@@ -1,0 +1,140 @@
+DTYPE_MAPPING = {
+    'String': 'string',
+    'Number': 'Float64',
+    'Integer': 'Int64',
+    'TimeInterval': 'string',
+    'Date': 'string',
+    'TimePeriod': 'string',
+    'Duration': 'string',
+    'Boolean': 'boolean',
+}
+
+CAST_MAPPING = {
+    'String': str,
+    'Number': float,
+    'Integer': int,
+    'TimeInterval': str,
+    'Date': str,
+    'TimePeriod': str,
+    'Duration': str,
+    'Boolean': bool,
+}
+
+
+class ScalarType:
+    """
+    """
+
+    default = None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}"
+
+    def strictly_same_class(self, obj) -> bool:
+        if not isinstance(obj, ScalarType):
+            raise Exception("Not use strictly_same_class")
+        return self.__class__ == obj.__class__
+
+    def __eq__(self, other):
+        return self.__class__.__name__ == other.__class__.__name__
+
+    def is_included(self, set_: set) -> bool:
+        return self.__class__ in set_
+
+    def is_subtype(self, obj) -> bool:
+        if not isinstance(obj, ScalarType):
+            raise Exception("Not use is_subtype")
+        return issubclass(self.__class__, obj.__class__)
+
+    def is_null_type(self) -> bool:
+        return False
+
+    def check_type(self, value):
+        if isinstance(value, CAST_MAPPING[self.__class__.__name__]):
+            return True
+
+        raise Exception(f"Value {value} is not a {self.__class__.__name__}")
+
+    def cast(self, value):
+        return CAST_MAPPING[self.__class__.__name__](value)
+
+    def dtype(self):
+        return DTYPE_MAPPING[self.__class__.__name__]
+
+    __str__ = __repr__
+
+
+class String(ScalarType):
+    """
+
+    """
+    default = ""
+
+
+class Number(ScalarType):
+    """
+    """
+    pass
+
+
+class Integer(Number):
+    """
+    """
+    pass
+
+
+class TimeInterval(ScalarType):
+    """
+
+    """
+    default = None
+
+
+class Date(TimeInterval):
+    """
+
+    """
+    default = None
+
+
+class TimePeriod(TimeInterval):
+    """
+
+    """
+    default = None
+
+
+class Duration(ScalarType):
+    pass
+
+
+class Boolean(ScalarType):
+    """
+    """
+    default = None
+
+    def cast(self, value):
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return True
+            elif value.lower() == "false":
+                return False
+            elif value.lower() == "1":
+                return True
+            elif value.lower() == "0":
+                return False
+            else:
+                return None
+        if isinstance(value, int):
+            if value != 0:
+                return True
+            else:
+                return False
+        if isinstance(value, float):
+            if value != 0.0:
+                return True
+            else:
+                return False
+        if isinstance(value, bool):
+            return value
+        return value
