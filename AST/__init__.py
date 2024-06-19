@@ -7,7 +7,7 @@ Description
 Basic AST nodes.
 """
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, OrderedDict, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass
@@ -35,9 +35,9 @@ class AST:
         return f"<{name}({', '.join(out)})>"
 
     def toJSON(self):
-        base = OrderedDict([(
-            'class_name', self.__class__.__name__
-        )])
+        base = {
+            'class_name': self.__class__.__name__
+        }
         for k in self.__all_annotations().keys():
             v = self.__getattribute__(k)
             base[k] = v
@@ -158,7 +158,7 @@ class Constant(AST):
     Constant: (type, value)
 
     types: INTEGER_CONSTANT, FLOAT_CONSTANT, BOOLEAN_CONSTANT,
-           STRING_CONSTANT,NULL_CONSTANT
+           STRING_CONSTANT, NULL_CONSTANT
     """
 
     type_: str
@@ -178,7 +178,7 @@ class ParamConstant(Constant):
     def __str__(self):
         return "<AST(name='{name}',type='{type}', value='{value}')>".format(
             name=self.__class__.__name__,
-            type=self.type,
+            type=self.type_,
             value=self.value
         )
 

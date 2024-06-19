@@ -6,8 +6,8 @@ from antlr4.error.ErrorListener import ErrorListener
 
 from AST import AST
 from AST.ASTConstructor import ASTVisitor
-from Grammar.lexer import Lexer
-from Grammar.parser import Parser
+from AST.Grammar.lexer import Lexer
+from AST.Grammar.parser import Parser
 from Model import Dataset
 
 
@@ -51,6 +51,7 @@ def create_ast(text: str) -> AST:
     cst = _parser(stream)
     visitor = ASTVisitor()
     return visitor.visit(cst)
+
 
 def load_datasets(file_path: Union[str, Path]) -> Dataset:
     """

@@ -1,9 +1,9 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import Constant, VarID, Identifier, Collection, BinOp, Role, Types, ParamConstant, DPRIdentifier, \
-    ParamOp, OrderBy, Windowing
+from AST import BinOp, Collection, Constant, DPRIdentifier, Identifier, OrderBy, ParamConstant, \
+    ParamOp, Role, Types, VarID, Windowing
 from AST.VtlVisitor import VtlVisitor
-from Grammar.parser import Parser
+from AST.Grammar.parser import Parser
 
 
 def _remove_scaped_characters(text):
@@ -73,12 +73,14 @@ class Terminals(VtlVisitor):
 
         if len(ctx_list) == 1:
             component_name = ctx_list[0].getSymbol().text
-            if component_name.startswith("\'") and component_name.endswith("\'"):  # The component could be imbalance, errorcode or errorlevel
+            if component_name.startswith("\'") and component_name.endswith(
+                    "\'"):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
             return Identifier(component_name, 'ComponentID')
         else:
             component_name = ctx_list[2].getSymbol().text
-            if component_name.startswith("\'") and component_name.endswith("\'"):  # The component could be imbalance, errorcode or errorlevel
+            if component_name.startswith("\'") and component_name.endswith(
+                    "\'"):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
             op_node = ctx_list[1].getSymbol().text
             return BinOp(left=Identifier(ctx_list[0].getSymbol().text, 'DatasetID'),
@@ -98,7 +100,8 @@ class Terminals(VtlVisitor):
         """
         valueDomainID: IDENTIFIER ;
         """
-        return Collection(name=ctx.children[0].getSymbol().text, type_=None, children=[], kind='ValueDomain')
+        return Collection(name=ctx.children[0].getSymbol().text, type_=None, children=[],
+                          kind='ValueDomain')
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
         """
@@ -257,7 +260,8 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        types = (Parser.BasicScalarTypeContext, Parser.ValueDomainNameContext, Parser.ScalarTypeConstraintContext)
+        types = (Parser.BasicScalarTypeContext, Parser.ValueDomainNameContext,
+                 Parser.ScalarTypeConstraintContext)
         scalartype = [scalartype for scalartype in ctx_list if isinstance(scalartype, types)][0]
 
         scalartype_constraint = [constraint for constraint in ctx_list if
@@ -265,7 +269,8 @@ class Terminals(VtlVisitor):
         not_ = [not_.getSymbol().text for not_ in ctx_list if
                 isinstance(not_, TerminalNodeImpl) and not_.getSymbol().type == Parser.NOT]
         null_constant = [null.getSymbol().text for null in ctx_list if
-                         isinstance(null, TerminalNodeImpl) and null.getSymbol().type == Parser.NULL_CONSTANT]
+                         isinstance(null,
+                                    TerminalNodeImpl) and null.getSymbol().type == Parser.NULL_CONSTANT]
 
         if isinstance(scalartype, Parser.BasicScalarTypeContext):
             type_node = self.visitBasicScalarType(scalartype)
@@ -293,7 +298,8 @@ class Terminals(VtlVisitor):
             # AST_ASTCONSTRUCTOR.47
             raise NotImplementedError
 
-        return Types(kind='Scalar', type_=type_node, constraints=scalartype_constraint, nullable=not_)
+        return Types(kind='Scalar', type_=type_node, constraints=scalartype_constraint,
+                     nullable=not_)
 
     def visitDatasetType(self, ctx: Parser.DatasetTypeContext):
         """
@@ -305,7 +311,8 @@ class Terminals(VtlVisitor):
                                  isinstance(constraint, Parser.CompConstraintContext)]
         type_node = 'DataSet'
 
-        return Types(kind='DataSet', type_=type_node, constraints=datasetype_constraint, nullable=None)
+        return Types(kind='DataSet', type_=type_node, constraints=datasetype_constraint,
+                     nullable=None)
 
     def visitRulesetType(self, ctx: Parser.RulesetTypeContext):
         """
@@ -347,7 +354,8 @@ class Terminals(VtlVisitor):
                                 isinstance(constraint, Parser.ScalarTypeContext)]
         type_node = role_node.role
 
-        return Types(kind='Component', type_=type_node, constraints=component_constraint, nullable=None)
+        return Types(kind='Component', type_=type_node, constraints=component_constraint,
+                     nullable=None)
 
     def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
         """
@@ -448,7 +456,8 @@ class Terminals(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
+            basic_scalar_type_node = [
+                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
             children_nodes = [const_node, basic_scalar_type_node[0]]
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
@@ -582,7 +591,8 @@ class Terminals(VtlVisitor):
     def visitOrderByClause(self, ctx: Parser.OrderByClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        return [self.visitOrderByItem(c) for c in ctx_list if isinstance(c, Parser.OrderByItemContext)]
+        return [self.visitOrderByItem(c) for c in ctx_list if
+                isinstance(c, Parser.OrderByItemContext)]
 
     def visitWindowingClause(self, ctx: Parser.WindowingClauseContext):
         ctx_list = list(ctx.getChildren())
@@ -601,11 +611,11 @@ class Terminals(VtlVisitor):
 
         if mode_2 == 'preceding':
             if mode_1 == 'preceding' and num_rows_1 == -1 and num_rows_2 == -1:  # preceding and preceding (error)
-                raise SyntaxError_(
+                raise Exception(
                     f'Cannot have 2 preceding clauses with unbounded in analytic clause, line {ctx_list[3].start.line}')
 
         if mode_1 == 'following' and num_rows_1 == -1 and num_rows_2 == -1:  # following and following (error)
-            raise SyntaxError_(
+            raise Exception(
                 f'Cannot have 2 following clauses with unbounded in analytic clause, line {ctx_list[3].start.line}')
 
         if mode_1 == mode_2:
@@ -626,7 +636,8 @@ class Terminals(VtlVisitor):
         if len(ctx_list) == 1:
             return OrderBy(component=self.visitComponentID(ctx_list[0]))
 
-        return OrderBy(component=self.visitComponentID(ctx_list[0]), order=ctx_list[1].getSymbol().text)
+        return OrderBy(component=self.visitComponentID(ctx_list[0]),
+                       order=ctx_list[1].getSymbol().text)
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
         ctx_list = list(ctx.getChildren())
@@ -639,7 +650,8 @@ class Terminals(VtlVisitor):
         else:
             result = int(c.getSymbol().text)
             if result < 0:
-                raise SyntaxError_(f'Cannot use negative numbers ({result}) on limitClause, line {c.symbol.line}')
+                raise Exception(
+                    f'Cannot use negative numbers ({result}) on limitClause, line {c.symbol.line}')
 
         return result, ctx_list[1].getSymbol().text
 

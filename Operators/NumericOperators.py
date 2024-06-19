@@ -1,9 +1,9 @@
 import math
 import operator
 
-from Operators import Operator
-from DataTypes.ScalarTypes import Number
-from Grammar.tokens import ABS, DIV, EXP, LN, LOG, MINUS, MULT, PLUS, SQRT
+import Operators as Operator
+from DataTypes import Number
+from AST.Grammar.tokens import ABS, DIV, EXP, LN, LOG, MINUS, MULT, PLUS, SQRT
 
 
 class Unary(Operator.Unary):
@@ -69,11 +69,6 @@ class Div(NumericBinary):
     op = DIV
     py_op = operator.truediv
     return_type = Number
-
-
-class Power(NumericBinary):
-    op = POW
-    py_op = operator.pow
 
 
 class Logarithm(NumericBinary):

@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 antlr4-python3-runtime = "==4.9.3"
-pyspark = "==3.3.0"
-pandas = "*"
+pyspark = "==3.3"
+numpy = "==1.23.5"
+pandas = "==1.5.1"
+pyarrow = "*"
 
 [dev-packages]
 pyspark-stubs = "*"

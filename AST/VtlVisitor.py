@@ -1,6 +1,6 @@
 from antlr4 import ParseTreeVisitor
 
-from Grammar.parser import Parser
+from AST.Grammar.parser import Parser
 
 
 # This class defines a complete generic visitor for a parse tree produced by Parser.

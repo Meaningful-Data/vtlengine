@@ -2,9 +2,9 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, TimeAggregation, \
     Identifier, EvalOp, Types, VarID, Analytic, AggregationComp
-from AST.ASTConstructorModules.handlers.terminals import terminal_handler
+from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
-from Grammar.parser import Parser
+from AST.Grammar.parser import Parser
 
 
 class ExprComp(VtlVisitor):
@@ -73,13 +73,13 @@ class ExprComp(VtlVisitor):
 
         # constant
         elif isinstance(ctx, Parser.ConstantExprCompContext):
-            return terminal_handler.visitConstant(c)
+            return Terminals().visitConstant(c)
 
         # componentID
-        # TODO Changed to pass more tests. Original code: return terminal_handler.visitComponentID(c)
+        # TODO Changed to pass more tests. Original code: return Terminals().visitComponentID(c)
         elif isinstance(ctx, Parser.CompIdContext):
             if len(c.children) > 1:
-                return terminal_handler.visitComponentID(c)
+                return Terminals().visitComponentID(c)
             token = c.children[0].getSymbol()
             # check token text
             has_scaped_char = token.text.find("\'") != -1
@@ -120,9 +120,9 @@ class ExprComp(VtlVisitor):
         op = ctx_list[1].symbol.text
 
         if isinstance(ctx_list[2], Parser.ListsContext):
-            right_node = terminal_handler.visitLists(ctx_list[2])
+            right_node = Terminals().visitLists(ctx_list[2])
         elif isinstance(ctx_list[2], Parser.ValueDomainIDContext):
-            right_node = terminal_handler.visitValueDomainID(ctx_list[2])
+            right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
             raise NotImplementedError
         bin_op_node = BinOp(left_node, op, right_node)
@@ -242,7 +242,7 @@ class ExprComp(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
-        op = terminal_handler.visitOperatorID(c)
+        op = Terminals().visitOperatorID(c)
         operator_node = Identifier(op, kind='OperatorID')
         param_nodes = [self.visitParameterComponent(element) for element in ctx_list if
                        isinstance(element, Parser.ParameterComponentContext)]
@@ -255,12 +255,12 @@ class ExprComp(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        routine_name = terminal_handler.visitRoutineName(ctx_list[2])
+        routine_name = Terminals().visitRoutineName(ctx_list[2])
 
         # Think of a way to maintain the order, for now its not necessary.
-        var_ids_nodes = [terminal_handler.visitVarID(varID) for varID in ctx_list if
+        var_ids_nodes = [Terminals().visitVarID(varID) for varID in ctx_list if
                          isinstance(varID, Parser.VarIDContext)]
-        constant_nodes = [terminal_handler.visitScalarItem(scalar) for scalar in ctx_list if
+        constant_nodes = [Terminals().visitScalarItem(scalar) for scalar in ctx_list if
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
@@ -271,7 +271,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.12
             raise SemanticError("1-4-2-1", option='language')
         # Reference manual says it is mandatory.
-        output_node = [terminal_handler.visitOutputParameterTypeComponent(output) for output in ctx_list if
+        output_node = [Terminals().visitOutputParameterTypeComponent(output) for output in ctx_list if
                        isinstance(output, Parser.OutputParameterTypeComponentContext)]
         if len(output_node) == 0:
             # AST_ASTCONSTRUCTOR.13
@@ -292,10 +292,10 @@ class ExprComp(VtlVisitor):
         op = token.text
         expr_node = [self.visitExprComponent(expr) for expr in ctx_list if
                      isinstance(expr, Parser.ExprComponentContext)]
-        basic_scalar_type = [terminal_handler.visitBasicScalarType(type_) for type_ in ctx_list if
+        basic_scalar_type = [Terminals().visitBasicScalarType(type_) for type_ in ctx_list if
                              isinstance(type_, Parser.BasicScalarTypeContext)]
 
-        [terminal_handler.visitValueDomainName(valueD) for valueD in ctx_list if
+        [Terminals().visitValueDomainName(valueD) for valueD in ctx_list if
          isinstance(valueD, Parser.ValueDomainNameContext)]
 
         if len(ctx_list) > 6:
@@ -705,13 +705,13 @@ class ExprComp(VtlVisitor):
 
         for c in ctx_list[5:-2]:
             if isinstance(c, Parser.PartitionByClauseContext):
-                partition_by = terminal_handler.visitPartitionByClause(c)
+                partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif isinstance(c, Parser.OrderByClauseContext):
-                order_by = terminal_handler.visitOrderByClause(c)
+                order_by = Terminals().visitOrderByClause(c)
                 continue
             elif isinstance(c, Parser.WindowingClauseContext):
-                params = terminal_handler.visitWindowingClause(c)
+                params = Terminals().visitWindowingClause(c)
                 continue
             else:
                 raise NotImplementedError
@@ -730,18 +730,18 @@ class ExprComp(VtlVisitor):
 
         for c in ctx_list[4:-2]:
             if isinstance(c, Parser.PartitionByClauseContext):
-                partition_by = terminal_handler.visitPartitionByClause(c)
+                partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif isinstance(c, Parser.OrderByClauseContext):
-                order_by = terminal_handler.visitOrderByClause(c)
+                order_by = Terminals().visitOrderByClause(c)
                 continue
             elif isinstance(c, Parser.SignedIntegerContext) or isinstance(c, Parser.ScalarItemContext):
                 if params is None:
                     params = []
                 if isinstance(c, Parser.SignedIntegerContext):
-                    params.append(terminal_handler.visitSignedInteger(c))
+                    params.append(Terminals().visitSignedInteger(c))
                 else:
-                    params.append(terminal_handler.visitScalarItem(c))
+                    params.append(Terminals().visitScalarItem(c))
                 continue
 
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)
@@ -756,10 +756,10 @@ class ExprComp(VtlVisitor):
 
         for c in ctx_list[4:-2]:
             if isinstance(c, Parser.PartitionByClauseContext):
-                partition_by = terminal_handler.visitPartitionByClause(c)
+                partition_by = Terminals().visitPartitionByClause(c)
                 continue
             elif isinstance(c, Parser.OrderByClauseContext):
-                order_by = terminal_handler.visitOrderByClause(c)
+                order_by = Terminals().visitOrderByClause(c)
                 continue
 
         return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by, params=None)
@@ -773,6 +773,6 @@ class ExprComp(VtlVisitor):
         op_node = ctx_list[0].getSymbol().text
         operand = self.visitExprComponent(ctx_list[2])
 
-        partition_by = terminal_handler.visitPartitionByClause(ctx_list[5])
+        partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)

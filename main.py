@@ -3,5 +3,6 @@ from Interpreter import InterpreterAnalyzer
 
 if __name__ == '__main__':
     ast = create_ast("DS_r := DS_1 + DS_2;")
+    print(ast)
     interpreter = InterpreterAnalyzer()
     interpreter.visit(ast)
