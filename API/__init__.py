@@ -1,5 +1,12 @@
+import json
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Dict
+import os
+
+if os.environ.get("SPARK", False):
+    import pyspark.pandas as pd
+else:
+    import pandas as pd
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
@@ -8,7 +15,7 @@ from AST import AST
 from AST.ASTConstructor import ASTVisitor
 from AST.Grammar.lexer import Lexer
 from AST.Grammar.parser import Parser
-from Model import Dataset
+from Model import Dataset, Component, Role
 
 
 class __VTLSingleErrorListener(ErrorListener):
@@ -36,7 +43,7 @@ def _lexer(text: str) -> CommonTokenStream:
 
 def _parser(stream: CommonTokenStream) -> Any:
     """
-    Parse the expresion
+    Parse the expression
     """
     vtl_parser = Parser(stream)
     vtl_parser._listeners = [__VTLSingleErrorListener()]
@@ -53,10 +60,37 @@ def create_ast(text: str) -> AST:
     return visitor.visit(cst)
 
 
-def load_datasets(file_path: Union[str, Path]) -> Dataset:
+def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[str, Dataset]:
     """
     Load the datasets
     """
-    # TODO: Method to load CSV files into PySpark and Pandas DataFrames
-    # TODO: Use Data Types and Lazy Loading on PySpark DataFrames
-    pass
+
+    if isinstance(dataPoints_path, str):
+        dataPoints_path = Path(dataPoints_path)
+
+    if isinstance(dataStructures_path, str):
+        dataStructures_path = Path(dataStructures_path)
+
+    datasets = {}
+    dataStructures = [dataStructures_path / f for f in os.listdir(dataStructures_path)
+                      if f.lower().endswith('.json')]
+
+    for f in dataStructures:
+        with open(f, 'r') as file:
+            structures = json.load(file)
+
+        for dataset_json in structures['datasets']:
+            dataset_name = dataset_json['name']
+            components = {component['name']: Component(name=component['name'], data_type=component['type'],
+                                                       role=Role(component['role']), nullable=component['nullable'])
+                          for component in dataset_json['DataStructure']}
+            dataPoint = dataPoints_path / f"{dataset_name}.csv"
+            if not os.path.exists(dataPoint):
+                data = pd.DataFrame(columns=components.keys())
+            else:
+                data = pd.read_csv(str(dataPoint), sep=',')
+
+            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
+    if len(datasets) == 0:
+        raise FileNotFoundError("No datasets found")
+    return datasets

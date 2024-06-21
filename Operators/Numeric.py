@@ -7,7 +7,6 @@ from AST.Grammar.tokens import ABS, DIV, EXP, LN, LOG, MINUS, MULT, PLUS, SQRT
 
 
 class Unary(Operator.Unary):
-    op = None
     type_to_check = Number
 
 

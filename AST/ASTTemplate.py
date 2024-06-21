@@ -6,6 +6,7 @@ Description
 -----------
 Template to start a new visitor for the AST.
 """
+from typing import Any
 
 import AST
 from AST.ASTVisitor import NodeVisitor
@@ -26,7 +27,7 @@ class ASTTemplate(NodeVisitor):
 
     _______________________________________________________________________________________"""
 
-    def visit_Start(self, node: AST.Start) -> None:
+    def visit_Start(self, node: AST.Start) -> Any:
         """
         Start: (children)
 
@@ -38,7 +39,7 @@ class ASTTemplate(NodeVisitor):
         for child in node.children:
             self.visit(child)
 
-    def visit_Assignment(self, node: AST.Assignment) -> None:
+    def visit_Assignment(self, node: AST.Assignment) -> Any:
         """
         Assignment: (left, op, right)
 
@@ -52,7 +53,7 @@ class ASTTemplate(NodeVisitor):
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> None:
+    def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         """
         PersistentAssignment: (left, op, right)
 
@@ -66,7 +67,7 @@ class ASTTemplate(NodeVisitor):
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_VarID(self, node: AST.VarID) -> AST.AST:
+    def visit_VarID(self, node: AST.VarID) -> Any:
         """
         VarID: (token, value)
 
@@ -76,7 +77,7 @@ class ASTTemplate(NodeVisitor):
         """
         return node.value
 
-    def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
+    def visit_UnaryOp(self, node: AST.UnaryOp) -> Any:
         """
         UnaryOp: (op, operand)
 
