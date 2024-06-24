@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
