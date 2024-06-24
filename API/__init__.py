@@ -35,7 +35,7 @@ def _lexer(text: str) -> CommonTokenStream:
     Lexing
     """
     lexer_ = Lexer(InputStream(text))
-    lexer_._listeners = []
+    lexer_._listeners = [__VTLSingleErrorListener()]
     stream = CommonTokenStream(lexer_)
 
     return stream
