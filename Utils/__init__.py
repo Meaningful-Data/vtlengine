@@ -1,6 +1,6 @@
 from AST.Grammar.tokens import *
 from Operators.General import Membership
-from Operators.Comparison import Equal
+from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
 from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
 
 from Operators.RegularAggregation import Calc
@@ -11,6 +11,12 @@ BINARY_MAPPING = {
     MEMBERSHIP: Membership,
     # Comparison
     EQ: Equal,
+    NEQ: NotEqual,
+    GT: Greater,
+    GTE: GreaterEqual,
+    LT: Less,
+    LTE: LessEqual,
+    # IN: In,
     # Numeric
     PLUS: BinPlus,
     MINUS: BinMinus,
@@ -20,6 +26,8 @@ BINARY_MAPPING = {
 }
 
 UNARY_MAPPING = {
+    # Comparison
+    # ISNULL: IsNull,
     # Numeric
     PLUS: UnPlus,
     MINUS: UnMinus,
