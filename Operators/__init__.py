@@ -1,6 +1,10 @@
+import os
 from typing import Union
 
-import pandas as pd
+if os.environ.get("SPARK", False):
+    import pyspark.pandas as pd
+else:
+    import pandas as pd
 
 from Model import Dataset, Role, Scalar, Component, DataComponent
 
@@ -49,14 +53,13 @@ class Binary:
 
         # Merge the data
         result_data: pd.DataFrame = pd.merge(
-            left_operand.data, right_operand.data, copy=False,
+            left_operand.data, right_operand.data,
             how='inner', left_on=join_keys, right_on=join_keys)
 
         for measure_name in measures:
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name + '_x'],
                                                                       result_data[measure_name + '_y'])
-            del result_data[measure_name + '_x']
-            del result_data[measure_name + '_y']
+            result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
         base_operand = right_operand if use_right_components else left_operand
         result_components = {component_name: component for component_name, component in base_operand.components.items()
