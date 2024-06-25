@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
+from AST.Grammar.tokens import FILTER
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar
 from Operators.Assignment import Assignment
@@ -53,8 +54,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.is_from_regular_aggregation:
             return DataComponent(name=node.value,
-                                 data=self.datasets[self.regular_aggregation_dataset].data[
-                                     node.value],
+                                 data=self.datasets[self.regular_aggregation_dataset].data[node.value],
                                  data_type=
                                  self.datasets[self.regular_aggregation_dataset].components[
                                      node.value].data_type,
@@ -76,7 +76,12 @@ class InterpreterAnalyzer(ASTTemplate):
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
         self.regular_aggregation_dataset = None
+        if node.op == FILTER:
+            return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
+
+    def visit_RenameNode(self, node: AST.RenameNode) -> Any:
+        return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,

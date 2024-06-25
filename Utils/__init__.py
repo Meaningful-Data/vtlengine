@@ -3,7 +3,7 @@ from Operators.General import Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
 from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
 
-from Operators.RegularAggregation import Calc
+from Operators.Clause import Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 from Operators.RoleSetter import Identifier, Attribute, Measure
 
 BINARY_MAPPING = {
@@ -42,5 +42,12 @@ UNARY_MAPPING = {
 }
 
 REGULAR_AGGREGATION_MAPPING = {
-    CALC: Calc
+    CALC: Calc,
+    FILTER: Filter,
+    KEEP: Keep,
+    DROP: Drop,
+    RENAME: Rename,
+    PIVOT: Pivot,
+    UNPIVOT: Unpivot,
+    SUBSPACE: Sub
 }

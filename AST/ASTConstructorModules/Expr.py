@@ -2,7 +2,8 @@ import re
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import If, BinOp, UnaryOp, JoinOp, Identifier, ParamOp, EvalOp, ParamConstant, Types, MulOp, \
+from AST import If, BinOp, RenameNode, UnaryOp, JoinOp, Identifier, ParamOp, EvalOp, ParamConstant, \
+    Types, MulOp, \
     RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, Analytic
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
@@ -1260,11 +1261,10 @@ class Expr(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        left_node = Terminals().visitComponentID(ctx_list[0])
-        op_node = ctx_list[1].getSymbol().text
-        right_node = Terminals().visitVarID(ctx_list[2])
+        left_node = Terminals().visitComponentID(ctx_list[0]).value
+        right_node = Terminals().visitVarID(ctx_list[2]).value
 
-        return BinOp(left_node, op_node, right_node)
+        return RenameNode(left_node, right_node)
 
     """
                     -----------------------------------

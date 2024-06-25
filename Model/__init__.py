@@ -34,7 +34,7 @@ class DataComponent:
     data: Optional[Union[PandasSeries, SparkSeries]]
     data_type: ScalarType
     role: Role = Role.MEASURE
-    nullable: bool = False
+    nullable: bool = True
 
 
 @dataclass
