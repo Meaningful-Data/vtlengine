@@ -70,6 +70,8 @@ class InterpreterAnalyzer(ASTTemplate):
             raise NotImplementedError
         operands = []
         dataset = self.visit(node.dataset)
+        if isinstance(dataset, Scalar):
+            raise Exception(f"Scalar {dataset.name} cannot be used with clause operators")
         self.regular_aggregation_dataset = dataset
         for child in node.children:
             self.is_from_regular_aggregation = True

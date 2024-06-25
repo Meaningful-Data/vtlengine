@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from AST import RenameNode
-from DataTypes import Boolean
+from DataTypes import Boolean, String
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
 
@@ -146,22 +146,29 @@ class Unpivot:
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
-        if identifier not in dataset.components:
-            raise ValueError(f"Component {identifier} not found in dataset {dataset.name}")
-        if measure not in dataset.components:
-            raise ValueError(f"Component {measure} not found in dataset {dataset.name}")
-        if dataset.get_component(identifier).role != Role.IDENTIFIER:
-            raise ValueError(f"Component {identifier} in dataset {dataset.name} is not an "
-                             f"{Role.IDENTIFIER}")
-        if dataset.get_component(measure).role != Role.MEASURE:
-            raise ValueError(f"Component {measure} in dataset {dataset.name} is not a "
-                             f"{Role.MEASURE}")
+        if identifier in dataset.components:
+            raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
+        if measure in dataset.components:
+            raise ValueError(f"Component {measure} already exists in dataset {dataset.name}")
 
-        raise NotImplementedError
+        result_components = {comp.name: comp for comp in dataset.get_identifiers()}
+        result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
+        # noinspection PyTypeChecker
+        result_dataset.add_component(Component(name=identifier, data_type=String,
+                                               role=Role.IDENTIFIER, nullable=False))
+        # noinspection PyTypeChecker
+        result_dataset.add_component(Component(name=measure, data_type=String,
+                                               role=Role.MEASURE, nullable=True))
+        return result_dataset
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset):
-        raise NotImplementedError
+        result_dataset = cls.validate(operands, dataset)
+        result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
+                                                value_vars=dataset.get_measures_names(),
+                                                var_name=operands[0], value_name=operands[1])
+        result_dataset.data = result_dataset.data.reset_index(drop=True)
+        return result_dataset
 
 
 class Sub:
