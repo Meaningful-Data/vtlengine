@@ -29,7 +29,8 @@ class Operator:
 
     @classmethod
     def validate_scalar_type(cls, scalar: Scalar) -> None:
-        if (cls.type_to_check is not None and cls.validate_type_compatibility(scalar.data_type, cls.type_to_check)):
+        if (cls.type_to_check is not None and cls.validate_type_compatibility(scalar.data_type,
+                                                                              cls.type_to_check)):
             raise Exception(f"{scalar.name} is not a {cls.type_to_check.__name__}")
 
     @classmethod
@@ -136,8 +137,9 @@ class Binary(Operator):
         cls.validate_component_type(component)
         cls.validate_scalar_type(scalar)
 
-        return DataComponent(name="result", data_type=cls.apply_return_type(component), data=None,
-                             role=Role.MEASURE, nullable=component.nullable or scalar is None)
+        return DataComponent(name=component.name, data_type=cls.apply_return_type(component),
+                             data=None, role=component.role,
+                             nullable=component.nullable or scalar is None)
 
     @classmethod
     def validate(cls, left_operand, right_operand):

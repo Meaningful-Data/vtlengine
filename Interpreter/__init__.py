@@ -15,7 +15,7 @@ class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
-    regular_aggregation_dataset: Optional[str] = None
+    regular_aggregation_dataset: Optional[Dataset] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -54,15 +54,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.is_from_regular_aggregation:
             return DataComponent(name=node.value,
-                                 data=self.datasets[self.regular_aggregation_dataset].data[node.value],
+                                 data=self.regular_aggregation_dataset.data[node.value],
                                  data_type=
-                                 self.datasets[self.regular_aggregation_dataset].components[
+                                 self.regular_aggregation_dataset.components[
                                      node.value].data_type,
-                                 role=self.datasets[self.regular_aggregation_dataset].components[
+                                 role=self.regular_aggregation_dataset.components[
                                      node.value].role)
 
         if node.value not in self.datasets:
-            raise ValueError(f"Dataset {node.value} not found, please check input datastructures")
+            raise Exception(f"Dataset {node.value} not found, please check input datastructures")
         return self.datasets[node.value]
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
@@ -70,7 +70,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise NotImplementedError
         operands = []
         dataset = self.visit(node.dataset)
-        self.regular_aggregation_dataset = dataset.name
+        self.regular_aggregation_dataset = dataset
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))

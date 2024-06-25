@@ -70,7 +70,7 @@ class Keep:
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name in operands or comp.role == Role.IDENTIFIER}
 
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset):
@@ -93,7 +93,7 @@ class Drop:
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name not in operands}
 
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset):
@@ -118,7 +118,7 @@ class Rename:
             result_components[operand.new_name] = result_components.pop(operand.old_name)
             result_components[operand.new_name].name = operand.new_name
 
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset):
@@ -143,6 +143,20 @@ class Unpivot:
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
+        if len(operands) != 2:
+            raise ValueError("Unpivot clause requires two operands")
+        identifier, measure = operands
+        if identifier not in dataset.components:
+            raise ValueError(f"Component {identifier} not found in dataset {dataset.name}")
+        if measure not in dataset.components:
+            raise ValueError(f"Component {measure} not found in dataset {dataset.name}")
+        if dataset.get_component(identifier).role != Role.IDENTIFIER:
+            raise ValueError(f"Component {identifier} in dataset {dataset.name} is not an "
+                             f"{Role.IDENTIFIER}")
+        if dataset.get_component(measure).role != Role.MEASURE:
+            raise ValueError(f"Component {measure} in dataset {dataset.name} is not a "
+                             f"{Role.MEASURE}")
+
         raise NotImplementedError
 
     @classmethod
@@ -153,11 +167,26 @@ class Unpivot:
 class Sub:
 
     @classmethod
-    def validate(cls, operands: List[str], dataset: Dataset):
-        raise NotImplementedError
+    def validate(cls, operands: List[DataComponent], dataset: Dataset):
+        for operand in operands:
+            if operand.name not in dataset.components:
+                raise Exception(f"Component {operand.name} not found in dataset {dataset.name}")
+            if operand.role != Role.IDENTIFIER:
+                raise Exception(f"Component {operand.name} in dataset {dataset.name} is not an "
+                                f"{Role.IDENTIFIER}")
+
+        result_components = {name: comp for name, comp in dataset.components.items()
+                             if comp.name not in [operand.name for operand in operands]}
+        return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
-        raise NotImplementedError
+    def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
+        result_dataset = cls.validate(operands, dataset)
+        result_dataset.data = dataset.data.copy()
+        for operand in operands:
+            result_dataset.data = result_dataset.data[operand.data]
+            result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
+            result_dataset.data = result_dataset.data.reset_index(drop=True)
+        return result_dataset
 
 
