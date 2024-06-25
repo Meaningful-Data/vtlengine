@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from Model import Dataset, Scalar, DataComponent
+from DataTypes import BASIC_TYPES
+from Model import DataComponent, Dataset, Scalar
 from Operators.Assignment import Assignment
-from Utils import BINARY_MAPPING, UNARY_MAPPING, REGULAR_AGGREGATION_MAPPING
+from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
 
 
 @dataclass
@@ -50,11 +51,15 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_assignment:
             return node.value
 
-
         if self.is_from_regular_aggregation:
-            return DataComponent(name=node.value, data=self.datasets[self.regular_aggregation_dataset].data[node.value],
-                                 data_type=self.datasets[self.regular_aggregation_dataset].components[node.value].data_type,
-                                 role=self.datasets[self.regular_aggregation_dataset].components[node.value].role)
+            return DataComponent(name=node.value,
+                                 data=self.datasets[self.regular_aggregation_dataset].data[
+                                     node.value],
+                                 data_type=
+                                 self.datasets[self.regular_aggregation_dataset].components[
+                                     node.value].data_type,
+                                 role=self.datasets[self.regular_aggregation_dataset].components[
+                                     node.value].role)
 
         if node.value not in self.datasets:
             raise ValueError(f"Dataset {node.value} not found, please check input datastructures")
@@ -74,4 +79,5 @@ class InterpreterAnalyzer(ASTTemplate):
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
     def visit_Constant(self, node: AST.Constant) -> Any:
-        return Scalar(name=str(node.value), value=node.value)
+        return Scalar(name=str(node.value), value=node.value,
+                      data_type=BASIC_TYPES[type(node.value)])

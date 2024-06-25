@@ -1,25 +1,24 @@
 import operator
 import os
-from dataclasses import dataclass
 
-from AST.Grammar.tokens import EQ, NEQ, GT, GTE, LT, LTE, IN, CHARSET_MATCH, ISNULL
-from DataTypes import String, Boolean
-from Operators import Binary, Unary
+from AST.Grammar.tokens import EQ, GT, GTE, LT, LTE, NEQ
+from Operators import Binary
 
 if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
+    pass
 else:
-    import pandas as pd
+    pass
+
 
 # class IsNull(Unary):
 #     op = ISNULL
 #     py_op = operator.truth
 #     return_type = Boolean
 
-@dataclass
 class Equal(Binary):
     op = EQ
     py_op = operator.eq
+
 
 class NotEqual(Binary):
     op = NEQ
@@ -35,6 +34,7 @@ class GreaterEqual(Binary):
     op = GTE
     py_op = operator.ge
 
+
 class Less(Binary):
     op = LT
     py_op = operator.lt
@@ -43,7 +43,6 @@ class Less(Binary):
 class LessEqual(Binary):
     op = LTE
     py_op = operator.le
-
 
 # class In(Binary):
 #     op = IN

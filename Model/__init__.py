@@ -14,7 +14,8 @@ class Scalar:
     Class representing a scalar value
     """
     name: str
-    value: Union[int, float, str, bool]
+    data_type: ScalarType
+    value: Optional[Union[int, float, str, bool]]
 
 
 class Role(Enum):
@@ -28,10 +29,12 @@ class Role(Enum):
 
 @dataclass
 class DataComponent:
+    """A component of a dataset with data"""
     name: str
-    data: Union[PandasSeries, SparkSeries]
+    data: Optional[Union[PandasSeries, SparkSeries]]
     data_type: ScalarType
     role: Role = Role.MEASURE
+    nullable: bool = False
 
 
 @dataclass
@@ -81,10 +84,19 @@ class Dataset:
     def delete_component(self, component_name: str):
         self.components.pop(component_name, None)
 
+    def get_identifiers(self) -> List[Component]:
+        return [component for component in self.components.values() if component.role == Role.IDENTIFIER]
+
+    def get_attributes(self) -> List[Component]:
+        return [component for component in self.components.values() if component.role == Role.ATTRIBUTE]
+
+    def get_measures(self) -> List[Component]:
+        return [component for component in self.components.values() if component.role == Role.MEASURE]
+
     def get_identifiers_names(self) -> List[str]:
         return [name for name, component in self.components.items() if component.role == Role.IDENTIFIER]
 
-    def get_attributes(self) -> List[str]:
+    def get_attributes_names(self) -> List[str]:
         return [name for name, component in self.components.items() if component.role == Role.ATTRIBUTE]
 
     def get_measures_names(self) -> List[str]:

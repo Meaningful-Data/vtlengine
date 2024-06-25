@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Any, Union, Dict
 import os
 
+from DataTypes import SCALAR_TYPES
+
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
 else:
@@ -81,7 +83,7 @@ def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[
 
         for dataset_json in structures['datasets']:
             dataset_name = dataset_json['name']
-            components = {component['name']: Component(name=component['name'], data_type=component['type'],
+            components = {component['name']: Component(name=component['name'], data_type=SCALAR_TYPES[component['type']],
                                                        role=Role(component['role']), nullable=component['nullable'])
                           for component in dataset_json['DataStructure']}
             dataPoint = dataPoints_path / f"{dataset_name}.csv"

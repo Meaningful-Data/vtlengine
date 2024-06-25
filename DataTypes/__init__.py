@@ -38,6 +38,9 @@ class ScalarType:
     def __eq__(self, other):
         return self.__class__.__name__ == other.__class__.__name__
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def is_included(self, set_: set) -> bool:
         return self.__class__ in set_
 
@@ -74,13 +77,24 @@ class String(ScalarType):
 class Number(ScalarType):
     """
     """
-    pass
+    def __eq__(self, other):
+        return (self.__class__.__name__ == other.__class__.__name__ or
+                other.__class__.__name__ == Integer.__name__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Integer(Number):
     """
     """
-    pass
+
+    def __eq__(self, other):
+        return (self.__class__.__name__ == other.__class__.__name__ or
+                other.__class__.__name__ == Number.__name__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class TimeInterval(ScalarType):
@@ -138,3 +152,22 @@ class Boolean(ScalarType):
         if isinstance(value, bool):
             return value
         return value
+
+
+SCALAR_TYPES = {
+    'String': String,
+    'Number': Number,
+    'Integer': Integer,
+    'TimeInterval': TimeInterval,
+    'Date': Date,
+    'TimePeriod': TimePeriod,
+    'Duration': Duration,
+    'Boolean': Boolean,
+}
+
+BASIC_TYPES = {
+    str: String,
+    int: Integer,
+    float: Number,
+    bool: Boolean,
+}
