@@ -2,10 +2,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Union, Dict
 
+import json
+
+import pandas as pd
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
-from DataTypes import ScalarType
+from DataTypes import ScalarType, SCALAR_TYPES
 
 
 @dataclass
@@ -16,6 +19,9 @@ class Scalar:
     name: str
     data_type: ScalarType
     value: Optional[Union[int, float, str, bool]]
+    def from_json(json_str):
+        data = json.loads(json_str)
+        return Scalar(data['name'], data['value'])
 
 
 class Role(Enum):
@@ -36,6 +42,24 @@ class DataComponent:
     role: Role = Role.MEASURE
     nullable: bool = False
 
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
+
+    @classmethod
+    def from_json(cls, json_str):
+        return cls(json_str['name'], None, SCALAR_TYPES[json_str['data_type']], Role(json_str['role']), json_str['nullable'])
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'data': self.data,
+            'data_type': self.data_type,
+            'role': self.role,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4)
+
 
 @dataclass
 class Component:
@@ -52,14 +76,23 @@ class Component:
             if self.nullable:
                 raise ValueError("An Identifier cannot be nullable")
 
-    def toJSON(self):
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
+
+    @classmethod
+    def from_json(cls, json_str):
+        return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']), json_str['nullable'])
+
+    def to_dict(self):
         return {
-            "name": self.name,
-            "data_type": self.data_type.__class__.__name__,
-            "role": self.role,
-            "nullable": self.nullable
+            'name': self.name,
+            'data_type': self.data_type,
+            'role': self.role,
+            'nullable': self.nullable
         }
 
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4)
 
 @dataclass
 class Dataset:
@@ -72,6 +105,9 @@ class Dataset:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
                     "The number of components must match the number of columns in the data")
+
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]
@@ -108,3 +144,23 @@ class Dataset:
         if new_name in self.components:
             raise ValueError(f"Component with name {new_name} already exists")
         self.components[new_name] = self.components.pop(old_name)
+
+    @classmethod
+    def from_json(cls, json_str):
+        components = {k: Component.from_json(v) for k, v in json_str['components'].items()}
+        return cls(json_str['name'], components, pd.DataFrame(json_str['data']))
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'components': {k: {
+                'name': v.name,
+                'data_type': v.data_type.__name__,
+                'role': v.role.value,
+                'nullable': v.nullable
+            } for k, v in self.components.items()},
+            'data': self.data.to_dict(orient='records')
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4)
