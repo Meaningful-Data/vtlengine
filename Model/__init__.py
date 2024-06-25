@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict
+from typing import Dict, List, Optional, Union
 
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
@@ -85,22 +85,28 @@ class Dataset:
         self.components.pop(component_name, None)
 
     def get_identifiers(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.IDENTIFIER]
+        return [component for component in self.components.values() if
+                component.role == Role.IDENTIFIER]
 
     def get_attributes(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.ATTRIBUTE]
+        return [component for component in self.components.values() if
+                component.role == Role.ATTRIBUTE]
 
     def get_measures(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.MEASURE]
+        return [component for component in self.components.values() if
+                component.role == Role.MEASURE]
 
     def get_identifiers_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.IDENTIFIER]
+        return [name for name, component in self.components.items() if
+                component.role == Role.IDENTIFIER]
 
     def get_attributes_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.ATTRIBUTE]
+        return [name for name, component in self.components.items() if
+                component.role == Role.ATTRIBUTE]
 
     def get_measures_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.MEASURE]
+        return [name for name, component in self.components.items() if
+                component.role == Role.MEASURE]
 
     def rename_component(self, old_name: str, new_name: str):
         if old_name not in self.components:
@@ -108,3 +114,12 @@ class Dataset:
         if new_name in self.components:
             raise ValueError(f"Component with name {new_name} already exists")
         self.components[new_name] = self.components.pop(old_name)
+
+
+@dataclass
+class ScalarSet:
+    """
+    Class representing a set of scalar values
+    """
+    data_type: ScalarType
+    values: List[Union[int, float, str, bool]]

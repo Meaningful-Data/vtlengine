@@ -8,7 +8,7 @@ if os.environ.get("SPARK", False):
 else:
     import pandas as pd
 
-from Model import Dataset, Role, Scalar, DataComponent
+from Model import Dataset, Role, Scalar, DataComponent, ScalarSet
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -140,6 +140,31 @@ class Binary(Operator):
                              role=Role.MEASURE, nullable=component.nullable or scalar is None)
 
     @classmethod
+    def dataset_set_validation(cls, dataset: Dataset, scalar_set: ScalarSet):
+        cls.validate_dataset_type(dataset)
+        for measure in dataset.get_measures():
+            cls.validate_type_compatibility(measure.data_type, scalar_set.data_type)
+
+        result_dataset = Dataset(name="result", components=dataset.components, data=None)
+        cls.apply_return_type_dataset(result_dataset)
+        return result_dataset
+
+    @classmethod
+    def component_set_validation(cls, component: DataComponent, scalar_set: ScalarSet):
+        cls.validate_component_type(component)
+        cls.validate_type_compatibility(component.data_type, scalar_set.data_type)
+
+        return DataComponent(name="result", data_type=cls.return_type, data=None,
+                             role=Role.MEASURE, nullable=component.nullable)
+
+    @classmethod
+    def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
+        cls.validate_scalar_type(scalar)
+        cls.validate_type_compatibility(scalar.data_type, scalar_set.data_type)
+
+        return Scalar(name="result", data_type=cls.return_type, value=None)
+
+    @classmethod
     def validate(cls, left_operand, right_operand):
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
             return cls.dataset_validation(left_operand, right_operand)
@@ -158,6 +183,14 @@ class Binary(Operator):
 
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
             return cls.component_scalar_validation(right_operand, left_operand)
+
+        # In operator
+
+        if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
+            return cls.dataset_set_validation(left_operand, right_operand)
+
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
+            return cls.scalar_set_validation(left_operand, right_operand)
 
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset):
@@ -226,6 +259,29 @@ class Binary(Operator):
         return result_component
 
     @classmethod
+    def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
+        result_dataset = cls.dataset_set_validation(dataset, scalar_set)
+        result_data = dataset.data.copy()
+        result_dataset.data = result_data
+
+        for measure_name in result_dataset.get_measures_names():
+            result_data[measure_name] = cls.apply_operation_component(dataset.data[measure_name], scalar_set.values)
+
+        return result_dataset
+
+    @classmethod
+    def component_set_evaluation(cls, component: DataComponent, scalar_set: ScalarSet) -> DataComponent:
+        result_component = cls.component_set_validation(component, scalar_set)
+        result_component.data = cls.apply_operation_component(component.data.copy(), scalar_set.values)
+        return result_component
+
+    @classmethod
+    def scalar_set_evaluation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
+        result_scalar = cls.scalar_set_validation(scalar, scalar_set)
+        result_scalar.value = cls.py_op(scalar.value, scalar_set.values)
+        return result_scalar
+
+    @classmethod
     def evaluate(cls,
                  left_operand: ALL_MODEL_DATA_TYPES,
                  right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
@@ -252,6 +308,15 @@ class Binary(Operator):
 
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
             return cls.component_scalar_evaluation(right_operand, left_operand)
+
+        if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
+            return cls.dataset_set_evaluation(left_operand, right_operand)
+
+        if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
+            return cls.component_set_evaluation(left_operand, right_operand)
+
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
+            return cls.scalar_set_evaluation(left_operand, right_operand)
 
 
 class Unary(Operator):
