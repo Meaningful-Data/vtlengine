@@ -837,13 +837,13 @@ class Expr(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         exprs_nodes = [self.visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)]
 
-        return MulOp(ctx_list[0].getSymbol().text, exprs_nodes)
+        return MulOp(op=ctx_list[0].getSymbol().text, children=exprs_nodes)
 
     def visitSetOrSYmDiffAtom(self, ctx: Parser.SetOrSYmDiffAtomContext):
         ctx_list = list(ctx.getChildren())
         exprs_nodes = [self.visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)]
 
-        return BinOp(left=exprs_nodes[0], op=ctx_list[0].getSymbol().text, right=exprs_nodes[1])
+        return MulOp(op=ctx_list[0].getSymbol().text, children=exprs_nodes)
 
     """
                             -----------------------------------

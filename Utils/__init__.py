@@ -1,10 +1,11 @@
 from AST.Grammar.tokens import *
+from Operators.Comparison import Equal, Greater, GreaterEqual, Less, LessEqual, NotEqual
 from Operators.General import Membership
-from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
-
+from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Div, Exponential, Logarithm, Mult, \
+    NaturalLogarithm, SquareRoot, UnMinus, UnPlus
 from Operators.RegularAggregation import Calc
-from Operators.RoleSetter import Identifier, Attribute, Measure
+from Operators.RoleSetter import Attribute, Identifier, Measure
+from Operators.Set import Intersection, Setdiff, Symdiff, Union
 
 BINARY_MAPPING = {
     # General
@@ -43,4 +44,11 @@ UNARY_MAPPING = {
 
 REGULAR_AGGREGATION_MAPPING = {
     CALC: Calc
+}
+
+SET_MAPPING = {
+    UNION: Union,
+    INTERSECT: Intersection,
+    SYMDIFF: Symdiff,
+    SETDIFF: Setdiff
 }

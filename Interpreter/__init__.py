@@ -6,7 +6,8 @@ from AST.ASTTemplate import ASTTemplate
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar
 from Operators.Assignment import Assignment
-from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
+from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, SET_MAPPING, \
+    UNARY_MAPPING
 
 
 @dataclass
@@ -77,6 +78,19 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = False
         self.regular_aggregation_dataset = None
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
+
+    def visit_MulOp(self, node: AST.MulOp) -> None:
+        # Set Operators.
+        if node.op in SET_MAPPING:
+            datasets = []
+            for child in node.children:
+                datasets.append(self.visit(child))
+
+            for ds in datasets:
+                if not isinstance(ds, Dataset):
+                    raise ValueError(f"Expected dataset, got {type(ds).__name__}")
+
+            return SET_MAPPING[node.op].evaluate(datasets)
 
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,
