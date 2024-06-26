@@ -5,6 +5,7 @@ from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, Natura
 
 from Operators.RegularAggregation import Calc
 from Operators.RoleSetter import Identifier, Attribute, Measure
+from Operators.String import Length, Concatenate
 
 BINARY_MAPPING = {
     # General
@@ -22,7 +23,9 @@ BINARY_MAPPING = {
     MINUS: BinMinus,
     MULT: Mult,
     DIV: Div,
-    LOG: Logarithm
+    LOG: Logarithm,
+    # String
+    CONCAT: Concatenate
 }
 
 UNARY_MAPPING = {
@@ -38,7 +41,9 @@ UNARY_MAPPING = {
     # Role Setter
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
-    MEASURE: Measure
+    MEASURE: Measure,
+    # String
+    LEN: Length
 }
 
 REGULAR_AGGREGATION_MAPPING = {
