@@ -64,7 +64,15 @@ class Intersection(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = pd.merge(result.data, data, how='inner')
+                result.data = result.data.merge(data, how='inner',
+                                                on=result.get_identifiers_names())
+
+                not_identifiers = [col for col in result.get_measures_names() +
+                                   result.get_attributes_names()]
+
+                for col in not_identifiers:
+                    result.data[col] = result.data[col + "_x"]
+                result.data = result.data[result.get_identifiers_names() + not_identifiers]
         result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -79,8 +87,17 @@ class Symdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer', indicator=True)
-                               .query('_merge != "both"').drop('_merge', axis=1))
+                result.data = (pd.merge(result.data, data, how='outer',
+                                        on=result.get_identifiers_names(),
+                                        indicator=True, suffixes=('_x', '_y'))
+                               .query('_merge != "both"'))
+                not_identifiers = [col for col in result.get_measures_names() +
+                                   result.get_attributes_names()]
+                for col in not_identifiers:
+                    result.data[col] = result.data.apply(
+                        lambda x, c=col: x[c + "_x"] if x["_merge"] == "left_only" else x[c + "_y"],
+                        axis=1)
+                result.data = result.data[result.get_identifiers_names() + not_identifiers]
         result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -95,6 +112,14 @@ class Setdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer', indicator=True)
-                               .query('_merge == "left_only"').drop('_merge', axis=1))
+                result.data = (pd.merge(result.data, data, how='outer',
+                                        on=result.get_identifiers_names(),
+                                        indicator=True, suffixes=('_x', '_y'))
+                               .query('_merge == "left_only"'))
+                not_identifiers = [col for col in result.get_measures_names() +
+                                   result.get_attributes_names()]
+                for col in not_identifiers:
+                    result.data[col] = result.data[col + "_x"]
+                result.data = result.data[result.get_identifiers_names() + not_identifiers]
+        result.data.reset_index(drop=True, inplace=True)
         return result
