@@ -1,14 +1,7 @@
 import operator
-import os
 
 from AST.Grammar.tokens import EQ, GT, GTE, LT, LTE, NEQ
 from Operators import Binary
-
-if os.environ.get("SPARK", False):
-    pass
-else:
-    pass
-
 
 # class IsNull(Unary):
 #     op = ISNULL
