@@ -23,3 +23,18 @@ class Membership(Binary):
         result_dataset = cls.validate(left_operand, right_operand)
         result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
+
+
+class Alias(Binary):
+
+    @classmethod
+    def validate(cls, left_operand: Dataset, right_operand: str):
+        if left_operand.name == right_operand:
+            raise ValueError("Alias operation requires different names")
+        return Dataset(name=right_operand, components=left_operand.components, data=None)
+
+    @classmethod
+    def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+        result = cls.validate(left_operand, right_operand)
+        result.data = left_operand.data
+        return result

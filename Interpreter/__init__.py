@@ -3,10 +3,11 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
+from AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar
 from Operators.Assignment import Assignment
-from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
+from Utils import BINARY_MAPPING, JOIN_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
 
 
 @dataclass
@@ -81,3 +82,12 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,
                       data_type=BASIC_TYPES[type(node.value)])
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> None:
+        clause_elements = []
+        for clause in node.clauses:
+            clause_elements.append(self.visit(clause))
+
+        # No need to check using, regular aggregation is executed afterwards
+
+        return JOIN_MAPPING[node.op].evaluate(clause_elements, node.using)

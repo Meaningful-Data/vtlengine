@@ -1,6 +1,7 @@
 from AST.Grammar.tokens import *
-from Operators.General import Membership
+from Operators.General import Alias, Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
+from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin
 from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
 
 from Operators.RegularAggregation import Calc
@@ -22,7 +23,9 @@ BINARY_MAPPING = {
     MINUS: BinMinus,
     MULT: Mult,
     DIV: Div,
-    LOG: Logarithm
+    LOG: Logarithm,
+    # General
+    AS: Alias
 }
 
 UNARY_MAPPING = {
@@ -43,4 +46,11 @@ UNARY_MAPPING = {
 
 REGULAR_AGGREGATION_MAPPING = {
     CALC: Calc
+}
+
+JOIN_MAPPING = {
+    INNER_JOIN: InnerJoin,
+    LEFT_JOIN: LeftJoin,
+    FULL_JOIN: FullJoin,
+    CROSS_JOIN: CrossJoin
 }

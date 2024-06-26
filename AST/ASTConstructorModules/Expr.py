@@ -309,10 +309,9 @@ class Expr(VtlVisitor):
             clause_nodes.append(self.visitJoinClauseItem(item))
 
         if len(components) != 0:
-            mul_op = Parser.literalNames[Parser.USING][1:-1]
             for component in components:
-                component_nodes.append(Terminals().visitComponentID(component))
-            using = MulOp(mul_op, component_nodes)
+                component_nodes.append(Terminals().visitComponentID(component).value)
+            using = component_nodes
 
         return clause_nodes, using
 
