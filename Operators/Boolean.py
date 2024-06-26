@@ -1,7 +1,10 @@
-import operator
-from typing import Any, Optional
+import os
+if os.environ.get("SPARK", False):
+    import pyspark.pandas as pd
+else:
+    import pandas as pd
 
-import pandas as pd
+from typing import Optional, Any
 
 from AST.Grammar.tokens import AND, OR, XOR, NOT
 from DataTypes import Boolean
@@ -61,4 +64,3 @@ class Not(Unary):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         return series.map(cls.py_op)
-
