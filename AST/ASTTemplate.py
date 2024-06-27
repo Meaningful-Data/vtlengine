@@ -522,3 +522,8 @@ class ASTTemplate(NodeVisitor):
             self.visit(node.operand)
         """
         self.visit(node.operand)
+
+    def visit_RenameNode(self, node: AST.RenameNode) -> None:
+        """
+        RenameNode: (name, to)
+        """

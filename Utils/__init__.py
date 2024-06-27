@@ -1,8 +1,10 @@
+from Operators.Clause import Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+
 from AST.Grammar.tokens import *
-from Operators.Comparison import Equal, Greater, GreaterEqual, Less, LessEqual, NotEqual
+from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Membership
-from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Div, Exponential, Logarithm, Mult, \
-    NaturalLogarithm, SquareRoot, UnMinus, UnPlus
+from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
+    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus
 from Operators.RegularAggregation import Calc
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
@@ -17,13 +19,15 @@ BINARY_MAPPING = {
     GTE: GreaterEqual,
     LT: Less,
     LTE: LessEqual,
-    # IN: In,
+    IN: In,
     # Numeric
     PLUS: BinPlus,
     MINUS: BinMinus,
     MULT: Mult,
     DIV: Div,
-    LOG: Logarithm
+    LOG: Logarithm,
+    MOD: Modulo,
+    POWER: Power
 }
 
 UNARY_MAPPING = {
@@ -36,14 +40,26 @@ UNARY_MAPPING = {
     EXP: Exponential,
     LN: NaturalLogarithm,
     SQRT: SquareRoot,
-    # Role Setter
+    CEIL: Ceil,
+    FLOOR: Floor,
+    ISNULL: IsNull,
+}
+
+ROLE_SETTER_MAPPING = {
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
     MEASURE: Measure
 }
 
 REGULAR_AGGREGATION_MAPPING = {
-    CALC: Calc
+    CALC: Calc,
+    FILTER: Filter,
+    KEEP: Keep,
+    DROP: Drop,
+    RENAME: Rename,
+    PIVOT: Pivot,
+    UNPIVOT: Unpivot,
+    SUBSPACE: Sub
 }
 
 SET_MAPPING = {
