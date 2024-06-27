@@ -5,6 +5,7 @@ from Interpreter import InterpreterAnalyzer
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
+    pd.set_option('compute.ops_on_diff_frames', True)
 else:
     import pandas as pd
 
@@ -112,4 +113,4 @@ def test_reference(input_datasets, reference_datasets, ast, param):
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
     result = interpreter.visit(ast)
-    assert result == reference_datasets
+    assert reference_datasets == result

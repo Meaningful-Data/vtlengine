@@ -1,9 +1,10 @@
 import math
 import operator
+from typing import Any
 
 import Operators as Operator
-from DataTypes import Number
 from AST.Grammar.tokens import ABS, DIV, EXP, LN, LOG, MINUS, MULT, PLUS, SQRT
+from DataTypes import Number
 
 
 class Unary(Operator.Unary):
@@ -13,6 +14,10 @@ class Unary(Operator.Unary):
 class UnPlus(Unary):
     op = PLUS
     py_op = operator.pos
+
+    @classmethod
+    def apply_operation_component(cls, series: Any) -> Any:
+        return series
 
 
 class UnMinus(Unary):
