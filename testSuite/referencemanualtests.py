@@ -51,7 +51,6 @@ params = general_operators + \
          clause_operators
 
 
-
 @pytest.fixture
 def ast(input_datasets, param):
     with open(os.path.join(vtl_dir, f'RM{param:03d}.vtl'), 'r') as f:
@@ -62,7 +61,8 @@ def ast(input_datasets, param):
 @pytest.fixture
 def input_datasets(param):
     prefix = f'{param}-'
-    datapoints = [f.removeprefix(prefix) for f in os.listdir(input_dp_dir)
+    suffix_csv = '.csv'
+    datapoints = [f.removeprefix(prefix).removesuffix(suffix_csv) for f in os.listdir(input_dp_dir)
                   if f.lower().startswith(prefix)]
     datastructures = [f'{input_ds_dir}/{f}' for f in os.listdir(input_ds_dir)
                       if f.lower().startswith(prefix)]
@@ -72,7 +72,9 @@ def input_datasets(param):
 @pytest.fixture
 def reference_datasets(param):
     prefix = f'{param}-'
-    datapoints = [f.removeprefix(prefix) for f in os.listdir(reference_dp_dir)
+    suffix_csv = '.csv'
+    datapoints = [f.removeprefix(prefix).removesuffix(suffix_csv) for f in
+                  os.listdir(reference_dp_dir)
                   if f.lower().startswith(prefix)]
     datastructures = [f'{reference_ds_dir}/{f}' for f in os.listdir(reference_ds_dir)
                       if f.lower().startswith(prefix)]
@@ -88,18 +90,21 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         for dataset_json in structures['datasets']:
             dataset_name = dataset_json['name']
             components = {
-                component['name']: Component(name=component['name'], data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']), nullable=component['nullable'])
+                component['name']: Component(name=component['name'],
+                                             data_type=SCALAR_TYPES[component['type']],
+                                             role=Role(component['role']),
+                                             nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
             if dataset_name not in dataPoints:
                 data = pd.DataFrame(columns=components.keys())
             else:
-                data = pd.read_csv(os.path.join(dp_dir, f'{param}-{dataset_name}'), sep=',')
+                data = pd.read_csv(os.path.join(dp_dir, f'{param}-{dataset_name}.csv'), sep=',')
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
+
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param):
