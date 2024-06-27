@@ -3,10 +3,12 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import FILTER
+from AST.Grammar.tokens import FILTER, ALL, BETWEEN, EXISTS_IN, ROUND, TRUNC
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, Scalar
+from Model import DataComponent, Dataset, Scalar, ScalarSet
 from Operators.Assignment import Assignment
+from Operators.Comparison import Between, ExistIn
+from Operators.Numeric import Round, Trunc
 from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
 
 
@@ -48,6 +50,46 @@ class InterpreterAnalyzer(ASTTemplate):
             raise NotImplementedError
         return UNARY_MAPPING[node.op].evaluate(operand)
 
+    def visit_MulOp(self, node: AST.MulOp):
+        """
+        MulOp: (op, children)
+
+        op: BETWEEN : 'between'.
+
+        Basic usage:
+
+            for child in node.children:
+                self.visit(child)
+        """
+        # Comparison Operators
+        if node.op == BETWEEN:
+            operand_element = self.visit(node.children[0])
+            from_element = self.visit(node.children[1])
+            to_element = self.visit(node.children[2])
+
+            return Between.evaluate(operand_element, from_element, to_element)
+
+        # Comparison Operators
+        elif node.op == EXISTS_IN:
+            dataset_1 = self.visit(node.children[0])
+            if not isinstance(dataset_1, Dataset):
+                raise Exception("First operand must be a dataset")
+            dataset_2 = self.visit(node.children[1])
+            if not isinstance(dataset_2, Dataset):
+                raise Exception("Second operand must be a dataset")
+
+            retain_element = None
+            if len(node.children) == 3:
+                retain_element = self.visit(node.children[2])
+                if isinstance(retain_element, Scalar):
+                    retain_element = retain_element.value
+                if retain_element == ALL:
+                    retain_element = None
+
+            return ExistIn.evaluate(dataset_1, dataset_2, retain_element)
+
+        raise NotImplementedError
+
     def visit_VarID(self, node: AST.VarID) -> Any:
         if self.is_from_assignment:
             return node.value
@@ -64,6 +106,21 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
         return self.datasets[node.value]
+
+    def visit_Collection(self, node: AST.Collection) -> Any:
+        if node.kind == 'Set':
+            elements = []
+            for child in node.children:
+                elements.append(self.visit(child).value)
+            for element in elements:
+                if type(element) != type(elements[0]):
+                    raise Exception("All elements in a set must be of the same type")
+            if len(elements) == 0:
+                raise Exception("A set must contain at least one element")
+            if len(elements) != len(set(elements)):
+                raise Exception("A set must not contain duplicates")
+            return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
+        raise NotImplementedError
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
         if node.op not in REGULAR_AGGREGATION_MAPPING:
@@ -88,3 +145,25 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,
                       data_type=BASIC_TYPES[type(node.value)])
+
+    def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
+        return node.value
+
+    def visit_ParamOp(self, node: AST.ParamOp) -> None:
+        if node.op == ROUND:
+            op_element = self.visit(node.children[0])
+            if len(node.params) != 0:
+                param_element = self.visit(node.params[0])
+            else:
+                param_element = None
+
+            return Round.evaluate(op_element, param_element)
+
+        # Numeric Operator
+        elif node.op == TRUNC:
+            op_element = self.visit(node.children[0])
+            param_element = None
+            if len(node.params) != 0:
+                param_element = self.visit(node.params[0])
+
+            return Trunc.evaluate(op_element, param_element)
