@@ -1,6 +1,6 @@
 from AST.Grammar.tokens import *
 from Operators.General import Membership
-from Operators.Comparison import Equal, In, NotEqual, Greater, GreaterEqual, Less, LessEqual
+from Operators.Comparison import Equal, In, IsNull, NotEqual, Greater, GreaterEqual, Less, LessEqual
 from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
 
 from Operators.RegularAggregation import Calc
@@ -35,6 +35,7 @@ UNARY_MAPPING = {
     EXP: Exponential,
     LN: NaturalLogarithm,
     SQRT: SquareRoot,
+    ISNULL: IsNull,
     # Role Setter
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,

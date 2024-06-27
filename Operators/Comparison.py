@@ -11,7 +11,7 @@ else:
     import pandas as pd
 
 from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ
-from DataTypes import Boolean, String
+from DataTypes import Boolean, COMP_NAME_MAPPING, String
 import Operators as Operator
 
 
@@ -22,6 +22,27 @@ class Unary(Operator.Unary):
 class IsNull(Unary):
     op = ISNULL
     py_op = pd.isnull
+
+    @classmethod
+    def apply_operation_component(cls, series: pd.Series) -> Any:
+        return series.isnull()
+
+    @classmethod
+    def op_func(cls, x: Any) -> Any:
+        return pd.isnull(x)
+
+    @classmethod
+    def dataset_validation(cls, operand: Dataset):
+        result = super().dataset_validation(operand)
+        for measure in result.get_measures():
+            measure.nullable = False
+        return result
+
+    @classmethod
+    def component_validation(cls, operand: DataComponent):
+        result = super().component_validation(operand)
+        result.nullable = False
+        return result
 
 
 class Binary(Operator.Binary):
@@ -62,9 +83,9 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def apply_operation_component(cls,
-                                  left_series: Any,
-                                  right_series: Any) -> Any:
+    def apply_operation_two_series(cls,
+                                   left_series: Any,
+                                   right_series: Any) -> Any:
         return left_series.isin(right_series)
 
     @classmethod
@@ -88,6 +109,17 @@ class Match(Binary):
 
 
 class Between(Operator.Operator):
+    return_type = Boolean
+
+    @classmethod
+    def op_function(cls, x, y, z):
+        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z
+
+    @classmethod
+    def apply_operation_component(cls, series: pd.Series,
+                                  from_data: Any,
+                                  to_data: Any) -> Any:
+        return series.map(lambda x: cls.op_function(x, from_data, to_data))
 
     @classmethod
     def validate(cls, operand: Union[Dataset, DataComponent, Scalar],
@@ -95,14 +127,17 @@ class Between(Operator.Operator):
                  to: Union[DataComponent, Scalar]) -> Any:
         if isinstance(operand, Dataset):
             cls.validate_dataset_type(operand)
-            result = Dataset(name=operand.name, components=operand.components, data=None)
+            result = Dataset(name=operand.name, components=operand.components.copy(), data=None)
+            cls.apply_return_type_dataset(result)
         elif isinstance(operand, DataComponent):
             cls.validate_component_type(operand)
             result = DataComponent(name=operand.name, data=None,
                                    data_type=operand.data_type, role=operand.role)
+            cls.apply_return_type(result)
         else:
             cls.validate_scalar_type(operand)
             result = Scalar(name=operand.name, value=None, data_type=operand.data_type)
+            cls.apply_return_type(result)
 
         if isinstance(from_, DataComponent):
             cls.validate_component_type(from_)
@@ -114,8 +149,13 @@ class Between(Operator.Operator):
         if isinstance(to, Scalar):
             cls.validate_scalar_type(to)
 
-        cls.validate_type_compatibility(operand.data_type, from_.data_type)
-        cls.validate_type_compatibility(from_.data_type, to.data_type)
+        if isinstance(operand, Dataset):
+            for measure in operand.get_measures():
+                cls.validate_type_compatibility(measure.data_type, from_.data_type)
+                cls.validate_type_compatibility(from_.data_type, to.data_type)
+        else:
+            cls.validate_type_compatibility(operand.data_type, from_.data_type)
+            cls.validate_type_compatibility(from_.data_type, to.data_type)
 
         return result
 
@@ -128,9 +168,20 @@ class Between(Operator.Operator):
         from_data = from_.data if isinstance(from_, DataComponent) else from_.value
         to_data = to.data if isinstance(to, DataComponent) else to.value
         if isinstance(operand, Dataset):
-            result.data = operand.data[(operand.data >= from_data) & (operand.data <= to_data)]
+            result.data = operand.data.copy()
+            for measure_name in operand.get_measures_names():
+                result.data[measure_name] = cls.apply_operation_component(
+                    operand.data[measure_name],
+                    from_data, to_data
+                )
+                if len(result.get_measures()) == 1:
+                    result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
+                    del result.data[measure_name]
         if isinstance(operand, DataComponent):
-            result.data = operand.data[(operand.data >= from_data) & (operand.data <= to_data)]
+            result.data = cls.apply_operation_component(
+                operand.data,
+                from_data, to_data
+            )
         if isinstance(operand, Scalar):
             result.value = from_data <= operand.value <= to_data
 

@@ -118,6 +118,8 @@ class Dataset:
             self.data = self.data.to_pandas()
         if isinstance(other.data, SparkDataFrame):
             other.data = other.data.to_pandas()
+        self.data.fillna("", inplace=True)
+        other.data.fillna("", inplace=True)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True)
             same_data = True

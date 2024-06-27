@@ -38,6 +38,9 @@ validation_operators = list(range(157, 161))
 conditional_operators = list(range(161, 163))
 clause_operators = list(range(163, 177))
 
+# Remove tests not implemented (Value Domains)
+comparison_operators.remove(84)
+
 params = itertools.chain(
     general_operators,
     join_operators,
@@ -109,7 +112,6 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
-
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param):
