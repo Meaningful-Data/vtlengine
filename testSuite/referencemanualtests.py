@@ -113,4 +113,4 @@ def test_reference(input_datasets, reference_datasets, ast, param):
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
     result = interpreter.visit(ast)
-    assert reference_datasets == result
+    assert result == reference_datasets
