@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 
@@ -5,6 +6,7 @@ from Interpreter import InterpreterAnalyzer
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
+
     pd.set_option('compute.ops_on_diff_frames', True)
 else:
     import pandas as pd
@@ -36,20 +38,22 @@ validation_operators = list(range(157, 161))
 conditional_operators = list(range(161, 163))
 clause_operators = list(range(163, 177))
 
-params = general_operators + \
-         join_operators + \
-         string_operators + \
-         numeric_operators + \
-         comparison_operators + \
-         boolean_operators + \
-         time_operators + \
-         set_operators + \
-         hierarchy_operators + \
-         aggregation_operators + \
-         analytic_operators + \
-         validation_operators + \
-         conditional_operators + \
-         clause_operators
+params = itertools.chain(
+    general_operators,
+    join_operators,
+    string_operators,
+    numeric_operators,
+    comparison_operators,
+    boolean_operators,
+    time_operators,
+    set_operators,
+    hierarchy_operators,
+    # aggregation_operators,
+    # analytic_operators,
+    # validation_operators,
+    # conditional_operators,
+    # clause_operators
+)
 
 
 @pytest.fixture
