@@ -245,7 +245,7 @@ class Binary(Operator):
 
             if cls.return_type and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                del result_data[measure_name]
+                result_data = result_data.drop(columns=[measure_name])
 
         result_dataset.data = result_data
 
@@ -268,10 +268,9 @@ class Binary(Operator):
             result_dataset.data[measure_name] = cls.apply_operation_series_scalar(
                 result_data[measure_name], scalar.value, dataset_left)
 
-            if cls.return_type:
+            if cls.return_type and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                del result_data[measure_name]
-
+                result_dataset.data = result_data.drop(columns=[measure_name])
         return result_dataset
 
     @classmethod
@@ -367,7 +366,7 @@ class Unary(Operator):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(lambda x: cls.py_op(x), na_action='ignore')
+        return series.map(cls.op_func, na_action='ignore')
 
     @classmethod
     def dataset_validation(cls, operand: Dataset):

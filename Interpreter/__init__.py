@@ -141,3 +141,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
+
+    def visit_ParamOp(self, node: AST.ParamOp) -> None:
+        raise NotImplementedError

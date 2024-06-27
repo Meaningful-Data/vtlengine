@@ -1,7 +1,9 @@
 from AST.Grammar.tokens import *
 from Operators.General import Membership
 from Operators.Comparison import Equal, In, IsNull, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.Numeric import UnPlus, UnMinus,AbsoluteValue, Exponential, NaturalLogarithm, SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
+from Operators.Numeric import Ceil, Floor, Modulo, Power, UnPlus, UnMinus, AbsoluteValue, Exponential, \
+    NaturalLogarithm, \
+    SquareRoot, BinPlus, BinMinus, Mult, Div, Logarithm
 
 from Operators.RegularAggregation import Calc
 from Operators.RoleSetter import Identifier, Attribute, Measure
@@ -22,7 +24,9 @@ BINARY_MAPPING = {
     MINUS: BinMinus,
     MULT: Mult,
     DIV: Div,
-    LOG: Logarithm
+    LOG: Logarithm,
+    MOD: Modulo,
+    POWER: Power
 }
 
 UNARY_MAPPING = {
@@ -35,6 +39,8 @@ UNARY_MAPPING = {
     EXP: Exponential,
     LN: NaturalLogarithm,
     SQRT: SquareRoot,
+    CEIL: Ceil,
+    FLOOR: Floor,
     ISNULL: IsNull,
     # Role Setter
     IDENTIFIER: Identifier,

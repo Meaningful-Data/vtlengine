@@ -8,6 +8,8 @@ class Calc:
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset):
         for operand in operands:
+            if operand.name in dataset.components:
+                dataset.delete_component(operand.name)
             dataset.add_component(Component(
                 name=operand.name,
                 data_type=operand.data_type,
