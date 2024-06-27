@@ -22,8 +22,8 @@ class Length(Unary):
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
+        #TODO change measure name
         return series.map(cls.py_op)
-
 
 class Concatenate(Binary):
     op = CONCAT
