@@ -42,7 +42,9 @@ UNARY_MAPPING = {
     CEIL: Ceil,
     FLOOR: Floor,
     ISNULL: IsNull,
-    # Role Setter
+}
+
+ROLE_SETTER_MAPPING = {
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
     MEASURE: Measure

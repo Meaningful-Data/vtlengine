@@ -3,13 +3,13 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import FILTER, ALL, BETWEEN, EXISTS_IN, ROUND, TRUNC
+from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, ROUND, TRUNC
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
-from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
+from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, UNARY_MAPPING
 
 
 @dataclass
@@ -46,8 +46,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand = self.visit(node.operand)
-        if node.op not in UNARY_MAPPING:
+        if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
             raise NotImplementedError
+        if self.is_from_regular_aggregation and node.op in ROLE_SETTER_MAPPING:
+            data_size = len(self.regular_aggregation_dataset.data)
+            return ROLE_SETTER_MAPPING[node.op].evaluate(operand, data_size)
         return UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_MulOp(self, node: AST.MulOp):

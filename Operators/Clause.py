@@ -14,8 +14,8 @@ class Calc:
 
         for operand in operands:
             if operand.name in dataset.components:
-                raise Exception(f"Component {operand.name} already "
-                                f"exists in dataset {dataset.name}")
+                # Override component with same name
+                dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
                 result_dataset.add_component(Component(
@@ -36,6 +36,7 @@ class Calc:
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
         result_dataset = cls.validate(operands, dataset)
+        result_dataset.data = dataset.data.copy()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -159,8 +160,15 @@ class Unpivot:
         # noinspection PyTypeChecker
         result_dataset.add_component(Component(name=identifier, data_type=String,
                                                role=Role.IDENTIFIER, nullable=False))
-        # noinspection PyTypeChecker
-        result_dataset.add_component(Component(name=measure, data_type=String,
+        # TODO: Add type promotion
+        base_type = None
+        for comp in dataset.get_measures():
+            if base_type is None:
+                base_type = comp.data_type
+            else:
+                if comp.data_type != base_type:
+                    raise ValueError("All measures must have the same data type")
+        result_dataset.add_component(Component(name=measure, data_type=base_type,
                                                role=Role.MEASURE, nullable=True))
         return result_dataset
 
@@ -198,5 +206,3 @@ class Sub:
             result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
             result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset
-
-
