@@ -150,8 +150,8 @@ class Binary(Operator):
         cls.validate_component_type(right_operand)
 
         result = DataComponent(name="result", data_type=left_operand.data_type,
-                               data=None, role=Role.MEASURE, nullable=(left_operand.nullable or
-                                                                       right_operand.nullable))
+                               data=None, role=left_operand.role, nullable=(left_operand.nullable or
+                                                                            right_operand.nullable))
         cls.apply_return_type(result)
         return result
 
@@ -161,7 +161,7 @@ class Binary(Operator):
         cls.validate_scalar_type(scalar)
 
         result = DataComponent(name="result", data_type=component.data_type, data=None,
-                             role=Role.MEASURE, nullable=component.nullable or scalar is None)
+                               role=Role.MEASURE, nullable=component.nullable or scalar is None)
         cls.apply_return_type(result)
         return result
 
@@ -392,7 +392,7 @@ class Unary(Operator):
     def component_validation(cls, operand: DataComponent):
         cls.validate_component_type(operand)
         result = DataComponent(name="result", data_type=operand.data_type, data=None,
-                               role=Role.MEASURE, nullable=operand.nullable)
+                               role=operand.role, nullable=operand.nullable)
         cls.apply_return_type(result)
         return result
 
