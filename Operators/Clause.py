@@ -9,26 +9,29 @@ class Calc:
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
+
+        result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
+
         for operand in operands:
             if operand.name in dataset.components:
                 raise Exception(f"Component {operand.name} already "
                                 f"exists in dataset {dataset.name}")
 
             if isinstance(operand, Scalar):
-                dataset.add_component(Component(
+                result_dataset.add_component(Component(
                     name=operand.name,
                     data_type=operand.data_type,
                     role=Role.MEASURE,
                     nullable=True
                 ))
             else:
-                dataset.add_component(Component(
+                result_dataset.add_component(Component(
                     name=operand.name,
                     data_type=operand.data_type,
                     role=operand.role,
                     nullable=operand.nullable
                 ))
-        return dataset
+        return result_dataset
 
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
@@ -47,7 +50,7 @@ class Filter:
     def validate(cls, condition: DataComponent, dataset: Dataset):
         if condition.data_type == Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
-        return dataset
+        return Dataset(name=dataset.name, components=dataset.components, data=None)
 
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset):
