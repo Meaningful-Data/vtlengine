@@ -51,11 +51,11 @@ params = itertools.chain(
     time_operators,
     set_operators,
     hierarchy_operators,
-    # aggregation_operators,
-    # analytic_operators,
-    # validation_operators,
-    # conditional_operators,
-    # clause_operators
+    aggregation_operators,
+    analytic_operators,
+    validation_operators,
+    conditional_operators,
+    clause_operators
 )
 
 
@@ -112,6 +112,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
+
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param):
