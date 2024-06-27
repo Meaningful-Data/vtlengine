@@ -96,11 +96,11 @@ class Between(Operator.Operator):
         if isinstance(operand, Dataset):
             cls.validate_dataset_type(operand)
             result = Dataset(name=operand.name, components=operand.components, data=None)
-        if isinstance(operand, DataComponent):
+        elif isinstance(operand, DataComponent):
             cls.validate_component_type(operand)
             result = DataComponent(name=operand.name, data=None,
                                    data_type=operand.data_type, role=operand.role)
-        if isinstance(operand, Scalar):
+        else:
             cls.validate_scalar_type(operand)
             result = Scalar(name=operand.name, value=None, data_type=operand.data_type)
 
@@ -117,7 +117,7 @@ class Between(Operator.Operator):
         cls.validate_type_compatibility(operand.data_type, from_.data_type)
         cls.validate_type_compatibility(from_.data_type, to.data_type)
 
-        return operand
+        return result
 
     @classmethod
     def evaluate(cls, operand: Union[DataComponent, Scalar],
