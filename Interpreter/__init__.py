@@ -3,11 +3,12 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN
+from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, ROUND, TRUNC
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
+from Operators.Numeric import Round, Trunc
 from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, UNARY_MAPPING
 
 
@@ -143,4 +144,20 @@ class InterpreterAnalyzer(ASTTemplate):
         return node.value
 
     def visit_ParamOp(self, node: AST.ParamOp) -> None:
-        raise NotImplementedError
+        if node.op == ROUND:
+            op_element = self.visit(node.children[0])
+            if len(node.params) != 0:
+                param_element = self.visit(node.params[0])
+            else:
+                param_element = None
+
+            return Round.evaluate(op_element, param_element)
+
+        # Numeric Operator
+        elif node.op == TRUNC:
+            op_element = self.visit(node.children[0])
+            param_element = None
+            if len(node.params) != 0:
+                param_element = self.visit(node.params[0])
+
+            return Trunc.evaluate(op_element, param_element)

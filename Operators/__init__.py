@@ -65,8 +65,7 @@ class Operator:
     @classmethod
     def apply_return_type(cls, result: Union[DataComponent, Scalar]) -> ScalarType:
         if cls.return_type is not None:
-            return cls.return_type
-        return result.data_type
+            result.data_type = cls.return_type
 
 
 class Binary(Operator):
@@ -150,17 +149,21 @@ class Binary(Operator):
         cls.validate_component_type(left_operand)
         cls.validate_component_type(right_operand)
 
-        return DataComponent(name="result", data_type=cls.apply_return_type(left_operand),
-                             data=None, role=Role.MEASURE, nullable=(left_operand.nullable or
-                                                                     right_operand.nullable))
+        result = DataComponent(name="result", data_type=left_operand.data_type,
+                               data=None, role=Role.MEASURE, nullable=(left_operand.nullable or
+                                                                       right_operand.nullable))
+        cls.apply_return_type(result)
+        return result
 
     @classmethod
     def component_scalar_validation(cls, component: DataComponent, scalar: Scalar):
         cls.validate_component_type(component)
         cls.validate_scalar_type(scalar)
 
-        return DataComponent(name="result", data_type=cls.apply_return_type(component), data=None,
+        result = DataComponent(name="result", data_type=component.data_type, data=None,
                              role=Role.MEASURE, nullable=component.nullable or scalar is None)
+        cls.apply_return_type(result)
+        return result
 
     @classmethod
     def dataset_set_validation(cls, dataset: Dataset, scalar_set: ScalarSet):
@@ -178,8 +181,10 @@ class Binary(Operator):
         cls.validate_component_type(component)
         cls.validate_type_compatibility(component.data_type, scalar_set.data_type)
 
-        return DataComponent(name="result", data_type=cls.return_type, data=None,
-                             role=Role.MEASURE, nullable=component.nullable)
+        result = DataComponent(name="result", data_type=component.data_type, data=None,
+                               role=Role.MEASURE, nullable=component.nullable)
+        cls.apply_return_type(result)
+        return result
 
     @classmethod
     def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
@@ -379,22 +384,26 @@ class Unary(Operator):
     @classmethod
     def scalar_validation(cls, operand: Scalar):
         cls.validate_scalar_type(operand)
-        return Scalar(name="result", data_type=cls.apply_return_type(operand), value=None)
+        result = Scalar(name="result", data_type=operand.data_type, value=None)
+        cls.apply_return_type(result)
+        return result
 
     @classmethod
     def component_validation(cls, operand: DataComponent):
         cls.validate_component_type(operand)
-        return DataComponent(name="result", data_type=cls.apply_return_type(operand), data=None,
-                             nullable=operand.nullable, role=operand.role)
+        result = DataComponent(name="result", data_type=operand.data_type, data=None,
+                               role=Role.MEASURE, nullable=operand.nullable)
+        cls.apply_return_type(result)
+        return result
 
     @classmethod
     def validate(cls, operand: ALL_MODEL_DATA_TYPES):
         if isinstance(operand, Dataset):
-            cls.dataset_validation(operand)
+            return cls.dataset_validation(operand)
         if isinstance(operand, Scalar):
-            cls.scalar_validation(operand)
+            return cls.scalar_validation(operand)
         if isinstance(operand, DataComponent):
-            cls.component_validation(operand)
+            return cls.component_validation(operand)
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
