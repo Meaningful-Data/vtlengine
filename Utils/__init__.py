@@ -1,11 +1,10 @@
-from Operators.Clause import Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+from Operators.Clause import Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 
 from AST.Grammar.tokens import *
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Membership
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
     Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus
-from Operators.RegularAggregation import Calc
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
 

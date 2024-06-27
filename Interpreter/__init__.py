@@ -92,6 +92,18 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return ExistIn.evaluate(dataset_1, dataset_2, retain_element)
 
+        # Set Operators.
+        elif node.op in SET_MAPPING:
+            datasets = []
+            for child in node.children:
+                datasets.append(self.visit(child))
+
+            for ds in datasets:
+                if not isinstance(ds, Dataset):
+                    raise ValueError(f"Expected dataset, got {type(ds).__name__}")
+
+            return SET_MAPPING[node.op].evaluate(datasets)
+
         raise NotImplementedError
 
     def visit_VarID(self, node: AST.VarID) -> Any:
@@ -142,19 +154,6 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.op == FILTER:
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
-
-    def visit_MulOp(self, node: AST.MulOp) -> None:
-        # Set Operators.
-        if node.op in SET_MAPPING:
-            datasets = []
-            for child in node.children:
-                datasets.append(self.visit(child))
-
-            for ds in datasets:
-                if not isinstance(ds, Dataset):
-                    raise ValueError(f"Expected dataset, got {type(ds).__name__}")
-
-            return SET_MAPPING[node.op].evaluate(datasets)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         return node
