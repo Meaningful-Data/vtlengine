@@ -430,6 +430,15 @@ class RegularAggregation(AST):
     dataset: Optional[AST] = None
     isLast: bool = False
 
+@dataclass
+class RenameNode(AST):
+    """
+    RenameNode: (old_name, new_name)
+    """
+
+    old_name: str
+    new_name: str
+
 
 class Aggregation(AST):
     """
