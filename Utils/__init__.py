@@ -46,14 +46,13 @@ UNARY_MAPPING = {
     CEIL: Ceil,
     FLOOR: Floor,
     ISNULL: IsNull,
+    LEN: Length
 }
 
 ROLE_SETTER_MAPPING = {
     IDENTIFIER: Identifier,
     ATTRIBUTE: Attribute,
     MEASURE: Measure,
-    # String
-    LEN: Length
 }
 
 REGULAR_AGGREGATION_MAPPING = {
