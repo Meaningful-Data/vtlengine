@@ -4,7 +4,7 @@ from AST.Grammar.tokens import *
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.String import Length, Concatenate
+from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
     Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
@@ -46,7 +46,13 @@ UNARY_MAPPING = {
     CEIL: Ceil,
     FLOOR: Floor,
     ISNULL: IsNull,
-    LEN: Length
+    #String
+    LEN: Length,
+    LCASE: Lower,
+    LTRIM: Ltrim,
+    RTRIM: Rtrim,
+    TRIM: Trim,
+    UCASE: Upper
 }
 
 ROLE_SETTER_MAPPING = {
