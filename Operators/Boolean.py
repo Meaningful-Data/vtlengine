@@ -1,4 +1,5 @@
 import os
+
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
 else:
@@ -38,6 +39,7 @@ class Or(Binary):
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.py_op)
 
+
 class Xor(Binary):
     op = XOR
 
@@ -50,6 +52,7 @@ class Xor(Binary):
     @classmethod
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.py_op)
+
 
 class Not(Unary):
     type_to_check = Boolean
