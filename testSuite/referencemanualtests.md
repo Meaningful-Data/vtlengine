@@ -28,27 +28,27 @@ Test number      | VTL expresion         | Test result
 
 ## 3. String Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-13    | DS_r := DS_1 \|\| DS_2;                                                  | WIP
-14    | DS_r := DS_1[calc Me_2:= Me_1 \|\| " world"];                            | WIP
-15    | DS_r := rtrim(DS_1);                                                     | WIP
-16    | DS_r := DS_1[ calc Me_2:= rtrim(Me_1)];                                  | WIP
-17    | DS_r := upper(DS_1);                                                     | WIP
-18    | DS_r := DS_1[calc Me_2:= upper(Me_1)];                                   | WIP
-19    | DS_r:= substr ( DS_1 , 7 );                                              | WIP 
-20    | DS_r:= substr ( DS_1 , 1 , 5 );                                          | WIP 
-21    | DS_r:= DS_1 [ calc Me_2:= substr ( Me_2 , 1 , 5 ) ];                     | WIP 
-22    | DS_r := replace (ds_1,"ello","i");                                       | WIP 
-23    | DS_r := DS_1[ calc Me_2:= replace (Me_1,"ello","i")];                    | WIP 
-24    | DS_r:= instr(ds_1,"hello");                                              | WIP 
-25    | DS_r := DS_1[calc Me_2:=instr(Me_1,"hello")];                            | WIP 
-26    | DS_r := DS_2 [calc Me_10:= instr(Me_1, "o"), Me_20:=instr(Me_2, "o")];   | WIP
-27    | DS_r := instr(DS_2, "o");                                                | WIP
-28    | DS_r := length(DS_1);                                                    | WIP
-29    | DS_r:= DS_1[calc Me_2:=length(Me_1)];                                    | WIP
-30    | DS_r := DS_2 [calc Me_10:= length(Me_1), Me_20:=length(Me_2)];           | WIP
-31    | DS_r := length(DS_2);                                                    | WIP
+Test number     | VTL expresion                                                          | Test result
+:------------:  |:-----------------------------------------------------------------------|:-------------:
+13    | DS_r := DS_1 \|\| DS_2;                                                | WIP
+14    | DS_r := DS_1[calc Me_2:= Me_1 \|\| " world"];                          | WIP
+15    | DS_r := rtrim(DS_1);                                                   | WIP
+16    | DS_r := DS_1[ calc Me_2:= rtrim(Me_1)];                                | WIP
+17    | DS_r := upper(DS_1);                                                   | WIP
+18    | DS_r := DS_1[calc Me_2:= upper(Me_1)];                                 | WIP
+19    | DS_r:= substr ( DS_1 , 7 );                                            | WIP 
+20    | DS_r:= substr ( DS_1 , 1 , 5 );                                        | WIP 
+21    | DS_r:= DS_1 [ calc Me_2:= substr ( Me_2 , 1 , 5 ) ];                   | WIP 
+22    | DS_r := replace (ds_1,"ello","i");                                     | WIP 
+23    | DS_r := DS_1[ calc Me_2:= replace (Me_1,"ello","i")];                  | WIP 
+24    | DS_r:= instr(ds_1,"hello");                                            | WIP 
+25    | DS_r := DS_1[calc Me_2:=instr(Me_1,"hello")];                          | WIP 
+26    | DS_r := DS_1 [calc Me_10:= instr(Me_1, "o"), Me_20:=instr(Me_2, "o")]; | WIP
+27    | DS_r := instr(DS_1, "o");                                              | WIP
+28    | DS_r := length(DS_1);                                                  | WIP
+29    | DS_r:= DS_1[calc Me_2:=length(Me_1)];                                  | WIP
+30    | DS_r := DS_2 [calc Me_10:= length(Me_1), Me_20:=length(Me_2)];         | WIP
+31    | DS_r := length(DS_2);                                                  | WIP
 
 >>>
 

@@ -1,7 +1,7 @@
 import os
 from typing import Any, Union
 
-from DataTypes import COMP_NAME_MAPPING, ScalarType
+from DataTypes import COMP_NAME_MAPPING, ScalarType, Boolean, Integer
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -52,7 +52,7 @@ class Operator:
         if cls.return_type is not None:
             for measure in dataset.get_measures():
                 measure.data_type = cls.return_type
-                if len(dataset.get_measures()) == 1:
+                if len(dataset.get_measures()) == 1 and cls.return_type in [Boolean, Integer]:
                     component = Component(
                         name=COMP_NAME_MAPPING[cls.return_type],
                         data_type=cls.return_type,
@@ -61,6 +61,8 @@ class Operator:
                     )
                     dataset.delete_component(measure.name)
                     dataset.add_component(component)
+                    if dataset.data is not None:
+                        dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
     @classmethod
     def apply_return_type(cls, result: Union[DataComponent, Scalar]) -> ScalarType:
@@ -249,7 +251,7 @@ class Binary(Operator):
                 result_data[measure_name + '_y'])
             result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
-            if cls.return_type and len(result_dataset.get_measures()) == 1:
+            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 result_data = result_data.drop(columns=[measure_name])
 
@@ -274,7 +276,7 @@ class Binary(Operator):
             result_dataset.data[measure_name] = cls.apply_operation_series_scalar(
                 result_data[measure_name], scalar.value, dataset_left)
 
-            if cls.return_type and len(result_dataset.get_measures()) == 1:
+            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 result_dataset.data = result_data.drop(columns=[measure_name])
         return result_dataset
@@ -423,7 +425,7 @@ class Unary(Operator):
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
-            if cls.return_type and len(result_dataset.get_measures()) == 1:
+            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 del result_data[measure_name]
 
