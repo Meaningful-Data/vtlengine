@@ -8,7 +8,7 @@ if os.environ.get("SPARK", False):
 else:
     import pandas as pd
 
-from typing import Optional, Any, Union, List
+from typing import Optional, Any, Union
 
 from AST.Grammar.tokens import LEN, CONCAT, UCASE, LCASE, RTRIM, SUBSTR, LTRIM, TRIM, REPLACE, INSTR
 from DataTypes import Integer, String, COMP_NAME_MAPPING
@@ -125,10 +125,14 @@ class Parameterized(Unary):
         result.data = operand.data.copy()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-                # result.data[measure_name] = cls.apply_operation_two_series(
-                #     result.data[measure_name], param1.data
-                # )
-                pass
+                if isinstance(param1, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param1.data
+                    )
+                if isinstance(param2, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param2.data
+                    )
             else:
                 param_value1 = None if param1 is None else param1.value
                 param_value2 = None if param2 is None else param2.value
@@ -145,8 +149,10 @@ class Parameterized(Unary):
         result = cls.validate(operand, param1, param2)
         result.data = operand.data.copy()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-            # result.data = cls.apply_operation_two_series(operand.data, param1.data)
-            pass
+            if isinstance(param1, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param1.data)
+            if isinstance(param2, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param2.data)
         else:
             param_value1 = None if param1 is None else param1.value
             param_value2 = None if param2 is None else param2.value
@@ -248,11 +254,20 @@ class Instr(Parameterized):
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy()
         for measure_name in result.get_measures_names():
-            if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-                # result.data[measure_name] = cls.apply_operation_two_series(
-                #     result.data[measure_name], param1.data
-                # )
-                pass
+            if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(param3,
+                                                                                                    DataComponent):
+                if isinstance(param1, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param1.data
+                    )
+                if isinstance(param2, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param2.data
+                    )
+                if isinstance(param3, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param3.data
+                    )
             else:
                 param_value1 = None if param1 is None else param1.value
                 param_value2 = None if param2 is None else param2.value
@@ -269,9 +284,13 @@ class Instr(Parameterized):
                              param3: Optional[Union[DataComponent, Scalar]]):
         result = cls.validate(operand, param1, param2)
         result.data = operand.data.copy()
-        if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
-            # result.data = cls.apply_operation_two_series(operand.data, param1.data)
-            pass
+        if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(param3, DataComponent):
+            if isinstance(param1, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param1.data)
+            if isinstance(param2, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param2.data)
+            if isinstance(param3, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param3.data)
         else:
             param_value1 = None if param1 is None else param1.value
             param_value2 = None if param2 is None else param2.value
