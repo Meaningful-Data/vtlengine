@@ -1,10 +1,7 @@
 import json
 
-import pandas as pd
-
 from API import create_ast, load_datasets
 from Interpreter import InterpreterAnalyzer
-from Model import Dataset, Component
 
 if __name__ == '__main__':
     ast = create_ast("DS_r := DS_3 xor DS_4;")

@@ -171,3 +171,15 @@ BASIC_TYPES = {
     float: Number,
     bool: Boolean,
 }
+
+COMP_NAME_MAPPING = {
+    String: 'string_var',
+    Number: 'num_var',
+    Integer: 'int_var',
+    TimeInterval: 'time_var',
+    TimePeriod: 'time_period_var',
+    Date: 'date_var',
+    Duration: 'duration_var',
+    Boolean: 'bool_var'
+}
+

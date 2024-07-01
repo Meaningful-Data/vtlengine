@@ -1,14 +1,14 @@
+import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict
-
-import json
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
+from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
-from DataTypes import ScalarType, SCALAR_TYPES
+from DataTypes import SCALAR_TYPES, ScalarType
 
 
 @dataclass
@@ -19,9 +19,11 @@ class Scalar:
     name: str
     data_type: ScalarType
     value: Optional[Union[int, float, str, bool]]
-    def from_json(json_str):
+
+    @classmethod
+    def from_json(cls, json_str):
         data = json.loads(json_str)
-        return Scalar(data['name'], data['value'])
+        return cls(data['name'], data['value'])
 
 
 class Role(Enum):
@@ -40,14 +42,15 @@ class DataComponent:
     data: Optional[Union[PandasSeries, SparkSeries]]
     data_type: ScalarType
     role: Role = Role.MEASURE
-    nullable: bool = False
+    nullable: bool = True
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
 
     @classmethod
     def from_json(cls, json_str):
-        return cls(json_str['name'], None, SCALAR_TYPES[json_str['data_type']], Role(json_str['role']), json_str['nullable'])
+        return cls(json_str['name'], None, SCALAR_TYPES[json_str['data_type']],
+                   Role(json_str['role']), json_str['nullable'])
 
     def to_dict(self):
         return {
@@ -81,18 +84,20 @@ class Component:
 
     @classmethod
     def from_json(cls, json_str):
-        return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']), json_str['nullable'])
+        return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']),
+                   json_str['nullable'])
 
     def to_dict(self):
         return {
             'name': self.name,
-            'data_type': self.data_type,
-            'role': self.role,
+            'data_type': self.data_type.__name__,
+            'role': self.role.value,
             'nullable': self.nullable
         }
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
+
 
 @dataclass
 class Dataset:
@@ -107,7 +112,21 @@ class Dataset:
                     "The number of components must match the number of columns in the data")
 
     def __eq__(self, other):
-        return self.to_dict() == other.to_dict()
+        same_name = self.name == other.name
+        same_components = self.components == other.components
+
+        if isinstance(self.data, SparkDataFrame):
+            self.data = self.data.to_pandas()
+        if isinstance(other.data, SparkDataFrame):
+            other.data = other.data.to_pandas()
+        self.data.fillna("", inplace=True)
+        other.data.fillna("", inplace=True)
+        try:
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True)
+            same_data = True
+        except AssertionError:
+            same_data = False
+        return same_name and same_components and same_data
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]
@@ -121,22 +140,28 @@ class Dataset:
         self.components.pop(component_name, None)
 
     def get_identifiers(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.IDENTIFIER]
+        return [component for component in self.components.values() if
+                component.role == Role.IDENTIFIER]
 
     def get_attributes(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.ATTRIBUTE]
+        return [component for component in self.components.values() if
+                component.role == Role.ATTRIBUTE]
 
     def get_measures(self) -> List[Component]:
-        return [component for component in self.components.values() if component.role == Role.MEASURE]
+        return [component for component in self.components.values() if
+                component.role == Role.MEASURE]
 
     def get_identifiers_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.IDENTIFIER]
+        return [name for name, component in self.components.items() if
+                component.role == Role.IDENTIFIER]
 
     def get_attributes_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.ATTRIBUTE]
+        return [name for name, component in self.components.items() if
+                component.role == Role.ATTRIBUTE]
 
     def get_measures_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if component.role == Role.MEASURE]
+        return [name for name, component in self.components.items() if
+                component.role == Role.MEASURE]
 
     def rename_component(self, old_name: str, new_name: str):
         if old_name not in self.components:
@@ -153,14 +178,18 @@ class Dataset:
     def to_dict(self):
         return {
             'name': self.name,
-            'components': {k: {
-                'name': v.name,
-                'data_type': v.data_type.__name__,
-                'role': v.role.value,
-                'nullable': v.nullable
-            } for k, v in self.components.items()},
+            'components': {k: v.to_dict() for k, v in self.components.items()},
             'data': self.data.to_dict(orient='records')
         }
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
+
+
+@dataclass
+class ScalarSet:
+    """
+    Class representing a set of scalar values
+    """
+    data_type: ScalarType
+    values: List[Union[int, float, str, bool]]
