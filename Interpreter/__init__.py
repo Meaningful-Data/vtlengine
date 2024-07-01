@@ -3,12 +3,13 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, ROUND, TRUNC
+from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, ROUND, TRUNC, SUBSTR, REPLACE, INSTR
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
+from Operators.String import Substr, Replace, Instr
 from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, \
     UNARY_MAPPING
 
@@ -183,3 +184,26 @@ class InterpreterAnalyzer(ASTTemplate):
                 param_element = self.visit(node.params[0])
 
             return Trunc.evaluate(op_element, param_element)
+
+        elif node.op == SUBSTR or node.op == REPLACE or node.op == INSTR:
+            param1 = None
+            param2 = None
+            param3 = None
+            op_element = self.visit(node.children[0])
+            for node_param in node.params:
+                if param1 is None:
+                    param1 = self.visit(node_param)
+                elif param2 is None:
+                    param2 = self.visit(node_param)
+                elif param3 is None:
+                    param3 = self.visit(node_param)
+            if node.op == SUBSTR:
+                return Substr.evaluate(op_element, param1, param2)
+            elif node.op == REPLACE:
+                return Replace.evaluate(op_element, param1, param2)
+            elif node.op == INSTR:
+                return Instr.evaluate(op_element, param1, param2, param3)
+            else:
+                raise NotImplementedError
+
+

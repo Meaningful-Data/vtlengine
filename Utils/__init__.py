@@ -4,9 +4,9 @@ from AST.Grammar.tokens import *
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim
+from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim, Substr, Replace
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
-    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus
+    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus, Trunc, Round
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
 
@@ -53,6 +53,15 @@ UNARY_MAPPING = {
     RTRIM: Rtrim,
     TRIM: Trim,
     UCASE: Upper
+}
+
+PARAMETRIC_MAPPING = {
+    # Numeric
+    ROUND: Round,
+    TRUNC: Trunc,
+    # String
+    SUBSTR: Substr,
+    REPLACE: Replace
 }
 
 ROLE_SETTER_MAPPING = {

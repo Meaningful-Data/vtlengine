@@ -1,7 +1,0 @@
-Id_1,Id_2,Me_1
-A,A,"Hello, World!"
-A,B,"This is a test Dataset"
-A,C,"To check the string operators"
-B,A,"The next lines are empty and null"
-B,B,"a"
-B,C,

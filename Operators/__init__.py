@@ -61,6 +61,8 @@ class Operator:
                     )
                     dataset.delete_component(measure.name)
                     dataset.add_component(component)
+                    if dataset.data is not None:
+                        dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
     @classmethod
     def apply_return_type(cls, result: Union[DataComponent, Scalar]) -> ScalarType:
