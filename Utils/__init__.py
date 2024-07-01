@@ -1,6 +1,7 @@
 from Operators.Clause import Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 
 from AST.Grammar.tokens import *
+from Operators.Boolean import Not, And, Or, Xor
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
@@ -13,6 +14,10 @@ from Operators.Set import Intersection, Setdiff, Symdiff, Union
 BINARY_MAPPING = {
     # General
     MEMBERSHIP: Membership,
+    #Boolean
+    AND: And,
+    OR: Or,
+    XOR: Xor,
     # Comparison
     EQ: Equal,
     NEQ: NotEqual,
@@ -34,6 +39,8 @@ BINARY_MAPPING = {
 }
 
 UNARY_MAPPING = {
+    #Boolean
+    NOT: Not,
     # Comparison
     # ISNULL: IsNull,
     # Numeric

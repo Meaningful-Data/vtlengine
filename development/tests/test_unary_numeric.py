@@ -1,8 +1,15 @@
 import json
+from pathlib import Path
+
+from pytest import mark
 
 from API import create_ast, load_datasets
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset
+
+pytestmark = mark.input_path(Path(__file__).parent / "results")
+
+# @mark.parametrize("filename", ['Absolute.json', 'UnMinus.json', 'UnPlus.json'])
 
 datapoints_path = '../data/dataPoints'
 datastructures_path = '../data/dataStructures'

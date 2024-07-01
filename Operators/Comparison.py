@@ -5,6 +5,9 @@ from typing import Any, Optional, Union
 
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
+from AST.Grammar.tokens import EQ, GT, GTE, LT, LTE, NEQ
+from Operators import Binary
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
