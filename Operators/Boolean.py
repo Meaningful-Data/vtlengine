@@ -9,7 +9,17 @@ from typing import Optional, Any
 
 from AST.Grammar.tokens import AND, OR, XOR, NOT
 from DataTypes import Boolean
-from Operators import Binary, Unary
+import Operators as Operator
+
+
+class Unary(Operator.Unary):
+    type_to_check = Boolean
+    return_type = Boolean
+
+
+class Binary(Operator.Binary):
+    type_to_check = Boolean
+    return_type = Boolean
 
 
 class And(Binary):
@@ -17,7 +27,8 @@ class And(Binary):
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        return None if (pd.isnull(x) and y is not False) or (pd.isnull(y) and x is not False) else x and y
+        return None if (pd.isnull(x) and y is not False) or (
+                pd.isnull(y) and x is not False) else x and y
 
     @classmethod
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
@@ -55,14 +66,11 @@ class Xor(Binary):
 
 
 class Not(Unary):
-    type_to_check = Boolean
     op = NOT
 
     @classmethod
     def py_op(cls, x: Optional[bool]) -> Optional[bool]:
         return None if pd.isnull(x) else not x
-
-    py_op = py_op
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:

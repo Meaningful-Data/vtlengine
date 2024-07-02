@@ -95,8 +95,6 @@ class In(Binary):
     def py_op(cls, x, y):
         return operator.contains(y, x)
 
-    py_op = py_op
-
 
 class Match(Binary):
     op = CHARSET_MATCH
@@ -107,8 +105,6 @@ class Match(Binary):
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
         return bool(re.fullmatch(y, x))
-
-    py_op = py_op
 
 
 class Between(Operator.Operator):
