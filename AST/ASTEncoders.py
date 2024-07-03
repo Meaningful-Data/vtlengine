@@ -23,7 +23,6 @@ class ComplexDecoder(json.JSONDecoder):
             try:
                 return ast_class(**dictionary)
             except TypeError as e:
-                print(dictionary["class_name"])
                 raise e
         else:
             return dictionary

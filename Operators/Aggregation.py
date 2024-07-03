@@ -26,14 +26,10 @@ def extract_grouping_identifiers(identifier_names: List[str],
 class Aggregation(Operator.Unary):
 
     @classmethod
-    def validate(cls, operand: ALL_ALLOWED_MODEL_DATA_TYPES,
+    def validate(cls, operand: Dataset,
                  group_op: Optional[str],
                  grouping_components: Optional[List[str]],
-                 having_data: Optional[List[DataComponent]]):
-        if isinstance(operand, DataComponent):
-            return_type = operand.data_type if cls.return_type is None else cls.return_type
-            return DataComponent(name="result", data=None, data_type=return_type, role=operand.role,
-                                 nullable=operand.nullable)
+                 having_data: Optional[List[DataComponent]]) -> Dataset:
         result_components = operand.components.copy()
         if group_op is not None:
             for comp_name in grouping_components:
@@ -72,10 +68,10 @@ class Aggregation(Operator.Unary):
 
     @classmethod
     def evaluate(cls,
-                 operand: ALL_ALLOWED_MODEL_DATA_TYPES,
+                 operand: Dataset,
                  group_op: Optional[str],
                  grouping_columns: Optional[str],
-                 having_data: Optional[List[DataComponent]]) -> ALL_ALLOWED_MODEL_DATA_TYPES:
+                 having_data: Optional[List[DataComponent]]) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_data)
         result.data = operand.data.copy()
         measure_name = operand.get_measures_names()[0]

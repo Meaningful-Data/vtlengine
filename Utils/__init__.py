@@ -15,7 +15,7 @@ from Operators.Analytic import (Max as MaxAnalytic,
                                 Lag, Lead, FirstValue, LastValue, RatioToReport, Rank
                                 )
 
-from Operators.Clause import Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 
 from AST.Grammar.tokens import *
 from Operators.Boolean import Not, And, Or, Xor
@@ -102,7 +102,8 @@ REGULAR_AGGREGATION_MAPPING = {
     RENAME: Rename,
     PIVOT: Pivot,
     UNPIVOT: Unpivot,
-    SUBSPACE: Sub
+    SUBSPACE: Sub,
+    AGGREGATE: Aggregate
 }
 
 SET_MAPPING = {

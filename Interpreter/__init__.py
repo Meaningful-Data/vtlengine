@@ -1,11 +1,13 @@
+from copy import copy
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, INSTR, REPLACE, ROUND, SUBSTR, TRUNC
+from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, INSTR, REPLACE, ROUND, \
+    SUBSTR, TRUNC
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, Scalar, ScalarSet
+from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
@@ -22,6 +24,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     regular_aggregation_dataset: Optional[Dataset] = None
+    aggregation_grouping: Optional[List[str]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -39,7 +42,7 @@ class InterpreterAnalyzer(ASTTemplate):
         return Assignment.evaluate(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
-        return self.visit_Assignment(node)  # type:ignore
+        return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
         left_operand = self.visit(node.left)
@@ -58,8 +61,13 @@ class InterpreterAnalyzer(ASTTemplate):
         return UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_Aggregation(self, node: AST.Aggregation) -> None:
-        if node.operand is None:  # Only on Count inside Having
-            operand = self.regular_aggregation_dataset
+        if self.is_from_regular_aggregation:
+
+            if node.operand is None:  # Only on Count inside Having
+                operand = self.regular_aggregation_dataset
+            else:
+                operand_component = self.visit(node.operand)
+                operand = self.regular_aggregation_dataset
         else:
             operand = self.visit(node.operand)
         groupings = []
@@ -68,7 +76,9 @@ class InterpreterAnalyzer(ASTTemplate):
             for x in node.grouping:
                 groupings.append(self.visit(x))
         if node.having_clause is not None:
+            self.aggregation_grouping = groupings
             operand = self.visit(node.having_clause)
+            self.aggregation_grouping = None
 
         return AGGREGATION_MAPPING[node.op].evaluate(operand, node.grouping_op, groupings, having)
 
@@ -168,6 +178,23 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
+        if node.op == AGGREGATE:
+            dataset = copy(operands[0])
+            dataset.name = self.regular_aggregation_dataset.name
+            dataset.components = {comp_name: comp for comp_name, comp in dataset.components.items()
+                                  if comp.role != Role.MEASURE}
+            if dataset.data is not None:
+                dataset.data = dataset.data[dataset.get_identifiers_names()]
+            aux_operands = []
+            for operand in operands:
+                measure = operand.get_component(operand.get_measures_names()[0])
+                data = operand.data[measure.name] if operand.data is not None else None
+                aux_operands.append(DataComponent(name=operand.name,
+                                                  data=data,
+                                                  data_type=measure.data_type,
+                                                  role=measure.role,
+                                                  nullable=measure.nullable))
+            operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
