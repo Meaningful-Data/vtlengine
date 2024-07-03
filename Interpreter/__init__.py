@@ -10,10 +10,12 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Substr, Replace, Instr
-from Utils import BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, \
+from Utils import AGGREGATION_MAPPING, BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, \
+    ROLE_SETTER_MAPPING, SET_MAPPING, \
     UNARY_MAPPING
 
 
+# noinspection PyTypeChecker
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
@@ -54,6 +56,19 @@ class InterpreterAnalyzer(ASTTemplate):
             data_size = len(self.regular_aggregation_dataset.data)
             return ROLE_SETTER_MAPPING[node.op].evaluate(operand, data_size)
         return UNARY_MAPPING[node.op].evaluate(operand)
+
+    def visit_Aggregation(self, node: AST.Aggregation) -> None:
+        operand = self.visit(node.operand)
+        groupings = []
+        having = []
+        for x in node.grouping:
+            groupings.append(self.visit(x))
+        for y in node.having_clause:
+            having.append(self.visit(y))
+        if node.op not in AGGREGATION_MAPPING:
+            raise NotImplementedError
+
+        print(operand)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
@@ -205,5 +220,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return Instr.evaluate(op_element, param1, param2, param3)
             else:
                 raise NotImplementedError
+
+
 
 

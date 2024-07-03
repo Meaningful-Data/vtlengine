@@ -1,3 +1,20 @@
+from Operators.Aggregation import (Avg, Count, Max, Median,
+                                   Min,
+                                   PopulationStandardDeviation,
+                                   PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
+
+from Operators.Analytic import (Max as MaxAnalytic,
+                                Min as MinAnalytic,
+                                Sum as SumAnalytic,
+                                Count as CountAnalytic,
+                                Avg as AvgAnalytic, Median as MedianAnalytic,
+                                PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
+                                SampleStandardDeviation as SampleStandardDeviationAnalytic,
+                                PopulationVariance as PopulationVarianceAnalytic,
+                                SampleVariance as SampleVarianceAnalytic,
+                                Lag, Lead, FirstValue, LastValue, RatioToReport, Rank
+                                )
+
 from Operators.Clause import Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 
 from AST.Grammar.tokens import *
@@ -14,7 +31,7 @@ from Operators.Set import Intersection, Setdiff, Symdiff, Union
 BINARY_MAPPING = {
     # General
     MEMBERSHIP: Membership,
-    #Boolean
+    # Boolean
     AND: And,
     OR: Or,
     XOR: Xor,
@@ -39,7 +56,7 @@ BINARY_MAPPING = {
 }
 
 UNARY_MAPPING = {
-    #Boolean
+    # Boolean
     NOT: Not,
     # Comparison
     # ISNULL: IsNull,
@@ -53,7 +70,7 @@ UNARY_MAPPING = {
     CEIL: Ceil,
     FLOOR: Floor,
     ISNULL: IsNull,
-    #String
+    # String
     LEN: Length,
     LCASE: Lower,
     LTRIM: Ltrim,
@@ -93,4 +110,37 @@ SET_MAPPING = {
     INTERSECT: Intersection,
     SYMDIFF: Symdiff,
     SETDIFF: Setdiff
+}
+
+AGGREGATION_MAPPING = {
+    MAX: Max,
+    MIN: Min,
+    SUM: Sum,
+    COUNT: Count,
+    AVG: Avg,
+    MEDIAN: Median,
+    STDDEV_POP: PopulationStandardDeviation,
+    STDDEV_SAMP: SampleStandardDeviation,
+    VAR_POP: PopulationVariance,
+    VAR_SAMP: SampleVariance,
+
+}
+
+ANALYTIC_MAPPING = {
+    MAX: MaxAnalytic,
+    MIN: MinAnalytic,
+    SUM: SumAnalytic,
+    COUNT: CountAnalytic,
+    AVG: AvgAnalytic,
+    MEDIAN: MedianAnalytic,
+    STDDEV_POP: PopulationStandardDeviationAnalytic,
+    STDDEV_SAMP: SampleStandardDeviationAnalytic,
+    VAR_POP: PopulationVarianceAnalytic,
+    VAR_SAMP: SampleVarianceAnalytic,
+    LAG: Lag,
+    LEAD: Lead,
+    FIRST_VALUE: FirstValue,
+    LAST_VALUE: LastValue,
+    RATIO_TO_REPORT: RatioToReport,
+    RANK: Rank
 }

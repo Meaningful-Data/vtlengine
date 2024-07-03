@@ -1,49 +1,6 @@
 import json
 
-from AST import Start, Assignment, PersistentAssignment, VarID, UnaryOp, BinOp, MulOp, ParamOp, JoinOp, \
-    Constant, ParamConstant, Identifier, Optional, ID, Role, Collection, Analytic, OrderBy, Windowing, \
-    RegularAggregation, Aggregation, TimeAggregation, If, Validation, Operator, DefIdentifier, DPRIdentifier, Types, \
-    Argument, HRBinOp, HRUnOp, HRule, DPRule, HRuleset, DPRuleset, EvalOp
-
-AST_Classes = {
-
-    'Start': Start,
-    'Assignment': Assignment,
-    'PersistentAssignment': PersistentAssignment,
-    'VarID': VarID,
-    'UnaryOp': UnaryOp,
-    'BinOp': BinOp,
-    'MulOp': MulOp,
-    'ParamOp': ParamOp,
-    'JoinOp': JoinOp,
-    'Constant': Constant,
-    'ParamConstant': ParamConstant,
-    'Identifier': Identifier,
-    'Optional': Optional,
-    'ID': ID,
-    'Role': Role,
-    'Collection': Collection,
-    'Analytic': Analytic,
-    'OrderBy': OrderBy,
-    'Windowing': Windowing,
-    'RegularAggregation': RegularAggregation,
-    'Aggregation': Aggregation,
-    'TimeAggregation': TimeAggregation,
-    'If': If,
-    'Validation': Validation,
-    'Operator': Operator,
-    'DefIdentifier': DefIdentifier,
-    'DPRIdentifier': DPRIdentifier,
-    'Types': Types,
-    'Argument': Argument,
-    'HRBinOp': HRBinOp,
-    'HRUnOp': HRUnOp,
-    'HRule': HRule,
-    'DPRule': DPRule,
-    'HRuleset': HRuleset,
-    'DPRuleset': DPRuleset,
-    'EvalOp': EvalOp
-}
+import AST
 
 
 class ComplexEncoder(json.JSONEncoder):
@@ -58,12 +15,15 @@ class ComplexDecoder(json.JSONDecoder):
     @staticmethod
     def object_hook(dictionary):
         if "class_name" in dictionary:
-            name = dictionary["class_name"]
+            if not hasattr(AST, dictionary["class_name"]):
+                raise ValueError(f"Class {dictionary['class_name']} not found in AST")
+
+            ast_class = getattr(AST, dictionary["class_name"])
             del dictionary["class_name"]
             try:
-                return AST_Classes[name](**dictionary)
+                return ast_class(**dictionary)
             except TypeError as e:
-                print(name)
+                print(dictionary["class_name"])
                 raise e
         else:
             return dictionary
