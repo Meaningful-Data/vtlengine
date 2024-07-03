@@ -49,7 +49,7 @@ class Filter:
 
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset):
-        if condition.data_type == Boolean:
+        if condition.data_type != Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
         return Dataset(name=dataset.name, components=dataset.components, data=None)
 

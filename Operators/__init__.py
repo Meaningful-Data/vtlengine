@@ -1,7 +1,10 @@
 import os
 from typing import Any, Union
 
-from DataTypes import COMP_NAME_MAPPING, ScalarType, Boolean, Integer
+import DataTypes
+from AST.Grammar.tokens import AND, OR, XOR, NOT, CAST
+from DataTypes import COMP_NAME_MAPPING, TYPE_MAPPING_POSITION, TYPE_PROMOTION_MATRIX, ScalarType
+from DataTypes import Boolean as Boolean_type, Integer as Integer_type
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -43,7 +46,7 @@ class Operator:
                         f"is not a {cls.type_to_check.__name__}")
 
     @classmethod
-    def validate_type_compatibility(cls, left_type: ScalarType, right_type: ScalarType):
+    def validate_type_compatibility(cls, left_type: ScalarType, right_type: ScalarType) -> bool:
         # TODO: Implement this method (TypePromotion)
         return False
 
@@ -52,7 +55,9 @@ class Operator:
         if cls.return_type is not None:
             for measure in dataset.get_measures():
                 measure.data_type = cls.return_type
-                if len(dataset.get_measures()) == 1 and cls.return_type in [Boolean, Integer]:
+                if len(dataset.get_measures()) == 1 and cls.return_type in [Boolean_type,
+                                                                            Integer_type] and cls.op not in [AND, OR,
+                                                                                                             XOR, NOT]:
                     component = Component(
                         name=COMP_NAME_MAPPING[cls.return_type],
                         data_type=cls.return_type,
@@ -86,9 +91,9 @@ class Binary(Operator):
     def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
                                       series_left: bool) -> Any:
         if series_left:
-            return series.map(lambda x: cls.op_func(x, scalar), na_action='ignore')
+            return series.map(lambda x: cls.py_op(x, scalar), na_action='ignore')
         else:
-            return series.map(lambda x: cls.op_func(scalar, x), na_action='ignore')
+            return series.map(lambda x: cls.py_op(scalar, x), na_action='ignore')
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset):
@@ -144,16 +149,18 @@ class Binary(Operator):
         cls.validate_scalar_type(left_operand)
         cls.validate_scalar_type(right_operand)
 
-        return Scalar(name="result", data_type=cls.return_type, value=None)
+        return Scalar(name="result", data_type=cls.type_validation(left_operand, right_operand), value=None)
 
     @classmethod
     def component_validation(cls, left_operand: DataComponent, right_operand: DataComponent):
         cls.validate_component_type(left_operand)
         cls.validate_component_type(right_operand)
 
-        result = DataComponent(name="result", data_type=left_operand.data_type,
-                               data=None, role=left_operand.role, nullable=(left_operand.nullable or
-                                                                            right_operand.nullable))
+        result = DataComponent(name="result",
+                               data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
+                               data=None,
+                               role=left_operand.role,
+                               nullable=(left_operand.nullable or right_operand.nullable))
         cls.apply_return_type(result)
         return result
 
@@ -162,7 +169,8 @@ class Binary(Operator):
         cls.validate_component_type(component)
         cls.validate_scalar_type(scalar)
 
-        result = DataComponent(name=component.name, data_type=component.data_type,
+        result = DataComponent(name=component.name,
+                               data_type=cls.type_validation(component.data_type, scalar.data_type),
                                data=None, role=component.role,
                                nullable=component.nullable or scalar is None)
         cls.apply_return_type(result)
@@ -184,7 +192,8 @@ class Binary(Operator):
         cls.validate_component_type(component)
         cls.validate_type_compatibility(component.data_type, scalar_set.data_type)
 
-        result = DataComponent(name="result", data_type=component.data_type, data=None,
+        result = DataComponent(name="result", data_type=cls.type_validation(component.data_type, scalar_set.data_type),
+                               data=None,
                                role=Role.MEASURE, nullable=component.nullable)
         cls.apply_return_type(result)
         return result
@@ -193,8 +202,31 @@ class Binary(Operator):
     def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
         cls.validate_scalar_type(scalar)
         cls.validate_type_compatibility(scalar.data_type, scalar_set.data_type)
+        return Scalar(name="result", data_type=cls.type_validation(scalar.data_type, scalar_set.data_type), value=None)
 
-        return Scalar(name="result", data_type=cls.return_type, value=None)
+    @classmethod
+    def type_validation(cls, left_type: ScalarType, right_type: ScalarType) -> DataTypes:
+        if cls.return_type is not None:
+            return cls.return_type
+
+        if left_type is None or right_type is None:
+            return None
+
+        left_position = TYPE_MAPPING_POSITION[left_type]
+        right_position = TYPE_MAPPING_POSITION[right_type]
+        conversion = TYPE_PROMOTION_MATRIX[left_position][right_position]
+        if conversion is 'N':
+            raise Exception(f"Cannot convert {left_type} to {right_type}")
+        if conversion is 'E':
+            if cls.op == CAST:
+                return right_type
+            conversion = TYPE_PROMOTION_MATRIX[right_position][left_position]
+            if conversion is 'I':
+                return left_type
+            raise Exception(f"Cannot convert {left_type} to {right_type} without explicit cast")
+        if conversion is 'I':
+            return right_type
+        return left_type
 
     @classmethod
     def validate(cls, left_operand, right_operand):
@@ -251,7 +283,11 @@ class Binary(Operator):
                 result_data[measure_name + '_y'])
             result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
-            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
+            print(AND)
+            print(cls.op)
+
+            if cls.return_type in [Boolean_type, Integer_type] and len(
+                    result_dataset.get_measures()) == 1 and cls.op not in [AND, OR, XOR, NOT]:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 result_data = result_data.drop(columns=[measure_name])
 
@@ -276,7 +312,7 @@ class Binary(Operator):
             result_dataset.data[measure_name] = cls.apply_operation_series_scalar(
                 result_data[measure_name], scalar.value, dataset_left)
 
-            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
+            if cls.return_type in [Boolean_type, Integer_type] and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 result_dataset.data = result_data.drop(columns=[measure_name])
         return result_dataset
@@ -425,7 +461,8 @@ class Unary(Operator):
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
-            if cls.return_type in [Boolean, Integer] and len(result_dataset.get_measures()) == 1:
+            if cls.return_type in [Boolean_type, Integer_type] and len(
+                    result_dataset.get_measures()) == 1 and cls.op not in [AND, OR, XOR, NOT]:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 del result_data[measure_name]
 

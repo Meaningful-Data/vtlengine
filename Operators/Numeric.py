@@ -4,16 +4,21 @@ from typing import Any, Optional, Union
 
 import pandas as pd
 
+import DataTypes
 import Operators as Operator
 from AST.Grammar.tokens import ABS, CEIL, DIV, EXP, FLOOR, LN, LOG, MINUS, MOD, MULT, PLUS, POWER, \
     ROUND, \
     SQRT, TRUNC
-from DataTypes import Integer, Number
+from DataTypes import Integer, Number, ScalarType
 from Model import DataComponent, Dataset, Scalar
 from Operators import ALL_MODEL_DATA_TYPES
 
 
 class Unary(Operator.Unary):
+    type_to_check = Number
+
+
+class Binary(Operator.Binary):
     type_to_check = Number
 
 
@@ -66,34 +71,30 @@ class Floor(Unary):
     return_type = Integer
 
 
-class NumericBinary(Operator.Binary):
-    type_to_check = Number
-
-
-class BinPlus(NumericBinary):
+class BinPlus(Binary):
     op = PLUS
     py_op = operator.add
     type_to_check = Number
 
 
-class BinMinus(NumericBinary):
+class BinMinus(Binary):
     op = MINUS
     py_op = operator.sub
     type_to_check = Number
 
 
-class Mult(NumericBinary):
+class Mult(Binary):
     op = MULT
     py_op = operator.mul
 
 
-class Div(NumericBinary):
+class Div(Binary):
     op = DIV
     py_op = operator.truediv
     return_type = Number
 
 
-class Logarithm(NumericBinary):
+class Logarithm(Binary):
     op = LOG
     py_op = math.log
     return_type = Number
@@ -105,7 +106,7 @@ class Logarithm(NumericBinary):
         return super().validate(left_operand, right_operand)
 
 
-class Modulo(NumericBinary):
+class Modulo(Binary):
     op = MOD
     py_op = operator.mod
 
@@ -116,7 +117,7 @@ class Modulo(NumericBinary):
         return super().validate(left_operand, right_operand)
 
 
-class Power(NumericBinary):
+class Power(Binary):
     op = POWER
     py_op = operator.pow
     return_type = Number
