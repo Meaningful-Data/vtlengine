@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import pandas as pd
 
@@ -7,8 +7,6 @@ from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV
                                 VAR_SAMP)
 from DataTypes import Integer, Number
 from Model import DataComponent, Dataset, Role
-
-ALL_ALLOWED_MODEL_DATA_TYPES = Union[DataComponent, Dataset]
 
 
 def extract_grouping_identifiers(identifier_names: List[str],
@@ -71,7 +69,7 @@ class Aggregation(Operator.Unary):
                  operand: Dataset,
                  group_op: Optional[str],
                  grouping_columns: Optional[str],
-                 having_data: Optional[List[DataComponent]]) -> Dataset:
+                 having_data: Optional[pd.DataFrame]) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_data)
         result.data = operand.data.copy()
         measure_name = operand.get_measures_names()[0]
@@ -81,12 +79,14 @@ class Aggregation(Operator.Unary):
             result_number = result.data[measure_name].agg(cls.py_op)
             result.data = pd.DataFrame(data=[result_number], columns=[measure_name])
             return result
-        result.data = result.data[grouping_keys + [measure_name]]
+        result_df = result.data[grouping_keys + [measure_name]]
+        if having_data is not None:
+            result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
         if cls.op == COUNT:
-            result_df = result.data.groupby(grouping_keys).size().reset_index(name='int_var')
+            result_df = result_df.groupby(grouping_keys).size().reset_index(name='int_var')
         else:
             comps_to_keep = grouping_keys + [measure_name]
-            result_df = result.data.groupby(grouping_keys)[comps_to_keep].agg(cls.py_op)
+            result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(cls.py_op)
             result_df = result_df[measure_name]
             result_df = result_df.reset_index()
         result.data = result_df

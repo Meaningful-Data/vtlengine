@@ -1,13 +1,15 @@
-from copy import copy
+from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, INSTR, REPLACE, ROUND, \
+from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
+    ROUND, \
     SUBSTR, TRUNC
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
+from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
@@ -21,10 +23,14 @@ from Utils import AGGREGATION_MAPPING, BINARY_MAPPING, REGULAR_AGGREGATION_MAPPI
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
+    # Flags to change behaviour
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
+    is_from_having: bool = False
+    # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
+    aggregation_dataset: Optional[Dataset] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -61,26 +67,39 @@ class InterpreterAnalyzer(ASTTemplate):
         return UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_Aggregation(self, node: AST.Aggregation) -> None:
-        if self.is_from_regular_aggregation:
-
-            if node.operand is None:  # Only on Count inside Having
-                operand = self.regular_aggregation_dataset
-            else:
-                operand_component = self.visit(node.operand)
-                operand = self.regular_aggregation_dataset
+        # Having takes precedence as it is lower in the AST
+        if self.is_from_having:
+            operand = self.aggregation_dataset
+        elif self.is_from_regular_aggregation:
+            operand = self.regular_aggregation_dataset
         else:
             operand = self.visit(node.operand)
         groupings = []
-        having = []
+        having = None
+        grouping_op = node.grouping_op
         if node.grouping is not None:
             for x in node.grouping:
                 groupings.append(self.visit(x))
-        if node.having_clause is not None:
-            self.aggregation_grouping = groupings
-            operand = self.visit(node.having_clause)
-            self.aggregation_grouping = None
+            if node.having_clause is not None:
+                self.aggregation_dataset = Dataset(name=operand.name,
+                                                   components=operand.components,
+                                                   data=operand.data.copy())
+                self.aggregation_grouping = extract_grouping_identifiers(
+                    operand.get_identifiers_names(),
+                    node.grouping_op,
+                    groupings)
+                self.is_from_having = True
+                having = self.visit(node.having_clause)
+                # Reset to default values
+                self.is_from_having = False
+                self.aggregation_grouping = None
+                self.aggregation_dataset = None
+        elif self.is_from_having:
+            groupings = self.aggregation_grouping
+            # Setting here group by as we have already selected the identifiers we need
+            grouping_op = 'group by'
 
-        return AGGREGATION_MAPPING[node.op].evaluate(operand, node.grouping_op, groupings, having)
+        return AGGREGATION_MAPPING[node.op].evaluate(operand, grouping_op, groupings, having)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
@@ -137,7 +156,13 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_VarID(self, node: AST.VarID) -> Any:
         if self.is_from_assignment:
             return node.value
-
+        # Having takes precedence as it is lower in the AST
+        if self.is_from_having:
+            return DataComponent(name=node.value,
+                                 data=self.aggregation_dataset.data[node.value],
+                                 data_type=self.aggregation_dataset.components[
+                                     node.value].data_type,
+                                 role=self.aggregation_dataset.components[node.value].role)
         if self.is_from_regular_aggregation:
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
@@ -249,3 +274,23 @@ class InterpreterAnalyzer(ASTTemplate):
                 return Instr.evaluate(op_element, param1, param2, param3)
             else:
                 raise NotImplementedError
+        elif node.op == HAVING:
+            for id_name in self.aggregation_grouping:
+                if id_name not in self.aggregation_dataset.components:
+                    raise ValueError(f"Component {id_name} not found in dataset")
+            if len(self.aggregation_dataset.get_measures()) != 1:
+                raise ValueError("Only one measure is allowed")
+            # Deepcopy is necessary for components to avoid changing the original dataset
+            self.aggregation_dataset.components = {comp_name: deepcopy(comp) for comp_name, comp in
+                                                   self.aggregation_dataset.components.items()
+                                                   if comp_name in self.aggregation_grouping
+                                                   or comp.role == Role.MEASURE}
+            self.aggregation_dataset.data = self.aggregation_dataset.data[
+                self.aggregation_dataset.get_identifiers_names() +
+                self.aggregation_dataset.get_measures_names()]
+            result = self.visit(node.params)
+            # We get only the identifiers we need that have true values when grouped
+            measure_name = result.get_measures_names()[0]
+            result.data = result.data[result.data[measure_name]]
+            result.data.drop(columns=[measure_name], inplace=True)
+            return result.data
