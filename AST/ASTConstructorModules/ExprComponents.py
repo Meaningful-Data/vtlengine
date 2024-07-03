@@ -2,7 +2,7 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, \
     TimeAggregation, \
-    Identifier, EvalOp, Types, VarID, Analytic, AggregationComp
+    Identifier, EvalOp, Types, VarID, Analytic
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
@@ -672,8 +672,7 @@ class ExprComp(VtlVisitor):
     def visitCountAggrComp(self, ctx: Parser.CountAggrCompContext):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
-        param_constant = 'Null'
-        return Aggregation(op_node, param=param_constant)
+        return Aggregation(op_node)
 
     """
                                 -----------------------------------

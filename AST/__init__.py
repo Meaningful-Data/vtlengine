@@ -246,7 +246,7 @@ class Analytic(AST):
 @dataclass
 class OrderBy(AST):
     component: str
-    order: Optional[str]
+    order: Optional[str] = None
 
 
 @dataclass
@@ -307,8 +307,6 @@ class Aggregation(AST):
     grouping_op: Optional[str] = None
     grouping: Optional[List[AST]] = None
     having_clause: Optional[AST] = None
-    param: Optional[str] = None
-
 
 @dataclass
 class TimeAggregation(AST):
@@ -319,9 +317,9 @@ class TimeAggregation(AST):
     """
 
     op: str
-    operand: Optional[AST]
     params: List[AST]
-    conf: Optional[str]
+    operand: Optional[AST] = None
+    conf: Optional[str] = None
 
 
 @dataclass
@@ -376,7 +374,7 @@ class DPRIdentifier(AST):
     """
     value: str
     kind: str
-    alias: Optional[str]
+    alias: Optional[str] = None
 
 
 @dataclass

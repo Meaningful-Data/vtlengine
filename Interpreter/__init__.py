@@ -3,13 +3,13 @@ from typing import Any, Dict, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, ROUND, TRUNC, SUBSTR, REPLACE, INSTR
+from AST.Grammar.tokens import ALL, BETWEEN, EXISTS_IN, FILTER, INSTR, REPLACE, ROUND, SUBSTR, TRUNC
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
-from Operators.String import Substr, Replace, Instr
+from Operators.String import Instr, Replace, Substr
 from Utils import AGGREGATION_MAPPING, BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, \
     ROLE_SETTER_MAPPING, SET_MAPPING, \
     UNARY_MAPPING
@@ -58,17 +58,19 @@ class InterpreterAnalyzer(ASTTemplate):
         return UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_Aggregation(self, node: AST.Aggregation) -> None:
-        operand = self.visit(node.operand)
+        if node.operand is None:  # Only on Count inside Having
+            operand = self.regular_aggregation_dataset
+        else:
+            operand = self.visit(node.operand)
         groupings = []
         having = []
-        for x in node.grouping:
-            groupings.append(self.visit(x))
-        for y in node.having_clause:
-            having.append(self.visit(y))
-        if node.op not in AGGREGATION_MAPPING:
-            raise NotImplementedError
+        if node.grouping is not None:
+            for x in node.grouping:
+                groupings.append(self.visit(x))
+        if node.having_clause is not None:
+            operand = self.visit(node.having_clause)
 
-        print(operand)
+        return AGGREGATION_MAPPING[node.op].evaluate(operand, node.grouping_op, groupings, having)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
@@ -220,7 +222,3 @@ class InterpreterAnalyzer(ASTTemplate):
                 return Instr.evaluate(op_element, param1, param2, param3)
             else:
                 raise NotImplementedError
-
-
-
-
