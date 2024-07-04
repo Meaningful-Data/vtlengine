@@ -511,14 +511,7 @@ class ASTTemplate(NodeVisitor):
         """
         ...
 
-    def visit_AggregationComp(self, node: AST.AggregationComp) -> None:
+    def visit_RenameNode(self, node: AST.RenameNode) -> None:
         """
-        AggregationComp: (op, operand)
-
-        op:
-
-        Basic usage:
-
-            self.visit(node.operand)
+        RenameNode: (name, to)
         """
-        self.visit(node.operand)

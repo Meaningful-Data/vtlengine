@@ -77,6 +77,7 @@ class String(ScalarType):
 class Number(ScalarType):
     """
     """
+
     def __eq__(self, other):
         return (self.__class__.__name__ == other.__class__.__name__ or
                 other.__class__.__name__ == Integer.__name__)
@@ -171,3 +172,41 @@ BASIC_TYPES = {
     float: Number,
     bool: Boolean,
 }
+
+COMP_NAME_MAPPING = {
+    String: 'string_var',
+    Number: 'num_var',
+    Integer: 'int_var',
+    TimeInterval: 'time_var',
+    TimePeriod: 'time_period_var',
+    Date: 'date_var',
+    Duration: 'duration_var',
+    Boolean: 'bool_var'
+}
+
+CONVERSION_VALIDATOR = {
+    '-': 'same',
+    'I': 'implicit',
+    'E': 'explicit',
+    'N': 'no'
+}
+
+TYPE_MAPPING_POSITION = {
+    Integer: 0,
+    Number: 1,
+    Boolean: 2,
+    TimeInterval: 3,
+    Date: 4,
+    TimePeriod: 5,
+    String: 6,
+    Duration: 7
+}
+
+TYPE_PROMOTION_MATRIX = [['-', 'I', 'E', 'N', 'E', 'E', 'I', 'E'],
+                         ['E', '-', 'E', 'N', 'N', 'N', 'I', 'N'],
+                         ['E', 'E', '-', 'N', 'N', 'N', 'I', 'N'],
+                         ['N', 'N', 'N', '-', 'N', 'N', 'E', 'N'],
+                         ['N', 'N', 'N', 'I', '-', 'E', 'E', 'N'],
+                         ['N', 'N', 'N', 'I', 'N', '-', 'E', 'N'],
+                         ['E', 'E', 'N', 'E', 'E', 'E', '-', 'E'],
+                         ['N', 'N', 'N', 'N', 'N', 'N', 'E', '-']]

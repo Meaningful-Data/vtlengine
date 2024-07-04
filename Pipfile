@@ -9,6 +9,8 @@ numpy = "==1.23.5"
 pandas = "==1.5.1"
 pyspark = "==3.3"
 pyarrow = "*"
+pytest = "==7.0.1"
+duckdb = "*"
 
 [dev-packages]
 pyspark-stubs = "*"
