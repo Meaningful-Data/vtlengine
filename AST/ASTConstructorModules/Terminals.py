@@ -585,7 +585,7 @@ class Terminals(VtlVisitor):
     def visitPartitionByClause(self, ctx: Parser.PartitionByClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        return [self.visitComponentID(compID) for compID in ctx_list if
+        return [self.visitComponentID(compID).value for compID in ctx_list if
                 isinstance(compID, Parser.ComponentIDContext)]
 
     def visitOrderByClause(self, ctx: Parser.OrderByClauseContext):
@@ -634,9 +634,10 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         if len(ctx_list) == 1:
-            return OrderBy(component=self.visitComponentID(ctx_list[0]))
+            return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
+                           order='asc')
 
-        return OrderBy(component=self.visitComponentID(ctx_list[0]),
+        return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
                        order=ctx_list[1].getSymbol().text)
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
@@ -663,4 +664,5 @@ def create_windowing(win_mode, values, modes):
         elif values[e] == 0:
             values[e] = "CURRENT ROW"
 
-    return Windowing(win_mode, values[0], values[1], modes[0], modes[1])
+    return Windowing(type_=win_mode, start=values[0], stop=values[1],
+                     start_mode=modes[0], stop_mode=modes[1])

@@ -200,24 +200,24 @@ Test number     | VTL expresion     | Test result
 
 ### Aggregate Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-135    | DS_r := avg ( DS_1 group by Id_1 );                                                                       | WIP
-136    | DS_r := sum ( DS_1 group by Id_1, Id_3 );                                                                 | WIP
-137    | DS_r := avg ( DS_1 );                                                                                     | 
-138    | DS_r := DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 ) group by Id_1 ];                          | 
-139    | DS_r := sum ( DS_1 over ( order by Id_1, Id_2, Id_3 data points between 1 preceding and 1 following ) );  | 
-140    | DS_r := count ( DS_1 group by Id_1 );                                                                     | WIP
-141    | DS_r := sum ( DS_1 group by Id_1 having count() > 2 );                                                    | 
-142    | DS_r := min ( DS_1 group by Id_1 );                                                                       | WIP
-143    | DS_r := max ( DS_1 group by Id_1 );                                                                       | WIP
-144    | DS_r := median ( DS_1 group by Id_1 );                                                                    | WIP
-145    | DS_r := sum ( DS_1 group by Id_1 );                                                                       | WIP
-146    | DS_r := avg ( DS_1 group by Id_1 );                                                                       | WIP
-147    | DS_r := stddev_pop ( DS_1 group by Id_1 );                                                                | WIP
-148    | DS_r := stddev_samp ( DS_1 group by Id_1 );                                                               | WIP
-149    | DS_r := var_pop ( DS_1 group by Id_1 );                                                                   | WIP
-150    | DS_r := var_samp ( DS_1 group by Id_1 );                                                                  | WIP
+Test number     | VTL expresion                                                                                            | Test result
+:------------:  |:---------------------------------------------------------------------------------------------------------|:-------------:
+135    | DS_r := avg ( DS_1 group by Id_1 );                                                                      | WIP
+136    | DS_r := sum ( DS_1 group by Id_1, Id_3 );                                                                | WIP
+137    | DS_r := avg ( DS_1 );                                                                                    | 
+138    | DS_r := DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 ) group by Id_1 ];                         | 
+139    | DS_r := sum ( DS_1 over ( order by Id_1, Id_2, Id_3 data points between 1 preceding and 1 following ) ); | 
+140    | DS_r := count ( DS_1 group by Id_1 );                                                                    | WIP
+141    | DS_r := count ( DS_1 group by Id_1 having count() > 2 );                                                 | 
+142    | DS_r := min ( DS_1 group by Id_1 );                                                                      | WIP
+143    | DS_r := max ( DS_1 group by Id_1 );                                                                      | WIP
+144    | DS_r := median ( DS_1 group by Id_1 );                                                                   | WIP
+145    | DS_r := sum ( DS_1 group by Id_1 );                                                                      | WIP
+146    | DS_r := avg ( DS_1 group by Id_1 );                                                                      | WIP
+147    | DS_r := stddev_pop ( DS_1 group by Id_1 );                                                               | WIP
+148    | DS_r := stddev_samp ( DS_1 group by Id_1 );                                                              | WIP
+149    | DS_r := var_pop ( DS_1 group by Id_1 );                                                                  | WIP
+150    | DS_r := var_samp ( DS_1 group by Id_1 );                                                                 | WIP
 
 
 >>>

@@ -121,6 +121,8 @@ class Dataset:
             other.data = other.data.to_pandas()
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
+        self.data = self.data.sort_values(by=list(self.data.columns)).reset_index(drop=True)
+        other.data = other.data.sort_values(by=list(other.data.columns)).reset_index(drop=True)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True)
             same_data = True
