@@ -55,9 +55,9 @@ class Operator:
         if cls.return_type is not None:
             for measure in dataset.get_measures():
                 measure.data_type = cls.return_type
-                if len(dataset.get_measures()) == 1 and cls.return_type in [Boolean_type,
-                                                                            Integer_type] and cls.op not in [AND, OR,
-                                                                                                             XOR, NOT]:
+                if (len(dataset.get_measures()) == 1 and
+                        cls.return_type in [Boolean_type, Integer_type] and
+                        cls.op not in [AND, OR, XOR, NOT]):
                     component = Component(
                         name=COMP_NAME_MAPPING[cls.return_type],
                         data_type=cls.return_type,
@@ -70,7 +70,7 @@ class Operator:
                         dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
     @classmethod
-    def apply_return_type(cls, result: Union[DataComponent, Scalar]) -> ScalarType:
+    def apply_return_type(cls, result: Union[DataComponent, Scalar]):
         if cls.return_type is not None:
             result.data_type = cls.return_type
 
@@ -149,7 +149,9 @@ class Binary(Operator):
         cls.validate_scalar_type(left_operand)
         cls.validate_scalar_type(right_operand)
 
-        return Scalar(name="result", data_type=cls.type_validation(left_operand, right_operand), value=None)
+        return Scalar(name="result",
+                      data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
+                      value=None)
 
     @classmethod
     def component_validation(cls, left_operand: DataComponent, right_operand: DataComponent):
@@ -458,8 +460,9 @@ class Unary(Operator):
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
-            if cls.return_type in [Boolean_type, Integer_type] and len(
-                    result_dataset.get_measures()) == 1 and cls.op not in [AND, OR, XOR, NOT]:
+            if (cls.return_type in [Boolean_type, Integer_type] and
+                    len(result_dataset.get_measures()) == 1 and
+                    cls.op not in [AND, OR, XOR, NOT]):
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 del result_data[measure_name]
 
