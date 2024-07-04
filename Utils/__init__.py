@@ -1,11 +1,7 @@
-from Operators.Aggregation import (Avg, Count, Max, Median)
-from Operators.Boolean import And, Not, Or, Xor
-
-from Operators.Comparison import In, IsNull
-
-Min,
-PopulationStandardDeviation,
-PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
+from AST.Grammar.tokens import *
+from Operators.Aggregation import (Avg, Count, Max, Median, Min,
+                                   PopulationStandardDeviation,
+                                   PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
 from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, FirstValue, Lag,
                                 LastValue, Lead, Max as MaxAnalytic, Median as MedianAnalytic,
                                 Min as MinAnalytic,
@@ -14,18 +10,16 @@ from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, Firs
                                 RatioToReport,
                                 SampleStandardDeviation as SampleStandardDeviationAnalytic,
                                 SampleVariance as SampleVarianceAnalytic, Sum as SumAnalytic)
-from Operators.Clause import Aggregate, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
-
-from AST.Grammar.tokens import *
-from Operators.Comparison import Equal, Greater, GreaterEqual, Less, LessEqual, NotEqual
+from Operators.Boolean import And, Not, Or, Xor
+from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Alias, Membership
 from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin
-from Operators.RegularAggregation import Calc
-from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim, Substr, Replace
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
-    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus, Trunc, Round
+    Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
+from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
 
 BINARY_MAPPING = {
     # General
