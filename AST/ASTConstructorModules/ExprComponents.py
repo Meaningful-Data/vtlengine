@@ -716,7 +716,7 @@ class ExprComp(VtlVisitor):
             else:
                 raise NotImplementedError
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)
+        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params)
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -762,7 +762,7 @@ class ExprComp(VtlVisitor):
                 order_by = Terminals().visitOrderByClause(c)
                 continue
 
-        return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by, params=None)
+        return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by, window=None)
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -775,4 +775,4 @@ class ExprComp(VtlVisitor):
 
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)
+        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params)

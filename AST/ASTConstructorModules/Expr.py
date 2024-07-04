@@ -5,7 +5,8 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import If, BinOp, RenameNode, UnaryOp, JoinOp, Identifier, ParamOp, EvalOp, ParamConstant, \
     Types, MulOp, \
-    RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, Analytic
+    RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, \
+    Analytic, Windowing
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.ASTDataExchange import de_ruleset_elements
@@ -1138,7 +1139,7 @@ class Expr(VtlVisitor):
     def visitAnSimpleFunction(self, ctx: Parser.AnSimpleFunctionContext):
         ctx_list = list(ctx.getChildren())
 
-        params = None
+        window = None
         partition_by = None
         order_by = None
 
@@ -1153,13 +1154,22 @@ class Expr(VtlVisitor):
                 order_by = Terminals().visitOrderByClause(c)
                 continue
             elif isinstance(c, Parser.WindowingClauseContext):
-                params = Terminals().visitWindowingClause(c)
+                window = Terminals().visitWindowingClause(c)
                 continue
             else:
                 raise NotImplementedError
 
+        if window is None:
+            window = Windowing(
+                type_='data',
+                start=-1,
+                stop=0,
+                start_mode='preceding',
+                stop_mode='current'
+            )
+
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
-                        params=params)
+                        window=window)
 
     def visitLagOrLeadAn(self, ctx: Parser.LagOrLeadAnContext):
         ctx_list = list(ctx.getChildren())
@@ -1188,6 +1198,7 @@ class Expr(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
+
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)
 
@@ -1202,8 +1213,7 @@ class Expr(VtlVisitor):
 
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
-                        params=params)
+        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by)
 
     """______________________________________________________________________________________
 

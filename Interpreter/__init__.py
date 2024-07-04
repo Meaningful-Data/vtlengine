@@ -14,7 +14,8 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Utils import AGGREGATION_MAPPING, BINARY_MAPPING, REGULAR_AGGREGATION_MAPPING, \
+from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
+    REGULAR_AGGREGATION_MAPPING, \
     ROLE_SETTER_MAPPING, SET_MAPPING, \
     UNARY_MAPPING
 
@@ -100,6 +101,49 @@ class InterpreterAnalyzer(ASTTemplate):
             grouping_op = 'group by'
 
         return AGGREGATION_MAPPING[node.op].evaluate(operand, grouping_op, groupings, having)
+
+    def visit_Analytic(self, node: AST.Analytic) -> None:
+        if self.is_from_regular_aggregation:
+            if node.operand is None:
+                operand = self.regular_aggregation_dataset
+            else:
+                operand_comp = self.visit(node.operand)
+                measure_names = self.regular_aggregation_dataset.get_measures_names()
+                dataset_components = self.regular_aggregation_dataset.components.copy()
+                for name in measure_names:
+                    if name != operand_comp:
+                        dataset_components.pop(name)
+
+                operand = Dataset(name=self.regular_aggregation_dataset.name,
+                                  components=dataset_components,
+                                  data=self.regular_aggregation_dataset.data[
+                                      dataset_components.keys()])
+
+        else:
+            operand: Dataset = self.visit(node.operand)
+        partitioning = node.partition_by
+        ordering = node.order_by if node.order_by is not None else []
+        if not isinstance(operand, Dataset):
+            raise Exception("Analytic operator must have a dataset as operand")
+        if node.partition_by is None:
+            order_components = [x.component for x in node.order_by]
+            partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
+
+        result = ANALYTIC_MAPPING[node.op].evaluate(operand=operand,
+                                                    partitioning=partitioning,
+                                                    ordering=ordering,
+                                                    window=node.window,
+                                                    params=node.params)
+        if not self.is_from_regular_aggregation:
+            return result
+
+        # TODO: Review this as the components on calc are not in correct order (Rank test)
+        # Extracting the component we need (only measure)
+        measure_name = result.get_measures_names()[0]
+        return DataComponent(name=measure_name,
+                             data=result.data[measure_name],
+                             data_type=result.components[measure_name].data_type,
+                             role=result.components[measure_name].role)
 
     def visit_MulOp(self, node: AST.MulOp):
         """

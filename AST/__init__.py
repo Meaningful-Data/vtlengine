@@ -225,31 +225,6 @@ class Collection(AST):
 
 
 @dataclass
-class Analytic(AST):
-    """
-    Analytic: (op, operand, partition_by, order_by, params)
-
-    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, FIRST_VALUE, LAST_VALUE, LAG,
-        LEAD, RATIO_TO_REPORT
-
-    partition_by: List of components.
-    order_by: List of components + mode (ASC, DESC).
-    params: Windowing clause (no need to validate them) or Scalar Item in LAG/LEAD.
-    """
-    op: str
-    operand: AST
-    partition_by: List[AST]
-    order_by: List[AST]
-    params: List[AST]
-
-
-@dataclass
-class OrderBy(AST):
-    component: str
-    order: Optional[str] = None
-
-
-@dataclass
 class Windowing(AST):
     """
     Windowing: (type, first, second, first_mode, second_mode)
@@ -263,9 +238,49 @@ class Windowing(AST):
 
     type_: str
     start: int
-    start_mode: int
+    start_mode: str
     stop: int
-    stop_mode: int
+    stop_mode: str
+
+
+@dataclass
+class OrderBy(AST):
+    component: str
+    order: str
+
+    def __post_init__(self):
+        if self.order not in ['asc', 'desc']:
+            raise ValueError(f"Invalid order: {self.order}")
+
+
+@dataclass
+class Analytic(AST):
+    """
+    Analytic: (op, operand, partition_by, order_by, params)
+
+    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, FIRST_VALUE, LAST_VALUE, LAG,
+        LEAD, RATIO_TO_REPORT
+
+    partition_by: List of components.
+    order_by: List of components + mode (ASC, DESC).
+    params: Windowing clause (no need to validate them) or Scalar Item in LAG/LEAD.
+    """
+    op: str
+    operand: Optional[AST]
+    window: Optional[Windowing] = None
+    params: Optional[List[int]] = None
+    partition_by: Optional[List[str]] = None
+    order_by: Optional[List[OrderBy]] = None
+
+    def __post_init__(self):
+        if self.window is None and self.op not in ['lag', 'lead', 'rank', 'ratio_to_report']:
+            raise ValueError("Windowing must be provided.")
+
+        if self.partition_by is None and self.order_by is None:
+            raise ValueError("Partition by or order by must be provided on Analytic.")
+
+        if self.op != 'rank' and self.operand is None:
+            raise ValueError("Operand must be provided on Analytic.")
 
 
 @dataclass
@@ -307,6 +322,7 @@ class Aggregation(AST):
     grouping_op: Optional[str] = None
     grouping: Optional[List[AST]] = None
     having_clause: Optional[AST] = None
+
 
 @dataclass
 class TimeAggregation(AST):
