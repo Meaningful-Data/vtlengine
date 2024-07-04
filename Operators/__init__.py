@@ -283,9 +283,6 @@ class Binary(Operator):
                 result_data[measure_name + '_y'])
             result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
-            print(AND)
-            print(cls.op)
-
             if cls.return_type in [Boolean_type, Integer_type] and len(
                     result_dataset.get_measures()) == 1 and cls.op not in [AND, OR, XOR, NOT]:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
