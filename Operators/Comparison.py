@@ -175,7 +175,7 @@ class Between(Operator.Operator):
                 )
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
-                    del result.data[measure_name]
+                    result.data = result.data.drop(columns=[measure_name])
         if isinstance(operand, DataComponent):
             result.data = cls.apply_operation_component(
                 operand.data,

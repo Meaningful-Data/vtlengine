@@ -31,6 +31,10 @@ class And(Binary):
                 pd.isnull(y) and x is not False) else x and y
 
     @classmethod
+    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+        return x & y
+
+    @classmethod
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.py_op)
 
@@ -47,6 +51,10 @@ class Or(Binary):
         return x or y
 
     @classmethod
+    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+        return x | y
+
+    @classmethod
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.py_op)
 
@@ -61,6 +69,10 @@ class Xor(Binary):
         return (x and not y) or (not x and y)
 
     @classmethod
+    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+        return x ^ y
+
+    @classmethod
     def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.py_op)
 
@@ -71,6 +83,10 @@ class Not(Unary):
     @classmethod
     def py_op(cls, x: Optional[bool]) -> Optional[bool]:
         return None if pd.isnull(x) else not x
+
+    @classmethod
+    def spark_op(cls, series: pd.Series) -> pd.Series:
+        return ~series
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:

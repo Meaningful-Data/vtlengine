@@ -6,8 +6,7 @@ import pandas as pd
 
 import Operators as Operator
 from AST.Grammar.tokens import ABS, CEIL, DIV, EXP, FLOOR, LN, LOG, MINUS, MOD, MULT, PLUS, POWER, \
-    ROUND, \
-    SQRT, TRUNC
+    ROUND, SQRT, TRUNC
 from DataTypes import Integer, Number
 from Model import DataComponent, Dataset, Scalar
 from Operators import ALL_MODEL_DATA_TYPES
