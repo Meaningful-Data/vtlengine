@@ -189,7 +189,6 @@ class Between(Operator.Operator):
 
 class ExistIn(Operator.Operator):
     op = IN
-
     # noinspection PyTypeChecker
     @classmethod
     def validate(cls, dataset_1: Dataset, dataset_2: Dataset,

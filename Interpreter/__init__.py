@@ -336,5 +336,6 @@ class InterpreterAnalyzer(ASTTemplate):
             # We get only the identifiers we need that have true values when grouped
             measure_name = result.get_measures_names()[0]
             result.data = result.data[result.data[measure_name]]
-            result.data.drop(columns=[measure_name], inplace=True)
+            # result.data.drop(columns=[measure_name], inplace=True)
+            result.data.drop(columns=[measure_name])
             return result.data
