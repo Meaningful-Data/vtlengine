@@ -345,7 +345,6 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data.copy()
-        result_dataset.data = result_data
 
         for measure_name in dataset.get_measures_names():
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
@@ -354,6 +353,7 @@ class Binary(Operator):
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
                 result_data = result_data.drop(columns=[measure_name],  axis=1)
 
+        result_dataset.data = result_data
         return result_dataset
 
     @classmethod
