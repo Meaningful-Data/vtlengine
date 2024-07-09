@@ -3,7 +3,8 @@ from copy import copy
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import If, BinOp, RenameNode, UnaryOp, JoinOp, Identifier, ParamOp, EvalOp, ParamConstant, \
+from AST import If, BinOp, RenameNode, UDOCall, UnaryOp, JoinOp, Identifier, ParamOp, EvalOp, \
+    ParamConstant, \
     Types, MulOp, \
     RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, \
     Analytic, Windowing
@@ -397,11 +398,10 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         op = Terminals().visitOperatorID(c)
-        operator_node = Identifier(op, kind='OperatorID')
         param_nodes = [self.visitParameter(element) for element in ctx_list if
                        isinstance(element, Parser.ParameterContext)]
 
-        return ParamOp(op=op, children=[operator_node], params=param_nodes)
+        return UDOCall(op=op, params=param_nodes)
 
     def visitEvalAtom(self, ctx: Parser.EvalAtomContext):
         """
@@ -1485,15 +1485,15 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         if isinstance(c, Parser.ComponentRoleContext):
-            unop_node = Terminals().visitComponentRole(c)
+            role = Terminals().visitComponentRole(c)
 
             left_node = Terminals().visitComponentID(ctx_list[1])
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[3])
             operand_node = Assignment(left_node, op_node, right_node)
-
-            return UnaryOp(unop_node.role, operand_node)
-
+            if role is not None:
+                return UnaryOp(role.value.lower(), operand_node)
+            return operand_node
         else:
             left_node = Terminals().visitSimpleComponentId(c)
             op_node = ':='

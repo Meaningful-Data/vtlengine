@@ -515,3 +515,9 @@ class ASTTemplate(NodeVisitor):
         """
         RenameNode: (name, to)
         """
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> None:
+        """
+        UDOCall: (name, children, params)
+        """
+        pass

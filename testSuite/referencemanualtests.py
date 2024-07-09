@@ -68,19 +68,19 @@ comparison_operators.remove(84)
 clause_operators.remove(172)
 
 params = itertools.chain(
-    general_operators,
-    join_operators,
-    string_operators,
-    numeric_operators,
-    comparison_operators,
-    boolean_operators,
-    time_operators,
-    set_operators,
-    hierarchy_operators,
-    aggregation_operators,
-    analytic_operators,
-    validation_operators,
-    conditional_operators,
+    # general_operators,
+    # join_operators,
+    # string_operators,
+    # numeric_operators,
+    # comparison_operators,
+    # boolean_operators,
+    # time_operators,
+    # set_operators,
+    # hierarchy_operators,
+    # aggregation_operators,
+    # analytic_operators,
+    # validation_operators,
+    # conditional_operators,
     clause_operators
 )
 
