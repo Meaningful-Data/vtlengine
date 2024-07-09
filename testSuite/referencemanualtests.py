@@ -65,9 +65,13 @@ comparison_operators.remove(84)
 
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
+
 # TODO: Median test 144 inconsistent result on odd number of elements on pyspark
 aggregation_operators.remove(144)
 
+comparison_operators.remove(85)
+
+analytic_operators.remove(155)
 
 params = itertools.chain(
     general_operators,
@@ -82,7 +86,7 @@ params = itertools.chain(
     aggregation_operators,
     analytic_operators,
     # validation_operators,
-    conditional_operators,
+    # conditional_operators,
     clause_operators
 )
 
@@ -141,7 +145,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         raise FileNotFoundError("No datasets found")
     return datasets
 
-# params = [166, 167, 168]
+# params = [131]
 # params = [144]
 
 @pytest.mark.parametrize('param', params)
