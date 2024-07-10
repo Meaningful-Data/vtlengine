@@ -87,22 +87,32 @@ class Symdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer',
-                                        on=result.get_identifiers_names(),
-                                        indicator=True, suffixes=('_x', '_y'))
-                               .query('_merge != "both"'))
-                not_identifiers = [col for col in result.get_measures_names() +
-                                   result.get_attributes_names()]
+                # Realiza la operación equivalente en pyspark.pandas
+                result.data = result.data.merge(data, how='outer',
+                                                on=result.get_identifiers_names(),
+                                                suffixes=('_x', '_y'))
+
+                for measure in result.get_measures_names():
+                    result.data['_merge'] = result.data.apply(
+                        lambda row: 'left_only' if pd.isnull(row[measure + '_y']) else (
+                            'right_only' if pd.isnull(row[measure + '_x']) else 'both'),
+                        axis=1
+                    )
+
+                not_identifiers = result.get_measures_names() + result.get_attributes_names()
                 for col in not_identifiers:
                     result.data[col] = result.data.apply(
-                        lambda x, c=col: x[c + "_x"] if x["_merge"] == "left_only" else x[c + "_y"],
-                        axis=1)
-                result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+                        lambda x, c=col: x[c + '_x'] if x['_merge'] == 'left_only' else (
+                            x[c + '_y'] if x['_merge'] == 'right_only' else None), axis=1)
+                result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
+        result.data = result.data.reset_index(drop=True)
         return result
 
 
 class Setdiff(Set):
+
+    def has_null(row):
+        return row.isnull().any()
 
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
@@ -112,10 +122,9 @@ class Setdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer',
-                                        on=result.get_identifiers_names(),
-                                        indicator=True, suffixes=('_x', '_y'))
-                               .query('_merge == "left_only"'))
+                result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
+                result.data = result.data[result.data.apply(cls.has_null, axis=1)]
+
                 not_identifiers = [col for col in result.get_measures_names() +
                                    result.get_attributes_names()]
                 for col in not_identifiers:

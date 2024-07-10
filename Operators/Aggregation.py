@@ -1,6 +1,11 @@
+import os
 from typing import List, Optional
 
-import pandas as pd
+if os.getenv('SPARK', False):
+    import pyspark.pandas as pd
+else:
+    import pandas as pd
+from pyspark.sql.functions import col, stddev
 
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
@@ -76,7 +81,7 @@ class Aggregation(Operator.Unary):
 
         grouping_keys = result.get_identifiers_names()
         if len(grouping_keys) == 0:
-            result_number = result.data[measure_name].agg(cls.py_op)
+            result_number = result.data[measure_name].agg(cls.py_op.__name__)
             result.data = pd.DataFrame(data=[result_number], columns=[measure_name])
             return result
         result_df = result.data[grouping_keys + [measure_name]]
@@ -86,9 +91,15 @@ class Aggregation(Operator.Unary):
             result_df = result_df.groupby(grouping_keys).size().reset_index(name='int_var')
         else:
             comps_to_keep = grouping_keys + [measure_name]
-            result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(cls.py_op)
-            result_df = result_df[measure_name]
-            result_df = result_df.reset_index()
+            if os.getenv('SPARK', False) and cls.spark_op is not None:
+                result_df = cls.spark_op(result_df, grouping_keys)
+            elif cls.py_op.__name__ != 'py_op':
+                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(
+                    {measure_name: cls.py_op.__name__}).reset_index(drop=False)
+            else:
+                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg({measure_name: cls.py_op}).reset_index(
+                    drop=False)
+
         result.data = result_df
         return result
 
@@ -124,10 +135,19 @@ class Avg(Aggregation):
 
 
 class Median(Aggregation):
+    # TODO: Median has inconsistent behavior in spark
+    #  test 144 has a median of 3, but the result is 2
     op = MEDIAN
     type_to_check = Number
     return_type = Number
     py_op = pd.DataFrame.median
+
+    @classmethod
+    def spark_op(cls, df, keys):
+        return df.groupby(keys).median().reset_index(drop=False)
+
+        # percentiles = [0.5]  # Median
+        # return df.groupby(keys).approxQuantile(percentiles)[0].reset_index(drop=False)
 
 
 class PopulationStandardDeviation(Aggregation):
@@ -139,6 +159,10 @@ class PopulationStandardDeviation(Aggregation):
     def py_op(cls, df):
         return df.std(ddof=0)
 
+    @classmethod
+    def spark_op(cls, df, keys):
+        return df.groupby(keys).std(ddof=0).reset_index(drop=False)
+
 
 class SampleStandardDeviation(Aggregation):
     op = STDDEV_SAMP
@@ -148,6 +172,10 @@ class SampleStandardDeviation(Aggregation):
     @classmethod
     def py_op(cls, df):
         return df.std(ddof=1)
+
+    @classmethod
+    def spark_op(cls, df, keys):
+        return df.groupby(keys).std(ddof=1).reset_index(drop=False)
 
 
 class PopulationVariance(Aggregation):
@@ -159,9 +187,17 @@ class PopulationVariance(Aggregation):
     def py_op(cls, df):
         return df.var(ddof=0)
 
+    @classmethod
+    def spark_op(cls, df, keys):
+        return df.groupby(keys).var(ddof=0).reset_index(drop=False)
+
 
 class SampleVariance(Aggregation):
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number
     py_op = pd.DataFrame.var
+
+    @classmethod
+    def spark_op(cls, df, keys):
+        return df.groupby(keys).var().reset_index(drop=False)

@@ -351,7 +351,7 @@ class Binary(Operator):
                                                                        scalar_set.values)
             if cls.return_type and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                result_data = result_data.drop(columns=[measure_name],  axis=1)
+                result_dataset.data = result_data.drop(columns=[measure_name],  axis=1)
 
         result_dataset.data = result_data
         return result_dataset

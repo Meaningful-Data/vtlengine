@@ -189,7 +189,6 @@ class Between(Operator.Operator):
 
 class ExistIn(Operator.Operator):
     op = IN
-
     # noinspection PyTypeChecker
     @classmethod
     def validate(cls, dataset_1: Dataset, dataset_2: Dataset,
@@ -218,7 +217,7 @@ class ExistIn(Operator.Operator):
         common = result_dataset.get_identifiers_names()
         df1: pd.DataFrame = dataset_1.data[common]
         df2: pd.DataFrame = dataset_2.data[common]
-        compare_result = (df1 == df2).all(axis=1)
+        compare_result = (df1 == df2).apply(cls.check_all_columns, axis=1)
         result_dataset.data = df1
         result_dataset.data['bool_var'] = compare_result
 
@@ -228,3 +227,6 @@ class ExistIn(Operator.Operator):
             result_dataset.data = result_dataset.data.reset_index(drop=True)
 
         return result_dataset
+
+    def check_all_columns(row):
+        return all(col_value > 0 for col_value in row)
