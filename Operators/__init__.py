@@ -20,6 +20,7 @@ class Operator:
     """Superclass for all operators"""
     op = None
     py_op = None
+    spark_op = None
     type_to_check = None
     return_type = None
 
@@ -85,6 +86,14 @@ class Binary(Operator):
     def apply_operation_two_series(cls,
                                    left_series: Any,
                                    right_series: Any) -> Any:
+        if os.getenv("SPARK", False):
+            if cls.spark_op is None:
+                cls.spark_op = cls.py_op
+
+            nulls = left_series.isnull() | right_series.isnull()
+            result = cls.spark_op(left_series, right_series)
+            result.loc[nulls] = None
+            return result
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
@@ -336,15 +345,15 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data.copy()
-        result_dataset.data = result_data
 
         for measure_name in dataset.get_measures_names():
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
                                                                        scalar_set.values)
             if cls.return_type and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                del result_data[measure_name]
+                result_data = result_data.drop(columns=[measure_name],  axis=1)
 
+        result_dataset.data = result_data
         return result_dataset
 
     @classmethod
@@ -464,7 +473,7 @@ class Unary(Operator):
                     len(result_dataset.get_measures()) == 1 and
                     cls.op not in [AND, OR, XOR, NOT]):
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                del result_data[measure_name]
+                result_data = result_data.drop(columns=[measure_name])
 
         result_dataset.data = result_data
         return result_dataset

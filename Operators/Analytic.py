@@ -1,7 +1,11 @@
+import os
 from typing import List, Optional
 
 import duckdb
-import pandas as pd
+if os.environ.get("SPARK"):
+    import pyspark.pandas as pd
+else:
+    import pandas as pd
 
 import Operators as Operator
 from AST import OrderBy, Windowing
@@ -98,6 +102,8 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
+        if os.getenv("SPARK", False):
+            df = df.to_pandas()
         return duckdb.query(query).to_df()
 
     @classmethod

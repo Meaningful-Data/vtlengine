@@ -7,7 +7,10 @@ Description
 Basic AST nodes.
 """
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
+
+from DataTypes import ScalarType
+from Model import Role
 
 
 @dataclass
@@ -67,14 +70,11 @@ class Assignment(AST):
 
 
 @dataclass
-class PersistentAssignment(AST):
+class PersistentAssignment(Assignment):
     """
     PersistentAssignment: (left, op, right)
     """
-
-    left: AST
-    op: str
-    right: AST
+    pass
 
 
 @dataclass
@@ -134,6 +134,13 @@ class ParamOp(AST):
     op: str
     children: List[AST]
     params: List[AST]
+
+
+@dataclass
+class UDOCall(AST):
+    op: str
+    params: List[AST]
+    expression: AST = None
 
 
 @dataclass
@@ -197,17 +204,6 @@ class ID(AST):
 
     type_: str
     value: str
-
-
-@dataclass
-class Role(AST):
-    """
-    Role: (role)
-
-    roles: MEASURE, COMPONENT, DIMENSION, ATTRIBUTE, VIRAL ATTRIBUTE
-    """
-
-    role: str
 
 
 @dataclass
@@ -362,14 +358,66 @@ class Validation(AST):
 
 
 @dataclass
+class ComponentType(AST):
+    """
+    ComponentType: (data_type, role)
+    """
+    name: str
+    data_type: Optional[Type[ScalarType]] = None
+    role: Optional[Role] = None
+
+
+@dataclass
+class ASTScalarType(AST):
+    data_type: Type[ScalarType]
+
+
+@dataclass
+class DatasetType(AST):
+    """
+    DatasetType: (name, components)
+    """
+
+    components: List[ComponentType]
+
+
+@dataclass
+class Types(AST):
+    """
+    Types: (name, kind, type_, constraints, nullable)
+
+    kind:
+            - basicScalarType
+                - STRING, INTEGER, NUMBER, BOOLEAN, DATE, TIME_PERIOD, DURATION, SCALAR, TIME.
+            -
+    """
+
+    kind: str
+    type_: str
+    constraints: List[AST]
+    nullable: Optional[bool]
+    name: Optional[str] = None
+
+
+@dataclass
+class Argument(AST):
+    """
+    Argument: (name, type_, default)
+    """
+    name: str
+    type_: ScalarType
+    default: Optional[AST]
+
+
+@dataclass
 class Operator(AST):
     """
     Operator: (operator, parameters, outputType, expression)
     """
 
     op: str
-    parameters: list
-    outputType: str
+    parameters: List[Argument]
+    output_type: str
     expression: AST
 
 
@@ -391,34 +439,6 @@ class DPRIdentifier(AST):
     value: str
     kind: str
     alias: Optional[str] = None
-
-
-@dataclass
-class Types(AST):
-    """
-    Types: (name, kind, type_, constraints, nullable)
-
-    kind:
-            - basicScalarType
-                - STRING, INTEGER, NUMBER, BOOLEAN, DATE, TIME_PERIOD, DURATION, SCALAR, TIME.
-            -
-    """
-
-    name: Optional[str]
-    kind: str
-    type_: str
-    constraints: Optional[Dict[str, Any]]
-    nullable: bool
-
-
-@dataclass
-class Argument(AST):
-    """
-    Argument: (name, type_, default)
-    """
-    name: str
-    type_: str
-    default: Optional[AST]
 
 
 # TODO: Are HRBinOp and HRUnOp necessary?

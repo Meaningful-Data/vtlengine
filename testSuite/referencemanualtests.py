@@ -5,9 +5,32 @@ import os
 from Interpreter import InterpreterAnalyzer
 
 if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
+    import sys
+    virtualenv_path = sys.prefix
+    sys.path.append(virtualenv_path)
+    # os.environ['PYTHONPATH'] = f'{virtualenv_path}'
+    os.environ['PYSPARK_PYTHON'] = f'{virtualenv_path}/bin/python'
+    # os.environ['VIRTUAL_ENV'] = os.environ.get('PYTHONPATH', f'{virtualenv_path}')
 
+    from pyspark import SparkConf, SparkContext
+    conf = SparkConf()
+    conf.set('spark.driver.cores', '2')
+    conf.set('spark.executor.cores', '2')
+    conf.set('spark.driver.memory', '2g')
+    conf.set('spark.executor.memory', '2g')
+    # conf.set('spark.sql.execution.arrow.pyspark.enabled', 'true')
+    conf.set('spark.pyspark.virtualenv.enabled', 'true')
+    conf.set('spark.pyspark.virtualenv.type', 'native')
+    conf.set('spark.pyspark.virtualenv.requirements', 'requirements.txt')
+    # conf.set('spark.pyspark.virtualenv.bin.path', f'{virtualenv_path}/Scripts/python')
+    # Pandas API on Spark automatically uses this Spark context with the configurations set.
+    SparkContext(conf=conf)
+
+
+
+    import pyspark.pandas as pd
     pd.set_option('compute.ops_on_diff_frames', True)
+    os.environ["PYSPARK_SUBMIT_ARGS"] = "--conf spark.network.timeout=600s pyspark-shell"
 else:
     import pandas as pd
 
@@ -116,8 +139,6 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         raise FileNotFoundError("No datasets found")
     return datasets
 
-
-#TODO: add LTRIM and TRIM tests
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param):

@@ -21,6 +21,7 @@ from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 
 from AST.ASTConstructorModules.Expr import Expr
+from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 
@@ -145,7 +146,7 @@ class ASTVisitor(VtlVisitor):
             for datatype in ctx_list
             if isinstance(datatype, Parser.OutputParameterTypeContext)
         ]
-        # Here should be modify if we want to include more than one expr per function.
+        # Here should be modified if we want to include more than one expr per function.
         expr = [Expr().visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)][0]
 
         if len(return_) == 0:
@@ -153,7 +154,8 @@ class ASTVisitor(VtlVisitor):
         else:
             return_node = return_[0]
 
-        return Operator(operator=operator, parameters=parameters, outputType=return_node, expresion=expr)
+        return Operator(op=operator, parameters=parameters, output_type=return_node,
+                        expression=expr)
 
     """
                         -----------------------------------
@@ -261,7 +263,7 @@ class ASTVisitor(VtlVisitor):
             argument_default = argument_default[0]
 
         argument_type.name = argument_name.value
-        return Argument(name=argument_name.value, type=argument_type, default=argument_default)
+        return Argument(name=argument_name.value, type_=argument_type, default=argument_default)
 
     """
                         -----------------------------------
