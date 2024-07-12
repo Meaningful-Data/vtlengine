@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Archivo actual",
+            "type": "python",
+            "request": "launch",
+            // "module": "flask",
+            // "program": "${workspaceFolder}/WebServices/app.py",
+            // "program": "${workspaceFolder}/DataGenerator/operation_data_generator.py",
+            "program": "${workspaceFolder}/main.py",
+            // // "program": "${workspaceFolder}/testing/DynamicAST/test_dynamic_ast.py",
+            // "program": "${workspaceFolder}/Code/Preprocessor/populate_mongo.py",
+            // "program": "${workspaceFolder}/testing/testsuite.py",
+            // "program": "${workspaceFolder}/testing/AST/test_ast_generation.py",
+            // "program": "${workspaceFolder}/testing/NoIntervalOperation/test_operation.py",
+            // "program": "${workspaceFolder}/testing/AggregateOperation/test_aggregate_checking.py",
+            // "module": "pytest",
+            // "program": "${workspaceFolder}/Example/example.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+        }
+    ]
+}
