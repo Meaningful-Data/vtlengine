@@ -1,7 +1,8 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, TimeAggregation, \
-    Identifier, EvalOp, Types, VarID, Analytic, AggregationComp
+from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, \
+    TimeAggregation, \
+    Identifier, EvalOp, Types, VarID, Analytic
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
@@ -666,13 +667,12 @@ class ExprComp(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
         operand_node = self.visitExprComponent(ctx_list[2])
-        return AggregationComp(op_node, operand_node)
+        return Aggregation(op_node, operand_node)
 
     def visitCountAggrComp(self, ctx: Parser.CountAggrCompContext):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
-        param_constant = ParamConstant('Null', None)
-        return AggregationComp(op_node, param_constant)
+        return Aggregation(op_node)
 
     """
                                 -----------------------------------
@@ -716,7 +716,7 @@ class ExprComp(VtlVisitor):
             else:
                 raise NotImplementedError
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)
+        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params)
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -762,7 +762,7 @@ class ExprComp(VtlVisitor):
                 order_by = Terminals().visitOrderByClause(c)
                 continue
 
-        return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by, params=None)
+        return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by, window=None)
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -775,4 +775,4 @@ class ExprComp(VtlVisitor):
 
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params)
+        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params)

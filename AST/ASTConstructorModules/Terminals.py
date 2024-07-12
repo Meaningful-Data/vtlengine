@@ -1,9 +1,15 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import BinOp, Collection, Constant, DPRIdentifier, Identifier, OrderBy, ParamConstant, \
-    ParamOp, Role, Types, VarID, Windowing
-from AST.VtlVisitor import VtlVisitor
+from AST import BinOp, Collection, Constant, DPRIdentifier, \
+    Identifier, \
+    OrderBy, \
+    ParamConstant, \
+    ParamOp, Types, VarID, Windowing
 from AST.Grammar.parser import Parser
+from AST.VtlVisitor import VtlVisitor
+from DataTypes import Boolean, Date, Duration, Integer, Number, String, TimeInterval, \
+    TimePeriod
+from Model import Component, Dataset, Role
 
 
 def _remove_scaped_characters(text):
@@ -153,23 +159,23 @@ class Terminals(VtlVisitor):
         token = c.getSymbol()
 
         if token.type == Parser.STRING:
-            return 'String'
+            return String
         elif token.type == Parser.INTEGER:
-            return 'Integer'
+            return Integer
         elif token.type == Parser.NUMBER:
-            return 'Number'
+            return Number
         elif token.type == Parser.BOOLEAN:
-            return 'Boolean'
+            return Boolean
         elif token.type == Parser.DATE:
-            return 'Date'
+            return Date
         elif token.type == Parser.TIME_PERIOD:
-            return 'Time_Period'
+            return TimePeriod
         elif token.type == Parser.DURATION:
-            return 'Duration'
+            return Duration
         elif token.type == Parser.SCALAR:
-            return 'Null'
+            return None
         elif token.type == Parser.TIME:
-            return 'Time'
+            return TimeInterval
 
     def visitComponentRole(self, ctx: Parser.ComponentRoleContext):
         """
@@ -187,7 +193,12 @@ class Terminals(VtlVisitor):
             return self.visitViralAttribute(c)
         else:
             token = c.getSymbol()
-            return Role(token.text)
+            text = token.text
+            if text == "component":
+                return None
+            # Use upper case on first letter
+            text = text[0].upper() + text[1:].lower()
+            return Role(text)
 
     def visitViralAttribute(self, ctx: Parser.ViralAttributeContext):
         """
@@ -197,7 +208,7 @@ class Terminals(VtlVisitor):
         c = ctx_list[0]
         token = c.getSymbol()
 
-        return Role(token.text)
+        raise NotImplementedError
 
     def visitLists(self, ctx: Parser.ListsContext):
         """
@@ -276,7 +287,8 @@ class Terminals(VtlVisitor):
             type_node = self.visitBasicScalarType(scalartype)
 
         elif isinstance(scalartype, Parser.ValueDomainNameContext):
-            type_node = self.visitValueDomainName(scalartype)
+            # type_node = self.visitValueDomainName(scalartype)
+            raise NotImplementedError
         else:
             raise NotImplementedError
 
@@ -284,22 +296,15 @@ class Terminals(VtlVisitor):
             # AST_ASTCONSTRUCTOR.45
             raise NotImplementedError
 
-        else:
-            scalartype_constraint = []
-
         if len(not_) != 0:
             # AST_ASTCONSTRUCTOR.46
             raise NotImplementedError
-
-        else:
-            not_ = None
 
         if len(null_constant) != 0:
             # AST_ASTCONSTRUCTOR.47
             raise NotImplementedError
 
-        return Types(kind='Scalar', type_=type_node, constraints=scalartype_constraint,
-                     nullable=not_)
+        return type_node
 
     def visitDatasetType(self, ctx: Parser.DatasetTypeContext):
         """
@@ -307,12 +312,10 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        datasetype_constraint = [self.visitCompConstraint(constraint) for constraint in ctx_list if
-                                 isinstance(constraint, Parser.CompConstraintContext)]
-        type_node = 'DataSet'
+        # components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
+        #               isinstance(constraint, Parser.CompConstraintContext)]
 
-        return Types(kind='DataSet', type_=type_node, constraints=datasetype_constraint,
-                     nullable=None)
+        return Dataset(name="Dataset", components={}, data=None)
 
     def visitRulesetType(self, ctx: Parser.RulesetTypeContext):
         """
@@ -350,12 +353,14 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         role_node = self.visitComponentRole(ctx_list[0])
-        component_constraint = [self.visitScalarType(constraint) for constraint in ctx_list if
-                                isinstance(constraint, Parser.ScalarTypeContext)]
-        type_node = role_node.role
+        data_type = [self.visitScalarType(constraint) for constraint in ctx_list if
+                     isinstance(constraint, Parser.ScalarTypeContext)]
+        if len(data_type) > 0:
+            data_type = data_type[0]
+        else:
+            data_type = String()
 
-        return Types(kind='Component', type_=type_node, constraints=component_constraint,
-                     nullable=None)
+        return Component(name="Component", data_type=data_type, role=role_node, nullable=False)
 
     def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
         """
@@ -585,7 +590,7 @@ class Terminals(VtlVisitor):
     def visitPartitionByClause(self, ctx: Parser.PartitionByClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        return [self.visitComponentID(compID) for compID in ctx_list if
+        return [self.visitComponentID(compID).value for compID in ctx_list if
                 isinstance(compID, Parser.ComponentIDContext)]
 
     def visitOrderByClause(self, ctx: Parser.OrderByClauseContext):
@@ -634,9 +639,10 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         if len(ctx_list) == 1:
-            return OrderBy(component=self.visitComponentID(ctx_list[0]))
+            return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
+                           order='asc')
 
-        return OrderBy(component=self.visitComponentID(ctx_list[0]),
+        return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
                        order=ctx_list[1].getSymbol().text)
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
@@ -663,4 +669,5 @@ def create_windowing(win_mode, values, modes):
         elif values[e] == 0:
             values[e] = "CURRENT ROW"
 
-    return Windowing(win_mode, values[0], values[1], modes[0], modes[1])
+    return Windowing(type_=win_mode, start=values[0], stop=values[1],
+                     start_mode=modes[0], stop_mode=modes[1])

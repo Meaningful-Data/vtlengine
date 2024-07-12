@@ -18,13 +18,7 @@
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "Me_2",
-          "role": "Measure",
-          "type": "String",
+          "type": "Integer",
           "nullable": true
         }
       ]

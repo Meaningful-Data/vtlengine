@@ -45,11 +45,51 @@ class Calc:
         return result_dataset
 
 
+class Aggregate:
+
+    @classmethod
+    def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
+
+        result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
+
+        for operand in operands:
+            if operand.name in dataset.components:
+                # Override component with same name
+                dataset.delete_component(operand.name)
+
+            if isinstance(operand, Scalar):
+                result_dataset.add_component(Component(
+                    name=operand.name,
+                    data_type=operand.data_type,
+                    role=Role.MEASURE,
+                    nullable=True
+                ))
+            else:
+                result_dataset.add_component(Component(
+                    name=operand.name,
+                    data_type=operand.data_type,
+                    role=operand.role,
+                    nullable=operand.nullable
+                ))
+        return result_dataset
+
+    @classmethod
+    def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
+        result_dataset = cls.validate(operands, dataset)
+        result_dataset.data = dataset.data.copy()
+        for operand in operands:
+            if isinstance(operand, Scalar):
+                result_dataset.data[operand.name] = operand.value
+            else:
+                result_dataset.data[operand.name] = operand.data
+        return result_dataset
+
+
 class Filter:
 
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset):
-        if condition.data_type == Boolean:
+        if condition.data_type != Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
         return Dataset(name=dataset.name, components=dataset.components, data=None)
 

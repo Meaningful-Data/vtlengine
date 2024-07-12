@@ -5,6 +5,9 @@ from typing import Any, Optional, Union
 
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
+from AST.Grammar.tokens import EQ, GT, GTE, LT, LTE, NEQ
+from Operators import Binary
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -92,8 +95,6 @@ class In(Binary):
     def py_op(cls, x, y):
         return operator.contains(y, x)
 
-    py_op = py_op
-
 
 class Match(Binary):
     op = CHARSET_MATCH
@@ -104,8 +105,6 @@ class Match(Binary):
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
         return bool(re.fullmatch(y, x))
-
-    py_op = py_op
 
 
 class Between(Operator.Operator):
@@ -176,7 +175,7 @@ class Between(Operator.Operator):
                 )
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
-                    del result.data[measure_name]
+                    result.data = result.data.drop(columns=[measure_name])
         if isinstance(operand, DataComponent):
             result.data = cls.apply_operation_component(
                 operand.data,
@@ -190,7 +189,6 @@ class Between(Operator.Operator):
 
 class ExistIn(Operator.Operator):
     op = IN
-
     # noinspection PyTypeChecker
     @classmethod
     def validate(cls, dataset_1: Dataset, dataset_2: Dataset,
@@ -219,7 +217,7 @@ class ExistIn(Operator.Operator):
         common = result_dataset.get_identifiers_names()
         df1: pd.DataFrame = dataset_1.data[common]
         df2: pd.DataFrame = dataset_2.data[common]
-        compare_result = (df1 == df2).all(axis=1)
+        compare_result = (df1 == df2).apply(cls.check_all_columns, axis=1)
         result_dataset.data = df1
         result_dataset.data['bool_var'] = compare_result
 
@@ -229,3 +227,6 @@ class ExistIn(Operator.Operator):
             result_dataset.data = result_dataset.data.reset_index(drop=True)
 
         return result_dataset
+
+    def check_all_columns(row):
+        return all(col_value > 0 for col_value in row)

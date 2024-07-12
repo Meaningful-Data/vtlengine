@@ -28,27 +28,27 @@ Test number      | VTL expresion         | Test result
 
 ## 3. String Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-13    | DS_r := DS_1 \|\| DS_2;                                                  | WIP
-14    | DS_r := DS_1[calc Me_2:= Me_1 \|\| " world"];                            | WIP
-15    | DS_r := rtrim(DS_1);                                                     | WIP
-16    | DS_r := DS_1[ calc Me_2:= rtrim(Me_1)];                                  | WIP
-17    | DS_r := upper(DS_1);                                                     | WIP
-18    | DS_r := DS_1[calc Me_2:= upper(Me_1)];                                   | WIP
-19    | DS_r:= substr ( DS_1 , 7 );                                              | WIP 
-20    | DS_r:= substr ( DS_1 , 1 , 5 );                                          | WIP 
-21    | DS_r:= DS_1 [ calc Me_2:= substr ( Me_2 , 1 , 5 ) ];                     | WIP 
-22    | DS_r := replace (ds_1,"ello","i");                                       | WIP 
-23    | DS_r := DS_1[ calc Me_2:= replace (Me_1,"ello","i")];                    | WIP 
-24    | DS_r:= instr(ds_1,"hello");                                              | WIP 
-25    | DS_r := DS_1[calc Me_2:=instr(Me_1,"hello")];                            | WIP 
-26    | DS_r := DS_2 [calc Me_10:= instr(Me_1, "o"), Me_20:=instr(Me_2, "o")];   | WIP
-27    | DS_r := instr(DS_2, "o");                                                | WIP
-28    | DS_r := length(DS_1);                                                    | WIP
-29    | DS_r:= DS_1[calc Me_2:=length(Me_1)];                                    | WIP
-30    | DS_r := DS_2 [calc Me_10:= length(Me_1), Me_20:=length(Me_2)];           | WIP
-31    | DS_r := length(DS_2);                                                    | WIP
+Test number     | VTL expresion                                                          | Test result
+:------------:  |:-----------------------------------------------------------------------|:-------------:
+13    | DS_r := DS_1 \|\| DS_2;                                                | WIP
+14    | DS_r := DS_1[calc Me_2:= Me_1 \|\| " world"];                          | WIP
+15    | DS_r := rtrim(DS_1);                                                   | WIP
+16    | DS_r := DS_1[ calc Me_2:= rtrim(Me_1)];                                | WIP
+17    | DS_r := upper(DS_1);                                                   | WIP
+18    | DS_r := DS_1[calc Me_2:= upper(Me_1)];                                 | WIP
+19    | DS_r:= substr ( DS_1 , 7 );                                            | WIP 
+20    | DS_r:= substr ( DS_1 , 1 , 5 );                                        | WIP 
+21    | DS_r:= DS_1 [ calc Me_2:= substr ( Me_2 , 1 , 5 ) ];                   | WIP 
+22    | DS_r := replace (ds_1,"ello","i");                                     | WIP 
+23    | DS_r := DS_1[ calc Me_2:= replace (Me_1,"ello","i")];                  | WIP 
+24    | DS_r:= instr(ds_1,"hello");                                            | WIP 
+25    | DS_r := DS_1[calc Me_2:=instr(Me_1,"hello")];                          | WIP 
+26    | DS_r := DS_1 [calc Me_10:= instr(Me_1, "o"), Me_20:=instr(Me_2, "o")]; | WIP
+27    | DS_r := instr(DS_1, "o");                                              | WIP
+28    | DS_r := length(DS_1);                                                  | WIP
+29    | DS_r:= DS_1[calc Me_2:=length(Me_1)];                                  | WIP
+30    | DS_r := DS_2 [calc Me_10:= length(Me_1), Me_20:=length(Me_2)];         | WIP
+31    | DS_r := length(DS_2);                                                  | WIP
 
 >>>
 
@@ -200,24 +200,24 @@ Test number     | VTL expresion     | Test result
 
 ### Aggregate Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-135    | DS_r := avg ( DS_1 group by Id_1 );                                                                       | WIP
-136    | DS_r := sum ( DS_1 group by Id_1, Id_3 );                                                                 | WIP
-137    | DS_r := avg ( DS_1 );                                                                                     | 
-138    | DS_r := DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 ) group by Id_1 ];                          | 
-139    | DS_r := sum ( DS_1 over ( order by Id_1, Id_2, Id_3 data points between 1 preceding and 1 following ) );  | 
-140    | DS_r := count ( DS_1 group by Id_1 );                                                                     | WIP
-141    | DS_r := sum ( DS_1 group by Id_1 having count() > 2 );                                                    | 
-142    | DS_r := min ( DS_1 group by Id_1 );                                                                       | WIP
-143    | DS_r := max ( DS_1 group by Id_1 );                                                                       | WIP
-144    | DS_r := median ( DS_1 group by Id_1 );                                                                    | WIP
-145    | DS_r := sum ( DS_1 group by Id_1 );                                                                       | WIP
-146    | DS_r := avg ( DS_1 group by Id_1 );                                                                       | WIP
-147    | DS_r := stddev_pop ( DS_1 group by Id_1 );                                                                | WIP
-148    | DS_r := stddev_samp ( DS_1 group by Id_1 );                                                               | WIP
-149    | DS_r := var_pop ( DS_1 group by Id_1 );                                                                   | WIP
-150    | DS_r := var_samp ( DS_1 group by Id_1 );                                                                  | WIP
+Test number     | VTL expresion                                                                                            | Test result
+:------------:  |:---------------------------------------------------------------------------------------------------------|:-------------:
+135    | DS_r := avg ( DS_1 group by Id_1 );                                                                      | WIP
+136    | DS_r := sum ( DS_1 group by Id_1, Id_3 );                                                                | WIP
+137    | DS_r := avg ( DS_1 );                                                                                    | 
+138    | DS_r := DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 ) group by Id_1 ];                         | 
+139    | DS_r := sum ( DS_1 over ( order by Id_1, Id_2, Id_3 data points between 1 preceding and 1 following ) ); | 
+140    | DS_r := count ( DS_1 group by Id_1 );                                                                    | WIP
+141    | DS_r := count ( DS_1 group by Id_1 having count() > 2 );                                                 | 
+142    | DS_r := min ( DS_1 group by Id_1 );                                                                      | WIP
+143    | DS_r := max ( DS_1 group by Id_1 );                                                                      | WIP
+144    | DS_r := median ( DS_1 group by Id_1 );                                                                   | WIP
+145    | DS_r := sum ( DS_1 group by Id_1 );                                                                      | WIP
+146    | DS_r := avg ( DS_1 group by Id_1 );                                                                      | WIP
+147    | DS_r := stddev_pop ( DS_1 group by Id_1 );                                                               | WIP
+148    | DS_r := stddev_samp ( DS_1 group by Id_1 );                                                              | WIP
+149    | DS_r := var_pop ( DS_1 group by Id_1 );                                                                  | WIP
+150    | DS_r := var_samp ( DS_1 group by Id_1 );                                                                 | WIP
 
 
 >>>
