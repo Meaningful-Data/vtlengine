@@ -8,9 +8,8 @@ from Operators.String import Instr, Replace, Substr
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
-    ROUND, \
-    SUBSTR, TRUNC
-from DataTypes import BASIC_TYPES
+    ROUND, SUBSTR, TRUNC, AS, MEMBERSHIP, DROP, KEEP
+from DataTypes import BASIC_TYPES, Boolean
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
@@ -27,6 +26,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
+    is_from_join: bool = False
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -51,8 +51,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
-        left_operand = self.visit(node.left)
-        right_operand = self.visit(node.right)
+        if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
+            left_operand = self.regular_aggregation_dataset
+            right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
+        else:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
         return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
@@ -265,7 +269,33 @@ class InterpreterAnalyzer(ASTTemplate):
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
+            if not isinstance(operands[0], DataComponent):
+                measure = child.left.value
+                operands[0] = DataComponent(name=measure,
+                                            data=operands[0].data[measure],
+                                            data_type=operands[0].components[measure].data_type,
+                                            role=operands[0].components[measure].role,
+                                            nullable=operands[0].components[measure].nullable)
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
+        if self.is_from_join:
+            # self.is_from_join = False
+            if node.op in [DROP, KEEP]:
+                for operand in operands:
+                    if isinstance(operand, Dataset):
+                        operands.extend(operand.get_measures_names())
+                        operands.remove(operand)
+                    elif isinstance(operand, DataComponent):
+                        operands.append(operand.name)
+                        operands.remove(operand)
+            result = REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
+            if node.isLast:
+                result.data.rename(columns={col: col[col.find('#') + 1:] for col in result.data.columns}, inplace=True)
+                result.components = {comp_name[comp_name.find('#') + 1:]: comp for comp_name, comp in
+                                     result.components.items()}
+                for comp in result.components.values():
+                    comp.name = comp.name[comp.name.find('#') + 1:]
+                result.data.reset_index(drop=True, inplace=True)
+            return result
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
@@ -279,9 +309,11 @@ class InterpreterAnalyzer(ASTTemplate):
         clause_elements = []
         for clause in node.clauses:
             clause_elements.append(self.visit(clause))
+            if hasattr(clause, 'op') and clause.op == AS:
+                self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
         # No need to check using, regular aggregation is executed afterwards
-
+        self.is_from_join = True
         return JOIN_MAPPING[node.op].evaluate(clause_elements, node.using)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:

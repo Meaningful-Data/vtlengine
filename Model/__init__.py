@@ -45,6 +45,8 @@ class DataComponent:
     nullable: bool = True
 
     def __eq__(self, other):
+        if not isinstance(other, DataComponent):
+            return False
         return self.to_dict() == other.to_dict()
 
     @classmethod
@@ -82,6 +84,9 @@ class Component:
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
 
+    def copy(self):
+        return Component(self.name, self.data_type, self.role, self.nullable)
+
     @classmethod
     def from_json(cls, json_str):
         return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']),
@@ -112,6 +117,9 @@ class Dataset:
                     "The number of components must match the number of columns in the data")
 
     def __eq__(self, other):
+        if not isinstance(other, Dataset):
+            return False
+
         same_name = self.name == other.name
         same_components = self.components == other.components
 
@@ -164,6 +172,9 @@ class Dataset:
     def get_measures_names(self) -> List[str]:
         return [name for name, component in self.components.items() if
                 component.role == Role.MEASURE]
+
+    def get_components_names(self) -> List[str]:
+        return list(self.components.keys())
 
     def rename_component(self, old_name: str, new_name: str):
         if old_name not in self.components:

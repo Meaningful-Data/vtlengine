@@ -226,16 +226,16 @@ class Binary(Operator):
         left_position = TYPE_MAPPING_POSITION[left_type]
         right_position = TYPE_MAPPING_POSITION[right_type]
         conversion = TYPE_PROMOTION_MATRIX[left_position][right_position]
-        if conversion is 'N':
+        if conversion == 'N':
             raise Exception(f"Cannot convert {left_type} to {right_type}")
-        if conversion is 'E':
+        if conversion == 'E':
             if cls.op == CAST:
                 return right_type
             conversion = TYPE_PROMOTION_MATRIX[right_position][left_position]
-            if conversion is 'I':
+            if conversion == 'I':
                 return left_type
             raise Exception(f"Cannot convert {left_type} to {right_type} without explicit cast")
-        if conversion is 'I':
+        if conversion == 'I':
             return right_type
         return left_type
 
@@ -249,13 +249,10 @@ class Binary(Operator):
             return cls.dataset_scalar_validation(right_operand, left_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, Scalar):
             return cls.scalar_validation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, DataComponent):
             return cls.component_validation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
             return cls.component_scalar_validation(left_operand, right_operand)
-
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
             return cls.component_scalar_validation(right_operand, left_operand)
 
@@ -345,15 +342,15 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data.copy()
+        result_dataset.data = result_data
 
         for measure_name in dataset.get_measures_names():
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
                                                                        scalar_set.values)
             if cls.return_type and len(result_dataset.get_measures()) == 1:
                 result_data[COMP_NAME_MAPPING[cls.return_type]] = result_data[measure_name]
-                result_data = result_data.drop(columns=[measure_name],  axis=1)
+                result_dataset.data = result_data.drop(columns=[measure_name], axis=1)
 
-        result_dataset.data = result_data
         return result_dataset
 
     @classmethod
