@@ -8,7 +8,7 @@ from Operators.String import Instr, Replace, Substr
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
-    ROUND, SUBSTR, TRUNC, AS, MEMBERSHIP, DROP, KEEP
+    ROUND, SUBSTR, TRUNC, AS, MEMBERSHIP, DROP, KEEP, APPLY
 from DataTypes import BASIC_TYPES, Boolean
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Assignment import Assignment
@@ -211,6 +211,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].data_type,
                                  role=self.aggregation_dataset.components[node.value].role)
         if self.is_from_regular_aggregation:
+            if self.is_from_join and node.value in self.datasets.keys():
+                return self.datasets[node.value]
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
                                  data_type=
@@ -246,6 +248,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(dataset, Scalar):
             raise Exception(f"Scalar {dataset.name} cannot be used with clause operators")
         self.regular_aggregation_dataset = dataset
+        if node.op == APPLY:
+            op_map = BINARY_MAPPING
+            return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(dataset, node.children, op_map)
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
@@ -278,15 +283,12 @@ class InterpreterAnalyzer(ASTTemplate):
                                             nullable=operands[0].components[measure].nullable)
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
         if self.is_from_join:
-            # self.is_from_join = False
             if node.op in [DROP, KEEP]:
-                for operand in operands:
-                    if isinstance(operand, Dataset):
-                        operands.extend(operand.get_measures_names())
-                        operands.remove(operand)
-                    elif isinstance(operand, DataComponent):
-                        operands.append(operand.name)
-                        operands.remove(operand)
+                operands = [operand.get_measures_names() if isinstance(operand, Dataset) else operand.name if
+                            isinstance(operand, DataComponent) and operand.role is not Role.IDENTIFIER else
+                            operand for operand in operands]
+                operands = list(set([item for sublist in operands for item in
+                                     (sublist if isinstance(sublist, list) else [sublist])]))
             result = REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
             if node.isLast:
                 result.data.rename(columns={col: col[col.find('#') + 1:] for col in result.data.columns}, inplace=True)

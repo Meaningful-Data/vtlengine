@@ -103,6 +103,9 @@ class Component:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
+    def rename(self, new_name: str):
+        self.name = new_name
+
 
 @dataclass
 class Dataset:

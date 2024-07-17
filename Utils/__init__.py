@@ -15,7 +15,7 @@ from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename,
 from Operators.Comparison import In, IsNull
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
 from Operators.General import Alias, Membership
-from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin
+from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin, Apply
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
     Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
@@ -99,7 +99,8 @@ REGULAR_AGGREGATION_MAPPING = {
     PIVOT: Pivot,
     UNPIVOT: Unpivot,
     SUBSPACE: Sub,
-    AGGREGATE: Aggregate
+    AGGREGATE: Aggregate,
+    APPLY: Apply
 }
 
 SET_MAPPING = {
