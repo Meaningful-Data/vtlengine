@@ -299,17 +299,11 @@ class InterpreterAnalyzer(ASTTemplate):
             return Trunc.evaluate(op_element, param_element)
 
         elif node.op == SUBSTR or node.op == REPLACE or node.op == INSTR:
-            param1 = None
-            param2 = None
-            param3 = None
+            params = [None, None, None]
             op_element = self.visit(node.children[0])
-            for node_param in node.params:
-                if param1 is None:
-                    param1 = self.visit(node_param)
-                elif param2 is None:
-                    param2 = self.visit(node_param)
-                elif param3 is None:
-                    param3 = self.visit(node_param)
+            for i, node_param in enumerate(node.params):
+                params[i] = self.visit(node_param)
+            param1, param2, param3 = tuple(params)
             if node.op == SUBSTR:
                 return Substr.evaluate(op_element, param1, param2)
             elif node.op == REPLACE:

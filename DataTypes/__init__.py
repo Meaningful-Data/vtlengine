@@ -171,6 +171,7 @@ BASIC_TYPES = {
     int: Integer,
     float: Number,
     bool: Boolean,
+    type(None): String
 }
 
 COMP_NAME_MAPPING = {

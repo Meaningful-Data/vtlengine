@@ -203,6 +203,8 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
+        if node.value == '_':
+            return
         return node.value
 
     def visit_Role(self, node: AST.Role) -> AST.AST:

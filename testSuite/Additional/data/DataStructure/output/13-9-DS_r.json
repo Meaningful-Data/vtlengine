@@ -1,0 +1,99 @@
+{
+  "datasets": [
+    {
+      "name": "LNS_ADVNCS_DBTRS_FINREP_3",
+      "DataStructure": [
+        {
+          "name": "ACCMLTD_IMPRMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_PRTL_WRTFFS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_TTL_WRTFFS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "GRSS_CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IMPRMNT_STTS",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_HFS",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_LW_CRDT_RSK",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_INTRNL_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRCHSD_ORGNTD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_ACCNTNG_ITM",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_INSTRMNT",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

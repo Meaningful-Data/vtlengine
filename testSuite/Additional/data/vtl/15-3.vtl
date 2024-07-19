@@ -1,0 +1,6 @@
+define operator Test037 (x dataset, y scalar)
+    returns dataset is
+    x + y
+end operator;
+DS_r1 := Test037(DS_1, 3);
+DS_r2 := Test037(DS_r1, 3);
