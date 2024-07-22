@@ -94,8 +94,13 @@ class Div(Binary):
 
 class Logarithm(Binary):
     op = LOG
-    py_op = math.log
     return_type = Number
+
+    @classmethod
+    def py_op(cls, x: Any, param: Any) -> Any:
+        if pd.isnull(param):
+            return None
+        return math.log(x, param)
 
     @classmethod
     def validate(cls, left_operand, right_operand):
@@ -117,8 +122,13 @@ class Modulo(Binary):
 
 class Power(Binary):
     op = POWER
-    py_op = operator.pow
     return_type = Number
+
+    @classmethod
+    def py_op(cls, x: Any, param: Any) -> Any:
+        if pd.isnull(param):
+            return None
+        return x ** param
 
     @classmethod
     def validate(cls, left_operand, right_operand):
@@ -220,7 +230,7 @@ class Round(Parameterized):
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
         multiplier = 1.0
-        if param is not None:
+        if not pd.isnull(param):
             multiplier = 10 ** param
 
         if x >= 0.0:
@@ -240,12 +250,12 @@ class Trunc(Parameterized):
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
-        if param is not None:
+        if not pd.isnull(param):
             multiplier = 10 ** param
 
         truncated_value = int(x * multiplier) / multiplier
 
-        if param is not None:
+        if not pd.isnull(param):
             return truncated_value
 
         return int(truncated_value)
