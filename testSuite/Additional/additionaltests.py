@@ -941,17 +941,6 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_8(self):
-        '''
-        equal to reference manual test but at this one DS_2 have no Id_4 (different number of Ids).
-        '''
-        text = """DS_r := exists_in (DS_1, DS_2, all);"""
-        code = '5-8'
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-
     def test_9(self):
         '''
         equal to reference manual test but at this one DS_2 have no Id_4 (different number of Ids).
@@ -1006,8 +995,6 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-
-
 
     def test_16(self):
         '''
