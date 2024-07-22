@@ -1216,3 +1216,429 @@ class BooleanOperatorsTest(AdditionalHelper):
     maxDiff = None
 
     pass
+
+
+class ClauseOperatorsTest(AdditionalHelper):
+    """
+    Group 13
+    """
+
+    classTest = 'Additional.ClauseOperatorsTest'
+
+    def test_1(self):
+        '''
+        Basic behaviour for dataset with null values.
+        '''
+        text = """DS_r := DS_1 [ unpivot Id_2, Me_1];"""
+
+        code = '13-1'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+        Behaviour for unpivot mixed with another operator.
+        '''
+        text = """DS_r := DS_1 [ unpivot Id_2, Me_1] + DS_2;"""
+
+        code = '13-2'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+        Create null measures casting the value.
+        '''
+        text = """DS_r := DS_1[calc Me_10 := cast(null, number)];"""
+
+        code = '13-3'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        Replace null measures casting the value.
+        '''
+        # Load the files
+        text = """DS_r := DS_1[calc Me_1 := cast(null, string)];"""
+
+        code = '13-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+
+        '''
+        text = """DS_r := DS_1 [ aggr Me_4:= sum( Me_1 ), Me_2 := max( Me_1) group by Id_1 , Id_2 ][calc Me_6:= 2];"""
+
+        code = '13-6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+        Description:
+        Jira issue: VTLEN 575.
+        Git Branch: feat-VTLEN-575-no-semantic-error-thrown.
+        Goal: Check semantic result.
+        '''
+
+        code = '13-9'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    # unpivot
+    # BUG
+    def test_GL_49_1(self):
+        """
+        Status:
+        Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
+        Description: Unpivot that result has nulls
+            line RM 7200: " When a Measure is NULL then unpivot does not create
+                            a Data Point for that Measure."
+        Git Branch: bug-49-unpivot-and-nulls.
+        Goal: Check Result.
+        """
+        code = 'GL_49_1'
+        number_inputs = 1
+        references_names = ["DS_r"]
+        text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text
+        )
+
+    # BUG
+    def test_GL_49_2(self):
+        """
+        Status: BUG
+        Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
+        Description: two measures, one measure is all null Unpivot that result has nulls
+            line RM 7200: " When a Measure is NULL then unpivot does not create
+                            a Data Point for that Measure."
+        Git Branch: bug-49-unpivot-and-nulls.
+        Goal: Check Result.
+        """
+        code = 'GL_49_2'
+        number_inputs = 1
+        references_names = ["DS_r"]
+        text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text
+        )
+
+    # BUG
+    def test_GL_49_3(self):
+        """
+        Status: BUG
+        Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
+        Description: only one measure, is all null Unpivot that result has nulls
+            line RM 7200: " When a Measure is NULL then unpivot does not create
+                            a Data Point for that Measure."
+        Git Branch: bug-49-unpivot-and-nulls.
+        Goal: Check Result.
+        """
+        code = 'GL_49_3'
+        number_inputs = 1
+        references_names = ["DS_r"]
+        text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text
+        )
+
+    def test_GL_49_4(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1 [unpivot Id_3, Me_3];
+        Description: with several identifiers as input.
+            line RM 7200: " When a Measure is NULL then unpivot does not create
+                            a Data Point for that Measure."
+        Git Branch: bug-49-unpivot-and-nulls.
+        Goal: Check Result.
+        """
+        code = 'GL_49_4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+        text = "DS_r := DS_1 [unpivot Id_3, Me_3];"
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text
+        )
+        # BUG
+
+    def test_GL_49_6(self):
+        """
+        Status: BUG
+        Expression: DS_r := DS_1 [unpivot Id_3, Me_3];
+        Description: unpivot with measure with same name.
+            line RM 7200: " When a Measure is NULL then unpivot does not create
+                            a Data Point for that Measure."
+        Git Branch: bug-49-unpivot-and-nulls.
+        Goal: Check Result.
+        """
+        code = 'GL_49_6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+        text = "DS_r := DS_1 [unpivot Id_3, Me_2];"
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text
+        )
+
+
+class SetOperatorsTest(AdditionalHelper):
+    """
+    Group 8
+    """
+
+    classTest = 'Additional.SetOperatorsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1,DS_2);"""
+
+        code = '8-1'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := setdiff(DS_1,DS_2);"""
+
+        code = '8-2'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := symdiff(DS_1,DS_2);"""
+
+        code = '8-3'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1,DS_2,DS_3);"""
+
+        code = '8-4'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1[drop Me_3] ,DS_2);"""
+
+        code = '8-5'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1 [drop Me_1] ,DS_2);"""
+
+        code = '8-7'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1 ,DS_2);"""
+
+        code = '8-8'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+        Basic behaviour.
+        Description: Empty result.
+        '''
+        text = """DS_r := intersect(DS_1 ,DS_2);"""
+
+        code = '8-9'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+class AggregateOperatorsTest(AdditionalHelper):
+    """
+    Group 10
+    """
+
+    classTest = 'Additional.AggregateOperatorsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+        Basic behaviour for datasets.
+        '''
+        text = """DS_r := count(DS_1 group by Id_1);"""
+        code = '10-1'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+        Basic behaviour for datasets.
+        '''
+        text = """DS_r := count(DS_1 group by Id_1, Id_2);"""
+        code = '10-2'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+        feat-VTLEN-532-No-measures-agg
+        feat: no measures agg for count,min and max
+        '''
+        text = """DS_r := min(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
+        code = '10-3'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        feat-VTLEN-532-No-measures-agg
+        feat: no measures agg for count,min and max
+        '''
+        text = """DS_r := max(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
+        code = '10-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+        feat-VTLEN-532-No-measures-agg
+        feat: no measures agg for count,min and max
+        '''
+        text = """DS_r := count(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
+        code = '10-5'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+        feat-VTLEN-532-No-measures-agg
+        feat: no measures agg for count,min and max
+        '''
+        text = """DS_r := median(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
+        code = '10-6'
+        number_inputs = 1
+        message = "1-1-2-1"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_7(self):
+        '''
+        Description: Recheck of the no measures agg
+        Jira issue: bug VTLEN 536.
+        Git Branch: bug-VTLEN-546-Max-no-measures.
+        Goal: Interpreter results.
+        '''
+        text = """BNFCRS_TRNSFRS_CMMN_INSTRMNTS_3 :=
+                    max(BNFCRS_TRNSFRS_CMMN_INSTRMNTS_2 
+                    group by BNFCRS_CNTRPRTY_ID,
+                            TRNSFR_CNTRPRTY_ID,
+                            BNFCRS_DT_RFRNC,
+                            BNFCRS_INSTRMNT_UNQ_ID,
+                            BNFCRS_PRSPCTV_ID);
+
+                BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4 :=
+                    BNFCRS_TRNSFRS_CMMN_INSTRMNTS_3
+                        [rename BNFCRS_DT_RFRNC to DT_RFRNC,
+                                BNFCRS_INSTRMNT_UNQ_ID to INSTRMNT_UNQ_ID,
+                                BNFCRS_PRSPCTV_ID to PRSPCTV_ID]
+                        [calc BNFCR_ID := BNFCRS_CNTRPRTY_ID,
+                            TRNSFR_ID := TRNSFR_CNTRPRTY_ID];"""
+        code = '10-7'
+        number_inputs = 2
+        references_names = ["DS_r1", "DS_r2"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GL_222_1(self):
+        '''
+        '''
+        text = """DS_r := DS_1[aggr Me_3 := count ( ) , Me_4 := count ( ) group by Id_1];"""
+        code = 'GL_222_1'
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
