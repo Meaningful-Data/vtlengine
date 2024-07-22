@@ -31,7 +31,7 @@
           "name": "Me_6",
           "role": "Measure",
           "type": "Integer",
-          "nullable": false
+          "nullable": true
         }
       ]
     }
