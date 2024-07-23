@@ -1,5 +1,7 @@
 from copy import copy
-from typing import Optional
+from typing import Any, Dict, Optional
+
+import pandas as pd
 
 from DataTypes import Boolean, Number, String
 from Model import Component, Dataset, Role
@@ -31,7 +33,8 @@ class Check(Operator):
 
             imbalance_measure = imbalance_element.get_measures()[0]
             if imbalance_measure.data_type != Number:
-                raise Exception("The imbalance operand must have exactly one measure of type Numeric")
+                raise Exception(
+                    "The imbalance operand must have exactly one measure of type Numeric")
 
         # Generating the result dataset components
         result_components = {comp.name: comp for comp in validation_element.components.values()
@@ -75,4 +78,59 @@ class Check(Operator):
             validation_measure_name = validation_element.get_measures_names()[0]
             result.data = result.data[result.data[validation_measure_name] == False]
             result.data.reset_index(drop=True, inplace=True)
+        return result
+
+
+# noinspection PyTypeChecker
+class Check_Datapoint(Operator):
+
+    @classmethod
+    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+        result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
+        result_components['ruleid'] = Component(name='ruleid', data_type=String,
+                                                role=Role.IDENTIFIER, nullable=False)
+        if output == 'invalid':
+            result_components = {**result_components,
+                                 **{comp.name: copy(comp) for comp in
+                                    dataset_element.get_measures()}
+                                 }
+        elif output == 'all':
+            result_components['bool_var'] = Component(name='bool_var', data_type=Boolean,
+                                                      role=Role.MEASURE, nullable=True)
+        else:  # output == 'all_measures'
+            result_components = {**result_components,
+                                 **{comp.name: copy(comp) for comp in
+                                    dataset_element.get_measures()},
+                                 'bool_var': Component(name='bool_var', data_type=Boolean,
+                                                       role=Role.MEASURE, nullable=True)}
+        result_components['errorcode'] = Component(name='errorcode', data_type=String,
+                                                    role=Role.MEASURE, nullable=True)
+        result_components['errorlevel'] = Component(name='errorlevel', data_type=Number,
+                                                    role=Role.MEASURE, nullable=True)
+
+        return Dataset(name="result", components=result_components, data=None)
+
+    @classmethod
+    def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+        result = cls.validate(dataset_element, rule_info, output)
+        for rule_name, rule_data in rule_info.items():
+            rule_df = rule_data['output']
+            rule_df['ruleid'] = rule_name
+            rule_df['errorcode'] = rule_df['bool_var'].map({False: rule_data['error_code']})
+            rule_df['errorlevel'] = rule_df['bool_var'].map({False: rule_data['error_level']})
+            if result.data is None:
+                result.data = rule_df
+            else:
+                result.data = pd.concat([result.data, rule_df], ignore_index=True)
+
+        result.data = result.data.drop_duplicates(subset=result.get_identifiers_names() + ['ruleid'])
+        if output == 'invalid':
+            result.data = result.data[result.data['bool_var'] == False]
+            result.data = result.data.drop(columns=['bool_var'])
+            result.data.reset_index(drop=True, inplace=True)
+        elif output == 'all':
+            result.data = result.data[result.get_identifiers_names() + ['bool_var', 'errorcode', 'errorlevel']]
+        else:  # output == 'all_measures'
+            result.data = result.data[result.get_identifiers_names() + dataset_element.get_measures_names() + ['bool_var', 'errorcode', 'errorlevel']]
+
         return result

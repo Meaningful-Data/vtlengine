@@ -508,7 +508,7 @@ class DPRuleset(AST):
     """
 
     name: str
-    element: Union[DefIdentifier, list]
+    params: Union[DefIdentifier, list]
     rules: List[DPRule]
 
 

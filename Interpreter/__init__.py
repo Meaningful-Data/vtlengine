@@ -2,12 +2,15 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, \
+from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, CHECK_DATAPOINT, EXISTS_IN, FILTER, HAVING, \
+    INSTR, \
     REPLACE, \
     ROUND, \
-    SUBSTR, TRUNC
+    SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
@@ -15,7 +18,7 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Operators.Validation import Check
+from Operators.Validation import Check, Check_Datapoint
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, \
     ROLE_SETTER_MAPPING, SET_MAPPING, \
@@ -26,23 +29,61 @@ from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
-    # Flags to change behaviour
+    # Flags to change behavior
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
+    is_from_rule: bool = False
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
+    ruleset_dataset: Optional[Dataset] = None
+    rule_data: Optional[pd.DataFrame] = None
+    # DL
+    dprs: Dict[str, Dict[str, Any]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
         for child in node.children:
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
-            results[result.name] = result
+            if isinstance(result, Dataset):
+                self.datasets[result.name] = result
+                results[result.name] = result
         return results
 
+    # Definition Language
+
+    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
+
+        # Rule names are optional, if not provided, they are generated.
+        # If provided, all must be provided
+        rule_names = [rule.name for rule in node.rules if rule.name is not None]
+        if len(rule_names) != 0 and len(node.rules) != len(rule_names):
+            raise ValueError("All rules must have a name, or none of them")
+        if len(rule_names) == 0:
+            for i, rule in enumerate(node.rules):
+                rule.name = i + 1
+
+        # Signature has the actual parameters names or aliases if provided
+        signature = [param.value if param.alias is not None else param.alias for param in node.params]
+
+        ruleset_data = {
+            'rules': node.rules,
+            'signature_names': signature,
+            'params': node.params
+        }
+
+        # Adding the ruleset to the dprs dictionary
+        if self.dprs is None:
+            self.dprs = {}
+        elif node.name in self.dprs:
+            raise ValueError(f"Datapoint Ruleset {node.name} already exists")
+
+        self.dprs[node.name] = ruleset_data
+
+    # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
@@ -217,6 +258,11 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].data_type,
                                  role=self.regular_aggregation_dataset.components[
                                      node.value].role)
+        if self.is_from_rule:
+            return DataComponent(name=node.value,
+                                 data=self.rule_data[node.value],
+                                 data_type=self.ruleset_dataset.components[node.value].data_type,
+                                 role=self.ruleset_dataset.components[node.value].role)
 
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
@@ -340,6 +386,62 @@ class InterpreterAnalyzer(ASTTemplate):
             result.data = result.data[result.data[measure_name]]
             result.data.drop(columns=[measure_name], inplace=True)
             return result.data
+
+        elif node.op == CHECK_DATAPOINT:
+            # Checking if ruleset exists
+            dpr_name = node.children[1]
+            if dpr_name in self.dprs:
+                dpr_info = self.dprs[dpr_name]
+            else:
+                raise Exception(f"Datapoint Ruleset {dpr_name} not found")
+            # Extracting dataset
+            dataset_element = self.visit(node.children[0])
+            # Checking if list of components supplied is valid
+            if len(node.children) > 2:
+                for comp_name in node.children[2:]:
+                    if comp_name not in dataset_element.components:
+                        raise ValueError(f"Component {comp_name} not found in dataset {dataset_element.name}")
+
+            output = node.params[0]  # invalid, all_measures, all
+
+            rule_output_values = {}
+            self.ruleset_dataset = dataset_element
+            # Gather rule data, adding the ruleset dataset to the interpreter
+            for rule in dpr_info['rules']:
+                rule_output_values[rule.name] = {
+                    "error_code": rule.erCode,
+                    "error_level": rule.erLevel,
+                    "output": self.visit(rule)
+                }
+                self.rule_data = None
+            self.ruleset_dataset = None
+
+            # Datapoint Ruleset final evaluation
+            return Check_Datapoint.evaluate(dataset_element=dataset_element,
+                                            rule_info=rule_output_values,
+                                            output=output)
+
+    def visit_DPRule(self, node: AST.DPRule) -> None:
+        self.is_from_rule = True
+        self.rule_data = self.ruleset_dataset.data.copy()
+        validation_data = self.visit(node.rule)
+        self.is_from_rule = False
+        return validation_data
+
+    def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
+        if node.op == WHEN:
+            filter_comp = self.visit(node.left)
+            filtering_indexes = filter_comp.data[filter_comp.data].index
+            non_filtering_indexes = filter_comp.data[~filter_comp.data].index
+            original_data = self.rule_data.copy()
+            self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
+            result_validation = self.visit(node.right)
+            self.rule_data['bool_var'] = result_validation.data
+            original_data = original_data.merge(self.rule_data, how='left', on=original_data.columns.tolist())
+            original_data.loc[non_filtering_indexes, 'bool_var'] = True
+            return original_data
+
+
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
 

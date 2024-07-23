@@ -121,12 +121,15 @@ class Dataset:
             other.data = other.data.to_pandas()
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
-        self.data = self.data.sort_values(by=list(self.data.columns)).reset_index(drop=True)
-        other.data = other.data.sort_values(by=list(other.data.columns)).reset_index(drop=True)
+        self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
+        other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
+        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
+        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True)
+            assert_frame_equal(self.data, other.data, check_dtype="equiv", check_like=True, check_index_type=False)
             same_data = True
-        except AssertionError:
+        except AssertionError as e:
+            print(e)
             same_data = False
         return same_name and same_components and same_data
 
