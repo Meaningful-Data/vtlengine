@@ -2,6 +2,8 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
@@ -12,6 +14,7 @@ from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
+from Operators.Conditional import If
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
@@ -28,16 +31,19 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
+    is_from_then: Optional[List[bool]] = None
+    is_from_else: Optional[List[bool]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
+    true_condition_dataset: Optional[List[pd.DataFrame]] = None
+    false_condition_dataset: Optional[List[pd.DataFrame]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
         for child in node.children:
             result = self.visit(child)
-            # TODO: Execute collected operations from Spark and add explain
             results[result.name] = result
         return results
 
@@ -269,6 +275,38 @@ class InterpreterAnalyzer(ASTTemplate):
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
+    def visit_If(self, node: AST.If) -> Dataset:
+
+        condition = self.visit(node.condition)
+
+        if isinstance(condition, Scalar):
+            if condition.value:
+                return self.visit(node.thenOp)
+            else:
+                return self.visit(node.elseOp)
+
+        # Analysis for data component and dataset
+        else:
+            if self.is_from_then is None:
+                self.is_from_then = []
+            if self.true_condition_dataset is None:
+                self.true_condition_dataset = []
+            if self.is_from_else is None:
+                self.is_from_else = []
+            if self.false_condition_dataset is None:
+                self.false_condition_dataset = []
+
+            self.generate_true_false_datasets(condition)
+
+        self.is_from_then.append(True)
+        thenOp = self.visit(node.thenOp)
+        self.is_from_then.pop()
+        self.is_from_else.append(True)
+        elseOp = self.visit(node.elseOp)
+        self.is_from_else.pop()
+
+        return If.evaluate(condition, thenOp, elseOp)
+
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         return node
 
@@ -339,3 +377,13 @@ class InterpreterAnalyzer(ASTTemplate):
             # result.data.drop(columns=[measure_name], inplace=True)
             result.data.drop(columns=[measure_name])
             return result.data
+
+    def generate_true_false_datasets(self, condition):
+        if len(condition.get_measures_names()) != 1:
+            raise ValueError("Only one boolean measure is allowed on condition dataset")
+        true_condition = condition.data[condition.data[condition.get_measures_names()]]
+        false_condition = condition.data[~condition.data[condition.get_measures_names()]]
+        if self.true_condition_dataset is not None:
+            self.true_condition_dataset.append(true_condition)
+        if self.false_condition_dataset is not None:
+            self.false_condition_dataset.append(false_condition)

@@ -20,6 +20,7 @@ from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename,
 from AST.Grammar.tokens import *
 from Operators.Boolean import Not, And, Or, Xor
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
+from Operators.Conditional import Nvl
 from Operators.General import Membership
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
 from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim, Substr, Replace
@@ -43,6 +44,8 @@ BINARY_MAPPING = {
     LT: Less,
     LTE: LessEqual,
     IN: In,
+    # Conditional
+    NVL: Nvl,
     # Numeric
     PLUS: BinPlus,
     MINUS: BinMinus,
