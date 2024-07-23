@@ -331,8 +331,8 @@ class ASTTemplate(NodeVisitor):
         for param in node.params:
             self.visit(param)
 
-        if node.inbalance is not None:
-            self.visit(node.inbalance)
+        if node.imbalance is not None:
+            self.visit(node.imbalance)
 
     def visit_Operator(self, node: AST.Operator) -> None:
         """

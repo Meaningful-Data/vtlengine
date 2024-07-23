@@ -528,7 +528,10 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        return self.visitConstant(ctx_list[1])
+        try:
+            return str(self.visitConstant(ctx_list[1]).value)
+        except Exception:
+            raise Exception(f'Error code must be a string, line {ctx_list[1].getSymbol().line}')
 
     def visitErLevel(self, ctx: Parser.ErLevelContext):
         """
@@ -536,7 +539,10 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        return self.visitConstant(ctx_list[1])
+        try:
+            return int(self.visitConstant(ctx_list[1]).value)
+        except Exception:
+            raise Exception(f'Error level must be an integer, line {ctx_list[1].getSymbol().line}')
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind='ComponentID'):
         """

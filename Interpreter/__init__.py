@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
+from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, \
+    REPLACE, \
     ROUND, \
     SUBSTR, TRUNC
 from DataTypes import BASIC_TYPES
@@ -14,6 +15,7 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
+from Operators.Validation import Check
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, \
     ROLE_SETTER_MAPPING, SET_MAPPING, \
@@ -338,3 +340,21 @@ class InterpreterAnalyzer(ASTTemplate):
             result.data = result.data[result.data[measure_name]]
             result.data.drop(columns=[measure_name], inplace=True)
             return result.data
+
+    def visit_Validation(self, node: AST.Validation) -> Dataset:
+
+        validation_element = self.visit(node.validation)
+        if not isinstance(validation_element, Dataset):
+            raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+
+        imbalance_element = None
+        if node.imbalance is not None:
+            imbalance_element = self.visit(node.imbalance)
+            if not isinstance(imbalance_element, Dataset):
+                raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+
+        return Check.evaluate(validation_element=validation_element,
+                              imbalance_element=imbalance_element,
+                              error_code=node.error_code,
+                              error_level=node.error_level,
+                              invalid=node.invalid)

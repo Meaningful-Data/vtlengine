@@ -1,4 +1,5 @@
 import os
+from copy import copy
 from typing import Any, Union
 
 import DataTypes
@@ -119,8 +120,10 @@ class Binary(Operator):
 
         left_measures = sorted(left_operand.get_measures(), key=lambda x: x.name)
         right_measures = sorted(right_operand.get_measures(), key=lambda x: x.name)
+        left_measures_names = [measure.name for measure in left_measures]
+        right_measures_names = [measure.name for measure in right_measures]
 
-        if left_measures != right_measures:
+        if left_measures_names != right_measures_names:
             raise Exception("Measures do not match")
 
         for left_measure, right_measure in zip(left_measures, right_measures):
@@ -129,13 +132,15 @@ class Binary(Operator):
         # We do not need anymore these variables
         del left_measures
         del right_measures
+        del left_measures_names
+        del right_measures_names
 
         join_keys = list(set(left_identifiers).intersection(right_identifiers))
 
         # Deleting extra identifiers that we do not need anymore
 
         base_operand = right_operand if use_right_components else left_operand
-        result_components = {component_name: component for component_name, component in
+        result_components = {component_name: copy(component) for component_name, component in
                              base_operand.components.items()
                              if component.role == Role.MEASURE or component.name in join_keys}
 

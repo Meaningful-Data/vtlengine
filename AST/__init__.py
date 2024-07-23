@@ -347,14 +347,15 @@ class If(AST):
 @dataclass
 class Validation(AST):
     """
-    Validation: (op, validation, params, inbalance, invalid)
+    Validation: (op, validation, error_code, error_level, imbalance, invalid)
     """
 
     op: str
     validation: str
-    params: List[AST]
-    inbalance: Optional[AST]
-    invalid: Optional[AST]
+    error_code: Optional[str]
+    error_level: Optional[int]
+    imbalance: Optional[AST]
+    invalid: bool
 
 
 @dataclass

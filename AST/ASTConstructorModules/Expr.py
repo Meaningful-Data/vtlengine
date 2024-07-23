@@ -1045,24 +1045,27 @@ class Expr(VtlVisitor):
         validation_node = self.visitExpr(ctx_list[2])
 
         inbalance_node = None
-        params_nodes = []
+        error_code = None
+        error_level = None
         for param in ctx_list:
             if isinstance(param, Parser.ErCodeContext):
-                params_nodes.append(Terminals().visitErCode(param))
+                error_code = Terminals().visitErCode(param)
             elif isinstance(param, Parser.ErLevelContext):
-                params_nodes.append(Terminals().visitErLevel(param))
+                error_level = Terminals().visitErLevel(param)
             elif isinstance(param, Parser.ImbalanceExprContext):
                 inbalance_node = self.visitImbalanceExpr(param)
 
         invalid = ctx_list[-2] if isinstance(ctx_list[-2], TerminalNodeImpl) else None
 
         if invalid is None:
-            invalid_value = 'all'
+            invalid_value = False
         else:
-            invalid_value = invalid.getSymbol().text
+            invalid_value = True if invalid.getSymbol().text == 'invalid' else False
 
-        return Validation(op=token.text, validation=validation_node, params=params_nodes,
-                          inbalance=inbalance_node,
+        return Validation(op=token.text, validation=validation_node,
+                          error_code=error_code,
+                          error_level=error_level,
+                          imbalance=inbalance_node,
                           invalid=invalid_value)
 
     def visitImbalanceExpr(self, ctx: Parser.ImbalanceExprContext):
