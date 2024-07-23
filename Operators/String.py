@@ -11,7 +11,7 @@ else:
 from typing import Optional, Any, Union
 
 from AST.Grammar.tokens import LEN, CONCAT, UCASE, LCASE, RTRIM, SUBSTR, LTRIM, TRIM, REPLACE, INSTR
-from DataTypes import Integer, String, COMP_NAME_MAPPING
+from DataTypes import Integer, String, COMP_NAME_MAPPING, ScalarType
 import Operators as Operator
 
 
@@ -84,20 +84,16 @@ class Parameterized(Unary):
                  param2: Optional[Scalar] = None):
 
         if param1 is not None:
-            cls.validate_scalar_type(param1)
+            cls.check_param(param1, 2)
             if param2 is not None:
-                cls.validate_scalar_type(param2)
+                cls.check_param(param2, 2)
                 if isinstance(param1, Dataset) or isinstance(param2, Dataset):
                     raise Exception(f"{cls.op} cannot have a Dataset as parameter")
                 if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
                     raise Exception(f"{cls.op} cannot have a DataComponent as parameter")
 
-        if isinstance(operand, Dataset):
-            cls.apply_return_type_dataset(operand)
-        else:
-            cls.apply_return_type(operand)
 
-        return Unary.validate(operand)
+        return super().validate(operand)
 
     @classmethod
     def op_func(cls, x: Union[Dataset, String], param1: Optional[Any], param2: Optional[Any]) -> Any:
@@ -111,11 +107,6 @@ class Parameterized(Unary):
     def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any) -> Any:
         return series.map(lambda x: cls.op_func(x, param1, param2))
 
-    @classmethod
-    def modify_measure_column(cls, result: Dataset, measure_name: str):
-        if cls.return_type == Integer and len(result.get_measures()) == 1:
-            result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
-            result.data = result.data.drop(columns=[measure_name])
 
     @classmethod
     def dataset_evaluation(cls, operand: Dataset,
@@ -139,7 +130,7 @@ class Parameterized(Unary):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value1, param_value2
                 )
-            cls.modify_measure_column(result, measure_name)
+            cls.modify_measure_column(result)
         return result
 
     @classmethod
@@ -179,6 +170,10 @@ class Parameterized(Unary):
             return cls.component_evaluation(operand, param1, param2)
         if isinstance(operand, Scalar):
             return cls.scalar_evaluation(operand, param1, param2)
+        
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
+        raise Exception("Method should be implemented by inheritors")
 
 
 class Substr(Parameterized):
@@ -194,6 +189,27 @@ class Substr(Parameterized):
         elif param1 is not 0:
             param1 -= 1
         return x[param1:param2]
+    
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
+        if param:
+            if position not in (1,2):
+                raise Exception("param position is not specified")
+            data_type:ScalarType = param.data_type
+
+            if not data_type == Integer:
+                raise Exception("Substr params should be Integer")
+            
+            if isinstance(param, DataComponent):
+                value = param.data[0]
+            else:
+                value = param.value
+            if position == 1:
+                if not value >= 1:
+                    raise Exception("param start should be >= 1")
+            else:
+                if not value >= 0:
+                    raise Exception("param length should be >= 0")
 
 
 class Replace(Parameterized):
@@ -207,6 +223,16 @@ class Replace(Parameterized):
         elif param2 is None:
             param2 = ''
         return x.replace(param1, param2)
+    
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
+        if param:
+            if position not in (1,2):
+                raise Exception("param position is not specified")
+            data_type:ScalarType = param.data_type
+
+            if not data_type == String:
+                raise Exception("Replace params should be String")
 
 
 class Instr(Parameterized):
@@ -225,18 +251,39 @@ class Instr(Parameterized):
             raise Exception(f"{cls.op} cannot have a DataComponent as parameter")
 
         if param1 is not None:
-            cls.validate_scalar_type(param1)
+            cls.check_param(param1, 1)
         if param2 is not None:
-            cls.validate_scalar_type(param2)
+            cls.check_param(param2, 2)
         if param3 is not None:
-            cls.validate_scalar_type(param3)
+            cls.check_param(param3, 3)
 
-        if isinstance(operand, Dataset):
-            cls.apply_return_type_dataset(operand)
-        else:
-            cls.apply_return_type(operand)
 
-        return Unary.validate(operand)
+        return super().validate(operand)
+    
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
+        if param:
+            if position not in (1,2,3):
+                raise Exception("param position is not specified")
+            data_type:ScalarType = param.data_type
+            
+            if isinstance(param, DataComponent):
+                value = param.data[0]
+            else:
+                value = param.value
+            if position == 1:
+                if not data_type == String:
+                    raise Exception("Instr pattern param should be String")
+            elif position ==2:
+                if not data_type == Integer:
+                    raise Exception("Instr start param should be Integer")
+                if not value >= 1:
+                    raise Exception("param start should be >= 1")
+            else:
+                if not data_type == Integer:
+                    raise Exception("Instr occurrence param should be Integer")
+                if not value >= 1:
+                    raise Exception("param occurrence should be >= 1")
 
     @classmethod
     def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> Any:
@@ -253,7 +300,7 @@ class Instr(Parameterized):
                            param3: Optional[Union[DataComponent, Scalar]]):
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy()
-        for measure_name in result.get_measures_names():
+        for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(param3,
                                                                                                     DataComponent):
                 if isinstance(param1, DataComponent):
@@ -275,6 +322,7 @@ class Instr(Parameterized):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value1, param_value2, param_value3
                 )
+            cls.modify_measure_column(result)
         return result
 
     @classmethod

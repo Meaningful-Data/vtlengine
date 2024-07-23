@@ -108,12 +108,6 @@ class Modulo(Binary):
     op = MOD
     py_op = operator.mod
 
-    @classmethod
-    def validate(cls, left_operand, right_operand):
-        if isinstance(right_operand, Dataset):
-            raise Exception("Modulo operator divisor cannot be a Dataset")
-        return super().validate(left_operand, right_operand)
-
 
 class Power(Binary):
     op = POWER
@@ -147,14 +141,8 @@ class Parameterized(Unary):
             cls.return_type = Integer
         else:
             cls.return_type = Number
-        if isinstance(operand, Dataset):
-            cls.apply_return_type_dataset(operand)
-        else:
-            cls.apply_return_type(operand)
 
-        cls.return_type = None
-
-        return Unary.validate(operand)
+        return super().validate(operand)
 
     @classmethod
     def op_func(cls, x: Any, param: Optional[Any]) -> Any:

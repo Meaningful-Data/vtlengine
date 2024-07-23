@@ -8,6 +8,7 @@ else:
 
 from Model import Dataset
 from Operators import Operator
+from DataTypes import check_binary_implicit_promotion
 
 
 class Set(Operator):
@@ -22,7 +23,8 @@ class Set(Operator):
             if comp.name not in dataset_2.components:
                 raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
             second_comp = dataset_2.components[comp.name]
-            cls.validate_type_compatibility(comp.data_type, second_comp.data_type)
+            #TODO: Have we to validate the type compatibility (promotion) between the components?
+            check_binary_implicit_promotion(comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type)
             if comp.role != second_comp.role:
                 raise Exception(f"Component {comp.name} has different roles "
                                 f"in datasets {dataset_1.name} and {dataset_2.name}")
