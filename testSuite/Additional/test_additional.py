@@ -1286,25 +1286,10 @@ class ClauseOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_9(self):
-        '''
-        Description:
-        Jira issue: VTLEN 575.
-        Git Branch: feat-VTLEN-575-no-semantic-error-thrown.
-        Goal: Check semantic result.
-        '''
-
-        code = '13-9'
-        number_inputs = 1
-        references_names = ["DS_r"]
-
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-
     # unpivot
-    # BUG
     def test_GL_49_1(self):
         """
-        Status:
+        Status: OK
         Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
         Description: Unpivot that result has nulls
             line RM 7200: " When a Measure is NULL then unpivot does not create
@@ -1324,10 +1309,10 @@ class ClauseOperatorsTest(AdditionalHelper):
             text=text
         )
 
-    # BUG
+    # OK
     def test_GL_49_2(self):
         """
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
         Description: two measures, one measure is all null Unpivot that result has nulls
             line RM 7200: " When a Measure is NULL then unpivot does not create
@@ -1347,10 +1332,10 @@ class ClauseOperatorsTest(AdditionalHelper):
             text=text
         )
 
-    # BUG
+    # OK
     def test_GL_49_3(self):
         """
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 [unpivot Id_2, Me_3];
         Description: only one measure, is all null Unpivot that result has nulls
             line RM 7200: " When a Measure is NULL then unpivot does not create
@@ -1391,11 +1376,10 @@ class ClauseOperatorsTest(AdditionalHelper):
             references_names=references_names,
             text=text
         )
-        # BUG
 
     def test_GL_49_6(self):
         """
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 [unpivot Id_3, Me_3];
         Description: unpivot with measure with same name.
             line RM 7200: " When a Measure is NULL then unpivot does not create

@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from AST import RenameNode
-from DataTypes import Boolean, String
+from DataTypes import Boolean, String, check_unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
 
@@ -198,8 +198,6 @@ class Unpivot:
         identifier, measure = operands
         if identifier in dataset.components:
             raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
-        if measure in dataset.components:
-            raise ValueError(f"Component {measure} already exists in dataset {dataset.name}")
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
@@ -212,8 +210,8 @@ class Unpivot:
             if base_type is None:
                 base_type = comp.data_type
             else:
-                if comp.data_type != base_type:
-                    raise ValueError("All measures must have the same data type")
+                if check_unary_implicit_promotion(base_type, comp.data_type) is None:
+                    raise ValueError("All measures must have the same data type on unpivot clause")
         result_dataset.add_component(Component(name=measure, data_type=base_type,
                                                role=Role.MEASURE, nullable=True))
         return result_dataset
@@ -224,7 +222,7 @@ class Unpivot:
         result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
                                                 value_vars=dataset.get_measures_names(),
                                                 var_name=operands[0], value_name=operands[1])
-        result_dataset.data = result_dataset.data.reset_index(drop=True)
+        result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
         return result_dataset
 
 
