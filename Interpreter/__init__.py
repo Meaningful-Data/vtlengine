@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -45,7 +45,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for child in node.children:
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
-            if isinstance(result, Dataset):
+            if isinstance(result, Union[Dataset, Scalar]):
                 self.datasets[result.name] = result
                 results[result.name] = result
         return results

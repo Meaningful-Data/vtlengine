@@ -1,6 +1,7 @@
 import itertools
 import json
 import os
+from pathlib import Path
 
 from Interpreter import InterpreterAnalyzer
 
@@ -42,11 +43,12 @@ from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Model import Component, Role, Dataset
 
-input_dp_dir = 'data/DataSet/input'
-reference_dp_dir = 'data/DataSet/output'
-input_ds_dir = 'data/DataStructure/input'
-reference_ds_dir = 'data/DataStructure/output'
-vtl_dir = 'data/vtl'
+base_path = Path(__file__).parent
+input_dp_dir = base_path / 'data/DataSet/input'
+reference_dp_dir = base_path / 'data/DataSet/output'
+input_ds_dir = base_path / 'data/DataStructure/input'
+reference_ds_dir = base_path / 'data/DataStructure/output'
+vtl_dir = base_path / 'data/vtl'
 
 general_operators = list(range(1, 6))
 join_operators = list(range(6, 13))

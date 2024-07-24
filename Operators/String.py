@@ -12,7 +12,7 @@ else:
 from typing import Optional, Any, Union
 
 from AST.Grammar.tokens import LEN, CONCAT, UCASE, LCASE, RTRIM, SUBSTR, LTRIM, TRIM, REPLACE, INSTR
-from DataTypes import Integer, String, COMP_NAME_MAPPING, ScalarType
+from DataTypes import Integer, String, ScalarType, check_unary_implicit_promotion
 import Operators as Operator
 
 
@@ -208,21 +208,19 @@ class Substr(Parameterized):
         if param:
             if position not in (1,2):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
 
-            if not data_type == Integer:
+            if not check_unary_implicit_promotion(data_type, Integer):
                 raise Exception("Substr params should be Integer")
             
             if isinstance(param, DataComponent):
                 value = param.data[0]
             else:
                 value = param.value
-            if position == 1:
-                if not value >= 1:
-                    raise Exception("param start should be >= 1")
-            else:
-                if not value >= 0:
-                    raise Exception("param length should be >= 0")
+            if value is not None and value >= 1 and position == 1:
+                raise Exception("param start should be >= 1")
+            if value is not None and not value >= 0:
+                raise Exception("param length should be >= 0")
 
 
 class Replace(Parameterized):
@@ -240,11 +238,11 @@ class Replace(Parameterized):
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
         if param:
-            if position not in (1,2):
+            if position not in (1, 2):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
 
-            if not data_type == String:
+            if not check_unary_implicit_promotion(data_type, String):
                 raise Exception("Replace params should be String")
 
 
@@ -278,24 +276,24 @@ class Instr(Parameterized):
         if param:
             if position not in (1,2,3):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
             
             if isinstance(param, DataComponent):
                 value = param.data[0]
             else:
                 value = param.value
             if position == 1:
-                if not data_type == String:
+                if not check_unary_implicit_promotion(data_type, String):
                     raise Exception("Instr pattern param should be String")
             elif position ==2:
-                if not data_type == Integer:
+                if not check_unary_implicit_promotion(data_type, Integer):
                     raise Exception("Instr start param should be Integer")
-                if not value >= 1:
+                if value is not None and value < 1:
                     raise Exception("param start should be >= 1")
             else:
-                if not data_type == Integer:
+                if not check_unary_implicit_promotion(data_type, Integer):
                     raise Exception("Instr occurrence param should be Integer")
-                if not value >= 1:
+                if value is not None and value < 1:
                     raise Exception("param occurrence should be >= 1")
 
     @classmethod
