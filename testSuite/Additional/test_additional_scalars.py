@@ -175,11 +175,29 @@ comparison_params = [
     ('between("z", "a", "c")', False),
     ('between(6, 1, 9)', True),
     ('between(12, 1, 9)', False),
+]
 
-
+string_exception_param = [
+    ('substr("asdf", -3)', Exception),
+    ('substr("asdf", 0)', Exception),
+    ('substr("asdf", -2, 3)', Exception),
+    ('substr("asdf", 0, 5)', Exception),
+    ('substr("asdf", 1, -9)', Exception),
+    ('substr("asdf", _, -1)', Exception),
+    ('instr("abcdecfrxcwsd", "c", 0)', Exception),
+    ('instr("abcdecfrxcwsd", "c", -5, 4)', Exception),
+    ('instr("abcdecfrxcwsd", "c", 0, 0)', Exception),
+    ('instr("abcdecfrxcwsd", "c", 6, 0)', Exception),
+    ('instr("abcdecfrxcwsd", "c", 5, -5)', Exception),
+    ('instr("abcdecfrxcwsd", "c", _, -3)', Exception),
 ]
 
 
+numeric_exception_param = [
+    ('log(5.0, -8)', Exception),
+    ('log(0.0, 6)', Exception),
+    ('log(0.5, 6)', Exception)
+]
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
     expression = f"DS_r := {text};"
@@ -230,3 +248,20 @@ def test_comp_op_test(text, reference):
     result = interpreter.visit(ast)
     assert result['DS_r'].value == reference
 
+
+@pytest.mark.parametrize('text, exception', string_exception_param)
+def test_exception_string_op(text, exception):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    with pytest.raises(Exception):
+        assert interpreter == exception
+
+
+@pytest.mark.parametrize('text, exception', numeric_exception_param)
+def test_exception_numeric_op(text, exception):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    with pytest.raises(Exception):
+        assert interpreter == exception
