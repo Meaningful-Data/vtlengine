@@ -119,43 +119,53 @@ class Between(Operator.Operator):
                                   from_data: Any,
                                   to_data: Any) -> Any:
         return series.map(lambda x: cls.op_function(x, from_data, to_data))
+    
+    @classmethod
+    def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
+        is_mono_measure = len(operand.get_measures()) == 1
+        for measure in result_dataset.get_measures():
+            operand_type = operand.get_component(measure.name).data_type
+             
+            result_data_type = cls.type_validation(operand_type)
+            if is_mono_measure and operand_type.promotion_changed_type(result_data_type):
+                component = Component(
+                    name=COMP_NAME_MAPPING[result_data_type],
+                    data_type=result_data_type,
+                    role=Role.MEASURE,
+                    nullable=measure.nullable
+                )
+                result_dataset.delete_component(measure.name)
+                result_dataset.add_component(component)
+                if result_dataset.data is not None:
+                    result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
+            elif is_mono_measure is False and operand_type.promotion_changed_type(result_data_type):
+                raise Exception("Operation not allowed for multimeasure datsets")
+            else:
+                measure.data_type = result_data_type
 
     @classmethod
     def validate(cls, operand: Union[Dataset, DataComponent, Scalar],
                  from_: Union[DataComponent, Scalar],
                  to: Union[DataComponent, Scalar]) -> Any:
         if isinstance(operand, Dataset):
-            cls.validate_dataset_type(operand)
             result = Dataset(name=operand.name, components=operand.components.copy(), data=None)
-            cls.apply_return_type_dataset(result)
         elif isinstance(operand, DataComponent):
-            cls.validate_component_type(operand)
             result = DataComponent(name=operand.name, data=None,
                                    data_type=operand.data_type, role=operand.role)
-            cls.apply_return_type(result)
         else:
-            cls.validate_scalar_type(operand)
             result = Scalar(name=operand.name, value=None, data_type=operand.data_type)
-            cls.apply_return_type(result)
-
-        if isinstance(from_, DataComponent):
-            cls.validate_component_type(from_)
-        if isinstance(from_, Scalar):
-            cls.validate_scalar_type(from_)
-
-        if isinstance(to, DataComponent):
-            cls.validate_component_type(to)
-        if isinstance(to, Scalar):
-            cls.validate_scalar_type(to)
+        
 
         if isinstance(operand, Dataset):
             for measure in operand.get_measures():
                 cls.validate_type_compatibility(measure.data_type, from_.data_type)
-                cls.validate_type_compatibility(from_.data_type, to.data_type)
+                cls.validate_type_compatibility(measure.data_type, to.data_type)
+                cls.apply_return_type_dataset(result, operand)
         else:
             cls.validate_type_compatibility(operand.data_type, from_.data_type)
-            cls.validate_type_compatibility(from_.data_type, to.data_type)
+            cls.validate_type_compatibility(operand.data_type, to.data_type)
 
+        
         return result
 
     @classmethod

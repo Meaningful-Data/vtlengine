@@ -77,20 +77,20 @@ analytic_operators.remove(155)
 aggregation_operators.remove(144)
 
 params = itertools.chain(
-    # general_operators,
-    # join_operators,
-    # string_operators,
-    # numeric_operators,
-    # comparison_operators,
-    # boolean_operators,
+    general_operators,
+    join_operators,
+    string_operators,
+    numeric_operators,
+    comparison_operators,
+    boolean_operators,
     # time_operators,
-    # set_operators,
+    set_operators,
     # hierarchy_operators,
-    # aggregation_operators,
-    # analytic_operators,
-    # validation_operators,
+    aggregation_operators,
+    analytic_operators,
+    validation_operators,
     # conditional_operators,
-    # clause_operators
+    clause_operators
 )
 
 

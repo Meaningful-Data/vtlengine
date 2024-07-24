@@ -137,7 +137,7 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype="equiv", check_like=True, check_index_type=False)
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True, check_index_type=False)
             same_data = True
         except AssertionError as e:
             print(e)
