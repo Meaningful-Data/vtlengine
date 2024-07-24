@@ -183,6 +183,8 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
+        if node.value in self.datasets:
+            return self.datasets[node.value]
         return node.value
 
     def visit_Optional(self, node: AST.Optional) -> AST.AST:
@@ -333,8 +335,8 @@ class ASTTemplate(NodeVisitor):
         for param in node.params:
             self.visit(param)
 
-        if node.inbalance is not None:
-            self.visit(node.inbalance)
+        if node.imbalance is not None:
+            self.visit(node.imbalance)
 
     def visit_Operator(self, node: AST.Operator) -> None:
         """
@@ -403,7 +405,7 @@ class ASTTemplate(NodeVisitor):
             for rule in node.rules:
                 self.visit(rule)
         """
-        for element in node.element:
+        for element in node.params:
             self.visit(element)
         for rule in node.rules:
             self.visit(rule)

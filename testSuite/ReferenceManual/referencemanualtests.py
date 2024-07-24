@@ -69,30 +69,34 @@ comparison_operators.remove(84)
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
 
-# TODO: Median test 144 inconsistent result on odd number of elements on pyspark
-aggregation_operators.remove(144)
-
 comparison_operators.remove(85)
 
 analytic_operators.remove(155)
 
+# TODO: Median test 144 inconsistent result on odd number of elements on pyspark
+aggregation_operators.remove(144)
+
+# Multimeasures on specific operators that must raise errors
+exceptions_tests = [27, 31]
+
 params = itertools.chain(
     general_operators,
-    # join_operators,
+    join_operators,
     string_operators,
     numeric_operators,
     comparison_operators,
     boolean_operators,
-    # time_operators,
+    time_operators,
     set_operators,
-    # hierarchy_operators,
+    hierarchy_operators,
     aggregation_operators,
     analytic_operators,
-    # validation_operators,
-    # conditional_operators,
+    validation_operators,
+    conditional_operators,
     clause_operators
 )
 
+params = [x for x in list(params) if x not in exceptions_tests]
 
 @pytest.fixture
 def ast(input_datasets, param):
@@ -162,3 +166,11 @@ def test_reference(input_datasets, reference_datasets, ast, param):
     assert result == reference_datasets
     # except NotImplementedError:
     #     pass
+
+@pytest.mark.parametrize('param', exceptions_tests)
+def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
+    # try:
+    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+    interpreter = InterpreterAnalyzer(input_datasets)
+    with pytest.raises(Exception, match="Operation not allowed for multimeasure datasets"):
+        result = interpreter.visit(ast)

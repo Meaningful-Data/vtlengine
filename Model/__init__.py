@@ -45,6 +45,8 @@ class DataComponent:
     nullable: bool = True
 
     def __eq__(self, other):
+        if not isinstance(other, DataComponent):
+            return False
         return self.to_dict() == other.to_dict()
 
     @classmethod
@@ -82,6 +84,9 @@ class Component:
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
 
+    def copy(self):
+        return Component(self.name, self.data_type, self.role, self.nullable)
+
     @classmethod
     def from_json(cls, json_str):
         return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']),
@@ -98,6 +103,9 @@ class Component:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
+    def rename(self, new_name: str):
+        self.name = new_name
+
 
 @dataclass
 class Dataset:
@@ -112,6 +120,9 @@ class Dataset:
                     "The number of components must match the number of columns in the data")
 
     def __eq__(self, other):
+        if not isinstance(other, Dataset):
+            return False
+
         same_name = self.name == other.name
         same_components = self.components == other.components
 
@@ -121,12 +132,15 @@ class Dataset:
             other.data = other.data.to_pandas()
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
-        self.data = self.data.sort_values(by=list(self.data.columns)).reset_index(drop=True)
-        other.data = other.data.sort_values(by=list(other.data.columns)).reset_index(drop=True)
+        self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
+        other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
+        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
+        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True)
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True, check_index_type=False)
             same_data = True
-        except AssertionError:
+        except AssertionError as e:
+            print(e)
             same_data = False
         return same_name and same_components and same_data
 
@@ -164,6 +178,9 @@ class Dataset:
     def get_measures_names(self) -> List[str]:
         return [name for name, component in self.components.items() if
                 component.role == Role.MEASURE]
+
+    def get_components_names(self) -> List[str]:
+        return list(self.components.keys())
 
     def rename_component(self, old_name: str, new_name: str):
         if old_name not in self.components:

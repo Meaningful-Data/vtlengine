@@ -4,7 +4,7 @@ from API import create_ast, load_datasets
 from Interpreter import InterpreterAnalyzer
 
 if __name__ == '__main__':
-    ast = create_ast("DS_r := DS_3 and DS_4;")
+    ast = create_ast('DS_r := DS_1;')
     datasets = load_datasets("development/data/dataPoints", "development/data/dataStructures")
     interpreter = InterpreterAnalyzer(datasets)
     result = interpreter.visit(ast)

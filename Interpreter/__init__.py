@@ -2,11 +2,12 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, EXISTS_IN, FILTER, HAVING, INSTR, REPLACE, \
-    ROUND, \
-    SUBSTR, TRUNC
+from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
+    FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
@@ -14,33 +15,77 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
-    REGULAR_AGGREGATION_MAPPING, \
-    ROLE_SETTER_MAPPING, SET_MAPPING, \
-    UNARY_MAPPING
+from Operators.Validation import Check, Check_Datapoint
+from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
+    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING
 
 
 # noinspection PyTypeChecker
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
-    # Flags to change behaviour
+    # Flags to change behavior
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
+    is_from_rule: bool = False
+    is_from_join: bool = False
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
+    ruleset_dataset: Optional[Dataset] = None
+    rule_data: Optional[pd.DataFrame] = None
+    ruleset_signature: Dict[str, str] = None
+    # DL
+    dprs: Dict[str, Dict[str, Any]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
         for child in node.children:
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
-            results[result.name] = result
+            if isinstance(result, Dataset):
+                self.datasets[result.name] = result
+                results[result.name] = result
         return results
 
+    # Definition Language
+
+    def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
+
+        # Rule names are optional, if not provided, they are generated.
+        # If provided, all must be provided
+        rule_names = [rule.name for rule in node.rules if rule.name is not None]
+        if len(rule_names) != 0 and len(node.rules) != len(rule_names):
+            raise ValueError("All rules must have a name, or none of them")
+        if len(rule_names) == 0:
+            for i, rule in enumerate(node.rules):
+                rule.name = i + 1
+
+        # Signature has the actual parameters names or aliases if provided
+        signature_actual_names = {}
+        for param in node.params:
+            if param.alias is not None:
+                signature_actual_names[param.alias] = param.value
+            else:
+                signature_actual_names[param.value] = param.value
+
+        ruleset_data = {
+            'rules': node.rules,
+            'signature': signature_actual_names,
+            'params': node.params
+        }
+
+        # Adding the ruleset to the dprs dictionary
+        if self.dprs is None:
+            self.dprs = {}
+        elif node.name in self.dprs:
+            raise ValueError(f"Datapoint Ruleset {node.name} already exists")
+
+        self.dprs[node.name] = ruleset_data
+
+    # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
@@ -52,8 +97,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
-        left_operand = self.visit(node.left)
-        right_operand = self.visit(node.right)
+        if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
+            left_operand = self.regular_aggregation_dataset
+            right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
+        else:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
         return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
@@ -208,6 +257,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].data_type,
                                  role=self.aggregation_dataset.components[node.value].role)
         if self.is_from_regular_aggregation:
+            if self.is_from_join and node.value in self.datasets.keys():
+                return self.datasets[node.value]
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
                                  data_type=
@@ -215,6 +266,17 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].data_type,
                                  role=self.regular_aggregation_dataset.components[
                                      node.value].role)
+        if self.is_from_rule:
+            if node.value not in self.ruleset_signature:
+                raise Exception(f"Component {node.value} not found in ruleset signature")
+            comp_name = self.ruleset_signature[node.value]
+            if comp_name not in self.ruleset_dataset.components:
+                raise Exception(f"Component {comp_name} not found in dataset "
+                                f"{self.ruleset_dataset.name}")
+            return DataComponent(name=comp_name,
+                                 data=self.rule_data[comp_name],
+                                 data_type=self.ruleset_dataset.components[comp_name].data_type,
+                                 role=self.ruleset_dataset.components[comp_name].role)
 
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
@@ -243,6 +305,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(dataset, Scalar):
             raise Exception(f"Scalar {dataset.name} cannot be used with clause operators")
         self.regular_aggregation_dataset = dataset
+        if node.op == APPLY:
+            op_map = BINARY_MAPPING
+            return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(dataset, node.children, op_map)
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
@@ -266,7 +331,34 @@ class InterpreterAnalyzer(ASTTemplate):
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
+            if not isinstance(operands[0], DataComponent):
+                measure = child.left.value
+                operands[0] = DataComponent(name=measure,
+                                            data=operands[0].data[measure],
+                                            data_type=operands[0].components[measure].data_type,
+                                            role=operands[0].components[measure].role,
+                                            nullable=operands[0].components[measure].nullable)
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
+        if self.is_from_join:
+            if node.op in [DROP, KEEP]:
+                operands = [operand.get_measures_names() if isinstance(operand,
+                                                                       Dataset) else operand.name if
+                isinstance(operand, DataComponent) and operand.role is not Role.IDENTIFIER else
+                operand for operand in operands]
+                operands = list(set([item for sublist in operands for item in
+                                     (sublist if isinstance(sublist, list) else [sublist])]))
+            result = REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
+            if node.isLast:
+                result.data.rename(
+                    columns={col: col[col.find('#') + 1:] for col in result.data.columns},
+                    inplace=True)
+                result.components = {comp_name[comp_name.find('#') + 1:]: comp for comp_name, comp
+                                     in
+                                     result.components.items()}
+                for comp in result.components.values():
+                    comp.name = comp.name[comp.name.find('#') + 1:]
+                result.data.reset_index(drop=True, inplace=True)
+            return result
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
@@ -275,6 +367,17 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,
                       data_type=BASIC_TYPES[type(node.value)])
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> None:
+        clause_elements = []
+        for clause in node.clauses:
+            clause_elements.append(self.visit(clause))
+            if hasattr(clause, 'op') and clause.op == AS:
+                self.datasets[clause_elements[-1].name] = clause_elements[-1]
+
+        # No need to check using, regular aggregation is executed afterwards
+        self.is_from_join = True
+        return JOIN_MAPPING[node.op].evaluate(clause_elements, node.using)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
@@ -333,3 +436,79 @@ class InterpreterAnalyzer(ASTTemplate):
             # result.data.drop(columns=[measure_name], inplace=True)
             result.data.drop(columns=[measure_name])
             return result.data
+
+        elif node.op == CHECK_DATAPOINT:
+            # Checking if ruleset exists
+            dpr_name = node.children[1]
+            if dpr_name in self.dprs:
+                dpr_info = self.dprs[dpr_name]
+            else:
+                raise Exception(f"Datapoint Ruleset {dpr_name} not found")
+            # Extracting dataset
+            dataset_element = self.visit(node.children[0])
+            # Checking if list of components supplied is valid
+            if len(node.children) > 2:
+                for comp_name in node.children[2:]:
+                    if comp_name not in dataset_element.components:
+                        raise ValueError(
+                            f"Component {comp_name} not found in dataset {dataset_element.name}")
+
+            output = node.params[0]  # invalid, all_measures, all
+
+            rule_output_values = {}
+            self.ruleset_dataset = dataset_element
+            self.ruleset_signature = dpr_info['signature']
+            # Gather rule data, adding the ruleset dataset to the interpreter
+            for rule in dpr_info['rules']:
+                rule_output_values[rule.name] = {
+                    "error_code": rule.erCode,
+                    "error_level": rule.erLevel,
+                    "output": self.visit(rule)
+                }
+            self.ruleset_signature = None
+            self.ruleset_dataset = None
+
+            # Datapoint Ruleset final evaluation
+            return Check_Datapoint.evaluate(dataset_element=dataset_element,
+                                            rule_info=rule_output_values,
+                                            output=output)
+
+    def visit_DPRule(self, node: AST.DPRule) -> None:
+        self.is_from_rule = True
+        self.rule_data = self.ruleset_dataset.data.copy()
+        validation_data = self.visit(node.rule)
+        self.rule_data = None
+        self.is_from_rule = False
+        return validation_data
+
+    def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
+        if node.op == WHEN:
+            filter_comp = self.visit(node.left)
+            filtering_indexes = filter_comp.data[filter_comp.data].index
+            non_filtering_indexes = filter_comp.data[~filter_comp.data].index
+            original_data = self.rule_data.copy()
+            self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
+            result_validation = self.visit(node.right)
+            self.rule_data['bool_var'] = result_validation.data
+            original_data = original_data.merge(self.rule_data, how='left',
+                                                on=original_data.columns.tolist())
+            original_data.loc[non_filtering_indexes, 'bool_var'] = True
+            return original_data
+
+    def visit_Validation(self, node: AST.Validation) -> Dataset:
+
+        validation_element = self.visit(node.validation)
+        if not isinstance(validation_element, Dataset):
+            raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+
+        imbalance_element = None
+        if node.imbalance is not None:
+            imbalance_element = self.visit(node.imbalance)
+            if not isinstance(imbalance_element, Dataset):
+                raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+
+        return Check.evaluate(validation_element=validation_element,
+                              imbalance_element=imbalance_element,
+                              error_code=node.error_code,
+                              error_level=node.error_level,
+                              invalid=node.invalid)

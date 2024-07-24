@@ -13,6 +13,7 @@ class Calc:
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
+
             if operand.name in dataset.components:
                 # Override component with same name
                 dataset.delete_component(operand.name)
@@ -105,7 +106,7 @@ class Keep:
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
-            if operand not in dataset.components:
+            if operand not in dataset.get_components_names():
                 raise Exception(f"Component {operand} not found in dataset {dataset.name}")
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise Exception(f"Component {operand} in dataset {dataset.name} is an "
@@ -117,7 +118,12 @@ class Keep:
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
+    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        if len(operands) == 0:
+            raise ValueError('Keep clause requires at least one operand')
+        if dataset is None:
+            if sum(isinstance(operand, Dataset) for operand in operands) != 1:
+                raise ValueError('Keep clause requires at most one dataset operand')
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
         return result_dataset
@@ -151,9 +157,9 @@ class Rename:
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset):
         for operand in operands:
-            if operand.old_name not in dataset.components:
+            if operand.old_name not in dataset.components.keys():
                 raise Exception(f"Component {operand.old_name} not found in dataset {dataset.name}")
-            if operand.new_name in dataset.components:
+            if operand.new_name in dataset.components.keys():
                 raise Exception(
                     f"Component {operand.new_name} already exists in dataset {dataset.name}")
 
