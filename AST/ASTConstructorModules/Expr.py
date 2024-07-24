@@ -315,10 +315,9 @@ class Expr(VtlVisitor):
             clause_nodes.append(self.visitJoinClauseItem(item))
 
         if len(components) != 0:
-            mul_op = Parser.literalNames[Parser.USING][1:-1]
             for component in components:
-                component_nodes.append(Terminals().visitComponentID(component))
-            using = MulOp(mul_op, component_nodes)
+                component_nodes.append(Terminals().visitComponentID(component).value)
+            using = component_nodes
 
         return clause_nodes, using
 
@@ -1195,7 +1194,6 @@ class Expr(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
-
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)
 
@@ -1291,7 +1289,12 @@ class Expr(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        left_node = Terminals().visitComponentID(ctx_list[0]).value
+        left_node = Terminals().visitComponentID(ctx_list[0])
+        if isinstance(left_node, BinOp):
+            left_node = f'{left_node.left.value}{left_node.op}{left_node.right.value}'
+        else:
+            left_node = left_node.value
+
         right_node = Terminals().visitVarID(ctx_list[2]).value
 
         return RenameNode(left_node, right_node)

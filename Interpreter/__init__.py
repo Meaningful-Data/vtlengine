@@ -6,11 +6,8 @@ import pandas as pd
 
 import AST
 from AST.ASTTemplate import ASTTemplate
-from AST.Grammar.tokens import AGGREGATE, ALL, BETWEEN, CHECK_DATAPOINT, EXISTS_IN, FILTER, HAVING, \
-    INSTR, \
-    REPLACE, \
-    ROUND, \
-    SUBSTR, TRUNC, WHEN
+from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
+    FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
@@ -19,10 +16,8 @@ from Operators.Comparison import Between, ExistIn
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Validation import Check, Check_Datapoint
-from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, \
-    REGULAR_AGGREGATION_MAPPING, \
-    ROLE_SETTER_MAPPING, SET_MAPPING, \
-    UNARY_MAPPING
+from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
+    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING
 
 
 # noinspection PyTypeChecker
@@ -34,6 +29,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
     is_from_rule: bool = False
+    is_from_join: bool = False
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -101,8 +97,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
-        left_operand = self.visit(node.left)
-        right_operand = self.visit(node.right)
+        if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
+            left_operand = self.regular_aggregation_dataset
+            right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
+        else:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
         return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
@@ -257,6 +257,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].data_type,
                                  role=self.aggregation_dataset.components[node.value].role)
         if self.is_from_regular_aggregation:
+            if self.is_from_join and node.value in self.datasets.keys():
+                return self.datasets[node.value]
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
                                  data_type=
@@ -303,6 +305,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(dataset, Scalar):
             raise Exception(f"Scalar {dataset.name} cannot be used with clause operators")
         self.regular_aggregation_dataset = dataset
+        if node.op == APPLY:
+            op_map = BINARY_MAPPING
+            return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(dataset, node.children, op_map)
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
@@ -326,7 +331,34 @@ class InterpreterAnalyzer(ASTTemplate):
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
+            if not isinstance(operands[0], DataComponent):
+                measure = child.left.value
+                operands[0] = DataComponent(name=measure,
+                                            data=operands[0].data[measure],
+                                            data_type=operands[0].components[measure].data_type,
+                                            role=operands[0].components[measure].role,
+                                            nullable=operands[0].components[measure].nullable)
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
+        if self.is_from_join:
+            if node.op in [DROP, KEEP]:
+                operands = [operand.get_measures_names() if isinstance(operand,
+                                                                       Dataset) else operand.name if
+                isinstance(operand, DataComponent) and operand.role is not Role.IDENTIFIER else
+                operand for operand in operands]
+                operands = list(set([item for sublist in operands for item in
+                                     (sublist if isinstance(sublist, list) else [sublist])]))
+            result = REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
+            if node.isLast:
+                result.data.rename(
+                    columns={col: col[col.find('#') + 1:] for col in result.data.columns},
+                    inplace=True)
+                result.components = {comp_name[comp_name.find('#') + 1:]: comp for comp_name, comp
+                                     in
+                                     result.components.items()}
+                for comp in result.components.values():
+                    comp.name = comp.name[comp.name.find('#') + 1:]
+                result.data.reset_index(drop=True, inplace=True)
+            return result
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
@@ -335,6 +367,17 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(name=str(node.value), value=node.value,
                       data_type=BASIC_TYPES[type(node.value)])
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> None:
+        clause_elements = []
+        for clause in node.clauses:
+            clause_elements.append(self.visit(clause))
+            if hasattr(clause, 'op') and clause.op == AS:
+                self.datasets[clause_elements[-1].name] = clause_elements[-1]
+
+        # No need to check using, regular aggregation is executed afterwards
+        self.is_from_join = True
+        return JOIN_MAPPING[node.op].evaluate(clause_elements, node.using)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
@@ -413,7 +456,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(node.children) > 2:
                 for comp_name in node.children[2:]:
                     if comp_name not in dataset_element.components:
-                        raise ValueError(f"Component {comp_name} not found in dataset {dataset_element.name}")
+                        raise ValueError(
+                            f"Component {comp_name} not found in dataset {dataset_element.name}")
 
             output = node.params[0]  # invalid, all_measures, all
 
@@ -452,11 +496,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)
             self.rule_data['bool_var'] = result_validation.data
-            original_data = original_data.merge(self.rule_data, how='left', on=original_data.columns.tolist())
+            original_data = original_data.merge(self.rule_data, how='left',
+                                                on=original_data.columns.tolist())
             original_data.loc[non_filtering_indexes, 'bool_var'] = True
             return original_data
-
-
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
 

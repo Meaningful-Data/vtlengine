@@ -1,32 +1,26 @@
-from Operators.Aggregation import (Avg, Count, Max, Median,
-                                   Min,
+from AST.Grammar.tokens import *
+from Operators.Aggregation import (Avg, Count, Max, Median, Min,
                                    PopulationStandardDeviation,
                                    PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
-
-from Operators.Analytic import (Max as MaxAnalytic,
+from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, FirstValue, Lag,
+                                LastValue, Lead, Max as MaxAnalytic, Median as MedianAnalytic,
                                 Min as MinAnalytic,
-                                Sum as SumAnalytic,
-                                Count as CountAnalytic,
-                                Avg as AvgAnalytic, Median as MedianAnalytic,
                                 PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
+                                PopulationVariance as PopulationVarianceAnalytic, Rank,
+                                RatioToReport,
                                 SampleStandardDeviation as SampleStandardDeviationAnalytic,
-                                PopulationVariance as PopulationVarianceAnalytic,
-                                SampleVariance as SampleVarianceAnalytic,
-                                Lag, Lead, FirstValue, LastValue, RatioToReport, Rank
-                                )
-
+                                SampleVariance as SampleVarianceAnalytic, Sum as SumAnalytic)
+from Operators.Boolean import And, Not, Or, Xor
 from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
-
-from AST.Grammar.tokens import *
-from Operators.Boolean import Not, And, Or, Xor
-from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
-from Operators.General import Membership
+from Operators.Comparison import In, IsNull
 from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim, Substr, Replace
+from Operators.General import Alias, Membership
+from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin, Apply
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
-    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus, Trunc, Round
+    Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
+from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
 
 BINARY_MAPPING = {
     # General
@@ -47,10 +41,12 @@ BINARY_MAPPING = {
     PLUS: BinPlus,
     MINUS: BinMinus,
     MULT: Mult,
-    DIV: Div,
     LOG: Logarithm,
     MOD: Modulo,
     POWER: Power,
+    DIV: Div,
+    # General
+    AS: Alias,
     # String
     CONCAT: Concatenate
 }
@@ -103,7 +99,8 @@ REGULAR_AGGREGATION_MAPPING = {
     PIVOT: Pivot,
     UNPIVOT: Unpivot,
     SUBSPACE: Sub,
-    AGGREGATE: Aggregate
+    AGGREGATE: Aggregate,
+    APPLY: Apply
 }
 
 SET_MAPPING = {
@@ -144,4 +141,11 @@ ANALYTIC_MAPPING = {
     LAST_VALUE: LastValue,
     RATIO_TO_REPORT: RatioToReport,
     RANK: Rank
+}
+
+JOIN_MAPPING = {
+    INNER_JOIN: InnerJoin,
+    LEFT_JOIN: LeftJoin,
+    FULL_JOIN: FullJoin,
+    CROSS_JOIN: CrossJoin
 }
