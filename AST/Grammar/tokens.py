@@ -92,7 +92,6 @@ CURRENT_DATE = 'current_date'
 # Join Operators.
 INNER_JOIN = 'inner_join'
 LEFT_JOIN = 'left_join'
-RIGHT_JOIN = 'right_join'
 CROSS_JOIN = 'cross_join'
 FULL_JOIN = 'full_join'
 # Hierarchical aggregation.

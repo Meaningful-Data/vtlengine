@@ -131,27 +131,13 @@ class LeftJoin(Join):
                     raise Exception(f"Identifier {identifier} from using not found on datasets identifiers")
 
 
-class RightJoin(Join):
-    how = 'right'
-
-    @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using: List[str]) -> None:
-        for op in operands:
-            if op.get_identifiers() != operands[0].get_identifiers():
-                raise Exception("All datasets must have the same identifiers")
-        if using is not None:
-            for identifier in using:
-                if identifier not in operands[0].get_identifiers_names():
-                    raise Exception(f"Identifier {identifier} from using not found on datasets identifiers")
-
-
 class FullJoin(Join):
     how = 'outer'
 
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using=None) -> None:
         if using is not None:
-            raise Exception("Cross join does not accept using clause")
+            raise Exception("Full join does not accept using clause")
         for op in operands:
             if op.get_identifiers() != operands[0].get_identifiers():
                 raise Exception("All datasets must have the same identifiers")
