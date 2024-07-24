@@ -109,7 +109,24 @@ numeric_params = [
     ('trunc(12345.6, 0)', 12345),
     ('trunc(12345.6)', 12345),
     ('trunc(12345.6, _)', 12345),
-    ('trunc(12345.6, -1)', 12340.0)
+    ('trunc(12345.6, -1)', 12340.0),
+    ('power(5, 2)', 25),
+    ('power(5, 1)', 5),
+    ('power(5, 0)', 1),
+    ('power(5, -1)', 0.2),
+    ('power(-5, 3)', -125),
+    ('power(null, null)', None),
+    ('power(null, 1)', None),
+    ('power(1, null)', None),
+    ('log(8, 2)', 3.0),
+    ('log(8.0, 2)', 3.0),
+    ('log(1024, 2)', 10.0),
+    ('log(1024, 10)', 3.0102999566398116),
+    ('log(2.0, 2)', 1.0),
+    ('log(null, null)', None),
+    ('log(null, 1)', None),
+    ('log(1, null)', None),
+
 ]
 
 
@@ -149,4 +166,4 @@ def test_numeric_operators(text, reference):
 # @pytest.mark.parametrize('text, reference', DS_params)
 # def test_numeric_op_with_DS(text, reference):
 #     pass
-# TODO: Implement Boolean, Numeric and Comparison operators tests
+# TODO: Implement Boolean and Comparison operators tests
