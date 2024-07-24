@@ -58,6 +58,8 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in result_components.items():
             if comp.role == Role.MEASURE:
                 check_unary_implicit_promotion(comp.data_type, cls.type_to_check)
+                if cls.return_type is not None:
+                    comp.data_type = cls.return_type
         if cls.op == COUNT:
             for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
