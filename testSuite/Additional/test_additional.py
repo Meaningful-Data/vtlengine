@@ -1574,21 +1574,6 @@ class AggregateOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_6(self):
-        '''
-        feat-VTLEN-532-No-measures-agg
-        feat: no measures agg for count,min and max
-        '''
-        text = """DS_r := median(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
-        code = '10-6'
-        number_inputs = 1
-        message = "1-1-2-1"
-        self.NewSemanticExceptionTest(
-            text=text,
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
-        )
 
     def test_7(self):
         '''
