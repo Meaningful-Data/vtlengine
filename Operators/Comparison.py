@@ -5,9 +5,6 @@ from typing import Any, Optional, Union
 
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
-from AST.Grammar.tokens import EQ, GT, GTE, LT, LTE, NEQ
-from Operators import Binary
-
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -111,21 +108,36 @@ class Between(Operator.Operator):
     return_type = Boolean
 
     @classmethod
-    def op_function(cls, x, y, z):
+    def op_function(cls,
+                    x: Optional[Union[int, float, bool, str]],
+                    y: Optional[Union[int, float, bool, str]],
+                    z: Optional[Union[int, float, bool, str]]):
         return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z
 
     @classmethod
     def apply_operation_component(cls, series: pd.Series,
-                                  from_data: Any,
-                                  to_data: Any) -> Any:
+                                  from_data: Optional[Union[pd.Series, int, float, bool, str]],
+                                  to_data: Optional[
+                                      Union[pd.Series, int, float, bool, str]]) -> Any:
+        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(to_data,
+                                                                                    pd.Series)
+        if control_any_series_from_to:
+            if not isinstance(from_data, pd.Series):
+                from_data = pd.Series(from_data, index=series.index)
+            if not isinstance(to_data, pd.Series):
+                to_data = pd.Series(to_data, index=series.index)
+            df = pd.DataFrame({'operand': series, 'from_data': from_data, 'to_data': to_data})
+            return df.apply(lambda x: cls.op_function(x['operand'], x['from_data'], x['to_data']),
+                            axis=1)
+
         return series.map(lambda x: cls.op_function(x, from_data, to_data))
-    
+
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
         is_mono_measure = len(operand.get_measures()) == 1
         for measure in result_dataset.get_measures():
             operand_type = operand.get_component(measure.name).data_type
-             
+
             result_data_type = cls.type_validation(operand_type)
             if is_mono_measure and operand_type.promotion_changed_type(result_data_type):
                 component = Component(
@@ -151,10 +163,12 @@ class Between(Operator.Operator):
             result = Dataset(name=operand.name, components=operand.components.copy(), data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(name=operand.name, data=None,
-                                   data_type=operand.data_type, role=operand.role)
-        else:
-            result = Scalar(name=operand.name, value=None, data_type=operand.data_type)
-        
+                                   data_type=cls.return_type, role=operand.role)
+        elif isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
+            result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
+        else:  # From or To is a DataComponent, or both
+            result = DataComponent(name=operand.name, data=None,
+                                   data_type=cls.return_type, role=Role.MEASURE)
 
         if isinstance(operand, Dataset):
             for measure in operand.get_measures():
@@ -165,7 +179,6 @@ class Between(Operator.Operator):
             cls.validate_type_compatibility(operand.data_type, from_.data_type)
             cls.validate_type_compatibility(operand.data_type, to.data_type)
 
-        
         return result
 
     @classmethod
@@ -176,6 +189,14 @@ class Between(Operator.Operator):
 
         from_data = from_.data if isinstance(from_, DataComponent) else from_.value
         to_data = to.data if isinstance(to, DataComponent) else to.value
+
+        if (
+                isinstance(from_data, pd.Series) and
+                isinstance(to_data, pd.Series) and
+                len(from_data) != len(to_data)
+        ):
+            raise ValueError("From and To must have the same length")
+
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()
             for measure_name in operand.get_measures_names():
@@ -191,14 +212,32 @@ class Between(Operator.Operator):
                 operand.data,
                 from_data, to_data
             )
-        if isinstance(operand, Scalar):
-            result.value = from_data <= operand.value <= to_data
+        if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
+            if operand.value is None or from_data is None or to_data is None:
+                result.value = None
+            else:
+                result.value = from_data <= operand.value <= to_data
+        elif (
+                isinstance(operand, Scalar) and
+                (
+                        isinstance(from_data, pd.Series) or
+                        isinstance(to_data, pd.Series)
+                )
+        ):  # From or To is a DataComponent, or both
+            if isinstance(from_data, pd.Series):
+                series = pd.Series(operand.value, index=from_data.index)
+            else:
+                series = pd.Series(operand.value, index=to_data.index)
+            result_series = cls.apply_operation_component(series, from_data, to_data)
+            result = DataComponent(name=operand.name, data=result_series, data_type=cls.return_type,
+                                   role=Role.MEASURE)
 
         return result
 
 
 class ExistIn(Operator.Operator):
     op = IN
+
     # noinspection PyTypeChecker
     @classmethod
     def validate(cls, dataset_1: Dataset, dataset_2: Dataset,
