@@ -86,13 +86,13 @@ params = itertools.chain(
     numeric_operators,
     comparison_operators,
     boolean_operators,
-    # time_operators,
+    time_operators,
     set_operators,
-    # hierarchy_operators,
+    hierarchy_operators,
     aggregation_operators,
     analytic_operators,
     validation_operators,
-    # conditional_operators,
+    conditional_operators,
     clause_operators
 )
 
