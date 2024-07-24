@@ -129,6 +129,56 @@ numeric_params = [
 
 ]
 
+boolean_params = [
+    ('false and false', False),
+    ('false and true', False),
+    ('false and null', None),
+    ('true and false', False),
+    ('true and true', True),
+    ('true and null', None),
+    ('null and null', None),
+    ('false or false', False),
+    ('false or true', True),
+    ('false or null', None),
+    ('true or false', True),
+    ('true or true', True),
+    ('true or null', None),
+    ('null or null', None),
+    ('false xor false', False),
+    ('false xor true', True),
+    ('false xor null', None),
+    ('true xor false', True),
+    ('true xor true', False),
+    ('true xor null', None),
+    ('null xor null', None),
+    ('not false', True),
+    ('not true', False),
+    ('not null', None)
+]
+
+comparison_params = [
+    ('3 = null', None),
+    ('3 <> null', None),
+    ('3 < null', None),
+    ('3 > null', None),
+    ('3 <= null', None),
+    ('3 >= null', None),
+    ('3 in { null }', None),
+    ('3 not_in { null }', None),
+    ('null in { 1,2,3 }', None),
+    ('null not_in { 1,2,3 }', None),
+    ('between(null, 4, 5)', None),
+    ('between(5, null, 5)', None),
+    ('between(4, 4, null)', None),
+    ('between(null, null, null)', None),
+    ('between("a", "a", "z")', True),
+    ('between("z", "a", "c")', False),
+    ('between(6, 1, 9)', True),
+    ('between(12, 1, 9)', False),
+
+
+]
+
 
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
@@ -163,7 +213,20 @@ def test_numeric_operators(text, reference):
         assert result['DS_r'].data_type == Number or result['DS_r'].data_type == Integer
 
 
-# @pytest.mark.parametrize('text, reference', DS_params)
-# def test_numeric_op_with_DS(text, reference):
-#     pass
-# TODO: Implement Boolean and Comparison operators tests
+@pytest.mark.parametrize('text, reference', boolean_params)
+def test_bool_op_test(text, reference):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result['DS_r'].value == reference
+
+
+@pytest.mark.parametrize('text, reference', comparison_params)
+def test_comp_op_test(text, reference):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result['DS_r'].value == reference
+
