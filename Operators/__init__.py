@@ -2,7 +2,7 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from AST.Grammar.tokens import CEIL, FLOOR
+from AST.Grammar.tokens import CEIL, FLOOR, ROUND
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
@@ -19,7 +19,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
 # TODO: Check if there are more operators that allow this
-MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR]
+MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
 
 
 class Operator:

@@ -140,7 +140,7 @@ class Parameterized(Unary):
                 if isinstance(operand, Scalar):
                     raise Exception(f"{cls.op} cannot have an Scalar operand and "
                                     f"a DataComponent as parameter")
-                cls.validate_component_type(param)
+                cls.validate_type_compatibility(param.data_type)
             else:
                 cls.validate_scalar_type(param)
         if param is None:
