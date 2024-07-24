@@ -1522,6 +1522,7 @@ class SetOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
+
 class AggregateOperatorsTest(AdditionalHelper):
     """
     Group 10
