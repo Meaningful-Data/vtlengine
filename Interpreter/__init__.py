@@ -40,6 +40,7 @@ class InterpreterAnalyzer(ASTTemplate):
     aggregation_dataset: Optional[Dataset] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
+    ruleset_signature: Dict[str, str] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
 
@@ -67,11 +68,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 rule.name = i + 1
 
         # Signature has the actual parameters names or aliases if provided
-        signature = [param.value if param.alias is not None else param.alias for param in node.params]
+        signature_actual_names = {}
+        for param in node.params:
+            if param.alias is not None:
+                signature_actual_names[param.alias] = param.value
+            else:
+                signature_actual_names[param.value] = param.value
 
         ruleset_data = {
             'rules': node.rules,
-            'signature_names': signature,
+            'signature': signature_actual_names,
             'params': node.params
         }
 
@@ -259,10 +265,16 @@ class InterpreterAnalyzer(ASTTemplate):
                                  role=self.regular_aggregation_dataset.components[
                                      node.value].role)
         if self.is_from_rule:
-            return DataComponent(name=node.value,
-                                 data=self.rule_data[node.value],
-                                 data_type=self.ruleset_dataset.components[node.value].data_type,
-                                 role=self.ruleset_dataset.components[node.value].role)
+            if node.value not in self.ruleset_signature:
+                raise Exception(f"Component {node.value} not found in ruleset signature")
+            comp_name = self.ruleset_signature[node.value]
+            if comp_name not in self.ruleset_dataset.components:
+                raise Exception(f"Component {comp_name} not found in dataset "
+                                f"{self.ruleset_dataset.name}")
+            return DataComponent(name=comp_name,
+                                 data=self.rule_data[comp_name],
+                                 data_type=self.ruleset_dataset.components[comp_name].data_type,
+                                 role=self.ruleset_dataset.components[comp_name].role)
 
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
@@ -406,6 +418,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             rule_output_values = {}
             self.ruleset_dataset = dataset_element
+            self.ruleset_signature = dpr_info['signature']
             # Gather rule data, adding the ruleset dataset to the interpreter
             for rule in dpr_info['rules']:
                 rule_output_values[rule.name] = {
@@ -413,7 +426,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     "error_level": rule.erLevel,
                     "output": self.visit(rule)
                 }
-                self.rule_data = None
+            self.ruleset_signature = None
             self.ruleset_dataset = None
 
             # Datapoint Ruleset final evaluation
@@ -425,6 +438,7 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_rule = True
         self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
+        self.rule_data = None
         self.is_from_rule = False
         return validation_data
 
