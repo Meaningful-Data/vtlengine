@@ -98,10 +98,8 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
-    def validate(cls, left_operand, right_operand):
-        if isinstance(right_operand, Dataset):
-            raise Exception("Logarithm operator base cannot be a Dataset")
-        return super().validate(left_operand, right_operand)
+    def dataset_validation(cls, left_operand, right_operand):
+        raise Exception("Logarithm operator base cannot be a Dataset")
 
 
 class Modulo(Binary):
@@ -115,10 +113,8 @@ class Power(Binary):
     return_type = Number
 
     @classmethod
-    def validate(cls, left_operand, right_operand):
-        if isinstance(right_operand, Dataset):
-            raise Exception("Power operator exponent cannot be a Dataset")
-        return super().validate(left_operand, right_operand)
+    def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset):
+        raise Exception("Power operator exponent cannot be a Dataset")
 
 
 class Parameterized(Unary):

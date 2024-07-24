@@ -619,7 +619,7 @@ class Unary(Operator):
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif changed_allowed is False and is_mono_measure is False and operand_type.promotion_changed_type(
                     result_data_type):
-                raise Exception("Operation not allowed for multimeasure datsets")
+                raise Exception("Operation not allowed for multimeasure datasets")
             else:
                 measure.data_type = result_data_type
 
