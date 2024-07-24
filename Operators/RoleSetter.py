@@ -1,4 +1,5 @@
 import os
+from copy import copy
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -25,7 +26,7 @@ class RoleSetter(Unary):
                 data=None
             )
         operand.role = cls.role
-        return operand
+        return copy(operand)
 
     @classmethod
     def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):

@@ -255,7 +255,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data=self.aggregation_dataset.data[node.value],
                                  data_type=self.aggregation_dataset.components[
                                      node.value].data_type,
-                                 role=self.aggregation_dataset.components[node.value].role)
+                                 role=self.aggregation_dataset.components[node.value].role,
+                                 nullable=self.aggregation_dataset.components[node.value].nullable)
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets.keys():
                 return self.datasets[node.value]
@@ -265,7 +266,9 @@ class InterpreterAnalyzer(ASTTemplate):
                                  self.regular_aggregation_dataset.components[
                                      node.value].data_type,
                                  role=self.regular_aggregation_dataset.components[
-                                     node.value].role)
+                                     node.value].role,
+                                 nullable=self.regular_aggregation_dataset.components[
+                                     node.value].nullable)
         if self.is_from_rule:
             if node.value not in self.ruleset_signature:
                 raise Exception(f"Component {node.value} not found in ruleset signature")
@@ -276,7 +279,8 @@ class InterpreterAnalyzer(ASTTemplate):
             return DataComponent(name=comp_name,
                                  data=self.rule_data[comp_name],
                                  data_type=self.ruleset_dataset.components[comp_name].data_type,
-                                 role=self.ruleset_dataset.components[comp_name].role)
+                                 role=self.ruleset_dataset.components[comp_name].role,
+                                 nullable=self.ruleset_dataset.components[comp_name].nullable)
 
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")

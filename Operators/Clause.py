@@ -165,8 +165,13 @@ class Rename:
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
-            result_components[operand.new_name] = result_components.pop(operand.old_name)
-            result_components[operand.new_name].name = operand.new_name
+            result_components[operand.new_name] = Component(
+                name=operand.new_name,
+                data_type=result_components[operand.old_name].data_type,
+                role=result_components[operand.old_name].role,
+                nullable=result_components[operand.old_name].nullable
+            )
+            del result_components[operand.old_name]
 
         return Dataset(name=dataset.name, components=result_components, data=None)
 

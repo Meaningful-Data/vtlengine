@@ -14,6 +14,7 @@ from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
+from Model import Role
 
 
 class Expr(VtlVisitor):
@@ -1491,15 +1492,16 @@ class Expr(VtlVisitor):
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[3])
             operand_node = Assignment(left_node, op_node, right_node)
-            if role is not None:
-                return UnaryOp(role.value.lower(), operand_node)
-            return operand_node
+            if role is None:
+                return UnaryOp(Role.MEASURE.value.lower(), operand_node)
+            return UnaryOp(role.value.lower(), operand_node)
         else:
             left_node = Terminals().visitSimpleComponentId(c)
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 
-            return Assignment(left_node, op_node, right_node)
+            operand_node = Assignment(left_node, op_node, right_node)
+            return UnaryOp(Role.MEASURE.value.lower(), operand_node)
 
     def visitKeepOrDropClause(self, ctx: Parser.KeepOrDropClauseContext):
         """
