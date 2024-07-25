@@ -245,7 +245,7 @@ class Terminals(VtlVisitor):
 
         component_node = [self.visitComponentType(component) for component in ctx_list if
                           isinstance(component, Parser.ComponentTypeContext)]
-        component_name = [self.visitComponentID(component) for component in ctx_list if
+        component_name = [self.visitComponentID(component).value for component in ctx_list if
                           isinstance(component, Parser.ComponentIDContext)]
         component_mult = [self.visitMultModifier(modifier) for modifier in ctx_list if
                           isinstance(modifier, Parser.MultModifierContext)]
@@ -254,7 +254,7 @@ class Terminals(VtlVisitor):
             # AST_ASTCONSTRUCTOR.51
             raise NotImplementedError
 
-        component_node[0].name = component_name[0].value
+        component_node[0].name = component_name[0]
         return component_node[0]
 
     def visitSimpleScalar(self, ctx: Parser.SimpleScalarContext):
@@ -312,10 +312,11 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        # components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
-        #               isinstance(constraint, Parser.CompConstraintContext)]
+        components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
+                      isinstance(constraint, Parser.CompConstraintContext)]
+        components = {component.name: component for component in components}
 
-        return Dataset(name="Dataset", components={}, data=None)
+        return Dataset(name="Dataset", components=components, data=None)
 
     def visitRulesetType(self, ctx: Parser.RulesetTypeContext):
         """
