@@ -212,3 +212,28 @@ class ScalarSet:
     """
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
+
+
+@dataclass
+class ExternalRoutine:
+    """
+    Class representing an external routine, used in Eval operator
+    """
+    dataset_name: str
+    query: str
+    name: str
+
+    @classmethod
+    def from_sql_query(cls, name: str, query: str):
+        dataset_name = cls._extract_dataset_name(query)
+        return cls(dataset_name, query, name)
+
+    @classmethod
+    def _extract_dataset_name(cls, query):
+        if "FROM" not in query:
+            raise ValueError("FROM clause not found in query")
+        from_expression = query.split("FROM")[1].lstrip()
+        dataset_name = from_expression.split()[0]
+        if ';' in dataset_name:
+            dataset_name = dataset_name[:-1]
+        return dataset_name

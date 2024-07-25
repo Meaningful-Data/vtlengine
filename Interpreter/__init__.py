@@ -7,12 +7,13 @@ import pandas as pd
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
+from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
+from Operators.General import Eval
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Validation import Check, Check_Datapoint
@@ -23,7 +24,9 @@ from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MA
 # noinspection PyTypeChecker
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
+    # Model elements
     datasets: Dict[str, Dataset]
+    external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Flags to change behavior
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -518,3 +521,25 @@ class InterpreterAnalyzer(ASTTemplate):
                               error_code=node.error_code,
                               error_level=node.error_level,
                               invalid=node.invalid)
+
+    def visit_EvalOp(self, node: AST.EvalOp) -> Dataset:
+        """
+        EvalOp: (name, children, output, language)
+
+        Basic usage:
+
+            for child in node.children:
+                self.visit(child)
+            if node.output != None:
+                self.visit(node.output)
+
+        """
+        if node.language not in EXTERNAL:
+            raise Exception(f"Language {node.language} not supported on Eval")
+
+        if node.name not in self.external_routines:
+            raise Exception(f"External Routine {node.name} not found")
+        external_routine = self.external_routines[node.name]
+        operand = self.visit(node.operand)
+        output_to_check = node.output
+        return Eval.evaluate(operand, external_routine, output_to_check)

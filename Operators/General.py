@@ -1,6 +1,10 @@
+import duckdb
+import pandas as pd
+
 from DataTypes import CAST_MAPPING
-from Model import Dataset, Role, Component
-from Operators import Binary
+from Model import Dataset, ExternalRoutine, Role, Component
+from Operators import Binary, Unary
+
 
 class Membership(Binary):
 
@@ -12,8 +16,10 @@ class Membership(Binary):
         component = left_operand.components[right_operand]
         if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
             right_operand = f'{CAST_MAPPING[component.data_type.__name__].__name__}_var'
-            left_operand.components[right_operand] = Component(name=right_operand, data_type=component.data_type,
-                                                      role=Role.MEASURE, nullable=component.nullable)
+            left_operand.components[right_operand] = Component(name=right_operand,
+                                                               data_type=component.data_type,
+                                                               role=Role.MEASURE,
+                                                               nullable=component.nullable)
             left_operand.data[right_operand] = left_operand.data[component.name]
         result_components = {name: comp for name, comp in left_operand.components.items()
                              if comp.role == Role.IDENTIFIER or comp.name == right_operand}
@@ -39,4 +45,53 @@ class Alias(Binary):
     def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
         result = cls.validate(left_operand, right_operand)
         result.data = left_operand.data
+        return result
+
+
+class Eval(Unary):
+
+    @staticmethod
+    def _execute_query(query: str, dataset_name: str, data: pd.DataFrame) -> pd.DataFrame:
+        locals()[dataset_name] = data
+
+        try:
+            df_result = duckdb.query(query).to_df()
+        except Exception as e:
+            raise Exception(f"Error validating SQL query with duckdb: {e}")
+        del locals()[dataset_name]
+
+        return df_result
+
+    @classmethod
+    def validate(cls,
+                 operand: Dataset,
+                 external_routine: ExternalRoutine,
+                 output: Dataset) -> Dataset:
+        if external_routine.dataset_name != operand.name:
+            raise ValueError(f"Dataset name {external_routine.dataset_name} does not match "
+                             f"operand name {operand.name}")
+
+        empty_data = pd.DataFrame(columns=[comp.name for comp in operand.components.values()])
+
+        df = cls._execute_query(external_routine.query, external_routine.dataset_name, empty_data)
+        component_names = [name for name in df.columns]
+        for comp_name in component_names:
+            if comp_name not in output.components:
+                raise ValueError(f"Component {comp_name} not found in output dataset")
+
+        output.name = external_routine.name
+
+        return output
+
+    @classmethod
+    def evaluate(cls,
+                 operand: Dataset,
+                 external_routine: ExternalRoutine,
+                 output: Dataset) -> Dataset:
+        result = cls.validate(operand, external_routine, output)
+
+        result.data = cls._execute_query(external_routine.query,
+                                         external_routine.dataset_name,
+                                         operand.data)
+
         return result
