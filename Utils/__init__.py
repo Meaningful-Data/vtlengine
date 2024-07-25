@@ -148,3 +148,8 @@ ANALYTIC_MAPPING = {
     RATIO_TO_REPORT: RatioToReport,
     RANK: Rank
 }
+
+THEN_ELSE = {
+        'then': 'T',
+        'else': 'E'
+    }
