@@ -18,11 +18,18 @@ class RoleSetter(Unary):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES):
         if isinstance(operand, Scalar):
+
+            nullable = True
+            if cls.role == Role.IDENTIFIER:
+                nullable = False
+            if cls.role == Role.ATTRIBUTE and operand.value is not None:
+                nullable = False
+
             return DataComponent(
                 name=operand.name,
                 data_type=operand.data_type,
                 role=cls.role,
-                nullable=operand.value is None,
+                nullable=nullable,
                 data=None
             )
         operand.role = cls.role
