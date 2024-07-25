@@ -1614,3 +1614,5 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["1"]
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+

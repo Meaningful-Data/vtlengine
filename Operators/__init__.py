@@ -132,6 +132,8 @@ class Binary(Operator):
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
                                       series_left: bool) -> Any:
+        if scalar is None:
+            return pd.Series(None, index=series.index)
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar), na_action='ignore')
         else:

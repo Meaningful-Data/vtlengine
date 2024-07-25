@@ -1,8 +1,67 @@
+import json
+from pathlib import Path
+from typing import Dict, List
+
+import pandas as pd
 import pytest
+from pandas import read_csv
 
 from API import create_ast
-from DataTypes import String, Integer, Number
+from DataTypes import String, Integer, Number, SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
+from Model import Component, Role, Dataset
+
+base_path = Path(__file__).parent
+filepath_json = base_path / "data" / "DataStructure" / "input"
+filepath_csv = base_path / "data" / "DataSet" / "input"
+filepath_out_json = base_path / "data" / "DataStructure" / "output"
+filepath_out_csv = base_path / "data" / "DataSet" / "output"
+
+
+def LoadDataset(ds_path, dp_path):
+    with open(ds_path, 'r') as file:
+        structures = json.load(file)
+
+    for dataset_json in structures['datasets']:
+        dataset_name = dataset_json['name']
+        components = {
+            component['name']: Component(name=component['name'],
+                                         data_type=SCALAR_TYPES[component['type']],
+                                         role=Role(component['role']),
+                                         nullable=component['nullable'])
+            for component in dataset_json['DataStructure']}
+        data = read_csv(dp_path, sep=',')
+
+        return Dataset(name=dataset_name, components=components, data=data)
+
+
+def LoadInputs(code: str, number_inputs: int) -> Dict[str, Dataset]:
+    '''
+
+    '''
+    datasets = {}
+    for i in range(number_inputs):
+        json_file_name = str(filepath_json / f"{code}-DS_{str(i + 1)}.json")
+        csv_file_name = str(filepath_csv / f"{code}-DS_{str(i + 1)}.csv")
+        dataset = LoadDataset(json_file_name, csv_file_name)
+        datasets[dataset.name] = dataset
+
+    return datasets
+
+
+def LoadOutputs(code: str, references_names: List[str]) -> Dict[str, Dataset]:
+    """
+
+    """
+    datasets = {}
+    for name in references_names:
+        json_file_name = str(filepath_out_json / f"{code}-{name}.json")
+        csv_file_name = str(filepath_out_csv / f"{code}-{name}.csv")
+        dataset = LoadDataset(json_file_name, csv_file_name)
+        datasets[dataset.name] = dataset
+
+    return datasets
+
 
 string_params = [
     ("substr(null, null, null)", ""),
@@ -70,12 +129,6 @@ numeric_params = [
     ('null * 2.0', None),
     ('2 / null', None),
     ('null / 2', None),
-    # ('DS_1 + null', None),
-    # ('null + DS_1', None),
-    # ('DS_1 - null', None),
-    # ('null - DS_1', None),
-    # ('DS_1 * null', None),
-    # ('null * DS_1', None),
     ('2 + 3.3', 5.3),
     ('3.3 + 2', 5.3),
     ('2 - 3.3', -1.3),
@@ -126,6 +179,7 @@ numeric_params = [
     ('log(null, null)', None),
     ('log(null, 1)', None),
     ('log(1, null)', None),
+    ('log(0.5, 6)', -0.3868528072345416),
 
 ]
 
@@ -177,26 +231,45 @@ comparison_params = [
 ]
 
 string_exception_param = [
-    ('substr("asdf", -3)', Exception),
-    ('substr("asdf", 0)', Exception),
-    ('substr("asdf", -2, 3)', Exception),
-    ('substr("asdf", 0, 5)', Exception),
-    ('substr("asdf", 1, -9)', Exception),
-    ('substr("asdf", _, -1)', Exception),
-    ('instr("abcdecfrxcwsd", "c", 0)', Exception),
-    ('instr("abcdecfrxcwsd", "c", -5, 4)', Exception),
-    ('instr("abcdecfrxcwsd", "c", 0, 0)', Exception),
-    ('instr("abcdecfrxcwsd", "c", 6, 0)', Exception),
-    ('instr("abcdecfrxcwsd", "c", 5, -5)', Exception),
-    ('instr("abcdecfrxcwsd", "c", _, -3)', Exception),
+    ('substr("asdf", -3)', 'param length should be >= 0'),
+    ('substr("asdf", 0)', 'zzz'),
+    ('substr("asdf", -2, 3)', 'param length should be >= 0'),
+    ('substr("asdf", 0, 5)', 'zzz'),
+    ('substr("asdf", 1, -9)', 'param length should be >= 0'),
+    ('substr("asdf", _, -1)', 'zzz'),
+    ('instr("abcdecfrxcwsd", "c", 0)', 'param start should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", -5, 4)', 'param start should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", 0, 0)', 'param start should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'zzz'),
+    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'zzz'),
+    ('instr("abcdecfrxcwsd", "c", _, -3)', 'zzz'),
 ]
-
 
 numeric_exception_param = [
-    ('log(5.0, -8)', Exception),
-    ('log(0.0, 6)', Exception),
-    ('log(0.5, 6)', Exception)
+    ('log(5.0, -8)', 'math domain error'),
+    ('log(0.0, 6)', 'math domain error'),
+    ('log(0.5, 6)', 'math domain error')
 ]
+
+ds_param = [
+    ('3-51', 'DS_1[calc Me_2:=instr(Me_1, sc_1, null, 4)]'),  # stringop with ds
+    ('4-3', 'DS_1 + null'),
+    ('4-3', 'null + DS_1'),
+    ('4-3', 'DS_1 - null'),
+    ('4-3', 'null - DS_1'),
+    ('4-3', 'DS_1 * null'),
+    ('4-3', 'null * DS_1'),
+    ('4-5', 'DS_1 / null'),
+    ('4-5', 'null / DS_1'),
+    ('4-6', 'DS_1[calc Me_4:= Me_1 + null]'),
+    ('4-6', 'DS_1[calc Me_4:= null + Me_1]'),
+    ('4-6', 'DS_1[calc Me_4:= Me_1 - null]'),
+    ('4-6', 'DS_1[calc Me_4:= null - Me_1]'),
+    ('4-6', 'DS_1[calc Me_4:= Me_1 * null]'),
+    ('4-6', 'DS_1[calc Me_4:= null * Me_1]')
+]
+
+
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
     expression = f"DS_r := {text};"
@@ -217,6 +290,15 @@ def test_instr_op_test(text, reference):
     assert result['DS_r'].data_type == Integer
 
 
+@pytest.mark.parametrize('text, exception_message', string_exception_param)
+def test_exception_string_op(text, exception_message):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    with pytest.raises(Exception, match=exception_message):
+        interpreter.visit(ast)
+
+
 @pytest.mark.parametrize('text, reference', numeric_params)
 def test_numeric_operators(text, reference):
     expression = f"DS_r := {text};"
@@ -228,6 +310,26 @@ def test_numeric_operators(text, reference):
     else:
         assert result['DS_r'].value == reference
         assert result['DS_r'].data_type == Number or result['DS_r'].data_type == Integer
+
+
+@pytest.mark.parametrize('text, exception_message', numeric_exception_param)
+def test_exception_numeric_op(text, exception_message):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    with pytest.raises(Exception, match=exception_message):
+        interpreter.visit(ast)
+
+
+@pytest.mark.parametrize('code, text', ds_param)
+def test_datasets_params(code, text):
+    datasets = LoadInputs(code, 1)
+    reference = LoadOutputs(code, ["DS_r"])
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer(datasets)
+    result = interpreter.visit(ast)
+    assert result == reference
 
 
 @pytest.mark.parametrize('text, reference', boolean_params)
@@ -246,21 +348,3 @@ def test_comp_op_test(text, reference):
     interpreter = InterpreterAnalyzer({})
     result = interpreter.visit(ast)
     assert result['DS_r'].value == reference
-
-
-@pytest.mark.parametrize('text, exception', string_exception_param)
-def test_exception_string_op(text, exception):
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    with pytest.raises(Exception):
-        assert interpreter == exception
-
-
-@pytest.mark.parametrize('text, exception', numeric_exception_param)
-def test_exception_numeric_op(text, exception):
-    expression = f"DS_r := {text};"
-    ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({})
-    with pytest.raises(Exception):
-        assert interpreter == exception
