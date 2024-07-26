@@ -1576,7 +1576,6 @@ class AggregateOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-
     def test_7(self):
         '''
         Description: Recheck of the no measures agg
@@ -1616,3 +1615,1569 @@ class AggregateOperatorsTest(AdditionalHelper):
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
 
+class JoinOperatorsTest(AdditionalHelper):
+    """
+    Group 2
+    """
+
+    classTest = 'Additional.JoinOperatorsTest'
+
+    def test_1(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 keep Me_1);"""
+        code = '2-1'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1 as ds1, DS_2 as ds2 keep Me_1);"""
+        code = '2-2'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_1#Me_2 keep Me_1, DS_1#Me_2);"""
+        code = '2-3'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1 as d1, DS_2 as d2 filter Me_1 ="A" keep Me_1, d1#Me_2 );"""
+        code = '2-4'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+
+        '''
+        text = """DS_r := left_join ( DS_1 as d1, DS_2 as d2  rename d2#Me_2 to ent1, d1#Me_2 to ent2);"""
+        code = '2-5'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1 as d1, DS_2[keep Me_1A, Me_2] as d2 keep d2#Me_2);"""
+        code = '2-6'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2[keep Me_1A, Me_2] as d2 keep DS_1#Me_2);"""
+        code = '2-7'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1  filter Id_2="B" calc Me_3:=Me_1);"""
+        code = '2-8'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2 using  Id_1, Me_2);"""
+        code = '2-9'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 using  Id_1, Me_2);"""
+        code = '2-10'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 rename DS_1#Me_2 to Me_4);"""
+        code = '2-11'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 rename Me_2 to Me_4);"""
+        code = '2-12'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_13(self):
+        '''
+        reverse order of test 10.
+        '''
+        text = """DS_r := inner_join ( DS_2, DS_1 using  Id_1, Me_2);"""
+        code = '2-10'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_15(self):
+        '''
+        Only identifiers inner_join Interpreter.
+        '''
+        text = """DS_r <- inner_join(DS_1, DS_2);"""
+        code = '2-15'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_16(self):
+        '''
+        Description: Left_join review.
+        Jira issue: VTLEN 540.
+        Git Branch: feat-VTLEN-540-left_join-review.
+        Goal: Check Semantic Exception.
+        '''
+        text = """DS_r := left_join(A, B using Id1, IdB2, IdB3);"""
+        code = '2-16'
+        number_inputs = 2
+        error_code = "1-1-13-6"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=error_code
+        )
+
+    def test_19(self):
+        '''
+        INNER JOIN OPERATOR
+        Status: OK
+        Expression: DS_r := inner_join ( DS_1, DS_2 );
+        Description: Inner_join supersets review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 );"""
+        code = '2-19'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_20(self):
+        '''
+        Status: OK
+        Description: Inner_join supersets review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        '''
+        text = """DS_r := inner_join ( DS_3, DS_1, DS_2 );"""
+        code = '2-20'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_22(self):
+        '''
+        Status: OK
+        Description: Full_join supersets review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        '''
+        text = """DS_r := full_join ( DS_1, DS_2 );"""
+        code = '2-22'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_23(self):
+        '''
+        Status: OK
+        Description: Full_join supersets review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception.
+        '''
+        text = """DS_r := full_join ( DS_1, DS_2 );"""
+        code = '2-23'
+        number_inputs = 2
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_25(self):
+        '''
+        Status: OK
+        Description: Inner_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception, should be an exception.
+        Further description: Ver conjuntamente con el 26 pues los dos son tipo B1 (2263) por 2444-2455 debe dar error pero me falla el rename tb(2308-2316) y no debería
+        Tb se ve el desdoblamiento de Id_2.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 using Id_1 );"""
+        code = '2-25'
+        number_inputs = 2
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_26(self):
+        '''
+        Status: OK
+        Description: Inner_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception, should be an exception.
+        Further description: At op inner_join: Using clause does not define all the identifiers of non reference datasets.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2 using Id_2 );"""
+        code = '2-26'
+        number_inputs = 2
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_27(self):
+        '''
+        Status: OK
+        Description: Inner_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
+        code = '2-27'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_28(self):
+        '''
+        Status: OK
+        Description: Inner_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
+        code = '2-28'
+        number_inputs = 3
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_29(self):
+        '''
+        Status: OK
+        Description: Inner_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception.
+        Further description: The same that 28 but with two datasets that can act as reference.
+        '''
+        text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
+        code = '2-29'
+        number_inputs = 3
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_30(self):
+        '''
+        Status: OK
+        Description: Left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Exception.
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2 using Id_1 );"""
+        code = '2-30'
+        number_inputs = 2
+        message = "1-1-13-4"
+        self.NewExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            message=message
+        )
+
+    def test_31(self):
+        '''
+        Status: OK
+        Description: Left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: DS1 contains all the DS2's ids.
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2 using Id_1, Id_2 );"""
+        code = '2-31'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_32(self):
+        '''
+        Status: OK
+        Description: left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: 31 with different order.
+        '''
+        text = """DS_r := left_join ( DS_2, DS_1 using Id_1, Id_2 );"""
+        code = '2-32'
+        number_inputs = 2
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_33(self):
+        '''
+        Status: OK
+        Description: Left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2, DS_3 using Id_1 );"""
+        code = '2-33'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_34(self):
+        '''
+        Status: OK
+        Description: left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2, DS_3 using Id_1 );"""
+        code = '2-34'
+        number_inputs = 3
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    def test_35(self):
+        '''
+        Status: DOUBT
+        Description: left_join using review.
+        Jira issue: VTLEN 588.
+        Git Branch: feat-VTLEN-588-Aditional-join-tests.
+        Goal: Check Result.
+        Further description: Should be a b1? i have doubts if this is possible.
+        -b1 is a kind of join, read the manual-
+        '''
+        text = """DS_r := left_join ( DS_1, DS_2 using Id_1 );"""
+        code = '2-35'
+        number_inputs = 2
+        message = "1-1-13-4"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
+    # TODO: Move to a better place
+
+    def test_36(self):
+        '''
+        Status: OK
+        Description: Left_join using review.
+        Git issue: 42-create-null-implicit-promotion-at-left-join-op.
+        Git Branch: feat-42-create-null-implicit-promotion-at-left-join-op.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := left_join(DS_1, DS_2, DS_3 rename DS_2#Me_1 to Me_1_2, DS_2#Me_2 to Me_2_2, DS_3#Me_1 to Me_1_3, DS_3#Me_2 to Me_2_3);"""
+        code = '2-36'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_37(self):
+        '''
+        Status: OK
+        Description: Left_join using review.
+        Git issue: 42-create-null-implicit-promotion-at-left-join-op.
+        Git Branch: feat-42-create-null-implicit-promotion-at-left-join-op.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := left_join(DS_1, DS_2, DS_3 using Id_2, Id_1);"""
+        code = '2-37'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_38(self):
+        '''
+        Status: OK
+        Description: full_join implicit promotion review.
+        Git issue: 42-create-null-implicit-promotion-at-left-join-op.
+        Git Branch: feat-42-create-null-implicit-promotion-at-left-join-op.
+        Goal: Check Result.
+        Further description: 2 Datasets.
+        '''
+        text = """DS_r := full_join(DS_1, DS_2 keep DS_2#Me_1, Me_3, Me_2);"""
+        code = '2-38'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    # BUG
+    def test_39(self):
+        '''
+        Status: Differences between Interpreter and Semantic, for the rename
+        Description: full_join implicit promotion review.
+        Git issue: 42-create-null-implicit-promotion-at-left-join-op.
+        Git Branch: feat-42-create-null-implicit-promotion-at-left-join-op.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := full_join(DS_1 as d1, DS_2 [rename Me_1 to Me_1_2, Me_2 to Me_2_2] as d2, DS_3 [rename Me_1 to Me_1_3, Me_2 to Me_2_3] as d3);"""
+        code = '2-39'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_40(self):
+        '''
+        Status: OK
+        Description: full_join implicit promotion review.
+        Git issue: 42-create-null-implicit-promotion-at-left-join-op.
+        Git Branch: feat-42-create-null-implicit-promotion-at-left-join-op.
+        Goal: Check Result.
+        Further description: 3 Datasets.
+        '''
+        text = """DS_r := full_join(DS_1 as d1, DS_2 as d2, DS_3 as d3);"""
+        code = '2-40'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+class DataValidationOperatorsTest(AdditionalHelper):
+    """
+    Group 11
+    """
+
+    classTest = 'Additional.DataValidationOperatorsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+
+        '''
+        text = """DS_r := check ( DS_1 >= DS_2);"""
+
+        code = '11-1'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+
+        '''
+        text = """DS_r := check ( DS_1 >= DS_2 errorcode 1.0 errorlevel "local" imbalance DS_1 - DS_2 );"""
+
+        code = '11-2'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+
+        '''
+        text = """DS_r := check ( DS_1 >= DS_2 imbalance DS_1 - DS_2 )#bool_var = (DS_1 >= DS_2);"""
+
+        code = '11-3'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
+                R010 : A = J + K + L                        errorlevel 5 ;
+                R020 : B = M + N + O                        errorlevel 5 ; 
+                R030 : C = P + Q        errorcode "XX"      errorlevel 5 ; 
+                R040 : D = R + S                            errorlevel 1 ; 
+                R060 : F = Y + W + Z                        errorlevel 7 ;
+                R070 : G = B + C                                         ; 
+                R080 : H = D + E                            errorlevel 0 ; 
+                R090 : I = D + G        errorcode "YY"      errorlevel 0 ; 
+                R100 : M >= N                               errorlevel 5 ; 
+                R110 : M <= G                               errorlevel 5          
+            end hierarchical ruleset;
+
+            DS_r := check_hierarchy ( DS_1, HR_1 rule Id_2 all);"""
+
+        code = '11-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-5'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-7'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-8'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-9'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-10'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-11'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-12'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_13(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-13'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_14(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-14'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_15(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-15'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_16(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-16'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_17(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-17'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_18(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-18'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_19(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-19'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_20(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-20'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_21(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-21'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_22(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-22'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_23(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-23'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_24(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-24'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_25(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-25'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_26(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-26'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_27(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-27'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_28(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-28'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_29(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-29'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_30(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is 
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-30'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+class TimeOperatorsTest(AdditionalHelper):
+    """
+    Group 7
+    """
+
+    classTest = 'Additional.TimeOperatorsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+        Basic behaviour for datasets.
+        '''
+        text = """DS_r := period_indicator(DS_1);"""
+        code = '7-1'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, single);"""
+        code = '7-2'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, all);"""
+        code = '7-3'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1);"""
+        code = '7-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, single);"""
+        code = '7-5'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, all);"""
+        code = '7-6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1);"""
+        code = '7-7'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := flow_to_stock(DS_1);"""
+        code = '7-8'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := flow_to_stock(DS_1);"""
+        code = '7-9'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := stock_to_flow(DS_1);"""
+        code = '7-10'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := stock_to_flow(DS_1);"""
+        code = '7-11'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, 1);"""
+        code = '7-12'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_13(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, -1);"""
+        code = '7-13'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_14(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, 0);"""
+        code = '7-14'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_15(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, 1);"""
+        code = '7-15'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_16(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, -1);"""
+        code = '7-16'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_17(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, 0);"""
+        code = '7-17'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_18(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        code = '7-18'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_19(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        code = '7-19'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_20(self):
+        '''
+        Basic behaviour for group all with different durations (date, first)
+        '''
+        code = '7-20'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_21(self):
+        '''
+        Basic behaviour for group all with different durations (date, last)
+        '''
+        code = '7-21'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_22(self):
+        '''
+        Basic behaviour for dataset with different durations (date)
+        '''
+        code = '7-22'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_23(self):
+        '''
+        Basic behaviour for dataset with different durations (time_period)
+        '''
+        code = '7-23'
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_24(self):
+        '''
+        Dataset with calc on time_agg.
+        '''
+        code = '7-24'
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_25(self):
+        '''
+        Semantic error on time_agg with periodIndTo = "D" on Time_period
+        '''
+        code = '7-25'
+        number_inputs = 1
+        message = "1-1-19-5"
+
+        self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+
+    def test_26(self):
+        '''
+        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo
+        '''
+        code = '7-26'
+        number_inputs = 1
+        message = "2-1-19-1"
+        self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+
+
+class EmptyDatasetsTest(AdditionalHelper):
+    """
+    Group 14
+    """
+
+    classTest = 'Additional.EmptyDatasetsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+
+        '''
+        code = '14-1'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+
+        '''
+        code = '14-2'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+
+        '''
+        code = '14-3'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+
+        '''
+        code = '14-4'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+
+        '''
+        code = '14-5'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+
+        '''
+        code = '14-6'
+        number_inputs = 2
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+
+        '''
+        code = '14-7'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+
+        '''
+        code = '14-8'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+
+        '''
+        code = '14-9'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+
+        '''
+        code = '14-10'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+
+        '''
+        code = '14-11'
+        number_inputs = 3
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+
+        '''
+        code = '14-12'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+class DefinedOperatorsTest(AdditionalHelper):
+    """
+    Group 15
+    """
+
+    classTest = 'Additional.DefinedOperatorsTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        '''
+
+        '''
+        code = '15-1'
+        self.AssertScalar(code=code, reference_value=3)
+
+    def test_2(self):
+        '''
+
+        '''
+        code = '15-2'
+        self.AssertScalar(code=code, reference_value=2)
+
+    def test_3(self):
+        '''
+
+        '''
+        code = '15-3'
+        number_inputs = 1
+        references_names = ['DS_r1', 'DS_r2']
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+class DatesTest(AdditionalHelper):
+    """
+    Group 16
+    """
+
+    classTest = 'Additional.DatesTest'
+
+    maxDiff = None
+
+    def test_1(self):
+        """
+
+        """
+        code = '16-1'
+        number_inputs = 1
+        references_names = ['DS_r']
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
