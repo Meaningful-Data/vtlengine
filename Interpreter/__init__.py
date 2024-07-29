@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
 
 import AST
@@ -9,7 +10,7 @@ from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet
+from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
@@ -19,11 +20,13 @@ from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Validation import Check, Check_Datapoint
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
-    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING
+    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE
 
 
 # noinspection PyTypeChecker
 @dataclass
+
+
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
@@ -36,10 +39,14 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_join: bool = False
     is_from_then: Optional[List[bool]] = None
     is_from_else: Optional[List[bool]] = None
+    is_from_condition: bool = False
+    if_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
+    then_condition_dataset: Optional[List[pd.DataFrame]] = None
+    else_condition_dataset: Optional[List[pd.DataFrame]] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
@@ -111,6 +118,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+            left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
         return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
@@ -375,7 +384,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_If(self, node: AST.If) -> Dataset:
 
+        self.is_from_condition = True
         condition = self.visit(node.condition)
+        self.is_from_condition = False
 
         if isinstance(condition, Scalar):
             if condition.value:
@@ -385,23 +396,25 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Analysis for data component and dataset
         else:
-            if self.is_from_then is None:
-                self.is_from_then = []
-            if self.true_condition_dataset is None:
-                self.true_condition_dataset = []
-            if self.is_from_else is None:
-                self.is_from_else = []
-            if self.false_condition_dataset is None:
-                self.false_condition_dataset = []
+            if self.if_stack is None:
+                self.if_stack = []
+            if self.then_condition_dataset is None:
+                self.then_condition_dataset = []
+            if self.else_condition_dataset is None:
+                self.else_condition_dataset = []
+            self.generate_then_else_datasets(condition)
 
-            self.generate_true_false_datasets(condition)
-
-        self.is_from_then.append(True)
+        self.if_stack.append(THEN_ELSE['then'])
         thenOp = self.visit(node.thenOp)
-        self.is_from_then.pop()
-        self.is_from_else.append(True)
+        if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
+            self.then_condition_dataset.pop()
+            self.if_stack.pop()
+
+        self.if_stack.append(THEN_ELSE['else'])
         elseOp = self.visit(node.elseOp)
-        self.is_from_else.pop()
+        if isinstance(elseOp, Scalar) or not isinstance(node.elseOp, AST.BinOp):
+            self.else_condition_dataset.pop()
+            self.if_stack.pop()
 
         return If.evaluate(condition, thenOp, elseOp)
 
@@ -579,12 +592,46 @@ class InterpreterAnalyzer(ASTTemplate):
         output_to_check = node.output
         return Eval.evaluate(operand, external_routine, output_to_check)
 
-    def generate_true_false_datasets(self, condition):
-        if len(condition.get_measures_names()) != 1:
-            raise ValueError("Only one boolean measure is allowed on condition dataset")
-        true_condition = condition.data[condition.data[condition.get_measures_names()]]
-        false_condition = condition.data[~condition.data[condition.get_measures_names()]]
-        if self.true_condition_dataset is not None:
-            self.true_condition_dataset.append(true_condition)
-        if self.false_condition_dataset is not None:
-            self.false_condition_dataset.append(false_condition)
+    def generate_then_else_datasets(self, condition):
+        if isinstance(condition, Dataset):
+            if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != BASIC_TYPES[bool]:
+                raise ValueError("Only one boolean measure is allowed on condition dataset")
+            name = condition.get_measures_names()[0]
+            data = condition.data[name]
+        else:
+            if condition.data_type != BASIC_TYPES[bool]:
+                raise ValueError("Only boolean scalars are allowed on data component condition")
+            name = condition.name
+            data = condition.data
+        data.fillna(False, inplace=True)
+        then_index = pd.DataFrame({name: [i for i, data in enumerate(data) if data]})
+        else_index = pd.DataFrame({name: [i for i, data in enumerate(data) if not data]})
+        component = Component(name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE, nullable=True)
+        self.then_condition_dataset.append(
+            Dataset(name=name, components={name: component}, data=then_index))
+        self.else_condition_dataset.append(
+            Dataset(name=name, components={name: component}, data=else_index))
+
+    def merge_then_else_datasets(self, left_operand: Dataset | DataComponent, right_operand):
+        merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE['then'] else (
+            self.else_condition_dataset.pop())
+        merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
+        if isinstance(left_operand, Dataset | DataComponent):
+            if isinstance(left_operand, Dataset):
+                left_operand.get_measures()[0].data_type = BASIC_TYPES[int]
+                left = left_operand.data[left_operand.get_measures_names()[0]]
+                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(merge_index, fill_value=None)
+            else:
+                left_operand.data_type = BASIC_TYPES[int]
+                left = left_operand.data
+                left_operand.data = left.reindex(merge_index, fill_value=None)
+        if isinstance(right_operand, Dataset | DataComponent):
+            if isinstance(right_operand, Dataset):
+                right_operand.get_measures()[0].data_type = BASIC_TYPES[int]
+                right = right_operand.data[right_operand.get_measures_names()[0]]
+                right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(merge_index, fill_value=None)
+            else:
+                right_operand.data_type = BASIC_TYPES[int]
+                right = right_operand.data
+                right_operand.data = right.reindex(merge_index, fill_value=None)
+        return left_operand, right_operand
