@@ -21,6 +21,7 @@ from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Expon
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
 from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
+from Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow
 
 BINARY_MAPPING = {
     # General
@@ -72,7 +73,11 @@ UNARY_MAPPING = {
     LTRIM: Ltrim,
     RTRIM: Rtrim,
     TRIM: Trim,
-    UCASE: Upper
+    UCASE: Upper,
+    #Time
+    PERIOD_INDICATOR: Period_indicator,
+    FLOW_TO_STOCK: Flow_to_stock,
+    STOCK_TO_FLOW: Stock_to_flow
 }
 
 PARAMETRIC_MAPPING = {

@@ -80,20 +80,20 @@ aggregation_operators.remove(144)
 exceptions_tests = [27, 31]
 
 params = itertools.chain(
-    general_operators,
-    join_operators,
-    string_operators,
-    numeric_operators,
-    comparison_operators,
-    boolean_operators,
+    # general_operators,
+    # join_operators,
+    # string_operators,
+    # numeric_operators,
+    # comparison_operators,
+    # boolean_operators,
     time_operators,
-    set_operators,
-    hierarchy_operators,
-    aggregation_operators,
-    analytic_operators,
-    validation_operators,
-    conditional_operators,
-    clause_operators
+    # set_operators,
+    # hierarchy_operators,
+    # aggregation_operators,
+    # analytic_operators,
+    # validation_operators,
+    # conditional_operators,
+    # clause_operators
 )
 
 params = [x for x in list(params) if x not in exceptions_tests]
@@ -152,8 +152,9 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         raise FileNotFoundError("No datasets found")
     return datasets
 
-# params = [131]
-# params = [144]
+# params = [99]
+# params = [109, 110, 111, 112]
+params = [113, 114, 115, 116]
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param):

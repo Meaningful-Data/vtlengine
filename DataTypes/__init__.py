@@ -4,6 +4,7 @@ DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'Float64',
     'Integer': 'Int64',
+    'Time': 'string',
     'TimeInterval': 'string',
     'Date': 'string',
     'TimePeriod': 'string',
@@ -15,6 +16,7 @@ CAST_MAPPING = {
     'String': str,
     'Number': float,
     'Integer': int,
+    'Time': str,
     'TimeInterval': str,
     'Date': str,
     'TimePeriod': str,
@@ -107,22 +109,27 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+class Time(ScalarType):
+    """
 
-class TimeInterval(ScalarType):
+    """
+    default = None
+
+class Time_Interval(ScalarType):
     """
 
     """
     default = None
 
 
-class Date(TimeInterval):
+class Date(Time_Interval):
     """
 
     """
     default = None
 
 
-class TimePeriod(TimeInterval):
+class Time_Period(Time_Interval):
     """
 
     """
@@ -169,9 +176,10 @@ SCALAR_TYPES = {
     'String': String,
     'Number': Number,
     'Integer': Integer,
-    'TimeInterval': TimeInterval,
+    'Time': Time,
+    'Time_Interval': Time_Interval,
     'Date': Date,
-    'TimePeriod': TimePeriod,
+    'Time_Period': Time_Period,
     'Duration': Duration,
     'Boolean': Boolean,
 }
@@ -187,8 +195,9 @@ COMP_NAME_MAPPING = {
     String: 'string_var',
     Number: 'num_var',
     Integer: 'int_var',
-    TimeInterval: 'time_var',
-    TimePeriod: 'time_period_var',
+    Time: 'time_var',
+    Time_Interval: 'time_var',
+    Time_Period: 'time_period_var',
     Date: 'date_var',
     Duration: 'duration_var',
     Boolean: 'bool_var'
@@ -205,9 +214,9 @@ TYPE_MAPPING_POSITION = {
     Integer: 0,
     Number: 1,
     Boolean: 2,
-    TimeInterval: 3,
+    Time_Interval: 3,
     Date: 4,
-    TimePeriod: 5,
+    Time_Period: 5,
     String: 6,
     Duration: 7
 }
@@ -225,9 +234,9 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
     String: {String},
     Number: {String, Number},
     Integer: {String, Number, Integer},
-    TimeInterval: {String, TimeInterval},
-    Date: {String, TimeInterval, Date},
-    TimePeriod: {String, TimeInterval, TimePeriod},
+    Time_Interval: {String, Time_Interval},
+    Date: {String, Time_Interval, Date},
+    Time_Period: {String, Time_Interval, Time_Period},
     Duration: {String, Duration},
     Boolean: {String, Boolean}
     # Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}

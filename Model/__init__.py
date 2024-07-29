@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
@@ -8,6 +9,7 @@ from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
+import DataTypes
 from DataTypes import SCALAR_TYPES, ScalarType
 
 
@@ -118,6 +120,11 @@ class Dataset:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
                     "The number of components must match the number of columns in the data")
+            for name, component in self.components.items():
+                if name not in self.data.columns:
+                    raise ValueError(f"Component {name} not found in the data")
+                if component.data_type == DataTypes.Time_Period:
+                    self.data[name] = self.data[name].apply(self.refactor_time_period)
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -203,6 +210,21 @@ class Dataset:
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
+
+    def refactor_time_period(self, date):
+        if not isinstance(date, str):
+            return date
+        try:
+            date_datetime = datetime.strptime(date, "%YQ%d")
+            year, quarter = date_datetime.year, date_datetime.day
+            return "{}-Q{}".format(year, quarter)
+        except ValueError:
+            try:
+                date_datetime = datetime.strptime(date, "%YS%d")
+                year, semester = date_datetime.year, date_datetime.month
+                return "{}-S{}".format(year, semester)
+            except ValueError:
+                return date
 
 
 @dataclass
