@@ -1,0 +1,2 @@
+DS_r := LGL_ENTTY_OBSRVD_AGNT[calc LGL_ENTTY_CD := if isnull(HD_QRTR_CD) then OBSRVD_AGNT_CD else HD_QRTR_CD,
+                CNTRY_LGL_ENTTY := substr(LGL_ENTTY_CD, 1, 2)];

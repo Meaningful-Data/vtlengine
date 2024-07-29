@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "INSTRMTN_PRTCT_RCVD_AGG_2",
+      "DataStructure": [
+        {
+          "name": "PRTCTN_ALLCTD_VL_PRTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

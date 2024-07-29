@@ -1,0 +1,21 @@
+HD_QRTR_DS_OBS :=
+    RIAD_IS_BRNCH_C
+        [calc measure HD_QRTR_CD := TRGT_ENTTY_RIAD_CD]
+        [keep HD_QRTR_CD]
+        [rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD]
+        [filter VLD_T = cast(null, date)];
+        /*[filter VLD_T = cast("9999-12-31", date)];*/
+HD_QRTR_DS_MX :=
+    max(HD_QRTR_DS_OBS group by OBSRVD_AGNT_CD);
+    
+ENTTY_INSTRMNT_HDQRTR :=
+    inner_join(
+        ANCRDT_ENTTY_INSTRMNT_C,
+        HD_QRTR_DS_MX
+            [rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD]
+        as B
+        using ENTTY_RIAD_CD
+    );
+ENTTY_INSTRMNT_LGL_ENTTY_CD_ID :=
+    ENTTY_INSTRMNT_HDQRTR
+        [calc identifier LGL_ENTTY_CD := LGL_ENTTY_CD];

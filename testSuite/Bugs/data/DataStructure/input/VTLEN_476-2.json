@@ -1,0 +1,81 @@
+{
+  "datasets": [
+    {
+      "name": "FOW_SPEC",
+      "DataStructure": [
+        {
+          "name": "base_currency",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "contract_id",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "contract_name",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "contract_size",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "contract_size_description",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "contract_type",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "instrument_id",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "mic",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "settlement_currency",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "stock_exchange_id",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ticker_id",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

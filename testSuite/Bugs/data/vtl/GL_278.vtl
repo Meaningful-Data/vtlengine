@@ -1,0 +1,8 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+IMMDT_PRNT_DS_MX :=
+    drop_identifier(RIAD_IS_OWNR_C
+        [calc measure IMMDT_PRNT_CD := ENTTY_RIAD_CD]
+        [keep IMMDT_PRNT_CD], ENTTY_RIAD_CD);

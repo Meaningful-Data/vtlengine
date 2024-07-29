@@ -1,0 +1,69 @@
+{
+  "datasets": [
+    {
+      "name": "FOW_VOLS",
+      "DataStructure": [
+        {
+          "name": "contract_id",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "contract_name",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "contract_type",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "instrument_id",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "open_interest",
+          "role": "Attribute",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "stock_exchange_id",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "trading_days",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "turnover",
+          "role": "Attribute",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

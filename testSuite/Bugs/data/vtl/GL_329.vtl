@@ -1,0 +1,6 @@
+MLTPL_DBTRS_ONA_EQL :=
+    MLTPL_DBTRS
+        [aggr IS_ONA_MNR := min(if JNT_LBLTY_AMNT < OTSTNDNG_NMNL_AMNT then 1 else 0),
+              IS_ONA_EQL := max(if JNT_LBLTY_AMNT = OTSTNDNG_NMNL_AMNT then 1 else 0)
+              group except ENTTY_RL, ENTTY_RIAD_CD];
+

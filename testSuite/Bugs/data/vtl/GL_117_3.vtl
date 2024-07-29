@@ -1,0 +1,7 @@
+define datapoint ruleset dprDefault (variable Id_1, Id_2, Id_3, Me_1, Me_2, Me_3, Me_4) is
+  
+            Me_4 = "code_1" errorcode "CN0630" errorlevel 3;
+            when Id_1 = "code_1"  or Me_3 = 1 then Me_4 = "code_1"  errorcode "CN0816" errorlevel 3;
+            when Me_2 = 2  and Me_3 = 1 then Id_1 = "code_1"  errorcode "CN0555" errorlevel 3       
+        end datapoint ruleset;
+        DS_r <- check_datapoint ( DS_1 , dprDefault all) ; 

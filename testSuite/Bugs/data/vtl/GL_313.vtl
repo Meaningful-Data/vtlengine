@@ -1,0 +1,7 @@
+JN_LBLTS_AGGR :=
+    A07.ENTTY_INSTRMNT_JN_LBLTS
+        [filter ENTTY_RL = "2"]
+        [aggr
+            NMBR_DBTRS := count(),
+            SUM_JNT_LBLTY_AMNT := sum(JNT_LBLTY_AMNT)
+        group except ENTTY_RIAD_CD, ENTTY_RL];

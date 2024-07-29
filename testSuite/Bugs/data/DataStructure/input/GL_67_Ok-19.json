@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "BIRD_JNT_CNTRPRTS_IL",
+      "DataStructure": [
+        {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTY_CMPNNT",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTY_PRCNTG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

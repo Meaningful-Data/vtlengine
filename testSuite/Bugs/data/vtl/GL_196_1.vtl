@@ -1,0 +1,1 @@
+dsPrep.ENTTY_INSTRMNT_LGL_ENTTY_CD_ID := dsPrep.ENTTY_INSTRMNT_HDQRTR [ calc identifier LGL_ENTTY_CD := if isnull ( HD_QRTR_CD ) then nvl(ENTTY_RIAD_CD,1) else nvl(HD_QRTR_CD,1) ] [ drop HD_QRTR_CD ] ;

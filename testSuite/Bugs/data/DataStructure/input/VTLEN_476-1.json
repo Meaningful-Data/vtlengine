@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "currentContracts",
+      "DataStructure": [
+        {
+          "name": "autonumber",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "contract_id",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

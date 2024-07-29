@@ -1,0 +1,7 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+INSTTTNL_SCTR_DS :=
+    drop_identifier(drop_identifier(INSTTTNL_SCTR_DS_CJ[filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T], VLD_T), VLD_FRM);

@@ -1,0 +1,7 @@
+define operator get_dp_rc(ds dataset, row component, column component, rv string default "R0030", cv string default "C0030") returns dataset is
+    max(ds[filter row = rv and column = cv] group except row, column)
+end operator;
+
+DS_r2 := get_dp_rc(table1,row, column, "", "");
+DS_r3 := get_dp_rc(table1,row, column);
+DS_r4 := get_dp_rc(table1,row, column);

@@ -1,0 +1,17 @@
+/*1. Initial filter*/
+
+INSTRMNT_FCT_1 := INSTRMNT_CNTRPRTY[filter ENTTY_RL in{"1","2"}];
+
+/*2. Change granularity*/
+ANCRDT_RPRTNG_ENTTY := ANAMART_ENTTY_TM[keep IS_ANCRDT_RPRTNG][filter IS_ANCRDT_RPRTNG="T"];
+
+/*INSTRMNT_FCT_2 := left_join(INSTRMNT_FCT_1, ANCRDT_RPRTNG_ENTTY using ENTTY_RIAD_ID, DT_RFRNC);*/
+
+INSTRMNT_FCT_3 := INSTRMNT_FCT_2
+[filter ENTTY_RL="2" or 
+(ENTTY_RL="1" and 
+(isnull(IS_ANCRDT_RPRTNG) or ENTTY_RIAD_ID=OBSRVD_AGNT_ID))]
+[drop IS_ANCRDT_RPRTNG]; /*We have to leave all the debtors (ENTTY_RL="2") plus (or) all the creditors (ENTTY_RL="1") that are either (the observed agent ENTTY_RIAD_ID=OBSRVD_AGNT_ID or not reporting AnaCredit isnull(IS_ANCRDT_RPRTNG))*/
+
+INSTRMNT_FCT_CRDTR:=INSTRMNT_FCT_3[filter ENTTY_RL="1"][rename ENTTY_RIAD_ID to CRDTR_ID];
+INSTRMNT_FCT_DBTR:=INSTRMNT_FCT_3[filter ENTTY_RL="2"][rename ENTTY_RIAD_ID to DBTR_ID];

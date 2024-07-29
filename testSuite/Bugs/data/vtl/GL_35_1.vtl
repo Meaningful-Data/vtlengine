@@ -1,0 +1,5 @@
+/*IS INTRCMPNY - Note that the SDD is wrong for this variable. IT is defined as boolean, which can only take true or false*//*1. Create a dataset with the legal entity riad code for the observed agent and for the counterparty (regardless of its role)*/
+ENTTY_LE := A02.ANAMART_ENTTY_LE[keep ENTTY_RIAD_CD_LE];
+CNTRPRTY_LE :=inner_join(INSTRMNT_CNTRPRTY, ENTTY_LE[rename ENTTY_RIAD_CD_LE to LE_CNTRPRTY] as A);
+/* OBSRVD_AGNT_LE := inner_join(CNTRPRTY_LE, ENTTY_LE[rename ENTTY_RIAD_ID to OBSRVD_AGNT_ID, ENTTY_RIAD_CD_LE to LE_OBSRVD_AGNT] as B);*/
+OBSRVD_AGNT_LE := inner_join(CNTRPRTY_LE, ENTTY_LE[rename ENTTY_RIAD_ID to OBSRVD_AGNT_ID][rename ENTTY_RIAD_CD_LE to LE_OBSRVD_AGNT] as B);

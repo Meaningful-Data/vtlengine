@@ -1,0 +1,11 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+DS_r :=
+    drop_identifier(
+        inner_join(
+            drop_identifier(ENTTY_INSTRMNT_CRDTR_LE, ENTTY_RIAD_CD)[drop ENTTY_RIAD_CD_LE] as A,
+            drop_identifier(ENTTY_INSTRMNT_DBTR_LE, ENTTY_RIAD_CD)[drop ENTTY_RIAD_CD_LE] as B),
+        LE_CD);

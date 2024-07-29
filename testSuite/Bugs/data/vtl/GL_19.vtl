@@ -1,0 +1,34 @@
+define datapoint ruleset granularCmaEntity (variable ENTRPRS_SZ, BLNC_SHT_TTL_CRRNCY, ANNL_TRNVR_CRRNCY, NMBR_EMPLYS, 
+                                                     PD, INSTTTNL_SCTR, DFLT_STTS, LGL_PRCDNG_STTS, NEVS_DFLT_STTS) is
+
+    IG0010: when NMBR_EMPLYS >= 250 or 
+                    (ANNL_TRNVR_CRRNCY >= 50000000 and BLNC_SHT_TTL_CRRNCY >= 43000000)
+           then ENTRPRS_SZ = "1" 
+           errorcode "IG0010" errorlevel 1;
+    
+    IG0011: when NMBR_EMPLYS >= 50 or 
+                    (ANNL_TRNVR_CRRNCY >= 10000000 and BLNC_SHT_TTL_CRRNCY >= 10000000)
+           then ENTRPRS_SZ not_in {"4", "3"} 
+           errorcode "IG0011" errorlevel 1;
+           
+    IG0012: when NMBR_EMPLYS >= 10 or 
+                    (ANNL_TRNVR_CRRNCY >= 2000000 and BLNC_SHT_TTL_CRRNCY >= 2000000)
+           then ENTRPRS_SZ <> "4" 
+           errorcode "IG0012" errorlevel 1;
+           
+    IG0020: when ENTRPRS_SZ = "1" or INSTTTNL_SCTR = "S122"
+           then PD >= 0.0003
+           errorcode "IG0020" errorlevel 1;
+
+    IG0080: when DFLT_STTS <> "14"
+           then PD = 1
+           errorcode "IG0080" errorlevel 1;
+    
+    IG0090: when LGL_PRCDNG_STTS = "3"
+           then DFLT_STTS <> "14"
+           errorcode "IG0090" errorlevel 1
+
+
+end datapoint ruleset;
+
+GRNLR_CMA_ENTTY <- check_datapoint ( dsPrep.ENTTY_PD , granularCmaEntity ) ; 

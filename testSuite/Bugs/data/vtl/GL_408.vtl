@@ -1,0 +1,5 @@
+DS_b := DS_1[rename Me_1 to Me_a];
+DS_a := DS_b[aggr Mx := max(Me_2) group except Id_1];
+DS_d <- DS_2#Me_1 * DS_a[rename Mx to Me_1]#Me_1;
+DS_e := DS_d[filter Me_1 > 0 and Me_1 < 3];
+DS_c <- inner_join(DS_d, DS_e keep DS_d#Me_1);

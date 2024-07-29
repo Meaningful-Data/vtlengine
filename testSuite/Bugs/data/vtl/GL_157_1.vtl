@@ -1,0 +1,3 @@
+A01.AUX := ANCRDT_ENTTY_DFLT_C [ calc identifier DT_RFRNC := cast ( "2018-12-31" , date ) ][ filter VLD_FRM <= DT_RFRNC and VLD_T >= DT_RFRNC ]  ; 
+A01.FINAL := inner_join (A01.AUX, ANCRDT_ENTTY_RSK_C using DT_RFRNC, ENTTY_RIAD_CD);
+
