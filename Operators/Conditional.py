@@ -29,12 +29,10 @@ class If(Operator):
     def component_level_evaluation(cls, condition, true_branch, false_branch):
         data = []
         for i, row in enumerate(condition.data):
-            true_value = true_branch.value if isinstance(true_branch, Scalar) else (true_branch.data.iloc[i] if
-                                                                                    i < len(true_branch.data) else None)
-            false_value = false_branch.value if isinstance(false_branch, Scalar) else (false_branch.data.iloc[i] if
-                                                                                       i < len(
-                                                                                           false_branch.data) else None)
-            data.append(true_value if row else false_value)
+            if row:
+                data.append(true_branch.value if isinstance(true_branch, Scalar) else true_branch.data[i])
+            else:
+                data.append(false_branch.value if isinstance(false_branch, Scalar) else false_branch.data[i])
         return pd.Series(data)
 
     @classmethod
@@ -66,7 +64,6 @@ class If(Operator):
         return result
 
     # TODO:
-    #  - check condition components are from the same dataset
     #  - change this to use the implicit data type promotion method
     @classmethod
     def validate(cls, condition, true_branch, false_branch) -> Scalar | DataComponent | Dataset:
@@ -80,11 +77,7 @@ class If(Operator):
                 left = false_branch
                 right = true_branch
 
-        if isinstance(condition, Scalar):
-            if not isinstance(left, Scalar):
-                raise ValueError("If operation at scalar level must have scalar types on both sides")
-            return Scalar(name='result', value=None, data_type=Binary.type_validation(left.data_type, right.data_type))
-
+        # Datacomponent
         if isinstance(condition, DataComponent):
             return DataComponent(name='result', data=None,
                                  data_type=Binary.type_validation(left.data_type, right.data_type),
