@@ -1,0 +1,6 @@
+DS_r := sum(DS_1 group all time_agg("D", _ ,Id_1, last));
+DS_r1 := sum(DS_1 group all time_agg("W", _ ,Id_1, last));
+DS_r2 := sum(DS_1 group all time_agg("M", _ ,Id_1, last));
+DS_r3 := sum(DS_1 group all time_agg("Q", _ ,Id_1, last));
+DS_r4 := sum(DS_1 group all time_agg("S", _ ,Id_1, last));
+DS_r5 := sum(DS_1 group all time_agg("A", _ ,Id_1, last));

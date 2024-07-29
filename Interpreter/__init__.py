@@ -1,18 +1,20 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, Role, Scalar, ScalarSet
+from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
+from Operators.General import Eval
+from Operators.Conditional import If
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Validation import Check, Check_Datapoint
@@ -23,13 +25,17 @@ from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MA
 # noinspection PyTypeChecker
 @dataclass
 class InterpreterAnalyzer(ASTTemplate):
+    # Model elements
     datasets: Dict[str, Dataset]
+    external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Flags to change behavior
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
+    is_from_then: Optional[List[bool]] = None
+    is_from_else: Optional[List[bool]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -37,6 +43,8 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
+    true_condition_dataset: Optional[List[pd.DataFrame]] = None
+    false_condition_dataset: Optional[List[pd.DataFrame]] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
 
@@ -45,7 +53,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for child in node.children:
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
-            if isinstance(result, Dataset):
+            if isinstance(result, Union[Dataset, Scalar]):
                 self.datasets[result.name] = result
                 results[result.name] = result
         return results
@@ -255,7 +263,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data=self.aggregation_dataset.data[node.value],
                                  data_type=self.aggregation_dataset.components[
                                      node.value].data_type,
-                                 role=self.aggregation_dataset.components[node.value].role)
+                                 role=self.aggregation_dataset.components[node.value].role,
+                                 nullable=self.aggregation_dataset.components[node.value].nullable)
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets.keys():
                 return self.datasets[node.value]
@@ -265,7 +274,9 @@ class InterpreterAnalyzer(ASTTemplate):
                                  self.regular_aggregation_dataset.components[
                                      node.value].data_type,
                                  role=self.regular_aggregation_dataset.components[
-                                     node.value].role)
+                                     node.value].role,
+                                 nullable=self.regular_aggregation_dataset.components[
+                                     node.value].nullable)
         if self.is_from_rule:
             if node.value not in self.ruleset_signature:
                 raise Exception(f"Component {node.value} not found in ruleset signature")
@@ -276,7 +287,8 @@ class InterpreterAnalyzer(ASTTemplate):
             return DataComponent(name=comp_name,
                                  data=self.rule_data[comp_name],
                                  data_type=self.ruleset_dataset.components[comp_name].data_type,
-                                 role=self.ruleset_dataset.components[comp_name].role)
+                                 role=self.ruleset_dataset.components[comp_name].role,
+                                 nullable=self.ruleset_dataset.components[comp_name].nullable)
 
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
@@ -361,6 +373,38 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands, dataset)
 
+    def visit_If(self, node: AST.If) -> Dataset:
+
+        condition = self.visit(node.condition)
+
+        if isinstance(condition, Scalar):
+            if condition.value:
+                return self.visit(node.thenOp)
+            else:
+                return self.visit(node.elseOp)
+
+        # Analysis for data component and dataset
+        else:
+            if self.is_from_then is None:
+                self.is_from_then = []
+            if self.true_condition_dataset is None:
+                self.true_condition_dataset = []
+            if self.is_from_else is None:
+                self.is_from_else = []
+            if self.false_condition_dataset is None:
+                self.false_condition_dataset = []
+
+            self.generate_true_false_datasets(condition)
+
+        self.is_from_then.append(True)
+        thenOp = self.visit(node.thenOp)
+        self.is_from_then.pop()
+        self.is_from_else.append(True)
+        elseOp = self.visit(node.elseOp)
+        self.is_from_else.pop()
+
+        return If.evaluate(condition, thenOp, elseOp)
+
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         return node
 
@@ -402,17 +446,11 @@ class InterpreterAnalyzer(ASTTemplate):
             return Trunc.evaluate(op_element, param_element)
 
         elif node.op == SUBSTR or node.op == REPLACE or node.op == INSTR:
-            param1 = None
-            param2 = None
-            param3 = None
+            params = [None, None, None]
             op_element = self.visit(node.children[0])
-            for node_param in node.params:
-                if param1 is None:
-                    param1 = self.visit(node_param)
-                elif param2 is None:
-                    param2 = self.visit(node_param)
-                elif param3 is None:
-                    param3 = self.visit(node_param)
+            for i, node_param in enumerate(node.params):
+                params[i] = self.visit(node_param)
+            param1, param2, param3 = tuple(params)
             if node.op == SUBSTR:
                 return Substr.evaluate(op_element, param1, param2)
             elif node.op == REPLACE:
@@ -518,3 +556,35 @@ class InterpreterAnalyzer(ASTTemplate):
                               error_code=node.error_code,
                               error_level=node.error_level,
                               invalid=node.invalid)
+
+    def visit_EvalOp(self, node: AST.EvalOp) -> Dataset:
+        """
+        EvalOp: (name, children, output, language)
+
+        Basic usage:
+
+            for child in node.children:
+                self.visit(child)
+            if node.output != None:
+                self.visit(node.output)
+
+        """
+        if node.language not in EXTERNAL:
+            raise Exception(f"Language {node.language} not supported on Eval")
+
+        if node.name not in self.external_routines:
+            raise Exception(f"External Routine {node.name} not found")
+        external_routine = self.external_routines[node.name]
+        operand = self.visit(node.operand)
+        output_to_check = node.output
+        return Eval.evaluate(operand, external_routine, output_to_check)
+
+    def generate_true_false_datasets(self, condition):
+        if len(condition.get_measures_names()) != 1:
+            raise ValueError("Only one boolean measure is allowed on condition dataset")
+        true_condition = condition.data[condition.data[condition.get_measures_names()]]
+        false_condition = condition.data[~condition.data[condition.get_measures_names()]]
+        if self.true_condition_dataset is not None:
+            self.true_condition_dataset.append(true_condition)
+        if self.false_condition_dataset is not None:
+            self.false_condition_dataset.append(false_condition)

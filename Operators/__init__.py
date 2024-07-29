@@ -2,7 +2,7 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from AST.Grammar.tokens import CEIL, FLOOR
+from AST.Grammar.tokens import CEIL, FLOOR, ROUND
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
@@ -19,7 +19,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
 # TODO: Check if there are more operators that allow this
-MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR]
+MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
 
 
 class Operator:
@@ -132,6 +132,8 @@ class Binary(Operator):
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
                                       series_left: bool) -> Any:
+        if scalar is None:
+            return pd.Series(None, index=series.index)
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar), na_action='ignore')
         else:
@@ -210,7 +212,7 @@ class Binary(Operator):
         base_operand = right_operand if use_right_components else left_operand
         result_components = {component_name: copy(component) for component_name, component in
                              base_operand.components.items()
-                             if component.role == Role.MEASURE or component.name in join_keys}
+                             if component.role in [Role.IDENTIFIER, Role.MEASURE]}
 
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
@@ -391,27 +393,34 @@ class Binary(Operator):
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset):
         result_dataset = cls.dataset_validation(left_operand, right_operand)
 
-        join_keys = result_dataset.get_identifiers_names()
-        measure_names = left_operand.get_measures_names()
+        use_right_as_base = False
+        if len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names()):
+            use_right_as_base = True
+            base_operand_data = right_operand.data
+            other_operand_data = left_operand.data
+        else:
+            base_operand_data = left_operand.data
+            other_operand_data = right_operand.data
 
-        # Deleting extra identifiers that we do not need anymore
-        for column in left_operand.data.columns:
-            if column not in join_keys + measure_names:
-                del left_operand.data[column]
-
-        for column in right_operand.data.columns:
-            if column not in join_keys + measure_names:
-                del right_operand.data[column]
+        join_keys = list(set(left_operand.get_identifiers_names()).intersection(
+            right_operand.get_identifiers_names()))
 
         # Merge the data
         result_data: pd.DataFrame = pd.merge(
-            left_operand.data, right_operand.data,
-            how='inner', left_on=join_keys, right_on=join_keys)
+            base_operand_data, other_operand_data,
+            how='inner', on=join_keys,
+            suffixes=('_x', '_y'))
 
+        # Measures are the same, using left operand measures names
         for measure_name in left_operand.get_measures_names():
-            result_data[measure_name] = cls.apply_operation_two_series(
-                result_data[measure_name + '_x'],
-                result_data[measure_name + '_y'])
+            if use_right_as_base:
+                result_data[measure_name] = cls.apply_operation_two_series(
+                    result_data[measure_name + '_y'],
+                    result_data[measure_name + '_x'])
+            else:
+                result_data[measure_name] = cls.apply_operation_two_series(
+                    result_data[measure_name + '_x'],
+                    result_data[measure_name + '_y'])
             result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
         result_dataset.data = result_data

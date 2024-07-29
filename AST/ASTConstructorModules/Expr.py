@@ -14,6 +14,7 @@ from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
+from Model import Role
 
 
 class Expr(VtlVisitor):
@@ -417,6 +418,9 @@ class Expr(VtlVisitor):
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
+        if len(children_nodes) > 1:
+            raise Exception("Only one operand is allowed in Eval")
+
         # Reference manual says it is mandatory.
         language_name = [language for language in ctx_list if
                          isinstance(language,
@@ -431,7 +435,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, children=children_nodes, output=output_node[0],
+        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
@@ -1491,15 +1495,16 @@ class Expr(VtlVisitor):
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[3])
             operand_node = Assignment(left_node, op_node, right_node)
-            if role is not None:
-                return UnaryOp(role.value.lower(), operand_node)
-            return operand_node
+            if role is None:
+                return UnaryOp(Role.MEASURE.value.lower(), operand_node)
+            return UnaryOp(role.value.lower(), operand_node)
         else:
             left_node = Terminals().visitSimpleComponentId(c)
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 
-            return Assignment(left_node, op_node, right_node)
+            operand_node = Assignment(left_node, op_node, right_node)
+            return UnaryOp(Role.MEASURE.value.lower(), operand_node)
 
     def visitKeepOrDropClause(self, ctx: Parser.KeepOrDropClauseContext):
         """

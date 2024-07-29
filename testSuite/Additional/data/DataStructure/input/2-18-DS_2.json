@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "B",
+      "DataStructure": [
+        {
+          "name": "Id1",
+          "role": "Identifier",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "IdB2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IdB3",
+          "role": "Identifier",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "MeB1",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

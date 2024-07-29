@@ -171,6 +171,21 @@ class Boolean(ScalarType):
             return value
         return value
 
+class Null(ScalarType):
+    """
+    """
+
+    def is_null_type(self) -> bool:
+        return True
+
+    def check_type(self, value):
+        return True
+
+    def cast(self, value):
+        return None
+
+    def dtype(self):
+        return 'string'
 
 SCALAR_TYPES = {
     'String': String,
@@ -189,6 +204,7 @@ BASIC_TYPES = {
     int: Integer,
     float: Number,
     bool: Boolean,
+    type(None): Null
 }
 
 COMP_NAME_MAPPING = {
@@ -203,33 +219,6 @@ COMP_NAME_MAPPING = {
     Boolean: 'bool_var'
 }
 
-CONVERSION_VALIDATOR = {
-    '-': 'same',
-    'I': 'implicit',
-    'E': 'explicit',
-    'N': 'no'
-}
-
-TYPE_MAPPING_POSITION = {
-    Integer: 0,
-    Number: 1,
-    Boolean: 2,
-    Time_Interval: 3,
-    Date: 4,
-    Time_Period: 5,
-    String: 6,
-    Duration: 7
-}
-
-TYPE_PROMOTION_MATRIX = [['-', 'I', 'E', 'N', 'E', 'E', 'I', 'E'],
-                         ['E', '-', 'E', 'N', 'N', 'N', 'I', 'N'],
-                         ['E', 'E', '-', 'N', 'N', 'N', 'I', 'N'],
-                         ['N', 'N', 'N', '-', 'N', 'N', 'E', 'N'],
-                         ['N', 'N', 'N', 'I', '-', 'E', 'E', 'N'],
-                         ['N', 'N', 'N', 'I', 'N', '-', 'E', 'N'],
-                         ['E', 'E', 'N', 'E', 'E', 'E', '-', 'E'],
-                         ['N', 'N', 'N', 'N', 'N', 'N', 'E', '-']]
-
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
     String: {String},
     Number: {String, Number},
@@ -238,8 +227,8 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
     Date: {String, Time_Interval, Date},
     Time_Period: {String, Time_Interval, Time_Period},
     Duration: {String, Duration},
-    Boolean: {String, Boolean}
-    # Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
+    Boolean: {String, Boolean},
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
 
 

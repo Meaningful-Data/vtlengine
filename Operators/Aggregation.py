@@ -10,8 +10,8 @@ from pyspark.sql.functions import col, stddev
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
                                 VAR_SAMP)
-from DataTypes import Integer, Number
-from Model import DataComponent, Dataset, Role
+from DataTypes import Integer, Number, check_unary_implicit_promotion
+from Model import Component, DataComponent, Dataset, Role
 
 
 def extract_grouping_identifiers(identifier_names: List[str],
@@ -54,18 +54,17 @@ class Aggregation(Operator.Unary):
         for comp_name, comp in operand.components.items():
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
-        if len(operand.get_measures()) != 1:
-            raise ValueError("Only one measure is allowed")
         # Change Measure data type
         for comp_name, comp in result_components.items():
             if comp.role == Role.MEASURE:
-                # TODO: Type promotion
+                check_unary_implicit_promotion(comp.data_type, cls.type_to_check)
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:
-            measure_name = operand.get_measures_names()[0]
-            new_comp = result_components.pop(measure_name)
-            new_comp.name = "int_var"
+            for measure_name in operand.get_measures_names():
+                result_components.pop(measure_name)
+            new_comp = Component(name="int_var", role=Role.MEASURE, data_type=Integer,
+                                 nullable=True)
             result_components["int_var"] = new_comp
         return Dataset(name="result", components=result_components, data=None)
 
@@ -76,10 +75,16 @@ class Aggregation(Operator.Unary):
                  grouping_columns: Optional[str],
                  having_data: Optional[pd.DataFrame]) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_data)
-        result.data = operand.data.copy()
-        measure_name = operand.get_measures_names()[0]
 
         grouping_keys = result.get_identifiers_names()
+        result.data = operand.data.copy()
+        if len(operand.get_measures_names()) == 0:
+            if cls.op == COUNT:
+                result.data = result.data[grouping_keys].groupby(grouping_keys).size().reset_index(name='int_var')
+            else:
+                result.data = result.data[grouping_keys].drop_duplicates(keep='first')
+            return result
+        measure_name = operand.get_measures_names()[0]
         if len(grouping_keys) == 0:
             result_number = result.data[measure_name].agg(cls.py_op.__name__)
             result.data = pd.DataFrame(data=[result_number], columns=[measure_name])
@@ -88,6 +93,7 @@ class Aggregation(Operator.Unary):
         if having_data is not None:
             result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
         if cls.op == COUNT:
+            result_df = result_df.dropna(subset=[measure_name], how='any')
             result_df = result_df.groupby(grouping_keys).size().reset_index(name='int_var')
         else:
             comps_to_keep = grouping_keys + [measure_name]

@@ -1,4 +1,5 @@
 import os
+from copy import copy
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -17,15 +18,22 @@ class RoleSetter(Unary):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES):
         if isinstance(operand, Scalar):
+
+            nullable = True
+            if cls.role == Role.IDENTIFIER:
+                nullable = False
+            if cls.role == Role.ATTRIBUTE and operand.value is not None:
+                nullable = False
+
             return DataComponent(
                 name=operand.name,
                 data_type=operand.data_type,
                 role=cls.role,
-                nullable=operand.value is None,
+                nullable=nullable,
                 data=None
             )
         operand.role = cls.role
-        return operand
+        return copy(operand)
 
     @classmethod
     def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):

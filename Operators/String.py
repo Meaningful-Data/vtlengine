@@ -1,5 +1,6 @@
 import operator
 import os
+import re
 
 from Model import Scalar, Dataset, DataComponent
 
@@ -11,7 +12,7 @@ else:
 from typing import Optional, Any, Union
 
 from AST.Grammar.tokens import LEN, CONCAT, UCASE, LCASE, RTRIM, SUBSTR, LTRIM, TRIM, REPLACE, INSTR
-from DataTypes import Integer, String, COMP_NAME_MAPPING, ScalarType
+from DataTypes import Integer, String, ScalarType, check_unary_implicit_promotion
 import Operators as Operator
 
 
@@ -70,12 +71,17 @@ class Rtrim(Unary):
 class Binary(Operator.Binary):
     type_to_check = String
 
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        x = "" if pd.isnull(x) else x
+        y = "" if pd.isnull(y) else y
+        return cls.py_op(x, y)
+
 
 class Concatenate(Binary):
     op = CONCAT
     py_op = operator.concat
     return_type = String
-
 
 class Parameterized(Unary):
 
@@ -97,7 +103,8 @@ class Parameterized(Unary):
 
     @classmethod
     def op_func(cls, x: Union[Dataset, String], param1: Optional[Any], param2: Optional[Any]) -> Any:
-        return None if pd.isnull(x) else cls.py_op(x, param1, param2)
+        x = "" if pd.isnull(x) else x
+        return cls.py_op(x, param1, param2)
 
     @classmethod
     def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> Any:
@@ -141,9 +148,9 @@ class Parameterized(Unary):
         result.data = operand.data.copy()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
             if isinstance(param1, DataComponent):
-                result.data = cls.apply_operation_two_series(operand.data, param1.data)
+                raise NotImplementedError
             if isinstance(param2, DataComponent):
-                result.data = cls.apply_operation_two_series(operand.data, param2.data)
+                raise NotImplementedError
         else:
             param_value1 = None if param1 is None else param1.value
             param_value2 = None if param2 is None else param2.value
@@ -188,6 +195,12 @@ class Substr(Parameterized):
             param1 = 0
         elif param1 is not 0:
             param1 -= 1
+        elif param1 > (len(x)):
+            return ""
+        if param2 is None or (param1 + param2) > len(x):
+            param2 = len(x)
+        else:
+            param2 = (param1 + param2)
         return x[param1:param2]
     
     @classmethod
@@ -195,21 +208,19 @@ class Substr(Parameterized):
         if param:
             if position not in (1,2):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
 
-            if not data_type == Integer:
+            if not check_unary_implicit_promotion(data_type, Integer):
                 raise Exception("Substr params should be Integer")
             
             if isinstance(param, DataComponent):
                 value = param.data[0]
             else:
                 value = param.value
-            if position == 1:
-                if not value >= 1:
-                    raise Exception("param start should be >= 1")
-            else:
-                if not value >= 0:
-                    raise Exception("param length should be >= 0")
+            if value is not None and value >= 1 and position == 1:
+                raise Exception("param start should be >= 1")
+            if value is not None and not value >= 0:
+                raise Exception("param length should be >= 0")
 
 
 class Replace(Parameterized):
@@ -219,7 +230,7 @@ class Replace(Parameterized):
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         if param1 is None:
-            return x
+            return ""
         elif param2 is None:
             param2 = ''
         return x.replace(param1, param2)
@@ -227,11 +238,11 @@ class Replace(Parameterized):
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position:int):
         if param:
-            if position not in (1,2):
+            if position not in (1, 2):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
 
-            if not data_type == String:
+            if not check_unary_implicit_promotion(data_type, String):
                 raise Exception("Replace params should be String")
 
 
@@ -265,24 +276,24 @@ class Instr(Parameterized):
         if param:
             if position not in (1,2,3):
                 raise Exception("param position is not specified")
-            data_type:ScalarType = param.data_type
+            data_type: ScalarType = param.data_type
             
             if isinstance(param, DataComponent):
                 value = param.data[0]
             else:
                 value = param.value
             if position == 1:
-                if not data_type == String:
+                if not check_unary_implicit_promotion(data_type, String):
                     raise Exception("Instr pattern param should be String")
             elif position ==2:
-                if not data_type == Integer:
+                if not check_unary_implicit_promotion(data_type, Integer):
                     raise Exception("Instr start param should be Integer")
-                if not value >= 1:
+                if value is not None and value < 1:
                     raise Exception("param start should be >= 1")
             else:
-                if not data_type == Integer:
+                if not check_unary_implicit_promotion(data_type, Integer):
                     raise Exception("Instr occurrence param should be Integer")
-                if not value >= 1:
+                if value is not None and value < 1:
                     raise Exception("param occurrence should be >= 1")
 
     @classmethod
@@ -373,12 +384,38 @@ class Instr(Parameterized):
     @classmethod
     def op_func(cls, x: Union[Dataset, String], param1: Optional[Any], param2: Optional[Any],
                 param3: Optional[Any]) -> Any:
-        return None if pd.isnull(x) else cls.py_op(x, param1, param2, param3)
+        x = "" if pd.isnull(x) else x
+        return cls.py_op(x, param1, param2, param3)
 
     @classmethod
-    def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any], param3: Optional[Any]) -> Any:
-        if param2 is None:
-            param2 = 0
-        if param3 is None:
-            param3 = len(x)
-        return x.find(param1, param2, param3) + 1
+    def py_op(cls, str_value: str, str_to_find: Optional[str], start: Optional[int], occurrence: Optional[int]) -> Any:
+        if start is not None:
+            if isinstance(start, int) or start.is_integer():
+                start = int(start - 1)
+            else:
+                # OPERATORS_STRINGOPERATORS.92
+                raise Exception(f"At op {cls.op}: Start parameter value {start} should be integer.")
+        else:
+            start = 0
+
+        if occurrence is not None:
+            if isinstance(occurrence, int) or occurrence.is_integer():
+                occurrence = int(occurrence - 1)
+            else:
+                # OPERATORS_STRINGOPERATORS.93
+                raise Exception(f"At op {cls.op}: Occurrence parameter value {occurrence} should be integer.")
+        else:
+            occurrence = 0
+        if str_to_find is None:
+            return 0
+
+        occurrences_list = [m.start() for m in re.finditer(str_to_find, str_value[start:])]
+
+        length = len(occurrences_list)
+
+        if occurrence > length - 1:
+            position = 0
+        else:
+            position = int(start + occurrences_list[occurrence] + 1)
+
+        return position

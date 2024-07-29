@@ -521,16 +521,9 @@ class EvalOp(AST):
     """
 
     name: str
-    children: List[AST]
+    operand: AST
     output: Optional[str]
     language: Optional[str]
-
-    def __init__(self, name, children, output, language):
-        super().__init__()
-        self.name = name
-        self.children = children
-        self.output = output
-        self.language = language
 
 
 @dataclass

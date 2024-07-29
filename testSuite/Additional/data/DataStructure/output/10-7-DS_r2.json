@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "name": "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4",
+      "DataStructure": [
+        {
+          "name": "BNFCRS_CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TRNSFR_CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "BNFCR_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TRNSFR_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
