@@ -1,3 +1,5 @@
+from Operators.Conditional import Nvl
+
 from AST.Grammar.tokens import *
 from Operators.Aggregation import (Avg, Count, Max, Median, Min,
                                    PopulationStandardDeviation,
@@ -12,10 +14,9 @@ from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, Firs
                                 SampleVariance as SampleVarianceAnalytic, Sum as SumAnalytic)
 from Operators.Boolean import And, Not, Or, Xor
 from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
-from Operators.Comparison import In, IsNull
-from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
+from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
 from Operators.General import Alias, Membership
-from Operators.Join import CrossJoin, FullJoin, InnerJoin, LeftJoin, Apply
+from Operators.Join import Apply, CrossJoin, FullJoin, InnerJoin, LeftJoin
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
     Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
@@ -37,6 +38,8 @@ BINARY_MAPPING = {
     LT: Less,
     LTE: LessEqual,
     IN: In,
+    # Conditional
+    NVL: Nvl,
     # Numeric
     PLUS: BinPlus,
     MINUS: BinMinus,
