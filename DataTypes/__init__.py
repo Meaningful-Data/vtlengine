@@ -212,7 +212,6 @@ COMP_NAME_MAPPING = {
     Number: 'num_var',
     Integer: 'int_var',
     Time: 'time_var',
-    Time_Interval: 'time_var',
     Time_Period: 'time_period_var',
     Date: 'date_var',
     Duration: 'duration_var',
@@ -228,7 +227,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
     Time_Period: {String, Time_Interval, Time_Period},
     Duration: {String, Duration},
     Boolean: {String, Boolean},
-    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
+    Null: {String, Number, Integer, Time, Date, Time_Period, Duration, Boolean, Null}
 }
 
 
