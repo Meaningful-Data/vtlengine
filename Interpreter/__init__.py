@@ -37,8 +37,6 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_having: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
-    is_from_then: Optional[List[bool]] = None
-    is_from_else: Optional[List[bool]] = None
     is_from_condition: bool = False
     if_stack: Optional[List[str]] = None
     # Handlers for simplicity
@@ -50,8 +48,6 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
-    true_condition_dataset: Optional[List[pd.DataFrame]] = None
-    false_condition_dataset: Optional[List[pd.DataFrame]] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
 
