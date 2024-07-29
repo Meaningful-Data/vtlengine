@@ -21,6 +21,23 @@ class Binary(Operator.Binary):
     type_to_check = Boolean
     return_type = Boolean
 
+    @classmethod
+    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
+                                      series_left: bool) -> Any:
+        if series_left:
+            return series.map(lambda x: cls.py_op(x, scalar))
+        else:
+            return series.map(lambda x: cls.py_op(scalar, x))
+
+    @classmethod
+    def apply_operation_two_series(cls,
+                                   left_series: Any,
+                                   right_series: Any) -> Any:
+        return left_series.combine(right_series, cls.op_func)
+
+    @classmethod
+    def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
+        return cls.py_op(x, y)
 
 class And(Binary):
     op = AND
@@ -33,10 +50,6 @@ class And(Binary):
     @classmethod
     def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
         return x & y
-
-    @classmethod
-    def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.py_op)
 
 
 class Or(Binary):
@@ -54,10 +67,6 @@ class Or(Binary):
     def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
         return x | y
 
-    @classmethod
-    def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.py_op)
-
 
 class Xor(Binary):
     op = XOR
@@ -71,10 +80,6 @@ class Xor(Binary):
     @classmethod
     def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
         return x ^ y
-
-    @classmethod
-    def apply_operation_component(cls, left_series: Any, right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.py_op)
 
 
 class Not(Unary):
