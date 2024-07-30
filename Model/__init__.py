@@ -133,6 +133,12 @@ class Dataset:
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
         self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
+        if not same_components:
+            return same_components
+        for comp in self.components.values():
+            if comp.data_type == SCALAR_TYPES['String']:
+                self.data[comp.name] = self.data[comp.name].astype(str)
+                other.data[comp.name] = other.data[comp.name].astype(str)
         other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
@@ -181,13 +187,6 @@ class Dataset:
 
     def get_components_names(self) -> List[str]:
         return list(self.components.keys())
-
-    def rename_component(self, old_name: str, new_name: str):
-        if old_name not in self.components:
-            raise ValueError(f"Component with name {old_name} does not exist")
-        if new_name in self.components:
-            raise ValueError(f"Component with name {new_name} already exists")
-        self.components[new_name] = self.components.pop(old_name)
 
     @classmethod
     def from_json(cls, json_str):

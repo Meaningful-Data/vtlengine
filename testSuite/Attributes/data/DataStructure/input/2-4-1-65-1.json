@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Me_11",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_12",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_3",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "At_11",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "At_12",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
