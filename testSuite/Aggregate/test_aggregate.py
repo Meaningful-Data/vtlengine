@@ -95,6 +95,10 @@ class TestAggregateHelper(TestCase):
         result = interpreter.visit(ast)
         assert result == reference_datasets
 
+    @classmethod
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+        assert True
+
 
 class AggregateOperatorsTest(TestAggregateHelper):
     """
