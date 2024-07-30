@@ -1,0 +1,9 @@
+
+RSDL_MRTY_WA := 
+    inner_join(
+        DBTR_FCT_DYS,
+        VRBLS_AGGR
+        aggr RSDL_MTRTY_DYS_WGHTD_AVRG := sum (RSDL_MTRTY*PST_D_DYS/MAX_RSDL_MTRTY_DYS) group by DT_RFRNC, ENTTY_RIAD_CD
+        );
+
+

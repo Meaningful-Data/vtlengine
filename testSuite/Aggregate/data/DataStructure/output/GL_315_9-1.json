@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "RSDL_MRTY_WA",
+      "DataStructure": [
+        {
+          "name": "CRDTR_ID",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "RSDL_MTRTY_DYS_WGHTD_AVRG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_3",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
