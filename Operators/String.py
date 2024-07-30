@@ -73,8 +73,8 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        x = "" if pd.isnull(x) else x
-        y = "" if pd.isnull(y) else y
+        x = "" if pd.isnull(x) else str(x)
+        y = "" if pd.isnull(y) else str(y)
         return cls.py_op(x, y)
 
 
@@ -137,7 +137,11 @@ class Parameterized(Unary):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value1, param_value2
                 )
-            cls.modify_measure_column(result)
+
+        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        result.data = result.data[cols_to_keep]
+
+        cls.modify_measure_column(result)
         return result
 
     @classmethod
@@ -333,7 +337,9 @@ class Instr(Parameterized):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value1, param_value2, param_value3
                 )
-            cls.modify_measure_column(result)
+        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        result.data = result.data[cols_to_keep]
+        cls.modify_measure_column(result)
         return result
 
     @classmethod

@@ -164,6 +164,7 @@ class Boolean(ScalarType):
             return value
         return value
 
+
 class Null(ScalarType):
     """
     """
@@ -180,13 +181,14 @@ class Null(ScalarType):
     def dtype(self):
         return 'string'
 
+
 SCALAR_TYPES = {
     'String': String,
     'Number': Number,
     'Integer': Integer,
     'TimeInterval': TimeInterval,
     'Date': Date,
-    'TimePeriod': TimePeriod,
+    'Time_Period': TimePeriod,
     'Duration': Duration,
     'Boolean': Boolean,
 }

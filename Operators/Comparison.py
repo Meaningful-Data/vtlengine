@@ -1,6 +1,7 @@
 import operator
 import os
 import re
+from copy import copy
 from typing import Any, Optional, Union
 
 from Model import Component, DataComponent, Dataset, Role, Scalar
@@ -10,7 +11,7 @@ if os.environ.get("SPARK"):
 else:
     import pandas as pd
 
-from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ
+from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ, NOT_IN
 from DataTypes import Boolean, COMP_NAME_MAPPING, String
 import Operators as Operator
 
@@ -93,6 +94,20 @@ class In(Binary):
         return operator.contains(y, x)
 
 
+class NotIn(Binary):
+    op = NOT_IN
+
+    @classmethod
+    def apply_operation_two_series(cls,
+                                   left_series: Any,
+                                   right_series: Any) -> Any:
+        return ~left_series.isin(right_series)
+
+    @classmethod
+    def py_op(cls, x, y):
+        return not operator.contains(y, x)
+
+
 class Match(Binary):
     op = CHARSET_MATCH
     type_to_check = String
@@ -160,7 +175,10 @@ class Between(Operator.Operator):
                  from_: Union[DataComponent, Scalar],
                  to: Union[DataComponent, Scalar]) -> Any:
         if isinstance(operand, Dataset):
-            result = Dataset(name=operand.name, components=operand.components.copy(), data=None)
+            result_components = {comp_name: copy(comp) for comp_name, comp in
+                                 operand.components.items()
+                                 if comp.role == Role.IDENTIFIER or comp.role == Role.MEASURE}
+            result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(name=operand.name, data=None,
                                    data_type=cls.return_type, role=operand.role)
@@ -207,6 +225,7 @@ class Between(Operator.Operator):
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
                     result.data = result.data.drop(columns=[measure_name])
+            result.data = result.data[result.get_components_names()]
         if isinstance(operand, DataComponent):
             result.data = cls.apply_operation_component(
                 operand.data,

@@ -32,12 +32,6 @@
           "role": "Attribute",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
         }
       ]
     }
