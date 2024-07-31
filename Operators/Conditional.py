@@ -1,4 +1,5 @@
 import os
+from copy import copy
 
 import numpy as np
 
@@ -128,6 +129,8 @@ class Nvl(Binary):
             result.data = left.data.fillna(right.value)
         if isinstance(right, Dataset) or isinstance(right, DataComponent):
             result.data = left.data.fillna(right.data)
+        if isinstance(result, Dataset):
+            result.data = result.data[result.get_components_names()]
         return result
 
     # TODO: change this to use the implicit data type promotion method
@@ -158,4 +161,6 @@ class Nvl(Binary):
                     if component.data_type != right.components[component.name].data_type:
                         component.data_type = cls.type_validation(component.data_type,
                                                                   right.components[component.name].data_type)
-            return Dataset(name='result', components=left.components.copy(), data=None)
+            result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()
+                                 if comp.role != Role.ATTRIBUTE}
+            return Dataset(name='result', components=result_components, data=None)

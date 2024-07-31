@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "ANAMART_ENTTY_DYS",
+      "DataStructure": [
+        {
+          "name": "MAX_RSDL_MTRTY_DYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "MAX_PST_D_DYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TTL_CV_OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "RSDL_MTRTY_DYS_WGHTD_AVRG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

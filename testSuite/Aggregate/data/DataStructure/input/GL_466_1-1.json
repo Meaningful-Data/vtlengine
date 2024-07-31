@@ -1,0 +1,27 @@
+{
+    "datasets": [
+      {
+        "name": "test_time_period",
+        "DataStructure": [
+          {
+            "name": "ID2",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "ME1",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "REF_PERIOD",
+            "type": "Date",
+            "nullable": false,
+            "role": "Identifier"
+          }
+        ]
+      }
+    ]
+  }

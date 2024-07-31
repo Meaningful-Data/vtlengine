@@ -1,7 +1,7 @@
 import duckdb
 import pandas as pd
 
-from DataTypes import CAST_MAPPING
+from DataTypes import CAST_MAPPING, COMP_NAME_MAPPING
 from Model import Dataset, ExternalRoutine, Role, Component
 from Operators import Binary, Unary
 
@@ -15,7 +15,7 @@ class Membership(Binary):
 
         component = left_operand.components[right_operand]
         if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
-            right_operand = f'{CAST_MAPPING[component.data_type.__name__].__name__}_var'
+            right_operand = COMP_NAME_MAPPING[component.data_type]
             left_operand.components[right_operand] = Component(name=right_operand,
                                                                data_type=component.data_type,
                                                                role=Role.MEASURE,

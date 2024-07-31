@@ -1,0 +1,4 @@
+DS_r:= full_join (DS_1 [aggr Me_1:= min (Me_1) group by Id_2] as d1,
+                  DS_2 [aggr Me_2:= max (Me_1) group by Id_2] as d2,
+                  DS_3 [aggr Me_3:= sum (Me_1) group by Id_2] as d3,
+                  DS_4 [aggr Me_4:= count () group by Id_2] as d4);

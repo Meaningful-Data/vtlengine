@@ -1,0 +1,3 @@
+INCRMNTL_3PPC_P := ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+                   [calc MX_3PPC := max(THRD_PRTY_PRRTY_CLMS over (partition by DT_RFRNC, OBSRVD_AGNT_CD, PRTCTN_ID
+                    order by THRD_PRTY_PRRTY_CLMS range between unbounded preceding and 1 preceding))];

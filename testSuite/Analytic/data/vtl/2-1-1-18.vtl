@@ -1,0 +1,7 @@
+dsr :=
+    ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+        [calc
+                MX_3PPC := max(THRD_PRTY_PRRTY_CLMS over (partition by DT_RFRNC, OBSRVD_AGNT_CD, PRTCTN_ID order by THRD_PRTY_PRRTY_CLMS data points between 1 preceding and unbounded preceding)),
+                CNT_3PPC := count(THRD_PRTY_PRRTY_CLMS over(partition by DT_RFRNC, OBSRVD_AGNT_CD, PRTCTN_ID order by THRD_PRTY_PRRTY_CLMS range between 0 preceding and 0 following))
+            ];
+

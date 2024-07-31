@@ -1,0 +1,3 @@
+DS_r1 := DS_1 [filter Id_1 = 2021 and At_11 < 3.0 ];
+DS_r2 := DS_2 [filter Id_1 = 2021 and At_21 > 1.0 ];
+DS_r := full_join (DS_r1 as d1, DS_r2 as d2);

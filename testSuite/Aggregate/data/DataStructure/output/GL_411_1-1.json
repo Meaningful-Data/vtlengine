@@ -1,0 +1,1 @@
+{"datasets": [{"name": "entIntJl.IS_OA_CRDTR", "DataStructure": [{"name": "OBSRVD_AGNT_CD", "role": "Identifier", "type": "String", "nullable": false}, {"name": "IS_OA_CRDTR", "role": "Measure", "type": "Integer", "nullable": false}], "DataPoints": null}]}

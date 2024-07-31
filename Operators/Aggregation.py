@@ -84,26 +84,30 @@ class Aggregation(Operator.Unary):
             else:
                 result.data = result.data[grouping_keys].drop_duplicates(keep='first')
             return result
-        measure_name = operand.get_measures_names()[0]
         if len(grouping_keys) == 0:
+            measure_name = operand.get_measures_names()[0]
             result_number = result.data[measure_name].agg(cls.py_op.__name__)
             result.data = pd.DataFrame(data=[result_number], columns=[measure_name])
             return result
-        result_df = result.data[grouping_keys + [measure_name]]
+        measure_names = operand.get_measures_names()
+        result_df = result.data[grouping_keys + measure_names]
         if having_data is not None:
             result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
         if cls.op == COUNT:
-            result_df = result_df.dropna(subset=[measure_name], how='any')
+            result_df = result_df.dropna(subset=measure_names, how='any')
             result_df = result_df.groupby(grouping_keys).size().reset_index(name='int_var')
         else:
-            comps_to_keep = grouping_keys + [measure_name]
+            comps_to_keep = grouping_keys + measure_names
+
             if os.getenv('SPARK', False) and cls.spark_op is not None:
                 result_df = cls.spark_op(result_df, grouping_keys)
             elif cls.py_op.__name__ != 'py_op':
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(
-                    {measure_name: cls.py_op.__name__}).reset_index(drop=False)
+                agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
+                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict
+                    ).reset_index(drop=False)
             else:
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg({measure_name: cls.py_op}).reset_index(
+                agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
+                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
                     drop=False)
 
         result.data = result_df

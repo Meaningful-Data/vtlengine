@@ -176,6 +176,7 @@ class Parameterized(Unary):
                 result.data[measure_name] = cls.apply_operation_series_scalar(
                     result.data[measure_name], param_value
                 )
+        result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod

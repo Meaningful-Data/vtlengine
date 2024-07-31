@@ -1,0 +1,17 @@
+Id_11,Id_12,At_1,Id_21,Id_22,At_2
+2021,Belgium,1.0,2021,Belgium,1.0
+2021,Belgium,1.0,2021,Denmark,2.0
+2021,Belgium,1.0,2021,France,3.0
+2021,Belgium,1.0,2018,Spain,4.0
+2021,Denmark,2.0,2021,Belgium,1.0
+2021,Denmark,2.0,2021,Denmark,2.0
+2021,Denmark,2.0,2021,France,3.0
+2021,Denmark,2.0,2018,Spain,4.0
+2020,France,3.0,2021,Belgium,1.0
+2020,France,3.0,2021,Denmark,2.0
+2020,France,3.0,2021,France,3.0
+2020,France,3.0,2018,Spain,4.0
+2020,Spain,4.0,2021,Belgium,1.0
+2020,Spain,4.0,2021,Denmark,2.0
+2020,Spain,4.0,2021,France,3.0
+2020,Spain,4.0,2018,Spain,4.0
