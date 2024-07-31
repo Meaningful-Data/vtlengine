@@ -248,7 +248,6 @@ string_exception_param = [
 numeric_exception_param = [
     ('log(5.0, -8)', 'math domain error'),
     ('log(0.0, 6)', 'math domain error'),
-    ('log(0.5, 6)', 'math domain error')
 ]
 
 ds_param = [

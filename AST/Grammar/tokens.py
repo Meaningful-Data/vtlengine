@@ -152,3 +152,6 @@ APPLY = 'apply'
 # Defined operators.
 OPERATOR = 'operator'
 EVAL = 'eval'
+# External.
+SQLITE = '"sqlite"'
+EXTERNAL = [SQLITE]

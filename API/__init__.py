@@ -1,7 +1,7 @@
 import json
-from pathlib import Path
-from typing import Any, Union, Dict
 import os
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
 
 from DataTypes import SCALAR_TYPES
 
@@ -17,7 +17,7 @@ from AST import AST
 from AST.ASTConstructor import ASTVisitor
 from AST.Grammar.lexer import Lexer
 from AST.Grammar.parser import Parser
-from Model import Dataset, Component, Role
+from Model import Dataset, Component, ExternalRoutine, Role
 
 
 class __VTLSingleErrorListener(ErrorListener):
@@ -62,7 +62,8 @@ def create_ast(text: str) -> AST:
     return visitor.visit(cst)
 
 
-def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[str, Dataset]:
+def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[
+    str, Dataset]:
     """
     Load the datasets
     """
@@ -83,8 +84,10 @@ def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[
 
         for dataset_json in structures['datasets']:
             dataset_name = dataset_json['name']
-            components = {component['name']: Component(name=component['name'], data_type=SCALAR_TYPES[component['type']],
-                                                       role=Role(component['role']), nullable=component['nullable'])
+            components = {component['name']: Component(name=component['name'],
+                                                       data_type=SCALAR_TYPES[component['type']],
+                                                       role=Role(component['role']),
+                                                       nullable=component['nullable'])
                           for component in dataset_json['DataStructure']}
             dataPoint = dataPoints_path / f"{dataset_name}.csv"
             if not os.path.exists(dataPoint):
@@ -96,3 +99,22 @@ def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
+
+
+def load_external_routines(external_routines_path: Union[str, Path]) -> Optional[
+    Dict[str, ExternalRoutine]]:
+    """
+    Load the external routines
+    """
+    if isinstance(external_routines_path, str):
+        external_routines_path = Path(external_routines_path)
+
+    if len(list(external_routines_path.iterdir())) == 0:
+        return
+
+    external_routines = {}
+    for f in external_routines_path.iterdir():
+        with open(f, 'r') as file:
+            sql_query = file.read()
+        external_routines[f.stem] = ExternalRoutine.from_sql_query(f.stem, sql_query)
+    return external_routines
