@@ -191,11 +191,19 @@ class InterpreterAnalyzer(ASTTemplate):
             order_components = [x.component for x in node.order_by]
             partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
 
+        params = []
+        if node.params is not None:
+            for param in node.params:
+                if isinstance(param, AST.Constant):
+                    params.append(param.value)
+                else:
+                    params.append(param)
+
         result = ANALYTIC_MAPPING[node.op].evaluate(operand=operand,
                                                     partitioning=partitioning,
                                                     ordering=ordering,
                                                     window=node.window,
-                                                    params=node.params)
+                                                    params=params)
         if not self.is_from_regular_aggregation:
             return result
 
