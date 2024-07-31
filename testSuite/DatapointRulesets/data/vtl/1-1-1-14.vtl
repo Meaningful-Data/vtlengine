@@ -1,0 +1,5 @@
+define datapoint ruleset dpr1 ( variable Id_3 as Id_2,  Me_1 ) is
+    when Id_2 = "CREDIT" then Me_1 >= 0 errorcode "Bad credit";
+    when Id_2 = "DEBIT" then Me_1 >= 0 errorcode "Bad debit"
+end datapoint ruleset;
+DS_r := check_datapoint ( DS_1, dpr1 components Id_2, Me_1 invalid);
