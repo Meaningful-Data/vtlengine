@@ -1,0 +1,18 @@
+define operator comp_avg (ds dataset, freq string) 
+returns dataset is
+    round(
+    inner_join(
+        count(
+			DS_CP group all time_agg("Q",_,TIME_PERIOD)
+		)
+		[calc int_var := if freq = "Q" then 3 else if freq = "S" then 6 else 12 ] as A,
+        avg(
+			DS_CP group all time_agg("Q",_,TIME_PERIOD)
+		) as B
+    )
+        [sub FREQ = "M"]
+        [calc identifier FREQ := "Q"]
+    , 2)
+end operator;
+
+avg_m_q_result2 <- comp_avg(DS_CP, "M") ;
