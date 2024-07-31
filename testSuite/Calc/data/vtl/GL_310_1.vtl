@@ -1,0 +1,11 @@
+LGL_FRM_DS :=
+    max(
+        cross_join(
+            RIAD_LGL_FRM_C, 
+            DT_RFRNC_DS
+            filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T
+            keep OBS_VALUE
+            rename OBS_VALUE to LGL_FRM)
+        group except VLD_FRM, VLD_T
+        );
+
