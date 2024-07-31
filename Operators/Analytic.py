@@ -1,7 +1,9 @@
 import os
+from copy import copy
 from typing import List, Optional
 
 import duckdb
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -14,8 +16,9 @@ from AST.Grammar.tokens import AVG, COUNT, FIRST_VALUE, LAG, LAST_VALUE, LEAD, M
     STDDEV_SAMP, \
     SUM, VAR_POP, \
     VAR_SAMP
-from DataTypes import Integer, Number
-from Model import Dataset, Role
+from DataTypes import COMP_NAME_MAPPING, Integer, Number, \
+    check_unary_implicit_promotion
+from Model import Component, Dataset, Role
 
 
 # noinspection PyMethodOverriding
@@ -42,9 +45,24 @@ class Analytic(Operator.Unary):
                 raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
         measures = operand.get_measures()
 
-        # TODO: Type promotion
         if cls.type_to_check is not None:
-            result_components[measures[0].name].data_type = cls.type_to_check
+            for measure in measures:
+                if not check_unary_implicit_promotion(measure.data_type, cls.type_to_check):
+                    raise Exception(f"Measure {measure.name} is not a {cls.type_to_check.__name__}")
+        if cls.return_type is not None:
+            for measure in measures:
+                new_measure = copy(measure)
+                new_measure.data_type = cls.return_type
+                result_components[measure.name] = new_measure
+        if cls.op == COUNT and len(measures) == 1:
+            measure_name = COMP_NAME_MAPPING[cls.return_type]
+            result_components[measure_name] = Component(
+                name=measure_name,
+                data_type=cls.return_type,
+                role=Role.MEASURE,
+                nullable=True
+            )
+            del result_components[measures[0].name]
 
         return Dataset(name="result", components=result_components, data=None)
 
@@ -64,6 +82,11 @@ class Analytic(Operator.Unary):
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = window.start_mode if window.start_mode != 'current' and window.start != 'CURRENT ROW' else ''
             stop_mode = window.stop_mode if window.stop_mode != 'current' and window.stop != 'CURRENT ROW' else ''
+            if window.start == -1:
+                window.start = 'UNBOUNDED'
+
+            if stop_mode == '' and window.stop == 0:
+                window.stop = 'CURRENT ROW'
             window_str = f"{mode} BETWEEN {window.start} {start_mode} AND {window.stop} {stop_mode}"
 
         # Partitioning
@@ -93,7 +116,10 @@ class Analytic(Operator.Unary):
                 measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params))})"
             else:
                 measure_query = f"{cls.sql_op}({measure})"
-            measure_query += f" {analytic_str} as {measure}"
+            if cls.op == COUNT and len(measure_names) == 1:
+                measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+            else:
+                measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
 
         measures_sql = ', '.join(measure_queries)
@@ -137,6 +163,7 @@ class Min(Analytic):
 class Sum(Analytic):
     op = SUM
     type_to_check = Number
+    return_type = Number
     sql_op = "SUM"
 
 
@@ -212,7 +239,10 @@ class Lead(Analytic):
 class Rank(Analytic):
     op = RANK
     sql_op = "RANK"
+    return_type = Integer
 
 
 class RatioToReport(Analytic):
     op = RATIO_TO_REPORT
+    type_to_check = Number
+    return_type = Number
