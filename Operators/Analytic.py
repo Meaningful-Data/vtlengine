@@ -1,7 +1,9 @@
 import os
+from copy import copy
 from typing import List, Optional
 
 import duckdb
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -14,7 +16,8 @@ from AST.Grammar.tokens import AVG, COUNT, FIRST_VALUE, LAG, LAST_VALUE, LEAD, M
     STDDEV_SAMP, \
     SUM, VAR_POP, \
     VAR_SAMP
-from DataTypes import CAST_MAPPING, COMP_NAME_MAPPING, Integer, Number
+from DataTypes import COMP_NAME_MAPPING, Integer, Number, \
+    check_unary_implicit_promotion
 from Model import Component, Dataset, Role
 
 
@@ -44,8 +47,13 @@ class Analytic(Operator.Unary):
 
         if cls.type_to_check is not None:
             for measure in measures:
-                result_components[measure.name].data_type = cls.type_to_check
-
+                if not check_unary_implicit_promotion(measure.data_type, cls.type_to_check):
+                    raise Exception(f"Measure {measure.name} is not a {cls.type_to_check.__name__}")
+        if cls.return_type is not None:
+            for measure in measures:
+                new_measure = copy(measure)
+                new_measure.data_type = cls.return_type
+                result_components[measure.name] = new_measure
         if cls.op == COUNT and len(measures) == 1:
             measure_name = COMP_NAME_MAPPING[cls.return_type]
             result_components[measure_name] = Component(
@@ -57,7 +65,6 @@ class Analytic(Operator.Unary):
             del result_components[measures[0].name]
 
         return Dataset(name="result", components=result_components, data=None)
-
 
     @classmethod
     def analyticfunc(cls, df: pd.DataFrame, partitioning: List[str],
@@ -156,6 +163,7 @@ class Min(Analytic):
 class Sum(Analytic):
     op = SUM
     type_to_check = Number
+    return_type = Number
     sql_op = "SUM"
 
 
@@ -231,8 +239,10 @@ class Lead(Analytic):
 class Rank(Analytic):
     op = RANK
     sql_op = "RANK"
+    return_type = Integer
 
 
 class RatioToReport(Analytic):
     op = RATIO_TO_REPORT
     type_to_check = Number
+    return_type = Number

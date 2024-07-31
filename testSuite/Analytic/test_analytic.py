@@ -95,6 +95,13 @@ class AnalyticHelper(TestCase):
         result = interpreter.visit(ast)
         assert result == reference_datasets
 
+    @classmethod
+    def NewSemanticExceptionTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
+        '''
+
+        '''
+        assert True
+
 
 class AnalyticOperatorsTest(AnalyticHelper):
     """

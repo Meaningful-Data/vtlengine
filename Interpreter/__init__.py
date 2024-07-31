@@ -173,7 +173,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
-                    if name != operand_comp:
+                    if name != operand_comp.name:
                         dataset_components.pop(name)
 
                 operand = Dataset(name=self.regular_aggregation_dataset.name,
