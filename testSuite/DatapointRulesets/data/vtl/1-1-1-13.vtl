@@ -1,0 +1,4 @@
+define datapoint ruleset dpr1 ( valuedomain TYPE,  AMOUNT ) is
+    when TYPE = "CREDIT" then AMOUNT >= 0 errorcode "Bad credit"
+end datapoint ruleset;
+DS_r := check_datapoint ( DS_1, dpr1 components Id_3, Me_1 invalid);
