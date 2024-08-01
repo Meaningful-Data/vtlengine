@@ -1,4 +1,5 @@
 import json
+import os.path
 from pathlib import Path
 from typing import Dict, List
 from unittest import TestCase
@@ -40,7 +41,10 @@ class TestDataPointRuleset(TestCase):
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+            if not os.path.exists(dp_path):
+                data = pd.DataFrame(columns=list(components.keys()))
+            else:
+                data = pd.read_csv(dp_path, sep=',')
 
             return Dataset(name=dataset_name, components=components, data=data)
 
@@ -433,10 +437,9 @@ class DatapointRulesetTests(TestDataPointRuleset):
         """
         code = '1-1-1-11'
         number_inputs = 1
-        vd_names = []
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, vd_names=vd_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     """
     - if variable rule in signature:
