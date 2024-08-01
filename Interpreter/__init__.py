@@ -135,6 +135,26 @@ class InterpreterAnalyzer(ASTTemplate):
             operand = self.aggregation_dataset
         elif self.is_from_regular_aggregation:
             operand = self.regular_aggregation_dataset
+            if node.operand is not None:
+                op_comp: DataComponent = self.visit(node.operand)
+                if op_comp.name not in operand.get_measures_names():
+                    raise Exception(f"Measure {op_comp.name} not in dataset {self.regular_aggregation_dataset.name}")
+                comps_to_keep = {}
+                for comp_name, comp in self.regular_aggregation_dataset.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        comps_to_keep[comp_name] = copy(comp)
+                    elif comp_name == op_comp.name:
+                        comps_to_keep[comp_name] = Component(
+                            name=op_comp.name,
+                            data_type=op_comp.data_type,
+                            role=op_comp.role,
+                            nullable=op_comp.nullable
+                        )
+                data_to_keep = operand.data[operand.get_identifiers_names()]
+                data_to_keep[op_comp.name] = op_comp.data
+                operand = Dataset(name=operand.name,
+                                  components=comps_to_keep,
+                                  data=data_to_keep)
         else:
             operand = self.visit(node.operand)
         groupings = []
