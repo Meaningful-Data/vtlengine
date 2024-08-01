@@ -8,7 +8,7 @@ import pandas as pd
 from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset
+from Model import Component, ExternalRoutine, Role, Dataset
 
 
 class TestEval(TestCase):
@@ -20,6 +20,7 @@ class TestEval(TestCase):
     filepath_json = base_path / "data" / "DataStructure" / "input"
     filepath_csv = base_path / "data" / "DataSet" / "input"
     filepath_vtl = base_path / "data" / "vtl"
+    filepath_sql = base_path / "data" / "sql"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
@@ -82,6 +83,17 @@ class TestEval(TestCase):
             return file.read()
 
     @classmethod
+    def LoadExternalRoutines(cls, code):
+
+        external_routines = {}
+        sql_file_name = cls.filepath_sql / f"{code}.sql"
+        with open(sql_file_name, "r") as f:
+            er = ExternalRoutine.from_sql_query(code, f.read())
+        external_routines[er.name] = er
+        return external_routines
+
+
+    @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
         '''
 
@@ -91,7 +103,8 @@ class TestEval(TestCase):
         ast = create_ast(text)
         input_datasets = cls.LoadInputs(code, number_inputs)
         reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
+        external_routines = cls.LoadExternalRoutines(code)
+        interpreter = InterpreterAnalyzer(input_datasets, external_routines=external_routines)
         result = interpreter.visit(ast)
         assert result == reference_datasets
 

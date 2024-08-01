@@ -609,6 +609,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.language not in EXTERNAL:
             raise Exception(f"Language {node.language} not supported on Eval")
 
+        if self.external_routines is None:
+            raise Exception(f"No External Routines have been loaded.")
+
         if node.name not in self.external_routines:
             raise Exception(f"External Routine {node.name} not found")
         external_routine = self.external_routines[node.name]
