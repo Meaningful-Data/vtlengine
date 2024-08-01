@@ -101,7 +101,7 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
         self.is_from_assignment = False
-        right_operand: Dataset = self.visit(node.right)
+        right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         return Assignment.evaluate(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
