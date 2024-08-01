@@ -20,9 +20,7 @@ class RoleSetter(Unary):
         if isinstance(operand, Scalar):
 
             nullable = True
-            if cls.role == Role.IDENTIFIER:
-                nullable = False
-            if cls.role == Role.ATTRIBUTE and operand.value is not None:
+            if cls.role == Role.IDENTIFIER or operand.value is not None:
                 nullable = False
 
             return DataComponent(
