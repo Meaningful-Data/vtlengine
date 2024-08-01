@@ -565,7 +565,6 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_310_2(self):
         """
-        # BUG: Discrepancy between interpreter and semantic, interpreter wrong, number for integer.
         inner join
         Dataset --> Dataset
         Status: OK
