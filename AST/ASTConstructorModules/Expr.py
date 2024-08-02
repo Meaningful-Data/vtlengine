@@ -958,8 +958,16 @@ class Expr(VtlVisitor):
         operand_node = self.visitExpr(ctx_list[2])
         rule_name = ctx_list[4].getSymbol().text
 
-        components = [Terminals().visitComponentID(comp).right.value for comp in ctx_list if
+        components = [Terminals().visitComponentID(comp) for comp in ctx_list if
                       isinstance(comp, Parser.ComponentIDContext)]
+        aux_components = []
+        for x in components:
+            if isinstance(x, BinOp):
+                aux_components.append(x.right.value)
+            else:
+                aux_components.append(x.value)
+
+        components = aux_components
 
         # Default value for output is invalid.
         output = 'invalid'

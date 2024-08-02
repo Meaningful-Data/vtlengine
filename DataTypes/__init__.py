@@ -202,7 +202,7 @@ BASIC_TYPES = {
 }
 
 COMP_NAME_MAPPING = {
-    String: 'string_var',
+    String: 'str_var',
     Number: 'num_var',
     Integer: 'int_var',
     TimeInterval: 'time_var',
