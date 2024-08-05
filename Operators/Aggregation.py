@@ -85,10 +85,7 @@ class Aggregation(Operator.Unary):
                 result.data = result.data[grouping_keys].drop_duplicates(keep='first')
             return result
         if len(grouping_keys) == 0:
-            measure_name = operand.get_measures_names()[0]
-            result_number = result.data[measure_name].agg(cls.py_op.__name__)
-            result.data = pd.DataFrame(data=[result_number], columns=[measure_name])
-            return result
+            grouping_keys = operand.get_identifiers_names()
         measure_names = operand.get_measures_names()
         result_df = result.data[grouping_keys + measure_names]
         if having_data is not None:

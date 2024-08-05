@@ -301,6 +301,8 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets.keys():
                 return self.datasets[node.value]
+            if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
+                return self.datasets[node.value]
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
                                  data_type=
@@ -662,3 +664,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 right = right_operand.data
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
+
+    def visit_Identifier(self, node: AST.Identifier) -> AST.AST:
+        """
+        Identifier: (value)
+
+        Basic usage:
+
+            return node.value
+        """
+        if node.value in self.datasets:
+            if self.is_from_assignment:
+                return self.datasets[node.value].name
+            return self.datasets[node.value]
+        return node.value
