@@ -133,7 +133,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -157,7 +156,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -183,7 +181,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -207,7 +204,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
@@ -230,7 +226,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
@@ -353,7 +348,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_12(self):
@@ -396,7 +390,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_14(self):
@@ -457,7 +450,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_17(self):
@@ -478,7 +470,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_18(self):
@@ -499,7 +490,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -521,7 +511,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -543,7 +532,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -565,7 +553,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -587,7 +574,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -609,7 +595,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -631,7 +616,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -653,7 +637,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -675,7 +658,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -697,7 +679,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_28(self):
@@ -946,7 +927,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_41(self):
@@ -967,7 +947,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -989,7 +968,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1011,7 +989,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1033,7 +1010,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1055,7 +1031,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1077,7 +1052,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1099,7 +1073,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_48(self):
@@ -1275,7 +1248,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_57(self):
@@ -1300,7 +1272,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_58(self):
@@ -1326,7 +1297,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_59(self):
@@ -1352,7 +1322,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1377,7 +1346,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1402,7 +1370,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1427,7 +1394,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_63(self):
@@ -1537,7 +1503,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_68(self):
@@ -1560,7 +1525,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1583,7 +1547,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1606,7 +1569,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
@@ -1629,7 +1591,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_72(self):
@@ -1734,7 +1695,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_77(self):
@@ -1761,7 +1721,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_78(self):
@@ -1788,7 +1747,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_79(self):
@@ -1816,7 +1774,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_80(self):
@@ -1841,7 +1798,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_81(self):
@@ -1866,7 +1822,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_82(self):
@@ -1891,7 +1846,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_83(self):
@@ -2004,7 +1958,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_88(self):
@@ -2026,7 +1979,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_89(self):
@@ -2047,7 +1999,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_90(self):
@@ -2068,7 +2019,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_91(self):
@@ -2089,7 +2039,6 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_92(self):
