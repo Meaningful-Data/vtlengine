@@ -214,7 +214,7 @@ COMP_NAME_MAPPING = {
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
     String: {String},
-    Number: {String, Number},
+    Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
     TimeInterval: {String, TimeInterval},
     Date: {String, TimeInterval, Date},

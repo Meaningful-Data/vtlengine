@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from DataTypes import Boolean, Number, String
+from DataTypes import Boolean, Integer, Number, String
 from Model import Component, Dataset, Role
 from Operators import Operator
 
@@ -41,19 +41,16 @@ class Check(Operator):
                              if comp.role in [Role.IDENTIFIER, Role.MEASURE]}
         if imbalance_measure is None:
             result_components['imbalance'] = Component(name='imbalance', data_type=Number,
-                                                       role=Role.MEASURE, nullable=False)
+                                                       role=Role.MEASURE, nullable=True)
         else:
             result_components['imbalance'] = copy(imbalance_measure)
             result_components['imbalance'].name = 'imbalance'
 
-        nullable_error_code = error_code is None
-        nullable_error_level = error_level is None
-
         result_components['errorcode'] = Component(name='errorcode', data_type=String,
-                                                   role=Role.MEASURE, nullable=nullable_error_code)
-        result_components['errorlevel'] = Component(name='errorlevel', data_type=Number,
+                                                   role=Role.MEASURE, nullable=True)
+        result_components['errorlevel'] = Component(name='errorlevel', data_type=Integer,
                                                     role=Role.MEASURE,
-                                                    nullable=nullable_error_level)
+                                                    nullable=True)
 
         return Dataset(name="result", components=result_components, data=None)
 
