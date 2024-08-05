@@ -25,6 +25,15 @@ class Scalar:
         data = json.loads(json_str)
         return cls(data['name'], data['value'])
 
+    def __eq__(self, other):
+        same_name = self.name == other.name
+        same_type = self.data_type == other.data_type
+        x = None if not pd.isnull(self.value) else self.value
+        y = None if not pd.isnull(other.value) else other.value
+        same_value = x == y
+        return same_name and same_type and same_value
+
+
 
 class Role(Enum):
     """

@@ -186,7 +186,7 @@ SCALAR_TYPES = {
     'String': String,
     'Number': Number,
     'Integer': Integer,
-    'TimeInterval': TimeInterval,
+    'Time': TimeInterval,
     'Date': Date,
     'Time_Period': TimePeriod,
     'Duration': Duration,
