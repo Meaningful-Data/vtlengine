@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "AMOUNTS",
+      "DataStructure": [
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBS_STATUS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "measure_",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "FREQ",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "contract_id",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+    "datasets": [
+        {
+            "name": "DS_r",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_4",
+                    "role": "Measure",
+                    "type": "Boolean",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}

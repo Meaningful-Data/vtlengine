@@ -1,0 +1,11 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+define operator suma (ds1 dataset, scds1 dataset)
+  returns dataset is
+    ds1 + scds1
+end operator;
+
+DS_r := drop_identifier (suma (DS_1, sc_1), Id_3);

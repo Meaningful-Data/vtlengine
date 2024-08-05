@@ -1,0 +1,40 @@
+{
+    "datasets": [
+        {
+            "name": "DS_r",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "role": "Identifier",
+                    "type": "Date",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "Medate_1",
+                    "role": "Measure",
+                    "type": "Date",
+                    "nullable": true
+                },
+                {
+                    "name": "Metp_3",
+                    "role": "Measure",
+                    "type": "Time_Period",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}
