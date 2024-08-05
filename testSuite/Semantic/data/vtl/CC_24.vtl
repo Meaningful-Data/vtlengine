@@ -1,0 +1,1 @@
+DS_r := sum(DS_1[aggr Me_4 := sum(Me_1), Me_5 := count() group except Id_1][rename Me_5 to Me_c])[calc Me_1 := Me_4, Me_a := Me_c*Me_4][keep Me_1, Me_a, Me_c];

@@ -214,6 +214,13 @@ class Binary(Operator):
                              base_operand.components.items()
                              if component.role in [Role.IDENTIFIER, Role.MEASURE]}
 
+        for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
+            if comp.name in left_operand.components and comp.name in right_operand.components:
+                left_comp = left_operand.components[comp.name]
+                right_comp = right_operand.components[comp.name]
+                comp.nullable = left_comp.nullable or right_comp.nullable
+
+
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
         return result_dataset

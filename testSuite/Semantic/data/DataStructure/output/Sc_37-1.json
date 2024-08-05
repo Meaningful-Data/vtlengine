@@ -1,0 +1,28 @@
+{
+    "datasets": [
+        {
+            "name": "DS_r",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "role": "Identifier",
+                    "type": "Integer",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "role": "Measure",
+                    "type": "Boolean",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}

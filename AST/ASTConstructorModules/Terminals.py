@@ -361,7 +361,12 @@ class Terminals(VtlVisitor):
         else:
             data_type = String()
 
-        return Component(name="Component", data_type=data_type, role=role_node, nullable=False)
+        if role_node == Role.IDENTIFIER:
+            nullable = False
+        else:
+            nullable = True
+
+        return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
     def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
         """

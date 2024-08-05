@@ -1,0 +1,4 @@
+DS_r := securities [calc Me :=
+    if accountingClassification = "ac" then
+        if securityId = 456 then 1 else marketValue
+    else if securityId = 123 then amortisedCost else 3 ];

@@ -1,0 +1,4 @@
+ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,OBS_VALUE,ruleid,errorcode,errorlevel
+C,D,F,G,IT,S1,0.0,sign1c,sign1c,1.0
+C,P,F,GA,IT,S1,,sign2c,sign2c,1.0
+C,D,FL,S,PT,S1,-100.0,sign3c,sign3c,1.0
