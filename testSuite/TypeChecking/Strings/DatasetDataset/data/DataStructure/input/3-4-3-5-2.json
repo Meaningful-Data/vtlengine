@@ -10,7 +10,7 @@
           "nullable": false
         },
         {
-          "name": "Me_1",
+          "name": "str_var",
           "role": "Measure",
           "type": "Number",
           "nullable": true

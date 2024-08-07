@@ -10,7 +10,7 @@
           "nullable": false
         },
         {
-          "name": "Me_1",
+          "name": "int_var",
           "role": "Measure",
           "type": "Integer",
           "nullable": true
