@@ -1,0 +1,5 @@
+define operator Test025 (x component, y scalar)
+    returns component is
+    instr(x, y)
+end operator;
+DS_r := DS_1[ calc Me_2:= Test025(Me_1, "hello")];

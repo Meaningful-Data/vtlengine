@@ -1,0 +1,5 @@
+define operator Test052 (x component)
+    returns component is
+    round(x)
+end operator;
+DS_r := DS_1 [ calc Me_10 := Test052(Me_1) ];

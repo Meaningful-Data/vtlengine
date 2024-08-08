@@ -1,0 +1,5 @@
+define operator Test054 (x dataset, y scalar)
+    returns dataset is
+    trunc(x, y)
+end operator;
+DS_r := Test054(DS_1, 0);

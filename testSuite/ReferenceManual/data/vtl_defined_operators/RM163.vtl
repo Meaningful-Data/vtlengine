@@ -1,0 +1,5 @@
+define operator Test163 (x dataset, y component, z component)
+    returns dataset is
+    x [ filter y = 1 and z < 10 ]
+end operator;
+DS_r := Test163(DS_1, Id_1, Me_1);

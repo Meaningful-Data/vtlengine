@@ -1,0 +1,5 @@
+define operator Test020 (x dataset, y scalar, z scalar)
+    returns dataset is
+    substr(x, y, z)
+end operator;
+DS_r := Test020(DS_1, 1, 5);
