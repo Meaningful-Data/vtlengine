@@ -266,6 +266,7 @@ class Replace(Parameterized):
             return ""
         elif pd.isnull(param2):
             param2 = ''
+        x = str(x)
         return x.replace(param1, param2)
 
     @classmethod

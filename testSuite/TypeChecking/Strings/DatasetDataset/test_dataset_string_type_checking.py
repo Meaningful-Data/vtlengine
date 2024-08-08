@@ -1033,12 +1033,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
+
     def test_46(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := upper(DS_1)
                             DS_1 Measure Boolean
 
@@ -1054,12 +1054,11 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # BUG
     def test_47(self):
         """
         CHARACTER CASE CONVERSION: UPPER/LOWER
         Boolean --> String
-        Status: BUG
+        Status: OK
         Expression: DS_r := lower(DS_1)
                             DS_1 Measure Boolean
 
