@@ -22,7 +22,7 @@ from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Expon
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
 from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
-from Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow
+from Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow, Fill_time_series, Time_Shift
 
 BINARY_MAPPING = {
     # General
@@ -52,7 +52,9 @@ BINARY_MAPPING = {
     # General
     AS: Alias,
     # String
-    CONCAT: Concatenate
+    CONCAT: Concatenate,
+    #Time
+    TIMESHIFT: Time_Shift
 }
 
 UNARY_MAPPING = {
@@ -89,7 +91,9 @@ PARAMETRIC_MAPPING = {
     TRUNC: Trunc,
     # String
     SUBSTR: Substr,
-    REPLACE: Replace
+    REPLACE: Replace,
+    #Time
+    FILL_TIME_SERIES: Fill_time_series,
 }
 
 ROLE_SETTER_MAPPING = {

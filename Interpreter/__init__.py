@@ -8,7 +8,7 @@ import pandas as pd
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, FILL_TIME_SERIES
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component
 from Operators.Aggregation import extract_grouping_identifiers
@@ -18,6 +18,7 @@ from Operators.General import Eval
 from Operators.Conditional import If
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
+from Operators.Time import Fill_time_series
 from Operators.Validation import Check, Check_Datapoint
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE
@@ -525,6 +526,9 @@ class InterpreterAnalyzer(ASTTemplate):
             return Check_Datapoint.evaluate(dataset_element=dataset_element,
                                             rule_info=rule_output_values,
                                             output=output)
+        if node.op == FILL_TIME_SERIES:
+            mode = self.visit(node.params[0]) if len(node.params) == 1 else 'all'
+            return Fill_time_series.evaluate(self.visit(node.children[0]), mode)
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
