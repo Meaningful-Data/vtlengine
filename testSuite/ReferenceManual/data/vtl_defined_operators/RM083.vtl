@@ -1,0 +1,5 @@
+define operator Test083 (x component)
+    returns component is
+    x in { 0, 3, 6, 12 }
+end operator;
+DS_r := DS_1 [ calc Me_2 := Test083(Me_1) ];

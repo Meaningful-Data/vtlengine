@@ -1,0 +1,5 @@
+define operator Test089 (x dataset, y dataset)
+    returns dataset is
+    exists_in(x, y, true)
+end operator;
+DS_r := Test089(DS_1, DS_2);

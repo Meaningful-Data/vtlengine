@@ -1,0 +1,5 @@
+define operator Test056 (x component, y scalar)
+    returns component is
+    trunc(x, y)
+end operator;
+DS_r := DS_1 [ calc Me_20 := Test056(Me_1, -1) ];

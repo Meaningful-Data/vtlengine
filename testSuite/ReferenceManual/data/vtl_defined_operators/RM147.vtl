@@ -1,0 +1,5 @@
+define operator Test147 (x dataset, y component)
+    returns dataset is
+    stddev_pop ( x group by y )
+end operator;
+DS_r := Test147(DS_1, Id_1);

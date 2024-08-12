@@ -1,0 +1,5 @@
+define operator Test060 (x component)
+    returns component is
+    floor(x)
+end operator;
+DS_r := DS_1 [ calc Me_10 := Test060(Me_1) ];

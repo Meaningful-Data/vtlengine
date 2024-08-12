@@ -1,0 +1,5 @@
+define operator Test175 (x dataset, y component, z component, k component)
+    returns dataset is
+    x [ sub y = 1, z = "B", k = "YY" ]
+end operator;
+DS_r := Test175(DS_1, Id_1, Id_2, Id_3);

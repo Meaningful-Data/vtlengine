@@ -1,0 +1,5 @@
+define operator Test096 (x component)
+    returns component is
+    x xor true
+end operator;
+DS_r := DS_1 [ calc Me_2 := Test096(Me_1) ];

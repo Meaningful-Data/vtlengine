@@ -1,0 +1,5 @@
+define operator Test146 (x dataset, y component)
+    returns dataset is
+    avg ( x group by y )
+end operator;
+DS_r := Test146(DS_1, Id_1);

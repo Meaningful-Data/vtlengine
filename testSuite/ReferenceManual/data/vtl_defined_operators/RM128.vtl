@@ -1,0 +1,5 @@
+define operator Test128 (x dataset, y dataset)
+    returns dataset is
+    intersect(x, y)
+end operator;
+DS_r := Test128(DS_1, DS_2);
