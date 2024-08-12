@@ -1,5 +1,5 @@
 import json
-import os.path
+import os
 from pathlib import Path
 from typing import Dict, List
 from unittest import TestCase
@@ -108,7 +108,6 @@ class SemanticHelper(TestCase):
 
         '''
         assert True
-
 
 class ClauseClauseTests(SemanticHelper):
     """
