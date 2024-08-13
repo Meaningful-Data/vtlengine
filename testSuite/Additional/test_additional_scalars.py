@@ -186,7 +186,7 @@ numeric_params = [
 boolean_params = [
     ('false and false', False),
     ('false and true', False),
-    ('false and null', None),
+    ('false and null', False),
     ('true and false', False),
     ('true and true', True),
     ('true and null', None),
@@ -196,7 +196,7 @@ boolean_params = [
     ('false or null', None),
     ('true or false', True),
     ('true or true', True),
-    ('true or null', None),
+    ('true or null', True),
     ('null or null', None),
     ('false xor false', False),
     ('false xor true', True),
@@ -251,7 +251,7 @@ numeric_exception_param = [
 ]
 
 ds_param = [
-    ('3-51', 'DS_1[calc Me_2:=instr(Me_1, sc_1, null, 4)]'),  # stringop with ds
+    ('3-51', 'DS_1[calc Me_2:=instr(Me_1, "", null, 4)]'),
     ('4-3', 'DS_1 + null'),
     ('4-3', 'null + DS_1'),
     ('4-3', 'DS_1 - null'),

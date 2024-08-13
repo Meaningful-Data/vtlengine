@@ -43,16 +43,22 @@ class If(Operator):
 
         true_data = condition.data[condition.data[condition_measure]]
         false_data = condition.data[~condition.data[condition_measure]]
-        if isinstance(true_branch, Dataset):
-            true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-            true_data.dropna(subset=[condition_measure], inplace=True)
+        if len(true_data) > 0:
+            if isinstance(true_branch, Dataset):
+                true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
+                true_data.dropna(subset=[condition_measure], inplace=True)
+            else:
+                true_data[condition_measure] = true_data[condition_measure].apply(lambda x: true_branch.value)
         else:
-            true_data[condition_measure] = true_data[condition_measure].apply(lambda x: true_branch.value)
-        if isinstance(false_branch, Dataset):
-            false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-            false_data.dropna(subset=[condition_measure], inplace=True)
+            true_data = pd.DataFrame(columns=true_branch.get_components_names())
+        if len(false_data) > 0:
+            if isinstance(false_branch, Dataset):
+                false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
+                false_data.dropna(subset=[condition_measure], inplace=True)
+            else:
+                false_data[condition_measure] = false_data[condition_measure].apply(lambda x: false_branch.value)
         else:
-            false_data[condition_measure] = false_data[condition_measure].apply(lambda x: false_branch.value)
+            false_data = pd.DataFrame(columns=false_branch.get_components_names())
 
         result.data = pd.concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         if isinstance(result, Dataset):

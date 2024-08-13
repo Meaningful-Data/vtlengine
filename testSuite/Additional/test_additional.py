@@ -584,7 +584,7 @@ class StringOperatorsTest(AdditionalHelper):
         '''
         Behaviour for component with null.
         '''
-        text = """DS_r := DS_1[calc Me_2:=instr(Me_1, sc_1, null, 4)];"""
+        text = """DS_r := DS_1[calc Me_2:=instr(Me_1, "", null, 4)];"""
 
         code = '3-51'
         number_inputs = 1

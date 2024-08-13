@@ -119,6 +119,7 @@ class Symdiff(Set):
 
 class Setdiff(Set):
 
+    @staticmethod
     def has_null(row):
         return row.isnull().any()
 
@@ -127,11 +128,12 @@ class Setdiff(Set):
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
-            if len(data) == 0:
+            if result.data is None:
                 result.data = data
             else:
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
-                result.data = result.data[result.data.apply(cls.has_null, axis=1)]
+                if len(result.data) > 0:
+                    result.data = result.data[result.data.apply(cls.has_null, axis=1)]
 
                 not_identifiers = [col for col in result.get_measures_names() +
                                    result.get_attributes_names()]
