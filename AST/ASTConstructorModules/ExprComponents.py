@@ -281,7 +281,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes[0], output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
