@@ -2722,7 +2722,6 @@ class DataValidationOperatorsTest(AdditionalHelper):
     #
     #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-# TODO: Uncomment this once Time operators are implemented
 class TimeOperatorsTest(AdditionalHelper):
     """
     Group 7
@@ -2732,283 +2731,283 @@ class TimeOperatorsTest(AdditionalHelper):
 
     maxDiff = None
 
-#     def test_1(self):
-#         '''
-#         Basic behaviour for datasets.
-#         '''
-#         text = """DS_r := period_indicator(DS_1);"""
-#         code = '7-1'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_2(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1, single);"""
-#         code = '7-2'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_3(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1, all);"""
-#         code = '7-3'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_4(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1);"""
-#         code = '7-4'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_5(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1, single);"""
-#         code = '7-5'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_6(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1, all);"""
-#         code = '7-6'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_7(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := fill_time_series(DS_1);"""
-#         code = '7-7'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_8(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := flow_to_stock(DS_1);"""
-#         code = '7-8'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_9(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := flow_to_stock(DS_1);"""
-#         code = '7-9'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_10(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := stock_to_flow(DS_1);"""
-#         code = '7-10'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_11(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := stock_to_flow(DS_1);"""
-#         code = '7-11'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_12(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, 1);"""
-#         code = '7-12'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_13(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, -1);"""
-#         code = '7-13'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_14(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, 0);"""
-#         code = '7-14'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_15(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, 1);"""
-#         code = '7-15'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_16(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, -1);"""
-#         code = '7-16'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_17(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := timeshift(DS_1, 0);"""
-#         code = '7-17'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_18(self):
-#         '''
-#         Basic behaviour for datasets with period type.
-#         '''
-#         text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
-#         code = '7-18'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_19(self):
-#         '''
-#         Basic behaviour for datasets with date type.
-#         '''
-#         text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
-#         code = '7-19'
-#         number_inputs = 1
-#         references_names = ["DS_r"]
-#
-#         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_20(self):
-#         '''
-#         Basic behaviour for group all with different durations (date, first)
-#         '''
-#         code = '7-20'
-#         number_inputs = 1
-#         references_names = ["1", "2", "3", "4", "5", "6"]
-#
-#         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_21(self):
-#         '''
-#         Basic behaviour for group all with different durations (date, last)
-#         '''
-#         code = '7-21'
-#         number_inputs = 1
-#         references_names = ["1", "2", "3", "4", "5", "6"]
-#
-#         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_22(self):
-#         '''
-#         Basic behaviour for dataset with different durations (date)
-#         '''
-#         code = '7-22'
-#         number_inputs = 1
-#         references_names = ["1", "2", "3", "4", "5", "6"]
-#
-#         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_23(self):
-#         '''
-#         Basic behaviour for dataset with different durations (time_period)
-#         '''
-#         code = '7-23'
-#         number_inputs = 1
-#         references_names = ["1"]
-#
-#         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_24(self):
-#         '''
-#         Dataset with calc on time_agg.
-#         '''
-#         code = '7-24'
-#         number_inputs = 1
-#         references_names = ["1"]
-#
-#         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-#
-#     def test_25(self):
-#         '''
-#         Semantic error on time_agg with periodIndTo = "D" on Time_period
-#         '''
-#         code = '7-25'
-#         number_inputs = 1
-#         message = "1-1-19-5"
-#
-#         self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
-#
-#     def test_26(self):
-#         '''
-#         Runtime Error on time_agg if any row has lower or equal duration than periodIndTo
-#         '''
-#         code = '7-26'
-#         number_inputs = 1
-#         message = "2-1-19-1"
-#         self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+    def test_1(self):
+        '''
+        Basic behaviour for datasets.
+        '''
+        text = """DS_r := period_indicator(DS_1);"""
+        code = '7-1'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_2(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, single);"""
+        code = '7-2'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, all);"""
+        code = '7-3'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := fill_time_series(DS_1);"""
+        code = '7-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, single);"""
+        code = '7-5'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1, all);"""
+        code = '7-6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := fill_time_series(DS_1);"""
+        code = '7-7'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := flow_to_stock(DS_1);"""
+        code = '7-8'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := flow_to_stock(DS_1);"""
+        code = '7-9'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := stock_to_flow(DS_1);"""
+        code = '7-10'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := stock_to_flow(DS_1);"""
+        code = '7-11'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, 1);"""
+        code = '7-12'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_13(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, -1);"""
+        code = '7-13'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_14(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := timeshift(DS_1, 0);"""
+        code = '7-14'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_15(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, 1);"""
+        code = '7-15'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_16(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, -1);"""
+        code = '7-16'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_17(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := timeshift(DS_1, 0);"""
+        code = '7-17'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_18(self):
+        '''
+        Basic behaviour for datasets with period type.
+        '''
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        code = '7-18'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_19(self):
+        '''
+        Basic behaviour for datasets with date type.
+        '''
+        text = """DS_r := sum (DS_1 group all time_agg("A", Id_1));"""
+        code = '7-19'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_20(self):
+        '''
+        Basic behaviour for group all with different durations (date, first)
+        '''
+        code = '7-20'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_21(self):
+        '''
+        Basic behaviour for group all with different durations (date, last)
+        '''
+        code = '7-21'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_22(self):
+        '''
+        Basic behaviour for dataset with different durations (date)
+        '''
+        code = '7-22'
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_23(self):
+        '''
+        Basic behaviour for dataset with different durations (time_period)
+        '''
+        code = '7-23'
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_24(self):
+        '''
+        Dataset with calc on time_agg.
+        '''
+        code = '7-24'
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_25(self):
+        '''
+        Semantic error on time_agg with periodIndTo = "D" on Time_period
+        '''
+        code = '7-25'
+        number_inputs = 1
+        message = "1-1-19-5"
+
+        self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+
+    def test_26(self):
+        '''
+        Runtime Error on time_agg if any row has lower or equal duration than periodIndTo
+        '''
+        code = '7-26'
+        number_inputs = 1
+        message = "2-1-19-1"
+        self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
 
 class EmptyDatasetsTest(AdditionalHelper):

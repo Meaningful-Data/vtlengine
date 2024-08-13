@@ -3,7 +3,9 @@ import sqlglot
 import sqlglot.expressions as exp
 
 import json
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
@@ -12,6 +14,7 @@ from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
+import DataTypes
 from DataTypes import SCALAR_TYPES, ScalarType
 
 
@@ -131,6 +134,11 @@ class Dataset:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
                     "The number of components must match the number of columns in the data")
+            for name, component in self.components.items():
+                if name not in self.data.columns:
+                    raise ValueError(f"Component {name} not found in the data")
+                if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
+                    self.data[name] = self.data[name].map(self.refactor_time_period, na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -215,6 +223,24 @@ class Dataset:
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
+
+    def refactor_time_period(self, date: str):
+        if not isinstance(date, str):
+            return date
+        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])$", date):
+            year, month = date.split("M")
+            return "{}-M{}".format(year, month)
+        if re.match(r"^\d{1,4}Q[1-4]$", date):
+            year, quarter = date.split("Q")
+            return "{}-Q{}".format(year, quarter)
+        if re.match(r"^\d{1,4}S[1-2]$", date):
+            year, semester = date.split("S")
+            return "{}-S{}".format(year, semester)
+        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])/\d{1,4}M(0?[1-9]|1[0-2])$", date):
+            date1, date2 = date.split("/")
+            return "{}/{}".format(self.refactor_time_period(date1), self.refactor_time_period(date2))
+        return date
+
 
 
 @dataclass
