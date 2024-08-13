@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DATASET",
+      "DataStructure": [
+        {
+          "name": "A",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "B",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "C",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

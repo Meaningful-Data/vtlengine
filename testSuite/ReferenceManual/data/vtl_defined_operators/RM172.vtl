@@ -1,0 +1,5 @@
+define operator Test172 (x dataset, y component, z component)
+    returns dataset is
+    x [ pivot y, z ]
+end operator;
+DS_r := Test172(DS_1, Id_2, Me_1);

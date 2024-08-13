@@ -1,0 +1,8 @@
+FLGS_E4 :=
+    FLGS_E2_NMBR_MAIN_DBTR
+          [calc  SHR_DBTR_ADJ := if NMBR_DBTR=1
+                            then 1
+                            else
+                              if NMBR_DBTR > 1 and IS_MAIN_DBTR = 1 and sum (IS_MAIN_DBTR over (partition by SNPSHT, OBSRVD_AGNT_CDD, DT_RFRNC, INSTRMNT_ID)) >0
+                              then 1 / sum(IS_MAIN_DBTR over (partition by SNPSHT, OBSRVD_AGNT_CD, DT_RFRNC, INSTRMNT_ID))
+                              else 0];

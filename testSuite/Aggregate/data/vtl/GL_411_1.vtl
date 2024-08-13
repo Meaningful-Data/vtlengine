@@ -1,0 +1,12 @@
+entIntJl.IS_OA_CRDTR:=ANCRDT_ENTTY_INSTRMNT_C
+            [sub ENTTY_RL = "1"]
+            [aggr 
+                    IS_OA_CRDTR := max(
+                            if 
+                                    ENTTY_RIAD_CD = OBSRVD_AGNT_CD 
+                            then 
+                                    1 
+                            else 
+                                    0) 
+                    group by OBSRVD_AGNT_CD
+            ];

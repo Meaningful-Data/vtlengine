@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DBTR_FCT_NN_PRFRMNG_SUM",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "SUM_OTSTNDNG_NMNL_AMNT_DV_NN_PRFRMNG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "SUM_OTSTNDNG_NMNL_AMNT_CV_NN_PRFRMNG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

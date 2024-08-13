@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "name": "BIRD_FCTRNG_AXLRY_IL",
+      "DataStructure": [
+        {
+          "name": "CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_MTRTY_CSH_RSRV",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_ORGNL_CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "GNRT_CSH_RSRV",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NN_PRFRMNG_FRBRN_EXT_CRTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ORGNL_CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

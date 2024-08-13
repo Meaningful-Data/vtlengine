@@ -1,0 +1,5 @@
+DS_r := left_join ( DS_1 as d1, DS_2 as d2
+    filter d1#Me_1 + d2#Me_1 <10
+    calc Me_1 := d1#Me_1 + d2#Me_3
+    keep Me_1
+    rename Me_1 to Me_1a);

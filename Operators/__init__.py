@@ -214,6 +214,13 @@ class Binary(Operator):
                              base_operand.components.items()
                              if component.role in [Role.IDENTIFIER, Role.MEASURE]}
 
+        for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
+            if comp.name in left_operand.components and comp.name in right_operand.components:
+                left_comp = left_operand.components[comp.name]
+                right_comp = right_operand.components[comp.name]
+                comp.nullable = left_comp.nullable or right_comp.nullable
+
+
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
         return result_dataset
@@ -221,7 +228,11 @@ class Binary(Operator):
     @classmethod
     def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar):
 
-        result_dataset = Dataset(name="result", components=dataset.components.copy(),
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             dataset.components.items() if
+                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+
+        result_dataset = Dataset(name="result", components=result_components,
                                  data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
@@ -289,7 +300,11 @@ class Binary(Operator):
                     f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
                 )
 
-        result_dataset = Dataset(name="result", components=dataset.components.copy(),
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             dataset.components.items() if
+                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+
+        result_dataset = Dataset(name="result", components=result_components,
                                  data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar_set)
         return result_dataset
@@ -423,6 +438,17 @@ class Binary(Operator):
                     result_data[measure_name + '_y'])
             result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
 
+        # Delete attributes from the result data
+        attributes = list(
+            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names()))
+        for att in attributes:
+            if att in result_data.columns:
+                result_data = result_data.drop(att, axis=1)
+            if att + '_x' in result_data.columns:
+                result_data = result_data.drop(att + '_x', axis=1)
+            if att + '_y' in result_data.columns:
+                result_data = result_data.drop(att + '_y', axis=1)
+
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
 
@@ -446,6 +472,8 @@ class Binary(Operator):
                 result_data[measure_name], scalar.value, dataset_left)
 
         result_dataset.data = result_data
+        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
+        result_dataset.data = result_dataset.data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -474,7 +502,8 @@ class Binary(Operator):
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
                                                                        scalar_set.values)
 
-        result_dataset.data = result_data
+        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
+        result_dataset.data = result_data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
 
         return result_dataset
@@ -560,8 +589,11 @@ class Unary(Operator):
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
         cls.validate_dataset_type(operand)
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             operand.components.items() if
+                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
 
-        result_dataset = Dataset(name="result", components=operand.components.copy(), data=None)
+        result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, operand)
         return result_dataset
 
@@ -648,6 +680,9 @@ class Unary(Operator):
         result_data = operand.data.copy()
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
+
+        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
+        result_data = result_data[cols_to_keep]
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)

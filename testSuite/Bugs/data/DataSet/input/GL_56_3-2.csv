@@ -1,0 +1,6 @@
+ACCOUNTING_ENTRY,ADJUSTMENT,COMMENT_OBS,COMMENT_TS,COMPILING_ORG,COMP_METHOD,OBS_VALUE,PRE_BREAK_VALUE
+AA,aa,,,,aa,,
+bb,bb,bb,bb,bb,bb,5,12
+cc,cc,cc,cc,cc,cc,-7,12
+ff,dd,dd,dd,dd,dd,-1,12
+ee,ee,ee,,ee,ee,1,12

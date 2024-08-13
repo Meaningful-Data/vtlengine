@@ -1,0 +1,1 @@
+DS_r := inner_join(comp_count.TYP_ENTTY, max(ANCRDT_INSTRMNT_C group by OBSRVD_AGNT_CD)[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B);

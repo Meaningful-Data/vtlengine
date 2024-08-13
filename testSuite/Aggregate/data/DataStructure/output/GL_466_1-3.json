@@ -1,0 +1,1 @@
+{"datasets": [{"name": "total_records_per_month", "DataStructure": [{"name": "month", "role": "Identifier", "type": "Time_Period", "nullable": false}, {"name": "int_var", "role": "Measure", "type": "Integer", "nullable": true}], "DataPoints": null}]}

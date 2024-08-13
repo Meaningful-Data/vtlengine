@@ -102,7 +102,7 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
         self.is_from_assignment = False
-        right_operand: Dataset = self.visit(node.right)
+        right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         return Assignment.evaluate(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
@@ -136,6 +136,26 @@ class InterpreterAnalyzer(ASTTemplate):
             operand = self.aggregation_dataset
         elif self.is_from_regular_aggregation:
             operand = self.regular_aggregation_dataset
+            if node.operand is not None:
+                op_comp: DataComponent = self.visit(node.operand)
+                if op_comp.name not in operand.get_measures_names():
+                    raise Exception(f"Measure {op_comp.name} not in dataset {self.regular_aggregation_dataset.name}")
+                comps_to_keep = {}
+                for comp_name, comp in self.regular_aggregation_dataset.components.items():
+                    if comp.role == Role.IDENTIFIER:
+                        comps_to_keep[comp_name] = copy(comp)
+                    elif comp_name == op_comp.name:
+                        comps_to_keep[comp_name] = Component(
+                            name=op_comp.name,
+                            data_type=op_comp.data_type,
+                            role=op_comp.role,
+                            nullable=op_comp.nullable
+                        )
+                data_to_keep = operand.data[operand.get_identifiers_names()]
+                data_to_keep[op_comp.name] = op_comp.data
+                operand = Dataset(name=operand.name,
+                                  components=comps_to_keep,
+                                  data=data_to_keep)
         else:
             operand = self.visit(node.operand)
         groupings = []
@@ -174,7 +194,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
-                    if name != operand_comp:
+                    if name != operand_comp.name:
                         dataset_components.pop(name)
 
                 operand = Dataset(name=self.regular_aggregation_dataset.name,
@@ -192,11 +212,19 @@ class InterpreterAnalyzer(ASTTemplate):
             order_components = [x.component for x in node.order_by]
             partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
 
+        params = []
+        if node.params is not None:
+            for param in node.params:
+                if isinstance(param, AST.Constant):
+                    params.append(param.value)
+                else:
+                    params.append(param)
+
         result = ANALYTIC_MAPPING[node.op].evaluate(operand=operand,
                                                     partitioning=partitioning,
                                                     ordering=ordering,
                                                     window=node.window,
-                                                    params=node.params)
+                                                    params=params)
         if not self.is_from_regular_aggregation:
             return result
 
@@ -273,6 +301,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                  nullable=self.aggregation_dataset.components[node.value].nullable)
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets.keys():
+                return self.datasets[node.value]
+            if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
                 return self.datasets[node.value]
             return DataComponent(name=node.value,
                                  data=self.regular_aggregation_dataset.data[node.value],
@@ -585,12 +615,20 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.language not in EXTERNAL:
             raise Exception(f"Language {node.language} not supported on Eval")
 
+        if self.external_routines is None:
+            raise Exception(f"No External Routines have been loaded.")
+
         if node.name not in self.external_routines:
             raise Exception(f"External Routine {node.name} not found")
         external_routine = self.external_routines[node.name]
-        operand = self.visit(node.operand)
+        operands = {}
+        for operand in node.operands:
+            element = (self.visit(operand))
+            if not isinstance(element, Dataset):
+                raise ValueError(f"Expected dataset, got {type(element).__name__} as Eval Operand")
+            operands[element.name] = element
         output_to_check = node.output
-        return Eval.evaluate(operand, external_routine, output_to_check)
+        return Eval.evaluate(operands, external_routine, output_to_check)
 
     def generate_then_else_datasets(self, condition):
         if isinstance(condition, Dataset):
@@ -635,3 +673,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 right = right_operand.data
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
+
+    def visit_Identifier(self, node: AST.Identifier) -> AST.AST:
+        """
+        Identifier: (value)
+
+        Basic usage:
+
+            return node.value
+        """
+        if node.value in self.datasets:
+            if self.is_from_assignment:
+                return self.datasets[node.value].name
+            return self.datasets[node.value]
+        return node.value

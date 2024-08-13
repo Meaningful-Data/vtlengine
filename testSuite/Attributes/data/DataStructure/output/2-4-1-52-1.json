@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r2",
+      "DataStructure": [
+        {
+          "name": "At_1",
+          "role": "Attribute",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

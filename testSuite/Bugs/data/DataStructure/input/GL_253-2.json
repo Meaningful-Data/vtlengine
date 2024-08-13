@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "RFA_DMID",
+      "DataStructure": [
+        {
+          "name": "BKAR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Currency",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

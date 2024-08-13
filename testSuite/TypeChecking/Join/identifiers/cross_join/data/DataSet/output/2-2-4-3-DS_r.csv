@@ -1,0 +1,10 @@
+Id_1A,Id_2A,Me_1,Me_2,Id_1B,Id_2B,Me_1A,Me_2A
+1,A,A,1.0,1,A,B,Q
+1,A,A,1.0,1,B,S,T
+1,A,A,1.0,3,A,Z,M
+1,B,C,2.0,1,A,B,Q
+1,B,C,2.0,1,B,S,T
+1,B,C,2.0,3,A,Z,M
+2,A,E,3.0,1,A,B,Q
+2,A,E,3.0,1,B,S,T
+2,A,E,3.0,3,A,Z,M

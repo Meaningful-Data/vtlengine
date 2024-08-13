@@ -1,0 +1,4 @@
+TTL_CRDTR_DBTR :=
+    IS_INTRCMPNY_DS_P
+        [filter ENTTY_RL in {"1", "2"}]
+        [aggr TTL := count() group except ENTTY_RIAD_CD, ENTTY_RL];

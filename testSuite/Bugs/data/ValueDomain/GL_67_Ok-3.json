@@ -1,0 +1,18 @@
+{
+  "name": "INTRNTNL_ORGNSTNS_FINREP",
+  "setlist": [
+    "1C",
+    "4D",
+    "4J1",
+    "4J2",
+    "4J3",
+    "4J4",
+    "4J5",
+    "4J6",
+    "4J7",
+    "4J8",
+    "4S",
+    "5B"
+  ],
+  "type": "String"
+}

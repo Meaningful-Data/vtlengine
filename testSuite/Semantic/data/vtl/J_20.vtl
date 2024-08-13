@@ -1,0 +1,5 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+DS_r := inner_join (drop_identifier(DS_1, Id_3) as d1, drop_identifier(DS_2, Id_3) as d2 filter Me_2a < 0 calc identifier Id_4 :=nvl(d2#Me_1 + Me_2,0) keep d1#Me_1)[rename Me_1 to Me_2b];

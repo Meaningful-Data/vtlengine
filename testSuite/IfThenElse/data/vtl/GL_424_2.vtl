@@ -1,0 +1,7 @@
+INPUT_CHECK_REGEX :=
+    if(match_characters(BIS_LOC_STATS # OBS_VALUE,"/[^A-Za-z ]/g"))
+    then
+        BIS_LOC_STATS # REP_COUNTRY in { "TR" }
+    else
+    BIS_LOC_STATS # REP_COUNTRY in { "US" }
+;

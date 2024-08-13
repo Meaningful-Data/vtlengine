@@ -4,7 +4,6 @@ DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'Float64',
     'Integer': 'Int64',
-    'Time': 'string',
     'TimeInterval': 'string',
     'Date': 'string',
     'TimePeriod': 'string',
@@ -16,7 +15,6 @@ CAST_MAPPING = {
     'String': str,
     'Number': float,
     'Integer': int,
-    'Time': str,
     'TimeInterval': str,
     'Date': str,
     'TimePeriod': str,
@@ -109,27 +107,22 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-class Time(ScalarType):
-    """
 
-    """
-    default = None
-
-class Time_Interval(ScalarType):
-    """
-
-    """
-    default = None
-
-
-class Date(Time_Interval):
+class TimeInterval(ScalarType):
     """
 
     """
     default = None
 
 
-class Time_Period(Time_Interval):
+class Date(TimeInterval):
+    """
+
+    """
+    default = None
+
+
+class TimePeriod(TimeInterval):
     """
 
     """
@@ -171,6 +164,7 @@ class Boolean(ScalarType):
             return value
         return value
 
+
 class Null(ScalarType):
     """
     """
@@ -187,14 +181,14 @@ class Null(ScalarType):
     def dtype(self):
         return 'string'
 
+
 SCALAR_TYPES = {
     'String': String,
     'Number': Number,
     'Integer': Integer,
-    'Time': Time,
-    'Time_Interval': Time_Interval,
+    'Time': TimeInterval,
     'Date': Date,
-    'Time_Period': Time_Period,
+    'Time_Period': TimePeriod,
     'Duration': Duration,
     'Boolean': Boolean,
 }
@@ -208,11 +202,11 @@ BASIC_TYPES = {
 }
 
 COMP_NAME_MAPPING = {
-    String: 'string_var',
+    String: 'str_var',
     Number: 'num_var',
     Integer: 'int_var',
-    Time: 'time_var',
-    Time_Period: 'time_period_var',
+    TimeInterval: 'time_var',
+    TimePeriod: 'time_period_var',
     Date: 'date_var',
     Duration: 'duration_var',
     Boolean: 'bool_var'
@@ -220,14 +214,14 @@ COMP_NAME_MAPPING = {
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
     String: {String},
-    Number: {String, Number},
+    Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
-    Time_Interval: {String, Time_Interval},
-    Date: {String, Time_Interval, Date},
-    Time_Period: {String, Time_Interval, Time_Period},
+    TimeInterval: {String, TimeInterval},
+    Date: {String, TimeInterval, Date},
+    TimePeriod: {String, TimeInterval, TimePeriod},
     Duration: {String, Duration},
     Boolean: {String, Boolean},
-    Null: {String, Number, Integer, Time, Date, Time_Period, Duration, Boolean, Null}
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
 
 

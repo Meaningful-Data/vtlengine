@@ -1,0 +1,5 @@
+define operator Test161 (x dataset, c component, y dataset, z dataset)
+    returns dataset is
+    if ( x#c = "F" ) then y else z
+end operator;
+DS_r := Test161(DS_cond,Id_4, DS_1, DS_2);

@@ -1,0 +1,40 @@
+{
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {
+                    "name": "ID2",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "ME1",
+                    "role": "Measure",
+                    "type": "Integer",
+                    "nullable": true
+                },
+                {
+                    "name": "REF_PERIOD",
+                    "role": "Identifier",
+                    "type": "Date",
+                    "nullable": false
+                },
+                {
+                    "name": "month",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "ME2",
+                    "role": "Measure",
+                    "type": "Integer",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+  }

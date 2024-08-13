@@ -1,0 +1,30 @@
+/*******************************************************************************
+*       Module am
+*******************************************************************************/
+am.FOW_VOLS_reshape := prep.FOW_VOLS_newContracts [ calc identifier FREQ := "M" ] [ drop trading_days , contract_name , contract_type , stock_exchange_id , instrument_id , OBS_VALUE , autonumber ] ; 
+am.FOW_VOLS_unpivot := am.FOW_VOLS_reshape [ unpivot measure_ , OBS_VALUE ] ; 
+am.AMOUNTS_open_interest := am.FOW_VOLS_unpivot [ sub measure_ = "open_interest" ] ; 
+am.AMOUNTS_turnover := am.FOW_VOLS_unpivot [ sub measure_ = "turnover" ] ; 
+AMOUNTS <- union ( am.AMOUNTS_open_interest [ calc identifier measure_ := "O" ] , am.AMOUNTS_turnover [ calc identifier measure_ := "V" ] ) ; 
+/*******************************************************************************
+*       Module con
+*******************************************************************************/
+con.FOW_SPECS_DRP := prep.FOW_SPEC_prepared [ drop mic , ticker_id , OBS_VALUE ] ; 
+con.FOW_SPECS_RCD1 := con.FOW_SPECS_DRP [ calc length_id := if contract_type = "B" then "L" else if contract_type = "R" then "P" else null ] ; 
+con.FOW_SPECS_RCD2 := con.FOW_SPECS_RCD1 [ calc contract_type := if contract_type = "B" then "I" else if contract_type = "M" then "P" else if contract_type = "O" then "A" else if contract_type = "Q" then "X" else if contract_type = "R" then "I" else if contract_type = "S" then "A" else if contract_type = "X" then "S" else if contract_type = "Z" then "X" else contract_type ] ; 
+con.FOW_SPECS_RNM := con.FOW_SPECS_RCD2 [ rename base_currency to contract_unit , settlement_currency to contract_second_leg ] ; 
+con.FOW_SPECS_DRVD := con.FOW_SPECS_RNM [ calc index_y_n := if contract_type = "S" then true else false , contract_yearly := false , contract_factor := 1 , contract_active := true , valid_from := current_date() ] ;
+CONTRACTS <- con.FOW_SPECS_DRVD [ filter not isnull ( instrument_id ) ] ; 
+/*******************************************************************************
+*       Module prep
+*******************************************************************************/
+prep.FOW_VOLS_Conv := FOW_VOLS [ calc measure trading_days := trading_days , measure open_interest := open_interest , measure turnover := turnover , measure contract_name := contract_name , measure instrument_id := instrument_id , measure contract_type := contract_type , measure stock_exchange_id := stock_exchange_id ] ; 
+prep.FOW_SPEC_Conv := FOW_SPEC [ calc measure stock_exchange_id := stock_exchange_id , measure mic := mic , measure ticker_id := ticker_id , measure contract_type := contract_type , measure instrument_id := instrument_id , measure contract_name := contract_name , measure contract_size_description := contract_size_description , measure base_currency := base_currency , measure contract_size := contract_size , measure settlement_currency := settlement_currency ] ; 
+prep.castedVols := prep.FOW_VOLS_Conv [ calc open_interest := cast ( open_interest , integer ) , turnover := cast ( turnover , integer ) ] ; 
+prep.FOW_VOLS_not0 := prep.castedVols [ filter open_interest <> 0 or turnover <> 0 ] ; 
+prep.FOW_VOLS_existingContracts := inner_join ( prep.FOW_VOLS_not0 , currentContracts ) ; 
+prep.FOW_VOLS_newContracts_join := left_join ( prep.FOW_VOLS_not0 , currentContracts using contract_id ) ; 
+prep.FOW_VOLS_newContracts := prep.FOW_VOLS_newContracts_join [ filter isnull ( autonumber ) ] ; 
+prep.FOW_SPEC_existingContracts := inner_join ( prep.FOW_SPEC_Conv , prep.FOW_VOLS_existingContracts [ keep OBS_VALUE ] [ drop OBS_VALUE ] as B ) ; 
+prep.FOW_SPEC_newContracts := inner_join ( prep.FOW_SPEC_Conv , prep.FOW_VOLS_newContracts [ keep OBS_VALUE ] [ drop OBS_VALUE ] as B ) ; 
+prep.FOW_SPEC_prepared := prep.FOW_SPEC_newContracts [ calc contract_fow_id := contract_id ] ; 

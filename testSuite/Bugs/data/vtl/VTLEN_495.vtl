@@ -1,0 +1,217 @@
+bopObs := BOP[keep OBS_VALUE];
+instrAssetVal := 
+  check_hierarchy(
+    bopObs, 
+    instrAsset rule INSTR_ASSET);
+refSectorVal :=
+  check_hierarchy(
+    bopObs, 
+    sectorsHierarchy rule REF_SECTOR);
+  
+maturityVal :=
+  check_hierarchy(
+    bopObs, 
+    maturity rule MATURITY);
+    
+intAccItemVal :=
+  check_hierarchy(
+    bopObs, 
+    intAccItem rule INT_ACC_ITEM);
+    
+counterpartAreaVal :=
+  check_hierarchy(
+    bopObs, 
+    areas rule COUNTERPART_AREA);
+counterpartSectorVal :=
+  check_hierarchy(
+    bopObs, 
+    sectorsHierarchy rule COUNTERPART_SECTOR);
+  
+accountingEntryVal :=
+  check_hierarchy(
+    bopObs, 
+    accountingEntry rule ACCOUNTING_ENTRY);
+    
+BAL :=
+  check(
+    bopObs[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] =
+      bopObs[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] -
+      bopObs[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"]
+    invalid
+  );
+  
+EQ0_1 :=
+  check(
+    bopObs[filter COUNTERPART_AREA = "I8" and
+                  REF_SECTOR = "S1" and
+                  COUNTERPART_SECTOR = "S121" and
+                  FLOW_STOCK_ENTRY = "T" and
+                  ACCOUNTING_ENTRY = "A" and 
+                  INT_ACC_ITEM= "FA" and 
+                  FUNCTIONAL_CAT = "P" and 
+                  INSTR_ASSET = "F3"]
+    =0
+    invalid
+  );
+  
+EQ0_2 :=
+  check(
+    bopObs[filter COUNTERPART_AREA = "W1" and
+                  REF_SECTOR = "S121" and
+                  COUNTERPART_SECTOR = "S1" and
+                  FLOW_STOCK_ENTRY = "T" and
+                  ACCOUNTING_ENTRY = "L" and 
+                  INT_ACC_ITEM= "FA" and 
+                  FUNCTIONAL_CAT = "P" and 
+                  INSTR_ASSET = "F3"]
+    =0
+    invalid
+  );
+  
+FUNC :=
+  check(
+    bopObs[sub ACCOUNTING_ENTRY = "N", FUNCTIONAL_CAT = "_T"] =
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "D"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "D"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "P"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "P"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "O"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "O"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "F"] +
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "R"]
+    invalid
+  );
+  
+sign1c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G"] > 0
+    invalid
+  );
+sign2c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA"] > 0
+    invalid
+  );
+  
+sign3c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S"] > 0
+    invalid
+  );
+  
+sign4c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1"] > 0
+    invalid
+  );
+  
+sign5c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN2"] > 0
+    invalid
+  );
+  
+sign6c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "D1"] > 0
+    invalid
+  );
+  
+sign7c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "KA"] > 0
+    invalid
+  );
+  
+sign8c :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "D4P"] > 0
+    invalid
+  );
+  
+sign1d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "G"] > 0
+    invalid
+  );
+sign2d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "GA"] > 0
+    invalid
+  );
+  
+sign3d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "S"] > 0
+    invalid
+  );
+  
+sign4d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "IN1"] > 0
+    invalid
+  );
+  
+sign5d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "IN2"] > 0
+    invalid
+  );
+  
+sign6d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "D1"] > 0
+    invalid
+  );
+  
+sign7d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "KA"] > 0
+    invalid
+  );
+  
+sign8d :=
+  check(
+    bopObs[filter ACCOUNTING_ENTRY = "D" and INT_ACC_ITEM = "D4P"] > 0
+    invalid
+  );
+  
+sign9 :=
+  check(
+    bopObs[filter INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL"] > 0
+    invalid
+  );
+  
+sign10 :=
+  check(
+    bopObs[filter INT_ACC_ITEM = "D4S" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F"] > 0
+    invalid
+  );
+  
+sign11 :=
+  check(
+    bopObs[filter INT_ACC_ITEM = "D41" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F3"] > 0
+    invalid
+  );
+  
+sign12 :=
+  check(
+    bopObs[filter INT_ACC_ITEM = "D41" and FUNCTIONAL_CAT = "O" and INSTR_ASSET = "FLA"] > 0
+    invalid
+  );
+  
+OW1 :=
+  check(
+    bopObs[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] -
+    bopObs[sub INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"]
+    > 0
+    invalid
+  );
+  
+OW2 :=
+  check(
+    bopObs[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] -
+    bopObs[sub INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"]
+    > 0
+    invalid
+  );

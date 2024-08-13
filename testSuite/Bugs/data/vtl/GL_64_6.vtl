@@ -1,0 +1,6 @@
+ENTTY_TM_CHNG :=
+    cross_join(
+        ENTTY_HD_OFFC,
+        DT_RFRNC_DS
+        filter VLD_FRM <= DT_RFRNC and VLD_T >= DT_RFRNC)
+        ;

@@ -1,0 +1,5 @@
+define operator Test019 (x dataset, y scalar)
+    returns dataset is
+    substr(x, y)
+end operator;
+DS_r := Test019(DS_1, 7);

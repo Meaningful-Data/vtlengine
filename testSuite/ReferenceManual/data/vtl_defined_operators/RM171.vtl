@@ -1,0 +1,5 @@
+define operator Test171 (x dataset, y component, z component)
+    returns dataset is
+    x [ rename y to Me_2, z to At_2]
+end operator;
+DS_r := Test171(DS_1, At_1);

@@ -1,0 +1,5 @@
+define operator Test142 (x dataset, y component)
+    returns dataset is
+    min ( x group by y )
+end operator;
+DS_r := Test142(DS_1, Id_1);

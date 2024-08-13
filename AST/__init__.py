@@ -521,7 +521,7 @@ class EvalOp(AST):
     """
 
     name: str
-    operand: AST
+    operands: List[AST]
     output: Optional[str]
     language: Optional[str]
 

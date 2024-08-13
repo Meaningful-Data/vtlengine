@@ -8,7 +8,7 @@ else:
 
 from Model import Dataset
 from Operators import Operator
-from DataTypes import check_binary_implicit_promotion
+from DataTypes import binary_implicit_promotion, check_binary_implicit_promotion
 
 
 class Set(Operator):
@@ -23,13 +23,9 @@ class Set(Operator):
             if comp.name not in dataset_2.components:
                 raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
             second_comp = dataset_2.components[comp.name]
-            # TODO: Have we to validate the type compatibility (promotion) between the components?
-            check_binary_implicit_promotion(comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type)
+            binary_implicit_promotion(comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type)
             if comp.role != second_comp.role:
                 raise Exception(f"Component {comp.name} has different roles "
-                                f"in datasets {dataset_1.name} and {dataset_2.name}")
-            if comp.nullable != second_comp.nullable:
-                raise Exception(f"Component {comp.name} has different nullability "
                                 f"in datasets {dataset_1.name} and {dataset_2.name}")
 
     @classmethod
@@ -39,7 +35,17 @@ class Set(Operator):
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
 
-        result = Dataset(name="result", components=base_operand.components, data=None)
+        result_components = {}
+        for operand in operands:
+            if len(result_components) == 0:
+                result_components = operand.components
+            else:
+                for comp_name, comp in operand.components.items():
+                    current_comp = result_components[comp_name]
+                    result_components[comp_name].data_type = binary_implicit_promotion(current_comp.data_type, comp.data_type)
+                    result_components[comp_name].nullable = current_comp.nullable or comp.nullable
+
+        result = Dataset(name="result", components=result_components, data=None)
         return result
 
 
@@ -121,7 +127,7 @@ class Setdiff(Set):
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
-            if result.data is None:
+            if len(data) == 0:
                 result.data = data
             else:
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
@@ -130,7 +136,11 @@ class Setdiff(Set):
                 not_identifiers = [col for col in result.get_measures_names() +
                                    result.get_attributes_names()]
                 for col in not_identifiers:
-                    result.data[col] = result.data[col + "_x"]
+                    if col + "_x" in result.data:
+                        result.data[col] = result.data[col + "_x"]
+                        del result.data[col + "_x"]
+                    if col + "_y" in result.data:
+                        del result.data[col + "_y"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
         result.data.reset_index(drop=True, inplace=True)
         return result

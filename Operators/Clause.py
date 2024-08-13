@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from AST import RenameNode
-from DataTypes import Boolean, String, check_unary_implicit_promotion
+from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
 
@@ -82,7 +82,10 @@ class Aggregate:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
-                result_dataset.data[operand.name] = operand.data
+                if len(operand.data) > 0:
+                    result_dataset.data[operand.name] = operand.data
+                else:
+                    result_dataset.data[operand.name] = None
         return result_dataset
 
 
@@ -97,7 +100,9 @@ class Filter:
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset):
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
+        result_dataset.data = dataset.data.copy()
+        if len(condition.data) > 0:
+            result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
         return result_dataset
 
 
@@ -209,15 +214,17 @@ class Unpivot:
         # noinspection PyTypeChecker
         result_dataset.add_component(Component(name=identifier, data_type=String,
                                                role=Role.IDENTIFIER, nullable=False))
-        # TODO: Add type promotion
         base_type = None
+        final_type = String
         for comp in dataset.get_measures():
             if base_type is None:
                 base_type = comp.data_type
             else:
                 if check_unary_implicit_promotion(base_type, comp.data_type) is None:
                     raise ValueError("All measures must have the same data type on unpivot clause")
-        result_dataset.add_component(Component(name=measure, data_type=base_type,
+            final_type = unary_implicit_promotion(base_type, comp.data_type)
+
+        result_dataset.add_component(Component(name=measure, data_type=final_type,
                                                role=Role.MEASURE, nullable=True))
         return result_dataset
 
@@ -251,7 +258,8 @@ class Sub:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
         for operand in operands:
-            result_dataset.data = result_dataset.data[operand.data]
+            if len(operand.data) > 0:
+                result_dataset.data = result_dataset.data[operand.data.index]
             result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
             result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset

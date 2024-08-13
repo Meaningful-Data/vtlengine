@@ -1,0 +1,6 @@
+DS_r :=
+    ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+        [calc
+                CNT_3PPC := count(THRD_PRTY_PRRTY_CLMS over(partition by DT_RFRNC order by DT_RFRNC range between 0 preceding and 0 following))
+            ];
+

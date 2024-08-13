@@ -1,0 +1,5 @@
+define hierarchical ruleset metrics(variable rule metric) is
+    v1: mi1 = mi2 - mi3 errorcode "val1" errorlevel 1
+end hierarchical ruleset;
+
+metrics_validation := check_hierarchy(table1, metrics rule metric);

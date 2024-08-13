@@ -1,0 +1,9 @@
+define operator hier_prep(table dataset, row_or_column component, var component, entity component, reference_date component) returns dataset is
+    max(table[calc identifier var := nvl(var, "x0")] group by entity, reference_date, var, row_or_column)
+end operator;
+
+define hierarchical ruleset metrics(variable rule OC) is
+    v1: mi1 = mi2 - mi3 errorcode "val1" errorlevel 1
+end hierarchical ruleset;
+
+table4_currencies := check_hierarchy(hier_prep(table4, column, OC, entity, reference_date), metrics rule OC);

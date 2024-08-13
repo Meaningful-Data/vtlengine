@@ -1,0 +1,13 @@
+define operator G_DFLT_STTS_CNTRPRTY1(APPRCH_CRDT_QLTY_STTS component, CRDT_QLTY_STTS component) returns component is 
+    if APPRCH_CRDT_QLTY_STTS = "2" then "0" 
+    else if APPRCH_CRDT_QLTY_STTS = "1" then 
+        if CRDT_QLTY_STTS in {"11", "2"} then "14" 
+        else if CRDT_QLTY_STTS = "19" then "19" 
+        else if CRDT_QLTY_STTS = "20" then "20" 
+        else if CRDT_QLTY_STTS = "18" then "18" 
+        else null 
+    else null 
+end operator;
+
+
+GRP_INFRMTN_CLC := GRP_INFRMTN_P [ calc DFLT_STTS_ISSR := G_DFLT_STTS_CNTRPRTY1 ( APPRCH_CRDT_QLTY_STTS , CRDT_QLTY_STTS_ISSR ) ] ;

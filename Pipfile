@@ -11,6 +11,7 @@ pyspark = "==3.3.0"
 pyarrow = "*"
 pytest = "==7.0.1"
 duckdb = "*"
+sqlglot = "*"
 
 [dev-packages]
 pyspark-stubs = "*"
