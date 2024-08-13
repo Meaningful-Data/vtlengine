@@ -1,0 +1,8 @@
+DS_r := eval( SQL_DS_NOT_FOUND( DS_1 ) language "sqlite"
+              returns dataset { 
+                identifier<integer> Id_1,
+                identifier<string> Id_2,
+                measure<integer> Me_1,
+                measure<integer> Me_2
+              } 
+            );

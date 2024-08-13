@@ -1,3 +1,7 @@
+import sqlparse, re
+import sqlglot
+import sqlglot.expressions as exp
+
 import json
 from dataclasses import dataclass
 from enum import Enum
@@ -227,21 +231,36 @@ class ExternalRoutine:
     """
     Class representing an external routine, used in Eval operator
     """
-    dataset_name: str
+    dataset_names: List[str]
     query: str
     name: str
 
     @classmethod
     def from_sql_query(cls, name: str, query: str):
-        dataset_name = cls._extract_dataset_name(query)
-        return cls(dataset_name, query, name)
+        dataset_names = cls._extract_dataset_names(query)
+        return cls(dataset_names, query, name)
 
     @classmethod
-    def _extract_dataset_name(cls, query):
-        if "FROM" not in query:
-            raise ValueError("FROM clause not found in query")
-        from_expression = query.split("FROM")[1].lstrip()
-        dataset_name = from_expression.split()[0]
-        if ';' in dataset_name:
-            dataset_name = dataset_name[:-1]
-        return dataset_name
+    def _get_tables(cls, d):
+        """Using https://stackoverflow.com/questions/69684115/python-library-for-extracting-table-names-from-from-clause-in-sql-statetments"""
+        f = False
+        for i in getattr(d, 'tokens', []):
+            if isinstance(i, sqlparse.sql.Token) and i.value.lower() == 'from':
+                f = True
+            elif isinstance(i, (sqlparse.sql.Identifier, sqlparse.sql.IdentifierList)) and f:
+                f = False
+                if not any(
+                        isinstance(x, sqlparse.sql.Parenthesis) or 'select' in x.value.lower()
+                        for x in getattr(i, 'tokens', [])):
+                    fr = ''.join(str(j) for j in i if j.value not in {'as', '\n'})
+                    for t in re.findall('(?:\w+\.\w+|\w+)\s+\w+|(?:\w+\.\w+|\w+)', fr):
+                        yield {'table': (t1 := t.split())[0],
+                               'alias': None if len(t1) < 2 else t1[-1]}
+            yield from cls._get_tables(i)
+
+    @classmethod
+    def _extract_dataset_names(cls, query) -> List[str]:
+        expression = sqlglot.parse_one(query, read="sqlite")
+        tables_info = list(expression.find_all(exp.Table))
+        dataset_names = [t.name for t in tables_info]
+        return dataset_names

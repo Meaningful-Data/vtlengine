@@ -4,6 +4,7 @@ from typing import Dict, List
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
@@ -136,3 +137,23 @@ class SQLliteEval(TestEval):
         number_inputs = 2
         references_names = ['DS_r']
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_3(self):
+        '''
+
+        '''
+        code = 'SQL3'
+        number_inputs = 3
+        references_names = ['DS_r']
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_4(self):
+        '''
+        Semantic Error on Dataset not found in the SQL Query
+        that does not match the operands in Eval.
+        '''
+        code = 'SQL_DS_NOT_FOUND'
+        number_inputs = 1
+        references_names = ['DS_r']
+        with pytest.raises(ValueError, match="External Routine dataset DS_X is not present in Eval operands"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

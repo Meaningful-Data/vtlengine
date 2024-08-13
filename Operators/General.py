@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import duckdb
 import pandas as pd
 
@@ -51,33 +53,43 @@ class Alias(Binary):
 class Eval(Unary):
 
     @staticmethod
-    def _execute_query(query: str, dataset_name: str, data: pd.DataFrame) -> pd.DataFrame:
-        locals()[dataset_name] = data
+    def _execute_query(query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+        for ds_name in dataset_names:
+            locals()[ds_name] = data[ds_name]
 
         try:
             df_result = duckdb.query(query).to_df()
         except Exception as e:
             raise Exception(f"Error validating SQL query with duckdb: {e}")
-        del locals()[dataset_name]
+        for ds_name in dataset_names:
+            del locals()[ds_name]
 
         return df_result
 
     @classmethod
     def validate(cls,
-                 operand: Dataset,
+                 operands: Dict[str, Dataset],
                  external_routine: ExternalRoutine,
                  output: Dataset) -> Dataset:
-        if external_routine.dataset_name != operand.name:
-            raise ValueError(f"Dataset name {external_routine.dataset_name} does not match "
-                             f"operand name {operand.name}")
 
-        empty_data = pd.DataFrame(columns=[comp.name for comp in operand.components.values()])
+        empty_data_dict = {}
+        for ds_name in external_routine.dataset_names:
+            if ds_name not in operands:
+                raise ValueError(f"External Routine dataset {ds_name} "
+                                 f"is not present in Eval operands")
+            empty_data = pd.DataFrame(columns=[comp.name for comp in operands[ds_name].components.values()])
+            empty_data_dict[ds_name] = empty_data
 
-        df = cls._execute_query(external_routine.query, external_routine.dataset_name, empty_data)
+        df = cls._execute_query(external_routine.query, external_routine.dataset_names,
+                                empty_data_dict)
         component_names = [name for name in df.columns]
         for comp_name in component_names:
             if comp_name not in output.components:
                 raise ValueError(f"Component {comp_name} not found in output dataset")
+
+        for comp_name in output.components:
+            if comp_name not in component_names:
+                raise ValueError(f"Component {comp_name} not found in External Routine result")
 
         output.name = external_routine.name
 
@@ -85,13 +97,15 @@ class Eval(Unary):
 
     @classmethod
     def evaluate(cls,
-                 operand: Dataset,
+                 operands: Dict[str, Dataset],
                  external_routine: ExternalRoutine,
                  output: Dataset) -> Dataset:
-        result = cls.validate(operand, external_routine, output)
+        result = cls.validate(operands, external_routine, output)
+
+        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
 
         result.data = cls._execute_query(external_routine.query,
-                                         external_routine.dataset_name,
-                                         operand.data)
+                                         external_routine.dataset_names,
+                                         operands_data_dict)
 
         return result

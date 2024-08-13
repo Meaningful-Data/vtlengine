@@ -617,9 +617,14 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.name not in self.external_routines:
             raise Exception(f"External Routine {node.name} not found")
         external_routine = self.external_routines[node.name]
-        operand = self.visit(node.operand)
+        operands = {}
+        for operand in node.operands:
+            element = (self.visit(operand))
+            if not isinstance(element, Dataset):
+                raise ValueError(f"Expected dataset, got {type(element).__name__} as Eval Operand")
+            operands[element.name] = element
         output_to_check = node.output
-        return Eval.evaluate(operand, external_routine, output_to_check)
+        return Eval.evaluate(operands, external_routine, output_to_check)
 
     def generate_then_else_datasets(self, condition):
         if isinstance(condition, Dataset):

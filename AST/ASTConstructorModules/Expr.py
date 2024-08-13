@@ -418,9 +418,6 @@ class Expr(VtlVisitor):
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
-        if len(children_nodes) > 1:
-            raise Exception("Only one operand is allowed in Eval")
-
         # Reference manual says it is mandatory.
         language_name = [language for language in ctx_list if
                          isinstance(language,
@@ -435,7 +432,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes, output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
