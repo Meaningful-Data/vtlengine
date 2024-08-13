@@ -257,9 +257,19 @@ class Sub:
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
-        for operand in operands:
-            if len(operand.data) > 0:
-                result_dataset.data = result_dataset.data[operand.data.index]
-            result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
-            result_dataset.data = result_dataset.data.reset_index(drop=True)
+        operand_names = [operand.name for operand in operands]
+        if len(dataset.data) > 0:
+            # Filter the Dataframe
+            # by intersecting the indexes of the Data Component with True values
+            true_indexes = set()
+            is_first = True
+            for operand in operands:
+                if is_first:
+                    true_indexes = set(operand.data[operand.data == True].index)
+                    is_first = False
+                else:
+                    true_indexes.intersection_update(set(operand.data[operand.data == True].index))
+            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
+        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
+        result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset
