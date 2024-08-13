@@ -9,7 +9,7 @@ import pandas as pd
 from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Dataset, Component, Role
+from Model import Dataset, Component, ExternalRoutine, Role
 
 
 class BugsHelper(TestCase):
@@ -88,7 +88,7 @@ class BugsHelper(TestCase):
             return file.read()
 
     @classmethod
-    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
+    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], sql_names:List[str]=None):
         '''
 
         '''
@@ -96,13 +96,25 @@ class BugsHelper(TestCase):
         ast = create_ast(text)
         input_datasets = cls.LoadInputs(code, number_inputs)
         reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
+        external_routines = None
+        if sql_names is not None:
+            external_routines = cls.LoadExternalRoutines(sql_names)
+        interpreter = InterpreterAnalyzer(input_datasets, external_routines)
         result = interpreter.visit(ast)
         assert result == reference_datasets
 
     @classmethod
     def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
         assert True
+
+    @classmethod
+    def LoadExternalRoutines(cls, sql_names):
+        external_routines = {}
+        for name in sql_names:
+            sql_file_name = str(cls.filepath_sql / f"{name}.sql")
+            with open(sql_file_name, 'r') as file:
+                external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
+        return external_routines
 
 
 class GeneralBugs(BugsHelper):
@@ -3061,8 +3073,7 @@ class ExternalRoutineBugs(BugsHelper):
         code = 'GL_156_1'
         number_inputs = 2
         references_names = ["1"]
-        sql_names = [
-            "prtctnDts"]
+        sql_names = ["prtctnDts"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, sql_names=sql_names)
 

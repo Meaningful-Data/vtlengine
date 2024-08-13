@@ -1,13 +1,9 @@
 import os
 from copy import copy
 
-import numpy as np
-
-import DataTypes
-from DataTypes import Boolean
-from Model import Scalar, DataComponent, Component, Dataset, Role
+from DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion
+from Model import Scalar, DataComponent, Dataset, Role
 from Operators import Operator, Binary
-from Operators.Set import Union
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -43,22 +39,23 @@ class If(Operator):
 
         true_data = condition.data[condition.data[condition_measure]]
         false_data = condition.data[~condition.data[condition_measure]]
-        if len(true_data) > 0:
-            if isinstance(true_branch, Dataset):
+
+        if isinstance(true_branch, Dataset):
+            if len(true_data) > 0:
                 true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
                 true_data.dropna(subset=[condition_measure], inplace=True)
             else:
-                true_data[condition_measure] = true_data[condition_measure].apply(lambda x: true_branch.value)
+                true_data = pd.DataFrame(columns=true_branch.get_components_names())
         else:
-            true_data = pd.DataFrame(columns=true_branch.get_components_names())
-        if len(false_data) > 0:
-            if isinstance(false_branch, Dataset):
+            true_data[condition_measure] = true_data[condition_measure].apply(lambda x: true_branch.value)
+        if isinstance(false_branch, Dataset):
+            if len(false_data) > 0:
                 false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
                 false_data.dropna(subset=[condition_measure], inplace=True)
             else:
-                false_data[condition_measure] = false_data[condition_measure].apply(lambda x: false_branch.value)
+                false_data = pd.DataFrame(columns=false_branch.get_components_names())
         else:
-            false_data = pd.DataFrame(columns=false_branch.get_components_names())
+            false_data[condition_measure] = false_data[condition_measure].apply(lambda x: false_branch.value)
 
         result.data = pd.concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         if isinstance(result, Dataset):
@@ -66,12 +63,10 @@ class If(Operator):
             result.data.drop(columns=drop_columns, inplace=True)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
             result.get_measures()[0].data_type = true_branch.data_type
-            result.get_measures()[0].name = DataTypes.COMP_NAME_MAPPING[true_branch.data_type]
+            result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
             result.data = result.data.rename(columns={condition_measure: result.get_measures()[0].name})
         return result
 
-    # TODO:
-    #  - change this to use the implicit data type promotion method
     @classmethod
     def validate(cls, condition, true_branch, false_branch) -> Scalar | DataComponent | Dataset:
         left = true_branch
@@ -87,33 +82,34 @@ class If(Operator):
         # Datacomponent
         if isinstance(condition, DataComponent):
             return DataComponent(name='result', data=None,
-                                 data_type=Binary.type_validation(left.data_type, right.data_type),
+                                 data_type=binary_implicit_promotion(left.data_type, right.data_type),
                                  role=Role.MEASURE, nullable=False)
 
         # Dataset
         if isinstance(left, DataComponent):
             raise ValueError("If operation at dataset level cannot have component type on left (condition) side")
         if isinstance(left, Scalar):
-            left.data_type = right.data_type = Binary.type_validation(left.data_type, right.data_type)
+            left.data_type = right.data_type = binary_implicit_promotion(left.data_type, right.data_type)
             return Dataset(name='result', components=condition.components.copy(), data=None)
         if isinstance(right, Scalar):
             for component in left.get_measures():
                 if component.data_type != right.data_type:
-                    component.data_type = Binary.type_validation(component.data_type, right.data_type)
+                    component.data_type = binary_implicit_promotion(left.data_type, right.data_type)
         if isinstance(right, Dataset):
             if left.components != right.components:
                 raise ValueError("If operands at dataset level must have the same components")
             for component in left.get_measures():
                 if component.data_type != right.components[component.name].data_type:
                     component.data_type = right.components[component.name].data_type = \
-                        Binary.type_validation(component.data_type, right.components[component.name].data_type)
+                        binary_implicit_promotion(component.data_type, right.components[component.name].data_type)
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != Boolean:
                 raise ValueError("If operation at dataset level condition side must be a dataset having an unique "
                                  "boolean measure")
             if left.get_identifiers() != condition.get_identifiers():
                 raise ValueError("If operands at dataset level must have the same identifiers as condition")
-        return Dataset(name='result', components=left.components.copy(), data=None)
+        result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
+        return Dataset(name='result', components=result_components, data=None)
 
 
 class Nvl(Binary):
@@ -139,7 +135,6 @@ class Nvl(Binary):
             result.data = result.data[result.get_components_names()]
         return result
 
-    # TODO: change this to use the implicit data type promotion method
     @classmethod
     def validate(cls, left, right) -> Scalar | DataComponent | Dataset:
         if isinstance(left, Scalar):

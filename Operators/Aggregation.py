@@ -1,11 +1,11 @@
 import os
+from copy import copy
 from typing import List, Optional
 
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
 else:
     import pandas as pd
-from pyspark.sql.functions import col, stddev
 
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
@@ -33,7 +33,7 @@ class Aggregation(Operator.Unary):
                  group_op: Optional[str],
                  grouping_components: Optional[List[str]],
                  having_data: Optional[List[DataComponent]]) -> Dataset:
-        result_components = operand.components.copy()
+        result_components = {k: copy(v) for k, v in operand.components.items()}
         if group_op is not None:
             for comp_name in grouping_components:
                 if comp_name not in operand.components:

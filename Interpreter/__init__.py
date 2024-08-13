@@ -138,19 +138,16 @@ class InterpreterAnalyzer(ASTTemplate):
             operand = self.regular_aggregation_dataset
             if node.operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
-                if op_comp.name not in operand.get_measures_names():
-                    raise Exception(f"Measure {op_comp.name} not in dataset {self.regular_aggregation_dataset.name}")
                 comps_to_keep = {}
                 for comp_name, comp in self.regular_aggregation_dataset.components.items():
                     if comp.role == Role.IDENTIFIER:
                         comps_to_keep[comp_name] = copy(comp)
-                    elif comp_name == op_comp.name:
-                        comps_to_keep[comp_name] = Component(
-                            name=op_comp.name,
-                            data_type=op_comp.data_type,
-                            role=op_comp.role,
-                            nullable=op_comp.nullable
-                        )
+                comps_to_keep[op_comp.name] = Component(
+                    name=op_comp.name,
+                    data_type=op_comp.data_type,
+                    role=op_comp.role,
+                    nullable=op_comp.nullable
+                )
                 data_to_keep = operand.data[operand.get_identifiers_names()]
                 data_to_keep[op_comp.name] = op_comp.data
                 operand = Dataset(name=operand.name,
@@ -626,7 +623,7 @@ class InterpreterAnalyzer(ASTTemplate):
             element = (self.visit(operand))
             if not isinstance(element, Dataset):
                 raise ValueError(f"Expected dataset, got {type(element).__name__} as Eval Operand")
-            operands[element.name] = element
+            operands[element.name.split(".")[1] if "." in element.name else element.name] = element
         output_to_check = node.output
         return Eval.evaluate(operands, external_routine, output_to_check)
 

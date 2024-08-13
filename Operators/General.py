@@ -1,9 +1,9 @@
 from typing import Dict, List
 
-import duckdb
+from pandasql import sqldf
 import pandas as pd
 
-from DataTypes import CAST_MAPPING, COMP_NAME_MAPPING
+from DataTypes import COMP_NAME_MAPPING
 from Model import Dataset, ExternalRoutine, Role, Component
 from Operators import Binary, Unary
 
@@ -58,9 +58,10 @@ class Eval(Unary):
             locals()[ds_name] = data[ds_name]
 
         try:
-            df_result = duckdb.query(query).to_df()
+            # df_result = duckdb.query(query).to_df()
+            df_result = sqldf(query=query, env=locals(), db_uri='sqlite:///:memory:')
         except Exception as e:
-            raise Exception(f"Error validating SQL query with duckdb: {e}")
+            raise Exception(f"Error executing SQL query: {e}")
         for ds_name in dataset_names:
             del locals()[ds_name]
 
@@ -102,7 +103,8 @@ class Eval(Unary):
                  output: Dataset) -> Dataset:
         result = cls.validate(operands, external_routine, output)
 
-        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
+        operands_data_dict = {ds_name: operands[ds_name].data
+                              for ds_name in operands}
 
         result.data = cls._execute_query(external_routine.query,
                                          external_routine.dataset_names,
