@@ -27,6 +27,16 @@ def extract_grouping_identifiers(identifier_names: List[str],
 
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
+    """
+        Annotation class
+
+        Class that inheritance from Unary.
+        It is the base to perform the aggregate operators.
+
+        Class methods:
+            Validate: Validates the Dataset.
+            Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
+        """
 
     @classmethod
     def validate(cls, operand: Dataset,
@@ -112,22 +122,34 @@ class Aggregation(Operator.Unary):
 
 
 class Max(Aggregation):
+    """
+    Max operator
+    """
     op = MAX
     py_op = pd.DataFrame.max
 
 
 class Min(Aggregation):
+    """
+    Min operator
+    """
     op = MIN
     py_op = pd.DataFrame.min
 
 
 class Sum(Aggregation):
+    """
+    Sum operator
+    """
     op = SUM
     type_to_check = Number
     py_op = pd.DataFrame.sum
 
 
 class Count(Aggregation):
+    """
+    Count operator
+    """
     op = COUNT
     type_to_check = None
     return_type = Integer
@@ -135,6 +157,9 @@ class Count(Aggregation):
 
 
 class Avg(Aggregation):
+    """
+    Average operator
+    """
     op = AVG
     type_to_check = Number
     return_type = Number
@@ -142,6 +167,9 @@ class Avg(Aggregation):
 
 
 class Median(Aggregation):
+    """
+    Median operator
+    """
     # TODO: Median has inconsistent behavior in spark
     #  test 144 has a median of 3, but the result is 2
     op = MEDIAN
@@ -158,6 +186,9 @@ class Median(Aggregation):
 
 
 class PopulationStandardDeviation(Aggregation):
+    """
+    Population Standard Deviation Operator
+    """
     op = STDDEV_POP
     type_to_check = Number
     return_type = Number
@@ -172,6 +203,9 @@ class PopulationStandardDeviation(Aggregation):
 
 
 class SampleStandardDeviation(Aggregation):
+    """
+    Sample Standard Deviation operator
+    """
     op = STDDEV_SAMP
     type_to_check = Number
     return_type = Number
@@ -186,6 +220,9 @@ class SampleStandardDeviation(Aggregation):
 
 
 class PopulationVariance(Aggregation):
+    """
+    Population Variance operator
+    """
     op = VAR_POP
     type_to_check = Number
     return_type = Number
@@ -200,6 +237,9 @@ class PopulationVariance(Aggregation):
 
 
 class SampleVariance(Aggregation):
+    """
+    Sample Variance operator
+    """
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number
