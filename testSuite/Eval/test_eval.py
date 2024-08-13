@@ -149,10 +149,11 @@ class SQLliteEval(TestEval):
 
     def test_4(self):
         '''
-        Semantic Error on Dataset not found in the SQL Query and does not match the operands.
+        Semantic Error on Dataset not found in the SQL Query
+        that does not match the operands in Eval.
         '''
         code = 'SQL_DS_NOT_FOUND'
         number_inputs = 1
         references_names = ['DS_r']
-        with pytest.raises(ValueError, match="External Routine dataset name DS_X is not present"):
+        with pytest.raises(ValueError, match="External Routine dataset DS_X is not present in Eval operands"):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

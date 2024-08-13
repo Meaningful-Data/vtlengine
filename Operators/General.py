@@ -75,7 +75,8 @@ class Eval(Unary):
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
-                raise ValueError(f"External Routine dataset name {ds_name} is not present in Eval operands")
+                raise ValueError(f"External Routine dataset {ds_name} "
+                                 f"is not present in Eval operands")
             empty_data = pd.DataFrame(columns=[comp.name for comp in operands[ds_name].components.values()])
             empty_data_dict[ds_name] = empty_data
 
