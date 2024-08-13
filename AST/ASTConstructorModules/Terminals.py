@@ -7,8 +7,8 @@ from AST import BinOp, Collection, Constant, DPRIdentifier, \
     ParamOp, Types, VarID, Windowing
 from AST.Grammar.parser import Parser
 from AST.VtlVisitor import VtlVisitor
-from DataTypes import Boolean, Date, Duration, Integer, Number, String, Time_Interval, \
-    Time_Period
+from DataTypes import Boolean, Date, Duration, Integer, Number, String, TimeInterval, \
+    TimePeriod
 from Model import Component, Dataset, Role
 
 
@@ -169,13 +169,13 @@ class Terminals(VtlVisitor):
         elif token.type == Parser.DATE:
             return Date
         elif token.type == Parser.TIME_PERIOD:
-            return Time_Period
+            return TimePeriod
         elif token.type == Parser.DURATION:
             return Duration
         elif token.type == Parser.SCALAR:
             return None
         elif token.type == Parser.TIME:
-            return Time_Interval
+            return TimeInterval
 
     def visitComponentRole(self, ctx: Parser.ComponentRoleContext):
         """

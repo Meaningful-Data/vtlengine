@@ -137,8 +137,8 @@ class Dataset:
             for name, component in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
-                if component.data_type == DataTypes.Time_Period or component.data_type == DataTypes.Time:
-                    self.data[name] = self.data[name].apply(self.refactor_time_period)
+                if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
+                    self.data[name] = self.data[name].map(self.refactor_time_period, na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):

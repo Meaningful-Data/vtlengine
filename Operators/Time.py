@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 from itertools import product
@@ -14,7 +15,7 @@ from Model import Dataset, DataComponent, Scalar, Component, Role
 class Time(Operators.Operator):
 
     py_op = None
-    TIME_DATA_TYPES = [DataTypes.Time, DataTypes.Date, DataTypes.Time_Period, DataTypes.Time_Interval]
+    TIME_DATA_TYPES = [DataTypes.Date, DataTypes.TimePeriod, DataTypes.TimeInterval]
 
     PERIODS = [
         (r"^\d{1,4}-(0?[1-9]|1[0-2])-\d{2}$", 'D'),
@@ -45,7 +46,7 @@ class Time(Operators.Operator):
     }
 
     @classmethod
-    def get_time_id(cls, operand: Dataset) -> str:
+    def get_time_id(cls, operand: Dataset) -> Optional[str]:
         reference_id = None
         for id in operand.get_identifiers():
             if id.data_type in cls.TIME_DATA_TYPES:
@@ -55,10 +56,10 @@ class Time(Operators.Operator):
         return reference_id
 
     @classmethod
-    def sort_by_time(cls, operand: Dataset) -> Dataset:
+    def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
         time_id = cls.get_time_id(operand)
         if time_id is None:
-            return operand
+            return
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
         ids.append(time_id)
         return operand.data.sort_values(by=ids).reset_index(drop=True)
@@ -223,10 +224,10 @@ class Period_indicator(Unary):
             return
         if isinstance(operand, Dataset):
             time_id = cls.get_time_id(operand)
-            if time_id is None or operand.components[time_id].data_type != DataTypes.Time_Period:
+            if time_id is None or operand.components[time_id].data_type != DataTypes.TimePeriod:
                 raise ValueError("PeriodIndicator can only be applied to a time dataset")
         else:
-            if operand.data_type != DataTypes.Time_Period:
+            if operand.data_type != DataTypes.TimePeriod:
                 raise ValueError("PeriodIndicator can only be applied to a time dataset")
 
 
@@ -326,6 +327,7 @@ class Time_Shift(Binary):
     @classmethod
     def evaluate(cls, operand, shift: Scalar) -> Dataset:
         result = cls.validate(operand, shift)
+        result.data = operand.data.copy()
         if shift.value == 0:
             return result
         result = cls.shift(operand.data, int(shift.value))
@@ -343,7 +345,8 @@ class Time_Shift(Binary):
         cls.reference_id = cls.get_time_id(operand)
         if cls.reference_id is None:
             raise ValueError("TimeShift can only be applied to a time dataset")
-        return cls.sort_by_time(operand)
+        cls.sort_by_time(operand)
+        return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
     def shift(cls, data, shift):
