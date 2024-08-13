@@ -4,6 +4,7 @@ from typing import List, Dict
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
@@ -2194,7 +2195,8 @@ class DataValidationOperatorsTest(AdditionalHelper):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Error level must be an integer, line 1"):
+            self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         '''

@@ -548,7 +548,7 @@ class Terminals(VtlVisitor):
         try:
             return int(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f'Error level must be an integer, line {ctx_list[1].getSymbol().line}')
+            raise Exception(f'Error level must be an integer, line {ctx_list[1].start.line}')
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind='ComponentID'):
         """
