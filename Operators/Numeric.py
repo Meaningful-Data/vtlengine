@@ -13,14 +13,23 @@ from Operators import ALL_MODEL_DATA_TYPES
 
 
 class Unary(Operator.Unary):
+    """
+    Checks that the unary operation is performed with a number.
+    """
     type_to_check = Number
 
 
 class Binary(Operator.Binary):
+    """
+    Checks that the binary operation is performed with numbers.
+    """
     type_to_check = Number
 
 
 class UnPlus(Unary):
+    """
+    Plus unary operator
+    """
     op = PLUS
     py_op = operator.pos
 
@@ -30,69 +39,105 @@ class UnPlus(Unary):
 
 
 class UnMinus(Unary):
+    """
+    Minus unary operator
+    """
     op = MINUS
     py_op = operator.neg
 
 
 class AbsoluteValue(Unary):
+    """
+    Absolute unary operator
+    """
     op = ABS
     py_op = operator.abs
 
 
 class Exponential(Unary):
+    """
+    Exponential unary operator
+    """
     op = EXP
     py_op = math.exp
     return_type = Number
 
 
 class NaturalLogarithm(Unary):
+    """
+    Logarithm unary operator
+    """
     op = LN
     py_op = math.log
     return_type = Number
 
 
 class SquareRoot(Unary):
+    """
+    Square Root unary operator
+    """
     op = SQRT
     py_op = math.sqrt
     return_type = Number
 
 
 class Ceil(Unary):
+    """
+    Ceil unary operator
+    """
     op = CEIL
     py_op = math.ceil
     return_type = Integer
 
 
 class Floor(Unary):
+    """
+    Floor unary operator
+    """
     op = FLOOR
     py_op = math.floor
     return_type = Integer
 
 
 class BinPlus(Binary):
+    """
+    Plus binary operator
+    """
     op = PLUS
     py_op = operator.add
     type_to_check = Number
 
 
 class BinMinus(Binary):
+    """
+    Minus binary operator
+    """
     op = MINUS
     py_op = operator.sub
     type_to_check = Number
 
 
 class Mult(Binary):
+    """
+    Multiplication binary operator
+    """
     op = MULT
     py_op = operator.mul
 
 
 class Div(Binary):
+    """
+    Division operator
+    """
     op = DIV
     py_op = operator.truediv
     return_type = Number
 
 
 class Logarithm(Binary):
+    """
+    Logarithm operator
+    """
     op = LOG
     return_type = Number
 
@@ -108,11 +153,17 @@ class Logarithm(Binary):
 
 
 class Modulo(Binary):
+    """
+    Module operator
+    """
     op = MOD
     py_op = operator.mod
 
 
 class Power(Binary):
+    """
+    Power operator
+    """
     op = POWER
     return_type = Number
 
@@ -128,7 +179,10 @@ class Power(Binary):
 
 
 class Parameterized(Unary):
-
+    """Annotation class
+        Parametrized class inherits from Unary class, to validate the data type and evaluate if it is the correct one to
+        perform the operation.
+    """
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
                  param: Optional[Union[DataComponent, Scalar]] = None):
@@ -209,6 +263,9 @@ class Parameterized(Unary):
 
 
 class Round(Parameterized):
+    """
+    Round operator
+    """
     op = ROUND
     return_type = Integer
 

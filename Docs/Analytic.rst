@@ -6,7 +6,7 @@ This module contains the necessary tools to perform analytic operations. It perf
 
 .. py:currentmodule:: vtl-engine-spark.Analytic
 
-Analytic's main class takes Operators.Unary params to perform. Also, it has the following class methods:
+Analytic's main class inherits from Operators.Unary. Also, it has the following class methods:
 
 .. autoclass:: Analytic
 

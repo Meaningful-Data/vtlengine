@@ -16,7 +16,16 @@ else:
 
 
 class If(Operator):
-
+    """
+    Annotation class:
+        If operator inherits from Operator, a superclass that contains general validate and evaluate class methods.
+        It cass the following class methods:
+    Class methods:
+        evaluate: Evaluates if the operation is well constructed, checking the actual condition and dropping a boolean
+        result.
+        component_level_evaluation: Returns a pandas dataframe with data to set the condition
+        dataset_level_evaluation: Sets the dataset and evaluates its correct schema to be able to perform the condition.
+    """
     @classmethod
     def evaluate(cls, condition, true_branch, false_branch):
         result = cls.validate(condition, true_branch, false_branch)
@@ -111,6 +120,14 @@ class If(Operator):
 
 
 class Nvl(Binary):
+    """
+    Annotation class:
+        Nvl class operator.
+
+    Class methods:
+        validate:
+        evaluate:
+    """
 
     @classmethod
     def evaluate(cls, left, right):
