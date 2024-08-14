@@ -54,10 +54,9 @@ class ScalarType:
     def promotion_changed_type(cls, promoted: Type['ScalarType']) -> bool:
         return not issubclass(cls, promoted)
 
-    def is_subtype(self, obj) -> bool:
-        if not isinstance(obj, ScalarType):
-            raise Exception("Not use is_subtype")
-        return issubclass(self.__class__, obj.__class__)
+    @classmethod
+    def is_subtype(cls, obj: Type["ScalarType"]) -> bool:
+        return issubclass(cls, obj)
 
     def is_null_type(self) -> bool:
         return False
@@ -244,6 +243,10 @@ def binary_implicit_promotion(left_type: ScalarType,
             if return_type is not None:
                 return return_type
             if left_type.is_included(right_implicities):
+                if left_type.is_subtype(right_type): # For Integer and Number
+                    return right_type
+                elif right_type.is_subtype(left_type):
+                    return left_type
                 return left_type
             if right_type.is_included(left_implicities):
                 return right_type
