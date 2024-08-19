@@ -61,17 +61,20 @@ class ScalarType:
     def is_null_type(self) -> bool:
         return False
 
-    def check_type(self, value):
-        if isinstance(value, CAST_MAPPING[self.__class__.__name__]):
+    @classmethod
+    def check_type(cls, value):
+        if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
 
-        raise Exception(f"Value {value} is not a {self.__class__.__name__}")
+        raise Exception(f"Value {value} is not a {cls.__name__}")
 
-    def cast(self, value):
-        return CAST_MAPPING[self.__class__.__name__](value)
+    @classmethod
+    def cast(cls, value):
+        return CAST_MAPPING[cls.__name__](value)
 
-    def dtype(self):
-        return DTYPE_MAPPING[self.__class__.__name__]
+    @classmethod
+    def dtype(cls):
+        return DTYPE_MAPPING[cls.__name__]
 
     __str__ = __repr__
 

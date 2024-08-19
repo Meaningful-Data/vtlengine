@@ -10,7 +10,8 @@ from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, FILL_TIME_SERIES
 from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component
+from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
+    ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
@@ -26,11 +27,10 @@ from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MA
 
 # noinspection PyTypeChecker
 @dataclass
-
-
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
+    value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Flags to change behavior
     is_from_assignment: bool = False
@@ -340,6 +340,12 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(elements) != len(set(elements)):
                 raise Exception("A set must not contain duplicates")
             return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
+        elif node.kind == 'ValueDomain':
+            if node.name not in self.value_domains:
+                raise Exception(f"Value Domain {node.name} not found")
+            vd = self.value_domains[node.name]
+            return ScalarSet(data_type=vd.type, values=vd.setlist)
+
         raise NotImplementedError
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
@@ -568,8 +574,9 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
-            filtering_indexes = filter_comp.data[filter_comp.data].index
-            non_filtering_indexes = filter_comp.data[~filter_comp.data].index
+
+            filtering_indexes = filter_comp.data[filter_comp.data.notnull() & filter_comp.data == True].index
+            non_filtering_indexes = filter_comp.data[filter_comp.data.isnull() | filter_comp.data == False].index
             original_data = self.rule_data.copy()
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)
