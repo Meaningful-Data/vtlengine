@@ -309,8 +309,7 @@ class ExprComp(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 

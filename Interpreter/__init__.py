@@ -8,14 +8,15 @@ import pandas as pd
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, FILL_TIME_SERIES
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
+    FILL_TIME_SERIES, CAST
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
-from Operators.General import Eval
+from Operators.General import Eval, Cast
 from Operators.Conditional import If
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
@@ -561,9 +562,19 @@ class InterpreterAnalyzer(ASTTemplate):
             return Check_Datapoint.evaluate(dataset_element=dataset_element,
                                             rule_info=rule_output_values,
                                             output=output)
-        if node.op == FILL_TIME_SERIES:
+        elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else 'all'
             return Fill_time_series.evaluate(self.visit(node.children[0]), mode)
+        elif node.op == CAST:
+            op_element = self.visit(node.children[0])
+            type_element = node.children[1]
+
+            if len(node.params) == 1:
+                param_element = self.visit(node.params[0]).value
+            else:
+                param_element = None
+            return Cast.evaluate(op_element, type_element, param_element)
+        raise NotImplementedError
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True

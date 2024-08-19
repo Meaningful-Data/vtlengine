@@ -1,5 +1,7 @@
 from typing import Type
 
+import pandas as pd
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'Float64',
@@ -70,6 +72,8 @@ class ScalarType:
 
     @classmethod
     def cast(cls, value):
+        if pd.isnull(value):
+            return None
         return CAST_MAPPING[cls.__name__](value)
 
     @classmethod
@@ -141,6 +145,8 @@ class Boolean(ScalarType):
     default = None
 
     def cast(self, value):
+        if pd.isnull(value):
+            return None
         if isinstance(value, str):
             if value.lower() == "true":
                 return True
@@ -254,7 +260,7 @@ def binary_implicit_promotion(left_type: ScalarType,
             if right_type.is_included(left_implicities):
                 return right_type
             return type_to_check
-        raise Exception("Implicit cast not allowed")
+        raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (left_type.is_included(
             right_implicities) or right_type.is_included(left_implicities)):
@@ -264,7 +270,7 @@ def binary_implicit_promotion(left_type: ScalarType,
     if right_type.is_included(left_implicities):
         return right_type
 
-    raise Exception("Implicit cast not allowed")
+    raise Exception(f"Implicit cast not allowed from {left_type} to {right_type}")
 
 
 def check_binary_implicit_promotion(
@@ -301,7 +307,7 @@ def unary_implicit_promotion(
     operand_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[operand_type]
     if type_to_check:
         if not type_to_check.is_included(operand_implicities):
-            raise Exception("Implicit cast not allowed")
+            raise Exception(f"Implicit cast not allowed from {operand_type} to {type_to_check}")
 
     if return_type:
         return return_type
