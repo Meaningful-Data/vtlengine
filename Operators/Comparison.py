@@ -116,7 +116,7 @@ class Match(Binary):
     def py_op(cls, x, y):
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
-        return bool(re.fullmatch(y, x))
+        return bool(re.fullmatch(str(y), str(x)))
 
 
 class Between(Operator.Operator):
