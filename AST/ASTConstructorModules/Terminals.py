@@ -106,8 +106,8 @@ class Terminals(VtlVisitor):
         """
         valueDomainID: IDENTIFIER ;
         """
-        return Collection(name=ctx.children[0].getSymbol().text, type_=None, children=[],
-                          kind='ValueDomain')
+        return Collection(name=ctx.children[0].getSymbol().text, children=[],
+                          kind='ValueDomain', type='')
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
         """

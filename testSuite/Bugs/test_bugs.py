@@ -9,7 +9,7 @@ import pandas as pd
 from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Dataset, Component, ExternalRoutine, Role
+from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain
 
 
 class BugsHelper(TestCase):
@@ -88,7 +88,7 @@ class BugsHelper(TestCase):
             return file.read()
 
     @classmethod
-    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], sql_names:List[str]=None):
+    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None, sql_names:List[str]=None):
         '''
 
         '''
@@ -96,16 +96,32 @@ class BugsHelper(TestCase):
         ast = create_ast(text)
         input_datasets = cls.LoadInputs(code, number_inputs)
         reference_datasets = cls.LoadOutputs(code, references_names)
+        value_domains = None
+        if vd_names is not None:
+            value_domains = cls.LoadValueDomains(vd_names)
+
         external_routines = None
         if sql_names is not None:
             external_routines = cls.LoadExternalRoutines(sql_names)
-        interpreter = InterpreterAnalyzer(input_datasets, external_routines)
+        interpreter = InterpreterAnalyzer(input_datasets,
+                                          value_domains=value_domains,
+                                          external_routines=external_routines)
         result = interpreter.visit(ast)
         assert result == reference_datasets
 
     @classmethod
     def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
         assert True
+
+    @classmethod
+    def LoadValueDomains(cls, vd_names):
+        value_domains = {}
+        for name in vd_names:
+            vd_file_name = str(cls.filepath_valueDomain / f"{name}.json")
+            with open(vd_file_name, 'r') as file:
+                vd = ValueDomain.from_json(file.read())
+                value_domains[vd.name] = vd
+        return value_domains
 
     @classmethod
     def LoadExternalRoutines(cls, sql_names):

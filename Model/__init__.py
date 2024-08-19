@@ -1,3 +1,5 @@
+from collections import Counter
+
 import sqlparse, re
 import sqlglot
 import sqlglot.expressions as exp
@@ -39,7 +41,6 @@ class Scalar:
         y = None if not pd.isnull(other.value) else other.value
         same_value = x == y
         return same_name and same_type and same_value
-
 
 
 class Role(Enum):
@@ -138,7 +139,8 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
                 if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
-                    self.data[name] = self.data[name].map(self.refactor_time_period, na_action="ignore")
+                    self.data[name] = self.data[name].map(self.refactor_time_period,
+                                                          na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -164,7 +166,8 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True, check_index_type=False)
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
+                               check_index_type=False)
             same_data = True
         except AssertionError as e:
             print(e)
@@ -238,9 +241,9 @@ class Dataset:
             return "{}-S{}".format(year, semester)
         if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])/\d{1,4}M(0?[1-9]|1[0-2])$", date):
             date1, date2 = date.split("/")
-            return "{}/{}".format(self.refactor_time_period(date1), self.refactor_time_period(date2))
+            return "{}/{}".format(self.refactor_time_period(date1),
+                                  self.refactor_time_period(date2))
         return date
-
 
 
 @dataclass
@@ -250,6 +253,51 @@ class ScalarSet:
     """
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
+
+
+@dataclass
+class ValueDomain:
+    """
+    Class representing a value domain
+    """
+    name: str
+    type: ScalarType
+    setlist: List[Union[int, float, str, bool]]
+
+    def __post_init__(self):
+        if len(set(self.setlist)) != len(self.setlist):
+            duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
+            raise ValueError(
+                f"The setlist must have unique values. Duplicated values: {duplicated}")
+
+        # Cast values to the correct type
+        self.setlist = [self.type.cast(value) for value in self.setlist]
+
+    @classmethod
+    def from_json(cls, json_str: str):
+        if len(json_str) == 0:
+            raise ValueError("Empty JSON string for ValueDomain")
+
+        json_info = json.loads(json_str)
+
+        if json_info['type'] not in SCALAR_TYPES:
+            raise ValueError(
+                f"Invalid data type {json_info['type']} for ValueDomain {json_info['name']}")
+
+        return cls(json_info['name'], SCALAR_TYPES[json_info['type']], json_info['setlist'])
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'type': self.type.__name__,
+            'setlist': self.setlist
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=4)
+
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
 
 
 @dataclass
