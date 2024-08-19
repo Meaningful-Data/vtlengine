@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from unittest import TestCase
 
 import pandas as pd
@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class TestIdentifiersTypeChecking(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class TestIdentifiersTypeChecking(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class TestIdentifiersTypeChecking(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,18 +71,14 @@ class TestIdentifiersTypeChecking(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+        """ """
 
         text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -96,7 +89,9 @@ class TestIdentifiersTypeChecking(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
 
@@ -105,10 +100,10 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
     Group 4
     """
 
-    classTest = 'Identifiers.IdentifiersTypeCheckingAdd'
+    classTest = "Identifiers.IdentifiersTypeCheckingAdd"
 
     def test_1(self):
-        '''
+        """
         ADD OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 + DS_2;
@@ -117,8 +112,8 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-3-1'
+        """
+        code = "4-6-3-1"
         # 4 For group numeric
         # 6 For group identifiers
         # 3 For add operator in numeric
@@ -126,11 +121,12 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         ADD OPERATOR
         Status: BUG
         Expression: DS_r := DS_2 + DS_1 ;
@@ -138,16 +134,17 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-3-2'
+        """
+        code = "4-6-3-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_3(self):
-        '''
+        """
         ADD OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 + DS_2 ;
@@ -156,16 +153,17 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-3-3'
+        """
+        code = "4-6-3-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_4(self):
-        '''
+        """
         ADD OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 + DS_2 ;
@@ -174,16 +172,17 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-3-4'
+        """
+        code = "4-6-3-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_5(self):
-        '''
+        """
         ADD OPERATOR
         Status: BUG
         Expression: DS_r := DS_2 + DS_1 ;
@@ -192,13 +191,14 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-3-5'
+        """
+        code = "4-6-3-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
 
 class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
@@ -206,12 +206,12 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
     Group 4
     """
 
-    classTest = 'Identifiers.IdentifiersTypeCheckingSubstraction'
+    classTest = "Identifiers.IdentifiersTypeCheckingSubstraction"
 
     # SUBSTRACTION OPERATOR
 
     def test_1(self):
-        '''
+        """
         SUBSTRACTION OPERATOR
         Status: OK
         Expression: DS_r := DS_1 - DS_2;
@@ -220,8 +220,8 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-4-1'
+        """
+        code = "4-6-4-1"
         # 4 For group numeric
         # 6 For group identifiers
         # 4 For substraction operator in numeric
@@ -229,11 +229,12 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         SUBSTRACTION OPERATOR
         Status: OK
         Expression: DS_r := DS_1 - DS_2;
@@ -242,13 +243,14 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-4-2'
+        """
+        code = "4-6-4-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
 
 class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
@@ -256,12 +258,12 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
     Group 4
     """
 
-    classTest = 'Identifiers.IdentifiersTypeCheckingMultiplication'
+    classTest = "Identifiers.IdentifiersTypeCheckingMultiplication"
 
     # MULTIPLICATION OPERATOR
 
     def test_1(self):
-        '''
+        """
         MULTIPLICATION OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 * DS_2;
@@ -270,8 +272,8 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-5-1'
+        """
+        code = "4-6-5-1"
         # 4 For group numeric
         # 6 For group identifiers
         # 5 For multiplication operator in numeric
@@ -279,11 +281,12 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         MULTIPLICATION OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 * DS_2;
@@ -292,13 +295,14 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-5-2'
+        """
+        code = "4-6-5-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
 
 class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
@@ -306,12 +310,12 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
     Group 4
     """
 
-    classTest = 'Identifiers.IdentifiersTypeCheckingDivision'
+    classTest = "Identifiers.IdentifiersTypeCheckingDivision"
 
     # DIVISION OPERATOR
 
     def test_1(self):
-        '''
+        """
         DIVISION OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 / DS_2;
@@ -320,8 +324,8 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-6-1'
+        """
+        code = "4-6-6-1"
         # 4 For group numeric
         # 6 For group identifiers
         # 6 For multiplication operator in numeric
@@ -329,11 +333,12 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         DIVISION OPERATOR
         Status: BUG
         Expression: DS_r := DS_1 / DS_2;
@@ -342,13 +347,14 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-6-2'
+        """
+        code = "4-6-6-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
 
 class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
@@ -356,12 +362,12 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
     Group 4
     """
 
-    classTest = 'Identifiers.IdentifiersTypeCheckingModule'
+    classTest = "Identifiers.IdentifiersTypeCheckingModule"
 
     # MOD OPERATOR
 
     def test_1(self):
-        '''
+        """
         MOD OPERATOR
         Status: BUG
         Expression: DS_r := mod ( DS_1, DS_2 );
@@ -370,16 +376,17 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-7-1'
+        """
+        code = "4-6-7-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         MOD OPERATOR
         Status: BUG
         Expression: DS_r := mod ( DS_1, DS_2 );
@@ -388,10 +395,11 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
         Goal: Check Doubt.
-        '''
-        code = '4-6-7-2'
+        """
+        code = "4-6-7-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )

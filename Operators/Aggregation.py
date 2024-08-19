@@ -2,24 +2,34 @@ import os
 from copy import copy
 from typing import List, Optional
 
-if os.getenv('SPARK', False):
+if os.getenv("SPARK", False):
     import pyspark.pandas as pd
 else:
     import pandas as pd
 
 import Operators as Operator
-from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
-                                VAR_SAMP)
+from AST.Grammar.tokens import (
+    AVG,
+    COUNT,
+    MAX,
+    MEDIAN,
+    MIN,
+    STDDEV_POP,
+    STDDEV_SAMP,
+    SUM,
+    VAR_POP,
+    VAR_SAMP,
+)
 from DataTypes import Integer, Number, check_unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role
 
 
-def extract_grouping_identifiers(identifier_names: List[str],
-                                 group_op: str,
-                                 grouping_components: List[str]) -> List[str]:
-    if group_op == 'group by':
+def extract_grouping_identifiers(
+    identifier_names: List[str], group_op: str, grouping_components: List[str]
+) -> List[str]:
+    if group_op == "group by":
         return grouping_components
-    elif group_op == 'group except':
+    elif group_op == "group except":
         return [comp for comp in identifier_names if comp not in grouping_components]
     else:
         return identifier_names
@@ -29,10 +39,13 @@ def extract_grouping_identifiers(identifier_names: List[str],
 class Aggregation(Operator.Unary):
 
     @classmethod
-    def validate(cls, operand: Dataset,
-                 group_op: Optional[str],
-                 grouping_components: Optional[List[str]],
-                 having_data: Optional[List[DataComponent]]) -> Dataset:
+    def validate(
+        cls,
+        operand: Dataset,
+        group_op: Optional[str],
+        grouping_components: Optional[List[str]],
+        having_data: Optional[List[DataComponent]],
+    ) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if group_op is not None:
             for comp_name in grouping_components:
@@ -40,11 +53,14 @@ class Aggregation(Operator.Unary):
                     raise ValueError(f"Component {comp_name} not found in dataset")
                 if operand.components[comp_name].role != Role.IDENTIFIER:
                     raise ValueError(f"Component {comp_name} is not an identifier")
-            identifiers_to_keep = extract_grouping_identifiers(operand.get_identifiers_names(),
-                                                               group_op,
-                                                               grouping_components)
+            identifiers_to_keep = extract_grouping_identifiers(
+                operand.get_identifiers_names(), group_op, grouping_components
+            )
             for comp_name, comp in operand.components.items():
-                if comp.role == Role.IDENTIFIER and comp_name not in identifiers_to_keep:
+                if (
+                    comp.role == Role.IDENTIFIER
+                    and comp_name not in identifiers_to_keep
+                ):
                     del result_components[comp_name]
         else:
             for comp_name, comp in operand.components.items():
@@ -63,57 +79,77 @@ class Aggregation(Operator.Unary):
         if cls.op == COUNT:
             for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
-            new_comp = Component(name="int_var", role=Role.MEASURE, data_type=Integer,
-                                 nullable=True)
+            new_comp = Component(
+                name="int_var", role=Role.MEASURE, data_type=Integer, nullable=True
+            )
             result_components["int_var"] = new_comp
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls,
-                 operand: Dataset,
-                 group_op: Optional[str],
-                 grouping_columns: Optional[str],
-                 having_data: Optional[pd.DataFrame]) -> Dataset:
+    def evaluate(
+        cls,
+        operand: Dataset,
+        group_op: Optional[str],
+        grouping_columns: Optional[str],
+        having_data: Optional[pd.DataFrame],
+    ) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_data)
 
         grouping_keys = result.get_identifiers_names()
         result.data = operand.data.copy()
         if len(operand.get_measures_names()) == 0:
             if cls.op == COUNT:
-                result.data = result.data[grouping_keys].groupby(grouping_keys).size().reset_index(name='int_var')
+                result.data = (
+                    result.data[grouping_keys]
+                    .groupby(grouping_keys)
+                    .size()
+                    .reset_index(name="int_var")
+                )
             else:
-                result.data = result.data[grouping_keys].drop_duplicates(keep='first')
+                result.data = result.data[grouping_keys].drop_duplicates(keep="first")
             return result
         if len(grouping_keys) == 0:
             grouping_keys = operand.get_identifiers_names()
         measure_names = operand.get_measures_names()
         result_df = result.data[grouping_keys + measure_names]
         if having_data is not None:
-            result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
+            result_df = result_df.merge(having_data, how="inner", on=grouping_keys)
         comps_to_keep = grouping_keys + measure_names
         if cls.op == COUNT:
             # As Count does not include null values,
             # we remove them and merge using the grouping keys,
             # to ensure we do not lose any group that only has null values
-            aux_df = result_df.dropna(subset=measure_names, how='any')
-            aux_df = aux_df.groupby(grouping_keys).size().reset_index(name='int_var')
-            result_df = result_df.drop_duplicates(subset=grouping_keys)[grouping_keys].reset_index(drop=True)
+            aux_df = result_df.dropna(subset=measure_names, how="any")
+            aux_df = aux_df.groupby(grouping_keys).size().reset_index(name="int_var")
+            result_df = result_df.drop_duplicates(subset=grouping_keys)[
+                grouping_keys
+            ].reset_index(drop=True)
             result_df = result_df.merge(aux_df, how="left", on=grouping_keys)
         else:
-            if os.getenv('SPARK', False) and cls.spark_op is not None:
+            if os.getenv("SPARK", False) and cls.spark_op is not None:
                 result_df = cls.spark_op(result_df, grouping_keys)
             else:
                 if cls.op == SUM:
                     # Min_count is used to ensure we return null if all elements are null,
                     # instead of 0
-                    agg_dict = {measure_name: lambda x: x.sum(min_count=1)
-                                for measure_name in measure_names}
-                elif cls.py_op.__name__ != 'py_op':
-                    agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
+                    agg_dict = {
+                        measure_name: lambda x: x.sum(min_count=1)
+                        for measure_name in measure_names
+                    }
+                elif cls.py_op.__name__ != "py_op":
+                    agg_dict = {
+                        measure_name: cls.py_op.__name__
+                        for measure_name in measure_names
+                    }
                 else:
-                    agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
-                        drop=False)
+                    agg_dict = {
+                        measure_name: cls.py_op for measure_name in measure_names
+                    }
+                result_df = (
+                    result_df.groupby(grouping_keys)[comps_to_keep]
+                    .agg(agg_dict)
+                    .reset_index(drop=False)
+                )
 
         result.data = result_df
         return result

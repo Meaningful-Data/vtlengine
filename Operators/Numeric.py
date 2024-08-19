@@ -5,8 +5,23 @@ from typing import Any, Optional, Union
 import pandas as pd
 
 import Operators as Operator
-from AST.Grammar.tokens import ABS, CEIL, DIV, EXP, FLOOR, LN, LOG, MINUS, MOD, MULT, PLUS, POWER, \
-    ROUND, SQRT, TRUNC
+from AST.Grammar.tokens import (
+    ABS,
+    CEIL,
+    DIV,
+    EXP,
+    FLOOR,
+    LN,
+    LOG,
+    MINUS,
+    MOD,
+    MULT,
+    PLUS,
+    POWER,
+    ROUND,
+    SQRT,
+    TRUNC,
+)
 from DataTypes import Integer, Number
 from Model import DataComponent, Dataset, Scalar
 from Operators import ALL_MODEL_DATA_TYPES
@@ -120,7 +135,7 @@ class Power(Binary):
     def py_op(cls, x: Any, param: Any) -> Any:
         if pd.isnull(param):
             return None
-        return x ** param
+        return x**param
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset):
@@ -130,16 +145,21 @@ class Power(Binary):
 class Parameterized(Unary):
 
     @classmethod
-    def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None):
+    def validate(
+        cls,
+        operand: Operator.ALL_MODEL_DATA_TYPES,
+        param: Optional[Union[DataComponent, Scalar]] = None,
+    ):
 
         if param is not None:
             if isinstance(param, Dataset):
                 raise Exception(f"{cls.op} cannot have a Dataset as parameter")
             if isinstance(param, DataComponent):
                 if isinstance(operand, Scalar):
-                    raise Exception(f"{cls.op} cannot have an Scalar operand and "
-                                    f"a DataComponent as parameter")
+                    raise Exception(
+                        f"{cls.op} cannot have an Scalar operand and "
+                        f"a DataComponent as parameter"
+                    )
                 cls.validate_type_compatibility(param.data_type)
             else:
                 cls.validate_scalar_type(param)
@@ -155,7 +175,9 @@ class Parameterized(Unary):
         return None if pd.isnull(x) else cls.py_op(x, param)
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> Any:
+    def apply_operation_two_series(
+        cls, left_series: pd.Series, right_series: pd.Series
+    ) -> Any:
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
@@ -180,7 +202,9 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]):
+    def component_evaluation(
+        cls, operand: DataComponent, param: Union[DataComponent, Scalar]
+    ):
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
         if isinstance(param, DataComponent):
@@ -198,8 +222,11 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None) -> ALL_MODEL_DATA_TYPES:
+    def evaluate(
+        cls,
+        operand: ALL_MODEL_DATA_TYPES,
+        param: Optional[Union[DataComponent, Scalar]] = None,
+    ) -> ALL_MODEL_DATA_TYPES:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)
         if isinstance(operand, DataComponent):
@@ -216,7 +243,7 @@ class Round(Parameterized):
     def py_op(cls, x: Any, param: Any) -> Any:
         multiplier = 1.0
         if not pd.isnull(param):
-            multiplier = 10 ** param
+            multiplier = 10**param
 
         if x >= 0.0:
             rounded_value = math.floor(x * multiplier + 0.5) / multiplier
@@ -236,7 +263,7 @@ class Trunc(Parameterized):
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
         if not pd.isnull(param):
-            multiplier = 10 ** param
+            multiplier = 10**param
 
         truncated_value = int(x * multiplier) / multiplier
 

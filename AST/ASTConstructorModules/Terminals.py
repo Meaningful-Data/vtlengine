@@ -1,21 +1,37 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from AST import BinOp, Collection, Constant, DPRIdentifier, \
-    Identifier, \
-    OrderBy, \
-    ParamConstant, \
-    ParamOp, Types, VarID, Windowing
+from AST import (
+    BinOp,
+    Collection,
+    Constant,
+    DPRIdentifier,
+    Identifier,
+    OrderBy,
+    ParamConstant,
+    ParamOp,
+    Types,
+    VarID,
+    Windowing,
+)
 from AST.Grammar.parser import Parser
 from AST.VtlVisitor import VtlVisitor
-from DataTypes import Boolean, Date, Duration, Integer, Number, String, TimeInterval, \
-    TimePeriod
+from DataTypes import (
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
+)
 from Model import Component, Dataset, Role
 
 
 def _remove_scaped_characters(text):
-    has_scaped_char = text.find("\'") != -1
+    has_scaped_char = text.find("'") != -1
     if has_scaped_char:
-        text = str(text.replace("\'", ""))
+        text = str(text.replace("'", ""))
     return text
 
 
@@ -24,24 +40,24 @@ class Terminals(VtlVisitor):
         token = ctx.children[0].getSymbol()
 
         if token.type == Parser.INTEGER_CONSTANT:
-            constant_node = Constant('INTEGER_CONSTANT', int(token.text))
+            constant_node = Constant("INTEGER_CONSTANT", int(token.text))
 
         elif token.type == Parser.NUMBER_CONSTANT:
-            constant_node = Constant('FLOAT_CONSTANT', float(token.text))
+            constant_node = Constant("FLOAT_CONSTANT", float(token.text))
 
         elif token.type == Parser.BOOLEAN_CONSTANT:
-            if token.text == 'true':
-                constant_node = Constant('BOOLEAN_CONSTANT', True)
-            elif token.text == 'false':
-                constant_node = Constant('BOOLEAN_CONSTANT', False)
+            if token.text == "true":
+                constant_node = Constant("BOOLEAN_CONSTANT", True)
+            elif token.text == "false":
+                constant_node = Constant("BOOLEAN_CONSTANT", False)
             else:
                 raise NotImplementedError
 
         elif token.type == Parser.STRING_CONSTANT:
-            constant_node = Constant('STRING_CONSTANT', token.text[1:-1])
+            constant_node = Constant("STRING_CONSTANT", token.text[1:-1])
 
         elif token.type == Parser.NULL_CONSTANT:
-            constant_node = Constant('NULL_CONSTANT', None)
+            constant_node = Constant("NULL_CONSTANT", None)
 
         else:
             raise NotImplementedError
@@ -72,26 +88,30 @@ class Terminals(VtlVisitor):
         # check token text
         token.text = _remove_scaped_characters(token.text)
 
-        return Identifier(token.text, 'ComponentID')
+        return Identifier(token.text, "ComponentID")
 
     def visitComponentID(self, ctx: Parser.ComponentIDContext):
         ctx_list = list(ctx.getChildren())
 
         if len(ctx_list) == 1:
             component_name = ctx_list[0].getSymbol().text
-            if component_name.startswith("\'") and component_name.endswith(
-                    "\'"):  # The component could be imbalance, errorcode or errorlevel
+            if component_name.startswith("'") and component_name.endswith(
+                "'"
+            ):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
-            return Identifier(component_name, 'ComponentID')
+            return Identifier(component_name, "ComponentID")
         else:
             component_name = ctx_list[2].getSymbol().text
-            if component_name.startswith("\'") and component_name.endswith(
-                    "\'"):  # The component could be imbalance, errorcode or errorlevel
+            if component_name.startswith("'") and component_name.endswith(
+                "'"
+            ):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
             op_node = ctx_list[1].getSymbol().text
-            return BinOp(left=Identifier(ctx_list[0].getSymbol().text, 'DatasetID'),
-                         op=op_node,
-                         right=Identifier(component_name, 'ComponentID'))
+            return BinOp(
+                left=Identifier(ctx_list[0].getSymbol().text, "DatasetID"),
+                op=op_node,
+                right=Identifier(component_name, "ComponentID"),
+            )
 
     def visitOperatorID(self, ctx: Parser.OperatorIDContext):
         """
@@ -106,8 +126,12 @@ class Terminals(VtlVisitor):
         """
         valueDomainID: IDENTIFIER ;
         """
-        return Collection(name=ctx.children[0].getSymbol().text, type_=None, children=[],
-                          kind='ValueDomain')
+        return Collection(
+            name=ctx.children[0].getSymbol().text,
+            type_=None,
+            children=[],
+            kind="ValueDomain",
+        )
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
         """
@@ -125,8 +149,10 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         # AST_ASTCONSTRUCTOR.48
         raise NotImplementedError(
-            'Value Domain \'{}\' not available for cast operator or scalar type representation or rulesets.'.format(
-                ctx_list[0].getSymbol().text))
+            "Value Domain '{}' not available for cast operator or scalar type representation or rulesets.".format(
+                ctx_list[0].getSymbol().text
+            )
+        )
 
     def visitValueDomainValue(self, ctx: Parser.ValueDomainValueContext):
         return _remove_scaped_characters(ctx.children[0].getSymbol().text)
@@ -218,10 +244,17 @@ class Terminals(VtlVisitor):
 
         scalar_nodes = []
 
-        scalars = [scalar for scalar in ctx_list if isinstance(scalar, Parser.SimpleScalarContext)]
+        scalars = [
+            scalar
+            for scalar in ctx_list
+            if isinstance(scalar, Parser.SimpleScalarContext)
+        ]
 
         scalars_with_cast = [
-            scalar for scalar in ctx_list if isinstance(scalar, Parser.ScalarWithCastContext)]
+            scalar
+            for scalar in ctx_list
+            if isinstance(scalar, Parser.ScalarWithCastContext)
+        ]
 
         for scalar in scalars:
             scalar_nodes.append(self.visitSimpleScalar(scalar))
@@ -229,7 +262,7 @@ class Terminals(VtlVisitor):
         for scalar_with_cast in scalars_with_cast:
             scalar_nodes.append(self.visitScalarWithCast(scalar_with_cast))
 
-        return Collection('Set', None, scalar_nodes)
+        return Collection("Set", None, scalar_nodes)
 
     def visitMultModifier(self, ctx: Parser.MultModifierContext):
         """
@@ -243,12 +276,21 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        component_node = [self.visitComponentType(component) for component in ctx_list if
-                          isinstance(component, Parser.ComponentTypeContext)]
-        component_name = [self.visitComponentID(component).value for component in ctx_list if
-                          isinstance(component, Parser.ComponentIDContext)]
-        component_mult = [self.visitMultModifier(modifier) for modifier in ctx_list if
-                          isinstance(modifier, Parser.MultModifierContext)]
+        component_node = [
+            self.visitComponentType(component)
+            for component in ctx_list
+            if isinstance(component, Parser.ComponentTypeContext)
+        ]
+        component_name = [
+            self.visitComponentID(component).value
+            for component in ctx_list
+            if isinstance(component, Parser.ComponentIDContext)
+        ]
+        component_mult = [
+            self.visitMultModifier(modifier)
+            for modifier in ctx_list
+            if isinstance(modifier, Parser.MultModifierContext)
+        ]
 
         if len(component_mult) != 0:
             # AST_ASTCONSTRUCTOR.51
@@ -271,17 +313,32 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        types = (Parser.BasicScalarTypeContext, Parser.ValueDomainNameContext,
-                 Parser.ScalarTypeConstraintContext)
-        scalartype = [scalartype for scalartype in ctx_list if isinstance(scalartype, types)][0]
+        types = (
+            Parser.BasicScalarTypeContext,
+            Parser.ValueDomainNameContext,
+            Parser.ScalarTypeConstraintContext,
+        )
+        scalartype = [
+            scalartype for scalartype in ctx_list if isinstance(scalartype, types)
+        ][0]
 
-        scalartype_constraint = [constraint for constraint in ctx_list if
-                                 isinstance(constraint, Parser.ScalarTypeConstraintContext)]
-        not_ = [not_.getSymbol().text for not_ in ctx_list if
-                isinstance(not_, TerminalNodeImpl) and not_.getSymbol().type == Parser.NOT]
-        null_constant = [null.getSymbol().text for null in ctx_list if
-                         isinstance(null,
-                                    TerminalNodeImpl) and null.getSymbol().type == Parser.NULL_CONSTANT]
+        scalartype_constraint = [
+            constraint
+            for constraint in ctx_list
+            if isinstance(constraint, Parser.ScalarTypeConstraintContext)
+        ]
+        not_ = [
+            not_.getSymbol().text
+            for not_ in ctx_list
+            if isinstance(not_, TerminalNodeImpl)
+            and not_.getSymbol().type == Parser.NOT
+        ]
+        null_constant = [
+            null.getSymbol().text
+            for null in ctx_list
+            if isinstance(null, TerminalNodeImpl)
+            and null.getSymbol().type == Parser.NULL_CONSTANT
+        ]
 
         if isinstance(scalartype, Parser.BasicScalarTypeContext):
             type_node = self.visitBasicScalarType(scalartype)
@@ -312,8 +369,11 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
-                      isinstance(constraint, Parser.CompConstraintContext)]
+        components = [
+            self.visitCompConstraint(constraint)
+            for constraint in ctx_list
+            if isinstance(constraint, Parser.CompConstraintContext)
+        ]
         components = {component.name: component for component in components}
 
         return Dataset(name="Dataset", components=components, data=None)
@@ -354,8 +414,11 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         role_node = self.visitComponentRole(ctx_list[0])
-        data_type = [self.visitScalarType(constraint) for constraint in ctx_list if
-                     isinstance(constraint, Parser.ScalarTypeContext)]
+        data_type = [
+            self.visitScalarType(constraint)
+            for constraint in ctx_list
+            if isinstance(constraint, Parser.ScalarTypeContext)
+        ]
         if len(data_type) > 0:
             data_type = data_type[0]
         else:
@@ -366,7 +429,9 @@ class Terminals(VtlVisitor):
         else:
             nullable = True
 
-        return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
+        return Component(
+            name="Component", data_type=data_type, role=role_node, nullable=nullable
+        )
 
     def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
         """
@@ -419,7 +484,9 @@ class Terminals(VtlVisitor):
         else:
             raise NotImplementedError
 
-    def visitOutputParameterTypeComponent(self, ctx: Parser.OutputParameterTypeComponentContext):
+    def visitOutputParameterTypeComponent(
+        self, ctx: Parser.OutputParameterTypeComponentContext
+    ):
         """
         outputParameterType: scalarType
                            | componentType
@@ -450,7 +517,7 @@ class Terminals(VtlVisitor):
 
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         """
-         |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast
+        |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -462,13 +529,19 @@ class Terminals(VtlVisitor):
         basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
 
         if len(ctx_list) > 6:
-            param_node = [ParamConstant('PARAM_CAST', ctx_list[6])]
+            param_node = [ParamConstant("PARAM_CAST", ctx_list[6])]
         else:
             param_node = []
 
         if len(basic_scalar_type) == 1:
             basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
+                Types(
+                    kind="Scalar",
+                    type_=basic_scalar_type[0],
+                    constraints=[],
+                    nullable=None,
+                )
+            ]
             children_nodes = [const_node, basic_scalar_type_node[0]]
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
@@ -493,15 +566,15 @@ class Terminals(VtlVisitor):
         token = ctx.children[0].getSymbol()
 
         if token.type == Parser.BOOLEAN_CONSTANT:
-            if token.text == 'true':
-                param_constant_node = Constant('BOOLEAN_CONSTANT', True)
-            elif token.text == 'false':
-                param_constant_node = Constant('BOOLEAN_CONSTANT', False)
+            if token.text == "true":
+                param_constant_node = Constant("BOOLEAN_CONSTANT", True)
+            elif token.text == "false":
+                param_constant_node = Constant("BOOLEAN_CONSTANT", False)
             else:
                 raise NotImplementedError
 
         elif token.type == Parser.ALL:
-            param_constant_node = ParamConstant('PARAM_CONSTANT', token.text)
+            param_constant_node = ParamConstant("PARAM_CONSTANT", token.text)
 
         else:
             raise NotImplementedError
@@ -537,7 +610,9 @@ class Terminals(VtlVisitor):
         try:
             return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f'Error code must be a string, line {ctx_list[1].getSymbol().line}')
+            raise Exception(
+                f"Error code must be a string, line {ctx_list[1].getSymbol().line}"
+            )
 
     def visitErLevel(self, ctx: Parser.ErLevelContext):
         """
@@ -548,9 +623,11 @@ class Terminals(VtlVisitor):
         try:
             return int(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f'Error level must be an integer, line {ctx_list[1].start.line}')
+            raise Exception(
+                f"Error level must be an integer, line {ctx_list[1].start.line}"
+            )
 
-    def visitSignature(self, ctx: Parser.SignatureContext, kind='ComponentID'):
+    def visitSignature(self, ctx: Parser.SignatureContext, kind="ComponentID"):
         """
         varID (AS alias)?
         """
@@ -575,8 +652,11 @@ class Terminals(VtlVisitor):
     def visitConditionClause(self, ctx: Parser.ConditionClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        components = [self.visitComponentID(c) for c in ctx_list
-                      if isinstance(c, Parser.ComponentIDContext)]
+        components = [
+            self.visitComponentID(c)
+            for c in ctx_list
+            if isinstance(c, Parser.ComponentIDContext)
+        ]
 
         return components
 
@@ -602,21 +682,27 @@ class Terminals(VtlVisitor):
     def visitPartitionByClause(self, ctx: Parser.PartitionByClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        return [self.visitComponentID(compID).value for compID in ctx_list if
-                isinstance(compID, Parser.ComponentIDContext)]
+        return [
+            self.visitComponentID(compID).value
+            for compID in ctx_list
+            if isinstance(compID, Parser.ComponentIDContext)
+        ]
 
     def visitOrderByClause(self, ctx: Parser.OrderByClauseContext):
         ctx_list = list(ctx.getChildren())
 
-        return [self.visitOrderByItem(c) for c in ctx_list if
-                isinstance(c, Parser.OrderByItemContext)]
+        return [
+            self.visitOrderByItem(c)
+            for c in ctx_list
+            if isinstance(c, Parser.OrderByItemContext)
+        ]
 
     def visitWindowingClause(self, ctx: Parser.WindowingClauseContext):
         ctx_list = list(ctx.getChildren())
 
         win_mode = ctx_list[0].getSymbol().text  # Windowing mode (data points | range )
 
-        if win_mode == 'data':
+        if win_mode == "data":
             num_rows_1, mode_1 = self.visitLimitClauseItem(ctx_list[3])
             num_rows_2, mode_2 = self.visitLimitClauseItem(ctx_list[5])
         else:
@@ -626,23 +712,33 @@ class Terminals(VtlVisitor):
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
-        if mode_2 == 'preceding':
-            if mode_1 == 'preceding' and num_rows_1 == -1 and num_rows_2 == -1:  # preceding and preceding (error)
+        if mode_2 == "preceding":
+            if (
+                mode_1 == "preceding" and num_rows_1 == -1 and num_rows_2 == -1
+            ):  # preceding and preceding (error)
                 raise Exception(
-                    f'Cannot have 2 preceding clauses with unbounded in analytic clause, line {ctx_list[3].start.line}')
+                    f"Cannot have 2 preceding clauses with unbounded in analytic clause, line {ctx_list[3].start.line}"
+                )
 
-        if mode_1 == 'following' and num_rows_1 == -1 and num_rows_2 == -1:  # following and following (error)
+        if (
+            mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
+        ):  # following and following (error)
             raise Exception(
-                f'Cannot have 2 following clauses with unbounded in analytic clause, line {ctx_list[3].start.line}')
+                f"Cannot have 2 following clauses with unbounded in analytic clause, line {ctx_list[3].start.line}"
+            )
 
         if mode_1 == mode_2:
-            if mode_1 == 'preceding' and first != -1 and second > first:  # 3 and 1: must be [-3:-1]
+            if (
+                mode_1 == "preceding" and first != -1 and second > first
+            ):  # 3 and 1: must be [-3:-1]
                 return create_windowing(win_mode, [second, first], [mode_2, mode_1])
-            if mode_1 == 'preceding' and second == -1:
+            if mode_1 == "preceding" and second == -1:
                 return create_windowing(win_mode, [second, first], [mode_2, mode_1])
-            if mode_1 == 'following' and second != -1 and second < first:  # 3 and 1: must be [1:3]
+            if (
+                mode_1 == "following" and second != -1 and second < first
+            ):  # 3 and 1: must be [1:3]
                 return create_windowing(win_mode, [second, first], [mode_2, mode_1])
-            if mode_1 == 'following' and first == -1:
+            if mode_1 == "following" and first == -1:
                 return create_windowing(win_mode, [second, first], [mode_2, mode_1])
 
         return create_windowing(win_mode, [first, second], [mode_1, mode_2])
@@ -651,25 +747,29 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         if len(ctx_list) == 1:
-            return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
-                           order='asc')
+            return OrderBy(
+                component=self.visitComponentID(ctx_list[0]).value, order="asc"
+            )
 
-        return OrderBy(component=self.visitComponentID(ctx_list[0]).value,
-                       order=ctx_list[1].getSymbol().text)
+        return OrderBy(
+            component=self.visitComponentID(ctx_list[0]).value,
+            order=ctx_list[1].getSymbol().text,
+        )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
-        if c.getSymbol().text == 'unbounded':
+        if c.getSymbol().text == "unbounded":
             result = -1
-        elif c.getSymbol().text == 'current':
+        elif c.getSymbol().text == "current":
             result = 0
             return result, ctx_list[0].getSymbol().text
         else:
             result = int(c.getSymbol().text)
             if result < 0:
                 raise Exception(
-                    f'Cannot use negative numbers ({result}) on limitClause, line {c.symbol.line}')
+                    f"Cannot use negative numbers ({result}) on limitClause, line {c.symbol.line}"
+                )
 
         return result, ctx_list[1].getSymbol().text
 
@@ -681,5 +781,10 @@ def create_windowing(win_mode, values, modes):
         elif values[e] == 0:
             values[e] = "CURRENT ROW"
 
-    return Windowing(type_=win_mode, start=values[0], stop=values[1],
-                     start_mode=modes[0], stop_mode=modes[1])
+    return Windowing(
+        type_=win_mode,
+        start=values[0],
+        stop=values[1],
+        start_mode=modes[0],
+        stop_mode=modes[1],
+    )

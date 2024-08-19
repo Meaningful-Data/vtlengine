@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from unittest import TestCase
 
 import pandas as pd
@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class TestStringTypeChecking(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class TestStringTypeChecking(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class TestStringTypeChecking(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,18 +71,14 @@ class TestStringTypeChecking(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+        """ """
 
         text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -96,7 +89,9 @@ class TestStringTypeChecking(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
 
@@ -105,7 +100,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
     Group 3
     """
 
-    classTest = 'DatasetDataset.DatasetDatasetStringTypeChecking'
+    classTest = "DatasetDataset.DatasetDatasetStringTypeChecking"
 
     def test_1(self):
         """
@@ -122,7 +117,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of two or more strings.
         """
-        code = '3-4-1-1'
+        code = "3-4-1-1"
 
         # 3 For group string
         # 4 For group dataset dataset
@@ -133,7 +128,9 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_2(self):
@@ -151,12 +148,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of Integer with String.
         """
-        code = '3-4-1-2'
+        code = "3-4-1-2"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_3(self):
@@ -174,14 +173,16 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a Number with String.
         """
-        code = 'Test3'
+        code = "Test3"
 
-        code = '3-4-1-3'
+        code = "3-4-1-3"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_4(self):
@@ -199,12 +200,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a Boolean with String.
         """
-        code = '3-4-1-4'
+        code = "3-4-1-4"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_5(self):
         """
@@ -221,12 +224,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Integer.
         """
-        code = '3-4-1-5'
+        code = "3-4-1-5"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_6(self):
         """
@@ -243,10 +248,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with time_period.
         """
-        code = '3-4-1-6'
+        code = "3-4-1-6"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
         """
@@ -263,10 +270,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of time with String.
         """
-        code = '3-4-1-7'
+        code = "3-4-1-7"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_8(self):
         """
@@ -283,10 +292,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of Date with String.
         """
-        code = '3-4-1-8'
+        code = "3-4-1-8"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_9(self):
         """
@@ -303,10 +314,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of time_period with String.
         """
-        code = '3-4-1-9'
+        code = "3-4-1-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_10(self):
         """
@@ -323,10 +336,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of duration with String.
         """
-        code = '3-4-1-10'
+        code = "3-4-1-10"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_11(self):
         """
@@ -343,12 +358,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Number.
         """
-        code = '3-4-1-11'
+        code = "3-4-1-11"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_12(self):
         """
@@ -365,10 +382,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Duration.
         """
-        code = '3-4-1-12'
+        code = "3-4-1-12"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_13(self):
         """
@@ -385,12 +404,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Boolean.
         """
-        code = '3-4-1-13'
+        code = "3-4-1-13"
         number_inputs = 2
 
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_14(self):
         """
@@ -407,10 +428,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Time.
         """
-        code = '3-4-1-14'
+        code = "3-4-1-14"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_15(self):
         """
@@ -427,10 +450,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #23 String operators types checking tests.
         Goal: Do the concatenation of a String with Date.
         """
-        code = '3-4-1-15'
+        code = "3-4-1-15"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_16(self):
         """
@@ -446,11 +471,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-1'
+        code = "3-4-2-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_17(self):
         """
@@ -466,11 +493,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-2'
+        code = "3-4-2-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_18(self):
         """
@@ -486,11 +515,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left) from a string.
         """
-        code = '3-4-2-3'
+        code = "3-4-2-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_19(self):
@@ -507,11 +538,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-4'
+        code = "3-4-2-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_20(self):
@@ -528,11 +561,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-5'
+        code = "3-4-2-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_21(self):
@@ -549,11 +584,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-6'
+        code = "3-4-2-6"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_22(self):
@@ -570,11 +607,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-7'
+        code = "3-4-2-7"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_23(self):
@@ -591,11 +630,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-8'
+        code = "3-4-2-8"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_24(self):
@@ -612,11 +653,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-9'
+        code = "3-4-2-9"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_25(self):
@@ -633,11 +676,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-10'
+        code = "3-4-2-10"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_26(self):
@@ -654,11 +699,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-11'
+        code = "3-4-2-11"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_27(self):
@@ -675,11 +722,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-12'
+        code = "3-4-2-12"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_28(self):
         """
@@ -695,10 +744,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-13'
+        code = "3-4-2-13"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_29(self):
         """
@@ -714,10 +765,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-14'
+        code = "3-4-2-14"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_30(self):
         """
@@ -733,10 +786,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-15'
+        code = "3-4-2-15"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_31(self):
         """
@@ -752,10 +807,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-16'
+        code = "3-4-2-16"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_32(self):
         """
@@ -771,10 +828,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-17'
+        code = "3-4-2-17"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_33(self):
         """
@@ -790,10 +849,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-18'
+        code = "3-4-2-18"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_34(self):
         """
@@ -809,10 +870,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-19'
+        code = "3-4-2-19"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_35(self):
         """
@@ -828,10 +891,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-20'
+        code = "3-4-2-20"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_36(self):
         """
@@ -847,10 +912,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-21'
+        code = "3-4-2-21"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_37(self):
         """
@@ -866,10 +933,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal from a string.
         """
-        code = '3-4-2-22'
+        code = "3-4-2-22"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_38(self):
         """
@@ -885,10 +954,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(right side) from a string.
         """
-        code = '3-4-2-23'
+        code = "3-4-2-23"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_39(self):
         """
@@ -904,10 +975,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #87 Trim operators type checking tests.
         Goal: Whitespace removal(left side) from a string.
         """
-        code = '3-4-2-24'
+        code = "3-4-2-24"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_40(self):
         """
@@ -923,11 +996,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-1'
+        code = "3-4-3-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_41(self):
         """
@@ -943,11 +1018,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-2'
+        code = "3-4-3-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_42(self):
@@ -964,11 +1041,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-3'
+        code = "3-4-3-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_43(self):
@@ -985,11 +1064,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-4'
+        code = "3-4-3-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_44(self):
@@ -1006,11 +1087,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-5'
+        code = "3-4-3-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_45(self):
@@ -1027,12 +1110,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-6'
+        code = "3-4-3-6"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_46(self):
         """
@@ -1048,11 +1132,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-7'
+        code = "3-4-3-7"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_47(self):
         """
@@ -1068,11 +1154,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-8'
+        code = "3-4-3-8"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_48(self):
         """
@@ -1088,10 +1176,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-9'
+        code = "3-4-3-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_49(self):
         """
@@ -1107,10 +1197,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-10'
+        code = "3-4-3-10"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_50(self):
         """
@@ -1126,10 +1218,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-11'
+        code = "3-4-3-11"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_51(self):
         """
@@ -1145,10 +1239,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-12'
+        code = "3-4-3-12"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_52(self):
         """
@@ -1164,10 +1260,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-13'
+        code = "3-4-3-13"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_53(self):
         """
@@ -1183,10 +1281,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-14'
+        code = "3-4-3-14"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_54(self):
         """
@@ -1202,10 +1302,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in upper case.
         """
-        code = '3-4-3-15'
+        code = "3-4-3-15"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_55(self):
         """
@@ -1221,10 +1323,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #98 lower-upper operators type checking tests.
         Goal: Converts the character case of a string in lower case.
         """
-        code = '3-4-3-16'
+        code = "3-4-3-16"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_56(self):
         """
@@ -1243,11 +1347,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-1'
+        code = "3-4-4-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_57(self):
         """
@@ -1267,11 +1373,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-2'
+        code = "3-4-4-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_58(self):
         """
@@ -1292,11 +1400,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-3'
+        code = "3-4-4-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_59(self):
         """
@@ -1317,11 +1427,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-4'
+        code = "3-4-4-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_60(self):
@@ -1341,11 +1453,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-5'
+        code = "3-4-4-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_61(self):
@@ -1365,11 +1479,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-6'
+        code = "3-4-4-6"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_62(self):
@@ -1389,11 +1505,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-7'
+        code = "3-4-4-7"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_63(self):
         """
@@ -1412,10 +1530,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-8'
+        code = "3-4-4-8"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_64(self):
         """
@@ -1434,10 +1554,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-9'
+        code = "3-4-4-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_65(self):
         """
@@ -1456,10 +1578,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-10'
+        code = "3-4-4-10"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_66(self):
         """
@@ -1478,10 +1602,12 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #112 substr-operators-type-checking-tests.
         Goal: The operator extracts a substring from op, which must be string type
         """
-        code = '3-4-4-11'
+        code = "3-4-4-11"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_67(self):
         """
@@ -1498,11 +1624,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
         """
-        code = '3-4-5-1'
+        code = "3-4-5-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_68(self):
         """
@@ -1519,12 +1647,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-2'
+        """
+        code = "3-4-5-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_69(self):
@@ -1541,12 +1671,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-3'
+        """
+        code = "3-4-5-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_70(self):
@@ -1563,12 +1695,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-4'
+        """
+        code = "3-4-5-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # BUG
     def test_71(self):
@@ -1585,12 +1719,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-5'
+        """
+        code = "3-4-5-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_72(self):
         """
@@ -1606,11 +1742,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-6'
+        """
+        code = "3-4-5-6"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_73(self):
         """
@@ -1626,11 +1764,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-7'
+        """
+        code = "3-4-5-7"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_74(self):
         """
@@ -1646,11 +1786,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-8'
+        """
+        code = "3-4-5-8"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_75(self):
         """
@@ -1666,11 +1808,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #114 replace operator type checking tests.
         Goal: Replaces all the occurrences of a specified string-pattern
-         """
-        code = '3-4-5-9'
+        """
+        code = "3-4-5-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_76(self):
         """
@@ -1689,12 +1833,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-1'
+        """
+        code = "3-4-6-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_77(self):
         """
@@ -1715,12 +1861,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-2'
+        """
+        code = "3-4-6-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_78(self):
         """
@@ -1741,12 +1889,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-3'
+        """
+        code = "3-4-6-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_79(self):
         """
@@ -1768,12 +1918,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-4'
+        """
+        code = "3-4-6-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_80(self):
         """
@@ -1792,12 +1944,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-5'
+        """
+        code = "3-4-6-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_81(self):
         """
@@ -1816,12 +1970,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-6'
+        """
+        code = "3-4-6-6"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_82(self):
         """
@@ -1840,12 +1996,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-7'
+        """
+        code = "3-4-6-7"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_83(self):
         """
@@ -1864,11 +2022,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-8'
+        """
+        code = "3-4-6-8"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_84(self):
         """
@@ -1887,11 +2047,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-9'
+        """
+        code = "3-4-6-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_85(self):
         """
@@ -1910,11 +2072,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-10'
+        """
+        code = "3-4-6-10"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_86(self):
         """
@@ -1933,11 +2097,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         Git Branch: #118 instr operator type checking tests.
         Goal: The operator returns the position in the input string of a
         specified string (pattern).
-         """
-        code = '3-4-6-11'
+        """
+        code = "3-4-6-11"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_87(self):
         """
@@ -1952,12 +2118,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a string.
-         """
-        code = '3-4-7-1'
+        """
+        code = "3-4-7-1"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_88(self):
         """
@@ -1973,12 +2141,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a string
-         """
-        code = '3-4-7-2'
+        """
+        code = "3-4-7-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_89(self):
         """
@@ -1993,12 +2163,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Integer.
-         """
-        code = '3-4-7-3'
+        """
+        code = "3-4-7-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_90(self):
         """
@@ -2013,12 +2185,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Number.
-         """
-        code = '3-4-7-4'
+        """
+        code = "3-4-7-4"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_91(self):
         """
@@ -2033,12 +2207,14 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a string.
-         """
-        code = '3-4-7-5'
+        """
+        code = "3-4-7-5"
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_92(self):
         """
@@ -2053,11 +2229,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Time.
-         """
-        code = '3-4-7-6'
+        """
+        code = "3-4-7-6"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_93(self):
         """
@@ -2072,11 +2250,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Date.
-         """
-        code = '3-4-7-7'
+        """
+        code = "3-4-7-7"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_94(self):
         """
@@ -2091,11 +2271,13 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Time_Period.
-         """
-        code = '3-4-7-8'
+        """
+        code = "3-4-7-8"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_95(self):
         """
@@ -2110,8 +2292,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
 
         Git Branch: #121 length operator type checking tests.
         Goal: Returns the length of a Duration.
-         """
-        code = '3-4-7-9'
+        """
+        code = "3-4-7-9"
         number_inputs = 2
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )

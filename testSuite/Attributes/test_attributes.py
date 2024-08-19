@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class TestAttributesHelper(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class TestAttributesHelper(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class TestAttributesHelper(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets_references = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,18 +71,20 @@ class TestAttributesHelper(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
-    def BaseTest(cls, text: Optional[str], code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+    def BaseTest(
+        cls,
+        text: Optional[str],
+        code: str,
+        number_inputs: int,
+        references_names: List[str],
+    ):
+        """ """
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -96,7 +95,9 @@ class TestAttributesHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
 
@@ -105,7 +106,7 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
     Group 1
     """
 
-    classTest = 'test_attributes.GeneralPurposeOperatorsTest'
+    classTest = "test_attributes.GeneralPurposeOperatorsTest"
 
     def test_16(self):
         """
@@ -122,11 +123,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Git Branch: #179 General purpose operators attributes tests.
         Goal: Do the operations using parentheses and check their attributes.
         """
-        code = '1-4-1-1'
+        code = "1-4-1-1"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -143,11 +149,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The input operand op is assigned to the persistent result re,
         which assumes the same value as op and check their attributes.
         """
-        code = '1-4-1-2'
+        code = "1-4-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -169,11 +180,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The value of the operand op is assigned to the result re, which
         is non-persistent and therefore is not stored and check their attributes.
         """
-        code = '1-4-1-3'
+        code = "1-4-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -196,11 +212,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The value of the operand op is assigned to the result re, which
         is non-persistent and therefore is not stored and check their attributes.
         """
-        code = '1-4-1-4'
+        code = "1-4-1-4"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -219,11 +240,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The membership operator returns a Data Set having the same
         Identifier Components of ds and a single Measure and check their attributes.
         """
-        code = '1-4-1-5'
+        code = "1-4-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -243,11 +269,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The membership operator returns a Data Set having the same
         Identifier Components of ds and a single Measure and check their attributes.
         """
-        code = '1-4-1-6'
+        code = "1-4-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -267,11 +298,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         Goal: The membership operator returns a Data Set having the same
         Identifier Components of ds and a single Measure and check their attributes.
         """
-        code = '1-4-1-7'
+        code = "1-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -291,11 +327,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-8'
+        code = "1-4-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -315,11 +356,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-9'
+        code = "1-4-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -339,11 +385,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-10'
+        code = "1-4-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -362,11 +413,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-11'
+        code = "1-4-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -386,11 +442,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-12'
+        code = "1-4-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -411,11 +472,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-13'
+        code = "1-4-1-13"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -436,10 +502,12 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-14'
+        code = "1-4-1-14"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_15(self):
         """
@@ -459,11 +527,16 @@ class GeneralPurposeOperatorsTest(TestAttributesHelper):
         passed to the operator in the invocation are associated to the corresponding
         parameters in positional order and check their attributes.
         """
-        code = '1-4-1-15'
+        code = "1-4-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class JoinOperatorsTest(TestAttributesHelper):
@@ -471,7 +544,7 @@ class JoinOperatorsTest(TestAttributesHelper):
     Group 2
     """
 
-    classTest = 'test_attributes.JoinOperatorsTest'
+    classTest = "test_attributes.JoinOperatorsTest"
 
     def test_1(self):
         """
@@ -488,11 +561,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-1'
+        code = "2-4-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -509,11 +587,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-2'
+        code = "2-4-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -530,11 +613,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-3'
+        code = "2-4-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -552,11 +640,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-4'
+        code = "2-4-1-4"
         number_inputs = 1
         references_names = ["1", "2"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -573,11 +666,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-5'
+        code = "2-4-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -594,11 +692,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-6'
+        code = "2-4-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -615,11 +718,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-7'
+        code = "2-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -636,11 +744,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-8'
+        code = "2-4-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -657,11 +770,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-9'
+        code = "2-4-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -678,11 +796,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-10'
+        code = "2-4-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -699,11 +822,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-11'
+        code = "2-4-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -720,11 +848,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-12'
+        code = "2-4-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -741,11 +874,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-13'
+        code = "2-4-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -762,11 +900,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-14'
+        code = "2-4-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -783,11 +926,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-15'
+        code = "2-4-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -805,11 +953,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-16'
+        code = "2-4-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -826,11 +979,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-17'
+        code = "2-4-1-17"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_18(self):
         """
@@ -847,11 +1005,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-18'
+        code = "2-4-1-18"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -868,11 +1031,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-19'
+        code = "2-4-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -889,11 +1057,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-20'
+        code = "2-4-1-20"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_21(self):
         """
@@ -911,11 +1084,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-21'
+        code = "2-4-1-21"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_22(self):
         """
@@ -933,11 +1111,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-22'
+        code = "2-4-1-22"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_23(self):
         """
@@ -955,11 +1138,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-23'
+        code = "2-4-1-23"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_24(self):
         """
@@ -977,11 +1165,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-24'
+        code = "2-4-1-24"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_25(self):
         """
@@ -1000,11 +1193,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-25'
+        code = "2-4-1-25"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_26(self):
         """
@@ -1021,11 +1219,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-26'
+        code = "2-4-1-26"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_27(self):
         """
@@ -1042,11 +1245,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-27'
+        code = "2-4-1-27"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_28(self):
         """
@@ -1063,11 +1271,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-28'
+        code = "2-4-1-28"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_29(self):
         """
@@ -1084,11 +1297,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-29'
+        code = "2-4-1-29"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_30(self):
         """
@@ -1106,11 +1324,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-30'
+        code = "2-4-1-30"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_31(self):
         """
@@ -1128,11 +1351,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-31'
+        code = "2-4-1-31"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_32(self):
         """
@@ -1150,11 +1378,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-32'
+        code = "2-4-1-32"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_33(self):
         """
@@ -1172,11 +1405,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-33'
+        code = "2-4-1-33"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_34(self):
         """
@@ -1196,11 +1434,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-34'
+        code = "2-4-1-34"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_35(self):
         """
@@ -1220,11 +1463,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-35'
+        code = "2-4-1-35"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_36(self):
         """
@@ -1244,11 +1492,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-36'
+        code = "2-4-1-36"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_37(self):
         """
@@ -1268,11 +1521,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-37'
+        code = "2-4-1-37"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_38(self):
         """
@@ -1292,11 +1550,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-38'
+        code = "2-4-1-38"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_39(self):
         """
@@ -1316,11 +1579,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-39'
+        code = "2-4-1-39"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_40(self):
         """
@@ -1340,11 +1608,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-40'
+        code = "2-4-1-40"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_41(self):
         """
@@ -1364,11 +1637,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-41'
+        code = "2-4-1-41"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_42(self):
         """
@@ -1388,11 +1666,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-42'
+        code = "2-4-1-42"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_43(self):
         """
@@ -1412,11 +1695,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-43'
+        code = "2-4-1-43"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_44(self):
         """
@@ -1436,11 +1724,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-44'
+        code = "2-4-1-44"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_45(self):
         """
@@ -1460,11 +1753,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-45'
+        code = "2-4-1-45"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_46(self):
         """
@@ -1484,11 +1782,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-46'
+        code = "2-4-1-46"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_47(self):
         """
@@ -1508,11 +1811,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-47'
+        code = "2-4-1-47"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_48(self):
         """
@@ -1532,11 +1840,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-48'
+        code = "2-4-1-48"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_49(self):
         """
@@ -1556,11 +1869,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-49'
+        code = "2-4-1-49"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_50(self):
         """
@@ -1580,11 +1898,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-50'
+        code = "2-4-1-50"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_51(self):
         """
@@ -1604,11 +1927,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-51'
+        code = "2-4-1-51"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_52(self):
         """
@@ -1628,11 +1956,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-52'
+        code = "2-4-1-52"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_53(self):
         """
@@ -1653,11 +1986,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-53'
+        code = "2-4-1-53"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_54(self):
         """
@@ -1677,11 +2015,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-54'
+        code = "2-4-1-54"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_55(self):
         """
@@ -1701,11 +2044,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-55'
+        code = "2-4-1-55"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_56(self):
         """
@@ -1725,11 +2073,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-56'
+        code = "2-4-1-56"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_57(self):
         """
@@ -1749,11 +2102,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-57'
+        code = "2-4-1-57"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_58(self):
         """
@@ -1777,11 +2135,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-58'
+        code = "2-4-1-58"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_59(self):
         """
@@ -1805,11 +2168,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-59'
+        code = "2-4-1-59"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_60(self):
         """
@@ -1831,13 +2199,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-60'
+        code = "2-4-1-60"
         number_inputs = 2
         message = "1-1-13-17"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_61(self):
@@ -1861,11 +2227,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-61'
+        code = "2-4-1-61"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_62(self):
         """
@@ -1886,10 +2257,12 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-62'
+        code = "2-4-1-62"
         number_inputs = 2
         message = "1-1-13-3"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_63(self):
         """
@@ -1908,11 +2281,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-63'
+        code = "2-4-1-63"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_64(self):
         """
@@ -1931,11 +2309,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-64'
+        code = "2-4-1-64"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_65(self):
         """
@@ -1954,11 +2337,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-65'
+        code = "2-4-1-65"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_66(self):
         """
@@ -1976,11 +2364,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-66'
+        code = "2-4-1-66"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_67(self):
         """
@@ -1998,11 +2391,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-67'
+        code = "2-4-1-67"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_68(self):
         """
@@ -2020,11 +2418,16 @@ class JoinOperatorsTest(TestAttributesHelper):
         Goal: Combine data points from two or more datasets, based on related
         components between them and check their attributes.
         """
-        code = '2-4-1-68'
+        code = "2-4-1-68"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class StringOperatorsTest(TestAttributesHelper):
@@ -2032,7 +2435,7 @@ class StringOperatorsTest(TestAttributesHelper):
     Group 3
     """
 
-    classTest = 'test_attributes.StringOperatorsTest'
+    classTest = "test_attributes.StringOperatorsTest"
 
     def test_1(self):
         """
@@ -2049,11 +2452,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Do the concatenation of two or more strings and check their attributes.
         """
-        code = '3-4-1-1'
+        code = "3-4-1-1"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -2070,11 +2478,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Do the concatenation of two or more strings and check their attributes.
         """
-        code = '3-4-1-2'
+        code = "3-4-1-2"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -2092,10 +2505,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Do the concatenation of two or more strings.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-3'
+        code = "3-4-1-3"
         number_inputs = 3
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_4(self):
         """
@@ -2112,11 +2527,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Do the concatenation of Integer with String and check their attributes.
         """
-        code = '3-4-1-4'
+        code = "3-4-1-4"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -2133,11 +2553,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Do the concatenation of two Strings and check their attributes.
         """
-        code = '3-4-1-5'
+        code = "3-4-1-5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -2155,10 +2580,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Do the concatenation of two Strings and check their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-6'
+        code = "3-4-1-6"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
         """
@@ -2174,11 +2601,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Whitespace removal from a string and check their attributes.
         """
-        code = '3-4-1-7'
+        code = "3-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -2195,11 +2627,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Whitespace removal from a string and check their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-8'
+        code = "3-4-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -2216,10 +2653,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Whitespace removal from a string and check their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-9'
+        code = "3-4-1-9"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_10(self):
         """
@@ -2236,11 +2675,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Converts the character case of a string in upper case and check
         their attributes.
         """
-        code = '3-4-1-10'
+        code = "3-4-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -2259,11 +2703,16 @@ class StringOperatorsTest(TestAttributesHelper):
         their attributes.
         Note: Output Dataset whit two measures.
         """
-        code = '3-4-1-11'
+        code = "3-4-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -2281,10 +2730,12 @@ class StringOperatorsTest(TestAttributesHelper):
         their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-12'
+        code = "3-4-1-12"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_13(self):
         """
@@ -2301,11 +2752,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Converts the character case of a string in lower case and check
         their attributes.
         """
-        code = '3-4-1-13'
+        code = "3-4-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -2323,11 +2779,16 @@ class StringOperatorsTest(TestAttributesHelper):
         their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-14'
+        code = "3-4-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -2345,10 +2806,12 @@ class StringOperatorsTest(TestAttributesHelper):
         their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-15'
+        code = "3-4-1-15"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_16(self):
         """
@@ -2368,11 +2831,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: The operator extracts a substring from op, which must be string
         type and check their attributes.
         """
-        code = '3-4-1-16'
+        code = "3-4-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -2393,11 +2861,16 @@ class StringOperatorsTest(TestAttributesHelper):
         type and check their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-17'
+        code = "3-4-1-17"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_18(self):
         """
@@ -2418,10 +2891,12 @@ class StringOperatorsTest(TestAttributesHelper):
         type and check their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-18'
+        code = "3-4-1-18"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_19(self):
         """
@@ -2438,11 +2913,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Replaces all the occurrences of a specified string-pattern and check their attributes.
         """
-        code = '3-4-1-19'
+        code = "3-4-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -2460,11 +2940,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Replaces all the occurrences of a specified string-pattern and check their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-20'
+        code = "3-4-1-20"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_21(self):
         """
@@ -2483,10 +2968,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Note: Output Dataset with two measures.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-21'
+        code = "3-4-1-21"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_22(self):
         """
@@ -2506,11 +2993,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: The operator returns the position in the input string of a
         specified string (pattern) and check their attributes.
         """
-        code = '3-4-1-22'
+        code = "3-4-1-22"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_23(self):
         """
@@ -2531,10 +3023,12 @@ class StringOperatorsTest(TestAttributesHelper):
         specified string (pattern) and check their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-23'
+        code = "3-4-1-23"
         number_inputs = 1
         message = "1-1-18-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_24(self):
         """
@@ -2555,10 +3049,12 @@ class StringOperatorsTest(TestAttributesHelper):
         specified string (pattern) and check their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-24'
+        code = "3-4-1-24"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_25(self):
         """
@@ -2574,11 +3070,16 @@ class StringOperatorsTest(TestAttributesHelper):
         Git Branch: #123 String operators attributes tests.
         Goal: Returns the length of a string. and check their attributes.
         """
-        code = '3-4-1-25'
+        code = "3-4-1-25"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_26(self):
         """
@@ -2595,10 +3096,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Returns the length of a string. and check their attributes.
         Note: Output Dataset with two measures.
         """
-        code = '3-4-1-26'
+        code = "3-4-1-26"
         number_inputs = 1
         message = "1-1-18-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_27(self):
         """
@@ -2615,10 +3118,12 @@ class StringOperatorsTest(TestAttributesHelper):
         Goal: Returns the length of a string. and check their attributes.
         Note: All roles are Attributes.
         """
-        code = '3-4-1-27'
+        code = "3-4-1-27"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class NumericOperatorsTest(TestAttributesHelper):
@@ -2626,7 +3131,7 @@ class NumericOperatorsTest(TestAttributesHelper):
     Group 4
     """
 
-    classTest = 'test_attributes.NumericOperatorsTest'
+    classTest = "test_attributes.NumericOperatorsTest"
 
     def test_1(self):
         """
@@ -2642,11 +3147,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator + returns the operand unchanged and check their attributes.
         """
-        code = '4-4-1-1'
+        code = "4-4-1-1"
         number_inputs = 1
         references_names = ["1", "2"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -2662,11 +3172,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator - inverts the sign of op and check their attributes.
         """
-        code = '4-4-1-2'
+        code = "4-4-1-2"
         number_inputs = 1
         references_names = ["1", "2"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -2681,11 +3196,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator addition returns the sum of two numbers and check their attributes.
         """
-        code = '4-4-1-3'
+        code = "4-4-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -2700,11 +3220,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator addition returns the sum of two numbers and check their attributes.
         """
-        code = '4-4-1-4'
+        code = "4-4-1-4"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -2720,11 +3245,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator subtraction returns the difference of two numbers and
         check their attributes.
         """
-        code = '4-4-1-5'
+        code = "4-4-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -2740,11 +3270,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator subtraction returns the difference of two numbers and
         check their attributes.
         """
-        code = '4-4-1-6'
+        code = "4-4-1-6"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -2760,11 +3295,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator multiplication returns the product of two numbers and
         check their attributes.
         """
-        code = '4-4-1-7'
+        code = "4-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -2780,11 +3320,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator multiplication returns the product of two numbers and
         check their attributes.
         """
-        code = '4-4-1-8'
+        code = "4-4-1-8"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -2799,11 +3344,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator division divides two numbers and check their attributes.
         """
-        code = '4-4-1-9'
+        code = "4-4-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -2818,11 +3368,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator division divides two numbers and check their attributes.
         """
-        code = '4-4-1-10'
+        code = "4-4-1-10"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -2838,11 +3393,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator mod returns the remainder of op1 divided by op2 and
         check their attributes.
         """
-        code = '4-4-1-11'
+        code = "4-4-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -2859,11 +3419,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator mod returns the remainder of op1 divided by op2 and
         check their attributes.
         """
-        code = '4-4-1-12'
+        code = "4-4-1-12"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -2885,11 +3450,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         at the right of the decimal point equal to the numDigit parameter.
         The decimal point is assumed to be at position 0 and check their attributes.
         """
-        code = '4-4-1-13'
+        code = "4-4-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -2910,11 +3480,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         positions at the right of the decimal point equal to the numDigit parameter.
         The decimal point is assumed to be at position 0 and check their attributes.
         """
-        code = '4-4-1-14'
+        code = "4-4-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -2932,11 +3507,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator ceil returns the smallest integer greater
         than or equal to op and check their attributes.
         """
-        code = '4-4-1-15'
+        code = "4-4-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -2954,11 +3534,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator floor returns the greatest integer which is smaller
         than or equal to op and check their attributes.
         """
-        code = '4-4-1-16'
+        code = "4-4-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -2975,11 +3560,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator abs calculates the absolute value of a number and
         check their attributes.
         """
-        code = '4-4-1-17'
+        code = "4-4-1-17"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_18(self):
         """
@@ -2997,11 +3587,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator exp returns e (base of the natural logarithm) raised
         to the op-th power and check their attributes.
         """
-        code = '4-4-1-18'
+        code = "4-4-1-18"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -3018,11 +3613,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator ln calculates the natural logarithm of a number and
         check their attributes.
         """
-        code = '4-4-1-19'
+        code = "4-4-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -3041,11 +3641,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Goal: The operator power raises a number (the base) to another one
         (the exponent) and check their attributes.
         """
-        code = '4-4-1-20'
+        code = "4-4-1-20"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_21(self):
         """
@@ -3063,11 +3668,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator log calculates the logarithm of num base op and check their attributes.
         """
-        code = '4-4-1-21'
+        code = "4-4-1-21"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_22(self):
         """
@@ -3083,11 +3693,16 @@ class NumericOperatorsTest(TestAttributesHelper):
         Git Branch: #138 Numeric operators attributes tests.
         Goal: The operator sqrt calculates the square root of a number and check their attributes.
         """
-        code = '4-4-1-22'
+        code = "4-4-1-22"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class ComparisonOperatorsTest(TestAttributesHelper):
@@ -3095,7 +3710,7 @@ class ComparisonOperatorsTest(TestAttributesHelper):
     Group 5
     """
 
-    classTest = 'test_attributes.ComparisonOperatorsTest'
+    classTest = "test_attributes.ComparisonOperatorsTest"
 
     def test_1(self):
         """
@@ -3114,11 +3729,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator returns TRUE if the left is equal to right,
         FALSE otherwise and check their attributes.
         """
-        code = '5-4-1-1'
+        code = "5-4-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -3137,11 +3757,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator returns FALSE if the left is equal to right, TRUE
         otherwise and check their attributes.
         """
-        code = '5-4-1-2'
+        code = "5-4-1-2"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -3160,11 +3785,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator > returns TRUE if left is greater than right,
         FALSE otherwise and check their attributes.
         """
-        code = '5-4-1-3'
+        code = "5-4-1-3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -3183,11 +3813,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator >= returns TRUE if left is greater than or equal to
         right, FALSE otherwise and check their attributes.
         """
-        code = '5-4-1-4'
+        code = "5-4-1-4"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -3206,11 +3841,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator < returns TRUE if left is smaller than right, FALSE
         otherwise and check their attributes.
         """
-        code = '5-4-1-5'
+        code = "5-4-1-5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -3229,11 +3869,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator <= returns TRUE if left is smaller than or equal to
         right, FALSE otherwise and check their attributes.
         """
-        code = '5-4-1-6'
+        code = "5-4-1-6"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -3256,11 +3901,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator returns TRUE if op is greater than or equal
         to from and lower than or equal to to and check their attributes.
         """
-        code = '5-4-1-7'
+        code = "5-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -3284,11 +3934,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The in operator returns TRUE if op belongs to the
         collection, FALSE otherwise and check their attributes.
         """
-        code = '5-4-1-8'
+        code = "5-4-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     # BUG
     def test_9(self):
@@ -3313,11 +3968,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The not_in operator returns FALSE if op belongs to the
         collection, TRUE otherwise and check their attributes.
         """
-        code = '5-4-1-9'
+        code = "5-4-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -3335,11 +3995,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Goal: The operator returns TRUE if the value of the operand is NULL,
         FALSE otherwise. and check their attributes.
         """
-        code = '5-4-1-10'
+        code = "5-4-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -3367,11 +4032,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         which are in op1 also exist in op2 and check their attributes. If the
         retain parameter is omitted, the default is all.
         """
-        code = '5-4-1-11'
+        code = "5-4-1-11"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -3397,11 +4067,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         of op1 and op2 and checks if the combinations of values of these Identifiers
         which are in op1 also exist in op2 and check their attributes.
         """
-        code = '5-4-1-12'
+        code = "5-4-1-12"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -3427,11 +4102,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         of op1 and op2 and checks if the combinations of values of these Identifiers
         which are in op1 also exist in op2 and check their attributes.
         """
-        code = '5-4-1-13'
+        code = "5-4-1-13"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -3451,10 +4131,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-14'
+        code = "5-4-1-14"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_15(self):
         """
@@ -3474,10 +4156,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-15'
+        code = "5-4-1-15"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_16(self):
         """
@@ -3497,10 +4181,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-16'
+        code = "5-4-1-16"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_17(self):
         """
@@ -3520,10 +4206,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         right, FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-17'
+        code = "5-4-1-17"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_18(self):
         """
@@ -3543,10 +4231,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-18'
+        code = "5-4-1-18"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_19(self):
         """
@@ -3566,10 +4256,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         right, FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-19'
+        code = "5-4-1-19"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_20(self):
         """
@@ -3593,10 +4285,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         to from and lower than or equal to to and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-20'
+        code = "5-4-1-20"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_21(self):
         """
@@ -3621,10 +4315,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         collection, FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-21'
+        code = "5-4-1-21"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_22(self):
         """
@@ -3649,10 +4345,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         collection, TRUE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-22'
+        code = "5-4-1-22"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_23(self):
         """
@@ -3671,10 +4369,12 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         FALSE otherwise. and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-23'
+        code = "5-4-1-23"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_24(self):
         """
@@ -3703,11 +4403,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         retain parameter is omitted, the default is all.
         Note: All measures are attributes.
         """
-        code = '5-4-1-24'
+        code = "5-4-1-24"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_25(self):
         """
@@ -3734,11 +4439,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         which are in op1 also exist in op2 and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-25'
+        code = "5-4-1-25"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_26(self):
         """
@@ -3765,11 +4475,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         which are in op1 also exist in op2 and check their attributes.
         Note: All measures are attributes.
         """
-        code = '5-4-1-26'
+        code = "5-4-1-26"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_27(self):
         """
@@ -3778,11 +4493,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Status: OK
         Expression: DS_r := DS_1 <= DS_2
         """
-        code = '5-4-1-27'
+        code = "5-4-1-27"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_28(self):
         """
@@ -3791,11 +4511,16 @@ class ComparisonOperatorsTest(TestAttributesHelper):
         Status: OK
         Expression: DS_r := DS_1[calc Me_3 := Me_1 = Me_2];
         """
-        code = '5-4-1-28'
+        code = "5-4-1-28"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class BooleanOperatorsTest(TestAttributesHelper):
@@ -3803,7 +4528,7 @@ class BooleanOperatorsTest(TestAttributesHelper):
     Group 6
     """
 
-    classTest = 'test_attributes.BooleanOperatorsTest'
+    classTest = "test_attributes.BooleanOperatorsTest"
 
     def test_1(self):
         """
@@ -3822,11 +4547,16 @@ class BooleanOperatorsTest(TestAttributesHelper):
         Goal: The and operator returns TRUE if both operands are TRUE,
         otherwise FALSE and check their attributes.
         """
-        code = '6-4-1-1'
+        code = "6-4-1-1"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -3846,10 +4576,12 @@ class BooleanOperatorsTest(TestAttributesHelper):
         otherwise FALSE and check their attributes.
         Note: All measures are attributes.
         """
-        code = '6-4-1-2'
+        code = "6-4-1-2"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_3(self):
         """
@@ -3868,11 +4600,16 @@ class BooleanOperatorsTest(TestAttributesHelper):
         Goal: The or operator returns TRUE if at least one of the operands
         is TRUE, otherwise FALSE and check their attributes.
         """
-        code = '6-4-1-3'
+        code = "6-4-1-3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -3892,10 +4629,12 @@ class BooleanOperatorsTest(TestAttributesHelper):
         is TRUE, otherwise FALSE and check their attributes.
         Note: All measures are attributes.
         """
-        code = '6-4-1-4'
+        code = "6-4-1-4"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_5(self):
         """
@@ -3914,11 +4653,16 @@ class BooleanOperatorsTest(TestAttributesHelper):
         Goal: The xor operator returns TRUE if only one of the operand
         is TRUE (but not both), FALSE otherwise and check their attributes.
         """
-        code = '6-4-1-5'
+        code = "6-4-1-5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -3938,10 +4682,12 @@ class BooleanOperatorsTest(TestAttributesHelper):
         is TRUE (but not both), FALSE otherwise and check their attributes.
         Note: All measures are attributes.
         """
-        code = '6-4-1-6'
+        code = "6-4-1-6"
         number_inputs = 2
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
         """
@@ -3957,11 +4703,16 @@ class BooleanOperatorsTest(TestAttributesHelper):
         Goal: The not operator returns TRUE if op is FALSE, otherwise TRUE and
         check their attributes.
         """
-        code = '6-4-1-7'
+        code = "6-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -3978,10 +4729,12 @@ class BooleanOperatorsTest(TestAttributesHelper):
         check their attributes.
         Note: All measures are attributes.
         """
-        code = '6-4-1-8'
+        code = "6-4-1-8"
         number_inputs = 1
         message = "1-1-1-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class TimeOperatorsTest(TestAttributesHelper):
@@ -3989,7 +4742,7 @@ class TimeOperatorsTest(TestAttributesHelper):
     Group 7
     """
 
-    classTest = 'test_attributes.TimeOperatorsTest'
+    classTest = "test_attributes.TimeOperatorsTest"
 
     pass
 
@@ -3999,7 +4752,7 @@ class SetOperatorsTest(TestAttributesHelper):
     Group 8
     """
 
-    classTest = 'test_attributes.SetOperatorsTest'
+    classTest = "test_attributes.SetOperatorsTest"
 
     def test_1(self):
         """
@@ -4020,11 +4773,16 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The union operator implements the union of functions
         (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-1'
+        code = "8-4-1-1"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -4045,11 +4803,16 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The union operator implements the union of functions
         (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-2'
+        code = "8-4-1-2"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -4070,11 +4833,16 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The union operator implements the union of functions
         (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-3'
+        code = "8-4-1-3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -4095,11 +4863,13 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The intersect operator implements the intersection of
         functions (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-4'
+        code = "8-4-1-4"
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        message = "[At_1,At_2] not in index"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_5(self):
         """
@@ -4120,11 +4890,16 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The intersect operator implements the intersection of
         functions (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-5'
+        code = "8-4-1-5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -4145,11 +4920,13 @@ class SetOperatorsTest(TestAttributesHelper):
         Goal: The intersect operator implements the intersection of
         functions (i.e., Data Sets) and check their attributes.
         """
-        code = '8-4-1-6'
+        code = "8-4-1-6"
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        message = "[At_1,At_2] not in index"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
         """
@@ -4174,11 +4951,13 @@ class SetOperatorsTest(TestAttributesHelper):
         belonging to the operand sets, the minuend and the subtrahend,
         respectively and check their attributes.
         """
-        code = '8-4-1-7'
+        code = "8-4-1-7"
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        message = "[At_1,At_2] not in index"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_8(self):
         """
@@ -4203,11 +4982,16 @@ class SetOperatorsTest(TestAttributesHelper):
         belonging to the operand sets, the minuend and the subtrahend,
         respectively and check their attributes.
         """
-        code = '8-4-1-8'
+        code = "8-4-1-8"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -4231,11 +5015,13 @@ class SetOperatorsTest(TestAttributesHelper):
         functions (i.e. Data Sets), interpreting the Data Points of the input
         Data Sets as the elements in the operand Sets and check their attributes.
         """
-        code = '8-4-1-9'
+        code = "8-4-1-9"
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        message = "[At_1,At_2] not in index"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_10(self):
         """
@@ -4259,11 +5045,16 @@ class SetOperatorsTest(TestAttributesHelper):
         functions (i.e. Data Sets), interpreting the Data Points of the input
         Data Sets as the elements in the operand Sets and check their attributes.
         """
-        code = '8-4-1-10'
+        code = "8-4-1-10"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class ConditionalOperatorsTest(TestAttributesHelper):
@@ -4271,7 +5062,7 @@ class ConditionalOperatorsTest(TestAttributesHelper):
     Group 12
     """
 
-    classTest = 'test_attributes.ConditionalOperatorsTest'
+    classTest = "test_attributes.ConditionalOperatorsTest"
 
     def test_1(self):
         """
@@ -4290,11 +5081,16 @@ class ConditionalOperatorsTest(TestAttributesHelper):
         Goal: The if operator returns thenOperand if condition evaluates to true,
         elseOperand otherwise and check their attributes.
         """
-        code = '12-4-1-1'
+        code = "12-4-1-1"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -4313,11 +5109,16 @@ class ConditionalOperatorsTest(TestAttributesHelper):
         Goal: The if operator returns thenOperand if condition evaluates to true,
         elseOperand otherwise.
         """
-        code = '12-4-1-2'
+        code = "12-4-1-2"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -4338,11 +5139,16 @@ class ConditionalOperatorsTest(TestAttributesHelper):
         from op1 is null, otherwise it returns the value from op1 and check
         their attributes.
         """
-        code = '12-4-1-3'
+        code = "12-4-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -4363,11 +5169,16 @@ class ConditionalOperatorsTest(TestAttributesHelper):
         from op1 is null, otherwise it returns the value from op1 and check
         their attributes.
         """
-        code = '12-4-1-4'
+        code = "12-4-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class ClauseOperatorsTest(TestAttributesHelper):
@@ -4375,7 +5186,7 @@ class ClauseOperatorsTest(TestAttributesHelper):
     Group 13
     """
 
-    classTest = 'test_attributes.ClauseOperatorsTest'
+    classTest = "test_attributes.ClauseOperatorsTest"
 
     def test_1(self):
         """
@@ -4401,11 +5212,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         for which filterCondition condition evaluates to FALSE or NULL) and check
         their attributes.
         """
-        code = '13-4-1-1'
+        code = "13-4-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -4431,11 +5247,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         for which filterCondition condition evaluates to FALSE or NULL) and check
         their attributes.
         """
-        code = '13-4-1-2'
+        code = "13-4-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -4461,11 +5282,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         be used also to change the role of a Component when possible and check
         their attributes.
         """
-        code = '13-4-1-3'
+        code = "13-4-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -4491,11 +5317,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         be used also to change the role of a Component when possible and check
         their attributes.
         """
-        code = '13-4-1-4'
+        code = "13-4-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -4521,11 +5352,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         be used also to change the role of a Component when possible and check
         their attributes.
         """
-        code = '13-4-1-5'
+        code = "13-4-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -4548,11 +5384,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         Component level. Each Component is calculated through an independent
         sub-expression and check their attributes.
         """
-        code = '13-4-1-6'
+        code = "13-4-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -4574,11 +5415,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         Component level. Each Component is calculated through an independent
         sub-expression and check their attributes.
         """
-        code = '13-4-1-7'
+        code = "13-4-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -4603,11 +5449,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         (Measures and Attributes) and maintains the independent Components (Identifiers)
         unchanged and check their attributes.
         """
-        code = '13-4-1-8'
+        code = "13-4-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -4632,11 +5483,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         (Measures and Attributes) and maintains the independent Components (Identifiers)
         unchanged and check their attributes.
         """
-        code = '13-4-1-9'
+        code = "13-4-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -4661,11 +5517,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         (Measures and Attributes) and maintains the independent Components (Identifiers)
         unchanged and check their attributes.
         """
-        code = '13-4-1-10'
+        code = "13-4-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -4689,11 +5550,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         and maintains all the other Components of the Data Set and check their
         attributes.
         """
-        code = '13-4-1-11'
+        code = "13-4-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -4717,11 +5583,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         and maintains all the other Components of the Data Set and check their
         attributes.
         """
-        code = '13-4-1-12'
+        code = "13-4-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     # BUG
     def test_13(self):
@@ -4747,11 +5618,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         and maintains all the other Components of the Data Set and check their
         attributes.
         """
-        code = '13-4-1-13'
+        code = "13-4-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -4775,11 +5651,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         after renaming the specified Components, must have unique names of all
         its Components and check their attributes.
         """
-        code = '13-4-1-14'
+        code = "13-4-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -4803,11 +5684,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         after renaming the specified Components, must have unique names of all
         its Components and check their attributes.
         """
-        code = '13-4-1-15'
+        code = "13-4-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -4831,11 +5717,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         after renaming the specified Components, must have unique names of all
         its Components and check their attributes.
         """
-        code = '13-4-1-16'
+        code = "13-4-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     # TODO: Uncomment when Pivot is redefined
     # def test_17(self):
@@ -4876,11 +5767,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         operand Data Set into several Data Points of the result Data set and
         check their attributes.
         """
-        code = '13-4-1-18'
+        code = "13-4-1-18"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -4897,11 +5793,16 @@ class ClauseOperatorsTest(TestAttributesHelper):
         Goal: The operator returns a Data Set in a subspace of the one of
         the input Dataset and check their attributes.
         """
-        code = '13-4-1-19'
+        code = "13-4-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -4918,8 +5819,13 @@ class ClauseOperatorsTest(TestAttributesHelper):
         Goal: The operator returns a Data Set in a subspace of the one of
         the input Dataset and check their attributes.
         """
-        code = '13-4-1-20'
+        code = "13-4-1-20"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )

@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class TestCalcHelper(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class TestCalcHelper(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class TestCalcHelper(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,22 +71,20 @@ class TestCalcHelper(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+        """ """
 
         text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -105,7 +100,7 @@ class CalcOperatorTest(TestCalcHelper):
     Group 1
     """
 
-    classTest = 'calc.CalcOperatorTest'
+    classTest = "calc.CalcOperatorTest"
 
     def test_1(self):
         """
@@ -121,11 +116,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 2  # 2
         message = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_2(self):
         """
@@ -141,11 +138,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_3(self):
         """
@@ -161,11 +160,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_4(self):
         """
@@ -182,11 +183,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_5(self):
         """
@@ -203,11 +206,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_6(self):
         """
@@ -223,11 +228,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 2
         message = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
         """
@@ -243,11 +250,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 2
         message = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_8(self):
         """
@@ -264,11 +273,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_287_1(self):
         """
@@ -285,11 +296,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #287-review-with-several-inputs.
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_287_1'
+        code = "GL_287_1"
         number_inputs = 3
         references_names = ["1", "2", "3", "4"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_1(self):
         """
@@ -301,11 +314,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_1'
+        code = "GL_300_1"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_2(self):
         """
@@ -317,11 +332,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_2'
+        code = "GL_300_2"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_3(self):
         """
@@ -333,11 +350,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_3'
+        code = "GL_300_3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_4(self):
         """
@@ -349,11 +368,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_4'
+        code = "GL_300_4"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_5(self):
         """
@@ -365,11 +386,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_5'
+        code = "GL_300_5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_6(self):
         """
@@ -381,11 +404,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_6'
+        code = "GL_300_6"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_7(self):
         """
@@ -397,11 +422,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_7'
+        code = "GL_300_7"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_8(self):
         """
@@ -413,11 +440,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_8'
+        code = "GL_300_8"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_9(self):
         """
@@ -429,11 +458,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_9'
+        code = "GL_300_9"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_10(self):
         """
@@ -445,11 +476,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_10'
+        code = "GL_300_10"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_300_11(self):
         """
@@ -461,11 +494,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_11'
+        code = "GL_300_11"
         number_inputs = 2
         message = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_300_12(self):
         """
@@ -477,11 +512,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_12'
+        code = "GL_300_12"
         number_inputs = 2
         message = "1-1-13-17"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_300_13(self):
         """
@@ -493,11 +530,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_13'
+        code = "GL_300_13"
         number_inputs = 2
         message = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_300_14(self):
         """
@@ -509,11 +548,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_14'
+        code = "GL_300_14"
         number_inputs = 2
         message = "1-3-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_300_15(self):
         """
@@ -525,11 +566,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_15'
+        code = "GL_300_15"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_16(self):
         """
@@ -541,11 +584,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-300-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_300_16'
+        code = "GL_300_16"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_310_1(self):
         """
@@ -557,11 +602,13 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-310-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_310_1'
+        code = "GL_310_1"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_310_2(self):
         """
@@ -573,8 +620,10 @@ class CalcOperatorTest(TestCalcHelper):
         Git Branch: #fix-310-review-join
         Goal: Check the performance of the calc operator.
         """
-        code = 'GL_310_2'
+        code = "GL_310_2"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )

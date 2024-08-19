@@ -22,30 +22,33 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
-                                      series_left: bool) -> Any:
+    def apply_operation_series_scalar(
+        cls, series: pd.Series, scalar: Any, series_left: bool
+    ) -> Any:
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar))
         else:
             return series.map(lambda x: cls.py_op(scalar, x))
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: Any) -> Any:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
         return cls.py_op(x, y)
 
+
 class And(Binary):
     op = AND
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        return None if (pd.isnull(x) and y is not False) or (
-                pd.isnull(y) and x is not False) else x and y
+        return (
+            None
+            if (pd.isnull(x) and y is not False) or (pd.isnull(y) and x is not False)
+            else x and y
+        )
 
     @classmethod
     def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
@@ -57,7 +60,9 @@ class Or(Binary):
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (pd.isnull(x) and (pd.isnull(y) or y == False)) or (pd.isnull(y) and x == False):
+        if (pd.isnull(x) and (pd.isnull(y) or y == False)) or (
+            pd.isnull(y) and x == False
+        ):  # noqa
             return None
         elif pd.isnull(x):
             return True

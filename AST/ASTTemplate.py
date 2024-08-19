@@ -6,14 +6,11 @@ Description
 -----------
 Template to start a new visitor for the AST.
 """
-from typing import Any
 
-import pandas as pd
+from typing import Any
 
 import AST
 from AST.ASTVisitor import NodeVisitor
-from Model import Dataset
-from Operators.Conditional import If
 
 
 class ASTTemplate(NodeVisitor):
@@ -209,7 +206,7 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
-        if node.value == '_':
+        if node.value == "_":
             return
         return node.value
 
@@ -278,9 +275,7 @@ class ASTTemplate(NodeVisitor):
                 self.visit(group)
 
     def visit_Analytic(self, node: AST.Analytic) -> None:
-        """
-
-        """
+        """ """
         if node.operand is not None:
             self.visit(node.operand)
 

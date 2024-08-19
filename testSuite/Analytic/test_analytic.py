@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class AnalyticHelper(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class AnalyticHelper(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class AnalyticHelper(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,18 +71,16 @@ class AnalyticHelper(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
-    def BaseTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+    def BaseTest(
+        cls, text: Any, code: str, number_inputs: int, references_names: List[str]
+    ):
+        """ """
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -96,10 +91,10 @@ class AnalyticHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+    def NewSemanticExceptionTest(
+        cls, text: Any, code: str, number_inputs: int, references_names: List[str]
+    ):
+        """ """
         assert True
 
 
@@ -108,7 +103,7 @@ class AnalyticOperatorsTest(AnalyticHelper):
     Group 1
     """
 
-    classTest = 'analytic.AnalyticOperatorsTest'
+    classTest = "analytic.AnalyticOperatorsTest"
 
     def test_1(self):
         """
@@ -126,11 +121,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the first_value operator.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -149,11 +149,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the last_value operator.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -172,11 +177,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the lag operator.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -195,11 +205,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the lead operator.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -219,11 +234,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the rank operator.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -240,11 +260,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the ratio_to_report operator.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -260,11 +285,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -280,11 +310,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -300,11 +335,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the avg operator.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -321,11 +361,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -341,11 +386,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the median operator.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -362,11 +412,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -384,11 +439,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the stddev_pop operator.
         """
-        code = '1-1-1-13'
+        code = "1-1-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -405,11 +465,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the stddev_samp operator.
         """
-        code = '1-1-1-14'
+        code = "1-1-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -426,11 +491,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the var_pop operator.
         """
-        code = '1-1-1-15'
+        code = "1-1-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -447,11 +517,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the var_samp operator.
         """
-        code = '1-1-1-16'
+        code = "1-1-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -470,11 +545,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the lag operator.
         """
-        code = '1-1-1-17'
+        code = "1-1-1-17"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_18(self):
         """
@@ -491,11 +571,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the first_value operator.
         """
-        code = '1-1-1-18'
+        code = "1-1-1-18"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -512,11 +597,16 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the first_value operator.
         """
-        code = '1-1-1-19'
+        code = "1-1-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
 
 class AnalyticOperatorsWithCalcTest(AnalyticHelper):
@@ -524,7 +614,7 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
     Group 2
     """
 
-    classTest = 'analytic.AnalyticOperatorsWithCalcTest'
+    classTest = "analytic.AnalyticOperatorsWithCalcTest"
 
     def test_1(self):
         """
@@ -546,11 +636,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the first_value with calc operator.
         """
-        code = '2-1-1-1'
+        code = "2-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -572,11 +667,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the last_value with calc operator.
         """
-        code = '2-1-1-2'
+        code = "2-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -598,11 +698,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the lag with calc operator.
         """
-        code = '2-1-1-3'
+        code = "2-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -623,11 +728,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the lead with calc operator.
         """
-        code = '2-1-1-4'
+        code = "2-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -648,11 +758,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the rank with calc operator.
         """
-        code = '2-1-1-5'
+        code = "2-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -671,11 +786,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the ratio_to_report with calc operator.
         """
-        code = '2-1-1-6'
+        code = "2-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -695,11 +815,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the max with calc operator.
         """
-        code = '2-1-1-7'
+        code = "2-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -719,11 +844,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the min with calc operator.
         """
-        code = '2-1-1-8'
+        code = "2-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -741,11 +871,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the avg with calc operator.
         """
-        code = '2-1-1-9'
+        code = "2-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -762,11 +897,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the count with calc operator.
         """
-        code = '2-1-1-10'
+        code = "2-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -785,11 +925,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the median with calc operator.
         """
-        code = '2-1-1-11'
+        code = "2-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -808,11 +953,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the sum with calc operator.
         """
-        code = '2-1-1-12'
+        code = "2-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -832,11 +982,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the stddev_pop with calc operator.
         """
-        code = '2-1-1-13'
+        code = "2-1-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -856,11 +1011,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the stddev_samp with calc operator.
         """
-        code = '2-1-1-14'
+        code = "2-1-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -879,11 +1039,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the var_pop with calc operator.
         """
-        code = '2-1-1-15'
+        code = "2-1-1-15"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -902,11 +1067,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the var_samp with calc operator.
         """
-        code = '2-1-1-16'
+        code = "2-1-1-16"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -922,11 +1092,13 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Git Branch: #246 test-for-analytic-operators.
         Goal: Check the performance of the rank with calc operator.
         """
-        code = '2-1-1-17'
+        code = "2-1-1-17"
         number_inputs = 1
         error_code = "1-1-3-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_18(self):
         """
@@ -940,11 +1112,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing with 2 preceding and unbounded
         """
-        code = '2-1-1-18'
+        code = "2-1-1-18"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -958,11 +1135,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing with 2 preceding and unbounded (same result as test_18)
         """
-        code = '2-1-1-19'
+        code = "2-1-1-19"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -976,11 +1158,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing with 2 following and unbounded
         """
-        code = '2-1-1-20'
+        code = "2-1-1-20"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_21(self):
         """
@@ -994,11 +1181,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing with 2 preceding and unbounded (same result as test_20)
         """
-        code = '2-1-1-21'
+        code = "2-1-1-21"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_22(self):
         """
@@ -1012,11 +1204,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing on range mode with 2 preceding and unbounded
         """
-        code = '2-1-1-22'
+        code = "2-1-1-22"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_23(self):
         """
@@ -1030,11 +1227,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window managing with 2 preceding and unbounded (same result as test_22)
         """
-        code = '2-1-1-23'
+        code = "2-1-1-23"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_24(self):
         """
@@ -1049,11 +1251,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Management of different types of results in Analytic (Series, Dataframe (with and without _y on result)
         """
-        code = '2-1-1-24'
+        code = "2-1-1-24"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_25(self):
         """
@@ -1066,11 +1273,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window creation with range and nan or float with decimals on column
         """
-        code = '2-1-1-25'
+        code = "2-1-1-25"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_26(self):
         """
@@ -1086,11 +1298,16 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window creation with range and nan or float with decimals on column
         """
-        code = '2-1-1-26'
+        code = "2-1-1-26"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_27(self):
         """
@@ -1103,8 +1320,13 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
         Description: Window creation with range and nan or float with decimals on column
         """
-        code = '2-1-1-27'
+        code = "2-1-1-27"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )

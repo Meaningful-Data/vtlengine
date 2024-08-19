@@ -21,15 +21,15 @@ from Model import Dataset, Component, ExternalRoutine, Role
 
 
 class __VTLSingleErrorListener(ErrorListener):
-    """
-
-    """
+    """ """
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise Exception(f"Not valid VTL Syntax \n "
-                        f"offendingSymbol: {offendingSymbol} \n "
-                        f"msg: {msg} \n "
-                        f"line: {line}")
+        raise Exception(
+            f"Not valid VTL Syntax \n "
+            f"offendingSymbol: {offendingSymbol} \n "
+            f"msg: {msg} \n "
+            f"line: {line}"
+        )
 
 
 def _lexer(text: str) -> CommonTokenStream:
@@ -62,8 +62,9 @@ def create_ast(text: str) -> AST:
     return visitor.visit(cst)
 
 
-def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[
-    str, Dataset]:
+def load_datasets(
+    dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]
+) -> Dict[str, Dataset]:
     """
     Load the datasets
     """
@@ -75,34 +76,44 @@ def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[
         dataStructures_path = Path(dataStructures_path)
 
     datasets = {}
-    dataStructures = [dataStructures_path / f for f in os.listdir(dataStructures_path)
-                      if f.lower().endswith('.json')]
+    dataStructures = [
+        dataStructures_path / f
+        for f in os.listdir(dataStructures_path)
+        if f.lower().endswith(".json")
+    ]
 
     for f in dataStructures:
-        with open(f, 'r') as file:
+        with open(f, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {component['name']: Component(name=component['name'],
-                                                       data_type=SCALAR_TYPES[component['type']],
-                                                       role=Role(component['role']),
-                                                       nullable=component['nullable'])
-                          for component in dataset_json['DataStructure']}
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
+            components = {
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
             dataPoint = dataPoints_path / f"{dataset_name}.csv"
             if not os.path.exists(dataPoint):
                 data = pd.DataFrame(columns=components.keys())
             else:
-                data = pd.read_csv(str(dataPoint), sep=',')
+                data = pd.read_csv(str(dataPoint), sep=",")
 
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
+            datasets[dataset_name] = Dataset(
+                name=dataset_name, components=components, data=data
+            )
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
 
 
-def load_external_routines(external_routines_path: Union[str, Path]) -> Optional[
-    Dict[str, ExternalRoutine]]:
+def load_external_routines(
+    external_routines_path: Union[str, Path]
+) -> Optional[Dict[str, ExternalRoutine]]:
     """
     Load the external routines
     """
@@ -114,7 +125,7 @@ def load_external_routines(external_routines_path: Union[str, Path]) -> Optional
 
     external_routines = {}
     for f in external_routines_path.iterdir():
-        with open(f, 'r') as file:
+        with open(f, "r") as file:
             sql_query = file.read()
         external_routines[f.stem] = ExternalRoutine.from_sql_query(f.stem, sql_query)
     return external_routines

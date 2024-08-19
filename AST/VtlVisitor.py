@@ -5,6 +5,7 @@ from AST.Grammar.parser import Parser
 
 # This class defines a complete generic visitor for a parse tree produced by Parser.
 
+
 class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#start.
@@ -106,7 +107,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#arithmeticExprOrConcatComp.
-    def visitArithmeticExprOrConcatComp(self, ctx: Parser.ArithmeticExprOrConcatCompContext):
+    def visitArithmeticExprOrConcatComp(
+        self, ctx: Parser.ArithmeticExprOrConcatCompContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#parenthesisExprComp.
@@ -126,19 +129,27 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#genericFunctionsComponents.
-    def visitGenericFunctionsComponents(self, ctx: Parser.GenericFunctionsComponentsContext):
+    def visitGenericFunctionsComponents(
+        self, ctx: Parser.GenericFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#stringFunctionsComponents.
-    def visitStringFunctionsComponents(self, ctx: Parser.StringFunctionsComponentsContext):
+    def visitStringFunctionsComponents(
+        self, ctx: Parser.StringFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#numericFunctionsComponents.
-    def visitNumericFunctionsComponents(self, ctx: Parser.NumericFunctionsComponentsContext):
+    def visitNumericFunctionsComponents(
+        self, ctx: Parser.NumericFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#comparisonFunctionsComponents.
-    def visitComparisonFunctionsComponents(self, ctx: Parser.ComparisonFunctionsComponentsContext):
+    def visitComparisonFunctionsComponents(
+        self, ctx: Parser.ComparisonFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#timeFunctionsComponents.
@@ -146,15 +157,21 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#conditionalFunctionsComponents.
-    def visitConditionalFunctionsComponents(self, ctx: Parser.ConditionalFunctionsComponentsContext):
+    def visitConditionalFunctionsComponents(
+        self, ctx: Parser.ConditionalFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#aggregateFunctionsComponents.
-    def visitAggregateFunctionsComponents(self, ctx: Parser.AggregateFunctionsComponentsContext):
+    def visitAggregateFunctionsComponents(
+        self, ctx: Parser.AggregateFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#analyticFunctionsComponents.
-    def visitAnalyticFunctionsComponents(self, ctx: Parser.AnalyticFunctionsComponentsContext):
+    def visitAnalyticFunctionsComponents(
+        self, ctx: Parser.AnalyticFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#joinFunctions.
@@ -302,7 +319,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unaryStringFunctionComponent.
-    def visitUnaryStringFunctionComponent(self, ctx: Parser.UnaryStringFunctionComponentContext):
+    def visitUnaryStringFunctionComponent(
+        self, ctx: Parser.UnaryStringFunctionComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#substrAtomComponent.
@@ -322,7 +341,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unaryWithOptionalNumeric.
-    def visitUnaryWithOptionalNumeric(self, ctx: Parser.UnaryWithOptionalNumericContext):
+    def visitUnaryWithOptionalNumeric(
+        self, ctx: Parser.UnaryWithOptionalNumericContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#binaryNumeric.
@@ -334,7 +355,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unaryWithOptionalNumericComponent.
-    def visitUnaryWithOptionalNumericComponent(self, ctx: Parser.UnaryWithOptionalNumericComponentContext):
+    def visitUnaryWithOptionalNumericComponent(
+        self, ctx: Parser.UnaryWithOptionalNumericComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#binaryNumericComponent.
@@ -362,7 +385,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#charsetMatchAtomComponent.
-    def visitCharsetMatchAtomComponent(self, ctx: Parser.CharsetMatchAtomComponentContext):
+    def visitCharsetMatchAtomComponent(
+        self, ctx: Parser.CharsetMatchAtomComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#isNullAtomComponent.
@@ -414,7 +439,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#currentDateAtomComponent.
-    def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
+    def visitCurrentDateAtomComponent(
+        self, ctx: Parser.CurrentDateAtomComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unionAtom.
@@ -478,7 +505,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#anSimpleFunctionComponent.
-    def visitAnSimpleFunctionComponent(self, ctx: Parser.AnSimpleFunctionComponentContext):
+    def visitAnSimpleFunctionComponent(
+        self, ctx: Parser.AnSimpleFunctionComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#lagOrLeadAnComponent.
@@ -490,7 +519,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#ratioToReportAnComponent.
-    def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
+    def visitRatioToReportAnComponent(
+        self, ctx: Parser.RatioToReportAnComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#renameClauseItem.
@@ -586,7 +617,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#outputParameterTypeComponent.
-    def visitOutputParameterTypeComponent(self, ctx: Parser.OutputParameterTypeComponentContext):
+    def visitOutputParameterTypeComponent(
+        self, ctx: Parser.OutputParameterTypeComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#inputParameterType.

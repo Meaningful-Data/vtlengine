@@ -13,9 +13,7 @@ from Model import Component, Role, Dataset
 
 
 class TestDataPointRuleset(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -24,35 +22,36 @@ class TestDataPointRuleset(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
             if not os.path.exists(dp_path):
                 data = pd.DataFrame(columns=list(components.keys()))
             else:
-                data = pd.read_csv(dp_path, sep=',')
+                data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -64,9 +63,7 @@ class TestDataPointRuleset(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -78,18 +75,14 @@ class TestDataPointRuleset(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+        """ """
 
         text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -100,7 +93,9 @@ class TestDataPointRuleset(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
 
@@ -109,7 +104,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
     Group 1
     """
 
-    classTest = 'rulesets.DatapointRulesetTests'
+    classTest = "rulesets.DatapointRulesetTests"
 
     def test_1(self):
         """
@@ -136,11 +131,13 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #291-tests-datapoint-rulesets-dpr.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
         """
@@ -167,11 +164,13 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #291-tests-datapoint-rulesets-dpr.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_3(self):
         """
@@ -198,229 +197,245 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #291-tests-datapoint-rulesets-dpr.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_4(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY, INT_ACC_ITEM,
-    FUNCTIONAL_CAT, INSTR_ASSET, OBS_VALUE) is
-    sign1c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G" then OBS_VALUE > 0 errorcode "sign1c" errorlevel 1;
-    sign2c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA" then OBS_VALUE > 0 errorcode "sign2c" errorlevel 1;
-    sign3c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S" then OBS_VALUE > 0 errorcode "sign3c" errorlevel 1;
-    sign4c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1" then OBS_VALUE > 0 errorcode "sign4c" errorlevel 2;
-    sign9: when INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL" then OBS_VALUE > 0 errorcode "sign9" errorlevel 3;
-    sign10: when INT_ACC_ITEM = "D45" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F" then OBS_VALUE > 0 errorcode "sign10" errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY, INT_ACC_ITEM,
+        FUNCTIONAL_CAT, INSTR_ASSET, OBS_VALUE) is
+        sign1c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G" then OBS_VALUE > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA" then OBS_VALUE > 0 errorcode "sign2c" errorlevel 1;
+        sign3c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S" then OBS_VALUE > 0 errorcode "sign3c" errorlevel 1;
+        sign4c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1" then OBS_VALUE > 0 errorcode "sign4c" errorlevel 2;
+        sign9: when INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL" then OBS_VALUE > 0 errorcode "sign9" errorlevel 3;
+        sign10: when INT_ACC_ITEM = "D45" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F" then OBS_VALUE > 0 errorcode "sign10" errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation);
+        DS_r := check_datapoint (BOP, signValidation);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_5(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-    FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4;
-    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
-    sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
-    sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
-    sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
-    sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4;
+        sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
+        sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation all);
+        DS_r := check_datapoint (BOP, signValidation all);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_6(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-    FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-    sign1c: when AE = "C" and IAI = "G" then O > 0;
-    sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1;
-    sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c";
-    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c";
-    sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
-    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1;
+        sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c";
+        sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c";
+        sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
+        sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation all);
+        DS_r := check_datapoint (BOP, signValidation all);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_7(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-    FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-    sign1c: when if AE = "C" and IAI = "G" then false else true then O > 0 errorcode "sign1c" errorlevel 1;
-    sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1;
-    sign3c: when if AE = "C" and IAI = "S" then true else false then O > 0 errorcode "sign3c" errorlevel 1;
-    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
-    sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
-    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when if AE = "C" and IAI = "G" then false else true then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1;
+        sign3c: when if AE = "C" and IAI = "S" then true else false then O > 0 errorcode "sign3c" errorlevel 1;
+        sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
+        sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
+        sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation all);
+        DS_r := check_datapoint (BOP, signValidation all);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_8(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as ACCOUNTING_ENTRY,
-    INT_ACC_ITEM as INT_ACC_ITEM, FUNCTIONAL_CAT as FUNCTIONAL_CAT,INSTR_ASSET as INSTR_ASSET,
-    OBS_VALUE as OBS_VALUE) is
-    sign1c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G" then OBS_VALUE > 0 errorcode "sign1c" errorlevel 1;
-    sign2c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA" then OBS_VALUE > 0 errorcode "sign2c" errorlevel 1;
-    sign3c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S" then OBS_VALUE > 0 errorcode "sign3c" errorlevel 1;
-    sign4c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1" then OBS_VALUE > 0 errorcode "sign4c" errorlevel 2;
-    sign9: when INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL" then OBS_VALUE > 0 errorcode "sign9" errorlevel 3;
-    sign10: when INT_ACC_ITEM = "D45" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F" then OBS_VALUE > 0 errorcode "sign10" errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as ACCOUNTING_ENTRY,
+        INT_ACC_ITEM as INT_ACC_ITEM, FUNCTIONAL_CAT as FUNCTIONAL_CAT,INSTR_ASSET as INSTR_ASSET,
+        OBS_VALUE as OBS_VALUE) is
+        sign1c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G" then OBS_VALUE > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA" then OBS_VALUE > 0 errorcode "sign2c" errorlevel 1;
+        sign3c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S" then OBS_VALUE > 0 errorcode "sign3c" errorlevel 1;
+        sign4c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1" then OBS_VALUE > 0 errorcode "sign4c" errorlevel 2;
+        sign9: when INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL" then OBS_VALUE > 0 errorcode "sign9" errorlevel 3;
+        sign10: when INT_ACC_ITEM = "D45" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F" then OBS_VALUE > 0 errorcode "sign10" errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation all);
+        DS_r := check_datapoint (BOP, signValidation all);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_9(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-    FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-    sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
-    sign2c: when AE = "C" and IAI = "GA" then nvl (O,0) errorcode "sign2c" errorlevel 1;
-    sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
-    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
-    sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
-    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then nvl (O,0) errorcode "sign2c" errorlevel 1;
+        sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
+        sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
+        sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
+        sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation);
+        DS_r := check_datapoint (BOP, signValidation);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_10(self):
         """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
+            define datapoint ruleset
+            Dataset --> Dataset
+            Status: OK
 
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-    FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-    sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
-    sign2c: when AE = "C" and IAI = "GA" then nvl (O,0) errorcode "sign2c" errorlevel 1;
-    sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
-    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
-    sign9: when IAI = "D" and FC = "D" and IA = "S" then nvl (O,0) errorcode "sign9" errorlevel 3;
-    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
+        define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then nvl (O,0) errorcode "sign2c" errorlevel 1;
+        sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c" errorlevel 1;
+        sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c" errorlevel 2;
+        sign9: when IAI = "D" and FC = "D" and IA = "S" then nvl (O,0) errorcode "sign9" errorlevel 3;
+        sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorcode "sign10" errorlevel 4
 
-    end datapoint ruleset;
+        end datapoint ruleset;
 
-    DS_r := check_datapoint (BOP, signValidation);
+        DS_r := check_datapoint (BOP, signValidation);
 
-        Description: This operator defines a persistent Data Point Ruleset named
-                     rulesetName that can be used for validation purposes.
+            Description: This operator defines a persistent Data Point Ruleset named
+                         rulesetName that can be used for validation purposes.
 
-        Git Branch: #291-tests-datapoint-rulesets-dpr.
-        Goal: Check the result of datapoint rulesets.
+            Git Branch: #291-tests-datapoint-rulesets-dpr.
+            Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     # with value domains
     def test_11(self):
@@ -433,13 +448,15 @@ class DatapointRulesetTests(TestDataPointRuleset):
                      rulesetName that can be used for validation purposes.
 
         Git Branch: #144
-        Goal: 
+        Goal:
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     """
     - if variable rule in signature:
@@ -462,10 +479,12 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #144
         Goal: Has to be an exception.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-3")
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-10-3"
+        )
 
     # Value domain
     def test_13(self):
@@ -480,10 +499,12 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #144
         Goal: Has to be an exception because types of variable and vd are differents.
         """
-        code = '1-1-1-13'
+        code = "1-1-1-13"
         number_inputs = 1
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-5")
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-10-5"
+        )
 
     def test_14(self):
         """
@@ -497,7 +518,9 @@ class DatapointRulesetTests(TestDataPointRuleset):
         Git Branch: #144
         Goal: Has to be an exception.
         """
-        code = '1-1-1-14'
+        code = "1-1-1-14"
         number_inputs = 1
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-3")
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-10-3"
+        )

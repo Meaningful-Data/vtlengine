@@ -1,33 +1,32 @@
-from typing import Type
+from typing import Type, Optional, Any
 
 DTYPE_MAPPING = {
-    'String': 'string',
-    'Number': 'Float64',
-    'Integer': 'Int64',
-    'TimeInterval': 'string',
-    'Date': 'string',
-    'TimePeriod': 'string',
-    'Duration': 'string',
-    'Boolean': 'boolean',
+    "String": "string",
+    "Number": "Float64",
+    "Integer": "Int64",
+    "TimeInterval": "string",
+    "Date": "string",
+    "TimePeriod": "string",
+    "Duration": "string",
+    "Boolean": "boolean",
 }
 
 CAST_MAPPING = {
-    'String': str,
-    'Number': float,
-    'Integer': int,
-    'TimeInterval': str,
-    'Date': str,
-    'TimePeriod': str,
-    'Duration': str,
-    'Boolean': bool,
+    "String": str,
+    "Number": float,
+    "Integer": int,
+    "TimeInterval": str,
+    "Date": str,
+    "TimePeriod": str,
+    "Duration": str,
+    "Boolean": bool,
 }
 
 
 class ScalarType:
-    """
-    """
+    """ """
 
-    default = None
+    default: Optional[Any] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
@@ -51,7 +50,7 @@ class ScalarType:
         return cls in set_
 
     @classmethod
-    def promotion_changed_type(cls, promoted: Type['ScalarType']) -> bool:
+    def promotion_changed_type(cls, promoted: Type["ScalarType"]) -> bool:
         return not issubclass(cls, promoted)
 
     @classmethod
@@ -77,54 +76,52 @@ class ScalarType:
 
 
 class String(ScalarType):
-    """
+    """ """
 
-    """
     default = ""
 
 
 class Number(ScalarType):
-    """
-    """
+    """ """
 
     def __eq__(self, other):
-        return (self.__class__.__name__ == other.__class__.__name__ or
-                other.__class__.__name__ == Integer.__name__)
+        return (
+            self.__class__.__name__ == other.__class__.__name__
+            or other.__class__.__name__ == Integer.__name__
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
 
 class Integer(Number):
-    """
-    """
+    """ """
 
     def __eq__(self, other):
-        return (self.__class__.__name__ == other.__class__.__name__ or
-                other.__class__.__name__ == Number.__name__)
+        return (
+            self.__class__.__name__ == other.__class__.__name__
+            or other.__class__.__name__ == Number.__name__
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
 
 class TimeInterval(ScalarType):
-    """
+    """ """
 
-    """
     default = None
 
 
 class Date(TimeInterval):
-    """
+    """ """
 
-    """
     default = None
 
 
 class TimePeriod(TimeInterval):
-    """
+    """ """
 
-    """
     default = None
 
 
@@ -133,40 +130,51 @@ class Duration(ScalarType):
 
 
 class Boolean(ScalarType):
-    """
-    """
+    """ """
+
     default = None
 
+    def _cast_string(self, value: str):
+        if value.lower() == "true":
+            return True
+        elif value.lower() == "false":
+            return False
+        elif value.lower() == "1":
+            return True
+        elif value.lower() == "0":
+            return False
+        else:
+            return None
+
+    def _cast_int(self, value: int):
+        if value == 1:
+            return True
+        elif value == 0:
+            return False
+        else:
+            return None
+
+    def _cast_float(self, value: float):
+        if value == 1.0:
+            return True
+        elif value == 0.0:
+            return False
+        else:
+            return None
+
     def cast(self, value):
+
         if isinstance(value, str):
-            if value.lower() == "true":
-                return True
-            elif value.lower() == "false":
-                return False
-            elif value.lower() == "1":
-                return True
-            elif value.lower() == "0":
-                return False
-            else:
-                return None
+            return self._cast_string(value)
         if isinstance(value, int):
-            if value != 0:
-                return True
-            else:
-                return False
+            return self._cast_int(value)
         if isinstance(value, float):
-            if value != 0.0:
-                return True
-            else:
-                return False
-        if isinstance(value, bool):
-            return value
+            return self._cast_float(value)
         return value
 
 
 class Null(ScalarType):
-    """
-    """
+    """ """
 
     def is_null_type(self) -> bool:
         return True
@@ -178,18 +186,18 @@ class Null(ScalarType):
         return None
 
     def dtype(self):
-        return 'string'
+        return "string"
 
 
 SCALAR_TYPES = {
-    'String': String,
-    'Number': Number,
-    'Integer': Integer,
-    'Time': TimeInterval,
-    'Date': Date,
-    'Time_Period': TimePeriod,
-    'Duration': Duration,
-    'Boolean': Boolean,
+    "String": String,
+    "Number": Number,
+    "Integer": Integer,
+    "Time": TimeInterval,
+    "Date": Date,
+    "Time_Period": TimePeriod,
+    "Duration": Duration,
+    "Boolean": Boolean,
 }
 
 BASIC_TYPES = {
@@ -197,21 +205,21 @@ BASIC_TYPES = {
     int: Integer,
     float: Number,
     bool: Boolean,
-    type(None): Null
+    type(None): Null,
 }
 
 COMP_NAME_MAPPING = {
-    String: 'str_var',
-    Number: 'num_var',
-    Integer: 'int_var',
-    TimeInterval: 'time_var',
-    TimePeriod: 'time_period_var',
-    Date: 'date_var',
-    Duration: 'duration_var',
-    Boolean: 'bool_var'
+    String: "str_var",
+    Number: "num_var",
+    Integer: "int_var",
+    TimeInterval: "time_var",
+    TimePeriod: "time_period_var",
+    Date: "date_var",
+    Duration: "duration_var",
+    Boolean: "bool_var",
 }
 
-IMPLICIT_TYPE_PROMOTION_MAPPING = {
+IMPLICIT_TYPE_PROMOTION_MAPPING: Any = {
     String: {String},
     Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
@@ -220,15 +228,26 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
     TimePeriod: {String, TimeInterval, TimePeriod},
     Duration: {String, Duration},
     Boolean: {String, Boolean},
-    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
+    Null: {
+        String,
+        Number,
+        Integer,
+        TimeInterval,
+        Date,
+        TimePeriod,
+        Duration,
+        Boolean,
+        Null,
+    },
 }
 
 
-def binary_implicit_promotion(left_type: ScalarType,
-                              right_type: ScalarType,
-                              type_to_check: ScalarType = None,
-                              return_type: ScalarType = None
-                              ) -> ScalarType:
+def binary_implicit_promotion(
+    left_type: ScalarType,
+    right_type: ScalarType,
+    type_to_check: Optional[ScalarType] = None,
+    return_type: Optional[ScalarType] = None,
+) -> ScalarType:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -243,7 +262,7 @@ def binary_implicit_promotion(left_type: ScalarType,
             if return_type is not None:
                 return return_type
             if left_type.is_included(right_implicities):
-                if left_type.is_subtype(right_type): # For Integer and Number
+                if left_type.is_subtype(right_type):  # For Integer and Number
                     return right_type
                 elif right_type.is_subtype(left_type):
                     return left_type
@@ -253,8 +272,10 @@ def binary_implicit_promotion(left_type: ScalarType,
             return type_to_check
         raise Exception("Implicit cast not allowed")
 
-    if return_type and (left_type.is_included(
-            right_implicities) or right_type.is_included(left_implicities)):
+    if return_type and (
+        left_type.is_included(right_implicities)
+        or right_type.is_included(left_implicities)
+    ):
         return return_type
     if left_type.is_included(right_implicities):
         return left_type
@@ -265,8 +286,10 @@ def binary_implicit_promotion(left_type: ScalarType,
 
 
 def check_binary_implicit_promotion(
-        left: ScalarType, right: ScalarType,
-        type_to_check: ScalarType = None, return_type: ScalarType = None
+    left: ScalarType,
+    right: ScalarType,
+    type_to_check: ScalarType = None,
+    return_type: ScalarType = None,
 ) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -280,13 +303,17 @@ def check_binary_implicit_promotion(
     left_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[left]
     right_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[right]
     if type_to_check:
-        return type_to_check.is_included(set_=left_implicities.intersection(right_implicities))
+        return type_to_check.is_included(
+            set_=left_implicities.intersection(right_implicities)
+        )
 
     return left.is_included(right_implicities) or right.is_included(left_implicities)
 
 
 def unary_implicit_promotion(
-        operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
+    operand_type: ScalarType,
+    type_to_check: Optional[ScalarType] = None,
+    return_type: Optional[ScalarType] = None,
 ) -> ScalarType:
     """
     Validates the compatibility between the type of the operand and the operator
@@ -300,15 +327,19 @@ def unary_implicit_promotion(
         if not type_to_check.is_included(operand_implicities):
             raise Exception("Implicit cast not allowed")
 
-    if return_type:
+    if return_type is not None:
         return return_type
-    if type_to_check and not issubclass(operand_type, type_to_check):
+    if type_to_check is not None and not issubclass(
+        operand_type, type_to_check
+    ):  # type: ignore[arg-type]
         return type_to_check
     return operand_type
 
 
 def check_unary_implicit_promotion(
-        operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
+    operand_type: ScalarType,
+    type_to_check: ScalarType = None,
+    return_type: ScalarType = None,
 ) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator

@@ -28,7 +28,7 @@ class RoleSetter(Unary):
                 data_type=operand.data_type,
                 role=cls.role,
                 nullable=nullable,
-                data=None
+                data=None,
             )
         operand.role = cls.role
         return copy(operand)
@@ -37,7 +37,9 @@ class RoleSetter(Unary):
     def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
         if isinstance(operand, DataComponent):
             if not operand.nullable and any(operand.data.isnull()):
-                raise Exception(f"Found null values in {operand.name} with nullable=False")
+                raise Exception(
+                    f"Found null values in {operand.name} with nullable=False"
+                )
         result = cls.validate(operand)
         if isinstance(operand, Scalar):
             result.data = pd.Series([operand.value] * data_size)

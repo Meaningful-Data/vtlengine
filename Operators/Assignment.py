@@ -9,10 +9,12 @@ ALL_MODEL_TYPES = Union[DataComponent, Dataset]
 class Assignment(Binary):
 
     @classmethod
-    def validate(cls, left_operand: str, right_operand: ALL_MODEL_TYPES) -> ALL_MODEL_TYPES:
-        right_operand.name = left_operand
-        return right_operand
+    def validate(cls, left: str, right: ALL_MODEL_TYPES) -> ALL_MODEL_TYPES:
+        right.name = left
+        return right
 
     @classmethod
-    def evaluate(cls, left_operand: str, right_operand: ALL_MODEL_TYPES) -> ALL_MODEL_TYPES:
+    def evaluate(
+        cls, left_operand: str, right_operand: ALL_MODEL_TYPES
+    ) -> ALL_MODEL_TYPES:
         return cls.validate(left_operand, right_operand)

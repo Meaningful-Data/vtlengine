@@ -12,9 +12,7 @@ from Model import Component, Role, Dataset
 
 
 class TestAggregateHelper(TestCase):
-    """
-
-    """
+    """ """
 
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -23,32 +21,33 @@ class TestAggregateHelper(TestCase):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     @classmethod
     def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
+            data = pd.read_csv(dp_path, sep=",")
 
             return Dataset(name=dataset_name, components=components, data=data)
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
@@ -60,9 +59,7 @@ class TestAggregateHelper(TestCase):
 
     @classmethod
     def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
@@ -74,18 +71,20 @@ class TestAggregateHelper(TestCase):
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
-    def BaseTest(cls, text: Optional[str], code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+    def BaseTest(
+        cls,
+        text: Optional[str],
+        code: str,
+        number_inputs: int,
+        references_names: List[str],
+    ):
+        """ """
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -96,7 +95,9 @@ class TestAggregateHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(
+        cls, code: str, number_inputs: int, exception_code: str
+    ):
         assert True
 
 
@@ -105,7 +106,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
     Group 1
     """
 
-    classTest = 'aggregate.AggregateOperatorsTest'
+    classTest = "aggregate.AggregateOperatorsTest"
 
     def test_1(self):
         """
@@ -120,11 +121,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_2(self):
         """
@@ -139,11 +145,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_3(self):
         """
@@ -158,11 +169,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_4(self):
         """
@@ -177,11 +193,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_5(self):
         """
@@ -197,11 +218,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_6(self):
         """
@@ -216,11 +242,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_7(self):
         """
@@ -235,11 +266,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_8(self):
         """
@@ -254,11 +290,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_9(self):
         """
@@ -273,11 +314,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_10(self):
         """
@@ -291,11 +337,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_11(self):
         """
@@ -312,11 +363,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         Goal: Check the performance of the avg operator.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_12(self):
         """
@@ -331,11 +387,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the avg operator.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_13(self):
         """
@@ -349,11 +410,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-13'
+        code = "1-1-1-13"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_14(self):
         """
@@ -367,11 +433,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-14'
+        code = "1-1-1-14"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_15(self):
         """
@@ -386,11 +457,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-15'
+        code = "1-1-1-15"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_16(self):
         """
@@ -405,11 +481,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-16'
+        code = "1-1-1-16"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_17(self):
         """
@@ -424,11 +505,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-17'
+        code = "1-1-1-17"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_18(self):
         """
@@ -443,11 +529,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-18'
+        code = "1-1-1-18"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_19(self):
         """
@@ -462,11 +553,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-19'
+        code = "1-1-1-19"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_20(self):
         """
@@ -481,11 +577,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-20'
+        code = "1-1-1-20"
         number_inputs = 3
         message = "1-1-9-12"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_21(self):
         """
@@ -500,11 +598,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-21'
+        code = "1-1-1-21"
         number_inputs = 3
         message = "1-1-1-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_22(self):
         """
@@ -519,11 +619,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-22'
+        code = "1-1-1-22"
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_23(self):
         """
@@ -538,11 +643,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the if-then-else operator.
         """
-        code = '1-1-1-23'
+        code = "1-1-1-23"
         number_inputs = 3
         message = "1-1-1-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_25(self):
         """
@@ -556,11 +663,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-25'
+        code = "1-1-1-25"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_26(self):
         """
@@ -574,11 +686,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-26'
+        code = "1-1-1-26"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_27(self):
         """
@@ -594,11 +711,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-27'
+        code = "1-1-1-27"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_28(self):
         """
@@ -613,11 +735,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-28'
+        code = "1-1-1-28"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_29(self):
         """
@@ -635,11 +762,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-29'
+        code = "1-1-1-29"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_30(self):
         """
@@ -657,11 +789,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-30'
+        code = "1-1-1-30"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_31(self):
         """
@@ -679,11 +816,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-31'
+        code = "1-1-1-31"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_32(self):
         """
@@ -703,11 +845,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the avg operator.
         """
-        code = '1-1-1-32'
+        code = "1-1-1-32"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_33(self):
         """
@@ -723,11 +870,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the count operator.
         """
-        code = '1-1-1-33'
+        code = "1-1-1-33"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_34(self):
         """
@@ -746,11 +898,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max,sum,count operator.
         """
-        code = '1-1-1-34'
+        code = "1-1-1-34"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_35(self):
         """
@@ -765,11 +922,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-35'
+        code = "1-1-1-35"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_36(self):
         """
@@ -786,11 +948,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-36'
+        code = "1-1-1-36"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_37(self):
         """
@@ -806,11 +973,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the max operator.
         """
-        code = '1-1-1-37'
+        code = "1-1-1-37"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_38(self):
         """
@@ -826,11 +998,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min operator.
         """
-        code = '1-1-1-38'
+        code = "1-1-1-38"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_39(self):
         """
@@ -848,11 +1025,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-39'
+        code = "1-1-1-39"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_40(self):
         """
@@ -870,11 +1052,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the sum operator.
         """
-        code = '1-1-1-40'
+        code = "1-1-1-40"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_41(self):
         """
@@ -893,11 +1080,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max,sum,count operator.
         """
-        code = '1-1-1-41'
+        code = "1-1-1-41"
         number_inputs = 4
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_42(self):
         """
@@ -919,11 +1111,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max,sum,count,avg operator.
         """
-        code = '1-1-1-42'
+        code = "1-1-1-42"
         number_inputs = 5
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_43(self):
         """
@@ -938,11 +1135,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max,sum,count,avg operator.
         """
-        code = '1-1-1-43'
+        code = "1-1-1-43"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_44(self):
         """
@@ -959,11 +1161,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max,sum operator.
         """
-        code = '1-1-1-44'
+        code = "1-1-1-44"
         number_inputs = 2
         error_code = "1-3-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_45(self):
         """
@@ -980,11 +1184,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max operator.
         """
-        code = '1-1-1-45'
+        code = "1-1-1-45"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_46(self):
         """
@@ -1001,11 +1210,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max operator.
         """
-        code = '1-1-1-46'
+        code = "1-1-1-46"
         number_inputs = 2
         message = "1-3-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_47(self):
         """
@@ -1022,11 +1233,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max operator.
         """
-        code = '1-1-1-47'
+        code = "1-1-1-47"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_48(self):
         """
@@ -1042,11 +1258,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max operator.
         """
-        code = '1-1-1-48'
+        code = "1-1-1-48"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_49(self):
         """
@@ -1063,11 +1284,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #273 aggregate-operators.
         Goal: Check the performance of the min,max operator.
         """
-        code = '1-1-1-49'
+        code = "1-1-1-49"
         number_inputs = 2
         message = "1-3-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_315_1(self):
         """
@@ -1081,11 +1304,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_1'
+        code = "GL_315_1"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_2(self):
         """
@@ -1105,11 +1333,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_2'
+        code = "GL_315_2"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_3(self):
         """
@@ -1123,11 +1356,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_3'
+        code = "GL_315_3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_4(self):
         """
@@ -1141,11 +1379,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_4'
+        code = "GL_315_4"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_5(self):
         """
@@ -1159,11 +1402,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_5'
+        code = "GL_315_5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_6(self):
         """
@@ -1176,11 +1424,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_315_6'
+        code = "GL_315_6"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_7(self):
         """
@@ -1194,11 +1447,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #fix-378-count.
         Goal: Check the performance of the min,max,count operator.
         """
-        code = 'GL_315_7'
+        code = "GL_315_7"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_8(self):
         """
@@ -1212,11 +1470,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join.
         """
-        code = 'GL_315_8'
+        code = "GL_315_8"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_9(self):
         """
@@ -1229,11 +1492,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315.
         Goal: Check the performance of aggr inside join.
         """
-        code = 'GL_315_9'
+        code = "GL_315_9"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_10(self):
         """
@@ -1245,11 +1513,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         Git Branch: #315.
         """
-        code = 'GL_315_10'
+        code = "GL_315_10"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_11(self):
         """
@@ -1261,11 +1534,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         Git Branch: #315.
         """
-        code = 'GL_315_11'
+        code = "GL_315_11"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_315_12(self):
         """
@@ -1278,11 +1556,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #315
         Goal: Show case b1 ambiguity.
         """
-        code = 'GL_315_12'
+        code = "GL_315_12"
         number_inputs = 2
         message = "1-1-13-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_323_1(self):
         """
@@ -1295,11 +1575,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #325.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_323_1'
+        code = "GL_323_1"
         number_inputs = 1
         references_names = ["1", "2", "3", "4"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_411_1(self):
         """
@@ -1312,11 +1597,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #325.
         Goal: Check the performance of aggr inside join
         """
-        code = 'GL_411_1'
+        code = "GL_411_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_466_1(self):
         """
@@ -1329,11 +1619,16 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #466.
         Goal: aggr (count) with null values
         """
-        code = 'GL_466_1'
+        code = "GL_466_1"
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GL_466_2(self):
         """
@@ -1346,8 +1641,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #466.
         Goal: aggr (count) with null values
         """
-        code = 'GL_466_2'
+        code = "GL_466_2"
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )

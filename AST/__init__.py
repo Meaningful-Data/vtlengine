@@ -6,6 +6,7 @@ Description
 -----------
 Basic AST nodes.
 """
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -38,9 +39,7 @@ class AST:
         return f"<{name}({', '.join(out)})>"
 
     def toJSON(self):
-        base = {
-            'class_name': self.__class__.__name__
-        }
+        base = {"class_name": self.__class__.__name__}
         for k in self.__all_annotations().keys():
             v = self.__getattribute__(k)
             base[k] = v
@@ -74,6 +73,7 @@ class PersistentAssignment(Assignment):
     """
     PersistentAssignment: (left, op, right)
     """
+
     pass
 
 
@@ -84,6 +84,7 @@ class VarID(AST):
     The Var node is constructed out of ID token.
     Could be: DATASET or a COMPONENT.
     """
+
     value: Any
 
 
@@ -104,7 +105,8 @@ class UnaryOp(AST):
 class BinOp(AST):
     """
     BinOp: (left, op, right)
-    op types: "+", "-", "*", "/",MOD, MEMBERSHIP, PIVOT, UNPIVOT, LOG, POWER, CHARSET_MATCH, NVL, MOD
+    op types: "+", "-", "*", "/",MOD, MEMBERSHIP, PIVOT, UNPIVOT, LOG,
+    POWER, CHARSET_MATCH, NVL, MOD
     """
 
     left: AST
@@ -217,7 +219,7 @@ class Collection(AST):
     name: str
     type: str
     children: List[AST]
-    kind: str = 'Set'
+    kind: str = "Set"
 
 
 @dataclass
@@ -245,7 +247,7 @@ class OrderBy(AST):
     order: str
 
     def __post_init__(self):
-        if self.order not in ['asc', 'desc']:
+        if self.order not in ["asc", "desc"]:
             raise ValueError(f"Invalid order: {self.order}")
 
 
@@ -254,13 +256,14 @@ class Analytic(AST):
     """
     Analytic: (op, operand, partition_by, order_by, params)
 
-    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, FIRST_VALUE, LAST_VALUE, LAG,
-        LEAD, RATIO_TO_REPORT
+    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
+    FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
     partition_by: List of components.
     order_by: List of components + mode (ASC, DESC).
     params: Windowing clause (no need to validate them) or Scalar Item in LAG/LEAD.
     """
+
     op: str
     operand: Optional[AST]
     window: Optional[Windowing] = None
@@ -269,13 +272,18 @@ class Analytic(AST):
     order_by: Optional[List[OrderBy]] = None
 
     def __post_init__(self):
-        if self.window is None and self.op not in ['lag', 'lead', 'rank', 'ratio_to_report']:
+        if self.window is None and self.op not in [
+            "lag",
+            "lead",
+            "rank",
+            "ratio_to_report",
+        ]:
             raise ValueError("Windowing must be provided.")
 
         if self.partition_by is None and self.order_by is None:
             raise ValueError("Partition by or order by must be provided on Analytic.")
 
-        if self.op != 'rank' and self.operand is None:
+        if self.op != "rank" and self.operand is None:
             raise ValueError("Operand must be provided on Analytic.")
 
 
@@ -313,6 +321,7 @@ class Aggregation(AST):
 
     grouping types: 'group by', 'group except', 'group all'.
     """
+
     op: str
     operand: Optional[AST] = None
     grouping_op: Optional[str] = None
@@ -339,6 +348,7 @@ class If(AST):
     """
     If: (condition, thenOp, elseOp)
     """
+
     condition: AST
     thenOp: AST
     elseOp: AST
@@ -363,6 +373,7 @@ class ComponentType(AST):
     """
     ComponentType: (data_type, role)
     """
+
     name: str
     data_type: Optional[Type[ScalarType]] = None
     role: Optional[Role] = None
@@ -405,6 +416,7 @@ class Argument(AST):
     """
     Argument: (name, type_, default)
     """
+
     name: str
     type_: ScalarType
     default: Optional[AST]
@@ -428,6 +440,7 @@ class DefIdentifier(AST):
     """
     DefIdentifier: (value, kind)
     """
+
     value: str
     kind: str
 
@@ -437,6 +450,7 @@ class DPRIdentifier(AST):
     """
     DefIdentifier: (value, kind, alias)
     """
+
     value: str
     kind: str
     alias: Optional[str] = None
@@ -449,6 +463,7 @@ class HRBinOp(AST):
     HRBinOp: (left, op, right)
     op types: '+','-', '=', '>', '<', '>=', '<='.
     """
+
     left: DefIdentifier
     op: str
     right: DefIdentifier
@@ -531,4 +546,5 @@ class NoOp(AST):
     """
     NoOp: ()
     """
+
     pass

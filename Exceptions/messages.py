@@ -6,6 +6,9 @@ Description
 -----------
 All exceptions exposed by the Vtl engine.
 """
+
+# flake8: noqa
+
 centralised_messages = {
     # Input Validation errors
     "0-1-2-1": "Invalid json structure because additional properties have been supplied on file {filename}.",
@@ -27,7 +30,8 @@ centralised_messages = {
     "0-1-1-10": "{value} is not allowed as {type} in this scalardataset {name}",
     "0-1-1-11": "Wrong data in the file for this scalardataset {name}",
     #
-    "0-1-0-1": " Trying to redefine input datasets {dataset}",  # Semantic Error
+    "0-1-0-1": " Trying to redefine input datasets {dataset}",
+    # Semantic Error
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": "At op {op}. Unable to validate types.",
@@ -35,7 +39,8 @@ centralised_messages = {
     "1-1-1-3": "At op {op}: Invalid data type for Component {comp_name} and Scalar {scalar_name}.",
     "1-1-1-4": "At op {op}: Dataset {name} contains more than one measure.",
     "1-1-1-5": "At op {op}: Invalid data type {type} for Scalar {scalar_name}.",
-    "1-1-1-6": "At op {op}: Internal error: Not same parents.",  # TODO: Deprecated not in use, delete this.
+    "1-1-1-6": "At op {op}: Internal error: Not same parents.",
+    # TODO: Deprecated not in use, delete this.
     "1-1-1-7": "At op {op}: Invalid data type {type} for Component {name}.",
     "1-1-1-8": "At op {op}: Invalid Dataset {name}, no measures defined.",
     "1-1-1-9": "At op {op}: Invalid Dataset {name}, all measures must have the same type: {type}.",
@@ -52,7 +57,8 @@ centralised_messages = {
     "1-1-1-20": "At op {op}: Only applies to datasets, instead of this a Scalar was provided.",
     # General Interpreter errors
     "2-1-1-1": "At op {op}: Unable to evaluate.",
-    "2-1-1-2": "At op {op}: Dataset {name} is empty.", # TODO: Review this message, for unpivot for example we can't raise this error, because we can have a empty dataset
+    "2-1-1-2": "At op {op}: Dataset {name} is empty.",
+    # TODO: Review this message, for unpivot for example we can't raise this error, because we can have a empty dataset
     "2-1-1-3": "At op {op}: No rules have results.",
     # Aggregate errors
     "1-1-2-1": "At op {op}: No measures found to aggregate.",
@@ -77,11 +83,14 @@ centralised_messages = {
     "1-1-6-4": "At op {op}: Alias symbol cannot have the name of a component symbol: {symbol_name} - {comp_name}.",
     "1-1-6-5": "At op {op}: Scalar values are not allowed at sub operator, found {name}.",
     "1-1-6-6": "Membership is not allowed inside a clause, found {dataset_name}#{comp_name}.",
-    "1-1-6-7": "Cannot use component {comp_name} as it was generated in another calc expression.",  # all the components used in calccomp must belong to the operand dataset
-    "1-1-6-8": "Cannot use component {comp_name} for rename because is yet in the datastructure and can't be duplicated.",  # it is the same error that 1-1-8-1 AND similar but not the same 1-3-1
+    "1-1-6-7": "Cannot use component {comp_name} as it was generated in another calc expression.",
+    # all the components used in calccomp must belong to the operand dataset
+    "1-1-6-8": "Cannot use component {comp_name} for rename because is yet in the datastructure and can't be duplicated.",
+    # it is the same error that 1-1-8-1 AND similar but not the same 1-3-1
     "1-1-6-9": "You have from_componets {from_components} repeated",
     "1-1-6-10": "At op {op}: You can't use a measure {name}, try with an identifier.",
-    "1-1-6-11": "Ambiguity for this variable {comp_name} inside a {clause}, exists as scalardataset and component.", # it is the same as the one that appears in joins, but are differents kinds of failures
+    "1-1-6-11": "Ambiguity for this variable {comp_name} inside a {clause}, exists as scalardataset and component.",
+    # it is the same as the one that appears in joins, but are differents kinds of failures
     "1-1-6-12": "At op {op}: Not allowed to drop the last element.",
     "1-1-6-13": "At op {op}: Not allowed to overwrite an identifier: {comp_name}",
     "1-1-6-14": "At op {op}: Not allowed to create an identifier: {comp_name}",
@@ -120,15 +129,19 @@ centralised_messages = {
     "1-1-13-2": "At op {op}: Missing mandatory aliasing.",
     "1-1-13-3": "At op {op}: Join conflict with duplicated names for column {name} from original datasets.",
     "1-1-13-4": "At op {op}: Using clause, using={using_names}, does not define all the identifiers, identifiers= {identifiers_names} of non reference dataset {dataset}.",
-    "1-1-13-5": "At op {op}: Invalid subcase B1, All the datasets must share as identifiers the using ones.",  # not in use but we keep for later, in use 1-1-13-4
+    "1-1-13-5": "At op {op}: Invalid subcase B1, All the datasets must share as identifiers the using ones.",
+    # not in use but we keep for later, in use 1-1-13-4
     "1-1-13-6": "At op {op}: Invalid subcase B2, All the declared using components '{using_components}' must be present as components in the reference dataset '{reference}'.",
     "1-1-13-7": "At op {op}: Invalid subcase B2, All the non reference datasets must share as identifiers the using ones.",
     "1-1-13-8": "At op {op}: No available using clause.",
     "1-1-13-9": "At op {op}: Ambiguity for this variable {comp_name} inside a {clause}.",
     "1-1-13-10": "The join operator does not perform scalar/component operations.",
-    "1-1-13-11": "At op {op}: Invalid subcase A, {dataset_reference} should be a superset but {component} not found.",  # inner_join and left join
-    "1-1-13-12": "At op {op}: Invalid subcase A. There are different identifiers for the provided datasets",  # full_join
-    "1-1-13-13": "At op {op}: Invalid subcase A. There are not same number of identifiers for the provided datasets",  # full_join
+    "1-1-13-11": "At op {op}: Invalid subcase A, {dataset_reference} should be a superset but {component} not found.",
+    # inner_join and left join
+    "1-1-13-12": "At op {op}: Invalid subcase A. There are different identifiers for the provided datasets",
+    # full_join
+    "1-1-13-13": "At op {op}: Invalid subcase A. There are not same number of identifiers for the provided datasets",
+    # full_join
     "1-1-13-14": "Cannot perform a join over a Dataset Without Identifiers: {name}.",
     "1-1-13-15": "At op {op}: {comp_name} has to be a Measure for all the provided datasets inside the join",
     "1-1-13-16": "At op {op}: Invalid use, please review : {msg}.",
@@ -163,7 +176,8 @@ centralised_messages = {
     "1-1-19-4": "At op {op}: Invalid values {value_1} and {value_2}, periodIndTo parameter must be a larger duration value than periodIndFrom parameter.",
     "1-1-19-5": "At op {op}: periodIndTo parameter must be a larger duration value than the values to aggregate.",
     "1-1-19-6": "At op {op}: Time type used in the component {comp} is not supported.",
-    "1-1-19-7": "At op {op}: can be applied only on Data Sets (of time series) and returns a Data Set (of time series).",  #flow_to_stock, stock_to_flow
+    "1-1-19-7": "At op {op}: can be applied only on Data Sets (of time series) and returns a Data Set (of time series).",
+    # flow_to_stock, stock_to_flow
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo parameter must be a larger duration value than the values to aggregate.",
     # ----------- Interpreter Common ------
     "2-3-1": "No {type} {value} found.",
@@ -180,9 +194,12 @@ centralised_messages = {
     "1-3-3": "Overwriting a dataset/variable is not allowed, trying it with {varId_value}.",
     "1-3-4": "Cannot perform a rename with two equal values: {left_value} -> {right_value}.",
     "1-3-5": "{node_op} not found or not valid for {op_type}.",
-    "1-3-6": "Hierarchical ruleset {node_value} not previously defined.",  #1-3-19
-    "1-3-7": "Datapoint ruleset {node_value} not previously defined.",  #1-3-19
-    "1-3-8": "Defined Operator {node_value} not previously defined.",  # 0-1-2-5
+    "1-3-6": "Hierarchical ruleset {node_value} not previously defined.",
+    # 1-3-19
+    "1-3-7": "Datapoint ruleset {node_value} not previously defined.",
+    # 1-3-19
+    "1-3-8": "Defined Operator {node_value} not previously defined.",
+    # 0-1-2-5
     "1-3-9": "Not valid set declaration, found duplicates {duplicates}.",
     "1-3-10": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
     "1-3-11": "No Parameters {node_params} available for operation: {node_op}.",
