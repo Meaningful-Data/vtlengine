@@ -87,7 +87,7 @@ class In(Binary):
     def apply_operation_two_series(cls,
                                    left_series: Any,
                                    right_series: list) -> Any:
-        return left_series.map(lambda x: str(x) in right_series, na_action='ignore')
+        return left_series.map(lambda x: x in right_series, na_action='ignore')
 
     @classmethod
     def py_op(cls, x, y):

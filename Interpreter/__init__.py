@@ -341,6 +341,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise Exception("A set must not contain duplicates")
             return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
         elif node.kind == 'ValueDomain':
+            if self.value_domains is None:
+                raise Exception(f"No Value Domains have been loaded, expected {node.name}.")
             if node.name not in self.value_domains:
                 raise Exception(f"Value Domain {node.name} not found")
             vd = self.value_domains[node.name]
