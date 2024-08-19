@@ -1,5 +1,7 @@
 from typing import Type
 
+import pandas as pd
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'Float64',
@@ -70,7 +72,7 @@ class ScalarType:
 
     @classmethod
     def cast(cls, value):
-        if value is None:
+        if pd.isnull(value):
             return None
         return CAST_MAPPING[cls.__name__](value)
 
@@ -143,7 +145,7 @@ class Boolean(ScalarType):
     default = None
 
     def cast(self, value):
-        if value is None:
+        if pd.isnull(value):
             return None
         if isinstance(value, str):
             if value.lower() == "true":
