@@ -1267,8 +1267,6 @@ class ClauseOperatorsTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        raise NotImplementedError("Cast is not implemented")
-
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
@@ -1281,8 +1279,6 @@ class ClauseOperatorsTest(AdditionalHelper):
         code = '13-4'
         number_inputs = 1
         references_names = ["DS_r"]
-
-        raise NotImplementedError("Cast is not implemented")
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 

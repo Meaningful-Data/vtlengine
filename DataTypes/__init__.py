@@ -70,6 +70,8 @@ class ScalarType:
 
     @classmethod
     def cast(cls, value):
+        if value is None:
+            return None
         return CAST_MAPPING[cls.__name__](value)
 
     @classmethod
@@ -141,6 +143,8 @@ class Boolean(ScalarType):
     default = None
 
     def cast(self, value):
+        if value is None:
+            return None
         if isinstance(value, str):
             if value.lower() == "true":
                 return True

@@ -24,6 +24,11 @@ class Unary(Operator.Unary):
         x = "" if pd.isnull(x) else str(x)
         return cls.py_op(x)
 
+    @classmethod
+    def apply_operation_component(cls, series: Any) -> Any:
+        """Applies the operation to a component"""
+        return series.map(lambda x: cls.py_op(str(x)), na_action='ignore')
+
 
 class Length(Unary):
     op = LEN
