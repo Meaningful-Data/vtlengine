@@ -570,7 +570,7 @@ class Unary(Operator):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(cls.op_func, na_action='ignore')
+        return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
     def validate(cls, operand: ALL_MODEL_DATA_TYPES):
