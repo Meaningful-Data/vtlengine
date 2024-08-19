@@ -100,8 +100,8 @@ class NotIn(Binary):
     @classmethod
     def apply_operation_two_series(cls,
                                    left_series: Any,
-                                   right_series: Any) -> Any:
-        return ~left_series.isin(right_series)
+                                   right_series: list) -> Any:
+        return not In.apply_operation_two_series(left_series, right_series)
 
     @classmethod
     def py_op(cls, x, y):
