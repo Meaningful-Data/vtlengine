@@ -96,7 +96,7 @@ class AnalyticHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
+    def NewSemanticExceptionTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str], exception_code: str):
         '''
 
         '''
@@ -926,7 +926,7 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         number_inputs = 1
         error_code = "1-1-3-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code, text=None, references_names=[])
 
     def test_18(self):
         """
