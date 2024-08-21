@@ -7,7 +7,14 @@ from Operators import Binary, Unary
 
 
 class Membership(Binary):
+    """Membership operator class.
 
+    It inherits from Binary class and has the following class methods:
+
+    Class methods:
+        Validate: Checks if str right operand is actually within the Dataset.
+        Evaluate: Checks validate operation and return the dataset to perform it.
+    """
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: str):
         if right_operand not in left_operand.components:
@@ -34,7 +41,13 @@ class Membership(Binary):
 
 
 class Alias(Binary):
+    """Alias operator class
+    It inherits from Binary class, and has the following class methods:
 
+    Class methods:
+        Validate: Ensures the name given in the right operand is different from the name of the Dataset.
+        Evaluate: Checks if the data between both operators are the same.
+    """
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: str):
         if left_operand.name == right_operand:
@@ -49,7 +62,14 @@ class Alias(Binary):
 
 
 class Eval(Unary):
+    """Eval operator class
+    It inherits from Unary class and has the following class methods
 
+    Class methods:
+        Validate: checks if the external routine name is the same as the operand name, which must be a Dataset.
+        Evaluate: Checks if the operand and the output is actually a Dataset.
+
+    """
     @staticmethod
     def _execute_query(query: str, dataset_name: str, data: pd.DataFrame) -> pd.DataFrame:
         locals()[dataset_name] = data

@@ -45,5 +45,5 @@ and the analytic function orders the measures and identifiers within the datafra
 
 .. autoclass:: RatioToReport
 
-Each operator has a TOKEN and a sql variable that specifies the operator and the type of data that is allowed to perform it.
+
 

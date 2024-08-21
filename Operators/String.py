@@ -17,10 +17,18 @@ import Operators as Operator
 
 
 class Unary(Operator.Unary):
+    """
+    Unary class.
+
+    Checks if the type of data is actually a string.
+    """
     type_to_check = String
 
 
 class Length(Unary):
+    """
+    `Length <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=92&zoom=100,72,133>`_ operator.
+    """
     op = LEN
     return_type = Integer
     py_op = len
@@ -39,36 +47,56 @@ class Length(Unary):
 
 
 class Lower(Unary):
+    """
+    `Lower <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=85&zoom=100,72,488>`_ operator.
+    """
     op = LCASE
     py_op = str.lower
     return_type = String
 
 
 class Upper(Unary):
+    """
+    `Upper <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=85&zoom=100,72,488>`_ operator.
+    """
     op = UCASE
     py_op = str.upper
     return_type = String
 
 
 class Trim(Unary):
+    """
+    `Trim <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=84&zoom=100,72,366>`_ operator.
+    """
     op = TRIM
     py_op = str.strip
     return_type = String
 
 
 class Ltrim(Unary):
+    """
+    `Ltrim <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=84&zoom=100,72,366>`_ operator.
+    """
     op = LTRIM
     py_op = str.lstrip
     return_type = String
 
 
 class Rtrim(Unary):
+    """
+    `Rtrim <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=84&zoom=100,72,366>`_ operator.
+    """
     op = RTRIM
     py_op = str.rstrip
     return_type = String
 
 
 class Binary(Operator.Binary):
+    """
+    Binary class.
+
+    Checks if the operation is actually a string.
+    """
     type_to_check = String
 
     @classmethod
@@ -79,11 +107,19 @@ class Binary(Operator.Binary):
 
 
 class Concatenate(Binary):
+    """
+    `Concatenate <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=83&zoom=100,72,142>`_ operator.
+    """
     op = CONCAT
     py_op = operator.concat
     return_type = String
 
+#TODO: Add docstrings to Parameterized class.
 class Parameterized(Unary):
+    """
+    Parametrized class.
+
+    """
 
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES, param1: Optional[Scalar] = None,
@@ -188,6 +224,14 @@ class Parameterized(Unary):
 
 
 class Substr(Parameterized):
+    """
+    `Substr <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=86&zoom=100,72,605>`_ operator.
+
+    Class methods:
+        py_op: Ensures the performing of the operator.
+        check_param: Checks the position, datatype, start of the operation and its length.
+
+    """
     op = SUBSTR
     return_type = String
 
@@ -228,6 +272,13 @@ class Substr(Parameterized):
 
 
 class Replace(Parameterized):
+    """
+    `Replace <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=88&zoom=100,72,414>`_ operator.
+
+    Class methods:
+        py_op: Ensures the performing of the operator.
+        check_param: Ensures replaced datatype to be strings.
+    """
     op = REPLACE
     return_type = String
 
@@ -251,6 +302,16 @@ class Replace(Parameterized):
 
 
 class Instr(Parameterized):
+    """
+    String pattern location (`instr <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=88&zoom=100,72,414>`_) operator.
+
+    Class methods:
+        Validate: Ensure data is not a Dataset or a Datacomponent, and returns the operand verified.
+        check_param: Checks the viability of the given integer to perform the operation.
+        Dataset evaluation: Evaluates the validated data and returns it.
+        .....
+
+    """
     op = INSTR
     return_type = Integer
 

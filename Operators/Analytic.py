@@ -24,9 +24,9 @@ from Model import Component, Dataset, Role
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
     """
-    Annotation class
+    Analytic class
 
-    Class that inheritance from Unary.
+    Class that inherits from Unary.
 
     Class methods:
         Validate: Validates the Dataset.
