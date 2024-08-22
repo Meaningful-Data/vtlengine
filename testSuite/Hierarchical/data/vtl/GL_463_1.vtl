@@ -1,0 +1,20 @@
+define hierarchical ruleset SUM_BIS_TOPIC ( valuedomain rule bis_topic ) is
+     KAAC = KBAC + KBXC;
+     KBEC = KBHC + KBNC;
+     KCBC = KCGC + KCKC + KMAC + KNAC + KOAC;
+     KCCC = KMNC + KNNC + KONC;
+     KCLC = KBXC + KCAC
+end hierarchical ruleset;
+/*******************************************************************************
+*       Module SUM_BIS_TOPIC
+*******************************************************************************/
+SUM_BIS_TOPIC.filtered_ds :=
+	BIS_MACRO
+		[filter FREQ = "M"]
+		[filter REF_AREA = "BE"]
+		[filter BIS_SUFFIX = "01"];
+BIS_DS <-
+	 hierarchy(
+		SUM_BIS_TOPIC.filtered_ds,
+		SUM_BIS_TOPIC
+		rule BIS_TOPIC);

@@ -1,0 +1,189 @@
+{
+    "datasets": [
+      {
+        "name": "BIS_MACRO",
+        "DataStructure": [
+          {
+            "name": "AGG_EQUN",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "AVAILABILITY",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "BIS_DOC_DATE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "BIS_SUFFIX",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "BIS_TOPIC",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "BIS_UNIT",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "BREAKS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "COLLECTION",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "COLLECTION_DETAIL",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "COMPILATION",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "COVERAGE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "DECIMALS",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "DOM_SER_IDS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "FREQ",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "METHOD_REF",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "NAT_TITLE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_COM",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_CONF",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_PRE_BREAK",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_VALUE",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "REF_AREA",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "REP_DELAY",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "SOURCE_REF",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "TIME_FORMAT",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "TIME_PERIOD",
+            "type": "Time_Period",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "TITLE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "TITLE_COMPL",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "UNIT_DETAIL",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "UNIT_MULT",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          }
+        ]
+      }
+    ]
+  }
