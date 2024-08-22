@@ -241,7 +241,8 @@ class InterpreterAnalyzer(ASTTemplate):
                              data=joined_result[measure_name],
                              data_type=result.components[
                                  measure_name].data_type,
-                             role=result.components[measure_name].role)
+                             role=result.components[measure_name].role,
+                             nullable=result.components[measure_name].nullable)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
