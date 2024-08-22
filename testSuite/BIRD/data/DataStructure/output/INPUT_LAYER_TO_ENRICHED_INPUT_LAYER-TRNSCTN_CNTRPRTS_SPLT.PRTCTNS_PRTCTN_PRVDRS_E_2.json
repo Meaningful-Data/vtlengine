@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "TRNSCTN_CNTRPRTS_SPLT.PRTCTNS_PRTCTN_PRVDRS_E_2",
+      "DataStructure": [
+        {
+          "name": "IS_PRMRY_PRTCTN_PRVDR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
