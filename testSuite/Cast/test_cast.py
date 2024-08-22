@@ -96,8 +96,20 @@ class CastHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
         assert True
+
+
+class CastExplicitWithoutMask(CastHelper):
+    """
+
+    """
+
+    classTest = 'Cast.CastExplicitWithoutMask'
+
+    def test_GL_461_1(self):
+        code = 'GL_461_1'
+        number_inputs = 1
+
+        error_code = "1-1-5-5"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
