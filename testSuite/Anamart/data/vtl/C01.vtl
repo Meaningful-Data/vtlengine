@@ -1,0 +1,5 @@
+/*This join is not allowed*/
+ANAMART_PRTCTN_JN := inner_join(INSTRMNT_PRTCTN_RCVD, 
+                            PRTCTN_RCVD 
+                            using OBSRVD_AGNT_ID, DT_RFRNC, CNTRCT_ID, INSTRMNT_ID, PRTCTN_ID, PRTCTN_PRVDR_ID
+                            keep PRTCTN_ALLCTD_VL, THRD_PRTY_PRRTY_CLMS);

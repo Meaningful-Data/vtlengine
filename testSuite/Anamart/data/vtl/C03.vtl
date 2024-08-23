@@ -1,0 +1,58 @@
+/*Working*/
+
+INSTRMNT_FCT_AGGR_KP := B15.ANCRDT_INSTRMNT_FCT[keep  
+                                           DV_ACCMLTD_CHNGS_FV_CR,
+                                           DV_ACCMLTD_IMPRMNT,
+                                           DV_ACCMLTD_WRTFFS,
+                                           DV_ACCRD_INTRST,
+                                           DV_ALLCTD_3PSPC_W_3PTPC,
+                                           DV_ALLCTD_3PSPC_W_PAV,
+                                           DV_ALLCTD_3PTPC_W_3PTPC,
+                                           DV_ALLCTD_3PTPC_W_PAV,
+                                           DV_ALLCTD_OPV_W_3PTPC_INSTRMNT,
+                                           DV_ALLCTD_OPV_W_PAV_INSTRMNT,
+                                           DV_ALLCTD_PV_W_3PTPC_INSTRMNT,
+                                           DV_ALLCTD_PV_W_PAV_INSTRMNT,
+                                           DV_ARRRS,
+                                           ANNLSD_AGRD_RT_W_ONA_CV,
+                                           DV_CMLTV_RCVRS_SNC_DFLT,
+                                           DV_CMMTMNT_INCPTN,
+                                           DV_CRRYNG_AMNT,
+                                           DV_OTSTNDNG_NMNL_AMNT,
+                                           DV_OFF_BLNC_SHT_AMNT,
+                                           DV_PRTCTN_ALLCTD_VL,
+                                           DV_PRVSNS_OFF_BLNC_SHT
+                                           ];
+                                           
+INSTRMNT_FCT_AGGR_P:= sum(INSTRMNT_FCT_AGGR_KP group except CRDTR_ID, DBTR_ID);
+INSTRMNT_FCT_AGGR := INSTRMNT_FCT_AGGR_P[rename
+                                           DV_ACCMLTD_CHNGS_FV_CR to ACCMLTD_CHNGS_FV_CR_INSTRMNT,
+                                           DV_ACCMLTD_IMPRMNT to ACCMLTD_IMPRMNT_INSTRMNT,
+                                           DV_ACCMLTD_WRTFFS to ACCMLTD_WRTFFS_INSTRMNT,
+                                           DV_ACCRD_INTRST to ACCRD_INTRST_INSTRMNT,
+                                           DV_ALLCTD_3PSPC_W_3PTPC to ALLCTD_3PSPC_W_3PTPC,
+                                           DV_ALLCTD_3PSPC_W_PAV to ALLCTD_3PSPC_W_PAV,
+                                           DV_ALLCTD_3PTPC_W_3PTPC to ALLCTD_3PTPC_W_3PTPC,
+                                           DV_ALLCTD_3PTPC_W_PAV to ALLCTD_3PTPC_W_PAV,
+                                           DV_ALLCTD_OPV_W_3PTPC_INSTRMNT to ALLCTD_OPV_W_3PTPC_INSTRMNT,
+                                           DV_ALLCTD_OPV_W_PAV_INSTRMNT to ALLCTD_OPV_W_PAV_INSTRMNT,
+                                           DV_ALLCTD_PV_W_3PTPC_INSTRMNT to ALLCTD_PV_W_3PTPC_INSTRMNT,
+                                           DV_ALLCTD_PV_W_PAV_INSTRMNT to ALLCTD_PV_W_PAV_INSTRMNT,
+                                           DV_ARRRS to ARRRS_INSTRMNT,
+                                           ANNLSD_AGRD_RT_W_ONA_CV to ANNLSD_AGRD_RT_W_AONA,
+                                           DV_CMLTV_RCVRS_SNC_DFLT to CMLTV_RCVRS_SNC_DFLT_INSTRMNT,
+                                           DV_CMMTMNT_INCPTN to CMMTMNT_INCPTN_INSTRMNT,
+                                           DV_CRRYNG_AMNT to CRRYNG_AMNT_INSTRMNT,
+                                           DV_OTSTNDNG_NMNL_AMNT to OTSTNDNG_NMNL_AMNT_INSTRMNT,
+                                           DV_OFF_BLNC_SHT_AMNT to OFF_BLNC_SHT_AMNT_INSTRMNT,
+                                           DV_PRTCTN_ALLCTD_VL to PRTCTN_ALLCTD_VL_INSTMRNT,
+                                           DV_PRVSNS_OFF_BLNC_SHT to PRVSNS_OFF_BLNC_SHT_INSTRMNT
+                                            ];
+
+
+PRTCTN_FCT_AGGR_FV := INSTRMNT[keep FV_CHNG_CR_BFR_PRCHS][rename FV_CHNG_CR_BFR_PRCHS to FV_CHNG_CR_BFR_PRCHS_INSTRMNT];
+
+
+ANAMART_PRTCTN_AGGR := inner_join(INSTRMNT_FCT_AGGR, PRTCTN_FCT_AGGR_FV);
+
+

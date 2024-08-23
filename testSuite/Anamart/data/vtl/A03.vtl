@@ -1,0 +1,26 @@
+/*Working*/
+
+/*1. Calculate the totals for performing and not performing*/
+DBTR_FCT := B15.ANCRDT_INSTRMNT_FCT
+            [keep DV_OTSTNDNG_NMNL_AMNT, CV_OTSTNDNG_NMNL_AMNT]
+            [rename DBTR_ID to ENTTY_RIAD_ID];
+
+DBTR_FCT_TTL  := sum(DBTR_FCT  group by DT_RFRNC, ENTTY_RIAD_ID);
+
+/*2. Calculate the totals for not performing*/
+DBTR_FCT_NN_PRFRMNG := B15.ANCRDT_INSTRMNT_FCT
+            [keep DV_OTSTNDNG_NMNL_AMNT, CV_OTSTNDNG_NMNL_AMNT, PRFRMNG_STTS]
+            [rename DBTR_ID to ENTTY_RIAD_ID][filter PRFRMNG_STTS="1"][drop PRFRMNG_STTS];
+
+DBTR_FCT_TTL_NN_PFRMNG := sum(DBTR_FCT_NN_PRFRMNG  group by DT_RFRNC, ENTTY_RIAD_ID);
+
+/*3. Joining the results (left join because of the debtos who do not have any non-performing loan*/
+DBTR_FCT_JN := left_join(DBTR_FCT_TTL as A, DBTR_FCT_TTL_NN_PFRMNG as B rename A#DV_OTSTNDNG_NMNL_AMNT to DV_TTL, A#CV_OTSTNDNG_NMNL_AMNT to CV_TTL, B#DV_OTSTNDNG_NMNL_AMNT to DV_NN_PRFRMNG, B#CV_OTSTNDNG_NMNL_AMNT to CV_NN_PRFRMNG);
+
+/*4. Calculate the new variables and substitue nulls with 0*/ 
+ANAMART_ENTTY_PRFRMNG_P := DBTR_FCT_JN[calc CV_NPL_RT := CV_NN_PRFRMNG/CV_TTL,
+                          DV_NPL_RT := DV_NN_PRFRMNG/DV_TTL,
+                          NPL_RT := DV_NN_PRFRMNG/DV_TTL
+                    ][drop CV_NN_PRFRMNG, CV_TTL, DV_NN_PRFRMNG, DV_TTL];
+                    
+ANAMART_ENTTY_PRFRMNG:=nvl(ANAMART_ENTTY_PRFRMNG_P,0);
