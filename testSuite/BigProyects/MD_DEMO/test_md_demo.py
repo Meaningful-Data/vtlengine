@@ -132,3 +132,23 @@ class DEMOHelper(TestCase):
                 external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
         return external_routines
 
+
+class DEMO(DEMOHelper):
+    """
+
+    """
+
+    classTest = 'md_demo.DEMO'
+
+    def test_DEMO1(self):
+        '''
+
+        '''
+        code = 'DEMO1'
+        number_inputs = 4
+        references_names = ['agg.DS2_tim', 'agg.DS1_tim', 'agg.val', 'agg.exRate', 'agg.DS1_conv', 'agg.DS1_enr',
+                            'agg.DS1_fin',
+                            'aggr.numDPCouYear', 'aggr.numYearCou', 'aggr.numCouYear', 'aggr.agg2', 'aggr.agg1',
+                            'val.valResult_nonFiltered']
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
