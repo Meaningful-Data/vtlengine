@@ -1,0 +1,9 @@
+define datapoint ruleset completenessInstrumentProtection(variable CD0060, 
+                                                                   PRTCTN_ALLCTD_VL, THRD_PRTY_PRRTY_CLMS) is
+    
+    CT0620: when not(CD0060) then not isnull(PRTCTN_ALLCTD_VL) errorcode "CT0620" errorlevel 2;
+    CT0630: when not(CD0060) then not isnull(THRD_PRTY_PRRTY_CLMS) errorcode "CT0630" errorlevel 2
+            
+end datapoint ruleset;
+
+

@@ -1,0 +1,18 @@
+define datapoint ruleset granularCmaProtection (variable PRTCTN_VL, TTL_PRTCTN_ALLCTD_VL, MX_THRD_PRTY_PRRTY_CLMS) is
+
+    IG0050: 
+        if 
+            isnull(PRTCTN_VL) or isnull(MX_THRD_PRTY_PRRTY_CLMS) or isnull(TTL_PRTCTN_ALLCTD_VL) then true
+        else
+            (PRTCTN_VL - MX_THRD_PRTY_PRRTY_CLMS) / TTL_PRTCTN_ALLCTD_VL >= 1 
+        errorcode "IG0050" errorlevel 1;
+    
+    IG0060: 
+        if
+            isnull(PRTCTN_VL) or isnull(MX_THRD_PRTY_PRRTY_CLMS) then true
+        else
+            PRTCTN_VL / MX_THRD_PRTY_PRRTY_CLMS > 1 
+        errorcode "IG0060" errorlevel 1
+
+
+end datapoint ruleset;

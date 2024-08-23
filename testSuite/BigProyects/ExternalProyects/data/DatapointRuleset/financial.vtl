@@ -1,0 +1,111 @@
+define datapoint ruleset financial (variable DT_NXT_INTRST_RT_RST, DT_RFRNC, DT_DFLT_STTS, DT_PST_D, ARRRS, DFLT_STTS, OFF_BLNC_SHT_AMNT, OTSTNDNG_NMNL_AMNT, TYP_SCRTSTN, ANNLSD_AGRD_RT, TRNSFRRD_AMNT, ACCRD_INTRST, NEVS_DT_PST_D) is
+
+    CN0210: 
+        if
+            isnull(DT_NXT_INTRST_RT_RST) or isnull(DT_RFRNC) then true
+        else
+            DT_NXT_INTRST_RT_RST >= DT_RFRNC 
+        errorcode "CN0210" errorlevel 1;
+    CN0240: 
+        if
+            isnull(DT_RFRNC) or isnull(DT_DFLT_STTS) then true
+        else
+            DT_RFRNC >= DT_DFLT_STTS 
+        errorcode "CN0240" errorlevel 2;
+    CN0250: 
+        if 
+            isnull(DT_RFRNC) or isnull(DT_PST_D) then true
+        else
+            DT_RFRNC >= DT_PST_D 
+        errorcode "CN0250" errorlevel 2;
+    CN0270a: 
+        when 
+            if isnull(ARRRS) then false else
+            not isnull(DT_PST_D) 
+        then 
+            ARRRS > 0 
+        errorcode "CN0270a" errorlevel 2;
+    CN0270b: 
+        when 
+            if NEVS_DT_PST_D in {"-5","-3", "-2"}  then false else
+            ARRRS > 0 
+        then 
+            not isnull(DT_PST_D) 
+        errorcode "CN0270b" errorlevel 2;
+    CN0280: 
+        when 
+            if isnull(ARRRS) then false else
+            DFLT_STTS in {"18", "20"} 
+        then 
+            ARRRS > 0 
+        errorcode "CN0280" errorlevel 2;
+    CN0847: 
+        when 
+            if isnull(TYP_SCRTSTN) then false else
+            OFF_BLNC_SHT_AMNT > 0 and OTSTNDNG_NMNL_AMNT = 0 
+        then 
+            TYP_SCRTSTN <> "1" 
+        errorcode "CN0847" errorlevel 2;
+    GCMA_TH_H_ANNLSD_AGRD_RT: 
+        if 
+            isnull(ANNLSD_AGRD_RT) then true
+        else
+            ANNLSD_AGRD_RT < 3 
+        errorcode "GCMA_TH_H_ANNLSD_AGRD_RT" errorlevel 4;
+    GCMA_TH_L_ANNLSD_AGRD_RT: 
+        if
+            isnull(ANNLSD_AGRD_RT) then true
+        else
+            ANNLSD_AGRD_RT > cast("-0.5", number) 
+        errorcode "GCMA_TH_L_ANNLSD_AGRD_RT" errorlevel 4;
+    /*GCMA_TH_H_DT_NXT_INTRST_RT_RST: DT_NXT_INTRST_RT_RST < 150 errorcode "GCMA_TH_H_DT_NXT_INTRST_RT_RST" errorlevel 4; Not implementable with VTL at the moment*/
+    GCMA_TH_L_DT_DFLT_STTS_INSTRMNT: 
+        if
+            isnull(DT_DFLT_STTS) then true
+        else
+            DT_DFLT_STTS > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_DFLT_STTS_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_TRNSFRRD_AMNT_INSTRMNT: 
+        if
+            isnull(TRNSFRRD_AMNT) then true 
+        else 
+            TRNSFRRD_AMNT < 1000000000 errorcode 
+        "GCMA_TH_H_TRNSFRRD_AMNT_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_ARRRS_INSTRMNT: 
+        if
+            isnull(ARRRS) then true
+        else
+            ARRRS < 1000000000 
+        errorcode "GCMA_TH_H_ARRRS_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_DT_PST_D: 
+        if
+            isnull(DT_PST_D) then true
+        else
+            DT_PST_D > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_PST_D" errorlevel 4;
+    GCMA_TH_H_OTSTNDNG_NMNL_AMNT_INSTRMNT: 
+        if
+            isnull(OTSTNDNG_NMNL_AMNT) then true
+        else
+            OTSTNDNG_NMNL_AMNT < 1000000000 
+        errorcode "GCMA_TH_H_OTSTNDNG_NMNL_AMNT_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_ACCRD_INTRST_INSTRMNT: 
+        if
+            isnull(ACCRD_INTRST) then true
+        else
+            ACCRD_INTRST < 1000000000 
+        errorcode "GCMA_TH_H_ACCRD_INTRST_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_ACCRD_INTRST_INSTRMNT: 
+        if
+            isnull(ACCRD_INTRST) then true
+        else
+            ACCRD_INTRST > -10000000 
+        errorcode "GCMA_TH_L_ACCRD_INTRST_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_OFF_BLNC_SHT_AMNT_INSTRMNT: 
+        if
+            isnull(OFF_BLNC_SHT_AMNT) then true
+        else
+            OFF_BLNC_SHT_AMNT < 1000000000 
+        errorcode "GCMA_TH_H_OFF_BLNC_SHT_AMNT_INSTRMNT" errorlevel 4
+      
+end datapoint ruleset;
