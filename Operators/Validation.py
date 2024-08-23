@@ -153,6 +153,20 @@ class Check_Datapoint(Validation):
 class Check_Hierarchy(Validation):
 
     @classmethod
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
+        df = None
+        for rule_name, rule_data in rule_info.items():
+            rule_df = rule_data['output']
+            rule_df['ruleid'] = rule_name
+            rule_df['errorcode'] = rule_data['errorcode']
+            rule_df['errorlevel'] = rule_data['errorlevel']
+            if df is None:
+                df = rule_df
+            else:
+                df = pd.concat([df, rule_df], ignore_index=True)
+        return df
+
+    @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = super().validate(dataset_element, rule_info, output)
         result.components['imbalance'] = Component(name='imbalance', data_type=Number,

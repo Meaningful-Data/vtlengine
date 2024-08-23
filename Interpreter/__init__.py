@@ -683,7 +683,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if isinstance(right_operand, Dataset):
                     right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-                return HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand)
+                return HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
             else:
                 left_operand = self.visit(node.left)
                 right_operand = self.visit(node.right)
@@ -834,8 +834,15 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.value in df[hr_component].values:
             df = df[df[hr_component] == node.value].reset_index(drop=True)
         else:
+            # If the value is not in the dataset, we create a new row
+            # based on the hierarchy mode
+            # (Missing data points are considered,
+            # lines 6483-6510 of the reference manual)
             measure_name = self.ruleset_dataset.get_measures_names()[0]
             df = df.head(1)
             df[hr_component] = node.value
-            df[measure_name] = None
+            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+                df[measure_name] = 0
+            else: # For non_null, partial_null and always_null
+                df[measure_name] = None
         return Dataset(name=name, components=result_components, data=df)

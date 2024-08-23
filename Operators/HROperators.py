@@ -1,6 +1,8 @@
 import operator
 from copy import copy
 
+import pandas as pd
+
 import Operators
 from DataTypes import Boolean, Number
 from Model import DataComponent, Dataset, Role, Component
@@ -17,7 +19,36 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 class HRComparison(Operators.Binary):
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: DataComponent) -> Dataset:
+    def imbalance_func(cls, x, y):
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return x - y
+
+    @staticmethod
+    def hr_func(x, y, hr_mode, func):
+        # In comments, it is specified the condition for evaluating the rule,
+        # so we delete the cases that does not satisfy the condition
+        # (line 6509 of the reference manual)
+        if hr_mode == 'non_null':
+            # If all the involved Data Points are not NULL
+            if pd.isnull(x) or pd.isnull(y):
+                return "REMOVE_VALUE"
+        elif hr_mode == 'non_zero':
+            # If at least one of the involved Data Points is <> zero
+            if not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
+                return "REMOVE_VALUE"
+        elif hr_mode in ('partial_null', 'partial_zero'):
+            if pd.isnull(x) and pd.isnull(y):
+                return "REMOVE_VALUE"
+
+        return func(x, y)
+
+    @classmethod
+    def apply_hr_func(cls, left_series, right_series, hr_mode, func):
+        return left_series.combine(right_series, lambda x, y: cls.hr_func(x, y, hr_mode, func))
+
+    @classmethod
+    def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              left_operand.components.items() if comp.role == Role.IDENTIFIER}
         result_components['bool_var'] = Component(name='bool_var',
@@ -33,12 +64,14 @@ class HRComparison(Operators.Binary):
                        data=None)
 
     @classmethod
-    def evaluate(cls, left: Dataset, right: DataComponent) -> Dataset:
-        result = cls.validate(left, right)
+    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
+        result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy()
         measure_name = left.get_measures_names()[0]
-        result.data['bool_var'] = cls.apply_operation_two_series(left.data[measure_name], right.data)
-        result.data['imbalance'] = HRBinMinus.apply_operation_two_series(left.data[measure_name], right.data)
+        result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data, hr_mode, cls.op_func)
+        result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data, hr_mode, cls.imbalance_func)
+        # Removing datapoints that should not be returned
+        result.data = result.data[result.data['bool_var'] != "REMOVE_VALUE"]
         result.data.drop(measure_name, axis=1, inplace=True)
         return result
 
