@@ -1,0 +1,63 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC0140B",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "FRGN_BRNCH",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "SPFUND",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "OTHR_TYP_ENTTY",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "TRD_RCVBL_NN_RCRS",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CC0140",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0140B",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
