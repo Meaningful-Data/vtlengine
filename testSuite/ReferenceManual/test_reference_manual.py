@@ -164,6 +164,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         raise FileNotFoundError("No datasets found")
     return datasets
 
+params = [159]
 
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):

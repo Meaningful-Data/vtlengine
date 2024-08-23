@@ -11,6 +11,7 @@ from AST import If, BinOp, RenameNode, UDOCall, UnaryOp, JoinOp, Identifier, Par
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.ASTDataExchange import de_ruleset_elements
+from AST.Grammar.tokens import DATASET_PRIORITY
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
@@ -904,16 +905,18 @@ class Expr(VtlVisitor):
 
         if inputs is None:
             inputs = 'dataset'
+        elif inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
         param_constant_node = []
 
         if modes is not None:
             param_constant_node.append(ParamConstant('PARAM_MODE', modes))
 
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
         if inputs is not None:
             param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+
+        if retains is not None:
+            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -990,9 +993,10 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        # Default values
+        modes = 'non_null'
+        inputs = 'dataset'
+        retains = 'invalid'
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -1012,14 +1016,12 @@ class Expr(VtlVisitor):
 
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        if inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
 
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):

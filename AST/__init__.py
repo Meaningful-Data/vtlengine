@@ -466,6 +466,7 @@ class HRUnOp(AST):
 
 
 # TODO: Unify HRule and DPRule?
+@dataclass
 class HRule(AST):
     """
     HRule: (name, rule, erCode, erLevel)

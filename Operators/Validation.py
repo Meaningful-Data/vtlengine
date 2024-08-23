@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from DataTypes import Boolean, Integer, Number, String
+from DataTypes import Boolean, Integer, Number, String, check_unary_implicit_promotion
 from Model import Component, Dataset, Role
 from Operators import Operator
 
@@ -79,7 +79,21 @@ class Check(Operator):
 
 
 # noinspection PyTypeChecker
-class Check_Datapoint(Operator):
+class Validation(Operator):
+
+    @classmethod
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
+        df = None
+        for rule_name, rule_data in rule_info.items():
+            rule_df = rule_data['output']
+            rule_df['ruleid'] = rule_name
+            rule_df['errorcode'] = rule_df['bool_var'].map({False: rule_data['errorcode']})
+            rule_df['errorlevel'] = rule_df['bool_var'].map({False: rule_data['errorlevel']})
+            if df is None:
+                df = rule_df
+            else:
+                df = pd.concat([df, rule_df], ignore_index=True)
+        return df
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
@@ -101,7 +115,7 @@ class Check_Datapoint(Operator):
                                  'bool_var': Component(name='bool_var', data_type=Boolean,
                                                        role=Role.MEASURE, nullable=True)}
         result_components['errorcode'] = Component(name='errorcode', data_type=String,
-                                                    role=Role.MEASURE, nullable=True)
+                                                   role=Role.MEASURE, nullable=True)
         result_components['errorlevel'] = Component(name='errorlevel', data_type=Number,
                                                     role=Role.MEASURE, nullable=True)
 
@@ -110,24 +124,51 @@ class Check_Datapoint(Operator):
     @classmethod
     def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = cls.validate(dataset_element, rule_info, output)
-        for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data['output']
-            rule_df['ruleid'] = rule_name
-            rule_df['errorcode'] = rule_df['bool_var'].map({False: rule_data['error_code']})
-            rule_df['errorlevel'] = rule_df['bool_var'].map({False: rule_data['error_level']})
-            if result.data is None:
-                result.data = rule_df
-            else:
-                result.data = pd.concat([result.data, rule_df], ignore_index=True)
+        result.data = cls._generate_result_data(rule_info)
 
-        result.data = result.data.drop_duplicates(subset=result.get_identifiers_names() + ['ruleid'])
+        result.data = result.data.drop_duplicates(
+            subset=result.get_identifiers_names() + ['ruleid'])
+        validation_measures = ['bool_var', 'errorcode', 'errorlevel']
+        # Only for check hierarchy
+        if 'imbalance' in result.components:
+            validation_measures.append('imbalance')
         if output == 'invalid':
             result.data = result.data[result.data['bool_var'] == False]
             result.data = result.data.drop(columns=['bool_var'])
             result.data.reset_index(drop=True, inplace=True)
         elif output == 'all':
-            result.data = result.data[result.get_identifiers_names() + ['bool_var', 'errorcode', 'errorlevel']]
+            result.data = result.data[
+                result.get_identifiers_names() + validation_measures]
         else:  # output == 'all_measures'
-            result.data = result.data[result.get_identifiers_names() + dataset_element.get_measures_names() + ['bool_var', 'errorcode', 'errorlevel']]
+            result.data = result.data[
+                result.get_identifiers_names() + dataset_element.get_measures_names() + validation_measures]
 
         return result
+
+
+class Check_Datapoint(Validation):
+    pass
+
+
+class Check_Hierarchy(Validation):
+
+    @classmethod
+    def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+        result = super().validate(dataset_element, rule_info, output)
+        result.components['imbalance'] = Component(name='imbalance', data_type=Number,
+                                                   role=Role.MEASURE, nullable=True)
+        return result
+
+    @staticmethod
+    def validate_hr_dataset(dataset: Dataset, component_name: str):
+        if len(dataset.get_measures()) != 1:
+            raise Exception("The hierarchy operand must have exactly one measure of type Number")
+        measure = dataset.get_measures()[0]
+        if not check_unary_implicit_promotion(measure.data_type, Number):
+            raise Exception("The hierarchy operand must have exactly one measure of type Number")
+        if component_name not in dataset.components:
+            raise ValueError(f"Component {component_name} not found in dataset {dataset.name}")
+        # Remove attributes from dataset
+        if len(dataset.get_attributes()) > 0:
+            for x in dataset.get_attributes():
+                dataset.delete_component(x.name)
