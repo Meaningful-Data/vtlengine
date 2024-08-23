@@ -1,0 +1,36 @@
+PRTCTN_RSDL_MTRTY_DYS_DS :=  PRTCTN_RCVD[calc PRTCTN_RSDL_MTRTY_DYS := DT_MTRTY_PRTCTN - DT_RFRNC]; /*This transformation is not pure VTL. This substract is not allowed*/
+
+PRTCTN_RSDL_MTRTY_DYS := 
+    PRTCTN_RSDL_MTRTY_DYS_DS[calc 
+        PRTCTN_RSDL_MTRTY := if PRTCTN_RSDL_MTRTY_DYS <= -18000 then "48" else(
+                              if PRTCTN_RSDL_MTRTY_DYS <= -10800 then "49" else(
+                               if PRTCTN_RSDL_MTRTY_DYS <= -7200 then "50" else(
+                                if PRTCTN_RSDL_MTRTY_DYS <= -5400 then "51" else(
+                                 if PRTCTN_RSDL_MTRTY_DYS <= -3600 then "52" else(
+                                  if PRTCTN_RSDL_MTRTY_DYS <= -1800 then "53" else(
+                                   if PRTCTN_RSDL_MTRTY_DYS <= -1080 then "54" else(
+                                    if PRTCTN_RSDL_MTRTY_DYS <= -720 then "55" else(
+                                     if PRTCTN_RSDL_MTRTY_DYS <= -540 then "56" else(
+                                      if PRTCTN_RSDL_MTRTY_DYS <= -360 then "57" else(
+                                       if PRTCTN_RSDL_MTRTY_DYS <= -180 then "58" else(
+                                        if PRTCTN_RSDL_MTRTY_DYS <= -90 then "59" else(
+                                         if PRTCTN_RSDL_MTRTY_DYS <= -30 then "60" else(
+                                          if PRTCTN_RSDL_MTRTY_DYS <= -7 then "61" else(
+                                           if PRTCTN_RSDL_MTRTY_DYS <= -1 then "62" else(
+                                            if PRTCTN_RSDL_MTRTY_DYS <= 0 then "63" else(
+                                             if PRTCTN_RSDL_MTRTY_DYS <= 1 then "64" else(
+                                              if PRTCTN_RSDL_MTRTY_DYS <= 7 then "3" else(
+                                               if PRTCTN_RSDL_MTRTY_DYS <= 30 then "65" else(
+                                                if PRTCTN_RSDL_MTRTY_DYS <= 90 then "9" else(
+                                                 if PRTCTN_RSDL_MTRTY_DYS <= 180 then "12" else(
+                                                  if PRTCTN_RSDL_MTRTY_DYS <= 360 then "16" else(
+                                                   if PRTCTN_RSDL_MTRTY_DYS <= 540 then "66" else(
+                                                    if PRTCTN_RSDL_MTRTY_DYS <= 720 then "67" else(
+                                                     if PRTCTN_RSDL_MTRTY_DYS <= 1080 then "28" else(
+                                                      if PRTCTN_RSDL_MTRTY_DYS <= 1800 then "31" else(
+                                                       if PRTCTN_RSDL_MTRTY_DYS <= 3600 then "36" else(
+                                                        if PRTCTN_RSDL_MTRTY_DYS <= 5400 then "39" else(
+                                                         if PRTCTN_RSDL_MTRTY_DYS <= 7200 then "41" else(
+                                                          if PRTCTN_RSDL_MTRTY_DYS <= 10800 then "68" else(
+                                                           if PRTCTN_RSDL_MTRTY_DYS <= 18000 then "69" else(
+                                                            "70" )))))))))))))))))))))))))))))))];
