@@ -1,0 +1,11 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+define operator greater (ds1 dataset, ds2 dataset)
+  returns dataset is
+    if ds1 > ds2 then ds1 else ds2
+end operator;
+
+DS_r := drop_identifier (greater (DS_1, DS_2), Id_3);

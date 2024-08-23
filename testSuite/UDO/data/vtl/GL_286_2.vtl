@@ -1,0 +1,39 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+  
+    max(ds group except comp)
+    
+end operator;
+define operator filter_valid_dates (ds dataset, DT_RFRNC component, VLD_FRM component, VLD_T component)
+  returns dataset is
+  
+    max(ds[filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T] group except VLD_FRM, VLD_T)
+    
+end operator;
+
+DT_RFRNC_DS := max(ANCRDT_INSTRMNT_C[keep FDCRY][drop FDCRY] group by DT_RFRNC);
+
+
+
+/*3. Prepare dataset with accounting framework*/
+
+ACCNTNG_FRMWRK_DS_MSR := 
+    RIAD_ACCNTNG_FRMWRK_SL_C
+        [keep OBS_VALUE]
+        [rename ENTTY_RIAD_CD to LGL_ENTTY_CD,
+                OBS_VALUE to ACCNTNG_FRMWRK];
+
+ACCNTNG_FRMWRK_DS_CJ :=
+    cross_join(ACCNTNG_FRMWRK_DS_MSR, DT_RFRNC_DS);
+
+/*
+ACCNTNG_FRMWRK_P := 
+    filter_valid_dates(ACCNTNG_FRMWRK_DS_CJ, DT_RFRNC, VLD_FRM, VLD_T);
+
+ACCNTNG_FRMWRK_MX :=
+    drop_identifier(ACCNTNG_FRMWRK_P, DT_RFRNC);
+*/
+ACCNTNG_FRMWRK_MX :=
+    drop_identifier(filter_valid_dates(ACCNTNG_FRMWRK_DS_CJ, DT_RFRNC, VLD_FRM, VLD_T), DT_RFRNC);
+
+

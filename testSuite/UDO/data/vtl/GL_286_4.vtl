@@ -1,0 +1,202 @@
+define operator filter_valid_dates (ds dataset, DT_RFRNC component, VLD_FRM component, VLD_T component)
+  returns dataset is
+  
+    max(ds[filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T] group except VLD_FRM, VLD_T)
+    
+end operator;
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+  
+    max(ds group except comp)
+    
+end operator;
+
+/***************************************************************************************
+
+ACCNTNG_FNNCL and INSTRMNTS_ACCNTNG
+
+****************************************************************************************/
+
+ACCNTNG_FNNCL := inner_join(ANCRDT_ACCNTNG_C, ANCRDT_FNNCL_C);
+INSTRMNT_ACCNTNG := inner_join(ANCRDT_INSTRMNT_C, ANCRDT_ACCNTNG_C);
+
+
+/***************************************************************************************
+
+INSTRMNT_ENTTY_RSK
+
+****************************************************************************************/
+
+INSTRMNT_DBTR := 
+    inner_join(
+        ANCRDT_FNNCL_C, 
+        ANCRDT_ACCNTNG_C, 
+        ANCRDT_ENTTY_INSTRMNT_C
+            [sub ENTTY_RL = "2"] as C);
+
+INSTRMNT_ENTTY_RSK :=
+    left_join(
+        INSTRMNT_DBTR,
+        ANCRDT_ENTTY_DFLT_C
+            [keep DFLT_STTS, DT_DFLT_STTS, NEVS_DFLT_STTS]
+            [rename DFLT_STTS to DFLT_STTS_DBTR, DT_DFLT_STTS to DT_DFLT_STTS_DBTR, NEVS_DFLT_STTS to NEVS_DFLT_STTS_DBTR] as B
+        using DT_RFRNC, OBSRVD_AGNT_CD, ENTTY_RIAD_CD
+        );
+
+
+/***************************************************************************************
+
+ACCNTNG_INSTRMNT_T_T3
+
+****************************************************************************************/
+
+ACCNTNG_INSTRMNT_T_T3 := 
+  inner_join(
+    drop_identifier(ANCRDT_ACCNTNG_C, DT_RFRNC)
+        [keep DT_FRBRNC_STTS, PRFRMNG_STTS, DT_PRFRMNG_STTS, FRBRNC_STTS, CRRYNG_AMNT, ACCMLTD_WRTFFS] as A,
+    drop_identifier(ANCRDT_ACCNTNG_C_T3, DT_RFRNC)
+        [keep PRFRMNG_STTS, DT_PRFRMNG_STTS, FRBRNC_STTS, DT_FRBRNC_STTS, CRRYNG_AMNT, ACCMLTD_WRTFFS]
+        [rename PRFRMNG_STTS to PRFRMNG_STTS_T3, 
+                DT_PRFRMNG_STTS to DT_PRFRMNG_STTS_T3,
+                FRBRNC_STTS to FRBRNC_STTS_T3,
+                DT_FRBRNC_STTS to DT_FRBRNC_STTS_T3,
+                CRRYNG_AMNT to CRRYNG_AMNT_T3, 
+                ACCMLTD_WRTFFS to ACCMLTD_WRTFFS_T3] as B,
+    drop_identifier(ANCRDT_INSTRMNT_C, DT_RFRNC)
+        [keep FDCRY, PRJCT_FNNC_LN, PRPS, RPYMNT_RGHTS, RCRS] as C,
+    drop_identifier(ANCRDT_INSTRMNT_C_T1, DT_RFRNC)
+        [keep FDCRY, PRJCT_FNNC_LN, PRPS, RPYMNT_RGHTS, RCRS]
+        [rename FDCRY to FDCRY_T1, PRJCT_FNNC_LN to PRJCT_FNNC_LN_T1,
+                PRPS to PRPS_T1, RPYMNT_RGHTS to RPYMNT_RGHTS_T1, RCRS to RCRS_T1] as D,
+    drop_identifier(ANCRDT_INSTRMNT_C_T2, DT_RFRNC)
+        [keep FDCRY, PRJCT_FNNC_LN, PRPS, RPYMNT_RGHTS, RCRS]
+        [rename FDCRY to FDCRY_T2, PRJCT_FNNC_LN to PRJCT_FNNC_LN_T2,
+                PRPS to PRPS_T2, RPYMNT_RGHTS to RPYMNT_RGHTS_T2, RCRS to RCRS_T2] as E,
+    drop_identifier(ANCRDT_INSTRMNT_C_T3, DT_RFRNC)
+        [keep FDCRY, PRJCT_FNNC_LN, PRPS, RPYMNT_RGHTS, RCRS]   
+        [rename FDCRY to FDCRY_T3, PRJCT_FNNC_LN to PRJCT_FNNC_LN_T3,
+                PRPS to PRPS_T3, RPYMNT_RGHTS to RPYMNT_RGHTS_T3, RCRS to RCRS_T3] as F
+  );
+  
+
+/****************************************************************************************
+
+ANCRDT_ACCNTNG_ACCNTNG_FRMWRK
+
+*****************************************************************************************/
+
+/*
+The following two transfromations serve to get a dataset with only the DT_RFRNC, which will 
+be used later to filter the right RIAD records.
+They assume that there is only one DT_RFRNC per dataset.
+*/
+
+DT_RFRNC_DS := max(ANCRDT_INSTRMNT_C[keep FDCRY][drop FDCRY] group by DT_RFRNC);
+
+/*1. Prepare dataset with legal entity code*/
+
+HD_QRTR_DS_MSR :=
+    RIAD_IS_BRNCH_C
+        [calc measure HD_QRTR_CD := TRGT_ENTTY_RIAD_CD]
+        [keep HD_QRTR_CD]
+        [rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD];
+
+HD_QRTR_DS_CJ :=
+    cross_join(HD_QRTR_DS_MSR, DT_RFRNC_DS);
+
+HD_QRTR_DS_P := 
+    filter_valid_dates(HD_QRTR_DS_CJ, DT_RFRNC, VLD_FRM, VLD_T);
+
+/*
+HD_QRTR_DS_MX :=
+    max(HD_QRTR_DS_P group except DT_RFRNC, TRGT_ENTTY_RIAD_CD);
+*/
+HD_QRTR_DS_MX :=
+    drop_identifier(drop_identifier(HD_QRTR_DS_P, DT_RFRNC), TRGT_ENTTY_RIAD_CD);
+
+
+/*2. Prepare dataset with relevant accounting information and code of the legal entity of the observed agent*/
+
+LGL_ENTTY_OBSRVD_AGNT := 
+    left_join(
+        ANCRDT_ACCNTNG_C,
+        HD_QRTR_DS_MX
+        using OBSRVD_AGNT_CD
+    );
+
+LGL_ENTTY_ACCNTNG :=
+    LGL_ENTTY_OBSRVD_AGNT
+        [calc LGL_ENTTY_CD := if isnull(HD_QRTR_CD) then OBSRVD_AGNT_CD else HD_QRTR_CD]
+        [calc CNTRY_LGL_ENTTY := substr(LGL_ENTTY_CD, 1, 2)];
+
+
+/*3. Prepare dataset with accounting framework*/
+
+ACCNTNG_FRMWRK_DS_MSR := 
+    RIAD_ACCNTNG_FRMWRK_SL_C
+        [keep OBS_VALUE]
+        [rename ENTTY_RIAD_CD to LGL_ENTTY_CD,
+                OBS_VALUE to ACCNTNG_FRMWRK];
+
+ACCNTNG_FRMWRK_DS_CJ :=
+    cross_join(ACCNTNG_FRMWRK_DS_MSR, DT_RFRNC_DS);
+
+/*
+ACCNTNG_FRMWRK_P := 
+    filter_valid_dates(ACCNTNG_FRMWRK_DS_CJ, DT_RFRNC, VLD_FRM, VLD_T);
+
+ACCNTNG_FRMWRK_MX :=
+    drop_identifier(ACCNTNG_FRMWRK_P, DT_RFRNC);
+*/
+ACCNTNG_FRMWRK_MX :=
+    drop_identifier(filter_valid_dates(ACCNTNG_FRMWRK_DS_CJ, DT_RFRNC, VLD_FRM, VLD_T), DT_RFRNC);
+
+
+/*4. Final dataset*/
+
+ANCRDT_ACCNTNG_ACCNTNG_FRMWRK :=
+    inner_join(
+        LGL_ENTTY_ACCNTNG,
+        ACCNTNG_FRMWRK_MX
+        using LGL_ENTTY_CD
+    );
+
+
+/****************************************************************************************
+
+INTRCMPNY_LNS_INSMRMNTS
+
+*****************************************************************************************/
+
+ENTTY_INSTRMNT_HDQRTR :=
+    left_join(
+        ANCRDT_ENTTY_INSTRMNT_C,
+        HD_QRTR_DS_MX
+            [rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD]
+        as B
+        using ENTTY_RIAD_CD
+    );
+
+ENTTY_INSTRMNT_LGL_ENTTY_CD_ID :=
+    ENTTY_INSTRMNT_HDQRTR
+        [calc identifier LGL_ENTTY_CD := nvl(ENTTY_RIAD_CD,"a")]
+        [drop HD_QRTR_CD];
+
+ENTTY_INSTRMNT_BY_LGL_ENTTY :=
+    drop_identifier(ENTTY_INSTRMNT_LGL_ENTTY_CD_ID, ENTTY_RIAD_CD);
+   
+INTRCMPNY_LNS_INTRSCTN :=
+    intersect(
+        ENTTY_INSTRMNT_BY_LGL_ENTTY
+            [sub ENTTY_RL = "1"],
+        ENTTY_INSTRMNT_BY_LGL_ENTTY
+            [sub ENTTY_RL = "2"]
+    );
+    
+INTRCMPNY_LNS_INSMRMNTS :=
+    inner_join(
+        drop_identifier(INTRCMPNY_LNS_INTRSCTN, LGL_ENTTY_CD) as A,
+        ANCRDT_ACCNTNG_C,
+        ANCRDT_FNNCL_C,
+        ANCRDT_INSTRMNT_C
+    );

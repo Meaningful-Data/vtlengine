@@ -1,0 +1,17 @@
+define operator isnull_nevs(comp component)
+  returns component is
+     isnull(comp) or comp in {"-2", "-3", "5"}
+end operator;
+
+define datapoint ruleset granularCmaEntityInstrument (variable PD, DFLT_STTS, DFLT_STTS_INSTRMNT, NEVS_DFLT_STTS, NEVS_DFLT_STTS_INSTRMNT) is
+
+    IG0160: when PD = 1
+             then
+                (isnull_nevs(NEVS_DFLT_STTS) and DFLT_STTS <> "14")
+                    or
+                (isnull_nevs(NEVS_DFLT_STTS_INSTRMNT) and DFLT_STTS_INSTRMNT <> "14")
+             errorcode "IG0160" errorlevel 1
+
+end datapoint ruleset;
+
+GRNLR_CMA_ENTTY_INSTRMNT <- check_datapoint (dsPrep.ENTTY_INSTRMNT_CMA  , granularCmaEntityInstrument ) ;
