@@ -131,3 +131,88 @@ class ExternalProjectsHelper(TestCase):
             with open(sql_file_name, 'r') as file:
                 external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
         return external_routines
+
+class AnaVal(ExternalProjectsHelper):
+    """
+
+    """
+
+    classTest = 'NewExternalProjects.AnaVal'
+
+    def test_Monthly_validations_1(self):
+        """
+        Description: EEAS_OA30
+        Git Branch: feat-test-projects
+        Goal: Check semantic result and interpreter results.
+        """
+        code = 'AnaVal_Monthly_validations_1'
+        number_inputs = 16
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
+
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names
+        )
+
+    def test_Monthly_validations_2(self):
+        """
+        Description: EEAS_OA26
+        Git Branch: feat-test-projects
+        Goal: Check semantic result and interpreter results.
+        """
+        code = 'AnaVal_Monthly_validations_2'
+        number_inputs = 16
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names
+        )
+
+    def test_Quarterly_validations_1(self):
+        """
+        Description: EEAS_OA30
+        Git Branch: feat-test-projects
+        Goal: Check semantic result and interpreter results.
+        """
+        code = 'AnaVal_Quarterly_validations_1'
+        number_inputs = 11
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 24)]
+        references_names = rn
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names
+        )
+
+    def test_Quarterly_validations_2(self):
+        """
+        Description: EEAS_OA26
+        Git Branch: feat-test-projects
+        Goal: Check semantic result and interpreter results.
+        """
+        code = 'AnaVal_Quarterly_validations_2'
+        number_inputs = 11
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 24)]
+        references_names = rn
+
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names
+        )
