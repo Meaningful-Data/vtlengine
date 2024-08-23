@@ -131,3 +131,23 @@ class BOPHelper(TestCase):
             with open(sql_file_name, 'r') as file:
                 external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
         return external_routines
+
+
+class BOP(BOPHelper):
+    """
+
+    """
+
+    classTest = 'NBB_bop.BOP'
+
+    def test_VALIDATIONS(self):
+        '''
+
+        '''
+        code = 'VALIDATIONS'
+        number_inputs = 1
+        references_names = ['1', '2', '3', '4', '5', '6',
+                            '7', '8', '9', '10', '11', '12', '13',
+                            '14', '15', '16', '17', '18', '19', '20', '21']
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
