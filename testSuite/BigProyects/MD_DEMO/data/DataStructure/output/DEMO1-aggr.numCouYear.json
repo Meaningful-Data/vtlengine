@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "aggr.numCouYear",
+      "DataStructure": [
+        {
+          "name": "REF_DATE",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "int_var",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

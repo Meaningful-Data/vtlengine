@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "aggr.numYearCou",
+      "DataStructure": [
+        {
+          "name": "REP_COUNTRY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "int_var",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
