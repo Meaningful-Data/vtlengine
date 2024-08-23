@@ -1,0 +1,35 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+ANCRDT_DBTR := 
+  inner_join(
+    ANAMART_ENTTY[drop ACCNTNG_FRMWRK_SL, INSTTTNL_SCTR, TRRTRL_UNT, ULTMT_PRNT_UNDRT_CD, NM_ENTTY, IS_EA_ACTIVITY, STRT, CTY, ECNMC_ACTVTY, LGL_FRM_LE, ANNL_TRNVR_LE, BLNC_SHT_TTL_LE, DT_ENTRPRS_SZ_LE, DT_INTTN_LGL_PRCDNGS_LE, ENTRPRS_SZ_LE, NMBR_EMPLYS_LE, INDSTRY_PD_SD, INDSTRY_PD_WGHTD_AVRG, INDSTRY_PD_SMPL_AVRG, RSDL_MTRTY_DYS_WGHTD_AVRG, TTL_CV_OTSTNDNG_NMNL_AMNT, MAX_PST_D_DYS, MAX_RSDL_MTRTY_DYS, NN_PRFRMNG_LNS_RT_W_ONA_DV, CNTRY_LE, NN_PRFRMNG_LNS_RT_W_ONA_CV, CTY_LE, ECNMC_ACTVTY_LE, HD_OFFC_UNDRT_ID, IMMDT_PRNT_UNDRT_ID, INSTTTNL_SCTR_DTL_LE, IS_LGL_ENTTY_EA_ANCRDT_CVRD, INSTTTNL_SCTR_LE, PSTL_CD_LE, STRT_LE, TRRTRL_UNT_LE ] as A, 
+    ANAMART_ENTTY_1,
+    drop_identifier(
+        drop_identifier(
+            drop_identifier(
+                ENTTY_INSTRMNT_JN_LBLTS 
+                    [drop JNT_LBLTY_AMNT]
+                    [sub ENTTY_RL="2"],
+            CNTRCT_ID),
+        OBSRVD_AGNT_CD),
+    INSTRMNT_ID) as B
+    using DT_RFRNC, ENTTY_RIAD_CD
+    rename A#CNTRY to A_CNTRY, A#DT_BRTH to A_DT_BRTH, A#DT_CLS to A_DT_CLS, A#IS_DMSTC_ACTVTY to A_IS_DMSTC_ACTVTY, A#INSTTTNL_SCTR_DTL to A_INSTTTNL_SCTR_DTL, A#LEI to A_LEI, A#PSTL_CD to A_PSTL_CD, A#IS_LGL_ENTTY_ANCRDT_CVRD to A_IS_LGL_ENTTY_ANCRDT_CVRD, A#LGL_PRCDNG_STTS_LE to A_LGL_PRCDNG_STTS_LE, A#ENTTY_RIAD_CD_LE to A_ENTTY_RIAD_CD_LE, A#NM_ENTTY_LE to A_NM_ENTTY_LE );
+/*
+ANCRDT_DBTR := 
+  inner_join(
+    ANAMART_ENTTY[drop ACCNTNG_FRMWRK_SL] as A,
+    drop_identifier(
+        drop_identifier(
+            drop_identifier(
+                ENTTY_INSTRMNT_JN_LBLTS 
+                    [drop JNT_LBLTY_AMNT]
+                    [sub ENTTY_RL="2"],
+            CNTRCT_ID),
+        OBSRVD_AGNT_CD),
+    INSTRMNT_ID) as B
+    using DT_RFRNC, ENTTY_RIAD_CD);
+*/

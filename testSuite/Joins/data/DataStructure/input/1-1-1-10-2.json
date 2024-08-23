@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "entities",
+      "DataStructure": [
+        {
+          "name": "timeReference",
+          "role": "Identifier",
+          "type": "Time",
+          "nullable": false
+        },
+        {
+          "name": "issuerId",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "sector",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "country",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

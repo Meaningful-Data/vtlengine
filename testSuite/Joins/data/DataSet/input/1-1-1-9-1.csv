@@ -1,0 +1,4 @@
+timeReference,securityId,typeInstrument,issuerId
+2021-06-30/2021-07-25,"123",F32,ABC
+2021-06-30/2021-07-25,"456",F511,DEF
+2021-06-30/2021-07-25,"789",F511,GHI
