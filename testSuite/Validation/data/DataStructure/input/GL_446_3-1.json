@@ -1,0 +1,232 @@
+{
+    "datasets": [
+        {
+            "name": "ECB_SHS6",
+            "DataStructure": [
+                {
+                    "name": "FREQ",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "HOLDER_AREA",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "ISSUER_AREA",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "HOLDER_SECTOR",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "ISSUER_SECTOR",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "FUNCTIONAL_CAT",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "STO",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "INSTR_ASSET",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "MATURITY",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "UNIT_MEASURE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "VALUATION",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "SECURITY_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "MA_FLAG",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "IS_IN_EADB",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "SECURITISATION_TYP",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "DEBT_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "TPH",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "NOM_CURR",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "COMPILING_ORG",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "TIME_PERIOD",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "TIME_FORMAT",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "OBS_STATUS",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "CONF_STATUS",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "PRE_BREAK_VALUE",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "COMMENT_OBS",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "EAPLUS_FLAG",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "ESCB_FLAG",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "COMMENT_TS",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "DATA_COMP",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "DECIMALS",
+                    "role": "Attribute",
+                    "type": "Integer",
+                    "nullable": true
+                },
+                {
+                    "name": "DISS_ORG",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "REF_PERIOD_DETAIL",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "TIME_PER_COLLECT",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "TITLE",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "TITLE_COMPL",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "UNIT_MULT",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "OBS_VALUE",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}
