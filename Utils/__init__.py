@@ -191,3 +191,24 @@ HR_UNARY_MAPPING = {
     PLUS: HRUnPlus,
     MINUS: HRUnMinus
 }
+
+HA_COMP_MAPPING = {
+    # Comparison
+    EQ: HREqual,
+    GT: HRGreater,
+    GTE: HRGreaterEqual,
+    LT: HRLess,
+    LTE: HRLessEqual,
+}
+
+HA_NUM_BINARY_MAPPING = {
+    # Numeric
+    PLUS: HRBinPlus,
+    MINUS: HRBinMinus,
+}
+
+HA_UNARY_MAPPING = {
+    # Numeric
+    PLUS: HRUnPlus,
+    MINUS: HRUnMinus
+}

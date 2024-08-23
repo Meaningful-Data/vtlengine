@@ -1,3 +1,4 @@
+import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
@@ -8,7 +9,7 @@ import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
-    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY
+    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
@@ -17,7 +18,7 @@ from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
 from Operators.Conditional import If
 from Operators.General import Eval, Cast
-from Operators.HROperators import get_measure_from_dataset
+from Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Time import Fill_time_series
@@ -41,7 +42,8 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_rule: bool = False
     is_from_join: bool = False
     is_from_condition: bool = False
-    is_from_hr: bool = False
+    is_from_hr_val: bool = False
+    is_from_hr_agg: bool = False
     if_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -52,7 +54,9 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
+    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     hr_mode: Optional[str] = None
+    hr_input: Optional[str] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
     hrs: Dict[str, AST.HRuleset] = None
@@ -604,11 +608,11 @@ class InterpreterAnalyzer(ASTTemplate):
             return Check_Datapoint.evaluate(dataset_element=dataset_element,
                                             rule_info=rule_output_values,
                                             output=output)
-        elif node.op == CHECK_HIERARCHY:
+        elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             dataset, component, hr_name = (self.visit(x) for x in node.children)
 
             # Input is always dataset
-            mode, _, output = (self.visit(param) for param in node.params)
+            mode, input_, output = (self.visit(param) for param in node.params)
 
             if self.hrs is None:
                 raise Exception("No Hierarchical Rulesets have been defined.")
@@ -619,27 +623,43 @@ class InterpreterAnalyzer(ASTTemplate):
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
-            rule_output_values = {}
+            # Gather rule data, adding the necessary elements to the interpreter
+            # for simplicity
             self.ruleset_dataset = dataset
             self.ruleset_signature = component
             self.hr_mode = mode
-            self.is_from_hr = True
-            # Gather rule data, adding the ruleset dataset to the interpreter
-            for rule in hr_info['rules']:
-                rule_output_values[rule.name] = {
-                    "errorcode": rule.erCode,
-                    "errorlevel": rule.erLevel,
-                    "output": self.visit(rule)
-                }
-            self.is_from_hr = False
+            self.hr_input = input_
+            rule_output_values = {}
+            if node.op == HIERARCHY:
+                self.is_from_hr_agg = True
+                self.hr_agg_rules_computed = {}
+                for rule in hr_info['rules']:
+                    self.visit(rule)
+                self.is_from_hr_agg = False
+            else:
+                self.is_from_hr_val = True
+                for rule in hr_info['rules']:
+                    rule_output_values[rule.name] = {
+                        "errorcode": rule.erCode,
+                        "errorlevel": rule.erLevel,
+                        "output": self.visit(rule)
+                    }
+                self.is_from_hr_val = False
             self.ruleset_signature = None
             self.ruleset_dataset = None
             self.hr_mode = None
+            self.hr_input = None
 
             # Final evaluation
-            return Check_Hierarchy.evaluate(dataset_element=dataset,
-                                            rule_info=rule_output_values,
-                                            output=output)
+            if node.op == CHECK_HIERARCHY:
+                result = Check_Hierarchy.evaluate(dataset_element=dataset,
+                                                  rule_info=rule_output_values,
+                                                  output=output)
+                del rule_output_values
+            else:
+                result = Hierarchy.evaluate(dataset, self.hr_agg_rules_computed, output)
+                self.hr_agg_rules_computed = None
+            return result
 
         raise NotImplementedError
 
@@ -654,10 +674,16 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
         self.rule_data = self.ruleset_dataset.data.copy()
-        validation_data = self.visit(node.rule).data
+        rule_result = self.visit(node.rule)
+        if self.is_from_hr_agg:
+            measure_name = rule_result.get_measures_names()[0]
+            if not all(rule_result.data[measure_name].isnull()):
+                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+        else:
+            rule_result = rule_result.data
         self.rule_data = None
         self.is_from_rule = False
-        return validation_data
+        return rule_result
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
         if node.op == WHEN:
@@ -675,30 +701,30 @@ class InterpreterAnalyzer(ASTTemplate):
                                                 on=original_data.columns.tolist())
             original_data.loc[non_filtering_indexes, 'bool_var'] = True
             return original_data
-        elif self.is_from_hr:
-            if node.op in HR_COMP_MAPPING:
-                left_operand = self.visit(node.left)
-                right_operand = self.visit(node.right)
-
-                if isinstance(right_operand, Dataset):
-                    right_operand = get_measure_from_dataset(right_operand, node.right.value)
-
-                return HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+        elif node.op in HR_COMP_MAPPING:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
+            if isinstance(right_operand, Dataset):
+                right_operand = get_measure_from_dataset(right_operand, node.right.value)
+            if self.is_from_hr_agg:
+                if node.op != EQ:
+                    warnings.warn("Only equality is allowed on hierarchical aggregation, "
+                                  "continuing with equality")
+                return HAAssignment.evaluate(left_operand, right_operand)
             else:
-                left_operand = self.visit(node.left)
-                right_operand = self.visit(node.right)
-                if isinstance(left_operand, Dataset):
-                    left_operand = get_measure_from_dataset(left_operand, node.left.value)
-                if isinstance(right_operand, Dataset):
-                    right_operand = get_measure_from_dataset(right_operand, node.right.value)
-                return HR_NUM_BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
-        raise NotImplementedError
+                return HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+        else:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
+            if isinstance(left_operand, Dataset):
+                left_operand = get_measure_from_dataset(left_operand, node.left.value)
+            if isinstance(right_operand, Dataset):
+                right_operand = get_measure_from_dataset(right_operand, node.right.value)
+            return HR_NUM_BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
-        if self.is_from_hr and node.op in HR_UNARY_MAPPING:
-            operand = self.visit(node.operand)
-            return HR_UNARY_MAPPING[node.op].evaluate(operand)
-        raise NotImplementedError
+        operand = self.visit(node.operand)
+        return HR_UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
 
@@ -830,6 +856,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
         name = node.value
 
+        if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed:
+            df = self.hr_agg_rules_computed[node.value].copy()
+            return Dataset(name=name, components=result_components, data=df)
+
         df = self.rule_data.copy()
         if node.value in df[hr_component].values:
             df = df[df[hr_component] == node.value].reset_index(drop=True)
@@ -843,6 +873,6 @@ class InterpreterAnalyzer(ASTTemplate):
             df[hr_component] = node.value
             if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
                 df[measure_name] = 0
-            else: # For non_null, partial_null and always_null
+            else:  # For non_null, partial_null and always_null
                 df[measure_name] = None
         return Dataset(name=name, components=result_components, data=df)

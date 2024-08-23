@@ -1,9 +1,12 @@
 import operator
 from copy import copy
+from typing import Dict
 
 import pandas as pd
+from pandas import DataFrame
 
 import Operators
+from AST.Grammar.tokens import HIERARCHY
 from DataTypes import Boolean, Number
 from Model import DataComponent, Dataset, Role, Component
 
@@ -68,9 +71,13 @@ class HRComparison(Operators.Binary):
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy()
         measure_name = left.get_measures_names()[0]
-        result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data, hr_mode, cls.op_func)
-        result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data, hr_mode, cls.imbalance_func)
+        result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
+                                                    hr_mode, cls.op_func)
+        result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data,
+                                                     hr_mode, cls.imbalance_func)
         # Removing datapoints that should not be returned
+        # (we do it below imbalance calculation
+        # to avoid errors on different shape)
         result.data = result.data[result.data['bool_var'] != "REMOVE_VALUE"]
         result.data.drop(measure_name, axis=1, inplace=True)
         return result
@@ -139,3 +146,51 @@ class HRUnPlus(HRUnNumeric):
 class HRUnMinus(HRUnNumeric):
     op = '-'
     py_op = operator.neg
+
+class HAAssignment(Operators.Binary):
+
+    @classmethod
+    def validate(cls, left: Dataset, right: DataComponent) -> Dataset:
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             left.components.items()}
+        return Dataset(name=f"{left.name}",
+                       components=result_components,
+                       data=None)
+
+    @classmethod
+    def evaluate(cls, left: Dataset, right: DataComponent) -> Dataset:
+        result = cls.validate(left, right)
+        measure_name = left.get_measures_names()[0]
+        result.data = left.data.copy()
+        result.data[measure_name] = right.data
+        return result
+
+class Hierarchy(Operators.Operator):
+
+    op = HIERARCHY
+
+    @staticmethod
+    def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
+        list_data = list(computed_dict.values())
+        return pd.concat(list_data, axis=0)
+
+    @classmethod
+    def validate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str) -> Dataset:
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             dataset.components.items()}
+        return Dataset(name=dataset.name,
+                       components=result_components,
+                       data=None)
+
+    @classmethod
+    def evaluate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str) -> Dataset:
+        result = cls.validate(dataset, computed_dict, output)
+        computed_data = cls.generate_computed_data(computed_dict)
+        if output == "computed":
+            result.data = computed_data
+            return result
+
+        result.data = pd.concat([dataset.data, computed_data], axis=1)
+        result.data.drop_duplicates(subset=dataset.get_identifiers_names(), keep='last', inplace=True)
+        return result
+

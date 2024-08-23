@@ -883,9 +883,9 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        modes = "non_null"
+        inputs = "rule"
+        retains = "computed"
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -903,20 +903,13 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.22
             conditions = conditions[0]
 
-        if inputs is None:
-            inputs = 'dataset'
-        elif inputs == DATASET_PRIORITY:
+        if inputs == DATASET_PRIORITY:
             raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
-
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
