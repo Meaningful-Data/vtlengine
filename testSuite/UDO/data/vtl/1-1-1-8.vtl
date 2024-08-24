@@ -1,0 +1,11 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+define operator resta (x dataset, s scalar)
+  returns dataset is
+    x - s
+end operator;
+
+DS_r := drop_identifier (resta (DS, 2.0), Id_3);

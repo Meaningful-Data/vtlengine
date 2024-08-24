@@ -1,0 +1,11 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+define operator membership (x dataset, c component)
+  returns dataset is
+    x#c
+end operator;
+
+DS_r := drop_identifier (membership (DS,Me_2), Id_3);

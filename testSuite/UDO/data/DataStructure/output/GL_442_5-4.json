@@ -1,0 +1,1 @@
+{"datasets": [{"name": "lei_statistcs.ENTITITES_PER_POSTAL_CODE", "DataStructure": [{"name": "Entity.LegalAddress.PostalCode", "role": "Identifier", "type": "String", "nullable": false}, {"name": "int_var", "role": "Measure", "type": "Integer", "nullable": true}], "DataPoints": null}]}

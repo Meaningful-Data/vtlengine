@@ -1,0 +1,31 @@
+define operator conf_status_str(value component)
+    returns component is
+        if value = 1 then "C" else
+        if value = 2 then "N" else
+        if value = 3 then "E" else
+        if value = 4 then "F" else 0
+end operator;
+
+define operator AVG_M_Q (ds dataset)
+     returns dataset is
+    inner_join(
+        count(
+			ds group all time_agg("Q",_,TIME_PERIOD)
+		)
+		[filter int_var = 3]
+		[drop int_var] as A,
+        ds
+            [calc CONF_STATUS_NUM := conf_status_num(CONF_STATUS)]
+            [aggr
+                OBS_VALUE := avg(OBS_VALUE),
+                CONF_STATUS_NUM := min(CONF_STATUS_NUM)
+                group all time_agg("Q",_,TIME_PERIOD)]
+            [calc CONF_STATUS := conf_status_str(CONF_STATUS_NUM)]
+            [drop CONF_STATUS_NUM] as B
+    )
+        [sub FREQ = "M"]
+        [calc identifier FREQ := "Q"]
+end operator;
+
+filtered_ds := DS_PPI[filter FREQ = "M"];
+with_udo :=  AVG_M_Q(filtered_ds);

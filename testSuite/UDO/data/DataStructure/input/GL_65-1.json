@@ -1,0 +1,219 @@
+{
+  "datasets": [
+    {
+      "name": "dsPrep.ENTTY_INSTRMNT_CMA",
+      "DataStructure": [
+        {
+          "name": "ACCNTNG_FRMWRK_SL",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "ANNL_TRNVR_CRRNCY",
+          "type": "Number",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "BLNC_SHT_TTL_CRRNCY",
+          "type": "Number",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "CNTRCT_ID",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "CNTRY",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        },
+        {
+          "name": "CTY",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DFLT_STTS",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DFLT_STTS_INSTRMNT",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "type": "Date",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DT_ENTRPRS_SZ",
+          "type": "Date",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DT_LGL_PRCDNG_STTS",
+          "type": "Date",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "DT_RFRNC",
+          "type": "Date",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "ECNMC_ACTVTY",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "ENTRPRS_SZ",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "HD_QRTR_CD",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        },
+        {
+          "name": "HD_QRTR_CNTRY",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        },
+        {
+          "name": "IMMDT_PRNT_CD",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "LEI",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "LGL_FRM",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "LGL_PRCDNG_STTS",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NEVS_DFLT_STTS",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NEVS_DFLT_STTS_INSTRMNT",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NEVS_DT_DFLT_STTS",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NEVS_PD",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NMBR_EMPLYS",
+          "type": "Number",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "NM_ENTTY",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "PD",
+          "type": "Number",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "PSTL_CD",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "SSMSIGNIFICANCE",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "STRT",
+          "type": "String",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "ULTMT_PRNT_CD",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        }
+      ]
+    }
+  ]
+}

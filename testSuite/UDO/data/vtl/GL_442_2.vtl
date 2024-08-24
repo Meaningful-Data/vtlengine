@@ -1,0 +1,16 @@
+define operator count_by_measure(ds dataset, 'measure' component, Me1 component, default_value string default "N/A")
+returns dataset
+is
+    count(
+        ds
+            [calc identifier 'measure' := nvl('measure', default_value)] 
+        group by Me1)
+end operator;
+/*******************************************************************************
+*       Module lei_statistcs
+*******************************************************************************/
+lei_statistcs.ENTITITES_PER_POSTAL_CODE :=
+	count_by_measure(
+		ENTITIES,
+		Entity.LegalAddress.PostalCode,
+        Entity.LegalName);
