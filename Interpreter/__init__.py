@@ -273,13 +273,24 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             return result
 
-        # TODO: Review this as the components on calc are not in correct order (Rank test)
-        # Extracting the component we need (only measure)
+        # Extracting the components we need (only identifiers)
+        id_columns = self.regular_aggregation_dataset.get_identifiers_names()
+
+        # Joining the result with the original dataset
+        joined_result = pd.merge(
+            self.regular_aggregation_dataset.data[id_columns],
+            result.data,
+            on=id_columns,
+            how='inner')
+
+        # # Extracting the component we need (only measure)
         measure_name = result.get_measures_names()[0]
         return DataComponent(name=measure_name,
-                             data=result.data[measure_name],
-                             data_type=result.components[measure_name].data_type,
-                             role=result.components[measure_name].role)
+                             data=joined_result[measure_name],
+                             data_type=result.components[
+                                 measure_name].data_type,
+                             role=result.components[measure_name].role,
+                             nullable=result.components[measure_name].nullable)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
