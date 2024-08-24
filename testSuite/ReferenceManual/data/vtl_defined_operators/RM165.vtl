@@ -1,0 +1,5 @@
+define operator Test165 (x dataset)
+    returns dataset is
+    x [ calc attribute At_1:= "EP" ]
+end operator;
+DS_r := Test165(DS_1);

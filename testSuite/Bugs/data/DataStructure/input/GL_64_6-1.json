@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "DT_RFRNC_DS",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,7 @@ from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
+from Model import Role
 
 
 class Expr(VtlVisitor):
@@ -315,10 +316,9 @@ class Expr(VtlVisitor):
             clause_nodes.append(self.visitJoinClauseItem(item))
 
         if len(components) != 0:
-            mul_op = Parser.literalNames[Parser.USING][1:-1]
             for component in components:
-                component_nodes.append(Terminals().visitComponentID(component))
-            using = MulOp(mul_op, component_nodes)
+                component_nodes.append(Terminals().visitComponentID(component).value)
+            using = component_nodes
 
         return clause_nodes, using
 
@@ -432,7 +432,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, children=children_nodes, output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes, output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
@@ -953,25 +953,27 @@ class Expr(VtlVisitor):
         op = c.getSymbol().text
 
         operand_node = self.visitExpr(ctx_list[2])
-        rule_name = ctx_list[4]
+        rule_name = ctx_list[4].getSymbol().text
 
         components = [Terminals().visitComponentID(comp) for comp in ctx_list if
                       isinstance(comp, Parser.ComponentIDContext)]
+        aux_components = []
+        for x in components:
+            if isinstance(x, BinOp):
+                aux_components.append(x.right.value)
+            else:
+                aux_components.append(x.value)
 
-        retain = None
+        components = aux_components
+
+        # Default value for output is invalid.
+        output = 'invalid'
 
         if isinstance(ctx_list[-2], Parser.ValidationOutputContext):
-            retain = Terminals().visitValidationOutput(ctx_list[-2])
+            output = Terminals().visitValidationOutput(ctx_list[-2])
 
-        if retain is not None:
-            param_constant_node = [ParamConstant('PARAM_DATAPOINT', retain)]
-        else:
-            param_constant_node = []
-
-        rule_name_node = Identifier(value=rule_name.getSymbol().text, kind='DPRuleID')
-
-        return ParamOp(op=op, children=[operand_node, rule_name_node, *components],
-                       params=param_constant_node)
+        return ParamOp(op=op, children=[operand_node, rule_name, *components],
+                       params=[output])
 
     # TODO Not fully implemented only basic usage available.
     def visitValidateHRruleset(self, ctx: Parser.ValidateHRrulesetContext):
@@ -1045,24 +1047,27 @@ class Expr(VtlVisitor):
         validation_node = self.visitExpr(ctx_list[2])
 
         inbalance_node = None
-        params_nodes = []
+        error_code = None
+        error_level = None
         for param in ctx_list:
             if isinstance(param, Parser.ErCodeContext):
-                params_nodes.append(Terminals().visitErCode(param))
+                error_code = Terminals().visitErCode(param)
             elif isinstance(param, Parser.ErLevelContext):
-                params_nodes.append(Terminals().visitErLevel(param))
+                error_level = Terminals().visitErLevel(param)
             elif isinstance(param, Parser.ImbalanceExprContext):
                 inbalance_node = self.visitImbalanceExpr(param)
 
         invalid = ctx_list[-2] if isinstance(ctx_list[-2], TerminalNodeImpl) else None
 
         if invalid is None:
-            invalid_value = 'all'
+            invalid_value = False
         else:
-            invalid_value = invalid.getSymbol().text
+            invalid_value = True if invalid.getSymbol().text == 'invalid' else False
 
-        return Validation(op=token.text, validation=validation_node, params=params_nodes,
-                          inbalance=inbalance_node,
+        return Validation(op=token.text, validation=validation_node,
+                          error_code=error_code,
+                          error_level=error_level,
+                          imbalance=inbalance_node,
                           invalid=invalid_value)
 
     def visitImbalanceExpr(self, ctx: Parser.ImbalanceExprContext):
@@ -1198,7 +1203,6 @@ class Expr(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
-
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)
 
@@ -1294,7 +1298,12 @@ class Expr(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        left_node = Terminals().visitComponentID(ctx_list[0]).value
+        left_node = Terminals().visitComponentID(ctx_list[0])
+        if isinstance(left_node, BinOp):
+            left_node = f'{left_node.left.value}{left_node.op}{left_node.right.value}'
+        else:
+            left_node = left_node.value
+
         right_node = Terminals().visitVarID(ctx_list[2]).value
 
         return RenameNode(left_node, right_node)
@@ -1491,15 +1500,16 @@ class Expr(VtlVisitor):
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[3])
             operand_node = Assignment(left_node, op_node, right_node)
-            if role is not None:
-                return UnaryOp(role.value.lower(), operand_node)
-            return operand_node
+            if role is None:
+                return UnaryOp(Role.MEASURE.value.lower(), operand_node)
+            return UnaryOp(role.value.lower(), operand_node)
         else:
             left_node = Terminals().visitSimpleComponentId(c)
             op_node = ':='
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 
-            return Assignment(left_node, op_node, right_node)
+            operand_node = Assignment(left_node, op_node, right_node)
+            return UnaryOp(Role.MEASURE.value.lower(), operand_node)
 
     def visitKeepOrDropClause(self, ctx: Parser.KeepOrDropClauseContext):
         """

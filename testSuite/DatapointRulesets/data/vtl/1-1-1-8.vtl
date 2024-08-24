@@ -1,0 +1,13 @@
+define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as ACCOUNTING_ENTRY,
+    INT_ACC_ITEM as INT_ACC_ITEM, FUNCTIONAL_CAT as FUNCTIONAL_CAT,INSTR_ASSET as INSTR_ASSET,
+    OBS_VALUE as OBS_VALUE) is 
+    sign1c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "G" then OBS_VALUE > 0 errorcode "sign1c" errorlevel 1;
+    sign2c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "GA" then OBS_VALUE > 0 errorcode "sign2c" errorlevel 1;
+    sign3c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "S" then OBS_VALUE > 0 errorcode "sign3c" errorlevel 1;
+    sign4c: when ACCOUNTING_ENTRY = "C" and INT_ACC_ITEM = "IN1" then OBS_VALUE > 0 errorcode "sign4c" errorlevel 2;
+    sign9: when INT_ACC_ITEM = "D4Q" and FUNCTIONAL_CAT = "D" and INSTR_ASSET = "FL" then OBS_VALUE > 0 errorcode "sign9" errorlevel 3;
+    sign10: when INT_ACC_ITEM = "D45" and FUNCTIONAL_CAT = "P" and INSTR_ASSET = "F" then OBS_VALUE > 0 errorcode "sign10" errorlevel 4
+
+end datapoint ruleset;
+
+DS_r := check_datapoint (BOP, signValidation all);

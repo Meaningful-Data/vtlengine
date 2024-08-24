@@ -1,0 +1,7 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+
+IS_INTRCMPNY_DS := drop_identifier ( inner_join ( drop_identifier ( B10.ENTTY_INSTRMNT_CRDTR_LE , ENTTY_RIAD_CD ) [ drop ENTTY_RIAD_CD_LE ] as A , drop_identifier ( B10.ENTTY_INSTRMNT_DBTR_LE , ENTTY_RIAD_CD ) [ drop ENTTY_RIAD_CD_LE ] as B calc IS_INTRCMPNY := "T" ) , LE_CD ) ;

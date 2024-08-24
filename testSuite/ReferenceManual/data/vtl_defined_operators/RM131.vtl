@@ -1,0 +1,5 @@
+define operator Test131 (x dataset, y dataset)
+    returns dataset is
+    symdiff(x, y)
+end operator;
+DS_r := Test131(DS_1, DS_2);

@@ -1,0 +1,2 @@
+DS_r := DS_1 [filter Me_1 = true and Me_2 = false][calc Me_3 := Me_1 and Me_2]
+[rename Me_1 to MeB_1, Me_2 to MeB_2, Me_3 to MeB_3][aggr Me_4 := min (MeB_1) group by Id_1];

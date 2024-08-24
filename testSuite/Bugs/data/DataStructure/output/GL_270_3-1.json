@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "ENTTY_INSTRMNT_JN_LBLTS_AGG",
+      "DataStructure": [
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_JNT_LBLTY_RPRTD_ALL",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+define operator Test150 (x dataset, y component)
+    returns dataset is
+    var_samp ( x group by y )
+end operator;
+DS_r := Test150(DS_1, Id_1);

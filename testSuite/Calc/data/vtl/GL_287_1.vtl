@@ -1,0 +1,20 @@
+ANCRDT_INSTRMNTS_IDS := ANCRDT_INSTRMNT_C[keep FDCRY][drop FDCRY]; 
+DT_RFRNC_DS := max(ANCRDT_INSTRMNTS_IDS group by DT_RFRNC);
+
+ENTTY_DS :=
+    cross_join(
+        RIAD_ENTTY_C[keep CNTRY, DT_BRTH, DT_CLS] as A,
+        DT_RFRNC_DS
+        );
+
+
+//INSTTTNL_SCTR and INSTTTNL_SCTR_DTL
+    INSTTTNL_SCTR_DS :=
+        max(
+            cross_join(
+                    RIAD_INSTTTNL_SCTR_C
+                        [rename OBS_VALUE to INSTTTNL_SCTR]
+                        [keep INSTTTNL_SCTR, INSTTTNL_SCTR_DTL] as A, 
+                    DT_RFRNC_DS)
+                [filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T]
+            group except VLD_FRM, VLD_T);

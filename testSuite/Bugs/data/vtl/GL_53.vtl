@@ -1,0 +1,8 @@
+define datapoint ruleset anacreditCounterpartyDefault (variable DT_DFLT_STTS, DT_RFRNC, DFLT_STTS, NEVS_DT_DFLT_STTS, NEVS_DFLT_STTS) is
+  
+            CN0630: DT_RFRNC >= DT_DFLT_STTS errorcode "CN0630" errorlevel 3;
+            CN0816: when NEVS_DT_DFLT_STTS = "0" and (NEVS_DFLT_STTS not_in {"0", "-2", "-3", "-5"} or isnull(NEVS_DFLT_STTS)) then DFLT_STTS = "14"  errorcode "CN0816" errorlevel 3;
+            GCMA_TH_L_DT_DFLT_STTS_ENTTY: DT_DFLT_STTS >= cast("1901-01-01", date) errorcode "GCMA_TH_L_DT_DFLT_STTS_ENTTY" errorlevel 4
+        
+        end datapoint ruleset;
+        CNTRPRTY_DFLT_RSLT <- check_datapoint ( ANCRDT_ENTTY_DFLT_C , anacreditCounterpartyDefault ) ; 

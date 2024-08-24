@@ -1,0 +1,5 @@
+define operator Test022 (x dataset, y scalar, z scalar)
+    returns dataset is
+    replace(x, y, z)
+end operator;
+DS_r := Test022(DS_1, "ello","i");

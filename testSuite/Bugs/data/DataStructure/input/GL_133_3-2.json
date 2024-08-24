@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_2",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "Time",
+          "nullable": false
+        },
+        {
+          "name": "Me_5",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_6",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

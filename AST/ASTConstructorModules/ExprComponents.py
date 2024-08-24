@@ -265,6 +265,9 @@ class ExprComp(VtlVisitor):
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
+        if len(children_nodes) > 1:
+            raise Exception("Only one operand is allowed in Eval")
+
         # Reference manual says it is mandatory.
         language_name = [language for language in ctx_list if
                          isinstance(language, TerminalNodeImpl) and language.getSymbol().type == Parser.STRING_CONSTANT]
@@ -278,7 +281,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, children=children_nodes, output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes[0], output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
@@ -306,8 +309,7 @@ class ExprComp(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 

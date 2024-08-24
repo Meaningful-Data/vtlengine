@@ -1,0 +1,5 @@
+define operator Test126 (x dataset, y dataset)
+    returns dataset is
+    union(x, y)
+end operator;
+DS_r := Test126(DS_1, DS_2);

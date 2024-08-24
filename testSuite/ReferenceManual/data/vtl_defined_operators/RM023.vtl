@@ -1,0 +1,5 @@
+define operator Test023 (x component, y scalar, z scalar)
+    returns component is
+    replace(x, y, z)
+end operator;
+DS_r := DS_1[ calc Me_2:= Test023(Me_1, "ello","i")];

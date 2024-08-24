@@ -1,0 +1,13 @@
+RSDL_MRTY_WA := 
+    inner_join(
+        DBTR_FCT_DYS,
+        VRBLS_AGGR
+        using ENTTY_RIAD_CD, DT_RFRNC
+        aggr RSDL_MTRTY_DYS_WGHTD_AVRG := max (RSDL_MTRTY),
+        Me_2 := sum(RSDL_MTRTY*PST_D_DYS/MAX_RSDL_MTRTY_DYS),
+        Me_3 := count()
+        group by CRDTR_ID
+        );
+
+
+

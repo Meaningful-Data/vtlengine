@@ -1,0 +1,4 @@
+define datapoint ruleset completenessFinancial(variable OTSTNDNG_NMNL_AMNT, NEVS_OTSTNDNG_NMNL_AMNT) is
+CT0320: not isnull(OTSTNDNG_NMNL_AMNT) or NEVS_OTSTNDNG_NMNL_AMNT = "0" errorcode "CT0320" errorlevel 2
+end datapoint ruleset;
+result := check_datapoint(FNNCL_CHCK , completenessFinancial ) ;

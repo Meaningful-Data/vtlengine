@@ -1,0 +1,3 @@
+DS_r:= inner_join (DS_1 [aggr Me_3 := min (Me_1) group by Id_2] as d1, 
+                   DS_2 [rename Me_1 to Me_1A] as d2) [rename Me_3 to Me_3A]
+                   [aggr Me_4:= count () group by Id_2];

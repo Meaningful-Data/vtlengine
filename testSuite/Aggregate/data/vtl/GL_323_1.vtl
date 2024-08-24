@@ -1,0 +1,23 @@
+DBTR_FCT_DYS :=
+    ANCRDT_INSTRMNT_FCT
+        [keep RSDL_MTRTY, PST_D_DYS, OTSTNDNG_NMNL_AMNT_CV]
+        [rename DBTR_ID to ENTTY_RIAD_CD];
+VRBLS_AGGR :=
+    DBTR_FCT_DYS
+        [aggr
+            MAX_RSDL_MTRTY_DYS := max(RSDL_MTRTY),
+            MAX_PST_D_DYS := max(PST_D_DYS),
+            TTL_CV_OTSTNDNG_NMNL_AMNT := sum(OTSTNDNG_NMNL_AMNT_CV)
+            group by DT_RFRNC, ENTTY_RIAD_CD];
+
+RSDL_MRTY_WA :=
+    inner_join(
+        DBTR_FCT_DYS,
+        VRBLS_AGGR
+        aggr RSDL_MTRTY_DYS_WGHTD_AVRG := sum (RSDL_MTRTY * OTSTNDNG_NMNL_AMNT_CV / TTL_CV_OTSTNDNG_NMNL_AMNT) group by DT_RFRNC, ENTTY_RIAD_CD
+        );
+
+ANAMART_ENTTY_DYS :=
+    inner_join(
+        VRBLS_AGGR,
+        RSDL_MRTY_WA);

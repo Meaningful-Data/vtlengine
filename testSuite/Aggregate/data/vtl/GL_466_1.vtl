@@ -1,0 +1,3 @@
+all_dates := fill_time_series(test_time_period, all);
+all_dates_and_month := all_dates[calc identifier month := time_agg("M", "D", cast(REF_PERIOD, time_period))];
+total_records_per_month := count(all_dates_and_month group by month);

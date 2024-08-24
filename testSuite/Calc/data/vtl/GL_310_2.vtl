@@ -1,0 +1,6 @@
+DQI_RI0290 <- left_join (
+    no_joint_liabilities [rename int_var to denominator] as A,
+    nvl(count(RI0290 group by DT_RFRNC, OBSRVD_AGNT_CD)[rename int_var to numerator], 0) as B
+    calc int_var := if denominator > 0 then numerator / denominator else 0
+    keep int_var
+    );

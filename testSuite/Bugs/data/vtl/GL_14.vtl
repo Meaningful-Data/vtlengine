@@ -1,0 +1,37 @@
+dsPrep.ANCRDT_ACCNTNG_C_MX := max ( ANCRDT_ACCNTNG_C group except DT_RFRNC ) ; 
+dsPrep.ANCRDT_ACCNTNG_C_T3_MX := max ( ANCRDT_ACCNTNG_C_T3 group except DT_RFRNC ) ; 
+dsPrep.ANCRDT_INSTRMNT_C_MX := max ( ANCRDT_INSTRMNT_C group except DT_RFRNC ) ; 
+dsPrep.ANCRDT_INSTRMNT_C_T1_MX := max ( ANCRDT_INSTRMNT_C_T1 group except DT_RFRNC ) ; 
+dsPrep.ANCRDT_INSTRMNT_C_T2_MX := max ( ANCRDT_INSTRMNT_C_T2 group except DT_RFRNC ) ; 
+dsPrep.ANCRDT_INSTRMNT_C_T3_MX := max ( ANCRDT_INSTRMNT_C_T3 group except DT_RFRNC ) ; 
+dsPrep.ACCNTNG_INSTRMNT_T_T3 := 
+    left_join ( dsPrep.ANCRDT_ACCNTNG_C_MX 
+                    [ keep DT_FRBRNC_STTS , PRFRMNG_STTS , DT_PRFRMNG_STTS , FRBRNC_STTS ] as A , 
+                dsPrep.ANCRDT_ACCNTNG_C_T3_MX 
+                    [ keep PRFRMNG_STTS , DT_PRFRMNG_STTS , FRBRNC_STTS , DT_FRBRNC_STTS ] 
+                    [ rename PRFRMNG_STTS to PRFRMNG_STTS_T3 , 
+                             DT_PRFRMNG_STTS to DT_PRFRMNG_STTS_T3 , 
+                             FRBRNC_STTS to FRBRNC_STTS_T3 , 
+                             DT_FRBRNC_STTS to DT_FRBRNC_STTS_T3 ] as B , 
+                dsPrep.ANCRDT_INSTRMNT_C_MX 
+                    [ keep FDCRY , PRJCT_FNNC_LN , PRPS , RPYMNT_RGHTS , RCRS ] as C , 
+                dsPrep.ANCRDT_INSTRMNT_C_T1_MX 
+                    [ keep FDCRY , PRJCT_FNNC_LN , PRPS , RPYMNT_RGHTS , RCRS ] 
+                    [ rename FDCRY to FDCRY_T1 , 
+                             PRJCT_FNNC_LN to PRJCT_FNNC_LN_T1 , 
+                             PRPS to PRPS_T1 , 
+                             RPYMNT_RGHTS to RPYMNT_RGHTS_T1 , 
+                             RCRS to RCRS_T1 ] as D , 
+                dsPrep.ANCRDT_INSTRMNT_C_T2_MX 
+                    [ rename FDCRY to FDCRY_T2 , 
+                      PRJCT_FNNC_LN to PRJCT_FNNC_LN_T2 , 
+                      PRPS to PRPS_T2 , 
+                      RPYMNT_RGHTS to RPYMNT_RGHTS_T2 , 
+                      RCRS to RCRS_T2 ] as E , 
+                dsPrep.ANCRDT_INSTRMNT_C_T3_MX 
+                    [ rename FDCRY to FDCRY_T3 , 
+                             PRJCT_FNNC_LN to PRJCT_FNNC_LN_T3 , 
+                             PRPS to PRPS_T3 , 
+                             RPYMNT_RGHTS to RPYMNT_RGHTS_T3 , 
+                             RCRS to RCRS_T3 ] 
+                as F ) ; 

@@ -1,0 +1,11 @@
+comp_cred.CD0060_DS := comp_cred.CD0060_P [ 
+    calc identifier CD0060 := if isnull ( RCGNTN_STTS ) 
+                    then 
+                        if OTSTNDNG_NMNL_AMNT = 0 and isnull ( OFF_BLNC_SHT_AMNT ) 
+                        then true 
+                        else null 
+                    else 
+                        if OTSTNDNG_NMNL_AMNT = 0 and isnull ( OFF_BLNC_SHT_AMNT ) and RCGNTN_STTS = "3" and ACCMLTD_WRTFFS > 0 
+                        then true 
+                        else null ] 
+                    [ keep CD0060 ] ; 

@@ -1,0 +1,1 @@
+DS_r := inner_join(DS_1[filter Id_2<>"aa"] as d1, DS_2 as d2 filter Id_4 > 0 calc Me_3 := Me_2*d2#Me_1 keep d1#Me_1, Me_1A, Me_3)[rename Me_3 to Me_3a];

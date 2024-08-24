@@ -8,8 +8,12 @@ Template to start a new visitor for the AST.
 """
 from typing import Any
 
+import pandas as pd
+
 import AST
 from AST.ASTVisitor import NodeVisitor
+from Model import Dataset
+from Operators.Conditional import If
 
 
 class ASTTemplate(NodeVisitor):
@@ -183,6 +187,8 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
+        if node.value in self.datasets:
+            return self.datasets[node.value]
         return node.value
 
     def visit_Optional(self, node: AST.Optional) -> AST.AST:
@@ -203,6 +209,8 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
+        if node.value == '_':
+            return
         return node.value
 
     def visit_Role(self, node: AST.Role) -> AST.AST:
@@ -308,7 +316,6 @@ class ASTTemplate(NodeVisitor):
             self.visit(node.thenOp)
             self.visit(node.elseOp)
         """
-
         self.visit(node.condition)
         self.visit(node.thenOp)
         self.visit(node.elseOp)
@@ -331,8 +338,8 @@ class ASTTemplate(NodeVisitor):
         for param in node.params:
             self.visit(param)
 
-        if node.inbalance is not None:
-            self.visit(node.inbalance)
+        if node.imbalance is not None:
+            self.visit(node.imbalance)
 
     def visit_Operator(self, node: AST.Operator) -> None:
         """
@@ -401,7 +408,7 @@ class ASTTemplate(NodeVisitor):
             for rule in node.rules:
                 self.visit(rule)
         """
-        for element in node.element:
+        for element in node.params:
             self.visit(element)
         for rule in node.rules:
             self.visit(rule)

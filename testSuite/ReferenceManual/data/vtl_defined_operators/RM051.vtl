@@ -1,0 +1,5 @@
+define operator Test051 (x dataset, y scalar)
+    returns dataset is
+    round(x, y)
+end operator;
+DS_r := Test051(DS_1, 0);

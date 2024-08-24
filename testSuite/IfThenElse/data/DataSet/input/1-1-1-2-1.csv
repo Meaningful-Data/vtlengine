@@ -1,0 +1,5 @@
+securityId,accountingClassification,amortisedCost,marketValue
+123,ac,10000
+123,fv,500,900
+456,ac,4000,3900
+456,fv,,5000

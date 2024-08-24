@@ -1,0 +1,24 @@
+define operator dqi_vl (errrs dataset, css dataset)
+  returns dataset is
+    left_join (
+        errrs,
+        css
+        using dt_rfrnc, mssg_id, obsrvd_agnt_acr_id
+        calc dqi_vl :=
+            if
+                exctd <> "T"
+            then
+                cast(null, number)
+            else
+                if
+                    ttl_obs = 0
+                then
+                    0
+                else
+                    nmbr_of_errrs / ttl_obs
+        keep dqi_vl
+    )
+end operator;
+
+DQI_IG0010:=
+    dqi_vl(errors_dataset[sub vldtn_id = "IG0010"], no_counterparties);

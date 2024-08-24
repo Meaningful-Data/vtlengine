@@ -1,0 +1,5 @@
+define operator Test173 (x dataset, y component, z component)
+    returns dataset is
+    x [ unpivot y, z ]
+end operator;
+DS_r := Test173(DS_1, Id_2, Me_1);

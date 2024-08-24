@@ -1,0 +1,5 @@
+securityId,accountingClassification,currentDate,amortisedCost,marketValue
+"123",ac,2021-08-25,10000
+"123",fv,2021-08-25,500,900
+"456",ac,2021-08-24,4000,3900
+"456",fv,2021-08-22,,5000

@@ -1,0 +1,5 @@
+define operator Test038 (x component, y scalar)
+    returns component is
+    x + y
+end operator;
+DS_r := DS_1 [ calc Me_3 := Test038(Me_1, 3.0) ];

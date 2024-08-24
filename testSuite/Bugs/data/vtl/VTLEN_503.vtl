@@ -1,0 +1,7 @@
+define datapoint ruleset accountEntry (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, OBS_VALUE as O) is
+  when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c";
+  when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c"
+  
+end datapoint ruleset;
+bopObs := BOP[keep OBS_VALUE];    
+signValidation := check_datapoint(bopObs, signValidation);

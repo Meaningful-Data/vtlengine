@@ -1,0 +1,7 @@
+GRP_INFRMTN_INTRGRP :=
+  left_join(G_SCRTS_TBR.SCRTS_RPR
+                [calc identifier ISSR_ID := ISSR_ID] as A,
+            INTRGRP_CPMNS
+                [drop TYP_PRDNTL_CNSLDTN, 
+                      PRCNTG_CNSLDTN] as B
+            using DT_RFRNC, PRSPCTV_ID, ISSR_ID);

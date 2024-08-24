@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from AST import RenameNode
-from DataTypes import Boolean, String
+from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
 
@@ -13,6 +13,7 @@ class Calc:
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
+
             if operand.name in dataset.components:
                 # Override component with same name
                 dataset.delete_component(operand.name)
@@ -81,7 +82,10 @@ class Aggregate:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
-                result_dataset.data[operand.name] = operand.data
+                if len(operand.data) > 0:
+                    result_dataset.data[operand.name] = operand.data
+                else:
+                    result_dataset.data[operand.name] = None
         return result_dataset
 
 
@@ -96,7 +100,9 @@ class Filter:
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset):
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
+        result_dataset.data = dataset.data.copy()
+        if len(condition.data) > 0:
+            result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
         return result_dataset
 
 
@@ -105,7 +111,7 @@ class Keep:
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
-            if operand not in dataset.components:
+            if operand not in dataset.get_components_names():
                 raise Exception(f"Component {operand} not found in dataset {dataset.name}")
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise Exception(f"Component {operand} in dataset {dataset.name} is an "
@@ -117,7 +123,12 @@ class Keep:
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
+    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        if len(operands) == 0:
+            raise ValueError('Keep clause requires at least one operand')
+        if dataset is None:
+            if sum(isinstance(operand, Dataset) for operand in operands) != 1:
+                raise ValueError('Keep clause requires at most one dataset operand')
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
         return result_dataset
@@ -151,16 +162,21 @@ class Rename:
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset):
         for operand in operands:
-            if operand.old_name not in dataset.components:
+            if operand.old_name not in dataset.components.keys():
                 raise Exception(f"Component {operand.old_name} not found in dataset {dataset.name}")
-            if operand.new_name in dataset.components:
+            if operand.new_name in dataset.components.keys():
                 raise Exception(
                     f"Component {operand.new_name} already exists in dataset {dataset.name}")
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
-            result_components[operand.new_name] = result_components.pop(operand.old_name)
-            result_components[operand.new_name].name = operand.new_name
+            result_components[operand.new_name] = Component(
+                name=operand.new_name,
+                data_type=result_components[operand.old_name].data_type,
+                role=result_components[operand.old_name].role,
+                nullable=result_components[operand.old_name].nullable
+            )
+            del result_components[operand.old_name]
 
         return Dataset(name=dataset.name, components=result_components, data=None)
 
@@ -192,23 +208,23 @@ class Unpivot:
         identifier, measure = operands
         if identifier in dataset.components:
             raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
-        if measure in dataset.components:
-            raise ValueError(f"Component {measure} already exists in dataset {dataset.name}")
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
         # noinspection PyTypeChecker
         result_dataset.add_component(Component(name=identifier, data_type=String,
                                                role=Role.IDENTIFIER, nullable=False))
-        # TODO: Add type promotion
         base_type = None
+        final_type = String
         for comp in dataset.get_measures():
             if base_type is None:
                 base_type = comp.data_type
             else:
-                if comp.data_type != base_type:
-                    raise ValueError("All measures must have the same data type")
-        result_dataset.add_component(Component(name=measure, data_type=base_type,
+                if check_unary_implicit_promotion(base_type, comp.data_type) is None:
+                    raise ValueError("All measures must have the same data type on unpivot clause")
+            final_type = unary_implicit_promotion(base_type, comp.data_type)
+
+        result_dataset.add_component(Component(name=measure, data_type=final_type,
                                                role=Role.MEASURE, nullable=True))
         return result_dataset
 
@@ -218,7 +234,7 @@ class Unpivot:
         result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
                                                 value_vars=dataset.get_measures_names(),
                                                 var_name=operands[0], value_name=operands[1])
-        result_dataset.data = result_dataset.data.reset_index(drop=True)
+        result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
         return result_dataset
 
 
@@ -241,8 +257,19 @@ class Sub:
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
-        for operand in operands:
-            result_dataset.data = result_dataset.data[operand.data]
-            result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
-            result_dataset.data = result_dataset.data.reset_index(drop=True)
+        operand_names = [operand.name for operand in operands]
+        if len(dataset.data) > 0:
+            # Filter the Dataframe
+            # by intersecting the indexes of the Data Component with True values
+            true_indexes = set()
+            is_first = True
+            for operand in operands:
+                if is_first:
+                    true_indexes = set(operand.data[operand.data == True].index)
+                    is_first = False
+                else:
+                    true_indexes.intersection_update(set(operand.data[operand.data == True].index))
+            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
+        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
+        result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset

@@ -1,0 +1,5 @@
+define operator Test021 (x component, y scalar, z scalar)
+    returns component is
+    substr(x, y, z)
+end operator;
+DS_r := DS_1[ calc Me_2:= Test021(Me_2, 1, 5)];

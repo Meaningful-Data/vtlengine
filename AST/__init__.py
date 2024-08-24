@@ -347,14 +347,15 @@ class If(AST):
 @dataclass
 class Validation(AST):
     """
-    Validation: (op, validation, params, inbalance, invalid)
+    Validation: (op, validation, error_code, error_level, imbalance, invalid)
     """
 
     op: str
     validation: str
-    params: List[AST]
-    inbalance: Optional[AST]
-    invalid: Optional[AST]
+    error_code: Optional[str]
+    error_level: Optional[int]
+    imbalance: Optional[AST]
+    invalid: bool
 
 
 @dataclass
@@ -507,7 +508,7 @@ class DPRuleset(AST):
     """
 
     name: str
-    element: Union[DefIdentifier, list]
+    params: Union[DefIdentifier, list]
     rules: List[DPRule]
 
 
@@ -520,16 +521,9 @@ class EvalOp(AST):
     """
 
     name: str
-    children: List[AST]
+    operands: List[AST]
     output: Optional[str]
     language: Optional[str]
-
-    def __init__(self, name, children, output, language):
-        super().__init__()
-        self.name = name
-        self.children = children
-        self.output = output
-        self.language = language
 
 
 @dataclass

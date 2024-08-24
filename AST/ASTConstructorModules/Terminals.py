@@ -106,8 +106,8 @@ class Terminals(VtlVisitor):
         """
         valueDomainID: IDENTIFIER ;
         """
-        return Collection(name=ctx.children[0].getSymbol().text, type_=None, children=[],
-                          kind='ValueDomain')
+        return Collection(name=ctx.children[0].getSymbol().text, children=[],
+                          kind='ValueDomain', type='')
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
         """
@@ -245,7 +245,7 @@ class Terminals(VtlVisitor):
 
         component_node = [self.visitComponentType(component) for component in ctx_list if
                           isinstance(component, Parser.ComponentTypeContext)]
-        component_name = [self.visitComponentID(component) for component in ctx_list if
+        component_name = [self.visitComponentID(component).value for component in ctx_list if
                           isinstance(component, Parser.ComponentIDContext)]
         component_mult = [self.visitMultModifier(modifier) for modifier in ctx_list if
                           isinstance(modifier, Parser.MultModifierContext)]
@@ -254,7 +254,7 @@ class Terminals(VtlVisitor):
             # AST_ASTCONSTRUCTOR.51
             raise NotImplementedError
 
-        component_node[0].name = component_name[0].value
+        component_node[0].name = component_name[0]
         return component_node[0]
 
     def visitSimpleScalar(self, ctx: Parser.SimpleScalarContext):
@@ -312,10 +312,11 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        # components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
-        #               isinstance(constraint, Parser.CompConstraintContext)]
+        components = [self.visitCompConstraint(constraint) for constraint in ctx_list if
+                      isinstance(constraint, Parser.CompConstraintContext)]
+        components = {component.name: component for component in components}
 
-        return Dataset(name="Dataset", components={}, data=None)
+        return Dataset(name="Dataset", components=components, data=None)
 
     def visitRulesetType(self, ctx: Parser.RulesetTypeContext):
         """
@@ -360,7 +361,12 @@ class Terminals(VtlVisitor):
         else:
             data_type = String()
 
-        return Component(name="Component", data_type=data_type, role=role_node, nullable=False)
+        if role_node == Role.IDENTIFIER:
+            nullable = False
+        else:
+            nullable = True
+
+        return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
     def visitInputParameterType(self, ctx: Parser.InputParameterTypeContext):
         """
@@ -528,7 +534,10 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        return self.visitConstant(ctx_list[1])
+        try:
+            return str(self.visitConstant(ctx_list[1]).value)
+        except Exception:
+            raise Exception(f'Error code must be a string, line {ctx_list[1].getSymbol().line}')
 
     def visitErLevel(self, ctx: Parser.ErLevelContext):
         """
@@ -536,7 +545,10 @@ class Terminals(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        return self.visitConstant(ctx_list[1])
+        try:
+            return int(self.visitConstant(ctx_list[1]).value)
+        except Exception:
+            raise Exception(f'Error level must be an integer, line {ctx_list[1].start.line}')
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind='ComponentID'):
         """

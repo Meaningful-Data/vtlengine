@@ -1,32 +1,29 @@
-from Operators.Aggregation import (Avg, Count, Max, Median,
-                                   Min,
-                                   PopulationStandardDeviation,
-                                   PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
-
-from Operators.Analytic import (Max as MaxAnalytic,
-                                Min as MinAnalytic,
-                                Sum as SumAnalytic,
-                                Count as CountAnalytic,
-                                Avg as AvgAnalytic, Median as MedianAnalytic,
-                                PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
-                                SampleStandardDeviation as SampleStandardDeviationAnalytic,
-                                PopulationVariance as PopulationVarianceAnalytic,
-                                SampleVariance as SampleVarianceAnalytic,
-                                Lag, Lead, FirstValue, LastValue, RatioToReport, Rank
-                                )
-
-from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+from Operators.Conditional import Nvl
 
 from AST.Grammar.tokens import *
-from Operators.Boolean import Not, And, Or, Xor
-from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, NotEqual
-from Operators.General import Membership
-from Operators.Comparison import Equal, NotEqual, Greater, GreaterEqual, Less, LessEqual
-from Operators.String import Length, Concatenate, Upper, Lower, Rtrim, Ltrim, Trim, Substr, Replace
+from Operators.Aggregation import (Avg, Count, Max, Median, Min,
+                                   PopulationStandardDeviation,
+                                   PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
+from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, FirstValue, Lag,
+                                LastValue, Lead, Max as MaxAnalytic, Median as MedianAnalytic,
+                                Min as MinAnalytic,
+                                PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
+                                PopulationVariance as PopulationVarianceAnalytic, Rank,
+                                RatioToReport,
+                                SampleStandardDeviation as SampleStandardDeviationAnalytic,
+                                SampleVariance as SampleVarianceAnalytic, Sum as SumAnalytic)
+from Operators.Boolean import And, Not, Or, Xor
+from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
+from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, \
+    NotEqual, NotIn, Match
+from Operators.General import Alias, Membership
+from Operators.Join import Apply, CrossJoin, FullJoin, InnerJoin, LeftJoin
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
-    Logarithm, Modulo, Mult, NaturalLogarithm, Power, SquareRoot, UnMinus, UnPlus, Trunc, Round
+    Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
+from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
+from Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow, Fill_time_series, Time_Shift
 
 BINARY_MAPPING = {
     # General
@@ -43,16 +40,24 @@ BINARY_MAPPING = {
     LT: Less,
     LTE: LessEqual,
     IN: In,
+    NOT_IN: NotIn,
+    # Conditional
+    NVL: Nvl,
     # Numeric
     PLUS: BinPlus,
     MINUS: BinMinus,
     MULT: Mult,
-    DIV: Div,
     LOG: Logarithm,
     MOD: Modulo,
     POWER: Power,
+    DIV: Div,
+    # General
+    AS: Alias,
     # String
-    CONCAT: Concatenate
+    CONCAT: Concatenate,
+    #Time
+    TIMESHIFT: Time_Shift,
+    CHARSET_MATCH: Match
 }
 
 UNARY_MAPPING = {
@@ -76,7 +81,11 @@ UNARY_MAPPING = {
     LTRIM: Ltrim,
     RTRIM: Rtrim,
     TRIM: Trim,
-    UCASE: Upper
+    UCASE: Upper,
+    #Time
+    PERIOD_INDICATOR: Period_indicator,
+    FLOW_TO_STOCK: Flow_to_stock,
+    STOCK_TO_FLOW: Stock_to_flow
 }
 
 PARAMETRIC_MAPPING = {
@@ -85,7 +94,9 @@ PARAMETRIC_MAPPING = {
     TRUNC: Trunc,
     # String
     SUBSTR: Substr,
-    REPLACE: Replace
+    REPLACE: Replace,
+    #Time
+    FILL_TIME_SERIES: Fill_time_series,
 }
 
 ROLE_SETTER_MAPPING = {
@@ -103,7 +114,8 @@ REGULAR_AGGREGATION_MAPPING = {
     PIVOT: Pivot,
     UNPIVOT: Unpivot,
     SUBSPACE: Sub,
-    AGGREGATE: Aggregate
+    AGGREGATE: Aggregate,
+    APPLY: Apply
 }
 
 SET_MAPPING = {
@@ -144,4 +156,15 @@ ANALYTIC_MAPPING = {
     LAST_VALUE: LastValue,
     RATIO_TO_REPORT: RatioToReport,
     RANK: Rank
+}
+
+THEN_ELSE = {
+        'then': 'T',
+        'else': 'E'
+    }
+JOIN_MAPPING = {
+    INNER_JOIN: InnerJoin,
+    LEFT_JOIN: LeftJoin,
+    FULL_JOIN: FullJoin,
+    CROSS_JOIN: CrossJoin
 }

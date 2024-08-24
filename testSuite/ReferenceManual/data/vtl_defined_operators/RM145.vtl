@@ -1,0 +1,5 @@
+define operator Test145 (x dataset, y component)
+    returns dataset is
+    sum ( x group by y )
+end operator;
+DS_r := Test145(DS_1, Id_1);

@@ -1,0 +1,13 @@
+define datapoint ruleset anaCreditInstrumentQuarterly (variable DFLT_STTS, PRFRMNG_STTS, DT_PRFRMNG_STTS, DT_INCPTN, DT_FRBRNC_STTS, DT_RFRNC,
+                                                            IMPRMNT_ASSSSMNT_MTHD, ACCMLTD_IMPRMNT, IMPRMNT_STTS, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT,
+                                                            RCGNTN_STTS, ACCMLTD_WRTFFS, OFF_BLNC_SHT_AMNT, ACCRD_INTRST, TRNSFRRD_AMNT,
+                                                            PRVSNS_OFF_BLNC_SHT, ACCNTNG_CLSSFCTN,
+                                                            ACCMLTD_IMPRMNT, IMPRMNT_STTS, ACCNTNG_CLSSFCTN, PRDNTL_PRTFL, RCGNTN_STTS,
+                                                            PRVSNS_OFF_BLNC_SHT, OFF_BLNC_SHT_AMNT, ANNLSD_AGRD_RT,
+                                                            TYP_INSTRMNT) is
+
+    CN0310: when (DFLT_STTS <> "14.0" and not isnull(DFLT_STTS)) then PRFRMNG_STTS = "1"  errorcode "CN0310" errorlevel 2
+    
+end datapoint ruleset;
+
+INSTRMNTS_FLL_QRTRLY_RSLT <- check_datapoint ( dsPrep.INSTRMNTS_FLL_QRTRLY , anaCreditInstrumentQuarterly ) ; 

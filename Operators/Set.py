@@ -8,6 +8,7 @@ else:
 
 from Model import Dataset
 from Operators import Operator
+from DataTypes import binary_implicit_promotion, check_binary_implicit_promotion
 
 
 class Set(Operator):
@@ -22,12 +23,9 @@ class Set(Operator):
             if comp.name not in dataset_2.components:
                 raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
             second_comp = dataset_2.components[comp.name]
-            cls.validate_type_compatibility(comp.data_type, second_comp.data_type)
+            binary_implicit_promotion(comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type)
             if comp.role != second_comp.role:
                 raise Exception(f"Component {comp.name} has different roles "
-                                f"in datasets {dataset_1.name} and {dataset_2.name}")
-            if comp.nullable != second_comp.nullable:
-                raise Exception(f"Component {comp.name} has different nullability "
                                 f"in datasets {dataset_1.name} and {dataset_2.name}")
 
     @classmethod
@@ -37,7 +35,17 @@ class Set(Operator):
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
 
-        result = Dataset(name="result", components=base_operand.components, data=None)
+        result_components = {}
+        for operand in operands:
+            if len(result_components) == 0:
+                result_components = operand.components
+            else:
+                for comp_name, comp in operand.components.items():
+                    current_comp = result_components[comp_name]
+                    result_components[comp_name].data_type = binary_implicit_promotion(current_comp.data_type, comp.data_type)
+                    result_components[comp_name].nullable = current_comp.nullable or comp.nullable
+
+        result = Dataset(name="result", components=result_components, data=None)
         return result
 
 
@@ -87,22 +95,33 @@ class Symdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer',
-                                        on=result.get_identifiers_names(),
-                                        indicator=True, suffixes=('_x', '_y'))
-                               .query('_merge != "both"'))
-                not_identifiers = [col for col in result.get_measures_names() +
-                                   result.get_attributes_names()]
+                # Realiza la operación equivalente en pyspark.pandas
+                result.data = result.data.merge(data, how='outer',
+                                                on=result.get_identifiers_names(),
+                                                suffixes=('_x', '_y'))
+
+                for measure in result.get_measures_names():
+                    result.data['_merge'] = result.data.apply(
+                        lambda row: 'left_only' if pd.isnull(row[measure + '_y']) else (
+                            'right_only' if pd.isnull(row[measure + '_x']) else 'both'),
+                        axis=1
+                    )
+
+                not_identifiers = result.get_measures_names() + result.get_attributes_names()
                 for col in not_identifiers:
                     result.data[col] = result.data.apply(
-                        lambda x, c=col: x[c + "_x"] if x["_merge"] == "left_only" else x[c + "_y"],
-                        axis=1)
-                result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+                        lambda x, c=col: x[c + '_x'] if x['_merge'] == 'left_only' else (
+                            x[c + '_y'] if x['_merge'] == 'right_only' else None), axis=1)
+                result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
+        result.data = result.data.reset_index(drop=True)
         return result
 
 
 class Setdiff(Set):
+
+    @staticmethod
+    def has_null(row):
+        return row.isnull().any()
 
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
@@ -112,14 +131,18 @@ class Setdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                result.data = (pd.merge(result.data, data, how='outer',
-                                        on=result.get_identifiers_names(),
-                                        indicator=True, suffixes=('_x', '_y'))
-                               .query('_merge == "left_only"'))
+                result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
+                if len(result.data) > 0:
+                    result.data = result.data[result.data.apply(cls.has_null, axis=1)]
+
                 not_identifiers = [col for col in result.get_measures_names() +
                                    result.get_attributes_names()]
                 for col in not_identifiers:
-                    result.data[col] = result.data[col + "_x"]
+                    if col + "_x" in result.data:
+                        result.data[col] = result.data[col + "_x"]
+                        del result.data[col + "_x"]
+                    if col + "_y" in result.data:
+                        del result.data[col + "_y"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
         result.data.reset_index(drop=True, inplace=True)
         return result

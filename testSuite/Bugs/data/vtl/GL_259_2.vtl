@@ -1,0 +1,2 @@
+/*DS_r := DS_1 [aggr Me_1:= sum( Me_1 ) group by Id_1] [aggr Me_2:= min( Me_1 ) group by Id_1];*/
+DS_r := DS_1 [aggr Me_1:= sum( Me_1 ), Me_3 := avg(Me_2) group by Id_1];

@@ -1,0 +1,63 @@
+{
+  "datasets": [
+    {
+      "name": "APPRCH_JNT_CNTRPRTY.INSTRMNTS_JNT_CNTRPRTS",
+      "DataStructure": [
+        {
+          "name": "INSTRMNTS_CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNTS_DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNTS_INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNTS_PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTS_CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTS_DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTS_JNT_CNTRPRTY_CMPNNT",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTS_PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "JNT_CNTRPRTS_JNT_CNTRPRTY_PRCNTG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

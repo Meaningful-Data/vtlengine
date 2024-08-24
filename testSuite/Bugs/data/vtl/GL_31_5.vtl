@@ -1,0 +1,1 @@
+CN0869 <- check ( dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT ] [ keep COMP_DT ] <= dsPrep.ENTTS_USD_BRTH [ rename DT_BRTH to COMP_DT ] [ keep COMP_DT ] errorcode "CN0869" errorlevel 2 invalid ) ; 

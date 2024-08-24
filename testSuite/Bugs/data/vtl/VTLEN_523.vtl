@@ -1,0 +1,12 @@
+SCRTY_PSTN:=inner_join (BIRD_SCRTS_RCVD_EIL[keep OBSRVD_AGNT_INTRNL_ID, SCRTY_ID] as A,
+      BIRD_SCRTY_SHRT_PSTN_EIL[drop ENCMBRD_NMNL_AMNT,MTCHNG_LBLTY_AMNT] as B);
+      
+SCRTY_SHRT_PSTN_UNION:=inner_join(SCRTY_PSTN as A, 
+                                  BIRD_SHRT_PSTNS_EIL[keep MRKT_VL, NMNL_VL] as B);
+
+SCRTY_SHRT_PSTN_agg:=SCRTY_SHRT_PSTN_UNION[aggr MRKT_VL:=sum(MRKT_VL), 
+                                                NMNL_VL:=sum(NMNL_VL),
+                                                OBSRVD_AGNT_INTRNL_ID:=max(OBSRVD_AGNT_INTRNL_ID),
+                                                SCRTY_ID:=max(SCRTY_ID) 
+                                           /*  group by DT_RFRNC, OWND_SCRTY_ID, PRSPCTV_ID ];*/
+                                             group except SHRT_PSTN_ID]; 

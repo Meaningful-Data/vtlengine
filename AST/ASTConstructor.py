@@ -175,7 +175,7 @@ class ASTVisitor(VtlVisitor):
         ruleset_elements = self.visitRulesetSignature(ctx_list[5])
         ruleset_rules = self.visitRuleClauseDatapoint(ctx_list[8])
 
-        return DPRuleset(name=ruleset_name, element=ruleset_elements, rules=ruleset_rules)
+        return DPRuleset(name=ruleset_name, params=ruleset_elements, rules=ruleset_rules)
 
     def visitRulesetSignature(self, ctx: Parser.RulesetSignatureContext):
         """
