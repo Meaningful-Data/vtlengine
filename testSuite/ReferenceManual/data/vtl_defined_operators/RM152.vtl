@@ -1,1 +1,5 @@
-DS_r := last_value ( DS_1 over ( partition by Id_1, Id_2 order by Id_3 data points between 1 preceding and 1 following ) );
+define operator Test152 (x dataset, c component, d component, e component)
+    returns dataset is
+    last_value ( x over ( partition by c, d order by e data points between 1 preceding and 1 following))
+end operator;
+DS_r := Test152(DS_1, Id_1, Id_2, Id_3);

@@ -1,1 +1,5 @@
-DS_r := DS_1 [ calc Me2 := rank ( over ( partition by Id_1 , Id_2 order by Me_1 ) ) ];
+define operator Test155 (x dataset, c component, d component, e component, out component)
+    returns dataset is
+    x [ calc out := rank ( over ( partition by c , d order by e ) ) ]
+end operator;
+DS_r := Test155(DS_1, Id_1, Id_2, Me_1, Me_2);

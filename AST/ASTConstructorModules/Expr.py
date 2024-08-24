@@ -1203,6 +1203,10 @@ class Expr(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
+        if len(params) == 0:
+            # AST_ASTCONSTRUCTOR.16
+            raise Exception(f"{op_node} requires an offset parameter.")
+
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)
 

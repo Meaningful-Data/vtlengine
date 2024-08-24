@@ -1,1 +1,5 @@
-DS_r := count ( DS_1 group by Id_1 having count() > 2 );
+define operator Test141 (x dataset, y component, i integer)
+    returns dataset is
+    count ( x group by y having count() > i)
+end operator;
+DS_r := Test141(DS_1, Id_1, 2);

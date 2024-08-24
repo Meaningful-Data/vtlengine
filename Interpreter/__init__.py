@@ -232,8 +232,26 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             operand: Dataset = self.visit(node.operand)
-        partitioning = node.partition_by
-        ordering = node.order_by if node.order_by is not None else []
+        partitioning = []
+        ordering = []
+        if self.udo_params is not None:
+            if node.partition_by is not None:
+                for comp_name in node.partition_by:
+                    if comp_name in self.udo_params[-1]:
+                        partitioning.append(self.udo_params[-1][comp_name])
+                    else:
+                        raise Exception(f"Component {comp_name} not found in UDO parameters")
+            if node.order_by is not None:
+                for o in node.order_by:
+                    if o.component in self.udo_params[-1]:
+                        o.component = self.udo_params[-1][o.component]
+                    else:
+                        raise Exception(f"Component {o.component} not found in UDO parameters")
+                ordering = node.order_by
+
+        else:
+            partitioning = node.partition_by
+            ordering = node.order_by if node.order_by is not None else []
         if not isinstance(operand, Dataset):
             raise Exception("Analytic operator must have a dataset as operand")
         if node.partition_by is None:
@@ -320,6 +338,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_assignment:
             return node.value
         # Having takes precedence as it is lower in the AST
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            udo_element = self.udo_params[-1][node.value]
+            if isinstance(udo_element, Scalar):
+                return udo_element
+            # If it is only the component or dataset name, we rename the node.value
+            node.value = udo_element
         if self.is_from_having:
             return DataComponent(name=node.value,
                                  data=self.aggregation_dataset.data[node.value],
@@ -328,12 +352,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                  role=self.aggregation_dataset.components[node.value].role,
                                  nullable=self.aggregation_dataset.components[node.value].nullable)
         if self.is_from_regular_aggregation:
-            if self.udo_params is not None and node.value in self.udo_params[-1]:
-                udo_element = self.udo_params[-1][node.value]
-                if isinstance(udo_element, Scalar):
-                    return udo_element
-                # If it is only the component name, we rename the node.value
-                node.value = udo_element
             if self.is_from_join and node.value in self.datasets.keys():
                 return self.datasets[node.value]
             if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
@@ -359,8 +377,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data_type=self.ruleset_dataset.components[comp_name].data_type,
                                  role=self.ruleset_dataset.components[comp_name].role,
                                  nullable=self.ruleset_dataset.components[comp_name].nullable)
-        if self.udo_params is not None and node.value in self.udo_params[-1]:
-            return self.udo_params[-1][node.value]
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
         return self.datasets[node.value]
@@ -489,8 +505,16 @@ class InterpreterAnalyzer(ASTTemplate):
         return If.evaluate(condition, thenOp, elseOp)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
-        if self.udo_params is not None and node.old_name in self.udo_params[-1]:
-            node.old_name = self.udo_params[-1][node.old_name]
+        if self.udo_params is not None:
+            if "#" in node.old_name:
+                if node.old_name.split('#')[1] in self.udo_params[-1]:
+                    comp_name = self.udo_params[-1][node.old_name.split('#')[1]]
+                    node.old_name = f"{node.old_name.split('#')[0]}#{comp_name}"
+            else:
+                if node.old_name in self.udo_params[-1]:
+                    node.old_name = self.udo_params[-1][node.old_name]
+
+
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
@@ -764,9 +788,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise Exception(f"Missing parameter {param['name']} for UDO {node.op}")
             else:
                 if isinstance(param['type'], str):
-                    if param['type'] in ['Dataset', 'Scalar']:
+                    if param['type'] == 'Scalar':
                         signature_values[param['name']] = self.visit(node.params[i])
-                    elif param['type'] == 'Component':
+                    elif param['type'] in ['Dataset', 'Component']:
                         signature_values[param['name']] = node.params[i].value
                     else:
                         raise NotImplementedError

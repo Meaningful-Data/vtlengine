@@ -1,1 +1,5 @@
-DS_r := fill_time_series ( DS_1, all );
+define operator Test106 (x dataset)
+    returns dataset is
+    fill_time_series ( x, all )
+end operator;
+DS_r := Test106(DS_1);

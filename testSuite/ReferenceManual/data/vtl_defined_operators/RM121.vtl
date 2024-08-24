@@ -1,1 +1,5 @@
-DS_r := sum ( DS_1 group all time_agg ( "A" , _ , Me_1 ));
+define operator Test121 (x dataset, c component)
+    returns dataset is
+    sum ( x group all time_agg ( "A" , _ , c ))
+end operator;
+DS_r := Test121(DS_1, Me_1);
