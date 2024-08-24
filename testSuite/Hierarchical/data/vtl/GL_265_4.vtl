@@ -1,0 +1,12 @@
+define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is 
+    A = B + N + U errorcode "totalComparedToBanks" errorlevel 4 ;
+    A > U errorcode "totalGeUnal" errorlevel 3
+end hierarchical ruleset;
+define hierarchical ruleset accountingEntryQ (variable rule BS_POSITION) is
+    L < C errorcode "Net (assets-liabilities) [Accounting_Entry rule 'N = A - L']" errorlevel 4
+end hierarchical ruleset;
+
+sectors_hier_val_unf := check_hierarchy(BIS_LOC_STATS, sectorsHierarchy) ;    
+sectors := check_hierarchy(BIS_LOC_STATS_2, accountingEntryQ) ;
+sectors_hier_val_unf_1 := check_hierarchy(BIS_LOC_STATS_3, sectorsHierarchy always_zero) ;
+

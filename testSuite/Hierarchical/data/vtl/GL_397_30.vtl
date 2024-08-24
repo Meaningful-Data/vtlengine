@@ -1,0 +1,26 @@
+/*define hierarchical ruleset EuropeanUnionCountries1 
+    (valuedomain condition ReferenceTime as Time rule GeoArea) is 
+    when between(Time, "1.1.1958", "31.12.1972")
+        then EU = BE + FR + DE + IT + LU + NL errorcode "Balance(credit-debit)" errorlevel 4;
+    when between(Time, "1.1.1973", "31.12.1980")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB errorcode "Balance(credit-debit)" errorlevel 4;
+    when between(Time, "1.1.1981", "02.10.1985")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR errorcode "Balance(credit-debit)" errorlevel 4;
+    when Time >= "1.1.1986"
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR + ES + PT
+end hierarchical ruleset;*/
+
+define hierarchical ruleset EuropeanUnionCountries1 
+    (valuedomain condition ReferenceTime as Time rule GeoArea) is 
+    when between(Time, "1958-01-01", "1972-12-31")
+        then EU = BE + FR + DE + IT + LU + NL errorlevel 1;
+    when between(Time, "1973-01-01", "1980-12-31")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB  errorlevel 2;
+    when between(Time, "1981-01-01", "1985-10-02")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR  errorlevel 3;
+    when Time >= "1986-01-01"
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR + ES + PT errorlevel 4
+end hierarchical ruleset;
+
+
+DS_r := check_hierarchy(DS_1, EuropeanUnionCountries1 condition DATE_STR rule REF_AREA always_zero);

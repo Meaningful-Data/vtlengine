@@ -1,0 +1,6 @@
+define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is 
+    B = C - D errorcode "Balance(credit-debit)" errorlevel 4;
+    N > A + L errorcode "Net(assets-liabilities)" errorlevel 4    
+end hierarchical ruleset;
+
+DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY partial_null all);
