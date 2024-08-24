@@ -1,0 +1,4 @@
+dateReference,securityId,typeInstrument,issuerId,sector,country
+2020-12-31,123,F32,ABC,S11,PT
+2020-12-31,456,F511,DEF,S121,IT
+2020-12-31,789,F511,GHI,,

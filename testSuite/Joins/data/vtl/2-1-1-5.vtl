@@ -1,0 +1,6 @@
+define operator filter_udo(ds dataset, comp component, value number)
+  returns dataset is
+    ds[filter comp <> value]
+end operator;
+
+DS_r:= inner_join( DS_1, DS_2 apply filter_udo(DS_1,Me_1, 4));

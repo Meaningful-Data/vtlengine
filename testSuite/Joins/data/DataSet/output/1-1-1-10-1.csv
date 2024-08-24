@@ -1,0 +1,4 @@
+securityId,typeInstrument,issuerId,sector,country,timeReference
+123,F32,ABC,S11,PT,2021-06-30/2021-07-25
+456,F511,DEF,S121,IT,2021-06-30/2021-07-25
+789,F511,GHI,,,2021-06-30/2021-07-25
