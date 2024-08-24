@@ -1,0 +1,63 @@
+{
+  "datasets": [
+    {
+      "name": "SCRTSTNS_OTHR_CRDT_TRNSFRS",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "IS_RSCRTSTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LBLTY_PL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "SCRTSTN_TRNSFR_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "SGNFCNT_RSK_TRNSFR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRTMNT_TRNSFRRD_ASSTS_BLNC_SHT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TYP_RSK_TRNSFR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "UNDRLYNG_PL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
