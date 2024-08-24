@@ -1,0 +1,12 @@
+/*Working*/
+
+DBTR_GGRPHCL := A02.ANAMART_ENTTY_LE[keep CNTRY, CNTRY_LE];
+
+DBTR_GGRPHCL_T :=DBTR_GGRPHCL[calc TRUE_VAR:="T"];/*This dataset is created only for the purpose of having a component with "T", because if else requires at least one component...*/
+
+ANAMART_ENTTY_GGRPHCL_P := DBTR_GGRPHCL_T
+                    [calc IS_DMSTC := if CNTRY=CNTRY_LE then TRUE_VAR else "F"];
+                    
+ANAMART_ENTTY_GGRPHCL:=ANAMART_ENTTY_GGRPHCL_P                  
+                    [calc IS_EA_ACTIVITY := if CNTRY in {"AT", "BE", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PT", "SI", "SK"} 
+                                then TRUE_VAR else "F"][drop TRUE_VAR];

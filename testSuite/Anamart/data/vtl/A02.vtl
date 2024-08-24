@@ -1,0 +1,116 @@
+/*Working*/
+
+/* 1. Independent datasets for legal and non=legal entities*/
+LE := A01.ANAMART_ENTTY_TM[filter isnull(HD_OFFC_UNDRT_ID)]; /*Records for which the variable is not null are not legal entities*/
+NLE := A01.ANAMART_ENTTY_TM[filter not isnull(HD_OFFC_UNDRT_ID)]; /*Records for which the variable is not null are not legal entities*/
+
+/* 2. Prepare the information for legal entities*/
+
+LE2 := LE[rename
+            LGL_FRM to LGL_FRM_LE,
+            IS_ANCRDT_RPRTNG to IS_LGL_ENTTY_ANCRDT_CVRD,
+            ANNL_TRNVR to ANNL_TRNVR_LE,
+            BLNC_SHT_TTL to BLNC_SHT_TTL_LE,
+            DT_ENTRPRS_SZ to DT_ENTRPRS_SZ_LE,
+            DT_INTTN_LGL_PRCDNGS to DT_INTTN_LGL_PRCDNGS_LE,
+            ENTRPRS_SZ to ENTRPRS_SZ_LE,
+            LGL_PRCDNG_STTS to LGL_PRCDNG_STTS_LE,
+            NMBR_EMPLYS to NMBR_EMPLYS_LE
+            ]; /*Rename the attributes that do not exist in the new dataset as such, but get the same values for the _LE attributes*/
+ 
+LE_3 := LE2[calc
+            CNTRY_LE:=CNTRY,
+            CTY_LE:=CTY,
+            ECNMC_ACTVTY_LE := ECNMC_ACTVTY,
+            ENTTY_RIAD_CD_LE := ENTTY_RIAD_CD,
+            ENTTY_RIAD_ID_LE := ENTTY_RIAD_ID,
+            INSTTTNL_SCTR_DTL_LE := INSTTTNL_SCTR_DTL,
+            INSTTTNL_SCTR_LE := INSTTTNL_SCTR,
+            NM_ENTTY_LE := NM_ENTTY,
+            PSTL_CD_LE := PSTL_CD,
+            STRT_LE := STRT,
+            TRRTRL_UNT_LE := TRRTRL_UNT
+        ]; /*Copy the attributes that exist for both entity and legal entity (for legal entities they are the same)*/
+
+/*LE_FLL is the dataset with all the information for the legal entities*/ 
+
+LE_FLL := LE_3[calc IS_LGL_ENTTY_EA_ANCRDT_CVRD := 
+                if (CNTRY_LE in{"AT", "BE", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PT", "SI", "SK"})
+                    then IS_LGL_ENTTY_ANCRDT_CVRD 
+                    else "F"];/*Add the is legal entity attribute  Euroa Area, using the EA countries subdomain*/
+
+
+
+/* 2. Prepare the information for non-legal entities*/
+
+LE_JN := LE_FLL[keep
+            LGL_FRM_LE,
+            IS_LGL_ENTTY_ANCRDT_CVRD,
+            ANNL_TRNVR_LE,
+            BLNC_SHT_TTL_LE,
+            DT_ENTRPRS_SZ_LE,
+            DT_INTTN_LGL_PRCDNGS_LE,
+            ENTRPRS_SZ_LE, 
+            LGL_PRCDNG_STTS_LE,
+            NMBR_EMPLYS_LE,
+            CNTRY_LE,
+            CTY_LE,
+            ECNMC_ACTVTY_LE,
+            ENTTY_RIAD_CD_LE,
+            INSTTTNL_SCTR_DTL_LE,
+            INSTTTNL_SCTR_LE,
+            NM_ENTTY_LE,
+            PSTL_CD_LE,
+            STRT_LE,
+            TRRTRL_UNT_LE,
+            ENTTY_RIAD_ID_LE,
+            IS_LGL_ENTTY_EA_ANCRDT_CVRD
+              ]; /*Prepare the LE dataset for a join*/
+              
+
+NLE2 := inner_join(NLE, 
+                   LE_JN[rename ENTTY_RIAD_ID to HD_OFFC_UNDRT_ID] as LE_JN_AS
+                   using DT_RFRNC, HD_OFFC_UNDRT_ID);/*Join with the dataset with the legal entities, to get the attributes for the related legal entity*/
+
+/* - Union of both datasets and final setup - */
+ 
+DBTR  := union(NLE2 [ drop LGL_FRM , LGL_PRCDNG_STTS , DT_INTTN_LGL_PRCDNGS , ENTRPRS_SZ , DT_ENTRPRS_SZ , NMBR_EMPLYS , BLNC_SHT_TTL , ANNL_TRNVR , IS_ANCRDT_RPRTNG ], LE_FLL);
+
+ANAMART_ENTTY_LE := DBTR[keep
+                IMMDT_PRNT_UNDRT_ID,
+                LEI,
+                ULTMT_PRNT_UNDRT_ID,
+                CNTRY,
+                CTY,
+                ECNMC_ACTVTY,
+                ENTTY_RIAD_CD,
+                INSTTTNL_SCTR_DTL,
+                INSTTTNL_SCTR,
+                NM_ENTTY,
+                PSTL_CD,
+                STRT,
+                TRRTRL_UNT,
+                CNTRY_LE,
+                CTY_LE,
+                ECNMC_ACTVTY_LE,
+                ENTTY_RIAD_CD_LE,
+                INSTTTNL_SCTR_DTL_LE,
+                INSTTTNL_SCTR_LE,
+                NM_ENTTY_LE,
+                PSTL_CD_LE,
+                STRT_LE,
+                TRRTRL_UNT_LE,
+                ANNL_TRNVR_LE,
+                BLNC_SHT_TTL_LE,
+                DT_ENTRPRS_SZ_LE,
+                DT_INTTN_LGL_PRCDNGS_LE,
+                ENTRPRS_SZ_LE,
+                LGL_FRM_LE,
+                LGL_PRCDNG_STTS_LE,
+                NMBR_EMPLYS_LE,
+                IS_LGL_ENTTY_ANCRDT_CVRD,
+                IS_LGL_ENTTY_EA_ANCRDT_CVRD,
+                ACCNTNG_FRMWRK_SL, /*It is not in the SDD cube!*/
+                DT_BRTH,
+                DT_CLS
+    ];

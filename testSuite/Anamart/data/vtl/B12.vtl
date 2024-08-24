@@ -1,0 +1,28 @@
+ANAMART_INSTRMNT_INTRVL := 
+    B11.ANAMART_INSTRMNT_JN2[calc 
+        CV_OTSTNDNG_NMNL_AMNT_INTRVL := if CV_OTSTNDNG_NMNL_AMNT <= 250000 then "2" else
+                                            (if CV_OTSTNDNG_NMNL_AMNT <= 1000000 then "3" else "1"),
+        DV_OTSTNDNG_NMNL_AMNT_INTRVL := if CV_OTSTNDNG_NMNL_AMNT <= 250000 then "2" else
+                                            (if CV_OTSTNDNG_NMNL_AMNT <= 1000000 then "3" else "1"),
+        NXT_INTRST_RT_RST_INTRVL := if NXT_INTRST_RT_RST_DYS <= 30 then "72" else 
+                                        (if NXT_INTRST_RT_RST_DYS <= 90 then "9" else 
+                                            (if NXT_INTRST_RT_RST_DYS <=180 then "12" else 
+                                                (if NXT_INTRST_RT_RST_DYS <=360 then "16" else 
+                                                    (if NXT_INTRST_RT_RST_DYS <=720 then "21" else 
+                                                        (if NXT_INTRST_RT_RST_DYS <= 1800 then "29" else 
+                                                            (if NXT_INTRST_RT_RST_DYS <=3600 then "36" else "71")))))),
+        ORGNL_MTRTY_INTRVL := if ORGNL_MTRTY_DYS <= 30 then "72" else 
+                                        (if ORGNL_MTRTY_DYS <= 90 then "9" else 
+                                            (if ORGNL_MTRTY_DYS <=180 then "12" else 
+                                                (if ORGNL_MTRTY_DYS <=360 then "16" else 
+                                                    (if ORGNL_MTRTY_DYS <=720 then "21" else 
+                                                        (if ORGNL_MTRTY_DYS <= 1800 then "29" else 
+                                                            (if ORGNL_MTRTY_DYS <=3600 then "36" else "71")))))),
+        RSDL_MTRTY_INTRVL :=  if RSDL_MTRTY_DYS <= 30 then "72" else 
+                                        (if RSDL_MTRTY_DYS <= 90 then "9" else 
+                                            (if RSDL_MTRTY_DYS <=180 then "12" else 
+                                                (if RSDL_MTRTY_DYS <=360 then "16" else 
+                                                    (if RSDL_MTRTY_DYS <=720 then "21" else 
+                                                        (if RSDL_MTRTY_DYS <= 1800 then "29" else 
+                                                            (if RSDL_MTRTY_DYS <=3600 then "36" else "71"))))))
+    ]

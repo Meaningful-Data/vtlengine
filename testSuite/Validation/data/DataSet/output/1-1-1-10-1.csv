@@ -1,0 +1,7 @@
+ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,bool_var,imbalance,errorcode,level
+C,D,F,G,IT,S1,False,0,111.0,1.0
+C,P,F,G,IT,S1,True,-110,,
+C,D,FL,S,PT,S1,False,100,111.0,1.0
+D,P,F,G,PT,S1,False,0,111.0,1.0
+D,D,F,S,IT,S1,True,-130,,
+D,P,FL,S,PT,S1,True,-140,,

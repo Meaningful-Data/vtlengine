@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "ANAMART_ENTTY_GGRPHCL_P",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CNTRY_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRUE_VAR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_DMSTC",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

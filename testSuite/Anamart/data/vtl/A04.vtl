@@ -1,0 +1,30 @@
+/*Instrument fact with number of days not yet available*/
+
+DBTR_FCT_DYS := ANCRDT_INSTRMNT_FCT
+    [keep RSDL_MTRTY, PST_D_DYS, CV_OTSTNDNG_NMNL_AMNT]
+    [rename DBTR_ID to ENTTY_RIAD_ID]; /*This dataset comes from a previous transformation of the data mart flow, and therefore it is already filtered by date*/
+ 
+/* - Calculating the maximum values - */
+ 
+
+VRBLS_MAX_P:=DBTR_FCT_DYS[keep RSDL_MTRTY, PST_D_DYS]
+                        [rename RSDL_MTRTY to MAX_RSDL_MTRTY_DYS, PST_D_DYS to MAX_PST_D_DYS];
+VRBLS_MAX := max(VRBLS_MAX_P group by DT_RFRNC, ENTTY_RIAD_ID);
+ 
+/* - Calculating the weighted average for the residual maturity - */
+ 
+RSDL_MRTY_WA := DBTR_FCT_DYS[keep RSDL_MTRTY, CV_OTSTNDNG_NMNL_AMNT];
+
+DNMNTR_P := RSDL_MRTY_WA[keep CV_OTSTNDNG_NMNL_AMNT]
+                    [rename CV_OTSTNDNG_NMNL_AMNT to TTL_CV_OTSTNDNG_NMNL_AMNT];
+
+DNMNTR := sum(DNMNTR_P group by DT_RFRNC, ENTTY_RIAD_ID);/*Creates a dataset with the denominator*/
+RSDL_MRTY_WA_JN := inner_join(RSDL_MRTY_WA, DNMNTR using DT_RFRNC, ENTTY_RIAD_ID);/*Joining to get a dataset with all the required variables*/
+
+RSDL_MRTY_WA_P := RSDL_MRTY_WA_JN[calc RSDL_MTRTY_DYS_WGHTD_AVRG := RSDL_MTRTY * CV_OTSTNDNG_NMNL_AMNT / TTL_CV_OTSTNDNG_NMNL_AMNT]
+                [keep RSDL_MTRTY_DYS_WGHTD_AVRG];/*Calculation of the weighted elements*/
+RSDL_MRTY_WA_FNL := sum(RSDL_MRTY_WA_P group by DT_RFRNC, ENTTY_RIAD_ID); /*Sum is the weighted average*/
+ 
+/* - Joining the results - */
+ 
+ANAMART_ENTTY_DYS := inner_join(VRBLS_MAX, RSDL_MRTY_WA_FNL);
