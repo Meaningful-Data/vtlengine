@@ -470,9 +470,7 @@ class Terminals(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = [const_node, basic_scalar_type_node[0]]
+            children_nodes = [const_node, basic_scalar_type[0]]
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 

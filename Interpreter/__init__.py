@@ -2,7 +2,6 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 
 import AST
@@ -16,8 +15,8 @@ from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarS
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
-from Operators.General import Eval, Cast
 from Operators.Conditional import If
+from Operators.General import Eval, Cast
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Time import Fill_time_series
@@ -94,7 +93,6 @@ class InterpreterAnalyzer(ASTTemplate):
             'output': node.output_type
         }
 
-
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
 
         # Rule names are optional, if not provided, they are generated.
@@ -146,7 +144,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(
+                self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -340,7 +339,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Having takes precedence as it is lower in the AST
         if self.udo_params is not None and node.value in self.udo_params[-1]:
             udo_element = self.udo_params[-1][node.value]
-            if isinstance(udo_element, Scalar):
+            if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
                 return udo_element
             # If it is only the component or dataset name, we rename the node.value
             node.value = udo_element
@@ -513,7 +512,6 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 if node.old_name in self.udo_params[-1]:
                     node.old_name = self.udo_params[-1][node.old_name]
-
 
         return node
 
@@ -782,32 +780,36 @@ class InterpreterAnalyzer(ASTTemplate):
         for i, param in enumerate(operator['params']):
             if i >= len(node.params):
                 if 'default' in param:
-                    value = param['default']
-                    signature_values[param['name']] = Scalar(name=str(value), value=value, data_type=BASIC_TYPES[type(value)])
+                    value = self.visit(param['default']).value
+                    signature_values[param['name']] = Scalar(name=str(value), value=value,
+                                                             data_type=BASIC_TYPES[type(value)])
                 else:
                     raise Exception(f"Missing parameter {param['name']} for UDO {node.op}")
             else:
-                if isinstance(param['type'], str):
+                if isinstance(param['type'], str):  # Scalar, Dataset, Component
                     if param['type'] == 'Scalar':
                         signature_values[param['name']] = self.visit(node.params[i])
                     elif param['type'] in ['Dataset', 'Component']:
-                        signature_values[param['name']] = node.params[i].value
+                        if isinstance(node.params[i], AST.VarID):
+                            signature_values[param['name']] = node.params[i].value
+                        else:
+                            signature_values[param['name']] = self.visit(node.params[i])
                     else:
                         raise NotImplementedError
-                elif issubclass(param['type'], ScalarType):
+                elif issubclass(param['type'], ScalarType):  # Basic types
                     # For basic Scalar types (Integer, Float, String, Boolean)
                     # We validate the type is correct and cast the value
                     param_element = self.visit(node.params[i])
                     scalar_type = param['type']
                     if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
                         raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "
-                                         f"on UDO {node.op}, parameter {param['name']}")
+                                        f"on UDO {node.op}, parameter {param['name']}")
                     signature_values[param['name']] = Scalar(name=param_element.name,
-                                           value=scalar_type.cast(param_element.value),
-                                           data_type=scalar_type)
+                                                             value=scalar_type.cast(
+                                                                 param_element.value),
+                                                             data_type=scalar_type)
                 else:
                     raise NotImplementedError
-
 
         # We set it here to a list to start the stack of UDO params
         if self.udo_params is None:
@@ -827,4 +829,3 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(self.udo_params) == 0:
             self.udo_params = None
         return result
-
