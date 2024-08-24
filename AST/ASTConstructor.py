@@ -24,6 +24,8 @@ from AST.ASTConstructorModules.Expr import Expr
 from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
+from DataTypes import ScalarType
+from Model import Scalar, Component, Dataset
 
 
 # pylint: disable=unreachable,expression-not-assigned
@@ -262,7 +264,8 @@ class ASTVisitor(VtlVisitor):
         else:
             argument_default = argument_default[0]
 
-        argument_type.name = argument_name.value
+        if isinstance(argument_type, (Dataset, Component, Scalar)):
+            argument_type.name = argument_name.value
         return Argument(name=argument_name.value, type_=argument_type, default=argument_default)
 
     """

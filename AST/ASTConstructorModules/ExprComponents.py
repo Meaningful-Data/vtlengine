@@ -2,7 +2,7 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, \
     TimeAggregation, \
-    Identifier, EvalOp, Types, VarID, Analytic
+    Identifier, EvalOp, VarID, Analytic, UDOCall
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
@@ -244,11 +244,10 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = Terminals().visitOperatorID(c)
-        operator_node = Identifier(op, kind='OperatorID')
         param_nodes = [self.visitParameterComponent(element) for element in ctx_list if
                        isinstance(element, Parser.ParameterComponentContext)]
 
-        return ParamOp(op=op, children=[operator_node], params=param_nodes)
+        return UDOCall(op=op, params=param_nodes)
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
