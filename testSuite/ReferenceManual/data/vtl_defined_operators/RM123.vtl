@@ -1,1 +1,5 @@
-DS_r :=time_agg( "Q", cast("20120213", date, "YYYYMMDD") , last );
+define operator Test123 (s string)
+    returns string is
+    time_agg ( "Q", cast(s, date, "YYYYMMDD"), last )
+end operator;
+DS_r := Test123("20120213");

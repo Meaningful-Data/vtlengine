@@ -1,0 +1,15 @@
+test2_1 :=
+	BE2_DF_NICP
+		[sub DERIVATION = "INDICES"]
+		[filter FREQ = "M"];
+test2_2 :=
+	timeshift(test2_1,-12);
+test2_result <-
+	inner_join(
+		test2_1
+			[rename OBS_VALUE to CURRENT] as C,
+		test2_2
+			[rename OBS_VALUE to PREVIOUS] as P 
+		calc GROWTH :=(CURRENT - PREVIOUS) / PREVIOUS * 100,
+		identifier DERIVATION := "GROWTH_RATE’"
+	);

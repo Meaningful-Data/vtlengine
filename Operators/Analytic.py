@@ -54,15 +54,17 @@ class Analytic(Operator.Unary):
                 new_measure = copy(measure)
                 new_measure.data_type = cls.return_type
                 result_components[measure.name] = new_measure
-        if cls.op == COUNT and len(measures) == 1:
+        if cls.op == COUNT and len(measures) <= 1:
             measure_name = COMP_NAME_MAPPING[cls.return_type]
+            nullable = False if len(measures) == 0 else measures[0].nullable
+            if len(measures) == 1:
+                del result_components[measures[0].name]
             result_components[measure_name] = Component(
                 name=measure_name,
                 data_type=cls.return_type,
                 role=Role.MEASURE,
-                nullable=True
+                nullable=nullable
             )
-            del result_components[measures[0].name]
 
         return Dataset(name="result", components=result_components, data=None)
 
@@ -121,6 +123,8 @@ class Analytic(Operator.Unary):
             else:
                 measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
+        if cls.op == COUNT and len(measure_names) == 0:
+            measure_queries.append(f"COUNT(*) {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}")
 
         measures_sql = ', '.join(measure_queries)
         identifiers_sql = ', '.join(identifier_names)

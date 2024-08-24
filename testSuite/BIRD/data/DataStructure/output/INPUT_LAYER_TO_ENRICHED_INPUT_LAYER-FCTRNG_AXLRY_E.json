@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "FCTRNG_AXLRY_E",
+      "DataStructure": [
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_MTRTY_CSH_RSRV",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_ORGNL_CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "GNRT_CSH_RSRV",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ORGNL_CSH_RSRV_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

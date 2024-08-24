@@ -1,0 +1,1 @@
+{"datasets": [{"name": "DS_r", "DataStructure": [{"name": "Id1", "role": "Identifier", "type": "String", "nullable": false}, {"name": "Me1", "role": "Measure", "type": "Time_Period", "nullable": true}], "DataPoints": null}]}

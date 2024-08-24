@@ -1,1 +1,5 @@
-DS_r := DS_1 [ filter period_indicator ( Id_3 ) = "A" ];
+define operator Test100 (x component)
+    returns component is
+    period_indicator ( x )
+end operator;
+DS_r := DS_1 [ filter Test100(Id_3) = "A" ];

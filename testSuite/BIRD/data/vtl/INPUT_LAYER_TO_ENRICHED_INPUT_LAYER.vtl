@@ -1,0 +1,400 @@
+define operator D_CRRYNG_AMNT(ACCNTNG_CLSSFCTN component, FV component, GRSS_CRRYNG_AMNT_E_INTRST component, ACCRD_INTRST component, 
+                              FV_CHNG_HDG_ACCNTNG component, ACCMLTD_IMPRMNT component, CRRYNG_AMNT component, IS_CRRYNG_AMNT_DRVD component) 
+  returns component is 
+      
+      if 
+        IS_CRRYNG_AMNT_DRVD = "T"
+      then 
+        if 
+          ACCNTNG_CLSSFCTN in {"FV_ACCNTNG_CLSSFCTNS"} /*This subdomain is not included in the SDD*/
+      then 
+          FV 
+        else 
+          GRSS_CRRYNG_AMNT_E_INTRST + ACCRD_INTRST  - FV_CHNG_HDG_ACCNTNG - ACCMLTD_IMPRMNT
+      else 
+        CRRYNG_AMNT
+end operator;
+define operator D_ACCMLTD_NGTV_CHNGS_FV_CR(ACCMLTD_CHNGS_FV_CR component)
+  returns component is 
+    if 
+      ACCMLTD_CHNGS_FV_CR < 0 
+    then 
+      ACCMLTD_CHNGS_FV_CR 
+    else 
+      0 
+end operator;
+define operator D_TYP_INSTRMNT_CMMTMNTS_FINREP(TYP_CMMTMNT component) 
+  returns component is 
+    if 
+      TYP_CMMTMNT in {"LN_CMMTMNTS_GVN"} 
+    then 
+      "910" 
+    else 
+      if 
+        TYP_CMMTMNT in {"OTHR_CMMTMNTS_GVN"}  
+      then 
+        "930" 
+      else 
+        "0" 
+end operator;
+define operator D_INSTTTNL_SCTR_FINREP(INSTTTNL_SCTR component, INTRNTNL_ORGNSTN_CD component)
+  returns component is 
+
+    if 
+      INSTTTNL_SCTR = "S122_A"  or INTRNTNL_ORGNSTN_CD in {"MLTLTRL_DVLPMNT_BNKS_FINREP"} 
+    then 
+      "S1_MDB" 
+    else 
+      if 
+        INSTTTNL_SCTR in {"Sectors04"} or INTRNTNL_ORGNSTN_CD in {"INTRNTNL_ORGNSTNS_FINREP"}
+      then 
+        "S13_IO" 
+      else 
+        INSTTTNL_SCTR 
+end operator;define operator G_IS_ELGBL_CNTRPRTY_AC(INSTTTNL_SCTR component) 
+  returns component is 
+    if 
+      INSTTTNL_SCTR in {"S14_A", "S14_B"} 
+    then 
+      "F" 
+    else 
+      "T" 
+end operator;
+
+
+define operator D_CNTRY_FINREP(CNTRY component, INTRNTNL_ORGNSTN_CD component) 
+  returns component is 
+    if 
+      INTRNTNL_ORGNSTN_CD in {"MLTLTRL_DVLPMNT_BNKS_FINREP"} or INTRNTNL_ORGNSTN_CD in {"INTRNTNL_ORGNSTNS_FINREP"}
+    then 
+      "_X" 
+    else 
+      CNTRY 
+end operator;define operator G_IS_ELGBL_INSTRMNT_AC(TYP_INSTRMNT component, OFF_BLNC_SHT_AMNT component, OTSTNDNG_NMNL_AMNT component, ACCMLTD_WRTFFS component) 
+  returns component is 
+    if 
+      TYP_INSTRMNT in {"INSTRMNTS_ELGBL_AC"} 
+        and 
+      (OFF_BLNC_SHT_AMNT > 0 or OTSTNDNG_NMNL_AMNT > 0) 
+    then 
+      "T" 
+    else 
+      "F" 
+end operator;/*******************************************************************************
+*       Module P_ADVNCS_NT_LNS_E_1
+*******************************************************************************/
+P_ADVNCS_NT_LNS_E_1.ADVNCS_NT_LNS_E := ADVNCS_NT_LNS [ calc IS_SRVCD_OBSRVD_AGNT := "T" , DT_NXT_INTRST_RT_RST := cast ( null , date ) , RPYMNT_RGHTS := "0" , DT_STTLMNT := cast ( null , date ) , SYNDCTD_CNTRCT_ID := cast ( null , string ) , RFRNC_RT := "0" , TYP_INTRST_RT := "0" , DT_END_INTRST_ONLY := cast ( null , date ) , SCRTSTN_TRNSFR_ID := cast ( null , string ) , IS_RTL_EXPSR := "F" , IS_DBT_FNNCNG := "F" , RLTNSHP_SCRTSTN_CRDT_TRNSFR := "0" , PRCHSD_ORGNTD_CRDT_IMPRD := "0" , DT_LGL_FNL_MTRTY := cast ( null , date ) , FDCRY := "2" , RCRS := "2" , CMLTV_RCVRS_SNC_DFLT := cast ( null , number ) , INTRST_RT_FLR := cast ( null , number ) , INTRST_RT_CP := cast ( null , number ) , CMMTMNT_INCPTN := cast ( null , number ) , PRCNTG_TRNSFRRD := cast ( null , number ) , OFF_BLNC_SHT_AMNT := cast ( null , number ) , INTRST_RT_SPRD := cast ( null , number ) , PYMNT_FRQNCY := "0" , ANNLSD_AGRD_RT := cast ( null , number ) , SRC_ENCMBRNC := "0" , PRVSNS_OFF_BLNC_SHT := cast ( null , number ) , TYP_AMRTSTN := "0" , IS_CRDT_LN_OTHR_RV_CRDT := "F" , DT_INCPTN := cast ( null , date ) , PRDNTL_PRTFL := "0" , INSTRMNT_ID := cast ( null , string ) , IS_TRNSFRBL_DPST := "F" , GV_RS_CR_PST := "F" , CNTRCT_ID := cast ( null , string ) , IS_RVLVNG_LN := "F" , INTRST_RT_RST_FRQNCY := "0" , ARRRS := cast ( null , number ) , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "141" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_ADVNCS_NT_LNS_1
+*******************************************************************************/
+ADVNCS_NT_LNS_E <- ADVNCS_NT_LNS [ calc IS_SRVCD_OBSRVD_AGNT := "T" , DT_NXT_INTRST_RT_RST := cast ( null , date ) , RPYMNT_RGHTS := "0" , DT_STTLMNT := cast ( null , date ) , SYNDCTD_CNTRCT_ID := cast ( null , string ) , RFRNC_RT := "0" , TYP_INTRST_RT := "0" , DT_END_INTRST_ONLY := cast ( null , date ) , SCRTSTN_TRNSFR_ID := cast ( null , string ) , IS_RTL_EXPSR := "F" , IS_DBT_FNNCNG := "F" , RLTNSHP_SCRTSTN_CRDT_TRNSFR := "0" , PRCHSD_ORGNTD_CRDT_IMPRD := "0" , DT_LGL_FNL_MTRTY := cast ( null , date ) , FDCRY := "2" , RCRS := "2" , CMLTV_RCVRS_SNC_DFLT := cast ( null , number ) , INTRST_RT_FLR := cast ( null , number ) , INTRST_RT_CP := cast ( null , number ) , CMMTMNT_INCPTN := cast ( null , number ) , PRCNTG_TRNSFRRD := cast ( null , number ) , OFF_BLNC_SHT_AMNT := cast ( null , number ) , INTRST_RT_SPRD := cast ( null , number ) , PYMNT_FRQNCY := "0" , ANNLSD_AGRD_RT := cast ( null , number ) , SRC_ENCMBRNC := "0" , PRVSNS_OFF_BLNC_SHT := cast ( null , number ) , TYP_AMRTSTN := "0" , IS_CRDT_LN_OTHR_RV_CRDT := "F" , DT_INCPTN := cast ( null , date ) , PRDNTL_PRTFL := "0" , INSTRMNT_ID := cast ( null , string ) , IS_TRNSFRBL_DPST := "F" , GV_RS_CR_PST := "F" , CNTRCT_ID := cast ( null , string ) , IS_RVLVNG_LN := "F" , INTRST_RT_RST_FRQNCY := "0" , ARRRS := cast ( null , number ) , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "141" ] ; 
+/*******************************************************************************
+*       Module D_CRRYNG_AMNT_SCRTS_1
+*******************************************************************************/
+D_CRRYNG_AMNT_SCRTS_1.OWND_SCRTS_PRMTR := inner_join ( OWND_SCRTS , PRMTR.CNSTNT_IS_CRRYNG_AMNT_DRVD ) ; 
+D_CRRYNG_AMNT_SCRTS_1.D_CRRYNG_AMNT_SCRTS := D_CRRYNG_AMNT_SCRTS_1.OWND_SCRTS_PRMTR [ calc CRRYNG_AMNT := D_CRRYNG_AMNT ( ACCNTNG_CLSSFCTN , FV , GRSS_CRRYNG_AMNT_E_INTRST , ACCRD_INTRST , FV_CHNG_HDG_ACCNTNG , ACCMLTD_IMPRMNT , CRRYNG_AMNT , IS_CRRYNG_AMNT_DRVD ) ] [ keep CRRYNG_AMNT ] ; 
+/*******************************************************************************
+*       Module P_CSH_ON_HND_E_1
+*******************************************************************************/
+CSH_ON_HND_E <- CSH_ON_HND ; 
+/*******************************************************************************
+*       Module P_CMMTMNTS_GVN_E_1
+*******************************************************************************/
+P_CMMTMNTS_GVN_E_1.CMMTMNTS_GVN_UNN := union ( P_IMPLCT_CRDT_FCLTS_GVN_1.CRDT_FCLTS_E , P_IMPLCT_OTHR_CMMTMNTS_GVN_1.OTHR_CMMTMNTS_GVN_E , P_IMPLCT_FNNCL_GRNTS_GVN_1.FNNCL_GRNTS_GVN_E ) ; 
+CMMTMNTS_GVN_E <- P_CMMTMNTS_GVN_E_1.CMMTMNTS_GVN_UNN [ calc TYP_INSTRMNT := D_TYP_INSTRMNT_CMMTMNTS_FINREP ( TYP_CMMTMNT ) ] [ calc ACCMLTD_CHNG_NGTV_FV_CR := D_ACCMLTD_NGTV_CHNGS_FV_CR ( ACCMLTD_CHNGS_FV_CR ) ] [ calc CRRYNG_AMNT := PRVSNS_OFF_BLNC_SHT ] [ calc NMNL_AMNT := OFF_BLNC_SHT_AMNT ] ; 
+/*******************************************************************************
+*       Module P_CMMTMNTS_GVN_PRTCTNS_E_1
+*******************************************************************************/
+CMMTMNTS_GVN_PRTCTNS_E <- CMMTMNT_PRTCTN ; 
+/*******************************************************************************
+*       Module P_CMMTMNTS_RCVD_CSTMRS_RLTNSHP_E_1
+*******************************************************************************/
+CMMTMNTS_RCVD_CSTMRS_RLTNSHP_E <- union ( TRNSCTN_CNTRPRTS_SPLT.CMMTMNTS_RCVD_CSTMRS_RLTNSHP , TRNSCTN_CNTRPRTS_SPLT.CMMTMNTS_RCVD_CSTMRS_RLTNSHP_FNNCL_GRTS ) ; 
+/*******************************************************************************
+*       Module P_CMMTMNT_RCVD_E_1
+*******************************************************************************/
+CMMTMNT_RCVD_E <- CMMTMNT_RCVD ; 
+/*******************************************************************************
+*       Module P_CNTRPRTS_E_1
+*******************************************************************************/
+P_CNTRPRTS_E_1.CNTRPRTS_E_JN := inner_join ( CNTRPRTS , D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD , CRDT_ASSSSMNT_SPLT.ECA_CNTRPRTS ) ; 
+CNTRPRTS_E <- P_CNTRPRTS_E_1.CNTRPRTS_E_JN [ calc INSTTTNL_SCTR_FINREP := D_INSTTTNL_SCTR_FINREP ( INSTTTNL_SCTR , INTRNTNL_ORGNSTN ) ] [ calc CNTRY_FINREP := D_CNTRY_FINREP ( CNTRY , INTRNTNL_ORGNSTN ) ] [ calc IS_ELGBL_CNTRPRTY := G_IS_ELGBL_CNTRPRTY_AC ( INSTTTNL_SCTR ) ] ; 
+/*******************************************************************************
+*       Module P_CNTRY_E
+*******************************************************************************/
+CNTRY_E <- CNTRY ; 
+/*******************************************************************************
+*       Module P_IMPLCT_CRDT_CRD_DBT_1
+*******************************************************************************/
+P_IMPLCT_CRDT_CRD_DBT_1.CRDT_CRD_DBT_E := CRDT_CRD_DBT [ calc IS_CRDT_LN_OTHR_RV_CRDT := "F" , SYNDCTD_CNTRCT_ID := cast ( null , string ) , RPYMNT_RGHTS := "2" , IS_TRNSFRBL_DPST := "F" , SBRDNTD_DBT := "2" , IS_RVLVNG_LN := "F" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "51" , IS_NN_PRFRMNG_PRR_FRBRNC := cast ( null , string ) ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_CRDT_DRVTV_1
+*******************************************************************************/
+P_IMPLCT_CRDT_DRVTV_1.CRDT_DRVTV_E := CRDT_DRVTV [ calc TYP_HDGD_RSK := "0" , TYP_RSK := "0" ] ; 
+/*******************************************************************************
+*       Module P_CRDT_FCLTS_E_1
+*******************************************************************************/
+CRDT_FCLTS_E <- CRDT_FCLTS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_CRDT_FCLTS_GVN_1
+*******************************************************************************/
+P_IMPLCT_CRDT_FCLTS_GVN_1.CRDT_FCLTS_E := CRDT_FCLTS [ calc TYP_INSTRMNT := D_TYP_INSTRMNT_CMMTMNTS_FINREP ( TYP_CMMTMNT ) ] ; 
+/*******************************************************************************
+*       Module P_CRDT_FCLTS_INSTRMNTS_E_1
+*******************************************************************************/
+CRDT_FCLTS_INSTRMNTS_E <- CRDT_FCLTS_INSTRMNTS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_CRRNT_ACCNT_ASSTS_1
+*******************************************************************************/
+P_IMPLCT_CRRNT_ACCNT_ASSTS_1.CRRNT_ACCNT_ASSTS_E := CRRNT_ACCNT_SPLT.CRRNT_ACCNT_ASSTS [ calc ANNLSD_AGRD_RT := ANNLSD_AGRD_RT_ASST , TYP_AMRTSTN := "5" , IS_CRDT_LN_OTHR_RV_CRDT := "0" , SYNDCTD_CNTRCT_ID := cast ( null , string ) , RPYMNT_RGHTS := "1" , DT_END_INTRST_ONLY := cast ( null , date ) , IS_RVLVNG_LN := "0" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "260" ] [ drop ADDTNL_PRTCTN , ANNLSD_AGRD_RT_ASST , ANNLSD_AGRD_RT_LBLTY , DGS_DPST , DGS_ELGBL , EXCLDD_FRM_BL_IN , GVRND_EU_LW , IS_ASST , OTSTNDNG_NMNL_AMNT_CVRD , OTSTNDNG_NMNL_AMNT_SCRD ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_CRRNT_ACCNT_LBLTS_1
+*******************************************************************************/
+P_IMPLCT_CRRNT_ACCNT_LBLTS_1.CRRNT_ACCNT_LBLTS_E := CRRNT_ACCNT_SPLT.CRRNT_ACCNT_LBLTS [ calc TYP_INSTRMNT := "260" , IS_RDMBL_NTC := "0" , PRCNTG_RDMPTN := cast ( 0 , number ) , RDMPTN_NTC_PRD := cast ( 0 , integer ) , RPYMNT_RGHTS := "0" , ERLY_RDMPTN_DT := cast ( null , date ) ] [ rename ANNLSD_AGRD_RT_LBLTY to ANNLSD_AGRD_RT ] [ keep ACCMLTD_CHNGS_FV , ACCMLTD_CHNGS_FV_CR , ACCNTNG_CLSSFCTN , ACCRD_INTRST , ADDTNL_PRTCTN , ANNLSD_AGRD_RT , CRRNCY_DNMNTN , CRRYNG_AMNT , DGS_DPST , DGS_ELGBL , DT_LGL_FNL_MTRTY , DT_STTLMNT , ERLY_RDMPTN_DT , EXCLDD_FRM_BL_IN , FV , FV_CHNG_HDG_ACCNTNG , FV_HRRCHY , FVO_DSGNTN , GRSS_CRRYNG_AMNT_E_INTRST , GVRND_EU_LW , IS_HFS , OBSRVD_AGNT_INTRNL_ID , OTSTNDNG_NMNL_AMNT , OTSTNDNG_NMNL_AMNT_CVRD , OTSTNDNG_NMNL_AMNT_SCRD , PRCNTG_RDMPTN , RDMPTN_NTC_PRD , SBRDNTD_DBT , TYP_INSTRMNT ] ; 
+/*******************************************************************************
+*       Module CRRNT_ACCNT_SPLT
+*******************************************************************************/
+CRRNT_ACCNT_SPLT.CRRNT_ACCNT_ASSTS := CRRNT_ACCNT [ filter IS_ASST = "T" ] ; 
+CRRNT_ACCNT_SPLT.CRRNT_ACCNT_LBLTS := CRRNT_ACCNT [ filter IS_ASST = "F" ] ; 
+/*******************************************************************************
+*       Module P_DBT_SCRTS_E_1
+*******************************************************************************/
+DBT_SCRTS_E <- P_OWND_SCRTS_E_1.OWND_SCRTS_JN [ filter TYP_INSTRMNT = "210" and IS_SHRT_PSTN in { "F" , "0" } ] ; 
+/*******************************************************************************
+*       Module P_DPSTS_LBLTS_E_1
+*******************************************************************************/
+P_DPSTS_LBLTS_E_1.DPSTS_LBLTS_E := DPSTS_LBLTS [ calc TYP_INSTRMNT := "547" ] ; 
+/*******************************************************************************
+*       Module P_DPSTS_THT_LBLTS_E_1
+*******************************************************************************/
+DPSTS_THT_LBLTS_E <- union ( P_DPSTS_LBLTS_E_1.DPSTS_LBLTS_E , P_IMPLCT_RPRCHS_AGRMNT_1.RPRCHS_AGRMNT_E , P_IMPLCT_CRRNT_ACCNT_LBLTS_1.CRRNT_ACCNT_LBLTS_E ) ; 
+/*******************************************************************************
+*       Module P_DRVTV_E_1
+*******************************************************************************/
+P_DRVTV_E_1.DRVTV_E := union ( P_IMPLCT_CRDT_DRVTV_1.CRDT_DRVTV_E , P_IMPLCT_FNNCL_OPTN_1.FNNCL_OPTN_E , P_IMPLCT_OTHR_FNNCL_DRVTV_1.OTHR_FNNCL_DRVTV_E ) ; 
+/*******************************************************************************
+*       Module D_ENTRPRS_SZ_CLCLTD_1
+*******************************************************************************/
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_OBJCTV := max ( CNTRPRTS group except PRSPCTV_ID ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_ATNMS0 := D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_OBJCTV [ filter ENTRPRS_SZ_CHC = "0" and TYP_ENTRPRS in { "1" , "2" } ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_ATNMS := D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_ATNMS0 [ keep NMBR_EMPLYS , BLNC_SHT_TTL , ANNL_TRNVR , TYP_ENTRPRS , CNTRL_PBLC_BDS , EXCPTN_MRG_ACQSTN ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_PRVS := left_join ( D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_OBJCTV , ENTRPRS_SZ_PRVS_PRD using DT_RFRNC , CNTRPRTY_ID ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.PRTNR_ENTRPRSS_AGG := PRTNR_ENTRPRSS [ calc measure AGGRGBL_BLNC_SHT_TTL := PRCNTG_INTRST_CPTL_VTNG_RGHTS * BLNC_SHT_TTL ] [ rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS , ANNL_TRNVR to AGGRGBL_ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG0 := inner_join ( GRP_DT as A , GRP_CNTRPRTY_RLTNSHP as B using DT_RFRNC , GRP_INTRNL_ID ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG1 := D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG0 [ keep NMBR_EMPLYS , BLNC_SHT_TTL , ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG := D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG1 [ rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS , BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL , ANNL_TRNVR to AGGRGBL_ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG0 := D_ENTRPRS_SZ_CLCLTD_1.PRTNR_ENTRPRSS_AGG [ keep AGGRGBL_BLNC_SHT_TTL , AGGRGBL_NMBR_EMPLYS , AGGRGBL_ANNL_TRNVR ] [ rename PRTNR_ENTRPRS_ID to RLTD_ID ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG1 := LNKD_ENTRPRSS [ keep NMBR_EMPLYS , BLNC_SHT_TTL , ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG2 := D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG1 [ rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS , BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL , ANNL_TRNVR to AGGRGBL_ANNL_TRNVR , LNKD_ENTRPRS_ID to RLTD_ID ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG3 := D_ENTRPRS_SZ_CLCLTD_1.GRP_ENTRPRSS_AGG [ keep AGGRGBL_BLNC_SHT_TTL , AGGRGBL_NMBR_EMPLYS , AGGRGBL_ANNL_TRNVR ] [ rename GRP_INTRNL_ID to RLTD_ID ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG4 := D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_ATNMS [ keep BLNC_SHT_TTL , NMBR_EMPLYS , ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG5 := D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG4 [ rename BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL , NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS , ANNL_TRNVR to AGGRGBL_ANNL_TRNVR ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG6 := D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG0 + D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG2 + D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG3 + D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG5 ; 
+D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG := sum ( D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG6 group except RLTD_ID ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.PRLMNRY_STTNG := D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG [ calc ENTRPRS_SZ_PRLMNRY_T := if ( isnull ( AGGRGBL_NMBR_EMPLYS ) or isnull ( AGGRGBL_BLNC_SHT_TTL ) and isnull ( AGGRGBL_ANNL_TRNVR ) ) then "7" else if ( AGGRGBL_NMBR_EMPLYS < 10 and AGGRGBL_BLNC_SHT_TTL <= 2000000 or AGGRGBL_ANNL_TRNVR <= 2000000 ) then "4" else if ( AGGRGBL_NMBR_EMPLYS < 50 and AGGRGBL_BLNC_SHT_TTL <= 10000000 or AGGRGBL_ANNL_TRNVR <= 10000000 ) then "3" else if ( AGGRGBL_NMBR_EMPLYS < 250 and AGGRGBL_BLNC_SHT_TTL <= 43000000 or AGGRGBL_ANNL_TRNVR <= 50000000 ) then "2" else "6" ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.ALL0 := inner_join ( D_ENTRPRS_SZ_CLCLTD_1.PRLMNRY_STTNG , D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_PRVS ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.ALL1 := inner_join ( D_ENTRPRS_SZ_CLCLTD_1.ALL0 [ keep ENTRPRS_SZ_PRLMNRY_T , ENTRPRS_SZ_CLCLTD , ENTRPRS_SZ_PRLMNRY ] as A , D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_OBJCTV as C ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.ALL2 := D_ENTRPRS_SZ_CLCLTD_1.ALL1 [ keep ENTRPRS_SZ_PRLMNRY , ENTRPRS_SZ_PRLMNRY_T , ENTRPRS_SZ_CLCLTD , TYP_ENTRPRS , CNTRL_PBLC_BDS , EXCPTN_MRG_ACQSTN ] [ rename EXCPTN_MRG_ACQSTN to MRGACQ ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG := D_ENTRPRS_SZ_CLCLTD_1.ALL2 [ calc ENTRPRS_SZ_CLCLTD_T := if ( TYP_ENTRPRS = "1" ) then "9" else if ( CNTRL_PBLC_BDS = "1" ) then "6" else if ( ENTRPRS_SZ_PRLMNRY_T = "7" ) then "7" else if isnull ( ENTRPRS_SZ_CLCLTD ) then ENTRPRS_SZ_PRLMNRY_T else if ( MRGACQ = "1" ) then ENTRPRS_SZ_PRLMNRY_T else if ( ENTRPRS_SZ_PRLMNRY_T = "4" ) then if ( ENTRPRS_SZ_CLCLTD = "4" ) then "4" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "2" , "3" , "7" } and ENTRPRS_SZ_PRLMNRY = "4" ) then "4" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in { "6" , "2" , "3" , "7" } ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in { "6" , "2" , "7" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "6" else null else if ( ENTRPRS_SZ_PRLMNRY_T = "3" ) then if ( ENTRPRS_SZ_CLCLTD = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "2" , "4" , "7" } and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4" ) then "4" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY in { "6" , "2" , "7" } ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY = "4" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in { "6" , "2" , "7" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY = "4" ) then "3" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "6" else null else if ( ENTRPRS_SZ_PRLMNRY_T = "2" ) then if ( ENTRPRS_SZ_CLCLTD = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "3" , "4" , "7" } and ENTRPRS_SZ_PRLMNRY = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4" ) then "4" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "4" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY in { "3" , "4" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "6" else null else if ( ENTRPRS_SZ_PRLMNRY_T = "6" ) then if ( ENTRPRS_SZ_CLCLTD in { "6" , "7" } ) then "6" else if ( ENTRPRS_SZ_CLCLTD in { "2" , "3" , "4" } and ENTRPRS_SZ_PRLMNRY in { "6" , "7" } ) then "6" else if ( ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in { "2" , "3" , "4" } ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in { "3" , "4" } ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "2" ) then "2" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "3" ) then "3" else if ( ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4" ) then "4" else null else null ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG2 := D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG [ keep ENTRPRS_SZ_CLCLTD_T ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG3 := D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG2 [ rename ENTRPRS_SZ_CLCLTD_T to ENTRPRS_SZ_CLCLTD ] [ calc measure IS_DRVD_ENTRPRS_SZ := "T" ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_INPT0 := D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_OBJCTV [ filter ENTRPRS_SZ_CHC = "1" ] [ keep ENTRPRS_SZ_INPT ] [ rename ENTRPRS_SZ_INPT to ENTRPRS_SZ_CLCLTD ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_INPT1 := D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_INPT0 [ calc measure IS_DRVD_ENTRPRS_SZ := "F" ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD0 := union ( D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG3 , D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_INPT1 ) ; 
+D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD1 := D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD0 [ calc ENTRPRS_SZ := if ( ENTRPRS_SZ_CLCLTD in { "0" , "9" } ) then "0" else if ( ENTRPRS_SZ_CLCLTD in { "1" , "6" , "7" } ) then "1" else ENTRPRS_SZ_CLCLTD ] ; 
+D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD := D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD1 [ keep ENTRPRS_SZ , IS_DRVD_ENTRPRS_SZ ] ; 
+/*******************************************************************************
+*       Module P_EQTY_INSTRMNTS_NT_SCRTS_E_1
+*******************************************************************************/
+EQTY_INSTRMNTS_NT_SCRTS_E <- EQTY_INSTRMNTS_NT_SCRTS [ calc ACCMLTD_IMPRMNT := cast ( null , number ) , IMPRMNT_STTS := "0" , TYP_INSTRMNT := "230" ] ; 
+/*******************************************************************************
+*       Module P_EQTY_SCRTS_E_1
+*******************************************************************************/
+P_EQTY_SCRTS_E_1.EQTY_SCRTS_E := P_OWND_SCRTS_E_1.OWND_SCRTS_JN [ filter TYP_INSTRMNT in { "220" , "240" } and IS_SHRT_PSTN in { "F" , "0" } ] ; 
+/*******************************************************************************
+*       Module P_FCTRNG_AXLRY_E_1
+*******************************************************************************/
+FCTRNG_AXLRY_E <- FCTRNG_AXLRY ; 
+/*******************************************************************************
+*       Module P_IMPLCT_FCTRNG_1
+*******************************************************************************/
+P_IMPLCT_FCTRNG_1.FCTRNG_E := FCTRNG [ calc TYP_AMRTSTN := "4" , RPYMNT_RGHTS := "2" , PRJCT_FNNC_LN := "0" , IS_TRNSFRBL_DPST := "F" , DT_END_INTRST_ONLY := cast ( null , date ) , SBRDNTD_DBT := "2" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "1020" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_FNNCL_GRNTS_GVN_1
+*******************************************************************************/
+P_IMPLCT_FNNCL_GRNTS_GVN_1.FNNCL_GRNTS_GVN_E := FNNCL_GRNTS_GVN [ calc DT_NXT_INTRST_RT_RST := cast ( null , date ) ] [ calc RPYMNT_RGHTS := "2" ] [ calc RFRNC_RT := "0" ] [ calc TYP_INTRST_RT := "0" ] [ calc DT_END_INTRST_ONLY := cast ( null , date ) ] [ calc IS_DBT_FNNCNG := "F" ] [ calc TYP_CMMTMNT := "0" ] [ calc IS_RVCBL := "F" ] [ calc RCRS := "2" ] [ calc INTRST_RT_FLR := cast ( null , number ) ] [ calc IS_PRFRMNG_FRBRN_UNDR_PRBTN := "F" ] [ calc INTRST_RT_CP := cast ( null , number ) ] [ calc INTRST_RT_SPRD := cast ( null , number ) ] [ calc TYP_INSTRMNT := "920" ] [ calc PYMNT_FRQNCY := "4" ] [ calc DT_DFLT_STTS := cast ( null , date ) ] [ calc ANNLSD_AGRD_RT := cast ( null , number ) ] [ calc GRNTD_AMNT := cast ( null , number ) ] [ calc TYP_AMRTSTN := "4" ] [ calc PRPS := "0" ] [ calc SBRDNTD_DBT := "2" ] [ calc TYP_FCLTY := "1" ] [ calc INSTRMNT_ID := cast ( null , string ) ] [ calc PRJCT_FNNC_LN := "0" ] [ calc IS_NN_PRFRMNG_PRR_FRBRNC := "F" ] [ calc INTRST_RT_RST_FRQNCY := "0" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_FNNCL_LSS_1
+*******************************************************************************/
+P_IMPLCT_FNNCL_LSS_1.FNNCL_LSS_E := FNNCL_LSS [ calc RPYMNT_RGHTS := "2" , IS_TRNSFRBL_DPST := "F" , SBRDNTD_DBT := "2" , IS_RVLVNG_LN := "F" , TYP_INSTRMNT := "80" , IS_CRDT_LN_OTHR_RV_CRDT := "F" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_FNNCL_OPTN_1
+*******************************************************************************/
+P_IMPLCT_FNNCL_OPTN_1.FNNCL_OPTN_E := FNNCL_OPTN [ calc TYP_DRVTV := "0" , TYP_INSTRMNT := "390" ] ; 
+/*******************************************************************************
+*       Module P_GDWLL_E_1
+*******************************************************************************/
+GDWLL_E <- GDWLL ; 
+/*******************************************************************************
+*       Module P_GRP_E_1
+*******************************************************************************/
+GRP_E <- GRP ; 
+/*******************************************************************************
+*       Module P_INSTRMNTS_PRTCTNS_E_1
+*******************************************************************************/
+INSTRMNTS_PRTCTNS_E <- INSTRMNTS_PRTCTNS ; 
+/*******************************************************************************
+*       Module P_INSTRMNTS_SRVCRS_E_1
+*******************************************************************************/
+P_INSTRMNTS_SRVCRS_E_1.INSTRMNTS_SRVCRS_ADDTNL := P_LNS_E_1.LNS_E_FNL [ filter IS_SRVCD_OBSRVD_AGNT = "T" ] [ keep FV ] [ drop FV ] ; 
+INSTRMNTS_SRVCRS_E <- inner_join ( TRNSCTN_CNTRPRTS_SPLT.INSTRMNTS_SRVCRS , P_INSTRMNTS_SRVCRS_E_1.INSTRMNTS_SRVCRS_ADDTNL ) ; 
+/*******************************************************************************
+*       Module P_INVSTMNT_PRPRTY_E_1
+*******************************************************************************/
+INVSTMNT_PRPRTY_E <- INVSTMNT_PRPRTY ; 
+/*******************************************************************************
+*       Module JNT_CNTRPRTS_E
+*******************************************************************************/
+JNT_CNTRPRTS_E_ <- JNT_CNTRPRTS ;
+/*******************************************************************************
+*       Module P_LNS_E_1
+*******************************************************************************/
+P_LNS_E_1.LNS_E_UNN := union ( P_IMPLCT_CRDT_CRD_DBT_1.CRDT_CRD_DBT_E , P_IMPLCT_FCTRNG_1.FCTRNG_E , P_IMPLCT_FNNCL_LSS_1.FNNCL_LSS_E , P_IMPLCT_OTHR_DPSTS_1.OTHR_DPSTS_E , P_IMPLCT_OTHR_LNS_1.OTHR_LNS_E , P_IMPLCT_OTHR_TRD_RCVBLS_1.OTHR_TRD_RCVBLS_E , P_IMPLCT_RVRS_RPRCHS_LNS_1.RVRS_RPRCHS_LNS_E , P_IMPLCT_CRRNT_ACCNT_ASSTS_1.CRRNT_ACCNT_ASSTS_E ) ; 
+P_LNS_E_1.LNS_E_PRMTR := inner_join ( P_LNS_E_1.LNS_E_UNN , PRMTR.CNSTNT_IS_CRRYNG_AMNT_DRVD ) ; 
+P_LNS_E_1.LNS_E_FNL := P_LNS_E_1.LNS_E_PRMTR [ calc IS_ELGBL_INSTRMNT_AC := G_IS_ELGBL_INSTRMNT_AC ( TYP_INSTRMNT , OFF_BLNC_SHT_AMNT , OTSTNDNG_NMNL_AMNT , ACCMLTD_WRTFFS ) ] [ calc CRRYNG_AMNT := D_CRRYNG_AMNT ( ACCNTNG_CLSSFCTN , FV , GRSS_CRRYNG_AMNT_E_INTRST , ACCRD_INTRST , FV_CHNG_HDG_ACCNTNG , ACCMLTD_IMPRMNT , CRRYNG_AMNT , IS_CRRYNG_AMNT_DRVD ) ] ; 
+LNS_E <- P_LNS_E_1.LNS_E_FNL ; 
+/*******************************************************************************
+*       Module P_MSTR_NTTNG_AGRMNT_E_1
+*******************************************************************************/
+MSTR_NTTNG_AGRMNT_E <- MSTR_NTTNG_AGRMNT ; 
+/*******************************************************************************
+*       Module P_NN_FNNCL_ASSTS_E_1
+*******************************************************************************/
+NN_FNNCL_ASSTS_E <- NN_FNNCL_ASSTS ; 
+/*******************************************************************************
+*       Module P_NN_FNNCL_LBLTS_E_1
+*******************************************************************************/
+NN_FNNCL_LBLTS_E <- NN_FNNCL_LBLTS ; 
+/*******************************************************************************
+*       Module P_OTHR_ASSTS_E_1
+*******************************************************************************/
+OTHR_ASSTS_E <- OTHR_ASSTS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_OTHR_CMMTMNTS_GVN_1
+*******************************************************************************/
+P_IMPLCT_OTHR_CMMTMNTS_GVN_1.OTHR_CMMTMNTS_GVN_E := OTHR_CMMTMNTS_GVN [ calc DT_NXT_INTRST_RT_RST := cast ( null , date ) ] [ calc RPYMNT_RGHTS := "2" ] [ calc RFRNC_RT := "0" ] [ calc TYP_INTRST_RT := "0" ] [ calc DT_END_INTRST_ONLY := cast ( null , date ) ] [ calc IS_DBT_FNNCNG := "F" ] [ calc IS_RVCBL := "F" ] [ calc RCRS := "2" ] [ calc INTRST_RT_FLR := cast ( null , number ) ] [ calc INTRST_RT_CP := cast ( null , number ) ] [ calc INTRST_RT_SPRD := cast ( null , number ) ] [ calc TYP_INSTRMNT := "930" ] [ calc PYMNT_FRQNCY := "4" ] [ calc DT_DFLT_STTS := cast ( null , date ) ] [ calc ANNLSD_AGRD_RT := cast ( null , number ) ] [ calc GRNTD_AMNT := cast ( null , number ) ] [ calc TYP_AMRTSTN := "4" ] [ calc PRPS := "0" ] [ calc SBRDNTD_DBT := "2" ] [ calc INSTRMNT_ID := cast ( null , string ) ] [ calc PRJCT_FNNC_LN := "0" ] [ calc INTRST_RT_RST_FRQNCY := "0" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_OTHR_DPSTS_1
+*******************************************************************************/
+P_IMPLCT_OTHR_DPSTS_1.OTHR_DPSTS_E := OTHR_DPSTS [ calc PRPS := cast ( null , string ) , IS_CRDT_LN_OTHR_RV_CRDT := "F" , SYNDCTD_CNTRCT_ID := cast ( null , string ) , PRCHSD_ORGNTD_CRDT_IMPRD := "0" , PRJCT_FNNC_LN := "0" , IS_TRNSFRBL_DPST := "F" , DT_END_INTRST_ONLY := cast ( null , date ) , IS_RVLVNG_LN := "F" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "1000" ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_OTHR_FNNCL_DRVTV_1
+*******************************************************************************/
+P_IMPLCT_OTHR_FNNCL_DRVTV_1.OTHR_FNNCL_DRVTV_E := OTHR_FNNCL_DRVTV [ calc TYP_DRVTV := "0" ] ; 
+/*******************************************************************************
+*       Module P_OTHR_FNNCL_LBLTS_NT_FNNCL_GRNTS_LN_CMMTMNTS_GVN_E_1
+*******************************************************************************/
+OTHR_FNNCL_LBLTS_NT_FNNCL_GRNTS_LN_CMMTMNTS_GVN_E <- OTHR_FNNCL_LBLTS_NT_FNNCL_GRNTS_LN_CMMTMNTS_GVN ; 
+/*******************************************************************************
+*       Module P_OTHR_FNNCL_PRTCTN_E_1
+*******************************************************************************/
+P_OTHR_FNNCL_PRTCTN_E_1.OTHR_FNNCL_PRTCTN_E := OTHR_FNNCL_PRTCTN [ calc measure PRTCTN_VLTN_APPRCH_PRTCTN_VL := PRTCTN_VLTN_APPRCH_PRTCTN_VL , FNNCL_GRNT_CNSDRD_MX_AMNT := cast ( null , number ) , ISSR_ID := cast ( null , string ) ] ; 
+/*******************************************************************************
+*       Module P_OTHR_INTNGBL_ASSTS_E_1
+*******************************************************************************/
+OTHR_INTNGBL_ASSTS_E <- OTHR_INTNGBL_ASSTS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_OTHR_LNS_1
+*******************************************************************************/
+P_IMPLCT_OTHR_LNS_1.OTHR_LNS_E := OTHR_LNS [ calc RPYMNT_RGHTS := "2" , IS_TRNSFRBL_DPST := "F" , TYP_INSTRMNT := "1022" ] ; 
+/*******************************************************************************
+*       Module P_OTHR_PHYSCL_PRTCTN_E_1
+*******************************************************************************/
+P_OTHR_PHYSCL_PRTCTN_E_1.OTHR_PHYSCL_PRTCTN_E := OTHR_PHYSCL_PRTCTN [ calc measure PRTCTN_VLTN_APPRCH_PRTCTN_VL := PRTCTN_VLTN_APPRCH_PRTCTN_VL , FNNCL_GRNT_CNSDRD_MX_AMNT := cast ( null , number ) , ISSR_ID := cast ( null , string ) ] [ drop SBTYP_PRTCTN_TYP_PRTCTN ] ; 
+/*******************************************************************************
+*       Module P_IMPLCT_OTHR_TRD_RCVBLS_1
+*******************************************************************************/
+P_IMPLCT_OTHR_TRD_RCVBLS_1.OTHR_TRD_RCVBLS_E := OTHR_TRD_RCVBLS [ calc RPYMNT_RGHTS := "2" , PRJCT_FNNC_LN := "0" , IS_TRNSFRBL_DPST := "F" , SBRDNTD_DBT := "2" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "1023" ] ; 
+/*******************************************************************************
+*       Module P_OWND_SCRTS_E_1
+*******************************************************************************/
+P_OWND_SCRTS_E_1.OWND_SCRTS_E_P_CRRYNG_AMNT := inner_join ( OWND_SCRTS , RGSTRY_TBL_SCRTS using DT_RFRNC , SCRTY_ID ) ; 
+P_OWND_SCRTS_E_1.OWND_SCRTS_JN := inner_join ( P_OWND_SCRTS_E_1.OWND_SCRTS_E_P_CRRYNG_AMNT [ drop CRRYNG_AMNT ] as A , D_CRRYNG_AMNT_SCRTS_1.D_CRRYNG_AMNT_SCRTS as B ) ; 
+OWND_SCRTS_E <- P_OWND_SCRTS_E_1.OWND_SCRTS_JN ;
+/*******************************************************************************
+*       Module PRMTR
+*******************************************************************************/
+PRMTR.CNSTNT_IS_CRRYNG_AMNT_DRVD := PRMTR_ # IS_CRRYNG_AMNT_DRVD ; 
+/*******************************************************************************
+*       Module P_PL_ITM_E_1
+*******************************************************************************/
+P_PL_ITM_E_1.PL_ITM_E := PL_ITM [ calc measure PRTCTN_VLTN_APPRCH_PRTCTN_VL := PRTCTN_VLTN_APPRCH_PRTCTN_VL , FNNCL_GRNT_CNSDRD_MX_AMNT := cast ( null , number ) , ISSR_ID := cast ( null , string ) ] ; 
+/*******************************************************************************
+*       Module P_PRPRTY_PLNT_EQPMNT_E_1
+*******************************************************************************/
+PRPRTY_PLNT_EQPMNT_E <- PRPRTY_PLNT_EQPMNT ; 
+/*******************************************************************************
+*       Module P_PRTCTNS_PRTCTN_PRVDRS_E_1
+*******************************************************************************/
+PRTCTNS_PRTCTN_PRVDRS_E <- union ( TRNSCTN_CNTRPRTS_SPLT.PRTCTNS_PRTCTN_PRVDRS_E_1 , TRNSCTN_CNTRPRTS_SPLT.PRTCTNS_PRTCTN_PRVDRS_E_2 ) ; 
+/*******************************************************************************
+*       Module P_PRTCTNS_NT_RL_ESTT_E_1
+*******************************************************************************/
+PRTCTNS_NT_RL_ESTT_E <- union ( P_SCRTS_PRTCTN_E_1.SCRTS_PRTCTN_E , P_OTHR_PHYSCL_PRTCTN_E_1.OTHR_PHYSCL_PRTCTN_E , P_OTHR_FNNCL_PRTCTN_E_1.OTHR_FNNCL_PRTCTN_E , P_PL_ITM_E_1.PL_ITM_E ) ; 
+/*******************************************************************************
+*       Module P_PRVSN_FLWS_NT_FNNCL_GRNTS_CMMTMNTS_GVN_E
+*******************************************************************************/
+PRVSN_FLWS_NT_FNNCL_GRNTS_CMMTMNTS_GVN_E <- PRVSN_FLWS_NT_FNNCL_GRNTS_CMMTMNTS_GVN ;
+/*******************************************************************************
+*       Module P_PRTCNTS_RL_ESTT_E_1
+*******************************************************************************/
+
+/*******************************************************************************
+*       Module P_RPRCHS_AGRMNT_LNS_E_1
+*******************************************************************************/
+RPRCHS_AGRMNT_LNS_E <- RPRCHS_AGRMNT_LNS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_RPRCHS_AGRMNT_1
+*******************************************************************************/
+P_IMPLCT_RPRCHS_AGRMNT_1.RPRCHS_AGRMNT_E := RPRCHS_AGRMNT [ calc SBRDNTD_DBT := "2" , TYP_INSTRMNT := "300" , DGS_ELGBL := "0" , DGS_ELGBL := "0" , DGS_DPST := "0" , OTSTNDNG_NMNL_AMNT_CVRD := cast ( 0 , number ) , OTSTNDNG_NMNL_AMNT_SCRD := 0.0 , ADDTNL_PRTCTN := 0.0 , EXCLDD_FRM_BL_IN := "0" , ERLY_RDMPTN_DT := cast ( null , date ) , PRCNTG_RDMPTN := 0.0 , GVRND_EU_LW := "-1" , RDMPTN_NTC_PRD := cast ( 0 , integer ) ] [ drop RSDL_MTRTY_CNTRCT ] ; 
+/*******************************************************************************
+*       Module P_RPRCHS_AGRMNT_SCRTS_E_1
+*******************************************************************************/
+RPRCHS_AGRMNT_SCRTS_E <- RPRCHS_AGRMNT_SCRTS ; 
+/*******************************************************************************
+*       Module P_IMPLCT_RVRS_RPRCHS_LNS_1
+*******************************************************************************/
+P_IMPLCT_RVRS_RPRCHS_LNS_1.RVRS_RPRCHS_LNS_E := RVRS_RPRCHS_LNS [ calc PRPS := if IS_DBT_FNNCNG = "T" then "5" else "11" , TYP_AMRTSTN := "4" , IS_CRDT_LN_OTHR_RV_CRDT := "F" , PYMNT_FRQNCY := "4" , RPYMNT_RGHTS := "2" , PRCHSD_ORGNTD_CRDT_IMPRD := "0" , PRJCT_FNNC_LN := "0" , IS_TRNSFRBL_DPST := "F" , DT_END_INTRST_ONLY := cast ( null , date ) , SBRDNTD_DBT := "2" , IS_RVLVNG_LN := "F" , FRZNG_PRD_DYS := 0 , TYP_INSTRMNT := "090" ] ; 
+/*******************************************************************************
+*       Module P_SCRTS_ISSD_E_1
+*******************************************************************************/
+P_SCRTS_ISSD_E_1.SCRTS_ISSD_E := inner_join ( SCRTS_ISSD [ drop SBRDNTD_DBT ] as A , RGSTRY_TBL_SCRTS using DT_RFRNC , SCRTY_ID ) ; 
+/*******************************************************************************
+*       Module P_SCRTS_PRTCTN_E_1
+*******************************************************************************/
+P_SCRTS_PRTCTN_E_1.SCRTS_PRTCTN_JN := inner_join ( SCRTS_PRTCTN [ calc measure PRTCTN_VLTN_APPRCH_PRTCTN_VL := PRTCTN_VLTN_APPRCH_PRTCTN_VL ] as A , RGSTRY_TBL_SCRTS [ keep ISSR_ID ] as B using DT_RFRNC , SCRTY_ID ) ; 
+P_SCRTS_PRTCTN_E_1.SCRTS_PRTCTN_E := P_SCRTS_PRTCTN_E_1.SCRTS_PRTCTN_JN [ calc PRTCTN_VLTN_APPRCH_PRTCTN_VL := "4" , FNNCL_GRNT_CNSDRD_MX_AMNT := cast ( null , number ) , TYP_PRTCTN := "12" ] [ drop SCRTY_ID ] ; 
+/*******************************************************************************
+*       Module P_SCRTSTNS_OTHR_CRDT_TRNSFRS_E_1
+*******************************************************************************/
+SCRTSTNS_OTHR_CRDT_TRNSFRS_E <- SCRTSTNS_OTHR_CRDT_TRNSFRS ; 
+/*******************************************************************************
+*       Module P_SHRT_PSTNS_E_1
+*******************************************************************************/
+SHRT_PSTNS_E <- OWND_SCRTS_E [ filter IS_SHRT_PSTN = "T" ] ; 
+/*******************************************************************************
+*       Module TRNSCTN_CNTRPRTS_SPLT
+*******************************************************************************/
+CMMTMNTS_GVN_CSTMRS_RLTNSHP_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "2" , CNTRPRTY_RL = "8" ] [ rename TRNSCTN_ID to CMMTMNT_UNQ_ID ] ; 
+TRNSCTN_CNTRPRTS_SPLT.CMMTMNTS_RCVD_CSTMRS_RLTNSHP := TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "8" , CNTRPRTY_RL = "8" ] [ rename TRNSCTN_ID to CMMTMNT_UNQ_ID ] ; 
+TRNSCTN_CNTRPRTS_SPLT.CMMTMNTS_RCVD_CSTMRS_RLTNSHP_FNNCL_GRTS := TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "3" , CNTRPRTY_RL = "4" ] [ rename TRNSCTN_ID to CMMTMNT_UNQ_ID ] ; 
+DRVTVS_CSTMRS_RLTSHP_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "7" , CNTRPRTY_RL = "8" ] [ rename TRNSCTN_ID to PSTN_ID ] ; 
+INSTRMNTS_BNFCRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "1" , CNTRPRTY_RL = "6" ] [ rename TRNSCTN_ID to INSTRMNT_UNQ_ID ] ; 
+INSTRMNTS_CRDTRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "1" , CNTRPRTY_RL = "1" ] [ rename TRNSCTN_ID to INSTRMNT_UNQ_ID ] ; 
+INSTRMNTS_CSTMRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "1" , CNTRPRTY_RL = "8" ] [ rename TRNSCTN_ID to INSTRMNT_UNQ_ID ] ; 
+INSTRMNTS_ORGNTRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "1" , CNTRPRTY_RL = "4" ] [ rename TRNSCTN_ID to INSTRMNT_UNQ_ID ] ; 
+TRNSCTN_CNTRPRTS_SPLT.INSTRMNTS_SRVCRS := TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "1" , CNTRPRTY_RL = "7" ] [ rename TRNSCTN_ID to INSTRMNT_UNQ_ID ] ; 
+TRNSCTN_CNTRPRTS_SPLT.PRTCTNS_PRTCTN_PRVDRS_E_1 := TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "3" , CNTRPRTY_RL = "4" ] [ keep IS_PRMRY_PRTCTN_PRVDR ] [ rename TRNSCTN_ID to PRTCTN_ID ] ; 
+TRNSCTN_CNTRPRTS_SPLT.PRTCTNS_PRTCTN_PRVDRS_E_2 := TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "6" , CNTRPRTY_RL = "4" ] [ keep IS_PRMRY_PRTCTN_PRVDR ] [ rename TRNSCTN_ID to PRTCTN_ID ] ; 
+SCRTSTNS_ORGNTRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "4" , CNTRPRTY_RL = "3" ] [ rename TRNSCTN_ID to SCRTSTN_TRNSFR_ID ] ; 
+SCRTSTNS_SRVCRS_E <- TRNSCTNS_CNTRPRTS [ sub TYP_TRNSCTN = "4" , CNTRPRTY_RL = "3" ] [ rename TRNSCTN_ID to SCRTSTN_TRNSFR_ID ] ; 

@@ -1,0 +1,333 @@
+{
+  "datasets": [
+    {
+      "name": "ANAMART_ENTTY",
+      "DataStructure": [
+        {
+          "name": "CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_BRTH",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DT_CLS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTTTNL_SCTR_DTL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRRTRL_UNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LEI",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NM_ENTTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "STRT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PSTL_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ECNMC_ACTVTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ACCNTNG_FRMWRK_SL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_FRM_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_LGL_ENTTY_ANCRDT_CVRD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ANNL_TRNVR_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "BLNC_SHT_TTL_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_ENTRPRS_SZ_LE",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_INTTN_LGL_PRCDNGS_LE",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_PRCDNG_STTS_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NMBR_EMPLYS_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "CNTRY_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CTY_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ECNMC_ACTVTY_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTTY_RIAD_CD_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTTTNL_SCTR_DTL_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NM_ENTTY_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PSTL_CD_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "STRT_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRRTRL_UNT_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IS_LGL_ENTTY_EA_ANCRDT_CVRD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IMMDT_PRNT_UNDRT_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "HD_OFFC_UNDRT_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NN_PRFRMNG_LNS_RT_W_ONA_CV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "NN_PRFRMNG_LNS_RT_W_ONA_DV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "MAX_RSDL_MTRTY_DYS",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "MAX_PST_D_DYS",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "TTL_CV_OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "RSDL_MTRTY_DYS_WGHTD_AVRG",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "INDSTRY_PD_SMPL_AVRG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "INDSTRY_PD_SD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "INDSTRY_PD_WGHTD_AVRG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IS_DMSTC_ACTVTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_EA_ACTIVITY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_TRRTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_ECNMC_ACTVTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_ENTRPRS_SZ_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

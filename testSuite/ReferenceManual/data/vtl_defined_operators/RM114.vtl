@@ -1,1 +1,5 @@
-DS_r := stock_to_flow ( DS_2 );
+define operator Test114 (x dataset)
+    returns dataset is
+    stock_to_flow ( x )
+end operator;
+DS_r := Test114(DS_1);

@@ -1,0 +1,11 @@
+define hierarchical ruleset sectors (variable rule ISSUER_SECTOR) is
+    r1: S1 = S11 + S12P + S12Q + S12K + S13 + S1M + S1N errorcode "Total should be equal to sum"
+end hierarchical ruleset;
+/*******************************************************************************
+*       Module shs_val
+*******************************************************************************/
+issuer_results <-
+	 check_hierarchy(
+		ECB_SHS6,
+		sectors
+		rule ISSUER_SECTOR);

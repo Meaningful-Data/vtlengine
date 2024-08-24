@@ -1,1 +1,5 @@
-DS_r := period_indicator ( DS_1 );
+define operator Test099 (x dataset)
+    returns dataset is
+    period_indicator ( x )
+end operator;
+DS_r := Test099(DS_1);

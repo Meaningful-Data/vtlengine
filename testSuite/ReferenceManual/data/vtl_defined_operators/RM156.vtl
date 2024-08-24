@@ -1,1 +1,5 @@
-DS_r := ratio_to_report ( DS_1 over ( partition by Id_1, Id_2 ) );
+define operator Test156 (x dataset, c component, d component)
+    returns dataset is
+    ratio_to_report ( x over ( partition by c, d ) )
+end operator;
+DS_r := Test156(DS_1, Id_1, Id_2);

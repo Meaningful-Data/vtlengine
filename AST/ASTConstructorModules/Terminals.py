@@ -9,7 +9,7 @@ from AST.Grammar.parser import Parser
 from AST.VtlVisitor import VtlVisitor
 from DataTypes import Boolean, Date, Duration, Integer, Number, String, TimeInterval, \
     TimePeriod
-from Model import Component, Dataset, Role
+from Model import Component, Dataset, Role, Scalar
 
 
 def _remove_scaped_characters(text):
@@ -173,7 +173,7 @@ class Terminals(VtlVisitor):
         elif token.type == Parser.DURATION:
             return Duration
         elif token.type == Parser.SCALAR:
-            return None
+            return "Scalar"
         elif token.type == Parser.TIME:
             return TimeInterval
 
@@ -284,6 +284,8 @@ class Terminals(VtlVisitor):
                                     TerminalNodeImpl) and null.getSymbol().type == Parser.NULL_CONSTANT]
 
         if isinstance(scalartype, Parser.BasicScalarTypeContext):
+            if scalartype.children[0].getSymbol().type == Parser.SCALAR:
+                return Scalar(name="", data_type=None, value=None)
             type_node = self.visitBasicScalarType(scalartype)
 
         elif isinstance(scalartype, Parser.ValueDomainNameContext):
@@ -409,13 +411,14 @@ class Terminals(VtlVisitor):
         c = ctx_list[0]
 
         if isinstance(c, Parser.ScalarTypeContext):
-            return self.visitScalarType(c)
+            # return self.visitScalarType(c).__class__.__name__
+            return "Scalar"
 
         elif isinstance(c, Parser.DatasetTypeContext):
-            return self.visitDatasetType(c)
+            return "Dataset"
 
         elif isinstance(c, Parser.ComponentTypeContext):
-            return self.visitComponentType(c)
+            return "Component"
         else:
             raise NotImplementedError
 
@@ -467,9 +470,7 @@ class Terminals(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = [const_node, basic_scalar_type_node[0]]
+            children_nodes = [const_node, basic_scalar_type[0]]
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 

@@ -1,0 +1,5 @@
+define hierarchical ruleset hie1 (variable rule Id2) is
+    A=B+C   errorcode "error"   errorlevel 5
+end hierarchical ruleset;
+
+DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);

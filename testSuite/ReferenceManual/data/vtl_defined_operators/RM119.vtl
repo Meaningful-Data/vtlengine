@@ -1,1 +1,5 @@
-DS_r := timeshift ( DS_3 , 1 );
+define operator Test119 (x dataset)
+    returns dataset is
+    timeshift ( x , 1 )
+end operator;
+DS_r := Test119(DS_1);

@@ -1,0 +1,6 @@
+time_period,securityId,marketValue,typeInstrument
+2021Q4,123,1000,F32
+2020A,123,1050,F32
+2021M9,456,2000,F511
+2019,456,1980,F511
+2021Q1,111,3000,

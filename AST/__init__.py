@@ -140,7 +140,6 @@ class ParamOp(AST):
 class UDOCall(AST):
     op: str
     params: List[AST]
-    expression: AST = None
 
 
 @dataclass

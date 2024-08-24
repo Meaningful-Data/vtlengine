@@ -1,1 +1,5 @@
-DS_r := inner_join ( DS_1 as d1, DS_2 as d2 apply d1 || d2);
+define operator Test012 (x dataset, y dataset)
+    returns dataset is
+        inner_join ( x as d1, y as d2 apply d1 || d2)
+end operator;
+DS_r := Test012 (DS_1, DS_2);

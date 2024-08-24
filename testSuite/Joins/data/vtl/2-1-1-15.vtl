@@ -1,0 +1,6 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+DS_r := cross_join (drop_identifier(DS_1, Id_3) as d1, drop_identifier(DS_2, Id_3) as d2 calc identifier Id_3 :=nvl(Me_1 + Me_22,0));

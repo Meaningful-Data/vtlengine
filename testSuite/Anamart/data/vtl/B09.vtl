@@ -1,0 +1,9 @@
+/*Missing operator for calculating days from dates*/
+
+ANAMART_INSTRMNT_DYS_P := B01.ANAMART_INSTRMNT_JN[keep DT_END_INTRST_ONLY, DT_INCPTN, DT_PST_D,DT_LGL_FNL_MTRTY];
+ANAMART_INSTRMNT_DYS := ANAMART_INSTRMNT_DYS_P[calc
+                                                NXT_INTRST_RT_RST_DYS := DT_END_INTRST_ONLY - DT_RFRNC,
+                                                ORGNL_MTRTY := DT_LGL_FNL_MTRTY - DT_INCPTN,
+                                                RSDL_MTRTY := DT_LGL_FNL_MTRTY - DT_RFRNC,
+                                                PST_D_DYS := DT_RFRNC - DT_PST_D
+];

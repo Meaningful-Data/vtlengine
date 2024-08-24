@@ -1,1 +1,5 @@
-DS_r :=cast ( current_date, string, ""YYYY.MM.DD"" );
+define operator Test125 ()
+    returns string is
+    cast ( current_date(), string, "YYYY.MM.DD" )
+end operator;
+DS_r := Test125();

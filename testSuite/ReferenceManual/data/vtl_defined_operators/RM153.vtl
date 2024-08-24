@@ -1,1 +1,5 @@
-DS_r := lag ( DS_1 , 1 over ( partition by Id_1 , Id_2 order by Id_3 ) );
+define operator Test153 (x dataset, c component, d component, e component)
+    returns dataset is
+    lag ( x, 1 over ( partition by c, d order by e ))
+end operator;
+DS_r := Test153(DS_1, Id_1, Id_2, Id_3);

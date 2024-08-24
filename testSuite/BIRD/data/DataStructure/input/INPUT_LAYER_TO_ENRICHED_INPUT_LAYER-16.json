@@ -1,0 +1,93 @@
+{
+  "datasets": [
+    {
+      "name": "PRMTR_",
+      "DataStructure": [
+        {
+          "name": "ACCNTNG_FRMWRK_CNS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ACCNTNG_FRMWRK_SL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ACCNTNG_RL_WTN_GRP",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "APPRCH_JNT_LBLTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DRGTN_SMLL_TRDNG_BK_BSNSS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_ACCNTNG_YR",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "FRM_RFRNC",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "GRP_ACCNTNG_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "GRP_PRDNTL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTN_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_CRRYNG_AMNT_DRVD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_EXPSR_CLSS_DRVD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_SBJCT_CPTL_RQRMNTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

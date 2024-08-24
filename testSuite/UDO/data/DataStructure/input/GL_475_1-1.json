@@ -1,0 +1,81 @@
+{
+    "datasets": [
+      {
+        "name": "DS_PPI",
+        "DataStructure": [
+          {
+            "name": "CONF_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "DECIMALS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "EMBARGO_TIME",
+            "type": "Date",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "FREQ",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "INDEX_BASE",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "MARKET_GEO",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "NBB_ISTI",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "OBS_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "OBS_VALUE",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "TIME_PERIOD",
+            "type": "Time_Period",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "UNIT_MEASURE",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "UNIT_MULT",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          }
+        ]
+      }
+    ]
+  }
