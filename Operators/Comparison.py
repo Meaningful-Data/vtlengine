@@ -265,11 +265,12 @@ class ExistIn(Operator.Operator):
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 
+        is_subset_right = set(right_identifiers).issubset(left_identifiers)
         is_subset_left = set(left_identifiers).issubset(right_identifiers)
-        if not is_subset_left:
+        if not (is_subset_left or is_subset_right):
             raise ValueError("Datasets must have common identifiers")
 
-        result_components = {comp.name: comp for comp in dataset_1.get_identifiers()}
+        result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name="result", components=result_components, data=None)
         result_dataset.add_component(Component(
             name='bool_var',
@@ -283,13 +284,45 @@ class ExistIn(Operator.Operator):
     def evaluate(cls, dataset_1: Dataset, dataset_2: Dataset,
                  retain_element: Optional[Boolean]) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
-        common = result_dataset.get_identifiers_names()
-        df1: pd.DataFrame = dataset_1.data[common]
-        df2: pd.DataFrame = dataset_2.data[common]
-        compare_result = (df1 == df2).apply(cls.check_all_columns, axis=1)
-        result_dataset.data = df1
-        result_dataset.data['bool_var'] = compare_result
 
+        # Checking the subset
+        left_id_names = dataset_1.get_identifiers_names()
+        right_id_names = dataset_2.get_identifiers_names()
+        is_subset_left = set(left_id_names).issubset(right_id_names)
+
+        # Identifiers for the result dataset
+        reference_identifiers_names = left_id_names
+
+        # Checking if the left dataset is a subset of the right dataset
+        if is_subset_left:
+            common_columns = left_id_names
+        else:
+            common_columns = right_id_names
+
+        # Check if the common identifiers are equal between the two datasets
+        true_results = pd.merge(dataset_1.data, dataset_2.data, how='inner',
+                                left_on=common_columns,
+                                right_on=common_columns, copy=False)
+        true_results = true_results[reference_identifiers_names]
+
+        # Check for empty values
+        if true_results.empty:
+            true_results['bool_var'] = None
+        else:
+            true_results['bool_var'] = True
+
+        final_result = pd.merge(dataset_1.data, true_results, how='left',
+                                left_on=reference_identifiers_names,
+                                right_on=reference_identifiers_names, copy=False)
+        final_result = final_result[reference_identifiers_names + ['bool_var']]
+
+        # No null values are returned, only True or False
+        final_result.fillna(False, axis=1, inplace=True)
+
+        # Adding to the result dataset
+        result_dataset.data = final_result
+
+        # Retain only the elements that are specified (True or False)
         if retain_element is not None:
             result_dataset.data = result_dataset.data[
                 result_dataset.data['bool_var'] == retain_element]
@@ -297,5 +330,6 @@ class ExistIn(Operator.Operator):
 
         return result_dataset
 
-    def check_all_columns(row):
-        return all(col_value > 0 for col_value in row)
+    @staticmethod
+    def _check_all_columns(row):
+        return all(col_value == True for col_value in row)
