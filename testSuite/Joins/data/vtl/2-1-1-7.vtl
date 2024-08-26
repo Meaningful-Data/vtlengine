@@ -1,0 +1,6 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+DS_r := inner_join (DS_1 as d1 , DS_2, drop_identifier(DS_1, Id_3) [drop Me_1,Me_2] as d2 using Id_1, Id_2);

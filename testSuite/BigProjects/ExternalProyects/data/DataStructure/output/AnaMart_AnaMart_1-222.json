@@ -1,0 +1,177 @@
+{
+  "datasets": [
+    {
+      "name": "A02.LE2",
+      "DataStructure": [
+        {
+          "name": "CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_BRTH",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DT_CLS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTTTNL_SCTR_DTL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "HD_OFFC_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRRTRL_UNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IMMDT_PRNT_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LEI",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NM_ENTTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "STRT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PSTL_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ECNMC_ACTVTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ACCNTNG_FRMWRK_SL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "HD_OFFC_UNDRT_CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_FRM_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_LGL_ENTTY_ANCRDT_CVRD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ANNL_TRNVR_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "BLNC_SHT_TTL_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_ENTRPRS_SZ_LE",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_INTTN_LGL_PRCDNGS_LE",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_PRCDNG_STTS_LE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NMBR_EMPLYS_LE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

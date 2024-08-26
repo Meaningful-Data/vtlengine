@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC013",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CC0130",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "CC0130A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "CC0131",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "CC0131A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "CC0132",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "CC0132A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

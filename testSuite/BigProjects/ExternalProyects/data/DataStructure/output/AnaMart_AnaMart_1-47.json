@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "B14.WGHTS_AGGR",
+      "DataStructure": [
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "V_3PSPC_W_3PTPC",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "V_3PSPC_W_PAV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "V_3PTPC_W_3PTPC",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "V_3PTPC_W_PAV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

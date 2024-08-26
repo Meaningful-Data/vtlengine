@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG3",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "RLTD_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "AGGRGBL_BLNC_SHT_TTL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "AGGRGBL_NMBR_EMPLYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "AGGRGBL_ANNL_TRNVR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

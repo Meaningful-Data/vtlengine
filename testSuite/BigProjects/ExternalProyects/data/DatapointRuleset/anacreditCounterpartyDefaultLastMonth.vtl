@@ -1,0 +1,11 @@
+define datapoint ruleset anacreditCounterpartyDefaultLastMonth(variable DFLT_STTS, DFLT_STTS_T1, DT_DFLT_STTS, DT_DFLT_STTS_T1) is
+  
+  CN0640: 
+    when 
+        if isnull(DT_DFLT_STTS) or isnull(DT_DFLT_STTS_T1) then false else
+        DFLT_STTS <> DFLT_STTS_T1 
+    then 
+        DT_DFLT_STTS > DT_DFLT_STTS_T1 
+    errorcode "CN0640" errorlevel 3
+
+end datapoint ruleset;

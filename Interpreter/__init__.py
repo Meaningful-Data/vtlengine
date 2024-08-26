@@ -2,7 +2,6 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 
 import AST
@@ -10,14 +9,14 @@ from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
     FILL_TIME_SERIES, CAST
-from DataTypes import BASIC_TYPES
+from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
-from Operators.General import Eval, Cast
 from Operators.Conditional import If
+from Operators.General import Eval, Cast
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Time import Fill_time_series
@@ -50,8 +49,10 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
+    udo_params: List[Dict[str, Any]] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
+    udos: Dict[str, Dict[str, Any]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -64,6 +65,33 @@ class InterpreterAnalyzer(ASTTemplate):
         return results
 
     # Definition Language
+
+    def visit_Operator(self, node: AST.Operator) -> None:
+
+        if self.udos is None:
+            self.udos = {}
+        elif node.op in self.udos:
+            raise ValueError(f"User Defined Operator {node.op} already exists")
+
+        param_info = []
+        for param in node.parameters:
+            if param.name in param_info:
+                raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
+            # We use a string for model types, but the data type class for basic types
+            # (Integer, Number, String, Boolean, ...)
+            if isinstance(param.type_, (Dataset, Component, Scalar)):
+                type_ = param.type_.__class__.__name__
+            else:
+                type_ = param.type_
+            param_info.append({"name": param.name, "type": type_})
+            if param.default is not None:
+                param_info[-1]["default"] = param.default
+
+        self.udos[node.op] = {
+            'params': param_info,
+            'expression': node.expression,
+            'output': node.output_type
+        }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
 
@@ -116,7 +144,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(
+                self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -202,8 +231,26 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             operand: Dataset = self.visit(node.operand)
-        partitioning = node.partition_by
-        ordering = node.order_by if node.order_by is not None else []
+        partitioning = []
+        ordering = []
+        if self.udo_params is not None:
+            if node.partition_by is not None:
+                for comp_name in node.partition_by:
+                    if comp_name in self.udo_params[-1]:
+                        partitioning.append(self.udo_params[-1][comp_name])
+                    else:
+                        raise Exception(f"Component {comp_name} not found in UDO parameters")
+            if node.order_by is not None:
+                for o in node.order_by:
+                    if o.component in self.udo_params[-1]:
+                        o.component = self.udo_params[-1][o.component]
+                    else:
+                        raise Exception(f"Component {o.component} not found in UDO parameters")
+                ordering = node.order_by
+
+        else:
+            partitioning = node.partition_by
+            ordering = node.order_by if node.order_by is not None else []
         if not isinstance(operand, Dataset):
             raise Exception("Analytic operator must have a dataset as operand")
         if node.partition_by is None:
@@ -226,13 +273,24 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             return result
 
-        # TODO: Review this as the components on calc are not in correct order (Rank test)
-        # Extracting the component we need (only measure)
+        # Extracting the components we need (only identifiers)
+        id_columns = self.regular_aggregation_dataset.get_identifiers_names()
+
+        # Joining the result with the original dataset
+        joined_result = pd.merge(
+            self.regular_aggregation_dataset.data[id_columns],
+            result.data,
+            on=id_columns,
+            how='inner')
+
+        # # Extracting the component we need (only measure)
         measure_name = result.get_measures_names()[0]
         return DataComponent(name=measure_name,
-                             data=result.data[measure_name],
-                             data_type=result.components[measure_name].data_type,
-                             role=result.components[measure_name].role)
+                             data=joined_result[measure_name],
+                             data_type=result.components[
+                                 measure_name].data_type,
+                             role=result.components[measure_name].role,
+                             nullable=result.components[measure_name].nullable)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
@@ -290,6 +348,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_assignment:
             return node.value
         # Having takes precedence as it is lower in the AST
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            udo_element = self.udo_params[-1][node.value]
+            if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
+                return udo_element
+            # If it is only the component or dataset name, we rename the node.value
+            node.value = udo_element
         if self.is_from_having:
             return DataComponent(name=node.value,
                                  data=self.aggregation_dataset.data[node.value],
@@ -323,7 +387,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data_type=self.ruleset_dataset.components[comp_name].data_type,
                                  role=self.ruleset_dataset.components[comp_name].role,
                                  nullable=self.ruleset_dataset.components[comp_name].nullable)
-
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
         return self.datasets[node.value]
@@ -452,6 +515,15 @@ class InterpreterAnalyzer(ASTTemplate):
         return If.evaluate(condition, thenOp, elseOp)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
+        if self.udo_params is not None:
+            if "#" in node.old_name:
+                if node.old_name.split('#')[1] in self.udo_params[-1]:
+                    comp_name = self.udo_params[-1][node.old_name.split('#')[1]]
+                    node.old_name = f"{node.old_name.split('#')[0]}#{comp_name}"
+            else:
+                if node.old_name in self.udo_params[-1]:
+                    node.old_name = self.udo_params[-1][node.old_name]
+
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
@@ -463,6 +535,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for clause in node.clauses:
             clause_elements.append(self.visit(clause))
             if hasattr(clause, 'op') and clause.op == AS:
+                # TODO: We need to delete somewhere the join datasets with alias that are added here
                 self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
         # No need to check using, regular aggregation is executed afterwards
@@ -703,4 +776,68 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_assignment:
                 return self.datasets[node.value].name
             return self.datasets[node.value]
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            return self.udo_params[-1][node.value]
         return node.value
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> None:
+        if self.udos is None:
+            raise Exception("No User Defined Operators have been loaded.")
+        elif node.op not in self.udos:
+            raise Exception(f"User Defined Operator {node.op} not found")
+
+        signature_values = {}
+
+        operator = self.udos[node.op]
+        for i, param in enumerate(operator['params']):
+            if i >= len(node.params):
+                if 'default' in param:
+                    value = self.visit(param['default']).value
+                    signature_values[param['name']] = Scalar(name=str(value), value=value,
+                                                             data_type=BASIC_TYPES[type(value)])
+                else:
+                    raise Exception(f"Missing parameter {param['name']} for UDO {node.op}")
+            else:
+                if isinstance(param['type'], str):  # Scalar, Dataset, Component
+                    if param['type'] == 'Scalar':
+                        signature_values[param['name']] = self.visit(node.params[i])
+                    elif param['type'] in ['Dataset', 'Component']:
+                        if isinstance(node.params[i], AST.VarID):
+                            signature_values[param['name']] = node.params[i].value
+                        else:
+                            signature_values[param['name']] = self.visit(node.params[i])
+                    else:
+                        raise NotImplementedError
+                elif issubclass(param['type'], ScalarType):  # Basic types
+                    # For basic Scalar types (Integer, Float, String, Boolean)
+                    # We validate the type is correct and cast the value
+                    param_element = self.visit(node.params[i])
+                    scalar_type = param['type']
+                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
+                        raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "
+                                        f"on UDO {node.op}, parameter {param['name']}")
+                    signature_values[param['name']] = Scalar(name=param_element.name,
+                                                             value=scalar_type.cast(
+                                                                 param_element.value),
+                                                             data_type=scalar_type)
+                else:
+                    raise NotImplementedError
+
+        # We set it here to a list to start the stack of UDO params
+        if self.udo_params is None:
+            self.udo_params = []
+
+        # Adding parameters to the stack
+        self.udo_params.append(signature_values)
+
+        # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
+        result = self.visit(deepcopy(operator['expression']))
+
+        # We pop the last element of the stack (current UDO params)
+        # to avoid using them in the next UDO call
+        self.udo_params.pop()
+
+        # We set to None if empty to ensure we do not use these params anymore
+        if len(self.udo_params) == 0:
+            self.udo_params = None
+        return result

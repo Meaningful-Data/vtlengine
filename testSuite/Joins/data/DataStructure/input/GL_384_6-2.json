@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DS_2",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Observation",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+define datapoint ruleset anacreditProtectionReceived (variable DT_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, DT_RFRNC,
+                                                               RL_ESTT_CLLTRL_LCTN, TYP_PRTCTN, RECL_CNTRY, RECL_TRRTRL_UNT, RECL_PSTL_CD,
+                                                               NEVS_RL_ESTT_CLLTRL_LCTN, NEVS_RECL_CNTRY, NEVS_RECL_TRRTRL_UNT, NEVS_RECL_PSTL_CD,
+                                                               PRTCTN_VL, DT_MTRTY_PRTCTN, ORGNL_PRTCTN_VL, NEVS_RL_ESTT_CLLTRL_LCTN,
+                                                               NEVS_RECL_CNTRY, NEVS_RECL_TRRTRL_UNT) is
+  
+    CN0142: 
+        if
+            isnull(DT_PRTCTN_VL) or isnull(DT_ORGNL_PRTCTN_VL) then true
+        else
+            DT_PRTCTN_VL >= DT_ORGNL_PRTCTN_VL 
+        errorcode "CN0142" errorlevel 3;
+    CN0660: 
+        if
+            isnull(DT_RFRNC) or isnull(DT_PRTCTN_VL) then true
+        else
+            DT_RFRNC >= DT_PRTCTN_VL 
+        errorcode "CN0660" errorlevel 2;
+    
+    CN0831: 
+        when
+            if isnull(TYP_PRTCTN) then false else
+            NEVS_RL_ESTT_CLLTRL_LCTN = "0" 
+        then 
+            TYP_PRTCTN not_in {"8", "9", "10"} 
+        errorcode "CN0831" errorlevel 1;
+    
+    CN0960a: 
+        when 
+            if NEVS_RL_ESTT_CLLTRL_LCTN in {"-5","-3", "-2"} then false else
+            TYP_PRTCTN not_in {"8", "9", "10"} 
+        then 
+            NEVS_RL_ESTT_CLLTRL_LCTN = "0" 
+        errorcode "CN0960a" errorlevel 1;
+    CN0960b: 
+        when 
+            if isnull(TYP_PRTCTN) then false else
+            NEVS_RL_ESTT_CLLTRL_LCTN = "0" 
+        then 
+            TYP_PRTCTN not_in {"8", "9", "10"}  
+        errorcode "CN0960b" errorlevel 1;
+    CN0961a: 
+        when 
+            if isnull(TYP_PRTCTN) then false else
+            NEVS_RECL_CNTRY = "0" 
+        then TYP_PRTCTN not_in {"8", "9", "10"} 
+        errorcode "CN0961a" errorlevel 1;
+    CN0961b: 
+        when 
+            if isnull(NEVS_RECL_CNTRY) or NEVS_RECL_CNTRY in {"-5","-3", "-2"} then false else
+            TYP_PRTCTN not_in {"8", "9", "10"} 
+        then 
+            NEVS_RECL_CNTRY = "0"  
+        errorcode "CN0961b" errorlevel 1;
+    CN0962a: 
+        when 
+            if isnull(TYP_PRTCTN) then false else
+            NEVS_RECL_TRRTRL_UNT  
+        then TYP_PRTCTN not_in {"8", "9", "10"} 
+        errorcode "CN0962a" errorlevel 1;
+    CN0962b: 
+        when 
+            if isnull(NEVS_RECL_TRRTRL_UNT) or NEVS_RECL_TRRTRL_UNT in {"-5","-3", "-2"} then false else
+            TYP_PRTCTN in {"8", "9", "10"} 
+        then 
+            NEVS_RECL_TRRTRL_UNT <> "0"  
+        errorcode "CN0962b" errorlevel 1;
+    CN0963a: 
+        when 
+            if isnull(TYP_PRTCTN) then false else
+            NEVS_RECL_PSTL_CD = "0" 
+        then 
+            TYP_PRTCTN not_in {"8", "9", "10"} 
+        errorcode "CN0963a" errorlevel 1;
+    CN0963b: 
+        when 
+            if isnull(NEVS_RECL_PSTL_CD) or NEVS_RECL_PSTL_CD in {"-5","-3", "-2"} then false else
+            TYP_PRTCTN not_in {"8", "9", "10"}
+        then 
+            NEVS_RECL_PSTL_CD = "0"  
+        errorcode "CN0963b" errorlevel 1;
+    
+    CN0980: 
+        when 
+        not isnull(RL_ESTT_CLLTRL_LCTN) or NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+        then (isnull(RECL_CNTRY) and isnull(NEVS_RECL_CNTRY)) and (isnull(RECL_TRRTRL_UNT) and isnull(NEVS_RECL_TRRTRL_UNT)) and (isnull(RECL_PSTL_CD) and isnull(NEVS_RECL_PSTL_CD)) 
+        errorcode "CN0980" errorlevel 1;
+    
+    GCMA_TH_H_PRTCTN_VL_TTL_PRTCTN: 
+        if 
+            isnull(PRTCTN_VL) then true
+        else
+            PRTCTN_VL <= 1000000000 
+        errorcode "GCMA_TH_H_PRTCTN_VL_TTL_PRTCTN" errorlevel 4;
+    GCMA_TH_L_DT_PRTCTN_VL: 
+       if 
+        isnull(DT_PRTCTN_VL) then true
+       else
+        DT_PRTCTN_VL >= cast("1901-01-01", date) 
+       errorcode "GCMA_TH_L_DT_PRTCTN_VL" errorlevel 4;
+    /*GCMA_TH_H_DT_MTRTY_PRTCTN: DT_MTRTY_PRTCTN <= 150 errorcode GCMA_TH_H_DT_MTRTY_PRTCTN errorlevel 4; Not implementable at the moment with VTL*/
+    GCMA_TH_L_DT_MTRTY_PRTCTN:
+        if 
+            isnull(DT_MTRTY_PRTCTN) then true
+        else
+            DT_MTRTY_PRTCTN >= cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_MTRTY_PRTCTN" errorlevel 4;
+    GCMA_TH_H_ORGNL_PRTCTN_VL_PRTCTN: 
+        if
+            isnull(ORGNL_PRTCTN_VL) then true
+        else
+            ORGNL_PRTCTN_VL <= 1000000000 
+        errorcode "GCMA_TH_H_ORGNL_PRTCTN_VL_PRTCTN" errorlevel 4;
+    /*GCMA_TH_H_DT_ORGNL_PRTCTN_VL: DT_ORGNL_PRTCTN_VL <= 5 errorcode "GCMA_TH_H_DT_ORGNL_PRTCTN_VL" errorlevel 4;*/
+    GCMA_TH_L_DT_ORGNL_PRTCTN_VL:
+        if
+            isnull(DT_ORGNL_PRTCTN_VL) then true 
+        else
+            DT_ORGNL_PRTCTN_VL >= cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_ORGNL_PRTCTN_VL" errorlevel 4
+
+    
+end datapoint ruleset;

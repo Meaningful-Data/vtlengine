@@ -1,0 +1,147 @@
+{
+  "datasets": [
+    {
+      "name": "ONA_JN",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "THRD_PRTY_PRRTY_CLMS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ALLCTD_VL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PAV_PRTCTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PAV_INSTMRNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "SHR_PAV_PRTCTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "SHR_PAV_INSTRMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "OTHR_INSTRMNT_PAV_PRTCTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "SHR_ONA_CRDTR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ANNLSD_AGRD_RT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_NXT_INTRST_RT_RST",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "TRNSFRRD_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ARRRS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_PST_D",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "TYP_SCRTSTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ACCRD_INTRST",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "OFF_BLNC_SHT_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,1 +1,5 @@
-DS_r := DS_1 [ aggr Me_3:= min( Me_1 ) group except Id_3 ];
+define operator Test167 (x dataset, c component, d component, out component)
+    returns dataset is
+    DS_1 [ aggr out:= min( d ) group except c ]
+end operator;
+DS_r := Test167(DS_1, Id_3, Me_1, Me_3);

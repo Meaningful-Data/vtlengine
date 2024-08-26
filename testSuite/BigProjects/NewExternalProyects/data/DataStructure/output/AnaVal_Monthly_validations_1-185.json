@@ -1,0 +1,441 @@
+{
+  "datasets": [
+    {
+      "name": "CNTRPRTY_CMPLTNSS",
+      "DataStructure": [
+        {
+          "name": "ACCNTNG_FRMWRK_SL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ANCRDT_DRGTN_QRTR_CR_OA",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ANNL_TRNVR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "BLNC_SHT_TTL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_BRTH",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DT_ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_INTTN_LGL_PRCDNGS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ECNMC_ACTVTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "HD_OFFC_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "HD_OFFC_UNDRT_CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IMMDT_PRNT_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR_DTL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LEI",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_FRM",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "LGL_PRCDNG_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NMBR_EMPLYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "NM_ENTTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PSTL_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "SSMSIGNIFICANCE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "STRT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TRRTRL_UNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ULTMT_PRNT_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CC0010",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0020",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0100",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0101",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0110",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0111",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0120",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0121",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0122",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0130",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0130A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0131",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0131A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0132",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0132A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0140",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0140B",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0140C",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0140A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0141",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0141A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0142",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0142A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0150",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0151",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0152",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0160",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0160A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0162",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0170",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0170A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0172",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0180",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0180A",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0182",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0190",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0191",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0192",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0200",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0201",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0202",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "errorcode",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "errorlevel",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

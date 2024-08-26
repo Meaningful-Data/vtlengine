@@ -1,0 +1,11 @@
+define datapoint ruleset anacreditJointLiability (variable JNT_LBLTY_AMNT ) is
+  
+  GCMA_TH_H_JNT_LBLTY_AMNT: 
+    if
+        isnull(JNT_LBLTY_AMNT) then true
+    else
+        JNT_LBLTY_AMNT <= 1000000000 
+    errorcode "GCMA_TH_H_JNT_LBLTY_AMNT" errorlevel 4
+
+ 
+end datapoint ruleset;

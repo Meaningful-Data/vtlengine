@@ -1,1 +1,6 @@
-DS_r := inner_join ( DS_1 as d1, DS_2 as d2 keep Me_1, d2#Me_2, Me_1A);
+define operator Test006 (x dataset, y dataset, c component, d component, e component)
+    returns dataset is
+        inner_join ( x as d1, y as d2 keep c, d2#d, e)
+end operator;
+
+DS_r := Test006( DS_1, DS_2, Me_1, Me_2, Me_1A);

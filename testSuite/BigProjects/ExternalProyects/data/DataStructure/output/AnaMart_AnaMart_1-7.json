@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "B14.AGG_INCRMNTL",
+      "DataStructure": [
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NMBR_INSTRMNT_SCRD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "INCRMNTL_3PPC",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

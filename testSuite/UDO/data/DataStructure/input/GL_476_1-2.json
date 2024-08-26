@@ -1,0 +1,39 @@
+{
+    "datasets": [
+      {
+        "name": "demo_data_structure_2",
+        "DataStructure": [
+          {
+            "name": "CONF_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          },
+          {
+            "name": "Id1",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "Id2",
+            "type": "Time_Period",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "Me1",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "OBS_STATUS",
+            "type": "String",
+            "nullable": true,
+            "role": "Attribute"
+          }
+        ]
+      }
+    ]
+  }

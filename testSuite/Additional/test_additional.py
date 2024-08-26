@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Union
 from unittest import TestCase
 
 import pandas as pd
@@ -97,6 +97,19 @@ class AdditionalHelper(TestCase):
         interpreter = InterpreterAnalyzer(input_datasets)
         result = interpreter.visit(ast)
         assert result == reference_datasets
+
+    @classmethod
+    def BaseScalarTest(cls, text: str, code: str, reference_value: Union[int, float, str]):
+        '''
+
+        '''
+        if text is None:
+            text = cls.LoadVTL(code)
+        ast = create_ast(text)
+        interpreter = InterpreterAnalyzer({})
+        result = interpreter.visit(ast)
+        assert result["DS_r"].value == reference_value
+
 
 
 class StringOperatorsTest(AdditionalHelper):
@@ -3150,14 +3163,14 @@ class DefinedOperatorsTest(AdditionalHelper):
 
         '''
         code = '15-1'
-        self.AssertScalar(code=code, reference_value=3)
+        self.BaseScalarTest(code=code, reference_value=3, text=None)
 
     def test_2(self):
         '''
 
         '''
         code = '15-2'
-        self.AssertScalar(code=code, reference_value=2)
+        self.BaseScalarTest(code=code, reference_value=2, text=None)
 
     def test_3(self):
         '''

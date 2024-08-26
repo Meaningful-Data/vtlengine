@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "A05.DNMNTR",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DBTR_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TTL_CV_OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

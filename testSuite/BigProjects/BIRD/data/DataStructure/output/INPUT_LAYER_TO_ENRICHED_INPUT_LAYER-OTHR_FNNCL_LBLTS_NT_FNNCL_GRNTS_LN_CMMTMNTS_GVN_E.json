@@ -1,0 +1,99 @@
+{
+  "datasets": [
+    {
+      "name": "OTHR_FNNCL_LBLTS_NT_FNNCL_GRNTS_LN_CMMTMNTS_GVN_E",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "FV_HRRCHY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_CHNGS_FV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_CHNGS_FV_CR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "ACCNTNG_CLSSFCTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "FV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "FVO_DSGNTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "GVRND_EU_LW",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_HFS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "MREL_ELGBL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_INTRNL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

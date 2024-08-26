@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "name": "dsPrep.OVR_1_DBTR_DFLTS",
+      "DataStructure": [
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TTL_NMBR_DBTRS",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "TTL_NMBR_DFLT_DBTRS",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

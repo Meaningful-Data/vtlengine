@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "C05.ANAMART_PRTCTN_ALLCTBL_KP",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ALLCTBL_PRTCTN_VL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ALLCTBL_PRTCTN_VL_USD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

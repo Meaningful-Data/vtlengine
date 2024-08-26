@@ -1,0 +1,33 @@
+define datapoint ruleset completenessInstrument (variable CD0020, CD0030, CD0039, CD0040, CD0050, CD0060,
+                                                          TYP_INSTRMNT, TYP_AMRTSTN, CRRNCY_DNMNTN,
+                                                          FDCRY, DT_INCPTN, DT_END_INTRST_ONLY, INTRST_RT_CP,INTRST_RT_FLR,
+                                                          INTRST_RT_RST_FRQNCY, INTRST_RT_SPRD, TYP_INTRST_RT,
+                                                          DT_LGL_FNL_MTRTY, CMMTMNT_INCPTN, PYMNT_FRQNCY, PRJCT_FNNC_LN,
+                                                          PRPS, RCRS, RFRNC_RT, DT_STTLMNT, SBRDNTD_DBT, SYNDCTD_CNTRCT_ID,
+                                                          RPYMNT_RGHTS, FV_CHNG_CR_BFR_PRCHS, NEVS_TYP_INSTRMNT, NEVS_TYP_AMRTSTN, NEVS_CRRNCY_DNMNTN, NEVS_FDCRY, NEVS_DT_INCPTN, NEVS_DT_END_INTRST_ONLY, NEVS_INTRST_RT_CP, NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_RST_FRQNCY, NEVS_INTRST_RT_SPRD, NEVS_TYP_INTRST_RT, NEVS_DT_LGL_FNL_MTRTY, NEVS_CMMTMNT_INCPTN, NEVS_PYMNT_FRQNCY, NEVS_PRJCT_FNNC_LN, NEVS_PRPS, NEVS_RCRS, NEVS_RFRNC_RT, NEVS_DT_STTLMNT, NEVS_SBRDNTD_DBT, NEVS_SYNDCTD_CNTRCT_ID, NEVS_RPYMNT_RGHTS, NEVS_FV_CHNG_CR_BFR_PRCHS) is
+    
+    CT0010: when not CD0060 then not isnull(TYP_INSTRMNT) or NEVS_TYP_INSTRMNT = "0" errorcode "CT0010" errorlevel 2;
+    CT0020: when not (CD0020 or CD0050 or CD0060) then not isnull(TYP_AMRTSTN) or NEVS_TYP_AMRTSTN = "0" errorcode "CT0020" errorlevel 2;
+    CT0030: when not CD0060 then not isnull(CRRNCY_DNMNTN) or NEVS_CRRNCY_DNMNTN = "0" errorcode "CT0030" errorlevel 2;
+    CT0040: when not CD0060 then not isnull(FDCRY) or NEVS_FDCRY = "0" errorcode "CT0040" errorlevel 2;
+    CT0050: when not (CD0020 or CD0060) then not isnull(DT_INCPTN) or NEVS_DT_INCPTN = "0" errorcode "CT0050" errorlevel 2;
+    CT0060: when not (CD0020 or CD0050 or CD0060)  then not isnull(DT_END_INTRST_ONLY) or NEVS_DT_END_INTRST_ONLY = "0" errorcode "CT0060" errorlevel 2;
+    CT0070: when not (CD0020 or CD0039 or CD0040 or CD0060) then not isnull(INTRST_RT_CP) or NEVS_INTRST_RT_CP = "0" errorcode "CT0070" errorlevel 2;
+    CT0080: when not (CD0020 or CD0039 or CD0040 or CD0060) then not isnull(INTRST_RT_FLR) or NEVS_INTRST_RT_FLR = "0" errorcode "CT0080" errorlevel 2;
+    CT0090: when not (CD0020 or CD0060) then not isnull(INTRST_RT_RST_FRQNCY) or NEVS_INTRST_RT_RST_FRQNCY = "0" errorcode "CT0090" errorlevel 2;
+    CT0100: when not (CD0020 or CD0060) then not isnull(INTRST_RT_SPRD) or NEVS_INTRST_RT_SPRD = "0" errorcode "CT0100" errorlevel 2;
+    CT0110: when not (CD0020 or CD0060) then not isnull(TYP_INTRST_RT) or NEVS_TYP_INTRST_RT = "0" errorcode "CT0110" errorlevel 2;
+    CT0120: when not CD0060 then not isnull(DT_LGL_FNL_MTRTY) or NEVS_DT_LGL_FNL_MTRTY = "0" errorcode "CT0120" errorlevel 2;
+    CT0130: when not CD0060 then not isnull(CMMTMNT_INCPTN) or NEVS_CMMTMNT_INCPTN = "0" errorcode "CT0130" errorlevel 2;
+    CT0140: when not (CD0020 or CD0050 or CD0060) then not isnull(PYMNT_FRQNCY) or NEVS_PYMNT_FRQNCY = "0" errorcode "CT0140" errorlevel 2;
+    CT0150: when not (CD0020 or CD0060) then not isnull(PRJCT_FNNC_LN) or NEVS_PRJCT_FNNC_LN = "0" errorcode "CT0150" errorlevel 2;
+    CT0160: when not CD0060 then not isnull(PRPS) or NEVS_PRPS = "0" errorcode "CT0160" errorlevel 2;
+    CT0170: when not CD0060 then not isnull(RCRS) or NEVS_RCRS = "0" errorcode "CT0170" errorlevel 2;
+    CT0180: when not (CD0020 or CD0060) then not isnull(RFRNC_RT) or NEVS_RFRNC_RT = "0" errorcode "CT0180" errorlevel 2;
+    CT0190: when not CD0060 then not isnull(DT_STTLMNT) or NEVS_DT_STTLMNT = "0" errorcode "CT0190" errorlevel 2;
+    CT0200: when not CD0060 then not isnull(SBRDNTD_DBT) or NEVS_SBRDNTD_DBT = "0" errorcode "CT0200" errorlevel 2;
+    CT0210: when not CD0060 then not isnull(SYNDCTD_CNTRCT_ID) or NEVS_SYNDCTD_CNTRCT_ID = "0" errorcode "CT0210" errorlevel 2;
+    CT0220: when not CD0060 then not isnull(RPYMNT_RGHTS) or NEVS_RPYMNT_RGHTS = "0" errorcode "CT0220" errorlevel 2;
+    CT0230: when not (CD0030 or CD0039 or CD0040 or CD0060) then not isnull(FV_CHNG_CR_BFR_PRCHS) or NEVS_FV_CHNG_CR_BFR_PRCHS = "0" errorcode "CT0230" errorlevel 2
+    
+end datapoint ruleset;

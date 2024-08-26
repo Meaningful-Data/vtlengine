@@ -1,0 +1,6 @@
+define hierarchical ruleset accountingEntry (valuedomain condition VD_REF_AREA as CNTRY, FUNCTIONAL_CAT as FUN, vd_REF_SECTOR as REF rule ACCOUNTING_ENTRY_vd) is 
+    when CNTRY = "IT" then B = C - D errorcode "Balance(credit-debit)" errorlevel 4;
+    when REF = "S1" then N = A + L errorcode "Net(assets-liabilities)" errorlevel 4    
+end hierarchical ruleset;
+
+DS_r := hierarchy(BOP, accountingEntry condition REF_AREA, FUNCTIONAL_CAT, REF_SECTOR rule ACCOUNTING_ENTRY non_null);

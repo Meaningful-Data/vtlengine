@@ -462,9 +462,7 @@ class Expr(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 
@@ -1202,6 +1200,10 @@ class Expr(VtlVisitor):
                 else:
                     params.append(Terminals().visitScalarItem(c))
                 continue
+
+        if len(params) == 0:
+            # AST_ASTCONSTRUCTOR.16
+            raise Exception(f"{op_node} requires an offset parameter.")
 
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)

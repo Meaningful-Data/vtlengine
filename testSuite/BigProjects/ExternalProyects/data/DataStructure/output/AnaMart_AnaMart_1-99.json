@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "A01.STRT_DS_MSR",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "VLD_FRM",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "VLD_T",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "STRT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+define datapoint ruleset zeroValidation (variable COUNTERPART_AREA as CA, REF_SECTOR as RS, COUNTERPART_SECTOR as CS, FLOW_STOCK_ENTRY as FSE, ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+  EQ0_1: when CA = "I8" and RS = "S1" and CS = "S121" and FSE = "T" and AE = "A" and IAI = "FA" and FC = "P" and IA = "F3" then O = 0 errorcode "EQ0_1";
+  EQ0_2: when CA = "W1" and RS = "S121" and CS = "S1" and FSE = "T" and AE = "L" and IAI = "FA" and FC = "P" and IA = "F3" then O = 0 errorcode "EQ0_2"
+end datapoint ruleset;

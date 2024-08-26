@@ -1,0 +1,2 @@
+ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,ruleid,OBS_VALUE,imbalance,errorcode,errorlevel
+B,D,F,G,IT,S1,1,100.0,10.0,Balance(credit-debit),4

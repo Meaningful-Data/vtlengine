@@ -1,0 +1,8 @@
+define datapoint ruleset completenessJointLiability(variable CD0060, JNT_LBLTY_AMNT, NEVS_JNT_LBLTY_AMNT) is
+    
+    CT0360: when not CD0060 then not isnull(JNT_LBLTY_AMNT) or NEVS_JNT_LBLTY_AMNT = "0" errorcode "CT0360" errorlevel 2
+            
+end datapoint ruleset;
+
+
+

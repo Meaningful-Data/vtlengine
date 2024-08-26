@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "RL_ESTT_CLM",
+      "DataStructure": [
+        {
+          "name": "DT_MTRTY_PRTCTN",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "THRD_PRTY_PRRTY_CLMS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "B02.NMBR_DBTRS_PR_INSTRMNT",
+      "DataStructure": [
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NMBR_DBTR",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

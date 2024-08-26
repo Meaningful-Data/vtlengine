@@ -1,0 +1,7 @@
+define hierarchical ruleset instrAsset (variable rule INSTR_ASSET) is 
+  F = F11 + F12 + FK + FR2 errorcode "Total financial assets/liabilities (reserve assets)";
+  F11 = F11A + F11B	errorcode "Monetary gold"; 
+  F5 = F51 + F52 errorcode "Equity and investment fund shares/units"; 
+  FR1 = F3 + F5	errorcode "Securities (Equity, investment fund shares/units and debt securities)";
+  FR2 = F2 + FR1 + F71 + FR41	errorcode "Other reserve assets .currency, deposits, securities, financial derivatives and other claims"
+end hierarchical ruleset;

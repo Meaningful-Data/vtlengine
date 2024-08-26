@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "comp_cred.CD0170_DS",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CD0170",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

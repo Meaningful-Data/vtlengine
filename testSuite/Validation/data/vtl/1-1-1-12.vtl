@@ -1,0 +1,2 @@
+DS_r := check (BOP > 0 errorcode 111 errorlevel 1 imbalance - BOP all)
+        [aggr errorlevel_N := sum ('errorlevel') group by ACCOUNTING_ENTRY];

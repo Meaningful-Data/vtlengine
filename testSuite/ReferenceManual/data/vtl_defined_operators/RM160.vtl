@@ -1,1 +1,5 @@
-DS_r := check ( DS1 >= DS2 imbalance DS1 - DS2 );
+define operator Test160 (x dataset, y dataset)
+    returns dataset is
+    check ( x >= y imbalance x - y )
+end operator;
+DS_r := Test160(DS_1, DS_2);

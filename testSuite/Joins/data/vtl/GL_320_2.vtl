@@ -1,0 +1,14 @@
+SHR_ONA_CRDTR_AGG := 
+    sum(
+        left_join(
+            B03.ANAMART_INSTRMNT_SHR_ONA_CRDTR,
+            A01.ANAMART_ENTTY_TM
+                [keep IS_ANCRDT_RPRTNG]
+                [rename 
+                    ENTTY_RIAD_CD to CRDTR_ID,
+                    IS_ANCRDT_RPRTNG to IS_CRDTR_ANCRDT_RPRTNG]
+                as B
+            using DT_RFRNC, CRDTR_ID
+            filter CRDTR_ID = OBSRVD_AGNT_CD and IS_CRDTR_ANCRDT_RPRTNG = OBSRVD_AGNT_CD)
+                [keep SHR_ONA_CRDTR]
+        group except CRDTR_ID, DBTR_ID);

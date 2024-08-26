@@ -1,0 +1,4 @@
+dateReference,securityId,typeInstrument,issuerId
+2020-12-31,"123",F32,ABC
+2020-12-31,"456",F511,DEF
+2020-12-31,"789",F511,GHI

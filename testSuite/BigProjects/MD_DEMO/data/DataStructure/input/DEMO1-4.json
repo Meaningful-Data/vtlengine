@@ -1,0 +1,195 @@
+{
+  "datasets": [
+    {
+      "name": "DS3",
+      "DataStructure": [
+        {
+          "name": "BREAKS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "COLLECTION",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "COMPILATION",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "COMPILING_ORG",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "COVERAGE",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CURRENCY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CURRENCY_DENOM",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DECIMALS",
+          "role": "Attribute",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "DISS_ORG",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DOM_SER_IDS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "EXR_SUFFIX",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "EXR_TYPE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "FREQ",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NAT_TITLE",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_COM",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_CONF",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_PRE_BREAK",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PUBL_ECB",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PUBL_MU",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PUBL_PUBLIC",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "SOURCE_AGENCY",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "SOURCE_PUB",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TIME_FORMAT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "TITLE",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TITLE_COMPL",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "UNIT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "UNIT_INDEX_BASE",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "UNIT_MULT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

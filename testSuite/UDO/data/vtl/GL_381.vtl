@@ -1,0 +1,6 @@
+define operator filter_ds (ds1 dataset, great_cons string default "1", less_cons number default 4.0)
+  returns dataset is
+    ds1[filter Me_1 > great_cons and Me_2 < less_cons]
+end operator;
+
+DS_r := filter_ds("3", 5.0);

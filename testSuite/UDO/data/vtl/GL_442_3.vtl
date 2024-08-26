@@ -1,0 +1,26 @@
+define operator count_by_measure(ds dataset, 'measure' component, default_value string default "N/A for tests")
+returns dataset
+is
+    count(
+        ds
+            [calc identifier 'measure' := nvl('measure', default_value)] 
+        group by 'measure')
+end operator;
+/*******************************************************************************
+*       Module lei_statistcs
+*******************************************************************************/
+lei_statistcs.ENTITITES_PER_POSTAL_CODE :=
+	count_by_measure(
+		ENTITIES,
+		Entity.LegalAddress.PostalCode);
+lei_statistcs.ENTITIES_PER_LEGAL_FORM :=
+	count_by_measure(
+		ENTITIES,
+		Entity.LegalForm.EntityLegalFormCode);
+/*******************************************************************************
+*       Module market
+*******************************************************************************/
+market.market :=
+	MARKET_DATA
+		[keep LastRate];
+

@@ -1,0 +1,14 @@
+define hierarchical ruleset EuropeanUnionCountries1 
+    (valuedomain condition ReferenceTime as Time rule GeoArea) is 
+    when between(Time, "1958-01-01", "1972-12-31")
+        then EU = BE + FR + DE + IT + LU + NL errorlevel 1;
+    when between(Time, "1973-01-01", "1980-12-31")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB  errorlevel 2;
+    when between(Time, "1981-01-01", "1985-10-02")
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR  errorlevel 3;
+    when Time >= "1986-01-01"
+        then EU = BE + FR + DE + IT + LU + NL + DK + IE + GB + GR + ES + PT errorlevel 4
+end hierarchical ruleset;
+
+
+DS_r := hierarchy(DS_1, EuropeanUnionCountries1 condition DATE_STR rule REF_AREA always_zero);

@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "A03.DBTR_FCT_TTL_NN_PFRMNG",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OTSTNDNG_NMNL_AMNT_CV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "OTSTNDNG_NMNL_AMNT_DV",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

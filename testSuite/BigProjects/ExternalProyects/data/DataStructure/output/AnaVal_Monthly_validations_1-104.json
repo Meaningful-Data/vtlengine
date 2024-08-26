@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "dsPrep.NMBR_EMPLYS_DS",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NMBR_EMPLYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
