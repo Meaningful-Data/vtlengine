@@ -433,16 +433,15 @@ class Instr(Parameterized):
             return cls.scalar_evaluation(operand, param1, param2, param3)
 
     @classmethod
-    def op_func(cls, x: Union[Dataset, String], param1: Optional[Any], param2: Optional[Any],
+    def op_func(cls, x: str, param1: Optional[Any], param2: Optional[Any],
                 param3: Optional[Any]) -> Any:
-        x = "" if pd.isnull(x) else x
+        if pd.isnull(x):
+            return None
         return cls.py_op(x, param1, param2, param3)
 
     @classmethod
     def py_op(cls, str_value: str, str_to_find: Optional[str], start: Optional[int],
               occurrence: Optional[int]) -> Any:
-        if pd.isnull(str_value):
-            return None
         str_value = str(str_value)
         if not pd.isnull(start):
             if isinstance(start, int) or start.is_integer():
