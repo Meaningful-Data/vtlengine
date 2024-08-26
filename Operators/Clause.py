@@ -102,7 +102,8 @@ class Filter:
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data.copy()
         if len(condition.data) > 0:
-            result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
+            true_indexes = condition.data[condition.data == True].index
+            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
         return result_dataset
 
 
