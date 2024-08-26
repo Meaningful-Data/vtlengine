@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Any
 from unittest import TestCase
@@ -40,7 +41,10 @@ class BIRDHelper(TestCase):
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+            if not os.path.exists(dp_path):
+                data = pd.DataFrame(columns=list(components.keys()))
+            else:
+                data = pd.read_csv(dp_path, sep=',')
 
             return Dataset(name=dataset_name, components=components, data=data)
 

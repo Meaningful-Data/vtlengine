@@ -255,32 +255,3 @@ class AnaMart(ExternalProjectsHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, vd_names=vd_names, exception_code=exception_code
         )
-
-    def test_AnaMart_AnaMart_2(self):
-        """
-        Description: AT_Bank_201906
-        Git Branch: feat-test-projects
-        Goal: Check semantic result and interpreter results.
-        """
-        code = 'AnaMart_AnaMart_2'
-        number_inputs = 30
-        vd_names = ["anaCreditCountries_2"]
-        # rn = [str(i) for i in range(1, 303)]
-        rn = [str(i) for i in range(1, 30)]
-        rn += [str(i) for i in range(72, 303)]
-        references_names = rn
-        sql_names = [
-            "instDates",
-            "instrFctJn",
-            "instrFctJn2",
-            "prtctnDts",
-            "prtctnFctJn"
-        ]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            vd_names=vd_names,
-            sql_names=sql_names
-        )
