@@ -4,7 +4,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-from Model import Component, DataComponent, Dataset, Role, Scalar
+from Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
@@ -12,7 +12,7 @@ else:
     import pandas as pd
 
 from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ, NOT_IN
-from DataTypes import Boolean, COMP_NAME_MAPPING, String
+from DataTypes import Boolean, COMP_NAME_MAPPING, String, Number
 import Operators as Operator
 
 
@@ -48,6 +48,58 @@ class IsNull(Unary):
 
 class Binary(Operator.Binary):
     return_type = Boolean
+
+    @classmethod
+    def _cast_values(cls, x: Union[int, float, str, bool], y: Union[int, float, str, bool]) -> tuple:
+        # Cast both values to the same data type
+        # An integer can be considered a bool, we must check first boolean, then numbers
+        if isinstance(x, str) and isinstance(y, bool):
+            y = String.cast(y)
+        elif isinstance(x, bool) and isinstance(y, str):
+            x = String.cast(x)
+        elif isinstance(x, str) and isinstance(y, (int, float)):
+            x = Number.cast(x)
+        elif isinstance(x, (int, float)) and isinstance(y, str):
+            y = Number.cast(y)
+
+        return x, y
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+        return cls.py_op(x, y)
+
+    @classmethod
+    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
+                                      series_left: bool) -> Any:
+        if scalar is None:
+            return pd.Series(None, index=series.index)
+        if series_left:
+            return series.map(lambda x: cls.op_func(x, scalar), na_action='ignore')
+        else:
+            return series.map(lambda x: cls.op_func(scalar, x), na_action='ignore')
+
+    @classmethod
+    def apply_return_type_dataset(
+            cls, result_dataset: Dataset, left_operand: Dataset,
+            right_operand: Union[Dataset, Scalar, ScalarSet]
+    ) -> None:
+        super().apply_return_type_dataset(result_dataset, left_operand, right_operand)
+        is_mono_measure = len(result_dataset.get_measures()) == 1
+        if is_mono_measure:
+            measure = result_dataset.get_measures()[0]
+            component = Component(
+                name=COMP_NAME_MAPPING[Boolean],
+                data_type=Boolean,
+                role=Role.MEASURE,
+                nullable=measure.nullable
+            )
+            result_dataset.delete_component(measure.name)
+            result_dataset.add_component(component)
+            if result_dataset.data is not None:
+                result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
 
 class Equal(Binary):
@@ -114,7 +166,9 @@ class Match(Binary):
     type_to_check = String
 
     @classmethod
-    def py_op(cls, x, y):
+    def op_func(cls, x, y):
+        if pd.isnull(x) or pd.isnull(y):
+            return None
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
         return bool(re.fullmatch(str(y), str(x)))
@@ -124,10 +178,10 @@ class Between(Operator.Operator):
     return_type = Boolean
 
     @classmethod
-    def op_function(cls,
-                    x: Optional[Union[int, float, bool, str]],
-                    y: Optional[Union[int, float, bool, str]],
-                    z: Optional[Union[int, float, bool, str]]):
+    def op_func(cls,
+                x: Optional[Union[int, float, bool, str]],
+                y: Optional[Union[int, float, bool, str]],
+                z: Optional[Union[int, float, bool, str]]):
         return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z
 
     @classmethod
@@ -143,10 +197,10 @@ class Between(Operator.Operator):
             if not isinstance(to_data, pd.Series):
                 to_data = pd.Series(to_data, index=series.index)
             df = pd.DataFrame({'operand': series, 'from_data': from_data, 'to_data': to_data})
-            return df.apply(lambda x: cls.op_function(x['operand'], x['from_data'], x['to_data']),
+            return df.apply(lambda x: cls.op_func(x['operand'], x['from_data'], x['to_data']),
                             axis=1)
 
-        return series.map(lambda x: cls.op_function(x, from_data, to_data))
+        return series.map(lambda x: cls.op_func(x, from_data, to_data))
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:

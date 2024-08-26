@@ -101,6 +101,17 @@ class Number(ScalarType):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1.0
+            elif value.lower() == "false":
+                return 0.0
+        return float(value)
+
 
 class Integer(Number):
     """
@@ -123,6 +134,11 @@ class Integer(Number):
                 return int(value)
             else:
                 raise Exception(f"Value {value} has decimals, cannot cast to integer")
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1
+            elif value.lower() == "false":
+                return 0
         return int(value)
 
 
