@@ -643,7 +643,7 @@ class InterpreterAnalyzer(ASTTemplate):
             type_element = node.children[1]
 
             if len(node.params) == 1:
-                param_element = self.visit(node.params[0]).value
+                param_element = self.visit(node.params[0])
             else:
                 param_element = None
             return Cast.evaluate(op_element, type_element, param_element)
@@ -653,6 +653,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_rule = True
         self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
+        if isinstance(validation_data, DataComponent):
+            aux = self.rule_data[self.ruleset_dataset.get_components_names()]
+            aux['bool_var'] = validation_data.data
+            validation_data = aux
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
