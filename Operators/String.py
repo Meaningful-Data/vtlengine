@@ -441,6 +441,8 @@ class Instr(Parameterized):
     @classmethod
     def py_op(cls, str_value: str, str_to_find: Optional[str], start: Optional[int],
               occurrence: Optional[int]) -> Any:
+        if pd.isnull(str_value):
+            return None
         str_value = str(str_value)
         if not pd.isnull(start):
             if isinstance(start, int) or start.is_integer():
