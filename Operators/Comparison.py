@@ -139,7 +139,10 @@ class In(Binary):
     def apply_operation_two_series(cls,
                                    left_series: Any,
                                    right_series: list) -> Any:
-        return left_series.map(lambda x: x in right_series, na_action='ignore')
+        right = pd.Series(right_series)
+        if left_series.dtype != right.dtype:
+            right = right.astype(left_series.dtype)
+        return left_series.map(lambda x: x in right.values, na_action='ignore')
 
     @classmethod
     def py_op(cls, x, y):
