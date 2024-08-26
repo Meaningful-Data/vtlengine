@@ -101,9 +101,9 @@ class Parameterized(Unary):
                  param2: Optional[Scalar] = None):
 
         if param1 is not None:
-            cls.check_param(param1, 2)
-            if param2 is not None:
-                cls.check_param(param2, 2)
+            cls.check_param(param1, 1)
+        if param2 is not None:
+            cls.check_param(param2, 2)
 
         return super().validate(operand)
 
@@ -255,9 +255,9 @@ class Substr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Optional[Union[int, str]], position: int):
-        if not pd.isnull(param) and param >= 1 and position == 1:
+        if not pd.isnull(param) and not param >= 1 and position == 1:
             raise Exception("param start should be >= 1")
-        if not pd.isnull(param) and not param >= 0:
+        elif not pd.isnull(param) and not param >= 0 and position == 2:
             raise Exception("param length should be >= 0")
 
 
@@ -299,7 +299,6 @@ class Instr(Parameterized):
         if isinstance(param1, Dataset) or isinstance(param2, Dataset) or isinstance(param3,
                                                                                     Dataset):
             raise Exception(f"{cls.op} cannot have a Dataset as parameter")
-
         if param1 is not None:
             cls.check_param(param1, 1)
         if param2 is not None:
@@ -395,7 +394,7 @@ class Instr(Parameterized):
                              param1: Optional[Union[DataComponent, Scalar]],
                              param2: Optional[Union[DataComponent, Scalar]],
                              param3: Optional[Union[DataComponent, Scalar]]):
-        result = cls.validate(operand, param1, param2)
+        result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(
                 param3, DataComponent):
@@ -413,7 +412,7 @@ class Instr(Parameterized):
                           param1: Optional[Union[DataComponent, Scalar]],
                           param2: Optional[Union[DataComponent, Scalar]],
                           param3: Optional[Union[DataComponent, Scalar]]):
-        result = cls.validate(operand, param1, param2)
+        result = cls.validate(operand, param1, param2, param3)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
         param_value3 = None if param3 is None else param3.value
