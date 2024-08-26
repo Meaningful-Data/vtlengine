@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
@@ -545,7 +546,10 @@ class NumericBugs(BugsHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.NewRunTimeExceptionTest(text=None, code=code, number_inputs=number_inputs)
+        with pytest.raises(Exception, match="has decimals, cannot cast to integer"):
+            self.BaseTest(
+                code=code, number_inputs=number_inputs,
+                references_names=references_names)
 
 
 class ComparisonBugs(BugsHelper):

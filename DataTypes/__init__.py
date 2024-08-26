@@ -113,6 +113,18 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, float):
+            # Check if the float has decimals
+            if value.is_integer():
+                return int(value)
+            else:
+                raise Exception(f"Value {value} has decimals, cannot cast to integer")
+        return int(value)
+
 
 class TimeInterval(ScalarType):
     """
