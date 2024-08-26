@@ -1,0 +1,11 @@
+CNTRCT_ID,DT_RFRNC,INSTRMNT_ID,OBSRVD_AGNT_CD,HS_NLL_JNTL_LBLTY_AMNT
+C_0,2019-06-30,I_0,AT_Bank,True
+1D_ONA_null,2019-06-30,JLA_null,AT_Bank,True
+1D_ONA_0,2019-06-30,JLA_null,AT_Bank,True
+1D_ONA_OK,2019-06-30,JLA_null,AT_Bank,True
+2D_ONA_null,2019-06-30,JLA_null_1,AT_Bank,True
+2D_ONA_0,2019-06-30,JLA_null_1,AT_Bank,True
+2D_ONA_OK,2019-06-30,JLA_null_1,AT_Bank,True
+3D_ONA_null,2019-06-30,JLA_null_all,AT_Bank,True
+3D_ONA_0,2019-06-30,JLA_null_all,AT_Bank,True
+3D_ONA_OK,2019-06-30,JLA_null_all,AT_Bank,True

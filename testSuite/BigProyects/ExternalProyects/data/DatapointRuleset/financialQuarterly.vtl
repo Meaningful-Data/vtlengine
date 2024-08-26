@@ -1,0 +1,18 @@
+define datapoint ruleset financialQuarterly (variable TRNSFRRD_AMNT, OTSTNDNG_NMNL_AMNT, NEVS_ANNLSD_AGRD_RT, NEVS_ACCRD_INTRST) is
+
+    CN0701: 
+        when 
+            if isnull(OTSTNDNG_NMNL_AMNT) then false else
+            TRNSFRRD_AMNT > 0 
+        then 
+            OTSTNDNG_NMNL_AMNT >= TRNSFRRD_AMNT 
+        errorcode "CN0701" errorlevel 3;
+    CN0901: 
+        when 
+            if isnull(NEVS_ACCRD_INTRST) then false else
+            NEVS_ANNLSD_AGRD_RT <> "0" or isnull(NEVS_ANNLSD_AGRD_RT)
+        then 
+            NEVS_ACCRD_INTRST <> "0" 
+        errorcode "CN0901" errorlevel 3
+
+end datapoint ruleset;

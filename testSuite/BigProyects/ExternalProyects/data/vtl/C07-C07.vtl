@@ -1,0 +1,22 @@
+MTRSTS_DS :=
+  inner_join(
+    ANCRDT_INSTRMNT_C[keep DT_LGL_FNL_MTRTY] as A,
+    ANCRDT_PRTCTN_RCVD_C[keep DT_MTRTY_PRTCTN] as B,
+    ANCRDT_INSTRMNT_PRTCTN_RCVD_C);
+MSMTCH_BL_DS :=
+  MTRSTS_DS
+    [calc IS_PRTCTN_MTRTY_MSMTCH := if DT_LGL_FNL_MTRTY > DT_MTRTY_PRTCTN then "T" else "F"];
+ANAMART_PRTCTN_MSMTCH := eval(
+                    prtctnDts(MSMTCH_BL_DS)
+                    language "sqlite"
+                    returns dataset{
+                            identifier<string> CNTRCT_ID,
+                            identifier<date> DT_RFRNC,
+                            identifier<string> OBSRVD_AGNT_CD,
+                            identifier<string> INSTRMNT_ID,
+                            identifier<string> PRTCTN_ID,
+                            measure<string> IS_PRTCTN_MTRTY_MSMTCH,
+                            measure<number> MTRTY_MSMTCH,
+                            measure<number> PRTCTN_RSDL_MTRTY_DYS
+                           }
+                  );

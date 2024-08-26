@@ -1,0 +1,26 @@
+exRate := DS3[sub CURRENCY="EUR", 
+                  CURRENCY_DENOM="ISK",
+                  EXR_TYPE="EN00",
+                  EXR_SUFFIX="E", 
+                  FREQ="M"][keep OBS_VALUE];
+
+/*Option A: Two currencies*/
+
+DS1_enr := inner_join(DS1, exRate[rename OBS_VALUE to EXCHANGE_RATE] as DS3);
+DS1_fin := DS1_enr[calc OBS_VALUE_EUR := OBS_VALUE*EXCHANGE_RATE];
+
+/*Option B: One currency*/
+DS1_conv := DS1*exRate;
+
+
+/*2. Complex validation: Checking that the aggregate sum of a dataset is in a certain range of the other dataset.*/
+DS1_tim:=sum(DS1 group by TIME_PERIOD);
+DS2_tim:=sum(DS2 group by TIME_PERIOD);
+
+
+val:= check(DS1_tim > 0.75*DS2_tim and DS1_tim < 1.25*DS2_tim 
+            errorcode "DS1 is not between 75% and 125% of DS2"
+            errorlevel 3
+            imbalance (DS1_tim - DS2_tim)/DS2_tim
+            invalid 
+            );

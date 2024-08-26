@@ -1,0 +1,16 @@
+define datapoint ruleset instrumentLastMonth (variable CMMTMNT_INCPTN, CMMTMNT_INCPTN_T1, FV_CHNG_CR_BFR_PRCHS, FV_CHNG_CR_BFR_PRCHS_T1) is
+
+    CN0804: 
+        if
+            isnull(CMMTMNT_INCPTN) or isnull(CMMTMNT_INCPTN_T1) then true
+        else
+            CMMTMNT_INCPTN = CMMTMNT_INCPTN_T1 
+        errorcode "CN0804" errorlevel 1;
+    CN0810: 
+        if
+            isnull(FV_CHNG_CR_BFR_PRCHS) or isnull(FV_CHNG_CR_BFR_PRCHS_T1) then true
+        else
+            FV_CHNG_CR_BFR_PRCHS = FV_CHNG_CR_BFR_PRCHS_T1 
+        errorcode "CN0810" errorlevel 2
+
+end datapoint ruleset;

@@ -1,0 +1,57 @@
+define datapoint ruleset financialAccounting (variable DFLT_STTS, NEVS_DFLT_STTS, PRFRMNG_STTS, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT, ACCMLTD_WRTFFS, OFF_BLNC_SHT_AMNT, ACCRD_INTRST, NEVS_PRVSNS_OFF_BLNC_SHT, NEVS_OFF_BLNC_SHT_AMNT, PRVSNS_OFF_BLNC_SHT, NEVS_ACCMLTD_IMPRMNT, NEVS_OTSTNDNG_NMNL_AMNT, ACCMLTD_IMPRMNT, NEVS_CRRYNG_AMNT, CRRYNG_AMNT) is
+
+    CN0310: 
+        when 
+            if isnull(PRFRMNG_STTS) then false else
+            DFLT_STTS <> "14"
+        then 
+            PRFRMNG_STTS = "1"  
+        errorcode "CN0310" errorlevel 2;
+    CN0510: 
+        when 
+            if isnull(RCGNTN_STTS) then false else
+            TYP_SCRTSTN = "6" and OTSTNDNG_NMNL_AMNT > 0 
+        then 
+            RCGNTN_STTS <> "3" 
+        errorcode "CN0510" errorlevel 2;
+    CN0700: 
+        when 
+            if isnull(ACCMLTD_WRTFFS) or isnull(OFF_BLNC_SHT_AMNT) or isnull(ACCRD_INTRST) then false else
+            OTSTNDNG_NMNL_AMNT = 0 
+        then 
+            ACCMLTD_WRTFFS >0 or OFF_BLNC_SHT_AMNT > 0 or ACCRD_INTRST > 0 
+        errorcode "CN0700" errorlevel 3;
+    CN0703a: 
+        when 
+            NEVS_PRVSNS_OFF_BLNC_SHT = "0" 
+        then 
+            NEVS_OFF_BLNC_SHT_AMNT = "0" 
+        errorcode "CN0703a" errorlevel 2;
+    CN0703b: 
+        when 
+            NEVS_OFF_BLNC_SHT_AMNT = "0"
+        then 
+            NEVS_PRVSNS_OFF_BLNC_SHT = "0" 
+        errorcode "CN0703b" errorlevel 2;
+    CN0876: 
+        if
+            isnull(PRVSNS_OFF_BLNC_SHT) or isnull(OFF_BLNC_SHT_AMNT) then true
+        else
+            PRVSNS_OFF_BLNC_SHT <= OFF_BLNC_SHT_AMNT 
+        errorcode "CN0876" errorlevel 2;
+    IG0100: 
+        when
+            if isnull(ACCMLTD_IMPRMNT) or isnull(OTSTNDNG_NMNL_AMNT) then false else
+            NEVS_OFF_BLNC_SHT_AMNT = "0" and NEVS_ACCMLTD_IMPRMNT not_in {"-2", "-3", "-5"} or NEVS_OTSTNDNG_NMNL_AMNT not_in {"-2", "-3", "-5"} 
+        then 
+            ACCMLTD_IMPRMNT <= OTSTNDNG_NMNL_AMNT 
+        errorcode "IG0100" errorlevel 1;
+    IG0110: 
+        when 
+            if isnull(OTSTNDNG_NMNL_AMNT) or isnull(CRRYNG_AMNT) then false else
+            ACCRD_INTRST <= ACCMLTD_IMPRMNT and isnull(NEVS_CRRYNG_AMNT) 
+        then 
+            OTSTNDNG_NMNL_AMNT >= CRRYNG_AMNT 
+        errorcode "IG0110" errorlevel 1
+
+end datapoint ruleset;

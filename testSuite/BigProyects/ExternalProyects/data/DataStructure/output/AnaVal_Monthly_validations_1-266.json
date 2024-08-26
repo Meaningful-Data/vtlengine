@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.MX_TRD_RCVBL_NN_RCRS",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TRD_RCVBL_NN_RCRS",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

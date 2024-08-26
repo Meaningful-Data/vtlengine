@@ -1,0 +1,83 @@
+/*
+  Calling datapoint rulesets
+*/
+
+
+DP_RLST_INSTRMNT_RSLT <- check_datapoint(ANCRDT_INSTRMNT_C, instrument);
+DP_RLST_INSTRMNT_FNNCL_RSLT <- check_datapoint(dsPrep.INSTRMNTS_FLL_MNTHLY, instrumentFinancial);
+DP_RLST_FNNCL_RSLT <- check_datapoint(ANCRDT_FNNCL_C, financial);
+DP_RLST_INSTRMNT_LST_MNTH_RSLT <- check_datapoint(dsPrep.INSTRMNT_T_T1, instrumentLastMonth);
+DP_RLST_FNNCL_LST_MNTH_RSLT <- check_datapoint(dsPrep.FNNCL_T_T1, financialLastMonth);
+DP_RLST_INSTRMNT_FNNCL_LST_MNTH_RSLT <- check_datapoint(dsPrep.INSTRMNT_FNNCL_T_T1, instrumentFinancialLastMonth);
+
+DP_RLST_CNTRPRTY_DFLT_RSLT <- check_datapoint(ANCRDT_ENTTY_DFLT_C, anacreditCounterpartyDefault);
+DP_RLST_CNTRPRTY_DFLT_LST_MNTH_RSLT <- check_datapoint(dsPrep.CNTRPRTY_DFLT_T_T1, anacreditCounterpartyDefaultLastMonth);
+DP_RLST_INSTRMNT_PRTCTNS_RSLT  <- check_datapoint(dsPrep.INSTRMTNS_PRTCTNS, anacreditInstrumentProtection);
+DP_RLST_PRTCTN_RCVD_RSLT <-  check_datapoint(ANCRDT_PRTCTN_RCVD_C, anacreditProtectionReceived);
+DP_RLST_PRTCTN_RCVD_LST_MNTH_RSLT <-  check_datapoint(dsPrep.PRTCTN_RCVD_T_T1, anacreditProtectionReceivedLastMonth);
+DP_RLST_JNT_LBLTS_RSLT <- check_datapoint(ANCRDT_JNT_LBLTS_C, anacreditJointLiability);
+DP_RLST_ENTTY_THRSHLDS_RSLT <- check_datapoint(dsPrep.ENTTY, anacreditEntityThresholds);
+GRNLR_CMA_ENTTY <- check_datapoint(dsPrep.ENTTY, granularCmaEntity);
+GRNLR_CMA_ENTTY_INSTRMNT <- check_datapoint(dsPrep.ENTTY_INSTRMNT_CMA, granularCmaEntityInstrument);
+GRNLR_CMA_ENTTY_RSK <- check_datapoint(dsPrep.ENTTY_PD, granularCmaEntityRisk);
+GRNLR_CMA_PRTCTN <- check_datapoint(dsPrep.PRTCTN_AGGRGTD_INSTRMNT_PRTCTN, granularCmaProtection);
+
+/*
+  Special validations
+*/
+
+CN0230 <- check(
+            not isnull(dsPrep.CN0230_DTST#TYP_PRTCTN)
+            errorcode "CN0230" 
+            errorlevel 2
+            invalid);
+
+CN0330  <- check(
+            ANCRDT_FNNCL_C[keep OTSTNDNG_NMNL_AMNT][rename OTSTNDNG_NMNL_AMNT to obs] >= ANCRDT_JNT_LBLTS_C[keep JNT_LBLTY_AMNT][rename JNT_LBLTY_AMNT to obs]
+            errorcode "CN0330" 
+            errorlevel 3
+            invalid);            
+
+CN0620 <-
+    check(
+        exists_in(dsPrep.INSTRMNTS_TRDTNL_SCRTSTN_CRDTR_FVC, ANCRDT_ENTTY_INSTRMNT_C[filter ENTTY_RL="3"], false) 
+            errorcode "CN0620" 
+            errorlevel 3
+    );
+
+
+
+CN0621 <-
+  check(
+    ANCRDT_ENTTY_INSTRMNT_C[sub ENTTY_RL = "1"][calc dummy := "T"] <> ANCRDT_ENTTY_INSTRMNT_C[sub ENTTY_RL = "2"][calc dummy := "T"] /*If there are two records, then there will be the same, and we want to raise an error, so we compare they are different*/
+    errorcode "CN0621" 
+    errorlevel 3
+    invalid
+  );
+
+
+
+CN0622 <- 
+  check(
+    isnull(dsPrep.CN0622_DTST#PRTCTN_PRVDR_CD) /*In reality we are here only testing if there is any record after the join, in which case there is an error. If there is a record, the PRTCTN_PRVDR_CD cannot be null because we have previously filtered by not isnull.*/
+    errorcode "CN0622" 
+    errorlevel 2
+    invalid
+  );
+  
+CN0869 <-
+    check(
+        dsPrep.ENTTS_USD_BRTH[rename DT_RFRNC_USD to COMP_DT][keep COMP_DT] >= dsPrep.ENTTS_USD_BRTH[rename DT_BRTH to COMP_DT][keep COMP_DT]
+        errorcode "CN0869" 
+        errorlevel 2
+        invalid
+    );
+    
+    
+IG0070 <-
+    check(
+        dsPrep.OVR_1_DBTR_ALL_DFLTD#DFLT_STTS <> "14"
+        errorcode "IG0070" 
+        errorlevel 1
+        invalid
+    );

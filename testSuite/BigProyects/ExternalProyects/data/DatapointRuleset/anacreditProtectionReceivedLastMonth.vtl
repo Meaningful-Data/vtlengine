@@ -1,0 +1,32 @@
+define datapoint ruleset anacreditProtectionReceivedLastMonth (variable DT_PRTCTN_VL, DT_PRTCTN_VL_T1,
+                                                                         DT_ORGNL_PRTCTN_VL, DT_ORGNL_PRTCTN_VL_T1,
+                                                                         ORGNL_PRTCTN_VL, ORGNL_PRTCTN_VL_T1,
+                                                                         TYP_PRTCTN, TYP_PRTCTN_T1) is
+  
+  CN0661: 
+    if
+        isnull(DT_PRTCTN_VL) or isnull(DT_PRTCTN_VL_T1) then true
+    else
+        DT_PRTCTN_VL >= DT_PRTCTN_VL_T1 
+    errorcode "CN0661" errorlevel 2;
+  CN0812: 
+    if 
+        isnull(ORGNL_PRTCTN_VL) or isnull(ORGNL_PRTCTN_VL_T1) then true
+    else
+        ORGNL_PRTCTN_VL = ORGNL_PRTCTN_VL_T1 
+    errorcode "CN0812" errorlevel 1;
+  CN0813: 
+    if
+        isnull(DT_ORGNL_PRTCTN_VL) or isnull(DT_ORGNL_PRTCTN_VL_T1) then true
+    else
+        DT_ORGNL_PRTCTN_VL = DT_ORGNL_PRTCTN_VL_T1 
+    errorcode "CN0813" errorlevel 1;
+  CN0950: 
+    when 
+        if isnull(TYP_PRTCTN) or isnull(TYP_PRTCTN_T1) then false else
+        TYP_PRTCTN not_in {"8", "9", "10"} or TYP_PRTCTN_T1 not_in {"8", "9", "10"} 
+    then 
+        TYP_PRTCTN = TYP_PRTCTN_T1 
+    errorcode "CN0950" errorlevel 3
+            
+end datapoint ruleset;

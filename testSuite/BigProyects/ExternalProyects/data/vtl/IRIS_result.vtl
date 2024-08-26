@@ -1,0 +1,84 @@
+define operator filRoundEr (ds dataset, comp component, margin number)
+  returns dataset is
+    ds[filter comp > margin or comp < -margin]
+end operator;
+define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is 
+    A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
+    A >= U errorcode "totalGeUnal" errorlevel 3
+end hierarchical ruleset;
+
+/*******************************************************************************
+*       Module agg
+*******************************************************************************/
+agg.exRate :=
+	DS3
+		[sub CURRENCY = "EUR",CURRENCY_DENOM = "ISK",EXR_TYPE = "EN00",EXR_SUFFIX = "E",FREQ = "M"]
+		[keep OBS_VALUE];
+agg.DS1_enr :=
+	inner_join(
+		DS1,
+		agg.exRate
+			[rename OBS_VALUE to EXCHANGE_RATE] as DS3
+	);
+agg.DS1_fin :=
+	agg.DS1_enr
+		[calc OBS_VALUE_EUR := OBS_VALUE * EXCHANGE_RATE];
+agg.DS1_conv :=
+	DS1 * agg.exRate;
+agg.DS1_tim :=
+	sum(
+			DS1 
+			group by TIME_PERIOD
+		);
+agg.DS2_tim :=
+	sum(
+			DS2 
+			group by TIME_PERIOD
+		);
+agg.val :=
+	check(
+		agg.DS1_tim 
+		>
+		 0.75 * agg.DS2_tim and
+			agg.DS1_tim 
+		<
+		 1.25 * agg.DS2_tim 
+		errorcode "DS1 is not between 75% and 125% of DS2"
+		errorlevel 3
+		imbalance(agg.DS1_tim - agg.DS2_tim) / agg.DS2_tim 
+		invalid);
+/*******************************************************************************
+*       Module aggr
+*******************************************************************************/
+numDPCouYear <-
+	 count(
+			BIS_LOC_STATS 
+			group by REP_COUNTRY,REF_DATE
+		);
+numCouYear <-
+	 count(
+			numDPCouYear 
+			group by REF_DATE
+		);
+numYearCou <-
+	 count(
+			numDPCouYear 
+			group by REP_COUNTRY
+		);
+/*******************************************************************************
+*       Module val
+*******************************************************************************/
+val.valResult_nonFiltered :=
+	check_hierarchy(
+		BIS_LOC_STATS,
+		sectorsHierarchy
+		rule COUNT_SECTOR
+		all);
+val.valResult_filtered :=
+	filRoundEr(
+		val.valResult_nonFiltered,
+		'imbalance',
+		1);
+valResult <-
+	 val.valResult_nonFiltered
+		[calc DSD_ID := "BIS_LOC_STATS"];

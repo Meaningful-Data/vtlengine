@@ -1,0 +1,23 @@
+define datapoint ruleset completenessFinancial(variable CD0060, CD0020, CD0030,
+                                                        ANNLSD_AGRD_RT, DT_NXT_INTRST_RT_RST, DFLT_STTS, DT_DFLT_STTS, TRNSFRRD_AMNT,
+                                                        ARRRS, DT_PST_D, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT,  ACCRD_INTRST, NEVS_ANNLSD_AGRD_RT, 
+                                                        NEVS_DT_NXT_INTRST_RT_RST, NEVS_DFLT_STTS, NEVS_DT_DFLT_STTS, NEVS_TRNSFRRD_AMNT, NEVS_ARRRS, 
+                                                        NEVS_DT_PST_D, NEVS_TYP_SCRTSTN, NEVS_OTSTNDNG_NMNL_AMNT, NEVS_ACCRD_INTRST, 
+                                                        NEVS_OFF_BLNC_SHT_AMNT, OFF_BLNC_SHT_AMNT ) is
+    
+    CT0240: when not CD0060 then not isnull(ANNLSD_AGRD_RT) or NEVS_ANNLSD_AGRD_RT = "0" errorcode "CT0240" errorlevel 2;
+    CT0250: when not (CD0060 or CD0020) then not isnull(DT_NXT_INTRST_RT_RST) or NEVS_DT_NXT_INTRST_RT_RST = "0" errorcode "CT0250" errorlevel 2;
+    CT0260: when not (CD0030 or if DT_RFRNC >= cast("2021-03-31", date) then CD0060 else false) then not isnull(DFLT_STTS) or NEVS_DFLT_STTS = "0" errorcode "CT0260" errorlevel 2;
+    CT0270: when not (CD0030 or if DT_RFRNC >= cast("2021-03-31", date) then CD0060 else false) then not isnull(DT_DFLT_STTS) or NEVS_DT_DFLT_STTS = "0" errorcode "CT0270" errorlevel 2;
+    CT0280: when not CD0060 then not isnull(TRNSFRRD_AMNT) or NEVS_TRNSFRRD_AMNT = "0" errorcode "CT0280" errorlevel 2;
+    CT0290: when not CD0060 then not isnull(ARRRS) or NEVS_ARRRS = "0" errorcode "CT0290" errorlevel 2;
+    CT0300: when not CD0060 then not isnull(DT_PST_D) or NEVS_DT_PST_D = "0" errorcode "CT0300" errorlevel 2;
+    CT0310: when not CD0060 then not isnull(TYP_SCRTSTN) or NEVS_TYP_SCRTSTN = "0" errorcode "CT0310" errorlevel 2;
+    CT0320: not isnull(OTSTNDNG_NMNL_AMNT) or NEVS_OTSTNDNG_NMNL_AMNT = "0" errorcode "CT0320" errorlevel 2;
+    CT0330: when not (CD0060 or CD0020) then not isnull(ACCRD_INTRST) or NEVS_ACCRD_INTRST = "0" errorcode "CT0330" errorlevel 2;
+    CT0340: not isnull(OFF_BLNC_SHT_AMNT) or NEVS_OFF_BLNC_SHT_AMNT = "0" errorcode "CT0340" errorlevel 2
+    
+end datapoint ruleset;
+
+
+

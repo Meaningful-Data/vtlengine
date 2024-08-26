@@ -1,0 +1,27 @@
+/*aggr not yet implemented*/
+ENTTY_RSK_PD := ANCRDT_ENTTY_RSK
+                    [keep PD]
+                    [rename ENTTY_RIAD_ID to DBTR_ID];/*This dataset comes from a previous transformation of the data mart flow, and therefore it is already filtered by date*/
+ 
+ENTTY_RSK := ENTTY_RSK_PD[aggr INDSTRY_PD_SMPL_AVRG := avg(PD), INDSTRY_PD_SD := stddev_pop(PD) group by  ENTTY_RIAD_ID, DT_RFRNC];/*Creates the average and standard deviation*/
+ 
+/* - Calculation of the weighted average - */
+ONA_P:=B15.ANCRDT_INSTRMNT_FCT[keep CV_OTSTNDNG_NMNL_AMNT];
+
+ONA := sum(ONA_P group by OBSRVD_AGNT_ID, DT_RFRNC, ENTTY_RIAD_ID); /*We are interested in the sum of the debt by observed agent and debtor*/
+ 
+ENTTY_RSK_ONA := inner_join(ENTTY_RSK_PD, ONA);
+ 
+ 
+DNMNTR_P:=ENTTY_RSK_ONA[keep CV_OTSTNDNG_NMNL_AMNT][rename CV_OTSTNDNG_NMNL_AMNT to TTL_CV_OTSTNDNG_NMNL_AMNT];
+DNMNTR := sum(DNMNTR_P group by DT_RFRNC, ENTTY_RIAD_ID);/*Creates a dataset with the denominator*/
+ 
+ 
+ENTTY_RSK_ONA2 := inner_join(ENTTY_RSK_ONA, DNMNTR using DT_RFRNC, ENTTY_RIAD_ID);/*Joining to get a dataset with all the required variables*/
+ENTTY_RSK_ONA3 := ENTTY_RSK_ONA2[calc PD_WGHTD_AVRG := PD * CV_OTSTNDNG_NMNL_AMNT / TTL_CV_OTSTNDNG_NMNL_AMNT]
+                [keep INDSTRY_PD_WGHTD_AVRG];/*Calculation of the weighted elements*/
+ENTTY_RSK_ONA4 := sum(ENTTY_RSK_ONA3 group by DT_RFRNC, ENTTY_RIAD_ID); /*Sum is the weighted average*/
+ 
+/* - Joining the results - */
+ 
+ANAMART_ENTTY_RSK := inner_join(ENTTY_RSK, ENTTY_RSK_ONA4)

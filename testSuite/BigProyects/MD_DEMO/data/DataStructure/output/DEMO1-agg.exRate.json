@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "agg.exRate",
+      "DataStructure": [
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

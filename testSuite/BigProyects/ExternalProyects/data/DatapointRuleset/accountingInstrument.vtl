@@ -1,0 +1,29 @@
+define datapoint ruleset accountingInstrument (variable DT_PRFRMNG_STTS, DT_INCPTN, DT_FRBRNC_STTS, TYP_INSTRMNT, NEVS_PRVSNS_OFF_BLNC_SHT, DT_LGL_FNL_MTRTY) is
+
+    CN0360: 
+        if 
+            isnull(DT_PRFRMNG_STTS) or isnull(DT_INCPTN) then true
+        else
+            DT_PRFRMNG_STTS >= DT_INCPTN 
+        errorcode "CN0360" errorlevel 2;
+    CN0370: 
+        if 
+            isnull(DT_FRBRNC_STTS) or isnull(DT_INCPTN) then true
+        else
+            DT_FRBRNC_STTS >= DT_INCPTN 
+        errorcode "CN0370" errorlevel 2;
+    CN0940: 
+        when 
+            if isnull(NEVS_PRVSNS_OFF_BLNC_SHT) then false else
+            TYP_INSTRMNT = "1003" 
+        then 
+            NEVS_PRVSNS_OFF_BLNC_SHT = "0" 
+        errorcode "CN0940" errorlevel 2;
+    IG0150: 
+        if 
+            isnull(DT_LGL_FNL_MTRTY) or isnull(DT_FRBRNC_STTS) then true
+        else
+            DT_LGL_FNL_MTRTY >= DT_FRBRNC_STTS 
+        errorcode "IG0150" errorlevel 1
+
+end datapoint ruleset;
