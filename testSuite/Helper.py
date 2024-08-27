@@ -1,7 +1,7 @@
 import json
 import os.path
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Optional
 from unittest import TestCase
 
 import pandas as pd
@@ -88,11 +88,13 @@ class TestHelper(TestCase):
             return file.read()
 
     @classmethod
-    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None, sql_names:List[str]=None):
+    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None,
+                 sql_names: List[str] = None, text: Optional[str] = None):
         '''
 
         '''
-        text = cls.LoadVTL(code)
+        if text is None:
+            text = cls.LoadVTL(code)
         ast = create_ast(text)
         input_datasets = cls.LoadInputs(code, number_inputs)
         reference_datasets = cls.LoadOutputs(code, references_names)
@@ -110,7 +112,7 @@ class TestHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
         assert True
 
     @classmethod
