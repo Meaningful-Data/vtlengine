@@ -50,6 +50,7 @@ class Terminals(VtlVisitor):
 
     def visitVarID(self, ctx: Parser.VarIDContext):
         token = ctx.children[0].getSymbol()
+        token.text = _remove_scaped_characters(token.text)
         var_id_node = VarID(token.text)
         return var_id_node
 
