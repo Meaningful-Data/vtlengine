@@ -123,8 +123,9 @@ class Aggregation(Operator.Unary):
                     result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
                             drop=False)
                 else:
-                    result_df = result_df[comps_to_keep].agg(agg_dict).to_frame().T
-                    print(result_df)
+                    result_df = result_df[comps_to_keep].agg(agg_dict)
+                    if len(comps_to_keep) == 1:
+                        result_df = result_df.to_frame().T
 
         result.data = result_df
         return result
