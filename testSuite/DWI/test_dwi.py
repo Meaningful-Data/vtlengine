@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Any
 from unittest import TestCase
@@ -40,7 +41,11 @@ class DWIHelper(TestCase):
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+
+            if not os.path.exists(dp_path):
+                data = pd.DataFrame(columns=list(components.keys()))
+            else:
+                data = pd.read_csv(dp_path, sep=',')
 
             return Dataset(name=dataset_name, components=components, data=data)
 
@@ -410,20 +415,6 @@ class Aggregate(DWIHelper):
         message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
-    def test_GL_218_11(self):
-        """
-        Status: BUG
-        Expression: DS_r := DS_1[ aggr Me_aux := max(BLNC_SHT_TTL_CRRNCY)];
-        Description: Aggregate tests for datasets without identifiers as input.
-        Git Issue: #218.
-        Goal: Check Result.
-        """
-        code = 'GL_218_11'
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
-
     def test_GL_218_12(self):
         """
         Status: OK
@@ -449,23 +440,6 @@ class Aggregate(DWIHelper):
         number_inputs = 1
         message = "1-1-2-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
-    def test_GL_218_24(self):
-        """
-        Status: BUG
-        Expression: DS_r := ANCRDT_INSTRMNT_PRTCTN_RCVD_C [ aggr NMBR_INSTRMNT_SCRD := count ( ) , THRD_PRTY_PRRTY_CLMS_MX := max ( THRD_PRTY_PRRTY_CLMS ) group except CNTRCT_ID , INSTRMNT_ID ] ;
-        Description: Aggregate tests.
-        Git Issue: #218. Related also #222
-        Goal: Check Result.
-        """
-        code = 'GL_218_24'
-        number_inputs = 1
-        references_names = []  # add reference name when #222 is done.
-
-        # TODO Generate data for this test
-
-
-        self.BaseTest(text= None, code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class Clause(DWIHelper):

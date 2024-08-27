@@ -84,21 +84,28 @@ class Aggregation(Operator.Unary):
             else:
                 result.data = result.data[grouping_keys].drop_duplicates(keep='first')
             return result
-        if len(grouping_keys) == 0:
+        if len(grouping_keys) == 0 and group_op is not None:
             grouping_keys = operand.get_identifiers_names()
+        elif group_op is None:
+            grouping_keys = []
         measure_names = operand.get_measures_names()
         result_df = result.data[grouping_keys + measure_names]
         if having_data is not None:
             result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
         comps_to_keep = grouping_keys + measure_names
         if cls.op == COUNT:
-            # As Count does not include null values,
-            # we remove them and merge using the grouping keys,
-            # to ensure we do not lose any group that only has null values
-            aux_df = result_df.dropna(subset=measure_names, how='any')
-            aux_df = aux_df.groupby(grouping_keys).size().reset_index(name='int_var')
-            result_df = result_df.drop_duplicates(subset=grouping_keys)[grouping_keys].reset_index(drop=True)
-            result_df = result_df.merge(aux_df, how="left", on=grouping_keys)
+            if len(grouping_keys) == 0:
+                result_df = result_df.dropna(subset=measure_names, how='any')
+                result_df = result_df.count().reset_index(name='int_var')
+                result_df = result_df['int_var'].to_frame().drop_duplicates().reset_index(drop=True)
+            else:
+                # As Count does not include null values,
+                # we remove them and merge using the grouping keys,
+                # to ensure we do not lose any group that only has null values
+                aux_df = result_df.dropna(subset=measure_names, how='any')
+                aux_df = aux_df.groupby(grouping_keys).size().reset_index(name='int_var')
+                result_df = result_df.drop_duplicates(subset=grouping_keys)[grouping_keys].reset_index(drop=True)
+                result_df = result_df.merge(aux_df, how="left", on=grouping_keys)
         else:
             if os.getenv('SPARK', False) and cls.spark_op is not None:
                 result_df = cls.spark_op(result_df, grouping_keys)
@@ -112,8 +119,12 @@ class Aggregation(Operator.Unary):
                     agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
                 else:
                     agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
-                        drop=False)
+                if len(grouping_keys) > 0:
+                    result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
+                            drop=False)
+                else:
+                    result_df = result_df[comps_to_keep].agg(agg_dict).to_frame().T
+                    print(result_df)
 
         result.data = result_df
         return result
