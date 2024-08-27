@@ -1257,7 +1257,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Status: OK
         Expression:
 
-        Description:
+        Description: inner join with aggregate
 
         Git Branch: #315.
         """
@@ -1327,7 +1327,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
 
         Git Branch: #466.
-        Goal: aggr (count) with null values
+        Goal: aggr (count) with null values and fill_time_series
         """
         code = 'GL_466_1'
         number_inputs = 1
