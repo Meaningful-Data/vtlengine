@@ -61,9 +61,6 @@ class Identifier(RoleSetter):
         if isinstance(operand, Scalar):
             if operand.value is None:
                 raise Exception("An Identifier cannot be nullable")
-            return cls.validate(operand)
-        if operand.data.duplicated().any():
-            raise Exception("An Identifier cannot have duplicated values")
         return cls.validate(operand)
 
 
