@@ -816,6 +816,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     # For basic Scalar types (Integer, Float, String, Boolean)
                     # We validate the type is correct and cast the value
                     param_element = self.visit(node.params[i])
+                    if isinstance(param_element, (Dataset, DataComponent)):
+                        raise Exception(f"Expected {param['type'].__name__}, got {type(param_element).__name__} "
+                                        f"on UDO {node.op}, parameter {param['name']}")
                     scalar_type = param['type']
                     if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
                         raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "

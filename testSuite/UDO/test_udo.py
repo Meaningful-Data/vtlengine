@@ -1,14 +1,16 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Any
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset, ValueDomain, ExternalRoutine
+from Model import Component, Role, Dataset, ValueDomain, ExternalRoutine, Scalar
 
 
 class UDOHelper(TestCase):
@@ -51,19 +53,27 @@ class UDOHelper(TestCase):
     def LoadDataset(cls, ds_path, dp_path):
         with open(ds_path, 'r') as file:
             structures = json.load(file)
+        datasets = {}
+        if 'datasets' in structures:
+            for dataset_json in structures['datasets']:
+                dataset_name = dataset_json['name']
+                components = {
+                    component['name']: Component(name=component['name'],
+                                                 data_type=SCALAR_TYPES[component['type']],
+                                                 role=Role(component['role']),
+                                                 nullable=component['nullable'])
+                    for component in dataset_json['DataStructure']}
+                if not os.path.exists(dp_path):
+                    data = pd.DataFrame(columns=list(components.keys()))
+                else:
+                    data = pd.read_csv(dp_path, sep=',')
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
-
-            return Dataset(name=dataset_name, components=components, data=data)
-
+                datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
+        if 'scalars' in structures:
+            for scalar_json in structures['scalars']:
+                scalar = Scalar(name=scalar_json['name'],data_type=SCALAR_TYPES[scalar_json['type']], value=None)
+                datasets[scalar.name] = scalar
+        return datasets
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
         '''
@@ -74,7 +84,7 @@ class UDOHelper(TestCase):
             json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
             csv_file_name = str(cls.filepath_csv / f"{code}-{str(i + 1)}{cls.CSV}")
             dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
+            datasets = {**datasets, **dataset}
 
         return datasets
 
@@ -88,7 +98,7 @@ class UDOHelper(TestCase):
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
             dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
+            datasets = {**datasets, **dataset}
 
         return datasets
 
@@ -103,7 +113,7 @@ class UDOHelper(TestCase):
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None,
-                 sql_names: List[str] = None):
+                 sql_names: List[str] = None, scalars: Dict[str, Any] = None):
         '''
 
         '''
@@ -118,6 +128,12 @@ class UDOHelper(TestCase):
         external_routines = None
         if sql_names is not None:
             external_routines = cls.LoadExternalRoutines(sql_names)
+        if scalars:
+            for name in scalars:
+                if name in input_datasets:
+                    input_datasets[name].value = scalars[name]
+                else:
+                    raise Exception(f"Scalar {name} not found in input datasets")
         interpreter = InterpreterAnalyzer(input_datasets,
                                           value_domains=value_domains,
                                           external_routines=external_routines)
@@ -530,8 +546,8 @@ class UdoTest(UDOHelper):
         code = 'GL_452_1'
         number_inputs = 1
         references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_452_2(self):
         """
@@ -578,8 +594,8 @@ class UdoTest(UDOHelper):
         code = 'GL_452_5'
         number_inputs = 2
         references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, scalars={'sc_2': "4"})
+        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, scalars={'sc_2': "4"})
 
     def test_GL_442_1(self):
         """
@@ -642,7 +658,7 @@ class UdoTest(UDOHelper):
     def test_GL_473_1(self):
         """
         Status: OK
-        Description:
+        Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
         code = 'GL_473_1'
@@ -654,7 +670,7 @@ class UdoTest(UDOHelper):
     def test_GL_473_2(self):
         """
         Status: OK
-        Description:
+        Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
         code = 'GL_473_2'
@@ -666,7 +682,7 @@ class UdoTest(UDOHelper):
     def test_GL_474_1(self):
         """
         Status: OK
-        Description:
+        Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
         code = 'GL_474_1'
@@ -702,7 +718,7 @@ class UdoTest(UDOHelper):
     def test_GL_475_1(self):
         """
         Status: OK
-        Description:
+        Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
         code = 'GL_475_1'
