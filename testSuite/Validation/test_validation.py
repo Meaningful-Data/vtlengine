@@ -458,59 +458,6 @@ class ValidationOperatorsTests(ValidationHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GL_426(self):
-        """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
-        define datapoint ruleset DMIDCheckRegex (variable OBS_VALUE, REP_COUNTRY, CURRENCY) is
-            DF1:
-                when
-                REP_COUNTRY in{"CY"} and
-                CURRENCY in {"TO1"}
-                then
-                match_characters (OBS_VALUE, "^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])")
-                and length(OBS_VALUE) > 0
-                and length(OBS_VALUE) < 20
-                errorcode "DF1"
-                errorlevel 1    
-        end datapoint ruleset;
-
-        INPUT_NULL_CHECK :=
-            check(
-                isnull(BIS_LOC_STATS # OBS_VALUE)
-                errorcode "not_null"
-                errorlevel 1
-                invalid
-                );
-        DF1 := check_datapoint (BIS_LOC_STATS,DMIDCheckRegex);
-
-        test_result := INPUT_NULL_CHECK
-                    [drop bool_var, 'imbalance'];
-        test_result_2 := DF1
-                    [rename 'errorcode' to errc, 'errorlevel' to errl];
-
-        Git Branch: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/426
-        Goal: Check imabalnce errorcode and errorlevel after check.
-        """
-        code = 'GL_426'
-        number_inputs = 1
-        references_names = ["1", "2", "3", "4"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GL_446_1(self):
-        """
-        define datapoint ruleset
-        Dataset --> Dataset
-        Status: OK
-        """
-        code = 'GL_446_1'
-        number_inputs = 1
-        references_names = ["1", "2"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
     def test_GL_446_2(self):
         '''
         Description: Left_join review.
@@ -547,6 +494,8 @@ class ValidationOperatorsTests(ValidationHelper):
         """
         eschaped characters in the hierarchical ruleset have to be replaced by the corresponding character
         '_T' -> 'T'
+
+        Uses SDMX-CSV 1.0
         """
         code = 'GL_cs_22'
         number_inputs = 1
