@@ -172,7 +172,9 @@ class Hierarchy(Operators.Operator):
     @staticmethod
     def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
         list_data = list(computed_dict.values())
-        return pd.concat(list_data, axis=0)
+        df = pd.concat(list_data, axis=0)
+        df.reset_index(drop=True, inplace=True)
+        return df
 
     @classmethod
     def validate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str) -> Dataset:
@@ -190,7 +192,7 @@ class Hierarchy(Operators.Operator):
             result.data = computed_data
             return result
 
-        result.data = pd.concat([dataset.data, computed_data], axis=1)
+        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
         result.data.drop_duplicates(subset=dataset.get_identifiers_names(), keep='last', inplace=True)
         return result
 
