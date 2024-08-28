@@ -9,7 +9,8 @@ Id1,Id2,bool_var,imbalance,ruleid,errorcode,errorlevel
 2,A,True,200.0,3,error3,5
 3,A,,,3,error3,5
 1,A,True,0.0,4,error4,5
-2,A,False,200.0,4,error4,5
-3,A,False,300.0,4,error4,5
+2,A,"","",4,error4,5
+3,A,"","",4,error4,5
 1,C,False,5.0,6,error6,5
-3,C,,,6,error6,5
+1,D,True,0.0,5,error5,5
+2,C,,,6,error6,5
