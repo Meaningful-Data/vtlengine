@@ -129,6 +129,7 @@ class Validation(Operator):
         result.data = result.data.drop_duplicates(
             subset=result.get_identifiers_names() + ['ruleid'])
         validation_measures = ['bool_var', 'errorcode', 'errorlevel']
+        result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any").reset_index(drop=True)
         # Only for check hierarchy
         if 'imbalance' in result.components:
             validation_measures.append('imbalance')
@@ -140,6 +141,7 @@ class Validation(Operator):
             result.data = result.data[
                 result.get_identifiers_names() + validation_measures]
         else:  # output == 'all_measures'
+
             result.data = result.data[
                 result.get_identifiers_names() + dataset_element.get_measures_names() + validation_measures]
 

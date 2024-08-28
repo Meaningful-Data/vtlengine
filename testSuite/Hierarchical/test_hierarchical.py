@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Any
 from unittest import TestCase
@@ -40,7 +41,11 @@ class HierarchicalHelper(TestCase):
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
+
+            if not os.path.exists(dp_path):
+                data = pd.DataFrame(columns=list(components.keys()))
+            else:
+                data = pd.read_csv(dp_path, sep=',')
 
             return Dataset(name=dataset_name, components=components, data=data)
 
@@ -533,7 +538,6 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_265_4(self):
-        # este el de varios statements, no va bien del todo, revisar
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
@@ -559,7 +563,6 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_265_5(self):
-        # El tercer resultado parece que esta mal
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK

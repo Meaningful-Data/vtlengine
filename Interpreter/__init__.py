@@ -785,7 +785,12 @@ class InterpreterAnalyzer(ASTTemplate):
                                   "continuing with equality")
                 return HAAssignment.evaluate(left_operand, right_operand)
             else:
-                return HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+                result = HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+                left_measure = left_operand.get_measures()[0]
+                left_original_measure_data = left_operand.data[left_measure.name]
+                result.data[left_measure.name] = left_original_measure_data
+                result.components[left_measure.name] = left_measure
+                return result
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
@@ -936,14 +941,28 @@ class InterpreterAnalyzer(ASTTemplate):
             return Dataset(name=name, components=result_components, data=df)
 
         df = self.rule_data.copy()
+        measure_name = self.ruleset_dataset.get_measures_names()[0]
         if node.value in df[hr_component].values:
-            df = df[df[hr_component] == node.value].reset_index(drop=True)
+            rest_identifiers = [comp.name for comp in result_components.values()
+                                if comp.role == Role.IDENTIFIER and comp.name != hr_component]
+            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
+            code_data = code_data.merge(df[rest_identifiers], how='right', on=rest_identifiers)
+            code_data = code_data.drop_duplicates().reset_index(drop=True)
+
+            # If the value is in the dataset, we create a new row
+            # based on the hierarchy mode
+            # (Missing data points are considered,
+            # lines 6483-6510 of the reference manual)
+            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+                fill_indexes = code_data[code_data[hr_component].isnull()].index
+                code_data.loc[fill_indexes, measure_name] = 0
+            code_data[hr_component] = node.value
+            df = code_data
         else:
             # If the value is not in the dataset, we create a new row
             # based on the hierarchy mode
             # (Missing data points are considered,
             # lines 6483-6510 of the reference manual)
-            measure_name = self.ruleset_dataset.get_measures_names()[0]
             df = df.head(1)
             df[hr_component] = node.value
             if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
