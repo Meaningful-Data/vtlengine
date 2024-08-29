@@ -287,6 +287,8 @@ class ASTVisitor(VtlVisitor):
         ruleset_rules = self.visitRuleClauseHierarchical(ctx_list[8])
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
+        if len(ruleset_rules) == 0:
+            raise Exception(f"No rules found for the ruleset {ruleset_name}")
 
         return HRuleset(name=ruleset_name, element=ruleset_elements, rules=ruleset_rules)
 
