@@ -32,6 +32,10 @@ class HRComparison(Operators.Binary):
         # In comments, it is specified the condition for evaluating the rule,
         # so we delete the cases that does not satisfy the condition
         # (line 6509 of the reference manual)
+        if (hr_mode in ('partial_null', 'partial_zero') and
+                not pd.isnull(y) and
+                y == "REMOVE_VALUE"):
+            return "REMOVE_VALUE"
         if hr_mode == 'non_null':
             # If all the involved Data Points are not NULL
             if pd.isnull(x) or pd.isnull(y):
@@ -39,9 +43,6 @@ class HRComparison(Operators.Binary):
         elif hr_mode == 'non_zero':
             # If at least one of the involved Data Points is <> zero
             if not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
-                return "REMOVE_VALUE"
-        elif hr_mode in ('partial_null', 'partial_zero'):
-            if pd.isnull(x) and pd.isnull(y):
                 return "REMOVE_VALUE"
 
         return func(x, y)
@@ -147,6 +148,7 @@ class HRUnMinus(HRUnNumeric):
     op = '-'
     py_op = operator.neg
 
+
 class HAAssignment(Operators.Binary):
 
     @classmethod
@@ -158,15 +160,26 @@ class HAAssignment(Operators.Binary):
                        data=None)
 
     @classmethod
-    def evaluate(cls, left: Dataset, right: DataComponent) -> Dataset:
+    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result = cls.validate(left, right)
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy()
-        result.data[measure_name] = right.data
+        result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
+        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
         return result
 
-class Hierarchy(Operators.Operator):
+    @classmethod
+    def handle_mode(cls, x, hr_mode):
+        if not pd.isnull(x) and x == "REMOVE_VALUE":
+            return "REMOVE_VALUE"
+        if hr_mode == 'non_null' and pd.isnull(x):
+            return "REMOVE_VALUE"
+        elif hr_mode == 'non_zero' and x == 0:
+            return "REMOVE_VALUE"
+        return x
 
+
+class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @staticmethod
@@ -177,7 +190,8 @@ class Hierarchy(Operators.Operator):
         return df
 
     @classmethod
-    def validate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str) -> Dataset:
+    def validate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame],
+                 output: str) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              dataset.components.items()}
         return Dataset(name=dataset.name,
@@ -185,14 +199,18 @@ class Hierarchy(Operators.Operator):
                        data=None)
 
     @classmethod
-    def evaluate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str) -> Dataset:
+    def evaluate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame],
+                 output: str) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         computed_data = cls.generate_computed_data(computed_dict)
         if output == "computed":
             result.data = computed_data
             return result
 
+        # union(setdiff(op, R), R) where R is the computed data.
+        # It is the same as union(op, R) and drop duplicates, selecting the last one available
         result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(subset=dataset.get_identifiers_names(), keep='last', inplace=True)
+        result.data.drop_duplicates(subset=dataset.get_identifiers_names(), keep='last',
+                                    inplace=True)
+        result.data.reset_index(drop=True, inplace=True)
         return result
-

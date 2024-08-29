@@ -113,7 +113,11 @@ class Binary(Operator):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else cls.py_op(x, y)
+        if not pd.isnull(x) and x == "REMOVE_VALUE":
+            return "REMOVE_VALUE"
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(x, y)
 
     @classmethod
     def apply_operation_two_series(cls,

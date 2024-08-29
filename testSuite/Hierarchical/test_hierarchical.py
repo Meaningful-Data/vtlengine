@@ -1783,8 +1783,6 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = '2-1-1-16'
         number_inputs = 1
-        code = '2-1-1-16'
-        number_inputs = 1
         references_names = ["1"]
 
         self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
@@ -2743,6 +2741,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
+
+        Uses SDMX-CSV 1.0
 
         Git Branch: #463.
         Goal:
