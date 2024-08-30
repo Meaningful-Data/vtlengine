@@ -1,7 +1,7 @@
 import json
 import os.path
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from unittest import TestCase
 
 import pandas as pd
@@ -9,7 +9,7 @@ import pandas as pd
 from API import create_ast
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain
+from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
 
 
 class TestHelper(TestCase):
@@ -30,25 +30,41 @@ class TestHelper(TestCase):
     CSV = '.csv'
     VTL = '.vtl'
 
+    # Prefix for the input files (DS_).
+    ds_input_prefix = ""
+
     @classmethod
-    def LoadDataset(cls, ds_path, dp_path):
+    def LoadDataset(cls, ds_path, dp_path) -> Dict[str, Union[Dataset, Scalar]]:
         with open(ds_path, 'r') as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            if not os.path.exists(dp_path):
-                data = pd.DataFrame(columns=list(components.keys()))
-            else:
-                data = pd.read_csv(dp_path, sep=',')
+        datasets = {}
 
-            return Dataset(name=dataset_name, components=components, data=data)
+        if 'datasets' in structures:
+            for dataset_json in structures['datasets']:
+                dataset_name = dataset_json['name']
+                components = {
+                    component['name']: Component(name=component['name'],
+                                                 data_type=SCALAR_TYPES[component['type']],
+                                                 role=Role(component['role']),
+                                                 nullable=component['nullable'])
+                    for component in dataset_json['DataStructure']}
+                if not os.path.exists(dp_path):
+                    data = pd.DataFrame(columns=list(components.keys()))
+                else:
+                    data = pd.read_csv(dp_path, sep=',')
+
+                datasets[dataset_name] = Dataset(name=dataset_name,
+                                                 components=components,
+                                                 data=data)
+        if 'scalars' in structures:
+            for scalar_json in structures['scalars']:
+                scalar_name = scalar_json['name']
+                scalar = Scalar(name=scalar_name,
+                                data_type=SCALAR_TYPES[scalar_json['type']],
+                                value=None)
+                datasets[scalar_name] = scalar
+        return datasets
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
@@ -57,10 +73,10 @@ class TestHelper(TestCase):
         '''
         datasets = {}
         for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-{str(i + 1)}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
+            json_file_name = str(cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
+            csv_file_name = str(cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
+            new_datasets = cls.LoadDataset(json_file_name, csv_file_name)
+            datasets.update(new_datasets)
 
         return datasets
 
@@ -73,8 +89,8 @@ class TestHelper(TestCase):
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
+            new_datasets = cls.LoadDataset(json_file_name, csv_file_name)
+            datasets.update(new_datasets)
 
         return datasets
 

@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Union
+from typing import Union, Dict, List
 
 import pytest
 
 from API import create_ast
 from Interpreter import InterpreterAnalyzer
+from Model import Dataset
 from testSuite.Helper import TestHelper
 
 
@@ -17,6 +18,8 @@ class AdditionalHelper(TestHelper):
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     filepath_sql = base_path / "data" / "sql"
+
+    ds_input_prefix = "DS_"
 
     @classmethod
     def BaseScalarTest(cls, text: str, code: str, reference_value: Union[int, float, str]):

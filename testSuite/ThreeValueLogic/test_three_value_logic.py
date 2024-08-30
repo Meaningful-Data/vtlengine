@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Dict, List
 
+from Model import Dataset
 from testSuite.Helper import TestHelper
 
 """
@@ -35,6 +37,8 @@ class ThreeValueHelper(TestHelper):
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     filepath_sql = base_path / "data" / "sql"
 
+    ds_input_prefix = "DS_"
+
 
 class ThreeValueTests(ThreeValueHelper):
     """
@@ -54,7 +58,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         '''
@@ -65,7 +69,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         '''
@@ -76,7 +80,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         '''
@@ -87,7 +91,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         '''
@@ -98,7 +102,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         '''
@@ -109,7 +113,7 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         '''
@@ -120,4 +124,4 @@ class ThreeValueTests(ThreeValueHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
