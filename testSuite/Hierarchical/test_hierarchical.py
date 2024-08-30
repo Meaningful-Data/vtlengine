@@ -1,113 +1,17 @@
-import json
-import os
 from pathlib import Path
-from typing import Dict, List, Any
-from unittest import TestCase
 
-import pandas as pd
-import pytest
-
-from API import create_ast
-from DataTypes import SCALAR_TYPES
-from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset
+from testSuite.Helper import TestHelper
 
 
-class HierarchicalHelper(TestCase):
-    """
-
-    """
-
+class HierarchicalHelper(TestHelper):
     base_path = Path(__file__).parent
+    filepath_VTL = base_path / "data" / "vtl"
+    filepath_valueDomain = base_path / "data" / "ValueDomain"
     filepath_json = base_path / "data" / "DataStructure" / "input"
     filepath_csv = base_path / "data" / "DataSet" / "input"
-    filepath_vtl = base_path / "data" / "vtl"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
-    # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
-
-    @classmethod
-    def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
-            structures = json.load(file)
-
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-
-            if not os.path.exists(dp_path):
-                data = pd.DataFrame(columns=list(components.keys()))
-            else:
-                data = pd.read_csv(dp_path, sep=',')
-
-            return Dataset(name=dataset_name, components=components, data=data)
-
-    @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
-        datasets = {}
-        for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-{str(i + 1)}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
-        datasets = {}
-        for name in references_names:
-            json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
-            csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
-        vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
-            return file.read()
-
-    @classmethod
-    def BaseTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
-        if text is None:
-            text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs)
-        reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
-        result = interpreter.visit(ast)
-        assert result == reference_datasets
-
-    @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, vd_names=Any):
-        assert True
-
-    @classmethod
-    def NewExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
-        assert True
+    filepath_sql = base_path / "data" / "sql"
 
 
 class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
@@ -142,7 +46,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -171,7 +75,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -200,7 +104,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -229,7 +133,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -258,7 +162,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -287,7 +191,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -314,7 +218,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -343,7 +247,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_9(self):
         """
@@ -372,7 +276,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_10(self):
         """
@@ -400,7 +304,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
         """
@@ -429,7 +333,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_12(self):
         """
@@ -458,7 +362,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # Other formulation
     def test_GL_240_1(self):
@@ -487,7 +391,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_265_2(self):
         """
@@ -512,7 +416,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_265_3(self):
         """
@@ -561,7 +465,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 3
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_265_5(self):
         """
@@ -591,7 +495,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 3
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_19(self):
         """
@@ -620,7 +524,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_20(self):
         """
@@ -649,7 +553,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_21(self):
         """
@@ -678,7 +582,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_22(self):
         """
@@ -707,7 +611,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_23(self):
         """
@@ -736,7 +640,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_24(self):
         """
@@ -765,7 +669,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_25(self):
         """
@@ -793,7 +697,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_26(self):
         """
@@ -822,7 +726,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_27(self):
         """
@@ -851,7 +755,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_28(self):
         """
@@ -880,7 +784,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_29(self):
         """
@@ -909,7 +813,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_30(self):
         """
@@ -938,7 +842,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_31(self):
         """
@@ -957,7 +861,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_275_1(self):
         """
@@ -986,7 +890,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     """
     - if variable rule in signature:
@@ -1019,11 +923,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_1'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_145_2(self):
         """
@@ -1047,10 +949,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_2'
         number_inputs = 1
-        vd_names = []  # TODO: Now it's not necessary
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_145_3(self):
         """
@@ -1073,11 +974,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_3'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_145_4(self):
         """
@@ -1101,9 +1000,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_4'
         number_inputs = 1
-        vd_names = []  # TODO: Now it's not necessary
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
     def test_GL_397_1(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -1127,7 +1026,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        # self.BaseTest(text= None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_3(self):
         """
@@ -1144,11 +1043,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_3'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_397_5(self):
         """
@@ -1173,7 +1070,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        # self.BaseTest(text= None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_7(self):
         """
@@ -1190,11 +1087,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_7'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-7"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_397_9(self):
         """
@@ -1214,6 +1109,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
     def test_GL_397_11(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -1232,6 +1128,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
     def test_GL_397_13(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -1250,6 +1147,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
     def test_GL_397_15(self):
         """
         HIERARCHICAL RULSET: hierarchy
@@ -1265,11 +1163,10 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_15'
         number_inputs = 1
-        vd_names = []
         error_code = "1-3-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+
 
     def test_GL_397_17(self):
         """
@@ -1289,7 +1186,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_18(self):
         """
@@ -1309,7 +1206,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_23(self):
         """
@@ -1329,7 +1226,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_24(self):
         """
@@ -1350,7 +1247,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="Cannot match condition components"):
-            self.BaseTest(text=None, code=code,
+            self.BaseTest(code=code,
                           number_inputs=number_inputs,
                           references_names=references_names)
 
@@ -1372,7 +1269,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_27(self):
         """
@@ -1392,7 +1289,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_29(self):
         """
@@ -1412,7 +1309,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_30(self):
         """
@@ -1432,7 +1329,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_32(self):
         """
@@ -1452,7 +1349,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_34(self):
         """
@@ -1472,7 +1369,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_36(self):
         """
@@ -1489,11 +1386,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_36'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-1-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
@@ -1528,7 +1423,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -1557,7 +1452,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -1586,7 +1481,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -1615,7 +1510,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -1644,7 +1539,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -1673,7 +1568,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_13(self):
         """
@@ -1701,7 +1596,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_14(self):
         """
@@ -1730,7 +1625,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_15(self):
         """
@@ -1759,7 +1654,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         error_code = "2-1-1-3"
 
-        self.NewExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_16(self):
         """
@@ -1789,7 +1684,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_17(self):
         """
@@ -1818,7 +1713,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_18(self):
         """
@@ -1847,7 +1742,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_19(self):
         """
@@ -1875,7 +1770,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_20(self):
         """
@@ -1903,7 +1798,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_21(self):
         """
@@ -1931,7 +1826,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_22(self):
         """
@@ -1959,7 +1854,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_23(self):
         """
@@ -1987,7 +1882,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_24(self):
         """
@@ -2015,7 +1910,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_25(self):
         """
@@ -2044,7 +1939,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         error_code = "2-1-1-3"
 
-        self.NewExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_26(self):
         """
@@ -2073,7 +1968,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_27(self):
         """
@@ -2101,7 +1996,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_28(self):
         """
@@ -2129,7 +2024,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_29(self):
         """
@@ -2156,7 +2051,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_30(self):
         """
@@ -2183,7 +2078,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_31(self):
         """
@@ -2210,7 +2105,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_32(self):
         """
@@ -2238,7 +2133,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_145_5(self):
         """
@@ -2262,11 +2157,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_5'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_145_6(self):
         """
@@ -2289,9 +2182,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_6'
         number_inputs = 1
-        vd_names = []  # TODO: Now it's not necessary
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
     def test_GL_145_7(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -2313,11 +2206,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_7'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_145_8(self):
         """
@@ -2340,8 +2231,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_8'
         number_inputs = 1
-        vd_names = []  # TODO: Now it's not necessary
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_145_9(self):
         """
@@ -2364,8 +2256,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_9'
         number_inputs = 1
-        vd_names = []  # TODO: Now it's not necessary
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_2(self):
         """
@@ -2390,7 +2283,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        # self.BaseTest(text= None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_4(self):
         """
@@ -2407,11 +2300,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_4'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_397_6(self):
         """
@@ -2436,7 +2327,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        # self.BaseTest(text= None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_8(self):
         """
@@ -2453,11 +2344,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_8'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-10-7"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_397_10(self):
         """
@@ -2477,6 +2366,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_397_12(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -2494,6 +2385,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         code = 'GL_397_12'
         number_inputs = 1
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_14(self):
         """
@@ -2513,6 +2406,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_397_16(self):
         """
         HIERARCHICAL RULSET: hierarchy
@@ -2528,11 +2423,9 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_16'
         number_inputs = 1
-        vd_names = []
         error_code = "1-3-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code,
-                                      vd_names=vd_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_397_19(self):
         """
@@ -2552,7 +2445,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_20(self):
         """
@@ -2572,7 +2465,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_21(self):
         """
@@ -2592,7 +2485,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_22(self):
         """
@@ -2612,7 +2505,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_26(self):
         """
@@ -2632,7 +2525,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_28(self):
         """
@@ -2652,7 +2545,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_31(self):
         """
@@ -2672,7 +2565,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_33(self):
         """
@@ -2692,7 +2585,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_35(self):
         """
@@ -2712,7 +2605,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_37(self):
         """
@@ -2729,12 +2622,10 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_37'
         number_inputs = 1
-        vd_names = []
         error_code = "1-1-1-3"
 
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code, vd_names=vd_names
-        )
+            code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_463_1(self):
         """
@@ -2756,4 +2647,4 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1", "2"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
