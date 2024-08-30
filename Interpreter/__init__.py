@@ -8,7 +8,7 @@ import pandas as pd
 import AST
 from AST.ASTTemplate import ASTTemplate
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, CAST
 from DataTypes import BASIC_TYPES
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component
 from Operators.Aggregation import extract_grouping_identifiers
@@ -19,6 +19,7 @@ from Operators.Conditional import If
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
 from Operators.Validation import Check, Check_Datapoint
+from Operators.CastOperator import Cast
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE
 
@@ -519,6 +520,16 @@ class InterpreterAnalyzer(ASTTemplate):
             # result.data.drop(columns=[measure_name], inplace=True)
             result.data.drop(columns=[measure_name])
             return result.data
+        
+        elif node.op == CAST:
+            operand = self.visit(node.children[0])
+            scalarType = node.children[1].type_ #TODO: maybe a vist method is needed or better? for checks but I think its unnecessary
+            mask = None
+            if len(node.params) > 0:
+                mask = self.visit(node.params[0])
+            else:
+                mask = None
+            return Cast.evaluate(operand, scalarType, mask)
 
         elif node.op == CHECK_DATAPOINT:
             # Checking if ruleset exists
