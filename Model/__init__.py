@@ -184,6 +184,8 @@ class Dataset:
 
     def delete_component(self, component_name: str):
         self.components.pop(component_name, None)
+        if self.data is not None:
+            self.data.drop(columns=[component_name], inplace=True)
 
     def get_identifiers(self) -> List[Component]:
         return [component for component in self.components.values() if

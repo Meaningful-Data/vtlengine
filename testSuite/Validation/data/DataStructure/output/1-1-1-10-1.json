@@ -54,7 +54,7 @@
         {
           "name": "errorcode",
           "role": "Measure",
-          "type": "Integer",
+          "type": "String",
           "nullable": true
         },
         {

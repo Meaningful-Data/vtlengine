@@ -465,6 +465,7 @@ class HRUnOp(AST):
 
 
 # TODO: Unify HRule and DPRule?
+@dataclass
 class HRule(AST):
     """
     HRule: (name, rule, erCode, erLevel)
@@ -496,6 +497,7 @@ class HRuleset(AST):
     """
 
     name: str
+    signature_type: str
     element: DefIdentifier
     rules: List[HRule]
 
