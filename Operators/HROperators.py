@@ -202,7 +202,10 @@ class Hierarchy(Operators.Operator):
     def evaluate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame],
                  output: str) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
-        computed_data = cls.generate_computed_data(computed_dict)
+        if len(computed_dict) == 0:
+            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+        else:
+            computed_data = cls.generate_computed_data(computed_dict)
         if output == "computed":
             result.data = computed_data
             return result

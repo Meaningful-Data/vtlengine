@@ -1,7 +1,7 @@
 import json
 import os.path
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from unittest import TestCase
 
 import pandas as pd
@@ -105,7 +105,7 @@ class TestHelper(TestCase):
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None,
-                 sql_names: List[str] = None, text: Optional[str] = None):
+                 sql_names: List[str] = None, text: Optional[str] = None, scalars: Dict[str, Any] = None):
         '''
 
         '''
@@ -121,6 +121,14 @@ class TestHelper(TestCase):
         external_routines = None
         if sql_names is not None:
             external_routines = cls.LoadExternalRoutines(sql_names)
+
+        if scalars is not None:
+            for scalar_name, scalar_value in scalars.items():
+                if scalar_name not in input_datasets:
+                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                if not isinstance(input_datasets[scalar_name], Scalar):
+                    raise Exception(f"{scalar_name} is a dataset")
+                input_datasets[scalar_name].value = scalar_value
         interpreter = InterpreterAnalyzer(input_datasets,
                                           value_domains=value_domains,
                                           external_routines=external_routines)
