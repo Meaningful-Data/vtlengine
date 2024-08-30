@@ -59,10 +59,11 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
+    hr_condition: Optional[Dict[str, str]] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
     udos: Dict[str, Dict[str, Any]] = None
-    hrs: Dict[str, AST.HRuleset] = None
+    hrs: Dict[str, Dict[str, Any]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -144,11 +145,17 @@ class InterpreterAnalyzer(ASTTemplate):
             for i, rule in enumerate(node.rules):
                 rule.name = i + 1
 
+        cond_comp = []
+        if isinstance(node.element, list):
+            cond_comp = [x.value for x in node.element[:-1]]
+            node.element = node.element[-1]
+
         signature_actual_name = node.element.value
 
         ruleset_data = {
             'rules': node.rules,
             'signature': signature_actual_name,
+            "condition": cond_comp
         }
 
         if self.hrs is None:
@@ -683,7 +690,16 @@ class InterpreterAnalyzer(ASTTemplate):
                                             rule_info=rule_output_values,
                                             output=output)
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
-            dataset, component, hr_name = (self.visit(x) for x in node.children)
+            if len(node.children) == 3:
+                dataset, component, hr_name = (self.visit(x) for x in node.children)
+                cond_components = []
+            else:
+                children = [self.visit(x) for x in node.children]
+                dataset = children[0]
+                component = children[1]
+                hr_name = children[2]
+                cond_components = children[3:]
+
 
             # Input is always dataset
             mode, input_, output = (self.visit(param) for param in node.params)
@@ -694,6 +710,15 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise Exception(f"Hierarchical Ruleset {hr_name} not found")
 
             hr_info = self.hrs[hr_name]
+
+            # Condition components check
+            if len(cond_components) != len(hr_info['condition']):
+                raise Exception(f"Cannot match condition components, different number of components on call"
+                                f"from those defined on the signature: "
+                                f"{len(cond_components)} <> {len(hr_info['condition'])}")
+            cond_info = {}
+            for i, cond_comp in enumerate(hr_info['condition']):
+                cond_info[cond_comp] = cond_components[i]
 
             if node.op == HIERARCHY:
                 aux = []
@@ -706,7 +731,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 # Filter only the rules with HRBinOP as =,
                 # as they are the ones that will be computed
                 if len(aux) == 0:
-                    raise Exception("No rules to evaluate on Hierarchy Roll-up")
+                    raise Exception("No rules to evaluate on Hierarchy Roll-up "
+                                    "as rules have no = operator")
                 hr_info['rules'] = aux
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
@@ -714,7 +740,7 @@ class InterpreterAnalyzer(ASTTemplate):
             # Gather rule data, adding the necessary elements to the interpreter
             # for simplicity
             self.ruleset_dataset = dataset
-            self.ruleset_signature = component
+            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
             self.hr_mode = mode
             self.hr_input = input_
             rule_output_values = {}
@@ -784,6 +810,9 @@ class InterpreterAnalyzer(ASTTemplate):
             original_data = self.rule_data.copy()
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)
+            if self.is_from_hr_agg or self.is_from_hr_val:
+                # We only need to filter rule_data on HR
+                return result_validation
             self.rule_data['bool_var'] = result_validation.data
             original_data = original_data.merge(self.rule_data, how='left',
                                                 on=original_data.columns.tolist())
@@ -964,15 +993,23 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              self.ruleset_dataset.components.items()}
-        hr_component = self.ruleset_signature
+        hr_component = self.ruleset_signature["RULE_COMPONENT"]
 
         name = node.value
+
+        condition = None
+        if hasattr(node, '_right_condition'):
+            condition: DataComponent = self.visit(node._right_condition)
+            condition = condition.data[condition.data == True].index
+
 
         if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed:
             df = self.hr_agg_rules_computed[node.value].copy()
             return Dataset(name=name, components=result_components, data=df)
 
         df = self.rule_data.copy()
+        if condition is not None:
+            df = df.loc[condition].reset_index(drop=True)
         measure_name = self.ruleset_dataset.get_measures_names()[0]
         if node.value in df[hr_component].values:
             rest_identifiers = [comp.name for comp in result_components.values()

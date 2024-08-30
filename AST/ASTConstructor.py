@@ -283,14 +283,15 @@ class ASTVisitor(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         ruleset_name = Terminals().visitRulesetID(ctx_list[3])
-        ruleset_elements = self.visitHierRuleSignature(ctx_list[5])
+        signature_type, ruleset_elements = self.visitHierRuleSignature(ctx_list[5])
         ruleset_rules = self.visitRuleClauseHierarchical(ctx_list[8])
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
         if len(ruleset_rules) == 0:
             raise Exception(f"No rules found for the ruleset {ruleset_name}")
 
-        return HRuleset(name=ruleset_name, element=ruleset_elements, rules=ruleset_rules)
+        return HRuleset(signature_type=signature_type, name=ruleset_name,
+                        element=ruleset_elements, rules=ruleset_rules)
 
     # TODO Add support for value Domains.
     def visitHierRuleSignature(self, ctx: Parser.HierRuleSignatureContext):
@@ -298,6 +299,8 @@ class ASTVisitor(VtlVisitor):
         hierRuleSignature: (VALUE_DOMAIN|VARIABLE) valueDomainSignature? RULE IDENTIFIER ;
         """
         ctx_list = list(ctx.getChildren())
+
+        signature_type = ctx_list[0].getSymbol().text
 
         value_domain = [valueDomain for valueDomain in ctx_list
                         if isinstance(valueDomain, TerminalNodeImpl) and
@@ -318,9 +321,14 @@ class ASTVisitor(VtlVisitor):
             identifiers_list = [
                 DefIdentifier(value=elto.alias if getattr(elto, "alias", None) else elto.value, kind=kind) for elto in conditions[0]]
             identifiers_list.append(DefIdentifier(value=dataset.getSymbol().text, kind=kind))
-            return identifiers_list
+            if signature_type == "variable":
+                unique_id_names = list(set([elto.value for elto in identifiers_list]))
+                if len(identifiers_list) > 2 or len(unique_id_names) < 1:
+                    raise Exception(f"Invalid signature for the ruleset {dataset.getSymbol().text}. "
+                                    f"On variables, condComp and ruleComp must be the same.")
+            return signature_type, identifiers_list
         else:
-            return DefIdentifier(value=dataset.getSymbol().text, kind=kind)
+            return signature_type, DefIdentifier(value=dataset.getSymbol().text, kind=kind)
 
     # TODO Support for valueDomainSignature.
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):

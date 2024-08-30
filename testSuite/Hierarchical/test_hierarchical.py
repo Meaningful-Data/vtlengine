@@ -5,6 +5,7 @@ from typing import Dict, List, Any
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
@@ -1348,7 +1349,10 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Cannot match condition components"):
+            self.BaseTest(text=None, code=code,
+                          number_inputs=number_inputs,
+                          references_names=references_names)
 
     def test_GL_397_25(self):
         """

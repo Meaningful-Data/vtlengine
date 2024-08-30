@@ -497,6 +497,7 @@ class HRuleset(AST):
     """
 
     name: str
+    signature_type: str
     element: DefIdentifier
     rules: List[HRule]
 
