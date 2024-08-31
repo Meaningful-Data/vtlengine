@@ -7,6 +7,7 @@ import pandas as pd
 
 import AST
 from AST.ASTTemplate import ASTTemplate
+from AST.DAG import HRDAGAnalyzer
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
     FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ
@@ -138,6 +139,13 @@ class InterpreterAnalyzer(ASTTemplate):
         self.dprs[node.name] = ruleset_data
 
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
+        if self.hrs is None:
+            self.hrs = {}
+
+        if node.name in self.hrs:
+            raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
+
+
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
             raise ValueError("All rules must have a name, or none of them")
@@ -150,6 +158,8 @@ class InterpreterAnalyzer(ASTTemplate):
             cond_comp = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
 
+        HRDAGAnalyzer.createDAG(node)
+
         signature_actual_name = node.element.value
 
         ruleset_data = {
@@ -158,11 +168,6 @@ class InterpreterAnalyzer(ASTTemplate):
             "condition": cond_comp
         }
 
-        if self.hrs is None:
-            self.hrs = {}
-
-        if node.name in self.hrs:
-            raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
 
         self.hrs[node.name] = ruleset_data
 
@@ -647,7 +652,7 @@ class InterpreterAnalyzer(ASTTemplate):
             type_element = node.children[1]
 
             if len(node.params) == 1:
-                param_element = self.visit(node.params[0]).value
+                param_element = self.visit(node.params[0])
             else:
                 param_element = None
             return Cast.evaluate(op_element, type_element, param_element)

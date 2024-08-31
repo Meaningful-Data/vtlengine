@@ -7,6 +7,7 @@ from unittest import TestCase
 import pandas as pd
 
 from API import create_ast
+from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar

@@ -15,6 +15,7 @@ pytest = "==7.0.1"
 duckdb = "*"
 sqlglot = "*"
 sqlparse = "*"
+networkx = "*"
 
 [dev-packages]
 pyspark-stubs = "*"
