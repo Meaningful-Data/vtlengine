@@ -70,6 +70,9 @@ clause_operators = list(range(163, 177))
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
 
+# Remove test 159 as it has a cycle
+validation_operators.remove(159)
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 

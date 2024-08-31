@@ -29,7 +29,8 @@ class SQLliteEval(TestEval):
         code = 'SQL1'
         number_inputs = 1
         references_names = ['DS_r']
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        sql_names = ["SQL1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, sql_names=sql_names)
 
     def test_2(self):
         '''
@@ -38,7 +39,8 @@ class SQLliteEval(TestEval):
         code = 'SQL2'
         number_inputs = 2
         references_names = ['DS_r']
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        sql_names = ["SQL2"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, sql_names=sql_names)
 
     def test_3(self):
         '''
@@ -47,7 +49,8 @@ class SQLliteEval(TestEval):
         code = 'SQL3'
         number_inputs = 3
         references_names = ['DS_r']
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        sql_names = ["SQL3"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, sql_names=sql_names)
 
     def test_4(self):
         '''
@@ -57,5 +60,6 @@ class SQLliteEval(TestEval):
         code = 'SQL_DS_NOT_FOUND'
         number_inputs = 1
         references_names = ['DS_r']
+        sql_names = ["SQL_DS_NOT_FOUND"]
         with pytest.raises(ValueError, match="External Routine dataset DS_X is not present in Eval operands"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, sql_names=sql_names)

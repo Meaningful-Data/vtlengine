@@ -495,10 +495,8 @@ class ASTTemplate(NodeVisitor):
                 self.visit(node.output)
 
         """
-        for child in node.children:
+        for child in node.operands:
             self.visit(child)
-        if node.output is not None:
-            self.visit(node.output)
 
     def visit_NoOp(self, node: AST.NoOp) -> None:  # pylint: disable=unused-argument
         """

@@ -2143,7 +2143,7 @@ class DataValidationOperatorsTest(AdditionalHelper):
 
     def test_4(self):
         '''
-
+        DAG Error: R070, R020 and R110 generate a cycle.
         '''
         text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
                 R010 : A = J + K + L                        errorlevel 5 ;
@@ -2164,7 +2164,8 @@ class DataValidationOperatorsTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="no DAG established"):
+            self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         '''
