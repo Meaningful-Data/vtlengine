@@ -1,0 +1,5 @@
+define operator Test087 (x component)
+    returns component is
+    isnull(x)
+end operator;
+DS_r := DS_1 [ calc Me_2 := Test087(Me_1) ];

@@ -1,0 +1,25 @@
+define datapoint ruleset anacreditAccountingIntercompany (variable RCGNTN_STTS, NEVS_FV_CHNG_CR_BFR_PRCHS, NEVS_DFLT_STTS, NEVS_DT_DFLT_STTS) is
+
+    CN0848: 
+        when 
+            if NEVS_DFLT_STTS in {"-2", "-3", "-5"} then false else
+            RCGNTN_STTS = "3" 
+        then 
+            NEVS_DFLT_STTS = "0" 
+        errorcode "CN0848" errorlevel 2;
+    CN0849: 
+        when 
+            if NEVS_DT_DFLT_STTS in {"-2", "-3", "-5"} then false else
+            RCGNTN_STTS = "3" 
+        then 
+            NEVS_DT_DFLT_STTS = "0" 
+        errorcode "CN0849" errorlevel 2;
+    CN0867: 
+        when 
+            if NEVS_FV_CHNG_CR_BFR_PRCHS in {"-2", "-3", "-5"} then false else
+            RCGNTN_STTS = "3" 
+        then 
+            NEVS_FV_CHNG_CR_BFR_PRCHS = "0" 
+        errorcode "CN0867" errorlevel 2
+
+end datapoint ruleset;

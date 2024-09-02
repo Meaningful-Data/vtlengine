@@ -1,0 +1,5 @@
+define operator Test053 (x component, y scalar)
+    returns component is
+    round(x, y)
+end operator;
+DS_r := DS_1 [ calc Me_20 := Test053(Me_1, -1) ];

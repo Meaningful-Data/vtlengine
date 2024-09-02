@@ -140,7 +140,6 @@ class ParamOp(AST):
 class UDOCall(AST):
     op: str
     params: List[AST]
-    expression: AST = None
 
 
 @dataclass
@@ -466,6 +465,7 @@ class HRUnOp(AST):
 
 
 # TODO: Unify HRule and DPRule?
+@dataclass
 class HRule(AST):
     """
     HRule: (name, rule, erCode, erLevel)
@@ -497,6 +497,7 @@ class HRuleset(AST):
     """
 
     name: str
+    signature_type: str
     element: DefIdentifier
     rules: List[HRule]
 
@@ -521,7 +522,7 @@ class EvalOp(AST):
     """
 
     name: str
-    operand: AST
+    operands: List[AST]
     output: Optional[str]
     language: Optional[str]
 

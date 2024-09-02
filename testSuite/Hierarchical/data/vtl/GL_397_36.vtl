@@ -1,0 +1,17 @@
+define hierarchical ruleset EuropeanUnionCountries2
+    (valuedomain condition ReferenceTime as Time rule GeoArea) is 
+        EU = BE [Time >= "1958-01-01"]
+            + FR [Time >= "1958-01-01"]
+            + DE [Time >= "1958-01-01"]
+            + IT [Time >= "1958-01-01"]
+            + LU [Time >= "1958-01-01"]
+            + NL [Time >= "1958-01-01"]
+            + DK [Time >= "1973-01-01"]
+            + IE [Time >= "1973-01-01"]
+            + GB [Time >= "1973-01-01"]
+            + GR [Time >= "1981-01-01"]
+            + ES [Time >= "1986-01-01"]
+            + PT [Time >= "1986-01-01"]
+end hierarchical ruleset;
+
+DS_r := check_hierarchy(DS_1, EuropeanUnionCountries2 condition DATE rule REF_AREA always_zero);

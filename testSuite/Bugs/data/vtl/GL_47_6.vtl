@@ -1,0 +1,14 @@
+cross_product_of_loans_and_advances_by_debtor_and_associated_protections :=
+
+    cross_join(loans_and_advances_by_debtor.loans_and_advances_by_debtor as L,
+
+               instrument_protection_item_assignments.instrument_protection_item_assignments as I
+
+               rename L#instrument_identifier to instrument_identifier1,
+
+                      L#debtor_party_identifier to debtor_party_identifier1,
+
+                      L#debtor_party_role to debtor_party_role1,
+
+                      I#instrument_identifier to instrument_identifier2);
+

@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "securities_dynamic",
+      "DataStructure": [
+        {
+          "name": "time_period",
+          "role": "Identifier",
+          "type": "Time_Period",
+          "nullable": false
+        },
+        {
+          "name": "securityId",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "marketValue",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

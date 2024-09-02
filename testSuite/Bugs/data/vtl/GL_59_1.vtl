@@ -1,0 +1,6 @@
+define operator G_DFLT_STTS_CNTRPRTY1(APPRCH_CRDT_QLTY_STTS component, CRDT_QLTY_STTS component) returns component is 
+    if APPRCH_CRDT_QLTY_STTS = "2" then "30000"
+    else null
+end operator;
+
+GRP_INFRMTN_CLC := GRP_INFRMTN_P [ calc DFLT_STTS_ISSR := G_DFLT_STTS_CNTRPRTY1 ( APPRCH_CRDT_QLTY_STTS , CRDT_QLTY_STTS_ISSR ) ] ;

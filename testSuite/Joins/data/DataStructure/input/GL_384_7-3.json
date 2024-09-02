@@ -1,0 +1,33 @@
+{
+    "datasets": [
+        {
+        "name": "DS_3",
+        "DataStructure": [
+            {
+            "name": "Observation_1",
+            "role": "Identifier",
+            "type": "Number",
+            "nullable": false
+            },
+            {
+            "name": "Id_2",
+            "role": "Identifier",
+            "type": "String",
+            "nullable": false
+            },
+            {
+                "name": "Id_1",
+                "role": "Identifier",
+                "type": "Number",
+                "nullable": false
+              },
+            {
+            "name": "Me_3",
+            "role": "Measure",
+            "type": "Number",
+            "nullable": true
+            }
+        ]
+        }
+    ]
+  }

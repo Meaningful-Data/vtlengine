@@ -1,0 +1,5 @@
+define operator Test130 (x dataset, y dataset)
+    returns dataset is
+    setdiff(x, y)
+end operator;
+DS_r := Test130(DS_1, DS_2);

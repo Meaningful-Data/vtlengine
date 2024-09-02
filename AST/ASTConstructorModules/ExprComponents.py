@@ -2,7 +2,7 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, \
     TimeAggregation, \
-    Identifier, EvalOp, Types, VarID, Analytic
+    Identifier, EvalOp, VarID, Analytic, UDOCall
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
@@ -244,11 +244,10 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = Terminals().visitOperatorID(c)
-        operator_node = Identifier(op, kind='OperatorID')
         param_nodes = [self.visitParameterComponent(element) for element in ctx_list if
                        isinstance(element, Parser.ParameterComponentContext)]
 
-        return ParamOp(op=op, children=[operator_node], params=param_nodes)
+        return UDOCall(op=op, params=param_nodes)
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
@@ -281,7 +280,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes[0], output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
@@ -309,8 +308,7 @@ class ExprComp(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 

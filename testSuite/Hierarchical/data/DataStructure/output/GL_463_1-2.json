@@ -1,0 +1,46 @@
+{
+    "datasets": [
+        {
+            "name": "BIS_DS",
+            "DataStructure": [
+                {
+                    "name": "BIS_SUFFIX",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "BIS_TOPIC",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "FREQ",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "REF_AREA",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "TIME_PERIOD",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "OBS_VALUE",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+define operator Test136 (x dataset, y component, z component)
+    returns dataset is
+    sum ( x group by y, z )
+end operator;
+DS_r := Test136(DS_1, Id_1, Id_3);

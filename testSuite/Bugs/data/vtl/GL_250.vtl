@@ -1,0 +1,7 @@
+OBSRVD_AGNT_LE :=
+    inner_join(
+        ANCRDT_ENTTY_INSTRMNT_C,
+        ENTTY_LE
+            [rename ENTTY_RIAD_CD_LE to LE_CNTRPRTY] as B,
+        ENTTY_LE
+            [rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD,  ENTTY_RIAD_CD_LE to LE_OBSRVD_AGNT] as C);

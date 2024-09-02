@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "securities_static",
+      "DataStructure": [
+        {
+          "name": "timeReference",
+          "role": "Identifier",
+          "type": "Time",
+          "nullable": false
+        },
+        {
+          "name": "securityId",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "typeInstrument",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "issuerId",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

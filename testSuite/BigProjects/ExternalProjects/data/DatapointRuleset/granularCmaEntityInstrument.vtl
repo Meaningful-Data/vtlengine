@@ -1,0 +1,21 @@
+define datapoint ruleset granularCmaEntityInstrument (variable PD, DFLT_STTS, DFLT_STTS_INSTRMNT, NEVS_DFLT_STTS, NEVS_DFLT_STTS_INSTRMNT, NEVS_DT_DFLT_STTS_INSTRMNT, NEVS_DT_DFLT_STTS) is
+
+    IG0160: 
+        when 
+            if isnull(DFLT_STTS) or isnull(DFLT_STTS_INSTRMNT) or isnull(NEVS_DFLT_STTS) or NEVS_DFLT_STTS in {"-2", "-3", "-5"} or isnull(NEVS_DFLT_STTS_INSTRMNT) or NEVS_DFLT_STTS_INSTRMNT in {"-2", "-3", "-5"} then false else
+            PD = 1
+        then(
+            (NEVS_DFLT_STTS= "-99" and DFLT_STTS <> "14")
+                 or 
+            (NEVS_DFLT_STTS_INSTRMNT = "-99" and DFLT_STTS_INSTRMNT <> "14"))
+        errorcode "IG0160" errorlevel 1;
+    
+    IG0170: 
+        when 
+            if NEVS_DT_DFLT_STTS in {"-2", "-3", "-5"} or NEVS_DT_DFLT_STTS_INSTRMNT in {"-2", "-3", "-5"} then false else
+            PD = 1
+        then 
+            isnull(NEVS_DT_DFLT_STTS) or isnull(NEVS_DT_DFLT_STTS_INSTRMNT)
+        errorcode "IG0170" errorlevel 1
+
+end datapoint ruleset;

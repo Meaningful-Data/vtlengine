@@ -1,0 +1,9 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+DS_r :=  drop_identifier (drop_identifier (DS_1, Id_1), Id_4);
+DS_r1 := drop_identifier (drop_identifier (DS_1, Id_2), Id_3);
+DS_r2 := drop_identifier (drop_identifier (DS_1, Id_3), Id_2);
+DS_r3 := drop_identifier (drop_identifier (DS_1, Id_4), Id_1);

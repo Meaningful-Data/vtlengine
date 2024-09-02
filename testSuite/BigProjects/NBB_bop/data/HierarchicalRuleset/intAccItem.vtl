@@ -1,0 +1,7 @@
+define hierarchical ruleset intAccItem (variable rule INT_ACC_ITEM) is 
+  CA = G + S + IN1 + IN2 errorcode "Current account";
+  D4P = D4S + D4Q errorcode "Income: Investment income";
+  D4P = D4S + D41 + D44P errorcode "Income: Investment income";
+  GS = G + S errorcode "GS=G+S";
+  IN1 = D1 + D4P + D4O errorcode "Primary income"
+end hierarchical ruleset;

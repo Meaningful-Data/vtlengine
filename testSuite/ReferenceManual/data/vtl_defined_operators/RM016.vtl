@@ -1,0 +1,5 @@
+define operator Test016 (c component)
+    returns component is
+    rtrim(c)               
+end operator;
+DS_r := DS_1[ calc Me_2:= Test016(Me_1)];

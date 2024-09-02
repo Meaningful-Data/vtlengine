@@ -101,26 +101,26 @@ Test number     | VTL expresion         | Test result
 
 ## 5. Comparison Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-73    | DS_r := DS_1 = 0.08;                                     | WIP
-74    | DS_r := DS_1 [ calc Me_2 := Me_1 = 0.08 ];               | WIP
-75    | DS_r := DS_1 <> DS_2;                                    | WIP
-76    | DS_r := DS_1 [ calc Me_2 := Me_1<>7.5 ];                 | WIP
-77    | DS_r := DS_1 > 20;                                       | WIP
-78    | DS_r := DS_1 [ calc Me_2 := Me_1 > 20 ];                 | WIP
-79    | DS_r:= DS_1 > DS_2;                                      | WIP
-80    | DS_r := DS_1 < 15000000;                                 | WIP
-81    | DS_r:= between(ds1, 5,10);                               | WIP
-82    | DS_r := DS_1 in { 0, 3, 6, 12 };                         | WIP
-83    | DS_r := DS_1 [ calc Me_2:= Me_1 in { 0, 3, 6, 12 } ];    | WIP
-84    | DS_r := DS_1#Id_2 in myGeoValueDomain;                   | 
-85    | DS_r:=(ds1, "[:alpha:]{2}[:digit:]{3}");                 | 
-86    | DS_r := isnull(DS_1);                                    | WIP
-87    | DS_r := DS_1[ calc Me_2 := isnull(Me_1) ];               | WIP
-88    | DS_r := exists_in (DS_1, DS_2, all);                     | WIP
-89    | DS_r := exists_in (DS_1, DS_2, true);                    | WIP
-90    | DS_r := exists_in (DS_1, DS_2, false);                   | WIP
+Test number     | VTL expresion                                             | Test result
+:------------:  |:----------------------------------------------------------|:-------------:
+73    | DS_r := DS_1 = 0.08;                                      | WIP
+74    | DS_r := DS_1 [ calc Me_2 := Me_1 = 0.08 ];                | WIP
+75    | DS_r := DS_1 <> DS_2;                                     | WIP
+76    | DS_r := DS_1 [ calc Me_2 := Me_1<>7.5 ];                  | WIP
+77    | DS_r := DS_1 > 20;                                        | WIP
+78    | DS_r := DS_1 [ calc Me_2 := Me_1 > 20 ];                  | WIP
+79    | DS_r:= DS_1 > DS_2;                                       | WIP
+80    | DS_r := DS_1 < 15000000;                                  | WIP
+81    | DS_r:= between(ds1, 5,10);                                | WIP
+82    | DS_r := DS_1 in { 0, 3, 6, 12 };                          | WIP
+83    | DS_r := DS_1 [ calc Me_2:= Me_1 in { 0, 3, 6, 12 } ];     | WIP
+84    | DS_r := DS_1#Id_2 in myGeoValueDomain;                    | 
+85    | DS_r:= match_characters(ds1, "[:alpha:]{2}[:digit:]{3}"); | 
+86    | DS_r := isnull(DS_1);                                     | WIP
+87    | DS_r := DS_1[ calc Me_2 := isnull(Me_1) ];                | WIP
+88    | DS_r := exists_in (DS_1, DS_2, all);                      | WIP
+89    | DS_r := exists_in (DS_1, DS_2, true);                     | WIP
+90    | DS_r := exists_in (DS_1, DS_2, false);                    | WIP
 
 
 >>>

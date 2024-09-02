@@ -1,0 +1,10 @@
+FOW_VOLS_Conv := 
+  FOW_VOLS
+    [calc measure trading_days := trading_days]
+    [calc measure open_interest := open_interest,
+          measure turnover := turnover,
+          measure contract_name := contract_name,
+          measure instrument_id := instrument_id,
+          measure contract_type := contract_type,
+          measure stock_exchange_id := stock_exchange_id];
+  

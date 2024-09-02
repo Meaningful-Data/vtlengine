@@ -23,11 +23,5 @@
         }
       ]
     }
-  ],
-  "scalars": [
-    {
-      "name": "sc_1",
-      "type": "String"
-    }
   ]
 }

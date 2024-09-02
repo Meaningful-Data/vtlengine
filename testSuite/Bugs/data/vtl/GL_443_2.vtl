@@ -1,0 +1,6 @@
+define datapoint ruleset market_data(variable CapitalListed, SecurityType, MaturityDate) is
+    r1: CapitalListed > 0 errorcode "sign1" errorlevel 4;
+    r2: when SecurityType in securities_with_maturity then not isnull(MaturityDate) errorcode "maturity1" errorlevel 2;
+    r3: when not SecurityType in securities_with_maturity then isnull(MaturityDate) errorcode "maturity2" errorlevel 2
+end datapoint ruleset;
+market_validation_result <- check_datapoint(MARKET_DATA, market_data all);

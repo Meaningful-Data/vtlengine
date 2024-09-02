@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "BIRD_EXTRNL_CRDT_ASSSSMNT_IL",
+      "DataStructure": [
+        {
+          "name": "CRDT_QLTY_STP",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ECAI_ECA",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "EXTRNL_CRDT_ASSSSMNT",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_SHRT_TRM_CRDT_ASSSSMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

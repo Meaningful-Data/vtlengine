@@ -1,0 +1,32 @@
+define datapoint ruleset granularCmaEntity (variable ENTRPRS_SZ, BLNC_SHT_TTL_CRRNCY, ANNL_TRNVR_CRRNCY, NMBR_EMPLYS, 
+                                                     INSTTTNL_SCTR) is
+
+    IG0010: 
+        when 
+            if isnull(ENTRPRS_SZ) then false else
+            NMBR_EMPLYS >= 250 or 
+                    (ANNL_TRNVR_CRRNCY >= 50000000 and BLNC_SHT_TTL_CRRNCY >= 43000000)
+        then 
+            ENTRPRS_SZ = "1"
+        errorcode "IG0010" errorlevel 1;
+    
+    IG0011: 
+        when 
+            if isnull(ENTRPRS_SZ) then false else
+            NMBR_EMPLYS >= 50 or 
+                    (ANNL_TRNVR_CRRNCY >= 10000000 and BLNC_SHT_TTL_CRRNCY >= 10000000)
+        then ENTRPRS_SZ not_in {"4", "3"} 
+        errorcode "IG0011" errorlevel 1;
+           
+    IG0012: 
+        when 
+            if isnull(ENTRPRS_SZ) then false else
+            NMBR_EMPLYS >= 10 or 
+                    (ANNL_TRNVR_CRRNCY >= 2000000 and BLNC_SHT_TTL_CRRNCY >= 2000000)
+        then 
+            ENTRPRS_SZ <> "4"
+        errorcode "IG0012" errorlevel 1
+           
+
+
+end datapoint ruleset;

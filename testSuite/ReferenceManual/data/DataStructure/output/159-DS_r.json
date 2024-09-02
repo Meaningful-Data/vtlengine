@@ -42,7 +42,7 @@
         {
           "name": "errorlevel",
           "role": "Measure",
-          "type": "String",
+          "type": "Number",
           "nullable": true
         }
       ]

@@ -1,0 +1,5 @@
+define operator Test072 (x component)
+    returns component is
+    sqrt(x)
+end operator;
+DS_r := DS_1 [ calc Me_1 := Test072(Me_1) ];

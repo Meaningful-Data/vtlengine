@@ -1,0 +1,5 @@
+define operator Test014 (c component)
+    returns component is
+    c || " world"               
+end operator;
+DS_r := DS_1[calc Me_2:= Test014(Me_1)];

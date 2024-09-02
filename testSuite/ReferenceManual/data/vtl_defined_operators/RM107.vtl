@@ -1,0 +1,5 @@
+define operator Test107 (x dataset)
+    returns dataset is
+    fill_time_series ( x, single )
+end operator;
+DS_r := Test107(DS_1);

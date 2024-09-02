@@ -1,0 +1,13 @@
+define operator dqi_vl (a dataset, b dataset, c dataset)
+  returns dataset is
+    inner_join (
+        a,
+        b,
+        c 
+        calc dqi_vl := 
+            Me_1a / Me_1b
+        keep dqi_vl, a#Me_1c, a#Me_1a
+    )
+end operator;
+DQI_IG0010:=
+    dqi_vl(DS_1, DS_1, DS_2);

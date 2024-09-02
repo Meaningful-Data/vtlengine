@@ -1,0 +1,4 @@
+/*******************************************************************************
+*       Module val
+*******************************************************************************/
+val.ck_missing_O_01 := inner_join ( AMOUNTS [ sub measure_ = "O" ] [ rename OBS_VALUE to O ] [ drop OBS_STATUS ] as A ,  AMOUNTS [ sub measure_ = "V" ] [ rename OBS_VALUE to V ] [ drop OBS_STATUS ] as B ) ;

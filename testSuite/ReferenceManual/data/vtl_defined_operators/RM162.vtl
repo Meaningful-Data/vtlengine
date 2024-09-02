@@ -1,0 +1,5 @@
+define operator Test162 (x dataset)
+    returns dataset is
+    nvl ( x, 0 )
+end operator;
+DS_r := Test162(DS_1);

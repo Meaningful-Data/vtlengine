@@ -3,6 +3,8 @@ from typing import Any, Type
 import numpy as np
 import pandas as pd
 
+import pandas as pd
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'Float64',
@@ -65,25 +67,29 @@ class ScalarType:
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
-    def is_subtype(self, obj) -> bool:
-        if not isinstance(obj, ScalarType):
-            raise Exception("Not use is_subtype")
-        return issubclass(self.__class__, obj.__class__)
+    @classmethod
+    def is_subtype(cls, obj: Type["ScalarType"]) -> bool:
+        return issubclass(cls, obj)
 
     def is_null_type(self) -> bool:
         return False
 
-    def check_type(self, value):
-        if isinstance(value, CAST_MAPPING[self.__class__.__name__]):
+    @classmethod
+    def check_type(cls, value):
+        if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
 
-        raise Exception(f"Value {value} is not a {self.__class__.__name__}")
+        raise Exception(f"Value {value} is not a {cls.__name__}")
 
-    def cast(self, value):
-        return CAST_MAPPING[self.__class__.__name__](value)
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        return CAST_MAPPING[cls.__name__](value)
 
-    def dtype(self):
-        return DTYPE_MAPPING[self.__class__.__name__]
+    @classmethod
+    def dtype(cls):
+        return DTYPE_MAPPING[cls.__name__]
 
     __str__ = __repr__
 
@@ -141,6 +147,17 @@ class Number(ScalarType):
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1.0
+            elif value.lower() == "false":
+                return 0.0
+        return float(value)
+
 
 class Integer(Number):
     """
@@ -176,6 +193,23 @@ class Integer(Number):
             return int(value)
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, float):
+            # Check if the float has decimals
+            if value.is_integer():
+                return int(value)
+            else:
+                raise Exception(f"Value {value} has decimals, cannot cast to integer")
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1
+            elif value.lower() == "false":
+                return 0
+        return int(value)
 
 
 class TimeInterval(ScalarType):
@@ -268,6 +302,8 @@ class Boolean(ScalarType):
     default = None
 
     def cast(self, value):
+        if pd.isnull(value):
+            return None
         if isinstance(value, str):
             if value.lower() == "true":
                 return True
@@ -358,8 +394,8 @@ COMP_NAME_MAPPING = {
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
-    String: {String},
-    Number: {String, Number},
+    String: {String, Boolean},
+    Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
     TimeInterval: {TimeInterval},
     Date: {TimeInterval, Date},
@@ -413,11 +449,15 @@ def binary_implicit_promotion(left_type: ScalarType,
             if return_type is not None:
                 return return_type
             if left_type.is_included(right_implicities):
+                if left_type.is_subtype(right_type): # For Integer and Number
+                    return right_type
+                elif right_type.is_subtype(left_type):
+                    return left_type
                 return left_type
             if right_type.is_included(left_implicities):
                 return right_type
             return type_to_check
-        raise Exception("Implicit cast not allowed")
+        raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (left_type.is_included(
             right_implicities) or right_type.is_included(left_implicities)):
@@ -427,7 +467,7 @@ def binary_implicit_promotion(left_type: ScalarType,
     if right_type.is_included(left_implicities):
         return right_type
 
-    raise Exception("Implicit cast not allowed")
+    raise Exception(f"Implicit cast not allowed from {left_type} to {right_type}")
 
 
 def check_binary_implicit_promotion(
@@ -464,7 +504,7 @@ def unary_implicit_promotion(
     operand_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[operand_type]
     if type_to_check:
         if not type_to_check.is_included(operand_implicities):
-            raise Exception("Implicit cast not allowed")
+            raise Exception(f"Implicit cast not allowed from {operand_type} to {type_to_check}")
 
     if return_type:
         return return_type

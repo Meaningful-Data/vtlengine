@@ -1,0 +1,8 @@
+DS_r := eval( SQL3( DS_1, DS_2, DS_3) language "sqlite"
+                    returns dataset { 
+                        identifier<integer> Id_1,
+                        identifier<string> Id_2,
+                        measure<integer> Me_1,
+                        measure<integer> Me_3
+                        } 
+                    );

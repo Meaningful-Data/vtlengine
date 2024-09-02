@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "comp_cred.RIAD_ANCRDT_DRGTN_QRTR_CR_OA_MSR",
+      "DataStructure": [
+        {
+          "name": "VLD_FRM",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "VLD_T",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ANCRDT_DRGTN_QRTR_CR_OA",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

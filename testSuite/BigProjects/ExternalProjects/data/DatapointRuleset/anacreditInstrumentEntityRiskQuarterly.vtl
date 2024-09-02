@@ -1,0 +1,13 @@
+define datapoint ruleset anacreditInstrumentEntityRiskQuarterly(variable DFLT_STTS, DFLT_STTS_DBTR, NEVS_CMLTV_RCVRS_SNC_DFLT, NEVS_DFLT_STTS_DBTR, NEVS_DFLT_STTS) is
+  
+    CN0845: 
+        when 
+            if NEVS_DFLT_STTS_DBTR in {"-2", "-3", "-5"} or NEVS_DFLT_STTS in {"-2", "-3", "-5"} then false else
+            NEVS_CMLTV_RCVRS_SNC_DFLT = "0"
+        then 
+            (DFLT_STTS_DBTR = "14" or NEVS_DFLT_STTS_DBTR = "0")
+            and  
+            (DFLT_STTS = "14" or NEVS_DFLT_STTS = "0")
+        errorcode "CN0845" errorlevel 2
+
+end datapoint ruleset;

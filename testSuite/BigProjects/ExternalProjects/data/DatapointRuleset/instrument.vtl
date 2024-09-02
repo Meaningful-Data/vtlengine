@@ -1,0 +1,159 @@
+define datapoint ruleset instrument (variable DT_STTLMNT, DT_INCPTN, DT_END_INTRST_ONLY, DT_LGL_FNL_MTRTY, DT_RFRNC,
+                                              TYP_AMRTSTN, TYP_INTRST_RT, NEVS_DT_END_INTRST_ONLY, NEVS_INTRST_RT_CP,
+                                              NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_SPRD, NEVS_RFRNC_RT, INTRST_RT_CP,
+                                              INTRST_RT_FLR, INTRST_RT_SPRD, CMMTMNT_INCPTN, FV_CHNG_CR_BFR_PRCHS) is
+
+    CN0010: 
+        if
+            isnull(DT_STTLMNT) or isnull(DT_INCPTN) then true 
+        else
+            DT_STTLMNT >= DT_INCPTN 
+        errorcode "CN0010" errorlevel 3;
+    CN0030: 
+        if
+            isnull(DT_END_INTRST_ONLY) or isnull(DT_INCPTN) then true
+        else
+            DT_END_INTRST_ONLY >= DT_INCPTN 
+        errorcode "CN0030" errorlevel 1;
+    CN0040:
+        if
+            isnull(DT_LGL_FNL_MTRTY) or isnull(DT_STTLMNT) then true
+        else
+            DT_LGL_FNL_MTRTY >= DT_STTLMNT 
+        errorcode "CN0040" errorlevel 3;
+    CN0050: 
+        if
+            isnull(DT_LGL_FNL_MTRTY) or isnull(DT_END_INTRST_ONLY) then true
+        else
+            DT_LGL_FNL_MTRTY >= DT_END_INTRST_ONLY 
+        errorcode "CN0050" errorlevel 1;
+    CN0140:
+        if
+            isnull(DT_RFRNC) or isnull(DT_INCPTN) then true
+        else
+            DT_RFRNC >= DT_INCPTN 
+        errorcode "CN0140" errorlevel 3;
+    CN0141:
+        if
+            isnull(DT_RFRNC) or isnull(DT_STTLMNT) then true
+        else
+            DT_RFRNC >= DT_STTLMNT 
+        errorcode "CN0141" errorlevel 3;
+    CN0220:
+        if
+            isnull(DT_END_INTRST_ONLY) or isnull(DT_STTLMNT) then true
+        else
+            DT_END_INTRST_ONLY >= DT_STTLMNT 
+        errorcode "CN0220" errorlevel 1;
+    CN0835: 
+        when 
+            if NEVS_DT_END_INTRST_ONLY in {"-2", "-3", "-5"} then false else
+            TYP_AMRTSTN in {"1","3"} 
+        then 
+            NEVS_DT_END_INTRST_ONLY = "0" 
+        errorcode "CN0835" errorlevel 1;
+    CN0836: 
+        when
+            if NEVS_INTRST_RT_CP in {"-2", "-3", "-5"} then false else
+            TYP_INTRST_RT = "1" 
+        then 
+            NEVS_INTRST_RT_CP = "0" 
+        errorcode "CN0836" errorlevel 1;
+    CN0837: 
+        when
+            if NEVS_INTRST_RT_FLR in {"-2", "-3", "-5"} then false else
+            TYP_INTRST_RT = "1" 
+        then 
+            NEVS_INTRST_RT_FLR = "0" 
+        errorcode "CN0837" errorlevel 1;
+    CN0838: 
+        when 
+            if NEVS_INTRST_RT_SPRD in {"-2", "-3", "-5"} then false else
+            TYP_INTRST_RT = "1" 
+        then 
+            NEVS_INTRST_RT_SPRD = "0" 
+        errorcode "CN0838" errorlevel 2;
+    CN0839: 
+        when 
+            if NEVS_RFRNC_RT in {"-2", "-3", "-5"} then false else
+            TYP_INTRST_RT = "1" 
+        then 
+            NEVS_RFRNC_RT = "0" 
+        errorcode "CN0839" errorlevel 1;
+    GCMA_TH_L_DT_INCPTN: 
+        if
+            isnull(DT_INCPTN) then true
+        else
+            DT_INCPTN > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_INCPTN" errorlevel 4;
+    /*GCMA_TH_H_DT_END_INTRST_ONLY: DT_END_INTRST_ONLY < 150 errorcode "GCMA_TH_H_DT_END_INTRST_ONLY" errorlevel 4; Not implementable with VTL at the moment*/
+    GCMA_TH_L_DT_END_INTRST_ONLY: 
+        if
+            isnull(DT_END_INTRST_ONLY) then true 
+        else
+            DT_END_INTRST_ONLY > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_END_INTRST_ONLY" errorlevel 4;
+    GCMA_TH_H_INTRST_RT_CP:
+        if
+            isnull(INTRST_RT_CP) then true 
+        else
+            INTRST_RT_CP < 3 
+        errorcode "GCMA_TH_H_INTRST_RT_CP" errorlevel 4;
+    GCMA_TH_L_INTRST_RT_CP: 
+        if
+            isnull(INTRST_RT_CP) then true 
+        else
+            INTRST_RT_CP > cast("-0.5", number) 
+        errorcode "GCMA_TH_L_INTRST_RT_CP" errorlevel 4;
+    GCMA_TH_H_INTRST_RT_FLR:
+        if
+            isnull(INTRST_RT_FLR) then true 
+        else
+            INTRST_RT_FLR < 3 
+        errorcode "GCMA_TH_H_INTRST_RT_FLR" errorlevel 4;
+    GCMA_TH_L_INTRST_RT_FLR:
+        if
+            isnull(INTRST_RT_FLR) then true 
+        else
+            INTRST_RT_FLR > cast("-0.5", number) 
+        errorcode "GCMA_TH_L_INTRST_RT_FLR" errorlevel 4;
+    GCMA_TH_H_INTRST_RT_SPRD:
+        if
+            isnull(INTRST_RT_SPRD) then true 
+        else
+            INTRST_RT_SPRD < 3 
+        errorcode "GCMA_TH_H_INTRST_RT_SPRD" errorlevel 4;
+    GCMA_TH_L_INTRST_RT_SPRD:
+        if
+            isnull(INTRST_RT_SPRD) then true 
+        else
+            INTRST_RT_SPRD > cast("-0.5", number) 
+        errorcode "GCMA_TH_L_INTRST_RT_SPRD" errorlevel 4;
+    /*GCMA_TH_H_DT_LGL_FNL_MTRTY: DT_LGL_FNL_MTRTY < 150 errorcode "GCMA_TH_H_DT_LGL_FNL_MTRTY" errorlevel 4;Not implementable with VTL at the moment*/
+    GCMA_TH_L_DT_LGL_FNL_MTRTY:
+        if
+            isnull(DT_LGL_FNL_MTRTY) then true 
+        else
+            DT_LGL_FNL_MTRTY > cast("1950-01-01", date) 
+        errorcode "GCMA_TH_L_DT_LGL_FNL_MTRTY" errorlevel 4;
+    GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT:
+        if
+            isnull(CMMTMNT_INCPTN) then true 
+        else
+            CMMTMNT_INCPTN < 1000000000 
+        errorcode "GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT" errorlevel 4;
+    /*GCMA_TH_H_DT_STTLMNT: DT_STTLMNT < 5 errorcode "GCMA_TH_H_DT_STTLMNT" errorlevel 4; Not implementable with VTL at the moment*/
+    GCMA_TH_L_DT_STTLMNT:
+        if
+            isnull(DT_STTLMNT) then true 
+        else
+            DT_STTLMNT > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_STTLMNT" errorlevel 4;
+    GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT:
+        if
+            isnull(FV_CHNG_CR_BFR_PRCHS) then true 
+        else
+            FV_CHNG_CR_BFR_PRCHS < 1000000000 
+        errorcode "GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT" errorlevel 4
+      
+end datapoint ruleset;

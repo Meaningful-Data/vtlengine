@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "securities_static",
+      "DataStructure": [
+        {
+          "name": "securityId",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "typeInstrument",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

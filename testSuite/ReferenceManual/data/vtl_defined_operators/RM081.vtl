@@ -1,0 +1,6 @@
+define operator Test081 (ds1 dataset, y integer, z integer)
+    returns dataset is
+    between(ds1, y, z)
+end operator;
+DS_r := Test081(DS_1, 5, 10);
+

@@ -11,6 +11,7 @@ from AST import If, BinOp, RenameNode, UDOCall, UnaryOp, JoinOp, Identifier, Par
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.ASTDataExchange import de_ruleset_elements
+from AST.Grammar.tokens import DATASET_PRIORITY
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
@@ -418,9 +419,6 @@ class Expr(VtlVisitor):
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
-        if len(children_nodes) > 1:
-            raise Exception("Only one operand is allowed in Eval")
-
         # Reference manual says it is mandatory.
         language_name = [language for language in ctx_list if
                          isinstance(language,
@@ -435,7 +433,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes, output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
@@ -465,9 +463,7 @@ class Expr(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 
@@ -885,9 +881,9 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        modes = "non_null"
+        inputs = "rule"
+        retains = "computed"
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -905,18 +901,13 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.22
             conditions = conditions[0]
 
-        if inputs is None:
-            inputs = 'dataset'
+        if inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
-
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -993,9 +984,10 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        # Default values
+        modes = 'non_null'
+        inputs = 'dataset'
+        retains = 'invalid'
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -1015,14 +1007,12 @@ class Expr(VtlVisitor):
 
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        if inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
 
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -1205,6 +1195,10 @@ class Expr(VtlVisitor):
                 else:
                     params.append(Terminals().visitScalarItem(c))
                 continue
+
+        if len(params) == 0:
+            # AST_ASTCONSTRUCTOR.16
+            raise Exception(f"{op_node} requires an offset parameter.")
 
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)

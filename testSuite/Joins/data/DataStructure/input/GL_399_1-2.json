@@ -1,0 +1,34 @@
+{
+    "datasets": [
+        {
+            "name": "no_counterparties",
+            "DataStructure": [
+                {
+                    "name": "dt_rfrnc",
+                    "role": "Identifier",
+                    "type": "Date",
+                    "nullable": false
+                },
+                {
+                    "name": "mssg_id",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "obsrvd_agnt_acr_id",
+                    "role": "Identifier",
+                    "type": "Number",
+                    "nullable": false
+                },
+                {
+                    "name": "ttl_obs",
+                    "role": "Measure",
+                    "type": "Number",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}

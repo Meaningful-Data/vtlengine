@@ -15,14 +15,17 @@ from Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, Firs
 from Operators.Boolean import And, Not, Or, Xor
 from Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
 from Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, \
-    NotEqual, NotIn
+    NotEqual, NotIn, Match
 from Operators.General import Alias, Membership
+from Operators.HROperators import HREqual, HRGreater, HRGreaterEqual, HRLess, HRLessEqual, \
+    HRBinPlus, HRBinMinus, HRUnPlus, HRUnMinus
 from Operators.Join import Apply, CrossJoin, FullJoin, InnerJoin, LeftJoin
 from Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
     Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
 from Operators.RoleSetter import Attribute, Identifier, Measure
 from Operators.Set import Intersection, Setdiff, Symdiff, Union
 from Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
+from Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow, Fill_time_series, Time_Shift
 
 BINARY_MAPPING = {
     # General
@@ -53,7 +56,10 @@ BINARY_MAPPING = {
     # General
     AS: Alias,
     # String
-    CONCAT: Concatenate
+    CONCAT: Concatenate,
+    #Time
+    TIMESHIFT: Time_Shift,
+    CHARSET_MATCH: Match
 }
 
 UNARY_MAPPING = {
@@ -77,7 +83,11 @@ UNARY_MAPPING = {
     LTRIM: Ltrim,
     RTRIM: Rtrim,
     TRIM: Trim,
-    UCASE: Upper
+    UCASE: Upper,
+    #Time
+    PERIOD_INDICATOR: Period_indicator,
+    FLOW_TO_STOCK: Flow_to_stock,
+    STOCK_TO_FLOW: Stock_to_flow
 }
 
 PARAMETRIC_MAPPING = {
@@ -86,7 +96,9 @@ PARAMETRIC_MAPPING = {
     TRUNC: Trunc,
     # String
     SUBSTR: Substr,
-    REPLACE: Replace
+    REPLACE: Replace,
+    #Time
+    FILL_TIME_SERIES: Fill_time_series,
 }
 
 ROLE_SETTER_MAPPING = {
@@ -157,4 +169,46 @@ JOIN_MAPPING = {
     LEFT_JOIN: LeftJoin,
     FULL_JOIN: FullJoin,
     CROSS_JOIN: CrossJoin
+}
+
+HR_COMP_MAPPING = {
+    # Comparison
+    EQ: HREqual,
+    GT: HRGreater,
+    GTE: HRGreaterEqual,
+    LT: HRLess,
+    LTE: HRLessEqual,
+}
+
+HR_NUM_BINARY_MAPPING = {
+    # Numeric
+    PLUS: HRBinPlus,
+    MINUS: HRBinMinus,
+}
+
+HR_UNARY_MAPPING = {
+    # Numeric
+    PLUS: HRUnPlus,
+    MINUS: HRUnMinus
+}
+
+HA_COMP_MAPPING = {
+    # Comparison
+    EQ: HREqual,
+    GT: HRGreater,
+    GTE: HRGreaterEqual,
+    LT: HRLess,
+    LTE: HRLessEqual,
+}
+
+HA_NUM_BINARY_MAPPING = {
+    # Numeric
+    PLUS: HRBinPlus,
+    MINUS: HRBinMinus,
+}
+
+HA_UNARY_MAPPING = {
+    # Numeric
+    PLUS: HRUnPlus,
+    MINUS: HRUnMinus
 }

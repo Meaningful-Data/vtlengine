@@ -1,0 +1,5 @@
+define operator Test084 (x dataset, c component)
+    returns dataset is
+    x#c in myGeoValueDomain
+end operator;
+DS_r := Test084(DS_1, Id_2);

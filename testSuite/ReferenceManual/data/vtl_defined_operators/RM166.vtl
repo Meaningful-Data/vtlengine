@@ -1,0 +1,5 @@
+define operator Test166 (x dataset, c component, d component, e component)
+    returns dataset is
+    x [ aggr e:= sum( e ) group by c , d ]
+end operator;
+DS_r := Test166(DS_1, Id_1, Id_2, Me_1);

@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "BIRD_CNTRPRTS_CDS_IL",
+      "DataStructure": [
+        {
+          "name": "CNTRPRTY_EXTRNL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "TYP_CNTRPRTY_EXTRNL_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

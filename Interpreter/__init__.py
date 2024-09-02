@@ -1,36 +1,40 @@
+import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 
 import AST
 from AST.ASTTemplate import ASTTemplate
+from AST.DAG import HRDAGAnalyzer
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, CAST
-from DataTypes import BASIC_TYPES
-from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
+    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ
+from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
+from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
+    ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
 from Operators.Comparison import Between, ExistIn
-from Operators.General import Eval
 from Operators.Conditional import If
+from Operators.General import Eval, Cast
+from Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Operators.Validation import Check, Check_Datapoint
-from Operators.CastOperator import Cast
+from Operators.Time import Fill_time_series
+from Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
-    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE
+    REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
+    HR_UNARY_MAPPING, HR_COMP_MAPPING, HR_NUM_BINARY_MAPPING
 
 
 # noinspection PyTypeChecker
 @dataclass
-
-
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
+    value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Flags to change behavior
     is_from_assignment: bool = False
@@ -39,6 +43,8 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_rule: bool = False
     is_from_join: bool = False
     is_from_condition: bool = False
+    is_from_hr_val: bool = False
+    is_from_hr_agg: bool = False
     if_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -49,8 +55,16 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Dict[str, str] = None
+    udo_params: List[Dict[str, Any]] = None
+    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
+    hr_mode: Optional[str] = None
+    hr_input: Optional[str] = None
+    hr_partial_is_valid: Optional[List[bool]] = None
+    hr_condition: Optional[Dict[str, str]] = None
     # DL
     dprs: Dict[str, Dict[str, Any]] = None
+    udos: Dict[str, Dict[str, Any]] = None
+    hrs: Dict[str, Dict[str, Any]] = None
 
     def visit_Start(self, node: AST.Start) -> Any:
         results = {}
@@ -63,6 +77,33 @@ class InterpreterAnalyzer(ASTTemplate):
         return results
 
     # Definition Language
+
+    def visit_Operator(self, node: AST.Operator) -> None:
+
+        if self.udos is None:
+            self.udos = {}
+        elif node.op in self.udos:
+            raise ValueError(f"User Defined Operator {node.op} already exists")
+
+        param_info = []
+        for param in node.parameters:
+            if param.name in param_info:
+                raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
+            # We use a string for model types, but the data type class for basic types
+            # (Integer, Number, String, Boolean, ...)
+            if isinstance(param.type_, (Dataset, Component, Scalar)):
+                type_ = param.type_.__class__.__name__
+            else:
+                type_ = param.type_
+            param_info.append({"name": param.name, "type": type_})
+            if param.default is not None:
+                param_info[-1]["default"] = param.default
+
+        self.udos[node.op] = {
+            'params': param_info,
+            'expression': node.expression,
+            'output': node.output_type
+        }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
 
@@ -97,6 +138,38 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.dprs[node.name] = ruleset_data
 
+    def visit_HRuleset(self, node: AST.HRuleset) -> None:
+        if self.hrs is None:
+            self.hrs = {}
+
+        if node.name in self.hrs:
+            raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
+
+
+        rule_names = [rule.name for rule in node.rules if rule.name is not None]
+        if len(rule_names) != 0 and len(node.rules) != len(rule_names):
+            raise ValueError("All rules must have a name, or none of them")
+        if len(rule_names) == 0:
+            for i, rule in enumerate(node.rules):
+                rule.name = i + 1
+
+        cond_comp = []
+        if isinstance(node.element, list):
+            cond_comp = [x.value for x in node.element[:-1]]
+            node.element = node.element[-1]
+
+        signature_actual_name = node.element.value
+
+        ruleset_data = {
+            'rules': node.rules,
+            'signature': signature_actual_name,
+            "condition": cond_comp,
+            'node': node
+        }
+
+
+        self.hrs[node.name] = ruleset_data
+
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
         self.is_from_assignment = True
@@ -115,7 +188,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(
+                self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -138,19 +212,16 @@ class InterpreterAnalyzer(ASTTemplate):
             operand = self.regular_aggregation_dataset
             if node.operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
-                if op_comp.name not in operand.get_measures_names():
-                    raise Exception(f"Measure {op_comp.name} not in dataset {self.regular_aggregation_dataset.name}")
                 comps_to_keep = {}
                 for comp_name, comp in self.regular_aggregation_dataset.components.items():
                     if comp.role == Role.IDENTIFIER:
                         comps_to_keep[comp_name] = copy(comp)
-                    elif comp_name == op_comp.name:
-                        comps_to_keep[comp_name] = Component(
-                            name=op_comp.name,
-                            data_type=op_comp.data_type,
-                            role=op_comp.role,
-                            nullable=op_comp.nullable
-                        )
+                comps_to_keep[op_comp.name] = Component(
+                    name=op_comp.name,
+                    data_type=op_comp.data_type,
+                    role=op_comp.role,
+                    nullable=op_comp.nullable
+                )
                 data_to_keep = operand.data[operand.get_identifiers_names()]
                 data_to_keep[op_comp.name] = op_comp.data
                 operand = Dataset(name=operand.name,
@@ -204,8 +275,26 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             operand: Dataset = self.visit(node.operand)
-        partitioning = node.partition_by
-        ordering = node.order_by if node.order_by is not None else []
+        partitioning = []
+        ordering = []
+        if self.udo_params is not None:
+            if node.partition_by is not None:
+                for comp_name in node.partition_by:
+                    if comp_name in self.udo_params[-1]:
+                        partitioning.append(self.udo_params[-1][comp_name])
+                    else:
+                        raise Exception(f"Component {comp_name} not found in UDO parameters")
+            if node.order_by is not None:
+                for o in node.order_by:
+                    if o.component in self.udo_params[-1]:
+                        o.component = self.udo_params[-1][o.component]
+                    else:
+                        raise Exception(f"Component {o.component} not found in UDO parameters")
+                ordering = node.order_by
+
+        else:
+            partitioning = node.partition_by
+            ordering = node.order_by if node.order_by is not None else []
         if not isinstance(operand, Dataset):
             raise Exception("Analytic operator must have a dataset as operand")
         if node.partition_by is None:
@@ -228,13 +317,24 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             return result
 
-        # TODO: Review this as the components on calc are not in correct order (Rank test)
-        # Extracting the component we need (only measure)
+        # Extracting the components we need (only identifiers)
+        id_columns = self.regular_aggregation_dataset.get_identifiers_names()
+
+        # Joining the result with the original dataset
+        joined_result = pd.merge(
+            self.regular_aggregation_dataset.data[id_columns],
+            result.data,
+            on=id_columns,
+            how='inner')
+
+        # # Extracting the component we need (only measure)
         measure_name = result.get_measures_names()[0]
         return DataComponent(name=measure_name,
-                             data=result.data[measure_name],
-                             data_type=result.components[measure_name].data_type,
-                             role=result.components[measure_name].role)
+                             data=joined_result[measure_name],
+                             data_type=result.components[
+                                 measure_name].data_type,
+                             role=result.components[measure_name].role,
+                             nullable=result.components[measure_name].nullable)
 
     def visit_MulOp(self, node: AST.MulOp):
         """
@@ -292,6 +392,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_assignment:
             return node.value
         # Having takes precedence as it is lower in the AST
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            udo_element = self.udo_params[-1][node.value]
+            if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
+                return udo_element
+            # If it is only the component or dataset name, we rename the node.value
+            node.value = udo_element
         if self.is_from_having:
             return DataComponent(name=node.value,
                                  data=self.aggregation_dataset.data[node.value],
@@ -325,7 +431,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data_type=self.ruleset_dataset.components[comp_name].data_type,
                                  role=self.ruleset_dataset.components[comp_name].role,
                                  nullable=self.ruleset_dataset.components[comp_name].nullable)
-
         if node.value not in self.datasets:
             raise Exception(f"Dataset {node.value} not found, please check input datastructures")
         return self.datasets[node.value]
@@ -343,6 +448,14 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(elements) != len(set(elements)):
                 raise Exception("A set must not contain duplicates")
             return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
+        elif node.kind == 'ValueDomain':
+            if self.value_domains is None:
+                raise Exception(f"No Value Domains have been loaded, expected {node.name}.")
+            if node.name not in self.value_domains:
+                raise Exception(f"Value Domain {node.name} not found")
+            vd = self.value_domains[node.name]
+            return ScalarSet(data_type=vd.type, values=vd.setlist)
+
         raise NotImplementedError
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
@@ -446,6 +559,15 @@ class InterpreterAnalyzer(ASTTemplate):
         return If.evaluate(condition, thenOp, elseOp)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
+        if self.udo_params is not None:
+            if "#" in node.old_name:
+                if node.old_name.split('#')[1] in self.udo_params[-1]:
+                    comp_name = self.udo_params[-1][node.old_name.split('#')[1]]
+                    node.old_name = f"{node.old_name.split('#')[0]}#{comp_name}"
+            else:
+                if node.old_name in self.udo_params[-1]:
+                    node.old_name = self.udo_params[-1][node.old_name]
+
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
@@ -457,6 +579,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for clause in node.clauses:
             clause_elements.append(self.visit(clause))
             if hasattr(clause, 'op') and clause.op == AS:
+                # TODO: We need to delete somewhere the join datasets with alias that are added here
                 self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
         # No need to check using, regular aggregation is executed afterwards
@@ -520,9 +643,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # result.data.drop(columns=[measure_name], inplace=True)
             result.data.drop(columns=[measure_name])
             return result.data
-        
+        elif node.op == FILL_TIME_SERIES:
+            mode = self.visit(node.params[0]) if len(node.params) == 1 else 'all'
+            return Fill_time_series.evaluate(self.visit(node.children[0]), mode)
         elif node.op == CAST:
-            operand = self.visit(node.children[0])
+            op_element = self.visit(node.children[0])
             scalarType = node.children[1].type_ #TODO: maybe a vist method is needed or better? for checks but I think its unnecessary
             mask = None
             if len(node.params) > 0:
@@ -532,6 +657,8 @@ class InterpreterAnalyzer(ASTTemplate):
             return Cast.evaluate(operand, scalarType, mask)
 
         elif node.op == CHECK_DATAPOINT:
+            if self.dprs is None:
+                raise Exception("No Datapoint Rulesets have been defined.")
             # Checking if ruleset exists
             dpr_name = node.children[1]
             if dpr_name in self.dprs:
@@ -555,8 +682,8 @@ class InterpreterAnalyzer(ASTTemplate):
             # Gather rule data, adding the ruleset dataset to the interpreter
             for rule in dpr_info['rules']:
                 rule_output_values[rule.name] = {
-                    "error_code": rule.erCode,
-                    "error_level": rule.erLevel,
+                    "errorcode": rule.erCode,
+                    "errorlevel": rule.erLevel,
                     "output": self.visit(rule)
                 }
             self.ruleset_signature = None
@@ -566,28 +693,191 @@ class InterpreterAnalyzer(ASTTemplate):
             return Check_Datapoint.evaluate(dataset_element=dataset_element,
                                             rule_info=rule_output_values,
                                             output=output)
+        elif node.op in (CHECK_HIERARCHY, HIERARCHY):
+            if len(node.children) == 3:
+                dataset, component, hr_name = (self.visit(x) for x in node.children)
+                cond_components = []
+            else:
+                children = [self.visit(x) for x in node.children]
+                dataset = children[0]
+                component = children[1]
+                hr_name = children[2]
+                cond_components = children[3:]
+
+
+            # Input is always dataset
+            mode, input_, output = (self.visit(param) for param in node.params)
+
+            if self.hrs is None:
+                raise Exception("No Hierarchical Rulesets have been defined.")
+            if hr_name not in self.hrs:
+                raise Exception(f"Hierarchical Ruleset {hr_name} not found")
+
+            if not isinstance(dataset, Dataset):
+                raise Exception("The operand must be a dataset")
+
+            hr_info = self.hrs[hr_name]
+
+            # Condition components check
+            if len(cond_components) != len(hr_info['condition']):
+                raise Exception(f"Cannot match condition components, different number of components on call"
+                                f"from those defined on the signature: "
+                                f"{len(cond_components)} <> {len(hr_info['condition'])}")
+            cond_info = {}
+            for i, cond_comp in enumerate(hr_info['condition']):
+                cond_info[cond_comp] = cond_components[i]
+
+            if node.op == HIERARCHY:
+                aux = []
+                for rule in hr_info['rules']:
+                    if rule.rule.op == EQ:
+                        aux.append(rule)
+                    elif rule.rule.op == WHEN:
+                        if rule.rule.right.op == EQ:
+                            aux.append(rule)
+                # Filter only the rules with HRBinOP as =,
+                # as they are the ones that will be computed
+                if len(aux) == 0:
+                    raise Exception("No rules to evaluate on Hierarchy Roll-up "
+                                    "as rules have no = operator")
+                hr_info['rules'] = aux
+
+                hierarchy_ast = AST.HRuleset(name=hr_name, signature_type=hr_info['node'].signature_type,
+                                             element=hr_info['node'].element, rules=aux)
+                HRDAGAnalyzer().visit(hierarchy_ast)
+
+            Check_Hierarchy.validate_hr_dataset(dataset, component)
+
+            # Gather rule data, adding the necessary elements to the interpreter
+            # for simplicity
+            self.ruleset_dataset = dataset
+            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
+            self.hr_mode = mode
+            self.hr_input = input_
+            rule_output_values = {}
+            if node.op == HIERARCHY:
+                self.is_from_hr_agg = True
+                self.hr_agg_rules_computed = {}
+                for rule in hr_info['rules']:
+                    self.visit(rule)
+                self.is_from_hr_agg = False
+            else:
+                self.is_from_hr_val = True
+                for rule in hr_info['rules']:
+                    rule_output_values[rule.name] = {
+                        "errorcode": rule.erCode,
+                        "errorlevel": rule.erLevel,
+                        "output": self.visit(rule)
+                    }
+                self.is_from_hr_val = False
+            self.ruleset_signature = None
+            self.ruleset_dataset = None
+            self.hr_mode = None
+            self.hr_input = None
+
+            # Final evaluation
+            if node.op == CHECK_HIERARCHY:
+                result = Check_Hierarchy.evaluate(dataset_element=dataset,
+                                                  rule_info=rule_output_values,
+                                                  output=output)
+                del rule_output_values
+            else:
+                result = Hierarchy.evaluate(dataset, self.hr_agg_rules_computed, output)
+                self.hr_agg_rules_computed = None
+            return result
+
+        raise NotImplementedError
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
+        if isinstance(validation_data, DataComponent):
+            aux = self.rule_data[self.ruleset_dataset.get_components_names()]
+            aux['bool_var'] = validation_data.data
+            validation_data = aux
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
 
+    def visit_HRule(self, node: AST.HRule) -> None:
+        self.is_from_rule = True
+        self.rule_data = self.ruleset_dataset.data.copy()
+        rule_result = self.visit(node.rule)
+        if self.is_from_hr_agg:
+            measure_name = rule_result.get_measures_names()[0]
+            if len(rule_result.data[measure_name]) > 0:
+                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+        else:
+            rule_result = rule_result.data
+        self.rule_data = None
+        self.is_from_rule = False
+        return rule_result
+
     def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
-            filtering_indexes = filter_comp.data[filter_comp.data].index
-            non_filtering_indexes = filter_comp.data[~filter_comp.data].index
+
+            filtering_indexes = filter_comp.data[
+                filter_comp.data.notnull() & filter_comp.data == True].index
+            non_filtering_indexes = filter_comp.data[
+                filter_comp.data.isnull() | filter_comp.data == False].index
             original_data = self.rule_data.copy()
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)
+            if self.is_from_hr_agg or self.is_from_hr_val:
+                # We only need to filter rule_data on HR
+                return result_validation
             self.rule_data['bool_var'] = result_validation.data
             original_data = original_data.merge(self.rule_data, how='left',
                                                 on=original_data.columns.tolist())
             original_data.loc[non_filtering_indexes, 'bool_var'] = True
             return original_data
+        elif node.op in HR_COMP_MAPPING:
+            self.is_from_assignment = True
+            if self.hr_mode in ('partial_null', 'partial_zero'):
+                self.hr_partial_is_valid = []
+            left_operand = self.visit(node.left)
+            self.is_from_assignment = False
+            right_operand = self.visit(node.right)
+            if isinstance(right_operand, Dataset):
+                right_operand = get_measure_from_dataset(right_operand, node.right.value)
+
+            if self.hr_mode in ('partial_null', 'partial_zero'):
+                # Check all values were present in the dataset
+                if self.hr_partial_is_valid and not any(self.hr_partial_is_valid):
+                    right_operand.data = right_operand.data.map(lambda x: "REMOVE_VALUE")
+                self.hr_partial_is_valid = []
+
+            if self.is_from_hr_agg:
+                return HAAssignment.evaluate(left_operand, right_operand, self.hr_mode)
+            else:
+                result = HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+                left_measure = left_operand.get_measures()[0]
+                left_original_measure_data = left_operand.data[left_measure.name]
+                result.data[left_measure.name] = left_original_measure_data
+                result.components[left_measure.name] = left_measure
+                return result
+        else:
+            left_operand = self.visit(node.left)
+            right_operand = self.visit(node.right)
+            if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset) and self.hr_mode in ('partial_null', 'partial_zero'):
+                measure_name = left_operand.get_measures_names()[0]
+                left_null_indexes = set(list(left_operand.data[left_operand.data[measure_name].isnull()].index))
+                right_null_indexes = set(list(right_operand.data[right_operand.data[measure_name].isnull()].index))
+                # If no indexes are in common, then one datapoint is not null
+                invalid_indexes = left_null_indexes.intersection(right_null_indexes)
+                if len(invalid_indexes) > 0:
+                    left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
+            if isinstance(left_operand, Dataset):
+                left_operand = get_measure_from_dataset(left_operand, node.left.value)
+            if isinstance(right_operand, Dataset):
+                right_operand = get_measure_from_dataset(right_operand, node.right.value)
+            return HR_NUM_BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
+
+    def visit_HRUnOp(self, node: AST.HRUnOp) -> None:
+        operand = self.visit(node.operand)
+        return HR_UNARY_MAPPING[node.op].evaluate(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
 
@@ -628,13 +918,19 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.name not in self.external_routines:
             raise Exception(f"External Routine {node.name} not found")
         external_routine = self.external_routines[node.name]
-        operand = self.visit(node.operand)
+        operands = {}
+        for operand in node.operands:
+            element = (self.visit(operand))
+            if not isinstance(element, Dataset):
+                raise ValueError(f"Expected dataset, got {type(element).__name__} as Eval Operand")
+            operands[element.name.split(".")[1] if "." in element.name else element.name] = element
         output_to_check = node.output
-        return Eval.evaluate(operand, external_routine, output_to_check)
+        return Eval.evaluate(operands, external_routine, output_to_check)
 
     def generate_then_else_datasets(self, condition):
         if isinstance(condition, Dataset):
-            if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != BASIC_TYPES[bool]:
+            if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != \
+                    BASIC_TYPES[bool]:
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
             data = condition.data[name]
@@ -646,21 +942,24 @@ class InterpreterAnalyzer(ASTTemplate):
         data.fillna(False, inplace=True)
         then_index = pd.DataFrame({name: [i for i, data in enumerate(data) if data]})
         else_index = pd.DataFrame({name: [i for i, data in enumerate(data) if not data]})
-        component = Component(name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE, nullable=True)
+        component = Component(name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE,
+                              nullable=True)
         self.then_condition_dataset.append(
             Dataset(name=name, components={name: component}, data=then_index))
         self.else_condition_dataset.append(
             Dataset(name=name, components={name: component}, data=else_index))
 
     def merge_then_else_datasets(self, left_operand: Dataset | DataComponent, right_operand):
-        merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE['then'] else (
+        merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE[
+            'then'] else (
             self.else_condition_dataset.pop())
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         if isinstance(left_operand, Dataset | DataComponent):
             if isinstance(left_operand, Dataset):
                 left_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 left = left_operand.data[left_operand.get_measures_names()[0]]
-                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(merge_index, fill_value=None)
+                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(merge_index,
+                                                                                       fill_value=None)
             else:
                 left_operand.data_type = BASIC_TYPES[int]
                 left = left_operand.data
@@ -669,7 +968,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(right_operand, Dataset):
                 right_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 right = right_operand.data[right_operand.get_measures_names()[0]]
-                right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(merge_index, fill_value=None)
+                right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(
+                    merge_index, fill_value=None)
             else:
                 right_operand.data_type = BASIC_TYPES[int]
                 right = right_operand.data
@@ -688,4 +988,149 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_assignment:
                 return self.datasets[node.value].name
             return self.datasets[node.value]
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            return self.udo_params[-1][node.value]
         return node.value
+
+    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> AST.AST:
+        """
+        DefIdentifier: (value, kind)
+
+        Basic usage:
+
+            return node.value
+        """
+        partial_is_valid = True
+        # Only for Hierarchical Rulesets
+        if not (self.is_from_rule and node.kind == 'CodeItemID'):
+            return node.value
+
+        # Getting Dataset elements
+        result_components = {comp_name: copy(comp) for comp_name, comp in
+                             self.ruleset_dataset.components.items()}
+        hr_component = self.ruleset_signature["RULE_COMPONENT"]
+
+        name = node.value
+
+        condition = None
+        if hasattr(node, '_right_condition'):
+            condition: DataComponent = self.visit(node._right_condition)
+            condition = condition.data[condition.data == True].index
+
+
+        if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed:
+            df = self.hr_agg_rules_computed[node.value].copy()
+            return Dataset(name=name, components=result_components, data=df)
+
+        df = self.rule_data.copy()
+        if condition is not None:
+            df = df.loc[condition].reset_index(drop=True)
+        measure_name = self.ruleset_dataset.get_measures_names()[0]
+        if node.value in df[hr_component].values:
+            rest_identifiers = [comp.name for comp in result_components.values()
+                                if comp.role == Role.IDENTIFIER and comp.name != hr_component]
+            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
+            code_data = code_data.merge(df[rest_identifiers], how='right', on=rest_identifiers)
+            code_data = code_data.drop_duplicates().reset_index(drop=True)
+
+            # If the value is in the dataset, we create a new row
+            # based on the hierarchy mode
+            # (Missing data points are considered,
+            # lines 6483-6510 of the reference manual)
+            if self.hr_mode in ('partial_null', 'partial_zero'):
+                # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
+                if self.is_from_hr_agg and self.is_from_assignment:
+                    pass
+                elif code_data[hr_component].isnull().any():
+                    partial_is_valid = False
+
+            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+                fill_indexes = code_data[code_data[hr_component].isnull()].index
+                code_data.loc[fill_indexes, measure_name] = 0
+            code_data[hr_component] = node.value
+            df = code_data
+        else:
+            # If the value is not in the dataset, we create a new row
+            # based on the hierarchy mode
+            # (Missing data points are considered,
+            # lines 6483-6510 of the reference manual)
+            if self.hr_mode in ('partial_null', 'partial_zero'):
+                # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
+                if self.is_from_hr_agg and self.is_from_assignment:
+                    pass
+                elif self.hr_mode == 'partial_null':
+                    partial_is_valid = False
+            df = df.head(1)
+            df[hr_component] = node.value
+            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+                df[measure_name] = 0
+            else:  # For non_null, partial_null and always_null
+                df[measure_name] = None
+        if self.hr_mode in ('partial_null', 'partial_zero'):
+            self.hr_partial_is_valid.append(partial_is_valid)
+        return Dataset(name=name, components=result_components, data=df)
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> None:
+        if self.udos is None:
+            raise Exception("No User Defined Operators have been loaded.")
+        elif node.op not in self.udos:
+            raise Exception(f"User Defined Operator {node.op} not found")
+
+        signature_values = {}
+
+        operator = self.udos[node.op]
+        for i, param in enumerate(operator['params']):
+            if i >= len(node.params):
+                if 'default' in param:
+                    value = self.visit(param['default']).value
+                    signature_values[param['name']] = Scalar(name=str(value), value=value,
+                                                             data_type=BASIC_TYPES[type(value)])
+                else:
+                    raise Exception(f"Missing parameter {param['name']} for UDO {node.op}")
+            else:
+                if isinstance(param['type'], str):  # Scalar, Dataset, Component
+                    if param['type'] == 'Scalar':
+                        signature_values[param['name']] = self.visit(node.params[i])
+                    elif param['type'] in ['Dataset', 'Component']:
+                        if isinstance(node.params[i], AST.VarID):
+                            signature_values[param['name']] = node.params[i].value
+                        else:
+                            signature_values[param['name']] = self.visit(node.params[i])
+                    else:
+                        raise NotImplementedError
+                elif issubclass(param['type'], ScalarType):  # Basic types
+                    # For basic Scalar types (Integer, Float, String, Boolean)
+                    # We validate the type is correct and cast the value
+                    param_element = self.visit(node.params[i])
+                    if isinstance(param_element, (Dataset, DataComponent)):
+                        raise Exception(f"Expected {param['type'].__name__}, got {type(param_element).__name__} "
+                                        f"on UDO {node.op}, parameter {param['name']}")
+                    scalar_type = param['type']
+                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
+                        raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "
+                                        f"on UDO {node.op}, parameter {param['name']}")
+                    signature_values[param['name']] = Scalar(name=param_element.name,
+                                                             value=scalar_type.cast(
+                                                                 param_element.value),
+                                                             data_type=scalar_type)
+                else:
+                    raise NotImplementedError
+
+        # We set it here to a list to start the stack of UDO params
+        if self.udo_params is None:
+            self.udo_params = []
+
+        # Adding parameters to the stack
+        self.udo_params.append(signature_values)
+
+        # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
+        result = self.visit(deepcopy(operator['expression']))
+
+        # We pop the last element of the stack (current UDO params)
+        # to avoid using them in the next UDO call
+        self.udo_params.pop()
+
+        # We set to None if empty to ensure we do not use these params anymore
+        if len(self.udo_params) == 0:
+            self.udo_params = None
+        return result

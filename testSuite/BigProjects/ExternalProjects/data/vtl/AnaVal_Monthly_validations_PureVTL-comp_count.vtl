@@ -1,0 +1,379 @@
+CC0010_DS := 
+  dsPrep.ENTTY
+    [calc CC0010:= CNTRY in AnaCreditCountries]
+    [keep CC0010];
+    
+CC0010_CC0020:= 
+  CC0010_DS
+    [calc CC0020 := not CC0010];
+
+ 
+FRGN_BRNCH_DS := 
+    dsPrep.ENTTY
+        [filter not isnull (HD_QRTR_CD)]
+        [calc FRGN_BRNCH := true]
+        [keep FRGN_BRNCH];
+    
+
+SPFUND_DS := 
+     dsPrep.ENTTY
+        [filter LGL_FRM = "SPFUND"]
+        [calc SPFUND := true]
+        [keep SPFUND];
+    
+FRGN_BRNCHS_SPFUND :=
+    left_join(
+        dsPrep.ENTTY,
+        FRGN_BRNCH_DS,
+        SPFUND_DS
+        );
+        
+FRGN_BRNCHS_SPFUND_FLL :=
+    nvl(FRGN_BRNCHS_SPFUND[keep SPFUND, FRGN_BRNCH], false);
+
+TYP_ENTTY := 
+    FRGN_BRNCHS_SPFUND_FLL
+        [calc OTHR_TYP_ENTTY := not SPFUND and not FRGN_BRNCH];
+
+
+/*
+    CC010* 
+*/
+
+CC010_FLTR := 
+  dsPrep.ENTTY
+    [filter CNTRY in AnaCreditCountries and INSTTTNL_SCTR_DTL in {"S122_A", "S125_B1"}];
+    
+CC010_MX :=
+    max(CC010_FLTR group by ENTTY_RIAD_CD);
+
+CC010_JN :=
+    inner_join(TYP_ENTTY, CC010_MX[keep CNTRY] [drop CNTRY] as B);
+    
+CC010 := 
+    CC010_JN
+        [calc CC0100 := OTHR_TYP_ENTTY,
+              CC0101 := FRGN_BRNCH]
+              [keep CC0100, CC0101];
+
+
+/*
+    CC011*
+*/
+
+CC011_MX := 
+    max(ANCRDT_INSTRMNT_C group by OBSRVD_AGNT_CD);
+    
+CC011_JN :=
+    inner_join(TYP_ENTTY, CC011_MX[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B);
+    
+CC011 :=
+    CC011_JN
+        [calc CC0110 := OTHR_TYP_ENTTY,
+              CC0111 := FRGN_BRNCH]
+        [keep CC0110, CC0111];
+
+
+/*
+
+CC012*
+
+*/
+
+CC012_FLTR := 
+    ANCRDT_ENTTY_INSTRMNT_C
+        [filter ENTTY_RL = "1"];
+        
+CC012_MX :=
+    max(CC012_FLTR group by OBSRVD_AGNT_CD);
+
+CC012_JN :=
+    inner_join(TYP_ENTTY, CC012_MX[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B);
+    
+CC012 := 
+    CC012_JN
+        [calc CC0120 := OTHR_TYP_ENTTY,
+              CC0121 := FRGN_BRNCH,
+              CC0122 := SPFUND]
+              [keep CC0120, CC0121, CC0122];
+
+
+/*
+
+CC013*
+
+*/
+
+DBTR_INSTRMNT := 
+    inner_join(
+        ANCRDT_ENTTY_INSTRMNT_C[filter ENTTY_RL = "2"] as A,
+        ANCRDT_INSTRMNT_C[keep DT_INCPTN, TYP_INSTRMNT, RCRS] as B
+        );
+
+DBTR_INSTRMNT_MX_DT :=
+    max(DBTR_INSTRMNT group by ENTTY_RIAD_CD);
+    
+CC013_CNTRPRTS_BFR_DT :=
+    DBTR_INSTRMNT_MX_DT
+        [filter DT_INCPTN < cast("2018-09-01", date)]
+        [keep DT_INCPTN][drop DT_INCPTN];
+
+
+TRD_RCVBL_NN_RCRS_DBTRS :=
+    DBTR_INSTRMNT
+        [calc TRD_RCVBL_NN_RCRS := TYP_INSTRMNT = "71" and  RCRS = "2"]
+        [keep TRD_RCVBL_NN_RCRS];
+
+MX_TRD_RCVBL_NN_RCRS :=
+    max(TRD_RCVBL_NN_RCRS_DBTRS group by ENTTY_RIAD_CD);    
+        
+
+CC013_DT_JN :=
+    inner_join(
+        TYP_ENTTY, 
+        CC013_CNTRPRTS_BFR_DT,
+        MX_TRD_RCVBL_NN_RCRS);   
+    
+CC013 := 
+    CC013_DT_JN
+        [calc CC0130 := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS,
+              CC0130A := OTHR_TYP_ENTTY and TRD_RCVBL_NN_RCRS,
+              CC0131 := FRGN_BRNCH and not TRD_RCVBL_NN_RCRS,
+              CC0131A  := FRGN_BRNCH and TRD_RCVBL_NN_RCRS,
+              CC0132 := SPFUND and not TRD_RCVBL_NN_RCRS,
+              CC0132A := SPFUND and TRD_RCVBL_NN_RCRS]
+              [keep CC0130, CC0130A, CC0131, CC0131A, CC0132, CC0132A];
+
+
+
+/*
+
+CC014*
+
+*/
+
+
+CC014_CNTRPRTS_AFTR_DT :=
+    DBTR_INSTRMNT_MX_DT
+        [filter DT_INCPTN >= cast("2018-09-01", date)]
+        [keep DT_INCPTN][drop DT_INCPTN];
+
+
+CC014_DT_JN :=
+    inner_join(
+        TYP_ENTTY, 
+        CC014_CNTRPRTS_AFTR_DT,
+        MX_TRD_RCVBL_NN_RCRS,
+        dsPrep.ENTTY[keep INSTTTNL_SCTR] as D);   
+
+
+CC0140 := 
+    CC014_DT_JN
+        [calc CC0140 := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR not_in {"S15", "S1311", "S1312", "S1313", "S1314", "S123", "S124"}];
+CC0140B := 
+    CC0140
+        [calc CC0140B := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR in {"S15", "S1311", "S1312", "S1313", "S1314", "S123", "S124"}];
+CC0140C := 
+    CC0140B
+        [calc CC0140C := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR = "S15"];
+
+CC014 :=
+    CC0140C
+        [calc CC0140A := OTHR_TYP_ENTTY and TRD_RCVBL_NN_RCRS,
+              CC0141 := FRGN_BRNCH and not TRD_RCVBL_NN_RCRS,
+              CC0141A  := FRGN_BRNCH and TRD_RCVBL_NN_RCRS,
+              CC0142 := SPFUND and not TRD_RCVBL_NN_RCRS,
+              CC0142A := SPFUND and TRD_RCVBL_NN_RCRS]
+        [keep CC0140, CC0140A, CC0140B, CC0140C, CC0141, CC0141A, CC0142, CC0142A];
+
+
+
+/*
+
+CC015*
+
+*/
+
+CC015_CD :=
+    ANCRDT_PRTCTN_RCVD_C
+        [calc identifier ENTTY_RIAD_CD := nvl(PRTCTN_PRVDR_CD , "")];
+
+
+CC015_MX :=
+    max(CC015_CD group by ENTTY_RIAD_CD);
+
+CC015_JN :=
+    inner_join(TYP_ENTTY, CC015_MX);
+    
+CC015 := 
+    CC015_JN
+        [calc CC0150 := OTHR_TYP_ENTTY,
+              CC0151 := FRGN_BRNCH,
+              CC0152 := SPFUND]
+              [keep CC0150, CC0151, CC0152];
+
+/*
+
+CC016*
+
+*/
+
+PRTCTN_PRVDR_USD := 
+    max(dsPrep.PRTCTN_PRVDR_USD group by DT_RFRNC, ENTTY_RIAD_CD);
+
+
+TYP_ENTTY_IS_PRTCTN_PRVDR_P :=
+    left_join(
+        TYP_ENTTY,
+        PRTCTN_PRVDR_USD
+            [calc IS_PRTCTN_PRVDR := true]
+            [keep IS_PRTCTN_PRVDR]
+            as B
+
+    );
+
+TYP_ENTTY_IS_PRTCTN_PRVDR :=
+    inner_join(
+        TYP_ENTTY_IS_PRTCTN_PRVDR_P,
+        dsPrep.ENTTY
+            [keep HD_QRTR_CD, IMMDT_PRNT_CD, ULTMT_PRNT_CD]
+            as B
+    );
+        
+
+CC016_FLTR := 
+    TYP_ENTTY_IS_PRTCTN_PRVDR
+        [filter ENTTY_RIAD_CD = HD_QRTR_CD];
+
+
+
+CC016 := 
+    CC016_FLTR
+        [calc CC0160 := OTHR_TYP_ENTTY,
+              CC0160A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR,
+              CC0162 := SPFUND]
+              [keep CC0160, CC0160A, CC0162];
+
+
+
+/*
+
+CC017*
+
+*/
+
+
+CC017_FLTR := 
+    TYP_ENTTY_IS_PRTCTN_PRVDR
+        [filter ENTTY_RIAD_CD = IMMDT_PRNT_CD];
+
+
+
+
+CC017 := 
+    CC017_FLTR
+        [calc CC0170 := OTHR_TYP_ENTTY,
+              CC0170A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR,
+              CC0172 := SPFUND]
+              [keep CC0170, CC0170A, CC0172];
+
+
+
+/*
+
+CC018*
+
+*/
+
+CC018_FLTR := 
+    TYP_ENTTY_IS_PRTCTN_PRVDR
+        [filter ENTTY_RIAD_CD = ULTMT_PRNT_CD];
+
+
+
+
+CC018 := 
+    CC018_FLTR
+        [calc CC0180 := OTHR_TYP_ENTTY,
+              CC0180A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR,
+              CC0182 := SPFUND]
+              [keep CC0180, CC0180A, CC0182];
+
+
+
+/*
+
+CC019*
+
+*/
+
+CC019_FLTR := 
+    ANCRDT_ENTTY_INSTRMNT_C
+        [filter ENTTY_RL = "3"];
+        
+CC019_MX :=
+    max(CC019_FLTR group by OBSRVD_AGNT_CD);
+
+CC019_JN :=
+    inner_join(TYP_ENTTY, CC019_MX[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B);
+    
+CC019 := 
+    CC019_JN
+        [calc CC0190 := OTHR_TYP_ENTTY,
+              CC0191 := FRGN_BRNCH,
+              CC0192 := SPFUND]
+              [keep CC0190, CC0191, CC0192];
+
+
+/*
+
+CC020*
+
+*/
+
+CC020_FLTR := 
+    ANCRDT_ENTTY_INSTRMNT_C
+        [filter ENTTY_RL = "7"];
+        
+CC020_MX :=
+    max(CC020_FLTR group by OBSRVD_AGNT_CD);
+
+CC020_JN :=
+    inner_join(TYP_ENTTY, CC020_MX[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B);
+    
+CC020 := 
+    CC020_JN
+        [calc CC0200 := OTHR_TYP_ENTTY,
+              CC0201 := FRGN_BRNCH,
+              CC0202 := SPFUND]
+              [keep CC0200, CC0201, CC0202];
+              
+              
+
+
+VLDTN_CNDTNS :=
+    left_join(
+        CC0010_CC0020,
+        CC010,
+        CC011,
+        CC012,
+        CC013,
+        CC014,
+        CC015,
+        CC016,
+        CC017,
+        CC018,
+        CC019,
+        CC020
+    );
+    
+
+VLDTN_CNDTNS_FLL :=
+    nvl(VLDTN_CNDTNS, false);
+
+
+ENTTY_VLDTN :=
+    inner_join(dsPrep.ENTTY, VLDTN_CNDTNS_FLL);
+
+CNTRPRTY_CMPLTNSS <-
+    check_datapoint(ENTTY_VLDTN, completenessCounterparties);

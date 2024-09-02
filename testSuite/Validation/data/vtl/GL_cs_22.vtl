@@ -1,0 +1,11 @@
+define hierarchical ruleset HR_TEST (valuedomain rule EXR_CURRENCY) is 
+    INR =  BRN + MXN + THB + '_T'
+end hierarchical ruleset ;
+
+filtered_ds := DSD_EXR[filter EXR_CURRENCY in {"BRN","MXN", "THB", "_T", "'_T'"}];
+result_non_zero := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY non_zero);
+result_partial_zero := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY partial_zero);
+result_always_zero := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY always_zero);
+result_non_null := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY non_null);
+result_partial_null := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY partial_null);
+result_always_null := hierarchy (filtered_ds, HR_TEST rule EXR_CURRENCY always_null);

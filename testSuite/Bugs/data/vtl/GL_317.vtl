@@ -1,0 +1,6 @@
+define operator getMonthYear (comp component)
+  returns component is
+    substr(cast(comp, string),1,7)
+end operator;
+
+DS_r := DS_1[calc TEST := getMonthYear(Me_1)];

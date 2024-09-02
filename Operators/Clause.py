@@ -1,3 +1,4 @@
+from copy import copy
 from typing import List, Union
 
 from AST import RenameNode
@@ -10,13 +11,14 @@ class Calc:
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
 
-        result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
+        result_components = {name: copy(comp) for name, comp in dataset.components.items()}
+        result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
 
         for operand in operands:
 
-            if operand.name in dataset.components:
+            if operand.name in result_dataset.components:
                 # Override component with same name
-                dataset.delete_component(operand.name)
+                result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
                 result_dataset.add_component(Component(
@@ -43,6 +45,10 @@ class Calc:
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
+        # Validate duplicates on identifiers
+        if len(result_dataset.get_identifiers_names()) != len(dataset.get_identifiers_names()):
+            if result_dataset.data[result_dataset.get_identifiers_names()].duplicated().any():
+                raise Exception("Found duplicated identifiers after calc clause")
         return result_dataset
 
 
@@ -102,7 +108,8 @@ class Filter:
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data.copy()
         if len(condition.data) > 0:
-            result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
+            true_indexes = condition.data[condition.data == True].index
+            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
         return result_dataset
 
 
@@ -257,9 +264,19 @@ class Sub:
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
-        for operand in operands:
-            if len(operand.data) > 0:
-                result_dataset.data = result_dataset.data[operand.data.index]
-            result_dataset.data = result_dataset.data.drop(columns=[operand.name], axis=1)
-            result_dataset.data = result_dataset.data.reset_index(drop=True)
+        operand_names = [operand.name for operand in operands]
+        if len(dataset.data) > 0:
+            # Filter the Dataframe
+            # by intersecting the indexes of the Data Component with True values
+            true_indexes = set()
+            is_first = True
+            for operand in operands:
+                if is_first:
+                    true_indexes = set(operand.data[operand.data == True].index)
+                    is_first = False
+                else:
+                    true_indexes.intersection_update(set(operand.data[operand.data == True].index))
+            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
+        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
+        result_dataset.data = result_dataset.data.reset_index(drop=True)
         return result_dataset

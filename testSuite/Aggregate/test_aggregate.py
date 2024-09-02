@@ -1,104 +1,16 @@
-import json
 from pathlib import Path
-from typing import Dict, List, Optional
-from unittest import TestCase
-
-import pandas as pd
-
-from API import create_ast
-from DataTypes import SCALAR_TYPES
-from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset
+from testSuite.Helper import TestHelper
 
 
-class TestAggregateHelper(TestCase):
-    """
-
-    """
-
+class TestAggregateHelper(TestHelper):
     base_path = Path(__file__).parent
+    filepath_VTL = base_path / "data" / "vtl"
+    filepath_valueDomain = base_path / "data" / "ValueDomain"
     filepath_json = base_path / "data" / "DataStructure" / "input"
     filepath_csv = base_path / "data" / "DataSet" / "input"
-    filepath_vtl = base_path / "data" / "vtl"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
-    # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
-
-    @classmethod
-    def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
-            structures = json.load(file)
-
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
-
-            return Dataset(name=dataset_name, components=components, data=data)
-
-    @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
-        datasets = {}
-        for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-{str(i + 1)}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
-        datasets = {}
-        for name in references_names:
-            json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
-            csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
-        vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
-            return file.read()
-
-    @classmethod
-    def BaseTest(cls, text: Optional[str], code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
-        if text is None:
-            text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs)
-        reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
-        result = interpreter.visit(ast)
-        assert result == reference_datasets
-
-    @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
-        assert True
-
+    filepath_sql = base_path / "data" / "sql"
 
 class AggregateOperatorsTest(TestAggregateHelper):
     """
@@ -124,7 +36,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -143,7 +55,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -162,7 +74,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -181,7 +93,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -201,7 +113,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -220,7 +132,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -239,7 +151,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -258,7 +170,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_9(self):
         """
@@ -277,7 +189,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_10(self):
         """
@@ -295,7 +207,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
         """
@@ -316,7 +228,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_12(self):
         """
@@ -335,7 +247,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_13(self):
         """
@@ -353,7 +265,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_14(self):
         """
@@ -371,7 +283,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_15(self):
         """
@@ -390,7 +302,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_16(self):
         """
@@ -409,7 +321,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_17(self):
         """
@@ -428,7 +340,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_18(self):
         """
@@ -447,7 +359,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_19(self):
         """
@@ -466,7 +378,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_20(self):
         """
@@ -523,7 +435,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_23(self):
         """
@@ -560,7 +472,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_26(self):
         """
@@ -578,7 +490,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_27(self):
         """
@@ -598,7 +510,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_28(self):
         """
@@ -617,7 +529,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_29(self):
         """
@@ -639,7 +551,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_30(self):
         """
@@ -661,7 +573,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_31(self):
         """
@@ -683,7 +595,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_32(self):
         """
@@ -707,7 +619,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_33(self):
         """
@@ -727,7 +639,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_34(self):
         """
@@ -750,7 +662,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_35(self):
         """
@@ -769,7 +681,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_36(self):
         """
@@ -790,7 +702,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_37(self):
         """
@@ -810,7 +722,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_38(self):
         """
@@ -830,7 +742,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_39(self):
         """
@@ -852,7 +764,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_40(self):
         """
@@ -874,7 +786,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_41(self):
         """
@@ -897,7 +809,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 4
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_42(self):
         """
@@ -923,7 +835,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 5
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_43(self):
         """
@@ -942,7 +854,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_44(self):
         """
@@ -984,7 +896,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_46(self):
         """
@@ -1026,7 +938,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_48(self):
         """
@@ -1046,7 +958,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_49(self):
         """
@@ -1085,7 +997,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_2(self):
         """
@@ -1109,7 +1021,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_3(self):
         """
@@ -1127,7 +1039,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_4(self):
         """
@@ -1145,7 +1057,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_5(self):
         """
@@ -1163,7 +1075,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_6(self):
         """
@@ -1180,7 +1092,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_7(self):
         """
@@ -1198,7 +1110,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_8(self):
         """
@@ -1216,7 +1128,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_9(self):
         """
@@ -1233,7 +1145,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_10(self):
         """
@@ -1249,7 +1161,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_11(self):
         """
@@ -1257,7 +1169,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Status: OK
         Expression:
 
-        Description:
+        Description: inner join with aggregate
 
         Git Branch: #315.
         """
@@ -1265,7 +1177,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_315_12(self):
         """
@@ -1299,7 +1211,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1", "2", "3", "4"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_411_1(self):
         """
@@ -1316,7 +1228,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_466_1(self):
         """
@@ -1327,13 +1239,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
 
         Git Branch: #466.
-        Goal: aggr (count) with null values
+        Goal: aggr (count) with null values and fill_time_series
         """
         code = 'GL_466_1'
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_466_2(self):
         """
@@ -1350,4 +1262,4 @@ class AggregateOperatorsTest(TestAggregateHelper):
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

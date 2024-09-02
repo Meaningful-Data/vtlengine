@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "aggr.agg1",
+      "DataStructure": [
+        {
+          "name": "REP_COUNTRY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "COUNT_SECTOR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "REF_DATE",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+    "datasets": [
+        {
+            "name": "errors_dataset",
+            "DataStructure": [
+                {
+                    "name": "acq_assgnd_msg_id",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "dt_rfrnc",
+                    "role": "Identifier",
+                    "type": "Date",
+                    "nullable": false
+                },
+                {
+                    "name": "mssg_id",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "obsrvd_agnt_acr_id",
+                    "role": "Identifier",
+                    "type": "Number",
+                    "nullable": false
+                },
+                {
+                    "name": "vldtn_id",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "exctd",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "nmbr_of_errrs",
+                    "role": "Measure",
+                    "type": "Number",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}

@@ -113,7 +113,11 @@ class Binary(Operator):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else cls.py_op(x, y)
+        if not pd.isnull(x) and x == "REMOVE_VALUE":
+            return "REMOVE_VALUE"
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(x, y)
 
     @classmethod
     def apply_operation_two_series(cls,
@@ -570,7 +574,7 @@ class Unary(Operator):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(cls.op_func, na_action='ignore')
+        return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
     def validate(cls, operand: ALL_MODEL_DATA_TYPES):

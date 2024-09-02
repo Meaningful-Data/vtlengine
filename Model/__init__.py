@@ -1,5 +1,13 @@
+from collections import Counter
+
+import sqlparse, re
+import sqlglot
+import sqlglot.expressions as exp
+
 import json
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
@@ -8,6 +16,7 @@ from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
+import DataTypes
 from DataTypes import SCALAR_TYPES, ScalarType
 
 
@@ -32,7 +41,6 @@ class Scalar:
         y = None if not pd.isnull(other.value) else other.value
         same_value = x == y
         return same_name and same_type and same_value
-
 
 
 class Role(Enum):
@@ -127,6 +135,12 @@ class Dataset:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
                     "The number of components must match the number of columns in the data")
+            for name, component in self.components.items():
+                if name not in self.data.columns:
+                    raise ValueError(f"Component {name} not found in the data")
+                if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
+                    self.data[name] = self.data[name].map(self.refactor_time_period,
+                                                          na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -152,7 +166,8 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True, check_index_type=False)
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
+                               check_index_type=False)
             same_data = True
         except AssertionError as e:
             print(e)
@@ -169,6 +184,8 @@ class Dataset:
 
     def delete_component(self, component_name: str):
         self.components.pop(component_name, None)
+        if self.data is not None:
+            self.data.drop(columns=[component_name], inplace=True)
 
     def get_identifiers(self) -> List[Component]:
         return [component for component in self.components.values() if
@@ -212,6 +229,24 @@ class Dataset:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
+    def refactor_time_period(self, date: str):
+        if not isinstance(date, str):
+            return date
+        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])$", date):
+            year, month = date.split("M")
+            return "{}-M{}".format(year, month)
+        if re.match(r"^\d{1,4}Q[1-4]$", date):
+            year, quarter = date.split("Q")
+            return "{}-Q{}".format(year, quarter)
+        if re.match(r"^\d{1,4}S[1-2]$", date):
+            year, semester = date.split("S")
+            return "{}-S{}".format(year, semester)
+        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])/\d{1,4}M(0?[1-9]|1[0-2])$", date):
+            date1, date2 = date.split("/")
+            return "{}/{}".format(self.refactor_time_period(date1),
+                                  self.refactor_time_period(date2))
+        return date
+
 
 @dataclass
 class ScalarSet:
@@ -223,25 +258,85 @@ class ScalarSet:
 
 
 @dataclass
+class ValueDomain:
+    """
+    Class representing a value domain
+    """
+    name: str
+    type: ScalarType
+    setlist: List[Union[int, float, str, bool]]
+
+    def __post_init__(self):
+        if len(set(self.setlist)) != len(self.setlist):
+            duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
+            raise ValueError(
+                f"The setlist must have unique values. Duplicated values: {duplicated}")
+
+        # Cast values to the correct type
+        self.setlist = [self.type.cast(value) for value in self.setlist]
+
+    @classmethod
+    def from_json(cls, json_str: str):
+        if len(json_str) == 0:
+            raise ValueError("Empty JSON string for ValueDomain")
+
+        json_info = json.loads(json_str)
+
+        if json_info['type'] not in SCALAR_TYPES:
+            raise ValueError(
+                f"Invalid data type {json_info['type']} for ValueDomain {json_info['name']}")
+
+        return cls(json_info['name'], SCALAR_TYPES[json_info['type']], json_info['setlist'])
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'type': self.type.__name__,
+            'setlist': self.setlist
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=4)
+
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
+
+
+@dataclass
 class ExternalRoutine:
     """
     Class representing an external routine, used in Eval operator
     """
-    dataset_name: str
+    dataset_names: List[str]
     query: str
     name: str
 
     @classmethod
     def from_sql_query(cls, name: str, query: str):
-        dataset_name = cls._extract_dataset_name(query)
-        return cls(dataset_name, query, name)
+        dataset_names = cls._extract_dataset_names(query)
+        return cls(dataset_names, query, name)
 
     @classmethod
-    def _extract_dataset_name(cls, query):
-        if "FROM" not in query:
-            raise ValueError("FROM clause not found in query")
-        from_expression = query.split("FROM")[1].lstrip()
-        dataset_name = from_expression.split()[0]
-        if ';' in dataset_name:
-            dataset_name = dataset_name[:-1]
-        return dataset_name
+    def _get_tables(cls, d):
+        """Using https://stackoverflow.com/questions/69684115/python-library-for-extracting-table-names-from-from-clause-in-sql-statetments"""
+        f = False
+        for i in getattr(d, 'tokens', []):
+            if isinstance(i, sqlparse.sql.Token) and i.value.lower() == 'from':
+                f = True
+            elif isinstance(i, (sqlparse.sql.Identifier, sqlparse.sql.IdentifierList)) and f:
+                f = False
+                if not any(
+                        isinstance(x, sqlparse.sql.Parenthesis) or 'select' in x.value.lower()
+                        for x in getattr(i, 'tokens', [])):
+                    fr = ''.join(str(j) for j in i if j.value not in {'as', '\n'})
+                    for t in re.findall('(?:\w+\.\w+|\w+)\s+\w+|(?:\w+\.\w+|\w+)', fr):
+                        yield {'table': (t1 := t.split())[0],
+                               'alias': None if len(t1) < 2 else t1[-1]}
+            yield from cls._get_tables(i)
+
+    @classmethod
+    def _extract_dataset_names(cls, query) -> List[str]:
+        expression = sqlglot.parse_one(query, read="sqlite")
+        tables_info = list(expression.find_all(exp.Table))
+        dataset_names = [t.name for t in tables_info]
+        return dataset_names

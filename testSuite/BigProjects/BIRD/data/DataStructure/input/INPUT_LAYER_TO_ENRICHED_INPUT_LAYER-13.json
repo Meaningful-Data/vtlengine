@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "PRVSN_FLWS_NT_FNNCL_GRNTS_CMMTMNTS_GVN",
+      "DataStructure": [
+        {
+          "name": "ADDTNS_INCLDNG_INCRSS_EXSTNG_PRVSNS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "AMNTS_USD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INCRS_DISCNTD_AMNT_EFFCT_CHNG_DSCNT_RT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "OTHR_MVMNTS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_PRVSN",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "UNSD_AMNTS_RVRSD_DRNG_PRD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

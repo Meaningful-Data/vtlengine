@@ -1,0 +1,106 @@
+{
+    "datasets": [
+        {
+            "name": "BIS_LBS_DISS",
+            "DataStructure": [
+                {
+                    "name": "FREQ",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_MEASURE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_POSITION",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": true
+                },
+                {
+                    "name": "L_INSTR",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_DENOM",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_CURR_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_PARENT_CTY",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_REP_BANK_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_REP_CTY",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_CP_SECTOR",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_CP_COUNTRY",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "L_POS_TYPE",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "TIME_PERIOD",
+                    "role": "Identifier",
+                    "type": "Date",
+                    "nullable": false
+                },
+                {
+                    "name": "OBS_VALUE",
+                    "role": "Measure",
+                    "type": "Number",
+                    "nullable": false
+                },
+                {
+                    "name": "OBS_STATUS",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "OBS_CONF",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": false
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+}
