@@ -1,4 +1,4 @@
-import warnings
+from copy import copy, deepcopy
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
@@ -16,9 +16,10 @@ from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarS
     ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
 from Operators.Assignment import Assignment
+from Operators.CastOperator import Cast
 from Operators.Comparison import Between, ExistIn
 from Operators.Conditional import If
-from Operators.General import Eval, Cast
+from Operators.General import Eval
 from Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
@@ -145,7 +146,6 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.name in self.hrs:
             raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
 
-
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
             raise ValueError("All rules must have a name, or none of them")
@@ -166,7 +166,6 @@ class InterpreterAnalyzer(ASTTemplate):
             "condition": cond_comp,
             'node': node
         }
-
 
         self.hrs[node.name] = ruleset_data
 
@@ -647,14 +646,12 @@ class InterpreterAnalyzer(ASTTemplate):
             mode = self.visit(node.params[0]) if len(node.params) == 1 else 'all'
             return Fill_time_series.evaluate(self.visit(node.children[0]), mode)
         elif node.op == CAST:
-            op_element = self.visit(node.children[0])
-            scalarType = node.children[1].type_ #TODO: maybe a vist method is needed or better? for checks but I think its unnecessary
+            operand = self.visit(node.children[0])
+            scalar_type = node.children[1]
             mask = None
             if len(node.params) > 0:
                 mask = self.visit(node.params[0])
-            else:
-                mask = None
-            return Cast.evaluate(operand, scalarType, mask)
+            return Cast.evaluate(operand, scalar_type, mask)
 
         elif node.op == CHECK_DATAPOINT:
             if self.dprs is None:
@@ -704,7 +701,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 hr_name = children[2]
                 cond_components = children[3:]
 
-
             # Input is always dataset
             mode, input_, output = (self.visit(param) for param in node.params)
 
@@ -720,9 +716,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Condition components check
             if len(cond_components) != len(hr_info['condition']):
-                raise Exception(f"Cannot match condition components, different number of components on call"
-                                f"from those defined on the signature: "
-                                f"{len(cond_components)} <> {len(hr_info['condition'])}")
+                raise Exception(
+                    f"Cannot match condition components, different number of components on call"
+                    f"from those defined on the signature: "
+                    f"{len(cond_components)} <> {len(hr_info['condition'])}")
             cond_info = {}
             for i, cond_comp in enumerate(hr_info['condition']):
                 cond_info[cond_comp] = cond_components[i]
@@ -742,7 +739,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                     "as rules have no = operator")
                 hr_info['rules'] = aux
 
-                hierarchy_ast = AST.HRuleset(name=hr_name, signature_type=hr_info['node'].signature_type,
+                hierarchy_ast = AST.HRuleset(name=hr_name,
+                                             signature_type=hr_info['node'].signature_type,
                                              element=hr_info['node'].element, rules=aux)
                 HRDAGAnalyzer().visit(hierarchy_ast)
 
@@ -852,7 +850,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_hr_agg:
                 return HAAssignment.evaluate(left_operand, right_operand, self.hr_mode)
             else:
-                result = HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand, self.hr_mode)
+                result = HR_COMP_MAPPING[node.op].evaluate(left_operand, right_operand,
+                                                           self.hr_mode)
                 left_measure = left_operand.get_measures()[0]
                 left_original_measure_data = left_operand.data[left_measure.name]
                 result.data[left_measure.name] = left_original_measure_data
@@ -861,10 +860,14 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-            if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset) and self.hr_mode in ('partial_null', 'partial_zero'):
+            if isinstance(left_operand, Dataset) and isinstance(right_operand,
+                                                                Dataset) and self.hr_mode in (
+            'partial_null', 'partial_zero'):
                 measure_name = left_operand.get_measures_names()[0]
-                left_null_indexes = set(list(left_operand.data[left_operand.data[measure_name].isnull()].index))
-                right_null_indexes = set(list(right_operand.data[right_operand.data[measure_name].isnull()].index))
+                left_null_indexes = set(
+                    list(left_operand.data[left_operand.data[measure_name].isnull()].index))
+                right_null_indexes = set(
+                    list(right_operand.data[right_operand.data[measure_name].isnull()].index))
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = left_null_indexes.intersection(right_null_indexes)
                 if len(invalid_indexes) > 0:
@@ -1017,7 +1020,6 @@ class InterpreterAnalyzer(ASTTemplate):
             condition: DataComponent = self.visit(node._right_condition)
             condition = condition.data[condition.data == True].index
 
-
         if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed:
             df = self.hr_agg_rules_computed[node.value].copy()
             return Dataset(name=name, components=result_components, data=df)
@@ -1103,8 +1105,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     # We validate the type is correct and cast the value
                     param_element = self.visit(node.params[i])
                     if isinstance(param_element, (Dataset, DataComponent)):
-                        raise Exception(f"Expected {param['type'].__name__}, got {type(param_element).__name__} "
-                                        f"on UDO {node.op}, parameter {param['name']}")
+                        raise Exception(
+                            f"Expected {param['type'].__name__}, got {type(param_element).__name__} "
+                            f"on UDO {node.op}, parameter {param['name']}")
                     scalar_type = param['type']
                     if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
                         raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "
