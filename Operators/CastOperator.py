@@ -1,9 +1,10 @@
 from copy import copy
-from typing import Optional
+from typing import Optional, Any
 
 import pandas as pd
 
 import Operators as Operator
+from AST.Grammar.tokens import CAST
 from DataTypes import (COMP_NAME_MAPPING, ScalarType,
                        EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
                        EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
@@ -23,6 +24,8 @@ duration_mapping = {
 
 
 class Cast(Operator.Unary):
+
+    op = CAST
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
@@ -125,7 +128,7 @@ class Cast(Operator.Unary):
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
 
-        raise Exception(f"Can not cast with mask from type {from_type} to {to_type}.")
+        raise Exception(f"Cannot cast with mask from type {from_type} to {to_type}.")
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
@@ -179,7 +182,7 @@ class Cast(Operator.Unary):
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
 
-        raise Exception(f"Can not cast with mask from {from_type} to {to_type}")
+        raise Exception(f"Cannot cast with mask from {from_type} to {to_type}")
 
     @classmethod
     def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType):
@@ -188,9 +191,9 @@ class Cast(Operator.Unary):
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
             explicit_with_mask = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
             if to_type.is_included(explicit_with_mask):
-                raise Exception(
-                    f"Can not cast from {from_type} to {to_type} without providing a mask.")
-            raise Exception(f"Can not cast from {from_type} to {to_type}")
+                raise Exception(f"Cannot cast from {from_type} to {to_type} "
+                                f"without providing a mask.")
+            raise Exception(f"Cannot cast from {from_type} to {to_type}")
 
     @classmethod
     def cast_component(cls, data: pd.Series, from_type: ScalarType,
@@ -209,15 +212,13 @@ class Cast(Operator.Unary):
     @classmethod
     def cast_mask_component(cls, data: pd.Series, from_type: ScalarType, to_type: ScalarType,
                             mask: str) -> pd.Series:
-        """
 
-        """
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action='ignore')
 
         return result
 
     @classmethod
-    def cast_value(cls, value, provided_type, to_type, mask_value):
+    def cast_value(cls, value: Any, provided_type: ScalarType, to_type: ScalarType, mask_value: str):
         """
 
         """
@@ -306,12 +307,10 @@ class Cast(Operator.Unary):
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
 
-        result = DataComponent(
+        return DataComponent(
             name=operand.name, data=None,
             data_type=to_type, role=operand.role
         )
-
-        return result
 
     @classmethod
     def scalar_validation(cls, operand: Scalar, to_type: ScalarType,
@@ -321,9 +320,8 @@ class Cast(Operator.Unary):
         """
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-        operand.data_type = to_type
 
-        return operand
+        return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod
     def evaluate(

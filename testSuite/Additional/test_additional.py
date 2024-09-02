@@ -3122,4 +3122,5 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ['DS_r']
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)

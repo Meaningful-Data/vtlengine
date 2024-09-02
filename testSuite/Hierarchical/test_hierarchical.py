@@ -1355,8 +1355,8 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         code = 'GL_397_32'
         number_inputs = 1
         references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_34(self):
         """
@@ -1376,7 +1376,8 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_36(self):
         """
@@ -2597,7 +2598,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_35(self):
         """
@@ -2617,7 +2619,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_397_37(self):
         """

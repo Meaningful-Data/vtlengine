@@ -415,6 +415,7 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
     TimePeriod: {String, TimePeriod},
     Duration: {Duration},
     Boolean: {Integer, Number, String, Boolean},
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
 
 EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
@@ -426,6 +427,7 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
     TimePeriod: {Date},
     Duration: {String},
     Boolean: {},
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
 
 
