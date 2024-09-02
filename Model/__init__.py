@@ -94,9 +94,8 @@ class Component:
     nullable: bool
 
     def __post_init__(self):
-        if self.role == Role.IDENTIFIER:
-            if self.nullable:
-                raise ValueError("An Identifier cannot be nullable")
+        if self.role == Role.IDENTIFIER and self.nullable:
+            raise ValueError("An Identifier cannot be nullable")
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
@@ -167,7 +166,7 @@ class Dataset:
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
-                               check_index_type=False)
+                               check_index_type=False, check_column_type=False)
             same_data = True
         except AssertionError as e:
             print(e)

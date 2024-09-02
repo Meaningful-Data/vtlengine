@@ -7,13 +7,13 @@ import pandas as pd
 
 DTYPE_MAPPING = {
     'String': 'string',
-    'Number': 'Float64',
-    'Integer': 'Int64',
+    'Number': 'float64',
+    'Integer': 'int64',
     'TimeInterval': 'string',
     'Date': 'string',
     'TimePeriod': 'string',
     'Duration': 'string',
-    'Boolean': 'boolean',
+    'Boolean': 'object',
 }
 
 CAST_MAPPING = {
@@ -88,7 +88,7 @@ class ScalarType:
         return CAST_MAPPING[cls.__name__](value)
 
     @classmethod
-    def dtype(cls):
+    def dtype(cls) -> str:
         return DTYPE_MAPPING[cls.__name__]
 
     __str__ = __repr__

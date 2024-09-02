@@ -11,6 +11,7 @@ from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
+from files.parser import load_datapoints
 
 
 class TestHelper(TestCase):
@@ -50,10 +51,7 @@ class TestHelper(TestCase):
                                                  role=Role(component['role']),
                                                  nullable=component['nullable'])
                     for component in dataset_json['DataStructure']}
-                if not os.path.exists(dp_path):
-                    data = pd.DataFrame(columns=list(components.keys()))
-                else:
-                    data = pd.read_csv(dp_path, sep=',')
+                data = load_datapoints(components, Path(dp_path))
 
                 datasets[dataset_name] = Dataset(name=dataset_name,
                                                  components=components,
