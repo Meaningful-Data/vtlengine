@@ -158,14 +158,13 @@ class InterpreterAnalyzer(ASTTemplate):
             cond_comp = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
 
-        HRDAGAnalyzer.createDAG(node)
-
         signature_actual_name = node.element.value
 
         ruleset_data = {
             'rules': node.rules,
             'signature': signature_actual_name,
-            "condition": cond_comp
+            "condition": cond_comp,
+            'node': node
         }
 
 
@@ -714,6 +713,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if hr_name not in self.hrs:
                 raise Exception(f"Hierarchical Ruleset {hr_name} not found")
 
+            if not isinstance(dataset, Dataset):
+                raise Exception("The operand must be a dataset")
+
             hr_info = self.hrs[hr_name]
 
             # Condition components check
@@ -739,6 +741,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise Exception("No rules to evaluate on Hierarchy Roll-up "
                                     "as rules have no = operator")
                 hr_info['rules'] = aux
+
+                hierarchy_ast = AST.HRuleset(name=hr_name, signature_type=hr_info['node'].signature_type,
+                                             element=hr_info['node'].element, rules=aux)
+                HRDAGAnalyzer().visit(hierarchy_ast)
 
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 

@@ -70,9 +70,6 @@ clause_operators = list(range(163, 177))
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
 
-# Remove test 159 as it has a cycle
-validation_operators.remove(159)
-
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
@@ -167,6 +164,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
         raise FileNotFoundError("No datasets found")
     return datasets
 
+
 @pytest.mark.parametrize('param', params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
@@ -177,6 +175,7 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     assert result == reference_datasets
     # except NotImplementedError:
     #     pass
+
 
 @pytest.mark.parametrize('param', params)
 def test_reference_defined_operators(input_datasets, reference_datasets,

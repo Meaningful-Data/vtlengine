@@ -35,7 +35,11 @@ class HRComparison(Operators.Binary):
         if (hr_mode in ('partial_null', 'partial_zero') and
                 not pd.isnull(y) and
                 y == "REMOVE_VALUE"):
-            return "REMOVE_VALUE"
+            if hr_mode == 'partial_null' and pd.isnull(x):
+                return "REMOVE_VALUE"
+            elif hr_mode == 'partial_zero' and not pd.isnull(x) and x == 0:
+                return "REMOVE_VALUE"
+            return None
         if hr_mode == 'non_null':
             # If all the involved Data Points are not NULL
             if pd.isnull(x) or pd.isnull(y):

@@ -2164,8 +2164,7 @@ class DataValidationOperatorsTest(AdditionalHelper):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        with pytest.raises(Exception, match="no DAG established"):
-            self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         '''
