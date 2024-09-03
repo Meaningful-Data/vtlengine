@@ -2640,4 +2640,5 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1", "2"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      scalars={"sc_1": 3})
