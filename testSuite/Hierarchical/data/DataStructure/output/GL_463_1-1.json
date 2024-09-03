@@ -1,190 +1,46 @@
 {
-    "datasets": [
+  "datasets": [
+    {
+      "name": "SUM_BIS_TOPIC.filtered_ds",
+      "DataStructure": [
         {
-            "name": "SUM_BIS_TOPIC.filtered_ds",
-            "DataStructure": [
-                {
-                    "name": "AGG_EQUN",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "AVAILABILITY",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "BIS_DOC_DATE",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "BIS_SUFFIX",
-                    "role": "Identifier",
-                    "type": "String",
-                    "nullable": false
-                },
-                {
-                    "name": "BIS_TOPIC",
-                    "role": "Identifier",
-                    "type": "String",
-                    "nullable": false
-                },
-                {
-                    "name": "BIS_UNIT",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "BREAKS",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "COLLECTION",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "COLLECTION_DETAIL",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "COMPILATION",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "COVERAGE",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "DECIMALS",
-                    "role": "Attribute",
-                    "type": "Integer",
-                    "nullable": true
-                },
-                {
-                    "name": "DOM_SER_IDS",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "FREQ",
-                    "role": "Identifier",
-                    "type": "String",
-                    "nullable": false
-                },
-                {
-                    "name": "METHOD_REF",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "NAT_TITLE",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "OBS_COM",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "OBS_CONF",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "OBS_PRE_BREAK",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "OBS_STATUS",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "OBS_VALUE",
-                    "role": "Measure",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "REF_AREA",
-                    "role": "Identifier",
-                    "type": "String",
-                    "nullable": false
-                },
-                {
-                    "name": "REP_DELAY",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "SOURCE_REF",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "TIME_FORMAT",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "TIME_PERIOD",
-                    "role": "Identifier",
-                    "type": "Time_Period",
-                    "nullable": false
-                },
-                {
-                    "name": "TITLE",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "TITLE_COMPL",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "UNIT_DETAIL",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                },
-                {
-                    "name": "UNIT_MULT",
-                    "role": "Attribute",
-                    "type": "String",
-                    "nullable": true
-                }
-            ],
-            "DataPoints": null
+          "name": "BIS_SUFFIX",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "BIS_TOPIC",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "FREQ",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "type": "Number",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "REF_AREA",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "type": "Time_Period",
+          "role": "Identifier",
+          "nullable": false
         }
-    ]
+      ],
+      "DataPoints": null
+    }
+  ]
 }
