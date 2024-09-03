@@ -65,7 +65,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, value, mask_value) -> str:  # Union[pd.NA, str]:
+    def cast_string_to_time(cls, value, mask_value) -> str:
         """
         This method casts a string to a time, according to the mask.
 

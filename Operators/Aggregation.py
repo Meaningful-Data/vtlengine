@@ -2,7 +2,8 @@ import os
 from copy import copy
 from typing import List, Optional
 
-from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED
+from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED, TimePeriodHandler, \
+    TimeIntervalHandler
 
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
@@ -41,16 +42,30 @@ class Aggregation(Operator.Unary):
             new_value = [None]
 
         for measure in measures:
-            if measure.data_type.__name__ == ('Date', 'TimePeriod', 'TimeInterval'):
+            if measure.data_type.__name__ == 'Date':
                 if cls.op == MIN:
                     if mode == 'input':
-                        to_replace = [None]
-                        # 15 characters to ensure TimeInterval is always greater
-                        new_value = ['ZZZZZZZZZZZZZZZZZ']
+                        # Invalid date only for null values
+                        new_value = ['9999-99-99']
                     else:
-                        to_replace = ['ZZZZZZZZZZZZZZZZ']
-                        new_value = [None]
+                        to_replace = ['9999-99-99']
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
+            elif measure.data_type.__name__ == 'TimePeriod':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].astype(object).map(
+                        lambda x: TimePeriodHandler(x),
+                        na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: str(x), na_action='ignore')
+            elif measure.data_type.__name__ == 'TimeInterval':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].astype(object).map(
+                        lambda x: TimeIntervalHandler(x),
+                        na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: str(x), na_action='ignore')
             elif measure.data_type.__name__ == 'String':
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
             elif measure.data_type.__name__ == 'Duration':

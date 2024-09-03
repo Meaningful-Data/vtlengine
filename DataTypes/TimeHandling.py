@@ -2,10 +2,9 @@ import calendar
 import copy
 import operator
 from datetime import date, datetime as dt
-from typing import Union
+from typing import Union, Optional
 
 import pandas as pd
-from pandas._libs.missing import NAType
 
 DURATION_MAPPING = {
     "A": 6,
@@ -269,9 +268,9 @@ class TimePeriodHandler:
                     raise ValueError(f'Invalid day {value} for year {self.year}.')
         self._period_number = value
 
-    def _meta_comparison(self, other, py_op) -> bool:
+    def _meta_comparison(self, other, py_op) -> Optional[bool]:
         if pd.isnull(other):
-            return pd.NA
+            return None
         if isinstance(other, str):
             if len(other) == 0:
                 return False
@@ -331,7 +330,7 @@ class TimePeriodHandler:
                                             period_indicator=new_indicator).period_number
 
 
-class TimeHandler:
+class TimeIntervalHandler:
     _date1: str = '0'
     _date2: str = 'Z'
 
@@ -390,13 +389,13 @@ class TimeHandler:
 
     __repr__ = __str__
 
-    def _meta_comparison(self, other, py_op):
+    def _meta_comparison(self, other, py_op) -> Optional[bool]:
         if pd.isnull(other):
-            return pd.NA
+            return None
         if isinstance(other, str):
             if len(other) == 0:
                 return False
-            other = TimeHandler(*other.split('/', maxsplit=1))
+            other = TimeIntervalHandler(*other.split('/', maxsplit=1))
         return py_op(self.length, other.length)
 
     def __eq__(self, other) -> bool:
@@ -422,21 +421,6 @@ class TimeHandler:
         date1 = period_to_date(value.year, value.period_indicator, value.period_number, start=True)
         date2 = period_to_date(value.year, value.period_indicator, value.period_number, start=False)
         return cls.from_dates(date1, date2)
-
-
-def timePeriodParser(str_: str) -> Union[TimePeriodHandler, NAType]:
-    """
-    Examples: 2020, 2019A, 2018Q3, 2011M12 2023S2.
-    """
-
-    try:
-        if pd.isnull(str_):
-            return pd.NA
-        return TimePeriodHandler(str_)
-
-    except ValueError:
-        # DATAMODEL_DATASET.13
-        raise ValueError('Not a valid time period format {}'.format(str_))
 
 
 def sort_dataframe_by_period_column(data, name, identifiers_names):
@@ -574,13 +558,13 @@ def period_to_date(year, period_indicator, period_number, start=False):
 
 def check_max_date(str_: str):
     if pd.isnull(str_) or str_ == 'nan' or str_ == 'NaT':
-        return pd.NA
+        return None
 
     if len(str_) == 9 and str_[7] == '-':
         str_ = str_[:-1] + '0' + str_[-1]
 
-    if len(str_) != 10 or str_[
-        7] != '-':  # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
+    # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
+    if len(str_) != 10 or str_[7] != '-':
         raise ValueError
 
     date.fromisoformat(str_)
