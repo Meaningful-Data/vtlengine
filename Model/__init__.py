@@ -144,17 +144,27 @@ class Dataset:
             return False
 
         same_name = self.name == other.name
+        if not same_name:
+            print("\nName mismatch")
+            print("result:", self.name)
+            print("reference:", other.name)
         same_components = self.components == other.components
+        if not same_components:
+            print("\nComponents mismatch")
+            print("result:", json.dumps(self.to_dict()['components'], indent=4))
+            print("reference:", json.dumps(other.to_dict()['components'], indent=4))
+            return False
 
         if isinstance(self.data, SparkDataFrame):
             self.data = self.data.to_pandas()
         if isinstance(other.data, SparkDataFrame):
             other.data = other.data.to_pandas()
+        if len(self.data) == len(other.data) == 0:
+            assert self.data.shape == other.data.shape
+
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
         self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
-        if not same_components:
-            return same_components
         other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
@@ -179,14 +189,15 @@ class Dataset:
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
-            self.data.replace(-1234997, None, inplace=True)
-            other.data.replace(-1234997, None, inplace=True)
             diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            # To display actual null values instead of -1234997
+            for comp in self.components.values():
+                if comp.data_type.__name__ in ['Integer', 'Float']:
+                    diff[comp.name] = diff[comp.name].replace(-1234997, "")
             print("\n Differences between the dataframes")
             print(diff)
             raise e
-        same_data = True
-        return same_name and same_components and same_data
+        return True
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]

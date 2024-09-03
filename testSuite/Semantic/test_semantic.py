@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from testSuite.Helper import TestHelper
 
 
@@ -1893,7 +1895,8 @@ class ScalarTests(SemanticHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Vtl Script contains Cycles, no DAG established"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -2139,7 +2142,8 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      scalars={"sc_1": True})
 
     def test_21(self):
         """
@@ -2155,7 +2159,8 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      scalars={"sc_1": True})
 
     def test_22(self):
         """
@@ -2402,7 +2407,8 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      scalars={"sc_1": 0})
 
     def test_35(self):
         """
@@ -2418,7 +2424,8 @@ class ScalarTests(SemanticHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      scalars={"sc_1": 0})
 
     def test_36(self):
         """
