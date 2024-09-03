@@ -109,6 +109,40 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
 
+def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key: str,
+                                 left_data: pd.DataFrame,
+                                 right_data: pd.DataFrame) -> None:
+    left_type_name = c_left.data_type.__name__
+    right_type_name = c_right.data_type.__name__
+
+    if left_type_name == right_type_name:
+        return
+    if ((left_type_name == "Integer" and right_type_name == "Number") or
+            (left_type_name == "Number" and right_type_name == "Integer")):
+        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
+        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
+    elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
+        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
+        left_data[join_key] = left_data[join_key].astype(object)
+        right_data[join_key] = right_data[join_key].astype(object)
+    elif left_type_name in ("Integer", "Number") and right_type_name == "String":
+        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
+        left_data[join_key] = left_data[join_key].astype(object)
+        right_data[join_key] = right_data[join_key].astype(object)
+
+
+def _handle_str_number(x: Union[str, int, float]) -> Union[int, float]:
+    if isinstance(x, int):
+        return x
+    try:
+        x = float(x)
+        if x.is_integer():
+            return int(x)
+        return x
+    except ValueError:  # Unable to get to string, return the same value that will not be matched
+        return x
+
+
 class Binary(Operator):
 
     @classmethod
@@ -223,7 +257,6 @@ class Binary(Operator):
                 left_comp = left_operand.components[comp.name]
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
-
 
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
@@ -423,6 +456,11 @@ class Binary(Operator):
 
         join_keys = list(set(left_operand.get_identifiers_names()).intersection(
             right_operand.get_identifiers_names()))
+
+        for join_key in join_keys:
+            _id_type_promotion_join_keys(left_operand.get_component(join_key),
+                                         right_operand.get_component(join_key),
+                                         join_key, base_operand_data, other_operand_data)
 
         # Merge the data
         result_data: pd.DataFrame = pd.merge(

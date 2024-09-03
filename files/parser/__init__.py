@@ -99,22 +99,19 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame):
             raise Exception(f"Identifiers cannot have null values, check column {id_name}")
 
     data = data.fillna(np.nan).replace([np.nan], [None])
-    # Checking time data types on all components
+    # Checking data types on all data types
     for comp_name, comp in components.items():
         if comp.data_type in (Date, TimePeriod, TimeInterval):
             data[comp_name] = data[comp_name].map(TIME_CHECKS_MAPPING[comp.data_type],
                                                   na_action='ignore')
-
-    # We only modify the measure and attribute values, rest we keep as object
-    non_identifiers = {c.name: c for c in components.values()
-                      if c.role in (Role.MEASURE, Role.ATTRIBUTE)}
-    for comp_name, comp in non_identifiers.items():
-        if comp.data_type == Integer:
+        elif comp.data_type == Integer:
             data[comp_name] = data[comp_name].map(lambda x: int(float(x)), na_action='ignore')
         elif comp.data_type == Number:
             data[comp_name] = data[comp_name].map(lambda x: float(x), na_action='ignore')
         elif comp.data_type == Boolean:
             data[comp_name] = data[comp_name].map(lambda x: _parse_boolean(x), na_action='ignore')
+        else:
+            data[comp_name] = data[comp_name].map(lambda x: str(x), na_action='ignore')
         data[comp_name] = data[comp_name].astype(np.object_, errors='raise')
 
     return data
