@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "CONF",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "SOURCE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TRNSLTRTD_VL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TYP_RQST",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "VLD_FRM",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "VLD_T",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

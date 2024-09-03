@@ -1,0 +1,22 @@
+{
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {
+                    "name": "ID1",
+                    "role": "Identifier",
+                    "type": "String",
+                    "nullable": false
+                },
+                {
+                    "name": "ME1",
+                    "role": "Measure",
+                    "type": "String",
+                    "nullable": true
+                }
+            ],
+            "DataPoints": null
+        }
+    ]
+  }
