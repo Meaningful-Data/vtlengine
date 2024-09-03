@@ -61,7 +61,7 @@ class Aggregation(Operator.Unary):
             elif measure.data_type.__name__ == 'TimeInterval':
                 if mode == 'input':
                     data[measure.name] = data[measure.name].astype(object).map(
-                        lambda x: TimeIntervalHandler(x),
+                        lambda x: TimeIntervalHandler.from_iso_format(x),
                         na_action='ignore')
                 else:
                     data[measure.name] = data[measure.name].map(

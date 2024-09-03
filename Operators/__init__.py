@@ -2,10 +2,11 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from AST.Grammar.tokens import CEIL, FLOOR, ROUND
+from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
+from DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -20,6 +21,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # when the operator is applied to mono-measure Data Sets.
 # TODO: Check if there are more operators that allow this
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
+BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 
 
 class Operator:
@@ -29,6 +31,21 @@ class Operator:
     spark_op = None
     type_to_check = None
     return_type = None
+
+    @classmethod
+    def cast_time_types(cls, data_type: ScalarType, series: pd.Series) -> pd.Series:
+        if cls.op not in BINARY_COMPARISON_OPERATORS:
+            return series
+        if data_type.__name__ == "TimeInterval":
+            series = series.map(lambda x: TimeIntervalHandler.from_iso_format(x),
+                                na_action='ignore')
+        elif data_type.__name__ == "TimePeriod":
+            series = series.map(lambda x: TimePeriodHandler(x),
+                                na_action='ignore')
+        elif data_type.__name__ == "Duration":
+            series = series.map(lambda x: DURATION_MAPPING[x],
+                                na_action='ignore')
+        return series
 
     @classmethod
     def modify_measure_column(cls, result: Dataset) -> None:
@@ -469,16 +486,20 @@ class Binary(Operator):
             suffixes=('_x', '_y'))
 
         # Measures are the same, using left operand measures names
-        for measure_name in left_operand.get_measures_names():
+        for measure in left_operand.get_measures():
+            result_data[measure.name + '_x'] = cls.cast_time_types(measure.data_type,
+                                                                   result_data[measure.name + '_x'])
+            result_data[measure.name + '_y'] = cls.cast_time_types(measure.data_type,
+                                                                   result_data[measure.name + '_y'])
             if use_right_as_base:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    result_data[measure_name + '_y'],
-                    result_data[measure_name + '_x'])
+                result_data[measure.name] = cls.apply_operation_two_series(
+                    result_data[measure.name + '_y'],
+                    result_data[measure.name + '_x'])
             else:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    result_data[measure_name + '_x'],
-                    result_data[measure_name + '_y'])
-            result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
+                result_data[measure.name] = cls.apply_operation_two_series(
+                    result_data[measure.name + '_x'],
+                    result_data[measure.name + '_y'])
+            result_data = result_data.drop([measure.name + '_x', measure.name + '_y'], axis=1)
 
         # Delete attributes from the result data
         attributes = list(
@@ -509,9 +530,10 @@ class Binary(Operator):
         result_data = dataset.data.copy()
         result_dataset.data = result_data
 
-        for measure_name in dataset.get_measures_names():
-            result_dataset.data[measure_name] = cls.apply_operation_series_scalar(
-                result_data[measure_name], scalar.value, dataset_left)
+        for measure in dataset.get_measures():
+            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
+            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
+                measure_data, scalar.value, dataset_left)
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
@@ -523,15 +545,17 @@ class Binary(Operator):
     def component_evaluation(cls, left_operand: DataComponent,
                              right_operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
-        result_component.data = cls.apply_operation_two_series(left_operand.data.copy(),
-                                                               right_operand.data.copy())
+        left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy())
+        right_data = cls.cast_time_types(right_operand.data_type, right_operand.data.copy())
+        result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
 
     @classmethod
     def component_scalar_evaluation(cls, component: DataComponent, scalar: Scalar,
                                     component_left: bool) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        result_component.data = cls.apply_operation_series_scalar(component.data.copy(),
+        comp_data = cls.cast_time_types(component.data_type, component.data.copy())
+        result_component.data = cls.apply_operation_series_scalar(comp_data,
                                                                   scalar.value, component_left)
         return result_component
 
