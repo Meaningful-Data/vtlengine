@@ -92,8 +92,8 @@ params = itertools.chain(
 
 # params = [x for x in list(params) if x not in exceptions_tests]
 # TODO: check if test 107 is correct
-params = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116]
-# params = [111, 112, 115, 116]
+params = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
+# params = [117]
 # params = time_operators
 exceptions_tests = []
 

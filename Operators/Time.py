@@ -4,7 +4,7 @@ from Model import Dataset, DataComponent, Scalar, Component, Role
 
 import re
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from itertools import combinations
 from dateutil.relativedelta import relativedelta
 from typing import Optional
@@ -22,6 +22,8 @@ class Time(Operators.Operator):
     PERIOD_PATTERN = r'^(\d{1,4})(?:-([SQMD])(\d{1,3}))?$'
     TIME_PATTERN = r'^(.+?)/(.+?)$'
 
+    FREQUENCY_MAP = {'Y': 'years', 'M': 'months', 'D': 'days'}
+    YEAR_TO_PERIOD = {'S': 2, 'Q': 4, 'M': 12, 'D': 365}
     PERIOD_ORDER = {'A': 0, 'S': 1, 'Q': 2, 'M': 3, 'D': 4}
     DATE_TO_PERIOD_PARSER = {
         'D': lambda x: x.strftime('%Y-D%d'),
@@ -56,10 +58,6 @@ class Time(Operators.Operator):
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
         ids.append(time_id)
         return operand.data.sort_values(by=ids).reset_index(drop=True)
-
-    @classmethod
-    def get_period_from_list(cls, series: pd.Series) -> pd.Series:
-        return series.apply(cls.get_period)
 
     @classmethod
     def get_period(cls, value) -> str | None:
@@ -131,6 +129,46 @@ class Time(Operators.Operator):
     def get_year(cls, value: str) -> int:
         return int(re.match(r'^(\d{1,4})', value).group(1))
 
+    @classmethod
+    def get_frequencies(cls, dates):
+        return [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
+
+    @classmethod
+    def find_min_frequency(cls, differences):
+        min_months = min((diff.months for diff in differences if diff.months > 0), default=None)
+        min_days = min((diff.days for diff in differences if diff.days > 0), default=None)
+        return 'D' if min_days else 'M' if min_months else 'Y'
+
+    @classmethod
+    def get_frequency_from_time(cls, interval, time_format, time_type):
+        start_date, end_date = interval.split('/')
+        if time_type == 'Period':
+            years = cls.get_year(end_date) - cls.get_year(start_date)
+            if time_format == 'A':
+                return years
+            return cls.value_from_period(end_date) - cls.value_from_period(start_date) + 1 + years * \
+                cls.YEAR_TO_PERIOD[time_format]
+        return cls.parse_date(end_date) - cls.parse_date(start_date)
+
+    @classmethod
+    def get_format_from_time(cls, interval):
+        start_date, end_date = interval.split('/')
+        if cls.is_period(start_date) and cls.is_period(end_date):
+            period = cls.get_period(start_date)
+            if period != cls.get_period(end_date):
+                raise ValueError("Start and end dates must have the same period")
+            return period
+        elif cls.is_date(start_date) and cls.is_date(end_date):
+            init_format = cls.get_date_format(start_date)
+            if init_format != cls.get_date_format(end_date):
+                raise ValueError("Start and end dates must have the same format")
+            return init_format
+
+    @classmethod
+    def get_date_format(cls, date_str):
+        date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
+        return '%Y-%m-%d' if date.day > 1 else '%Y-%m' if date.month > 1 else '%Y'
+
 
 class Unary(Time):
 
@@ -153,11 +191,7 @@ class Unary(Time):
             raise ValueError("FlowToStock can only be applied to a dataset with a single date type")
         result.data = result.data.sort_values(by=cls.other_ids + [cls.time_id])
         if date_type[0] == 'Period':
-            cls.periods = result.data[cls.time_id].apply(cls.get_period).unique()
-            if len(cls.periods) == 1 and cls.periods[0] == 'A':
-                result.data[cls.measures] = result.data.groupby(cls.other_ids)[cls.measures].apply(cls.py_op)
-            else:
-                result.data = cls.period_accumulation(result.data)
+            result.data = cls.period_accumulation(result.data)
         elif date_type[0] in ['Date', 'Time']:
             result.data[cls.measures] = result.data.groupby(cls.other_ids)[cls.measures].apply(cls.py_op)
         else:
@@ -176,7 +210,7 @@ class Unary(Time):
     @classmethod
     def period_accumulation(cls, data):
         data = data.copy()
-        data['Period_group_col'] = data[cls.time_id].apply(cls.get_period)
+        data['Period_group_col'] = data[cls.time_id].apply(cls.get_period).apply(lambda x: cls.PERIOD_ORDER[x])
         data[cls.measures] = data.groupby(cls.other_ids + ['Period_group_col'])[cls.measures].apply(cls.py_op).reset_index(
             drop=True)
         return data.drop(columns='Period_group_col')
@@ -198,7 +232,7 @@ class Period_indicator(Unary):
         if isinstance(operand, DataComponent):
             return DataComponent(name='result',
                                  data_type=DataTypes.Duration,
-                                 data=cls.get_period_from_list(operand.data))
+                                 data=operand.data.apply(cls.get_period))
         data = operand.data[cls.time_id].apply(cls.get_period)
         operand.data = operand.data.drop(columns=operand.get_measures_names())
         operand.data['duration_var'] = data
@@ -373,21 +407,6 @@ class Fill_time_series(Binary):
         return row.to_frame().T
 
     @classmethod
-    def get_frequencies(cls, dates):
-        return [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
-
-    @classmethod
-    def find_min_frequency(cls, differences):
-        min_months = min((diff.months for diff in differences if diff.months > 0), default=None)
-        min_days = min((diff.days for diff in differences if diff.days > 0), default=None)
-        return 'D' if min_days else 'M' if min_months else 'Y'
-
-    @classmethod
-    def get_date_format(cls, date_str):
-        date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
-        return '%Y-%m-%d' if date.day > 1 else '%Y-%m' if date.month > 1 else '%Y'
-
-    @classmethod
     def max_min_from_date(cls, data, fill_type='all'):
         def compute_min_max(group):
             min_date = cls.parse_date(group.min())
@@ -433,33 +452,6 @@ class Fill_time_series(Binary):
         combined_data = pd.concat([filled_data, data], ignore_index=True)
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
-
-    @classmethod
-    def get_format_from_time(cls, interval):
-        start_date, end_date = interval.split('/')
-        if cls.is_period(start_date) and cls.is_period(end_date):
-            period = cls.get_period(start_date)
-            if period != cls.get_period(end_date):
-                raise ValueError("Start and end dates must have the same period")
-            return period
-        elif cls.is_date(start_date) and cls.is_date(end_date):
-            init_format = cls.get_date_format(start_date)
-            if init_format != cls.get_date_format(end_date):
-                raise ValueError("Start and end dates must have the same format")
-            return init_format
-
-    @classmethod
-    def get_frequency_from_time(cls, interval, time_format, time_type):
-        start_date, end_date = interval.split('/')
-        year_to_period = {'S': 2, 'Q': 4, 'M': 12, 'D': 365}
-
-        if time_type == 'Period':
-            years = cls.get_year(end_date) - cls.get_year(start_date)
-            if time_format == 'A':
-                return years
-            return cls.value_from_period(end_date) - cls.value_from_period(start_date) + 1 + years * \
-                year_to_period[time_format]
-        return cls.parse_date(end_date) - cls.parse_date(start_date)
 
     @classmethod
     def max_min_from_time(cls, data, fill_type='all'):
@@ -522,62 +514,73 @@ class Fill_time_series(Binary):
         return pd.concat(filled_data, ignore_index=True).sort_values(
             by=cls.other_ids + [cls.time_id]).drop_duplicates()
 
-class Time_Shift(Binary):
+
+class Time_Shift(Time):
 
     @classmethod
-    def evaluate(cls, operand, shift: Scalar) -> Dataset:
-        result = cls.validate(operand, shift)
+    def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
+        result = cls.validate(operand)
         result.data = operand.data.copy()
-        if shift.value == 0:
-            return result
-        result = cls.shift(operand.data, int(shift.value))
-        cls.periods = result[cls.time_id].apply(cls.get_period).unique()
-        if len(cls.periods) == 1 and cls.periods[0] == 'A':
-            result[cls.time_id] = result[cls.time_id].astype(int)
-        return Dataset(name='result', components=operand.components.copy(), data=result)
+        shift_value = int(shift_value.value)
+        cls.time_id = cls.get_time_id(result)
+        date_type = cls.classify_dates(result.data[cls.time_id]).unique()[0]
+
+        if date_type == 'Date':
+            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
+            result.data[cls.time_id] = result.data[cls.time_id].apply(
+                lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
+        elif date_type == 'Time':
+            interval_format = cls.get_format_from_time(result.data[cls.time_id].iloc[0])
+            time_type = 'Period' if interval_format in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
+            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0], interval_format, time_type)
+            result.data[cls.time_id] = result.data[cls.time_id].apply(
+                lambda x: cls.shift_interval(x, shift_value, interval_format, freq))
+        elif date_type == 'Period':
+            periods = result.data[cls.time_id].apply(cls.get_period).unique()
+            result.data[cls.time_id] = result.data[cls.time_id].apply(lambda x: cls.shift_period(x, shift_value))
+            if len(periods) == 1 and periods[0] == 'A':
+                result.data[cls.time_id] = result.data[cls.time_id].astype(int)
+        else:
+            raise ValueError("Unknown date type for Timeshift")
+        return result
 
     @classmethod
-    def validate(cls, operand, shift) -> Dataset:
-        if not isinstance(shift, Scalar):
-            raise TypeError("TimeShift can only be applied with a scalar value")
-        if not isinstance(operand, Dataset):
-            raise TypeError("TimeShift can only be applied to a time dataset")
-        cls.time_id = cls.get_time_id(operand)
-        if cls.time_id is None:
-            raise ValueError("TimeShift can only be applied to a time dataset")
-        cls.sort_by_time(operand)
+    def validate(cls, operand: Dataset) -> Dataset:
+        if not isinstance(operand, Dataset) or cls.get_time_id(operand) is None:
+            raise TypeError("Timeshift can only be applied to a time dataset")
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
-    def shift(cls, data, shift):
+    def shift_date(cls, date, shift_value, frequency):
+        return pd.to_datetime(date) + relativedelta(**{cls.FREQUENCY_MAP[frequency]: shift_value})
 
-        def update_row(row):
-            period = cls.get_period(row[cls.time_id])
-            val = cls.value_from_period(row[cls.time_id])
-            year = cls.get_year(row[cls.time_id])
+    @classmethod
+    def shift_period(cls, period_str, shift_value, frequency=None):
+        period_type = cls.get_period(period_str)
 
-            if period in ['A', 'P']:
-                row[cls.time_id] = cls.PERIODS_TO_DATE_PARSER[period](year + shift)
-            elif period == 'D':
-                date = cls.DATE_TO_PERIOD_PARSER[period](row[cls.time_id]) + timedelta(days=shift)
-                row[cls.time_id] = cls.PERIODS_TO_DATE_PARSER[period](date.year, date.month, date.day)
-            elif period == 'M':
-                delta = relativedelta(months=shift)
-                row[cls.time_id] = cls.PERIODS_TO_DATE_PARSER[period](year, val + delta.months)
-            elif period == 'Q':
-                delta = val + shift
-                delta_years, quarters = divmod(delta, 4)
-                if quarters == 0:
-                    quarters = 4
-                    delta_years -= 1
-                row[cls.time_id] = cls.PERIODS_TO_DATE_PARSER[period](year + delta_years, quarters)
-            elif period == 'S':
-                delta = val + shift
-                delta_years, semesters = divmod(delta, 2)
-                if semesters == 0:
-                    semesters = 2
-                    delta_years -= 1
-                row[cls.time_id] = cls.PERIODS_TO_DATE_PARSER[period](year + delta_years, semesters)
-            return row
+        if period_type == 'A':
+            return str(int(period_str) + shift_value)
 
-        return data.apply(update_row, axis=1)
+        if frequency:
+            shift_value *= frequency
+
+        match = re.match(cls.PERIOD_PATTERN, period_str)
+        year, period, value = int(match.group(1)), match.group(2), int(match.group(3)) + shift_value
+        period_limit = cls.YEAR_TO_PERIOD[period]
+
+        if value <= 0:
+            year -= 1
+            value += period_limit
+        elif value > period_limit:
+            year += (value - 1) // period_limit
+            value = (value - 1) % period_limit + 1
+
+        return f"{year}-{period}{value}"
+
+    @classmethod
+    def shift_interval(cls, interval, shift_value, time_format, frequency):
+        start_date, end_date = interval.split('/')
+        shift_func = cls.shift_period if time_format in ['A', 'S', 'Q', 'M', 'D'] else cls.shift_date
+        start_date = shift_func(start_date, shift_value, frequency)
+        end_date = shift_func(end_date, shift_value, frequency)
+        return f'{start_date}/{end_date}'
