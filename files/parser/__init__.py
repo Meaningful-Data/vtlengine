@@ -105,9 +105,10 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame):
             data[comp_name] = data[comp_name].map(TIME_CHECKS_MAPPING[comp.data_type],
                                                   na_action='ignore')
 
-    # We only modify the measure values, rest we keep as string
-    measures = {c.name: c for c in components.values() if c.role == Role.MEASURE}
-    for comp_name, comp in measures.items():
+    # We only modify the measure and attribute values, rest we keep as object
+    non_identifiers = {c.name: c for c in components.values()
+                      if c.role in (Role.MEASURE, Role.ATTRIBUTE)}
+    for comp_name, comp in non_identifiers.items():
         if comp.data_type == Integer:
             data[comp_name] = data[comp_name].map(lambda x: int(float(x)), na_action='ignore')
         elif comp.data_type == Number:

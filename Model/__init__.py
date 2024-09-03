@@ -1,17 +1,15 @@
-from collections import Counter
-
-import sqlparse, re
-import sqlglot
-import sqlglot.expressions as exp
-
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
+import sqlglot
+import sqlglot.expressions as exp
+import sqlparse
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
@@ -157,20 +155,34 @@ class Dataset:
         self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
         if not same_components:
             return same_components
-        for comp in self.components.values():
-            if comp.data_type == SCALAR_TYPES['String']:
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
         other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
+        for comp in self.components.values():
+            if comp.data_type.__name__ in ['String', 'Date', 'TimePeriod', 'TimeInterval']:
+                self.data[comp.name] = self.data[comp.name].astype(str)
+                other.data[comp.name] = other.data[comp.name].astype(str)
+            elif comp.data_type.__name__ in ['Integer', 'Float']:
+                if comp.data_type.__name__ == 'Integer':
+                    type_ = "int64"
+                else:
+                    type_ = "float64"
+                self.data[comp.name] = self.data[comp.name].replace("", -12345).astype(type_)
+                other.data[comp.name] = other.data[comp.name].replace("", -12345).astype(type_)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
-                               check_index_type=False, check_column_type=False)
-            same_data = True
+                               check_index_type=False, check_datetimelike_compat=True)
         except AssertionError as e:
-            print(e)
-            same_data = False
+            if "DataFrame shape" in str(e):
+                print("\nDataFrame shape mismatch")
+                print("result:", self.data.shape)
+                print("reference:", other.data.shape)
+            # Differences between the dataframes
+            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            print("\n Differences between the dataframes")
+            print(diff)
+            raise e
+        same_data = True
         return same_name and same_components and same_data
 
     def get_component(self, component_name: str) -> Component:

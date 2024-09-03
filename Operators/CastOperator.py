@@ -96,7 +96,7 @@ class Cast(Operator.Unary):
         """
         """
         start = mask_value == "START"
-        return str_period_to_date(value, start).isoformat()
+        return str_period_to_date(value, start)
 
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 

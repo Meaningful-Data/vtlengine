@@ -52,8 +52,10 @@ class Identifier(RoleSetter):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES):
         result = super().validate(operand)
-        if result.nullable:
+        if result.nullable and any(result.data.isnull()):
             raise Exception("An Identifier cannot be nullable")
+        elif result.nullable:
+            result.nullable = False
         return result
 
     @classmethod

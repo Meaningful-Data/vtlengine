@@ -1,6 +1,6 @@
 import calendar
-from datetime import datetime, date
 import re
+from datetime import datetime, date
 
 from DataTypes.TimeHandling import TimePeriodHandler
 from Exceptions import InputValidationException
@@ -57,46 +57,52 @@ def check_time(value: str):
     raise ValueError("Time is not in the correct format. "
                      "Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM.")
 
+
 day_period_pattern = r'^\d{4}[-][0-1]?\d[-][0-3]?\d$'
 month_period_pattern = r'^\d{4}[-][0-1]?\d$'
 year_period_pattern = r'^\d{4}$'
 period_pattern = r'^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M][0-1]?\d$|^\d{4}[W][0-5]?\d$|^\d{4}[D][0-3]?[0-9]?\d$'
 
-## Related with gitlab issue #440, we can say that period pattern matches with our internal representation (or vtl user manual)
-## and further_options_period_pattern matches with other kinds of inputs that we have to accept for the period.
-further_options_period_pattern = r'\d{4}-\d{2}-\d{2}|^\d{4}-D[0-3]\d\d$|^\d{4}-W([0-4]\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]))$|^\d{4}-Q[1-4]$|^\d{4}-S[1-2]$|^\d{4}-A1$'
+# Related with gitlab issue #440, we can say that period pattern
+# matches with our internal representation (or vtl user manual)
+# and further_options_period_pattern matches
+# with other kinds of inputs that we have to accept for the period.
+further_options_period_pattern = (r'\d{4}-\d{2}-\d{2}|^\d{4}-D[0-3]\d\d$|^\d{4}-W([0-4]'
+                                  r'\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]))$|^'
+                                  r'\d{4}-Q[1-4]$|^\d{4}-S[1-2]$|^\d{4}-A1$')
+
 
 def check_time_period(value: str):
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:
-        TimePeriodHandler(value)
-        return value
+        result = TimePeriodHandler(value)
+        return str(result)
 
     # We allow the user to input the time period in different formats.
     # See gl-440 or documentation in time period tests.
     further_options_period_result = re.fullmatch(further_options_period_pattern, value)
     if further_options_period_result is not None:
-        TimePeriodHandler(value)
-        return value
+        result = TimePeriodHandler(value)
+        return str(result)
 
     year_result = re.fullmatch(year_period_pattern, value)
     if year_result is not None:
-        year = datetime.datetime.strptime(value, '%Y')
-        year_period = year.strftime('%YA')
+        year = datetime.strptime(value, '%Y')
         year_period_wo_A = str(year.year)
         return year_period_wo_A
         # return year_period
 
     month_result = re.fullmatch(month_period_pattern, value)
     if month_result is not None:
-        month = datetime.datetime.strptime(value, '%Y-%m')
+        month = datetime.strptime(value, '%Y-%m')
         month_period = month.strftime('%YM%m')
-        return month_period
+        result = TimePeriodHandler(month_period)
+        return str(result)
 
-    # are we use that? is covered by further option period_pattern
+    # TODO: Do we use this?
     day_result = re.fullmatch(day_period_pattern, value)
     if day_result is not None:
-        day = datetime.datetime.strptime(value, '%Y-%m-%d')
+        day = datetime.strptime(value, '%Y-%m-%d')
         day_period = day.strftime('%YD%-j')
         return day_period
     raise ValueError

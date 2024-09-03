@@ -7,7 +7,6 @@ from typing import Union
 import pandas as pd
 from pandas._libs.missing import NAType
 
-
 duration_mapping = {
     "A": 6,
     "S": 5,
@@ -27,20 +26,6 @@ duration_mapping_reversed = {
 }
 
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
-
-
-def str_period_to_date(value: str, start=False) -> date:
-    if len(value) < 6:
-        if start:
-            return date(int(value[:4]), 1, 1)
-        else:
-            return date(int(value[:4]), 12, 31)
-
-    year = int(value[:4])
-    period_indicator = value[4]
-    period_number = int(value[5:])
-
-    return period_to_date(year, period_indicator, period_number, start)
 
 
 def date_to_period(date_value: date, period_indicator):
@@ -113,7 +98,8 @@ def period_to_date(year, period_indicator, period_number, start=False):
 
     raise ValueError(f'Invalid Period Indicator {period_indicator}')
 
-def day_of_year(date:str):
+
+def day_of_year(date: str):
     """
     Returns the day of the year for a given date string
     2020-01-01 -> 1
@@ -126,7 +112,8 @@ def day_of_year(date:str):
 
     return day_number
 
-def from_input_customer_support_to_internal(period:str):
+
+def from_input_customer_support_to_internal(period: str):
     """
     Converts a period string from the input customer support format to the internal format
     2020-01-01 -> (2020, 'D', 1)
@@ -144,14 +131,14 @@ def from_input_customer_support_to_internal(period:str):
     if period.count("-") == 1:
         year = int(period.split("-")[0])
         second_term = period.split("-")[1]
-        if len(second_term)==4:
+        if len(second_term) == 4:
             period_indicator = 'D'
             period_number = int(second_term[1:])
-        elif len(second_term)==3:
+        elif len(second_term) == 3:
             # Could be W or M YYYY-Www or YYYY-Mmm
             period_indicator = second_term[0]
             period_number = int(second_term[1:])
-        elif len(second_term)==2:
+        elif len(second_term) == 2:
             # Could be M or Q or S or A YYYY-MM or YYYY-Qq or YYYY-Ss or YYYY-A1
             if second_term[0] in PERIOD_INDICATORS:
                 period_indicator = second_term[0]
@@ -161,9 +148,9 @@ def from_input_customer_support_to_internal(period:str):
                 period_number = int(second_term)
         else:
             raise ValueError
-        
+
         return year, period_indicator, period_number
-    
+
     raise ValueError
 
 
@@ -218,7 +205,8 @@ class TimePeriodHandler:
 
     def __init__(self, period: str):
         if "-" in period:
-            self.year, self.period_indicator, self.period_number = from_input_customer_support_to_internal(period)
+            self.year, self.period_indicator, self.period_number = from_input_customer_support_to_internal(
+                period)
         else:
             self.year = int(period[:4])
             if len(period) > 4:
@@ -233,7 +221,7 @@ class TimePeriodHandler:
     def __str__(self):
         if self.period_indicator == 'A':
             # return f"{self.year}{self.period_indicator}"
-            return f"{self.year}"  #Drop A from exit time period year
+            return f"{self.year}"  # Drop A from exit time period year
         return f"{self.year}{self.period_indicator}{self.period_number}"
 
     @staticmethod
@@ -339,7 +327,8 @@ class TimePeriodHandler:
             return
         date_value = period_to_date(self.year, self.period_indicator, self.period_number)
         self.period_indicator = new_indicator
-        self.period_number = date_to_period(date_value, period_indicator=new_indicator).period_number
+        self.period_number = date_to_period(date_value,
+                                            period_indicator=new_indicator).period_number
 
 
 class TimeHandler:
@@ -376,14 +365,16 @@ class TimeHandler:
     def date1(self, value: str):
         date.fromisoformat(value)
         if value > self.date2:
-            raise ValueError(f"({value} > {self.date2}). Cannot set date1 with a value greater than date2.")
+            raise ValueError(
+                f"({value} > {self.date2}). Cannot set date1 with a value greater than date2.")
         self._date1 = value
 
     @date2.setter
     def date2(self, value: str):
         date.fromisoformat(value)
         if value < self.date1:
-            raise ValueError(f"({value} < {self.date1}). Cannot set date2 with a value lower than date1.")
+            raise ValueError(
+                f"({value} < {self.date1}). Cannot set date2 with a value lower than date1.")
         self._date2 = value
 
     @property
@@ -505,8 +496,9 @@ def shift_period(x: TimePeriodHandler, shift_param: int):
 
 
 def sort_time_period(series: pd.Series):
-    values_sorted = sorted(list(series.values), key=lambda s: (s.year, duration_mapping[s.period_indicator],
-                                                               s.period_number))
+    values_sorted = sorted(list(series.values),
+                           key=lambda s: (s.year, duration_mapping[s.period_indicator],
+                                          s.period_number))
     return pd.Series(values_sorted, name=series.name)
 
 
@@ -523,6 +515,7 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler):
         period_range.append(next_period(period_range[-1]))
 
     return period_range
+
 
 def period_to_date(year, period_indicator, period_number, start=False):
     if period_indicator == 'A':
@@ -578,6 +571,7 @@ def period_to_date(year, period_indicator, period_number, start=False):
 
     raise ValueError(f'Invalid Period Indicator {period_indicator}')
 
+
 def check_max_date(str_: str):
     if pd.isnull(str_) or str_ == 'nan' or str_ == 'NaT':
         return pd.NA
@@ -585,11 +579,13 @@ def check_max_date(str_: str):
     if len(str_) == 9 and str_[7] == '-':
         str_ = str_[:-1] + '0' + str_[-1]
 
-    if len(str_) != 10 or str_[7] != '-':  # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
+    if len(str_) != 10 or str_[
+        7] != '-':  # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
         raise ValueError
 
     date.fromisoformat(str_)
     return str_
+
 
 def str_period_to_date(value: str, start=False) -> date:
     if len(value) < 6:
@@ -598,11 +594,11 @@ def str_period_to_date(value: str, start=False) -> date:
         else:
             return date(int(value[:4]), 12, 31)
 
-    year = int(value[:4])
-    period_indicator = value[4]
-    period_number = int(value[5:])
+    if start:
+        return TimePeriodHandler(value).start_date(as_date=False)
+    else:
+        return TimePeriodHandler(value).end_date(as_date=False)
 
-    return period_to_date(year, period_indicator, period_number, start)
 
 def date_to_period_str(date_value: date, period_indicator):
     if isinstance(date_value, str):
@@ -620,4 +616,3 @@ def date_to_period_str(date_value: date, period_indicator):
         return f"{cal[0]}W{cal[1]}"
     elif period_indicator == "D":  # Extract day of the year
         return f"{date_value.year}D{date_value.timetuple().tm_yday}"
-

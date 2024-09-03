@@ -1137,3 +1137,6 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(self.udo_params) == 0:
             self.udo_params = None
         return result
+
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
+        raise NotImplementedError("Time Aggregation is not implemented yet")
