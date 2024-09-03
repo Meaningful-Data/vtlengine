@@ -230,9 +230,9 @@ class Period_indicator(Unary):
         if isinstance(operand, Scalar):
             return Scalar(name='result', data_type=DataTypes.Duration, value=cls.get_period(str(operand.value)))
         if isinstance(operand, DataComponent):
-            return DataComponent(name='result',
-                                 data_type=DataTypes.Duration,
-                                 data=operand.data.apply(cls.get_period))
+            return DataComponent(name='result', data_type=DataTypes.Duration, data=operand.data.apply(cls.get_period))
+        cls.time_id = cls.get_time_id(operand)
+
         data = operand.data[cls.time_id].apply(cls.get_period)
         operand.data = operand.data.drop(columns=operand.get_measures_names())
         operand.data['duration_var'] = data
@@ -584,6 +584,9 @@ class Time_Shift(Binary):
         start_date = shift_func(start_date, shift_value, frequency)
         end_date = shift_func(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
+
+class Time_Aggregate(Time):
+    pass
 
 class Current_Date(Time):
 
