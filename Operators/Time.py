@@ -515,7 +515,7 @@ class Fill_time_series(Binary):
             by=cls.other_ids + [cls.time_id]).drop_duplicates()
 
 
-class Time_Shift(Time):
+class Time_Shift(Binary):
 
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
@@ -584,3 +584,9 @@ class Time_Shift(Time):
         start_date = shift_func(start_date, shift_value, frequency)
         end_date = shift_func(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
+
+class Current_Date(Time):
+
+        @classmethod
+        def evaluate(cls):
+            return datetime.now()
