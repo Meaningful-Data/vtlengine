@@ -7,7 +7,7 @@ from typing import Union
 import pandas as pd
 from pandas._libs.missing import NAType
 
-duration_mapping = {
+DURATION_MAPPING = {
     "A": 6,
     "S": 5,
     "Q": 4,
@@ -16,7 +16,7 @@ duration_mapping = {
     "D": 1
 }
 
-duration_mapping_reversed = {
+DURATION_MAPPING_REVERSED = {
     6: "A",
     5: "S",
     4: "Q",
@@ -277,8 +277,8 @@ class TimePeriodHandler:
                 return False
             other = TimePeriodHandler(other)
 
-        return py_op(duration_mapping[self.period_indicator],
-                     duration_mapping[other.period_indicator])
+        return py_op(DURATION_MAPPING[self.period_indicator],
+                     DURATION_MAPPING[other.period_indicator])
 
     def start_date(self, as_date=False) -> Union[date, str]:
         """
@@ -497,7 +497,7 @@ def shift_period(x: TimePeriodHandler, shift_param: int):
 
 def sort_time_period(series: pd.Series):
     values_sorted = sorted(list(series.values),
-                           key=lambda s: (s.year, duration_mapping[s.period_indicator],
+                           key=lambda s: (s.year, DURATION_MAPPING[s.period_indicator],
                                           s.period_number))
     return pd.Series(values_sorted, name=series.name)
 

@@ -2,6 +2,8 @@ import os
 from copy import copy
 from typing import List, Optional
 
+from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED
+
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
 else:
@@ -27,6 +29,37 @@ def extract_grouping_identifiers(identifier_names: List[str],
 
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
+    @classmethod
+    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str):
+        if cls.op == COUNT:
+            return
+        if mode == 'input':
+            to_replace = [None]
+            new_value = ['']
+        else:
+            to_replace = ['']
+            new_value = [None]
+
+        for measure in measures:
+            if measure.data_type.__name__ == ('Date', 'TimePeriod', 'TimeInterval'):
+                if cls.op == MIN:
+                    if mode == 'input':
+                        to_replace = [None]
+                        # 15 characters to ensure TimeInterval is always greater
+                        new_value = ['ZZZZZZZZZZZZZZZZZ']
+                    else:
+                        to_replace = ['ZZZZZZZZZZZZZZZZ']
+                        new_value = [None]
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)
+            elif measure.data_type.__name__ == 'String':
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)
+            elif measure.data_type.__name__ == 'Duration':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].map(lambda x: DURATION_MAPPING[x],
+                                                                na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: DURATION_MAPPING_REVERSED[x], na_action='ignore')
 
     @classmethod
     def validate(cls, operand: Dataset,
@@ -110,6 +143,7 @@ class Aggregation(Operator.Unary):
             if os.getenv('SPARK', False) and cls.spark_op is not None:
                 result_df = cls.spark_op(result_df, grouping_keys)
             else:
+                cls._handle_data_types(result_df, operand.get_measures(), mode='input')
                 if cls.op == SUM:
                     # Min_count is used to ensure we return null if all elements are null,
                     # instead of 0
@@ -126,7 +160,7 @@ class Aggregation(Operator.Unary):
                     result_df = result_df[comps_to_keep].agg(agg_dict)
                     if isinstance(result_df, pd.Series):
                         result_df = result_df.to_frame().T
-
+                cls._handle_data_types(result_df, operand.get_measures(), 'result')
         result.data = result_df
         return result
 

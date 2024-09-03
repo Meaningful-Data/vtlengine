@@ -167,8 +167,9 @@ class Dataset:
                     type_ = "int64"
                 else:
                     type_ = "float64"
-                self.data[comp.name] = self.data[comp.name].replace("", -12345).astype(type_)
-                other.data[comp.name] = other.data[comp.name].replace("", -12345).astype(type_)
+                    # We use here a number to avoid errors on equality on empty strings
+                self.data[comp.name] = self.data[comp.name].replace("", -1234997).astype(type_)
+                other.data[comp.name] = other.data[comp.name].replace("", -1234997).astype(type_)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
                                check_index_type=False, check_datetimelike_compat=True)
@@ -178,6 +179,8 @@ class Dataset:
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
+            self.data.replace(-1234997, None, inplace=True)
+            other.data.replace(-1234997, None, inplace=True)
             diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
             print("\n Differences between the dataframes")
             print(diff)
