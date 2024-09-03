@@ -93,7 +93,7 @@ class Component:
 
     def __post_init__(self):
         if self.role == Role.IDENTIFIER and self.nullable:
-            raise ValueError("An Identifier cannot be nullable")
+            raise ValueError(f"Identifier {self.name} cannot be nullable")
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()

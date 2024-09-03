@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Union, Any
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 from API import create_ast
 from AST.DAG import DAGAnalyzer
@@ -156,3 +157,21 @@ class TestHelper(TestCase):
             with open(sql_file_name, 'r') as file:
                 external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
         return external_routines
+
+    @classmethod
+    def DataLoadTest(cls, code: str, number_inputs: int, references_names: List[str] = None):
+        # Data Loading.--------------------------------------------------------
+        inputs = cls.LoadInputs(code=code, number_inputs=number_inputs)
+
+        # Test Assertion.------------------------------------------------------
+        if references_names:
+            references = cls.LoadOutputs(code=code, references_names=references_names)
+            assert inputs == references
+        assert True
+
+
+    @classmethod
+    def DataLoadExceptionTest(cls, code: str, number_inputs: int, exception_message: str):
+        # Test Assertion.------------------------------------------------------
+        with pytest.raises(Exception, match=exception_message):
+            cls.LoadInputs(code=code, number_inputs=number_inputs)

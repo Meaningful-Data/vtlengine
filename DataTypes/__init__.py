@@ -203,7 +203,7 @@ class Integer(Number):
             if value.is_integer():
                 return int(value)
             else:
-                raise Exception(f"Value {value} has decimals, cannot cast to integer")
+                raise ValueError(f"Value {value} has decimals, cannot cast to integer")
         if isinstance(value, str):
             if value.lower() == "true":
                 return 1
@@ -372,6 +372,17 @@ SCALAR_TYPES = {
     'Time_Period': TimePeriod,
     'Duration': Duration,
     'Boolean': Boolean,
+}
+
+SCALAR_TYPES_CLASS_REVERSE = {
+    String: 'String',
+    Number: 'Number',
+    Integer: 'Integer',
+    TimeInterval: 'Time',
+    Date: 'Date',
+    TimePeriod: 'Time_Period',
+    Duration: 'Duration',
+    Boolean: 'Boolean',
 }
 
 BASIC_TYPES = {

@@ -12,13 +12,18 @@ def check_date(value: str):
     """
     try:
         date.fromisoformat(value)
-    except ValueError:
+    except ValueError as e:
+        if 'is out of range' in str(e):
+            raise InputValidationException(f"Date {value} is out of range for the month.")
+        if 'month must be in 1..12' in str(e):
+            raise InputValidationException(f"Date {value} is invalid. "
+                                           f"Month must be between 1 and 12.")
         raise InputValidationException(f"Date {value} is not in the correct format. "
                                        f"Use YYYY-MM-DD.")
 
     # Check date is between 1900 and 9999
     if not 1900 <= int(value[:4]) <= 9999:
-        raise InputValidationException(f"Date {value} is not in the correct format. "
+        raise InputValidationException(f"Date {value} is invalid. "
                                        f"Year must be between 1900 and 9999.")
 
     return value
