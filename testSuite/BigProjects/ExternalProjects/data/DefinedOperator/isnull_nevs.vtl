@@ -1,0 +1,5 @@
+define operator isnull_nevs(comp string) 
+  returns string is 
+     isnull(comp) or comp in {"-2", "-3", "5"}
+      
+end operator;

@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "BOP_Q_VAL.IAI_3_round",
+      "DataStructure": [
+        {
+          "name": "COUNTERPART_AREA",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "REF_AREA",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "UNIT_MEASURE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "imbalance",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "errorcode",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "errorlevel",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC020_MX",
+      "DataStructure": [
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

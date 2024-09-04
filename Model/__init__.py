@@ -1,17 +1,15 @@
-from collections import Counter
-
-import sqlparse, re
-import sqlglot
-import sqlglot.expressions as exp
-
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
+import sqlglot
+import sqlglot.expressions as exp
+import sqlparse
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
 from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
@@ -94,9 +92,8 @@ class Component:
     nullable: bool
 
     def __post_init__(self):
-        if self.role == Role.IDENTIFIER:
-            if self.nullable:
-                raise ValueError("An Identifier cannot be nullable")
+        if self.role == Role.IDENTIFIER and self.nullable:
+            raise ValueError(f"Identifier {self.name} cannot be nullable")
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
@@ -148,32 +145,60 @@ class Dataset:
             return False
 
         same_name = self.name == other.name
+        if not same_name:
+            print("\nName mismatch")
+            print("result:", self.name)
+            print("reference:", other.name)
         same_components = self.components == other.components
+        if not same_components:
+            print("\nComponents mismatch")
+            print("result:", json.dumps(self.to_dict()['components'], indent=4))
+            print("reference:", json.dumps(other.to_dict()['components'], indent=4))
+            return False
 
         if isinstance(self.data, SparkDataFrame):
             self.data = self.data.to_pandas()
         if isinstance(other.data, SparkDataFrame):
             other.data = other.data.to_pandas()
+        if len(self.data) == len(other.data) == 0:
+            assert self.data.shape == other.data.shape
+
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
         self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
-        if not same_components:
-            return same_components
-        for comp in self.components.values():
-            if comp.data_type == SCALAR_TYPES['String']:
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
         other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
+        for comp in self.components.values():
+            if comp.data_type.__name__ in ['String', 'Date', 'TimePeriod', 'TimeInterval']:
+                self.data[comp.name] = self.data[comp.name].astype(str)
+                other.data[comp.name] = other.data[comp.name].astype(str)
+            elif comp.data_type.__name__ in ['Integer', 'Float']:
+                if comp.data_type.__name__ == 'Integer':
+                    type_ = "int64"
+                else:
+                    type_ = "float64"
+                    # We use here a number to avoid errors on equality on empty strings
+                self.data[comp.name] = self.data[comp.name].replace("", -1234997).astype(type_)
+                other.data[comp.name] = other.data[comp.name].replace("", -1234997).astype(type_)
         try:
             assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
-                               check_index_type=False)
-            same_data = True
+                               check_index_type=False, check_datetimelike_compat=True)
         except AssertionError as e:
-            print(e)
-            same_data = False
-        return same_name and same_components and same_data
+            if "DataFrame shape" in str(e):
+                print("\nDataFrame shape mismatch")
+                print("result:", self.data.shape)
+                print("reference:", other.data.shape)
+            # Differences between the dataframes
+            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            # To display actual null values instead of -1234997
+            for comp in self.components.values():
+                if comp.data_type.__name__ in ['Integer', 'Float']:
+                    diff[comp.name] = diff[comp.name].replace(-1234997, "")
+            print("\n Differences between the dataframes")
+            print(diff)
+            raise e
+        return True
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]
@@ -185,6 +210,8 @@ class Dataset:
 
     def delete_component(self, component_name: str):
         self.components.pop(component_name, None)
+        if self.data is not None:
+            self.data.drop(columns=[component_name], inplace=True)
 
     def get_identifiers(self) -> List[Component]:
         return [component for component in self.components.values() if

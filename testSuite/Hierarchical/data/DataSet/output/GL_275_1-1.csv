@@ -1,4 +1,2 @@
 ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,OBS_VALUE,imbalance,ruleid,errorcode,errorlevel
-B,P,F,G,IT,S1,,,1,totalComparedToBanks,4
-D,P,F,G,PT,S1,50.0,50.0,1,totalComparedToBanks,4
-N,P,F,G,IT,S1,,,2,totalGeUnal,3
+B,P,F,G,PT,S1,0.0,50.0,1,totalComparedToBanks,4

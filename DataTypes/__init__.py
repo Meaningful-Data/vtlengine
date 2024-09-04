@@ -1,16 +1,19 @@
-from typing import Type
+from DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
+from typing import Any, Type
+import numpy as np
+import pandas as pd
 
 import pandas as pd
 
 DTYPE_MAPPING = {
     'String': 'string',
-    'Number': 'Float64',
-    'Integer': 'Int64',
+    'Number': 'float64',
+    'Integer': 'int64',
     'TimeInterval': 'string',
     'Date': 'string',
     'TimePeriod': 'string',
     'Duration': 'string',
-    'Boolean': 'boolean',
+    'Boolean': 'object',
 }
 
 CAST_MAPPING = {
@@ -55,6 +58,14 @@ class ScalarType:
     @classmethod
     def promotion_changed_type(cls, promoted: Type['ScalarType']) -> bool:
         return not issubclass(cls, promoted)
+    
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        raise Exception("Method should be implemented by inheritors")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        raise Exception("Method should be implemented by inheritors")
 
     @classmethod
     def is_subtype(cls, obj: Type["ScalarType"]) -> bool:
@@ -77,7 +88,7 @@ class ScalarType:
         return CAST_MAPPING[cls.__name__](value)
 
     @classmethod
-    def dtype(cls):
+    def dtype(cls) -> str:
         return DTYPE_MAPPING[cls.__name__]
 
     __str__ = __repr__
@@ -88,6 +99,22 @@ class String(ScalarType):
 
     """
     default = ""
+
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+        # if pd.isna(value):
+        #     return cls.default
+        if from_type in {Number, Integer, Boolean, String}:
+            return str(value)
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+        if from_type in {TimePeriod, String}:
+            return str(value)
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
 
 class Number(ScalarType):
@@ -100,6 +127,36 @@ class Number(ScalarType):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+    
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> float:
+        # if pd.isna(value):
+        #     return cls.default
+        if from_type in {Integer, Number}:
+            return float(value)
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> float:
+        if from_type in {Boolean}:
+            if value:
+                return 1.0
+            else:
+                return 0.0
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1.0
+            elif value.lower() == "false":
+                return 0.0
+        return float(value)
 
 
 class Integer(Number):
@@ -112,6 +169,54 @@ class Integer(Number):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+    
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
+        if from_type.__name__ == "Integer":
+            return value
+
+        if from_type.__name__ == "Number":
+            if value.is_integer():
+                return int(value)
+            else:
+                raise RuntimeError(f"Value {value} has decimals, cannot cast to integer")
+
+        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
+                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
+        if from_type in {Boolean}:
+            if value:
+                return 1
+            else:
+                return 0
+        if from_type in {Number, String}:
+            try:
+                if float(value) - int(value) != 0:
+                    raise RuntimeError(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
+            except ValueError:
+                raise RuntimeError(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
+            return int(value)
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+    @classmethod
+    def cast(cls, value):
+        if pd.isnull(value):
+            return None
+        if isinstance(value, float):
+            # Check if the float has decimals
+            if value.is_integer():
+                return int(value)
+            else:
+                raise ValueError(f"Value {value} has decimals, cannot cast to integer")
+        if isinstance(value, str):
+            if value.lower() == "true":
+                return 1
+            elif value.lower() == "false":
+                return 0
+        return int(value)
 
 
 class TimeInterval(ScalarType):
@@ -120,12 +225,45 @@ class TimeInterval(ScalarType):
     """
     default = None
 
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        if from_type in {TimeInterval}:
+            return value
+        if from_type in {Date}:
+            value = check_max_date(value)
+            
+            return f"{value}/{value}"
+
+        if from_type in {TimePeriod}:
+            init_value = str_period_to_date(value, start=True).isoformat()
+            end_value = str_period_to_date(value, start=False).isoformat()
+            return f"{init_value}/{end_value}"
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
 
 class Date(TimeInterval):
     """
 
     """
     default = None
+
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        if from_type in {Date}:
+            return value
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
 
 class TimePeriod(TimeInterval):
@@ -134,9 +272,35 @@ class TimePeriod(TimeInterval):
     """
     default = None
 
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        if from_type in {TimePeriod}:
+            return value
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        if from_type in {Date}:
+            period_str = date_to_period_str(value,"D")
+            return period_str
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
 
 class Duration(ScalarType):
-    pass
+    
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+        if from_type in {Duration}:
+            return value
+
+        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
 
 class Boolean(ScalarType):
@@ -171,6 +335,23 @@ class Boolean(ScalarType):
         if isinstance(value, bool):
             return value
         return value
+    
+    @classmethod
+    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
+        if from_type in {Boolean}:
+            return value
+
+        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
+                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
+    
+    @classmethod
+    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
+        if from_type in {Number, Integer}:
+            if value in {0, 0.0}:
+                return False
+            return True
+        
+        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
 
 class Null(ScalarType):
@@ -201,6 +382,17 @@ SCALAR_TYPES = {
     'Boolean': Boolean,
 }
 
+SCALAR_TYPES_CLASS_REVERSE = {
+    String: 'String',
+    Number: 'Number',
+    Integer: 'Integer',
+    TimeInterval: 'Time',
+    Date: 'Date',
+    TimePeriod: 'Time_Period',
+    Duration: 'Duration',
+    Boolean: 'Boolean',
+}
+
 BASIC_TYPES = {
     str: String,
     int: Integer,
@@ -221,16 +413,42 @@ COMP_NAME_MAPPING = {
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
-    String: {String},
+    String: {String, Boolean},
     Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
-    TimeInterval: {String, TimeInterval},
-    Date: {String, TimeInterval, Date},
-    TimePeriod: {String, TimeInterval, TimePeriod},
+    TimeInterval: {TimeInterval},
+    Date: {TimeInterval, Date},
+    TimePeriod: {TimeInterval, TimePeriod},
     Duration: {String, Duration},
     Boolean: {String, Boolean},
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
+
+# TODO: Implicit are valid as cast without mask
+EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
+    String: {Integer, String},
+    Number: {Integer, Boolean, String, Number},
+    Integer: {Number, Boolean, String, Integer},
+    TimeInterval: {TimeInterval},
+    Date: {TimePeriod, Date},
+    TimePeriod: {String, TimePeriod},
+    Duration: {Duration},
+    Boolean: {Integer, Number, String, Boolean},
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
+}
+
+EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
+    String: {Number, TimeInterval, Date, TimePeriod, Duration},
+    Number: {},
+    Integer: {},
+    TimeInterval: {String},
+    Date: {String},
+    TimePeriod: {Date},
+    Duration: {String},
+    Boolean: {},
+    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
+}
+
 
 
 def binary_implicit_promotion(left_type: ScalarType,

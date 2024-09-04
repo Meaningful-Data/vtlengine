@@ -2,4 +2,3 @@ Id_1,Id_2,Id_3,ruleid,Me_1,Me_2,Me_3,Me_4,errorcode,errorlevel
 code_1,2,2,CN0630,code_1,1.0,1,code_2,CN0630,3
 code_2,2,2,CN0630,,2.0,2,code_2,CN0630,3
 code_1,2,2,CN0816,code_1,1.0,1,code_2,CN0816,3
-code_1,3,3,CN0816,code_2,,1,,CN0816,3

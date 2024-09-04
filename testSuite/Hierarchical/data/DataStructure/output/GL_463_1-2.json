@@ -36,7 +36,7 @@
                 {
                     "name": "OBS_VALUE",
                     "role": "Measure",
-                    "type": "String",
+                    "type": "Number",
                     "nullable": true
                 }
             ],

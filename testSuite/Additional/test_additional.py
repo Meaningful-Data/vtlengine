@@ -1,102 +1,25 @@
-import json
 from pathlib import Path
-from typing import List, Dict, Union
-from unittest import TestCase
+from typing import Union, Dict, List
 
-import pandas as pd
 import pytest
 
 from API import create_ast
-from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import Dataset, Component, Role
+from Model import Dataset
+from testSuite.Helper import TestHelper
 
-classTest = None
 
-
-class AdditionalHelper(TestCase):
-    """
-
-    """
-
+class AdditionalHelper(TestHelper):
     base_path = Path(__file__).parent
+    filepath_VTL = base_path / "data" / "vtl"
+    filepath_valueDomain = base_path / "data" / "ValueDomain"
     filepath_json = base_path / "data" / "DataStructure" / "input"
     filepath_csv = base_path / "data" / "DataSet" / "input"
-    filepath_vtl = base_path / "data" / "vtl"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
-    # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    filepath_sql = base_path / "data" / "sql"
 
-    @classmethod
-    def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
-            structures = json.load(file)
-
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
-
-            return Dataset(name=dataset_name, components=components, data=data)
-
-    @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
-        datasets = {}
-        for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-DS_{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-DS_{str(i + 1)}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
-        datasets = {}
-        for name in references_names:
-            json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
-            csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
-        vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
-            return file.read()
-
-    @classmethod
-    def BaseTest(cls, text: str, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
-        if text is None:
-            text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs)
-        reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
-        result = interpreter.visit(ast)
-        assert result == reference_datasets
+    ds_input_prefix = "DS_"
 
     @classmethod
     def BaseScalarTest(cls, text: str, code: str, reference_value: Union[int, float, str]):
@@ -109,7 +32,6 @@ class AdditionalHelper(TestCase):
         interpreter = InterpreterAnalyzer({})
         result = interpreter.visit(ast)
         assert result["DS_r"].value == reference_value
-
 
 
 class StringOperatorsTest(AdditionalHelper):
@@ -1989,11 +1911,11 @@ class JoinOperatorsTest(AdditionalHelper):
         code = '2-30'
         number_inputs = 2
         message = "1-1-13-4"
-        self.NewExceptionTest(
+        self.NewSemanticExceptionTest(
             text=text,
             code=code,
             number_inputs=number_inputs,
-            message=message
+            exception_code=message
         )
 
     def test_31(self):
@@ -2219,517 +2141,517 @@ class DataValidationOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # TODO: Uncomment this once check_hierarchy operator is implemented
-    # def test_4(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
-    #             R010 : A = J + K + L                        errorlevel 5 ;
-    #             R020 : B = M + N + O                        errorlevel 5 ;
-    #             R030 : C = P + Q        errorcode "XX"      errorlevel 5 ;
-    #             R040 : D = R + S                            errorlevel 1 ;
-    #             R060 : F = Y + W + Z                        errorlevel 7 ;
-    #             R070 : G = B + C                                         ;
-    #             R080 : H = D + E                            errorlevel 0 ;
-    #             R090 : I = D + G        errorcode "YY"      errorlevel 0 ;
-    #             R100 : M >= N                               errorlevel 5 ;
-    #             R110 : M <= G                               errorlevel 5
-    #         end hierarchical ruleset;
-    #
-    #         DS_r := check_hierarchy ( DS_1, HR_1 rule Id_2 all);"""
-    #
-    #     code = '11-4'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_5(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
-    #
-    #     code = '11-5'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_6(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
-    #
-    #     code = '11-6'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_7(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
-    #
-    #     code = '11-7'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_8(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
-    #
-    #     code = '11-8'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_9(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
-    #
-    #     code = '11-9'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_10(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
-    #
-    #     code = '11-10'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_11(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
-    #
-    #     code = '11-11'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_12(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
-    #
-    #     code = '11-12'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_13(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
-    #
-    #     code = '11-13'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_14(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
-    #
-    #     code = '11-14'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_15(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
-    #
-    #     code = '11-15'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_16(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
-    #
-    #     code = '11-16'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_17(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
-    #
-    #     code = '11-17'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_18(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
-    #
-    #     code = '11-18'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_19(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
-    #
-    #     code = '11-19'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_20(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
-    #
-    #     code = '11-20'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_21(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
-    #
-    #     code = '11-21'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_22(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
-    #
-    #     code = '11-22'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_23(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
-    #
-    #     code = '11-23'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_24(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A=B+C   errorcode "error"   errorlevel 5;
-    #                 A>=B    errorcode "error2"  errorlevel 5;
-    #                 A>=C    errorcode "error3"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
-    #
-    #     code = '11-24'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_25(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
-    #
-    #     code = '11-25'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_26(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
-    #
-    #     code = '11-26'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_27(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
-    #
-    #     code = '11-27'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_28(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
-    #
-    #     code = '11-28'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_29(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
-    #
-    #     code = '11-29'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
-    #
-    # def test_30(self):
-    #     '''
-    #
-    #     '''
-    #     text = """define hierarchical ruleset hie1 (variable rule Id2) is
-    #                 A = B + C    errorcode "error"   errorlevel 5;
-    #                 A >= B       errorcode "error2"  errorlevel 5;
-    #                 A >= C       errorcode "error3"  errorlevel 5;
-    #                 A = E + F    errorcode "error4"  errorlevel 5;
-    #                 D = E + F    errorcode "error5"  errorlevel 5;
-    #                 C = E + F    errorcode "error6"  errorlevel 5
-    #             end hierarchical ruleset;
-    #
-    #             DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
-    #
-    #     code = '11-30'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+    def test_4(self):
+        '''
+        DAG Error: R070, R020 and R110 generate a cycle.
+        '''
+        text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
+                R010 : A = J + K + L                        errorlevel 5 ;
+                R020 : B = M + N + O                        errorlevel 5 ;
+                R030 : C = P + Q        errorcode "XX"      errorlevel 5 ;
+                R040 : D = R + S                            errorlevel 1 ;
+                R060 : F = Y + W + Z                        errorlevel 7 ;
+                R070 : G = B + C                                         ;
+                R080 : H = D + E                            errorlevel 0 ;
+                R090 : I = D + G        errorcode "YY"      errorlevel 0 ;
+                R100 : M >= N                               errorlevel 5 ;
+                R110 : M <= G                               errorlevel 5
+            end hierarchical ruleset;
+
+            DS_r := check_hierarchy ( DS_1, HR_1 rule Id_2 all);"""
+
+        code = '11-4'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_5(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-5'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-6'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-7'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-8'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-9'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-10'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_11(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-11'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_12(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-12'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_13(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-13'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_14(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-14'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_15(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-15'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_16(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-16'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_17(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-17'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_18(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-18'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_19(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-19'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_20(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-20'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_21(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-21'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_22(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-22'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_23(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-23'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_24(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A=B+C   errorcode "error"   errorlevel 5;
+                    A>=B    errorcode "error2"  errorlevel 5;
+                    A>=C    errorcode "error3"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-24'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_25(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 all);"""
+
+        code = '11-25'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_26(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 non_zero all);"""
+
+        code = '11-26'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_27(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_null all);"""
+
+        code = '11-27'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_28(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 partial_zero all);"""
+
+        code = '11-28'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_29(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_null all);"""
+
+        code = '11-29'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_30(self):
+        '''
+
+        '''
+        text = """define hierarchical ruleset hie1 (variable rule Id2) is
+                    A = B + C    errorcode "error"   errorlevel 5;
+                    A >= B       errorcode "error2"  errorlevel 5;
+                    A >= C       errorcode "error3"  errorlevel 5;
+                    A = E + F    errorcode "error4"  errorlevel 5;
+                    D = E + F    errorcode "error5"  errorlevel 5;
+                    C = E + F    errorcode "error6"  errorlevel 5
+                end hierarchical ruleset;
+
+                DS_r := check_hierarchy(DS_1, hie1 rule Id2 always_zero all);"""
+
+        code = '11-30'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class TimeOperatorsTest(AdditionalHelper):
     """
@@ -3200,4 +3122,5 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ['DS_r']
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="cast .+? without providing a mask"):
+            self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)

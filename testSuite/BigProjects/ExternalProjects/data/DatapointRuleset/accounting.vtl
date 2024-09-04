@@ -1,0 +1,146 @@
+define datapoint ruleset accounting (variable DT_RFRNC, DT_PRFRMNG_STTS, DT_FRBRNC_STTS, IMPRMNT_ASSSSMNT_MTHD, ACCMLTD_IMPRMNT, NEVS_IMPRMNT_STTS, NEVS_IMPRMNT_ASSSSMNT_MTHD, RCGNTN_STTS, CRRYNG_AMNT, NEVS_CRRYNG_AMNT, NEVS_ACCMLTD_IMPRMNT, NEVS_ACCNTNG_CLSSFCTN, NEVS_PRDNTL_PRTFL, ACCNTNG_CLSSFCTN, ACCMLTD_WRTFFS, ACCMLTD_CHNGS_FV_CR, PRVSNS_OFF_BLNC_SHT, CMLTV_RCVRS_SNC_DFLT) is
+
+    CN0400: 
+    if 
+        isnull(DT_RFRNC) or isnull (DT_PRFRMNG_STTS) then true 
+    else 
+        DT_RFRNC >= DT_PRFRMNG_STTS 
+    errorcode "CN0400" errorlevel 2;
+    CN0410: 
+    if 
+        isnull(DT_RFRNC) or isnull (DT_FRBRNC_STTS) then true 
+    else 
+        DT_RFRNC >= DT_FRBRNC_STTS 
+    errorcode "CN0410" errorlevel 2;
+    CN0470a: 
+        when 
+            if NEVS_ACCMLTD_IMPRMNT in {"-2", "-3", "-5"}  then false else
+            IMPRMNT_ASSSSMNT_MTHD in {"1", "2"} 
+        then 
+            ACCMLTD_IMPRMNT >= 0 
+        errorcode "CN0470a" errorlevel 2;
+    CN0470b: 
+        when
+            if NEVS_IMPRMNT_ASSSSMNT_MTHD in {"-2", "-3", "-5"}  then false else
+            ACCMLTD_IMPRMNT >= 0 
+        then  
+            IMPRMNT_ASSSSMNT_MTHD in {"1", "2"} 
+        errorcode "CN0470b" errorlevel 2;
+    CN0490a: 
+        when 
+            if NEVS_IMPRMNT_ASSSSMNT_MTHD in {"-2", "-3", "-5"}  then false else
+            NEVS_IMPRMNT_STTS = "0" 
+        then
+            NEVS_IMPRMNT_ASSSSMNT_MTHD = "0"  
+        errorcode "CN0490a" errorlevel 2;
+    CN0490b: 
+        when 
+             if NEVS_IMPRMNT_STTS in {"-2", "-3", "-5"} then false else
+            NEVS_IMPRMNT_ASSSSMNT_MTHD = "0" 
+        then 
+            NEVS_IMPRMNT_STTS = "0" 
+        errorcode "CN0490b" errorlevel 2;
+    CN0702: 
+        when 
+            if NEVS_CRRYNG_AMNT in {"-2", "-3", "-5"} then false else
+            RCGNTN_STTS <> "3" 
+        then 
+            not isnull(CRRYNG_AMNT)
+        errorcode "CN0702" errorlevel 2;
+    CN0825a: 
+        when 
+            if NEVS_ACCMLTD_IMPRMNT in {"-2", "-3", "-5"} then false else
+            NEVS_IMPRMNT_STTS = "0" 
+        then 
+            NEVS_ACCMLTD_IMPRMNT = "0" 
+        errorcode "CN0825a" errorlevel 2;
+    CN0825b: 
+        when 
+        if NEVS_IMPRMNT_STTS in {"-2", "-3", "-5"} then false else
+            NEVS_ACCMLTD_IMPRMNT = "0" 
+        then 
+            NEVS_IMPRMNT_STTS = "0" 
+        errorcode "CN0825b" errorlevel 2;
+    CN0852: 
+        when 
+            if isnull(NEVS_ACCNTNG_CLSSFCTN) then false else
+            RCGNTN_STTS <> "3" 
+        then 
+            NEVS_ACCNTNG_CLSSFCTN <> "0" 
+        errorcode "CN0852" errorlevel 2;
+    CN0865: 
+        when
+            if isnull(NEVS_PRDNTL_PRTFL) then false else
+            RCGNTN_STTS <> "3" 
+        then 
+            NEVS_PRDNTL_PRTFL <> "0" 
+        errorcode "CN0865" errorlevel 1;
+    CN0930: 
+        when 
+            if NEVS_ACCMLTD_IMPRMNT in { "-2 " , "-3", "-5"} then false else
+            ACCNTNG_CLSSFCTN in {"2", "4", "41", "46", "3", "7", "47", "41", "9"} 
+        then 
+            NEVS_ACCMLTD_IMPRMNT = "0" 
+        errorcode "CN0930" errorlevel 2;
+    GCMA_TH_H_ACCMLTD_WRTFFS_INSTRMNT: 
+        if 
+            isnull(ACCMLTD_WRTFFS) then true 
+        else 
+            ACCMLTD_WRTFFS < 1000000000 
+        errorcode "GCMA_TH_H_ACCMLTD_WRTFFS_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_ACCMLTD_IMPRMNT_INSTRMNT: 
+        if 
+            isnull(ACCMLTD_IMPRMNT) then true 
+        else 
+            ACCMLTD_IMPRMNT < 1000000000 
+        errorcode "GCMA_TH_H_ACCMLTD_IMPRMNT_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_ACCMLTD_CHNGS_FV_CR_INSTRMNT: 
+        if 
+            isnull (ACCMLTD_CHNGS_FV_CR) then true
+        else 
+            ACCMLTD_CHNGS_FV_CR < 1000000000 
+        errorcode "GCMA_TH_H_ACCMLTD_CHNGS_FV_CR_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_ACCMLTD_CHNGS_FV_CR_INSTRMNT: 
+        if 
+            isnull(ACCMLTD_CHNGS_FV_CR) then true 
+        else 
+            ACCMLTD_CHNGS_FV_CR > -1000000000 
+        errorcode "GCMA_TH_L_ACCMLTD_CHNGS_FV_CR_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_DT_PRFRMNG_STTS: 
+        if 
+            isnull(DT_PRFRMNG_STTS) then true
+        else
+            DT_PRFRMNG_STTS > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_PRFRMNG_STTS" errorlevel 4;
+    GCMA_TH_H_PRVSNS_OFF_BLNC_SHT_INSTRMNT: 
+        if
+            isnull(PRVSNS_OFF_BLNC_SHT) then true
+        else 
+            PRVSNS_OFF_BLNC_SHT < 1000000000 
+        errorcode "GCMA_TH_H_PRVSNS_OFF_BLNC_SHT_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_DT_FRBRNC_STTS:
+        if 
+            isnull(DT_FRBRNC_STTS) then true 
+        else 
+            DT_FRBRNC_STTS > cast("1901-01-01", date) 
+        errorcode "GCMA_TH_L_DT_FRBRNC_STTS" errorlevel 4;
+    GCMA_TH_H_CMLTV_RCVRS_SNC_DFLT_INSTRMNT:
+        if 
+            isnull(CMLTV_RCVRS_SNC_DFLT) then true 
+        else 
+            CMLTV_RCVRS_SNC_DFLT < 1000000000 
+        errorcode "GCMA_TH_H_CMLTV_RCVRS_SNC_DFLT_INSTRMNT" errorlevel 4;
+    GCMA_TH_H_CRRYNG_AMNT_INSTRMNT: 
+        if 
+            isnull(CRRYNG_AMNT) then true 
+        else 
+            CRRYNG_AMNT < 1000000000 
+        errorcode "GCMA_TH_H_CRRYNG_AMNT_INSTRMNT" errorlevel 4;
+    GCMA_TH_L_CRRYNG_AMNT_INSTRMNT: 
+        if 
+            isnull(CRRYNG_AMNT) then true 
+        else 
+            CRRYNG_AMNT > -100000000 
+        errorcode "GCMA_TH_L_CRRYNG_AMNT_INSTRMNT" errorlevel 4
+
+end datapoint ruleset;

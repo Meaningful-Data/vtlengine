@@ -1,0 +1,13 @@
+ACCOUNTING_ENTRY,ADJUSTMENT,COMP_METHOD,COUNTERPART_AREA,COUNTERPART_SECTOR,CURRENCY_DENOM,FLOW_STOCK_ENTRY,FREQ,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,MATURITY,REF_AREA,REF_SECTOR,TIME_PERIOD,UNIT_MEASURE,VALUATION,OBS_VALUE,imbalance,ruleid,errorcode,errorlevel
+A,N,N,W1,S1,_T,T,M,D,FL,FA,_Z,BE,S1,2019-06-30,EUR,_X,-66870.0,-60182.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,BE,S1,2019-06-30,EUR,_X,8105.0,1.0,1,total economy,4.0
+L,N,N,W1,S1,_T,T,M,P,F3,FA,S,BE,S1,2019-06-30,EUR,M,-3414.0,-1.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,BE,S1,2019-05-31,EUR,_X,-10253.0,-1.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,O,F,FA,_Z,BE,S1,2019-04-30,EUR,_X,-5401.0,-1.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,P,F3,FA,L,BE,S1,2019-04-30,EUR,M,-668.0,-1.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,P,F3,FA,S,BE,S1,2019-04-30,EUR,M,-8041.0,-1.0,1,total economy,4.0
+A,N,N,W1,S1,_T,T,M,P,F5,FA,_Z,BE,S1,2019-04-30,EUR,M,1784.0,1.0,1,total economy,4.0
+A,N,N,I8,S1,_T,T,M,P,F3,FA,S,BE,S12T,2019-05-31,EUR,M,1206.0,-1.0,2,Monetary financial institutions other than central bank,4.0
+A,N,N,J8,S1,_T,T,M,P,F3,FA,L,BE,S12T,2019-05-31,EUR,M,4.0,-1.0,2,Monetary financial institutions other than central bank,4.0
+A,N,N,J8,S1,_T,T,M,P,F3,FA,S,BE,S12T,2019-05-31,EUR,M,-1036.0,-1.0,2,Monetary financial institutions other than central bank,4.0
+A,N,N,W1,S1,_T,T,M,P,F3,FA,S,BE,S12T,2019-05-31,EUR,M,171.0,1.0,2,Monetary financial institutions other than central bank,4.0

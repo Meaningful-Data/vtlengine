@@ -1,0 +1,29 @@
+define datapoint ruleset granularCmaEntityRisk (variable ENTRPRS_SZ, 
+                                                     PD, INSTTTNL_SCTR, DFLT_STTS, LGL_PRCDNG_STTS) is
+
+    IG0020: 
+        when 
+            if isnull(PD) then false else
+            ENTRPRS_SZ = "1" or INSTTTNL_SCTR = "S122"
+        then 
+            PD >= 0.0003
+        errorcode "IG0020" errorlevel 1;
+
+    IG0080: 
+        when 
+            if isnull(PD) then false else
+            DFLT_STTS <> "14"
+        then 
+            PD = 1 
+        errorcode "IG0080" errorlevel 1;
+    
+    IG0090: 
+        when 
+            if isnull(DFLT_STTS) then false else
+            LGL_PRCDNG_STTS = "3"
+        then 
+            DFLT_STTS <> "14"
+        errorcode "IG0090" errorlevel 1
+
+
+end datapoint ruleset;

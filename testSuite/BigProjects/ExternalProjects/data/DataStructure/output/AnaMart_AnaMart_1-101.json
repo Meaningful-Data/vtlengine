@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "A01.HD_QRTR_DS_OBS",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TRGT_ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "VLD_FRM",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "VLD_T",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "HD_OFFC_UNDRT_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

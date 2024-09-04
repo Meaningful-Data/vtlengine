@@ -1,103 +1,17 @@
-import json
 from pathlib import Path
-from typing import Dict, List, Any
-from unittest import TestCase
 
-import pandas as pd
-
-from API import create_ast
-from DataTypes import SCALAR_TYPES
-from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset
+from testSuite.Helper import TestHelper
 
 
-class JoinHelper(TestCase):
-    """
-
-    """
-
+class JoinHelper(TestHelper):
     base_path = Path(__file__).parent
+    filepath_VTL = base_path / "data" / "vtl"
+    filepath_valueDomain = base_path / "data" / "ValueDomain"
     filepath_json = base_path / "data" / "DataStructure" / "input"
     filepath_csv = base_path / "data" / "DataSet" / "input"
-    filepath_vtl = base_path / "data" / "vtl"
     filepath_out_json = base_path / "data" / "DataStructure" / "output"
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
-    # File extensions.--------------------------------------------------------------
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
-
-    @classmethod
-    def LoadDataset(cls, ds_path, dp_path):
-        with open(ds_path, 'r') as file:
-            structures = json.load(file)
-
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
-            data = pd.read_csv(dp_path, sep=',')
-
-            return Dataset(name=dataset_name, components=components, data=data)
-
-    @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
-        '''
-
-        '''
-        datasets = {}
-        for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-{str(i + 1)}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
-        """
-
-        """
-        datasets = {}
-        for name in references_names:
-            json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
-            csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            dataset = cls.LoadDataset(json_file_name, csv_file_name)
-            datasets[dataset.name] = dataset
-
-        return datasets
-
-    @classmethod
-    def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
-        vtl_file_name = str(cls.filepath_vtl / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
-            return file.read()
-
-    @classmethod
-    def BaseTest(cls, text: Any, code: str, number_inputs: int, references_names: List[str]):
-        '''
-
-        '''
-        if text is None:
-            text = cls.LoadVTL(code)
-        ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs)
-        reference_datasets = cls.LoadOutputs(code, references_names)
-        interpreter = InterpreterAnalyzer(input_datasets)
-        result = interpreter.visit(ast)
-        assert result == reference_datasets
-
-    @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str):
-        assert True
+    filepath_sql = base_path / "data" / "sql"
 
 
 class JoinTimeIdentifiersTests(JoinHelper):
@@ -122,7 +36,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -139,7 +53,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -156,7 +70,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -173,7 +87,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -190,7 +104,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -207,7 +121,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -225,7 +139,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -243,7 +157,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_9(self):
         """
@@ -262,7 +176,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_10(self):
         """
@@ -281,7 +195,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
         """
@@ -299,7 +213,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_12(self):
         """
@@ -317,7 +231,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class CalcInsideJoinTests(JoinHelper):
@@ -341,7 +255,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_2(self):
         """
@@ -373,7 +287,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_4(self):
         """
@@ -405,7 +319,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_6(self):
         """
@@ -421,7 +335,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_7(self):
         """
@@ -437,7 +351,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_8(self):
         """
@@ -453,7 +367,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_9(self):
         """
@@ -469,7 +383,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_10(self):
         """
@@ -485,7 +399,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_11(self):
         """
@@ -581,7 +495,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_17(self):
         """
@@ -597,7 +511,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_18(self):
         """
@@ -630,7 +544,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_20(self):
         """
@@ -662,7 +576,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_22(self):
         """
@@ -678,7 +592,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_23(self):
         """
@@ -694,7 +608,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_24(self):
         """
@@ -710,7 +624,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_25(self):
         """
@@ -726,7 +640,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_26(self):
         """
@@ -742,7 +656,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_300_27(self):
         """
@@ -838,7 +752,7 @@ class CalcInsideJoinTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class JoinCalcIfThenElseTests(JoinHelper):
@@ -863,7 +777,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -880,7 +794,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -897,7 +811,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -916,7 +830,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -934,7 +848,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -952,7 +866,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -1024,7 +938,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
         """
@@ -1041,7 +955,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_12(self):
         """
@@ -1095,7 +1009,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_15(self):
         """
@@ -1139,7 +1053,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -1157,7 +1071,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         """
@@ -1175,7 +1089,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         """
@@ -1192,7 +1106,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):  # TODO check this test.
         """
@@ -1210,7 +1124,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -1228,7 +1142,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -1246,7 +1160,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # def test_9(self):  # Does not work properly because Me_1 does not disappear when it is renamed to Me_11.
     #     """
@@ -1267,7 +1181,7 @@ class UdosInsideJoinsTests(JoinHelper):
     #     references_names = ["1"]
     #
     #     
-    #     self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_10(self):
         """
@@ -1286,7 +1200,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
         """
@@ -1323,7 +1237,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_13(self):
         """
@@ -1341,7 +1255,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_14(self):
         """
@@ -1359,7 +1273,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_15(self):
         """
@@ -1377,7 +1291,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_399_1(self):
         """
@@ -1395,7 +1309,7 @@ class UdosInsideJoinsTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_399_2(self):
         """
@@ -1487,7 +1401,7 @@ class JoinFilterTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_320_2(self):
         """
@@ -1517,7 +1431,7 @@ class JoinFilterTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_333_1(self):
         """
@@ -1616,7 +1530,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_2(self):
         """
@@ -1633,7 +1547,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_3(self):
         """
@@ -1688,7 +1602,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_6(self):
         """
@@ -1705,7 +1619,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_7(self):
         """
@@ -1722,7 +1636,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_9(self):
         """
@@ -1739,7 +1653,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_10(self):
         """
@@ -1795,7 +1709,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_13(self):
         """
@@ -1812,7 +1726,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_14(self):
         """
@@ -1829,7 +1743,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_15(self):
         """
@@ -1846,7 +1760,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_16(self):
         """
@@ -1901,7 +1815,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_342_19(self):
         """
@@ -1954,7 +1868,7 @@ class JoinUsingTests(JoinHelper):
         number_inputs = 3
         references_names = ["1"]
 
-        # self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # CASE A
 
@@ -1998,7 +1912,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
         """
@@ -2069,7 +1983,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
         """
@@ -2086,7 +2000,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -2104,7 +2018,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -2121,7 +2035,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_419(self):
         """
@@ -2151,7 +2065,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_422_2(self):
         """
@@ -2172,7 +2086,7 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_422_3(self):
         """
@@ -2199,7 +2113,7 @@ class JoinsGeneralTests(JoinHelper):
         # references_names = ["1"]
 
         # 
-        # self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
         error_code = "1-1-13-11"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)

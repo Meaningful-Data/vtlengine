@@ -1,0 +1,177 @@
+bopObs := BOP[keep OBS_VALUE];
+
+/*******************************************************************************/
+/*Hierarchical rulestes validation**********************************************/
+/*******************************************************************************/
+
+instrAssetVal := 
+  check_hierarchy(
+    bopObs, 
+    instrAsset rule INSTR_ASSET);
+    
+refSectorVal :=
+  check_hierarchy(
+    bopObs, 
+    sectorsHierarchy rule REF_SECTOR);
+  
+maturityVal :=
+  check_hierarchy(
+    bopObs, 
+    maturity rule MATURITY);
+    
+intAccItemVal :=
+  check_hierarchy(
+    bopObs, 
+    intAccItem rule INT_ACC_ITEM);
+    
+counterpartAreaVal :=
+  check_hierarchy(
+    bopObs, 
+    areas rule COUNTERPART_AREA);
+    
+counterpartSectorVal :=
+  check_hierarchy(
+    bopObs, 
+    sectorsHierarchy rule COUNTERPART_SECTOR);
+  
+accountingEntryVal :=
+  check_hierarchy(
+    bopObs, 
+    accountingEntry rule ACCOUNTING_ENTRY);
+    
+valResult := union(
+  instrAssetVal,
+  refSectorVal,
+  maturityVal,
+  intAccItemVal,
+  counterpartAreaVal,
+  counterpartSectorVal,
+  accountingEntryVal
+);
+
+
+/*******************************************************************************/
+/**********************Sign validation******************************************/
+/*******************************************************************************/
+
+signVal := check_datapoint(bopObs, signValidation);
+
+/*******************************************************************************/
+/**********************Not zero validation**************************************/
+/*******************************************************************************/
+
+
+notZero := check_datapoint(bopObs, zeroValidation);
+
+
+/*******************************************************************************/
+/*****Other vertical validations*************************************************/
+/*******************************************************************************/
+
+    
+BAL :=
+  check(
+    bopObs[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] =
+      bopObs[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] -
+      bopObs[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"]
+    invalid
+  );
+  
+
+FUNC1 :=
+  check(
+    bopObs[sub ACCOUNTING_ENTRY = "N", FUNCTIONAL_CAT = "_T"] =
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "D"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "D"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "P"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "P"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "O"] -
+      bopObs[sub ACCOUNTING_ENTRY = "L", FUNCTIONAL_CAT = "O"] + 
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "F"] +
+      bopObs[sub ACCOUNTING_ENTRY = "A", FUNCTIONAL_CAT = "R"]
+    invalid
+  );
+  
+
+OW1 :=
+  check(
+    bopObs[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] -
+    bopObs[sub INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"]
+    > 0
+    invalid
+  );
+  
+OW2 :=
+  check(
+    bopObs[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] -
+    bopObs[sub INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"]
+    > 0
+    invalid
+  );
+  
+
+STR :=
+  check(
+      bopObs[sub FUNCTIONAL_CAT = "P", INSTR_ASSET = "F"] 
+      =
+      bopObs[sub FUNCTIONAL_CAT = "P", INSTR_ASSET = "F5"] +
+      bopObs[sub FUNCTIONAL_CAT = "P", INSTR_ASSET = "F3"] 
+      
+    invalid
+  );
+    
+RSCS :=
+  check(
+      bopObs[sub REF_SECTOR = "S121", COUNTERPART_SECTOR = "S1"]  +
+      bopObs[sub REF_SECTOR = "S122", COUNTERPART_SECTOR = "S1"]  +
+      bopObs[sub REF_SECTOR = "S123", COUNTERPART_SECTOR = "S1"]  +
+      bopObs[sub REF_SECTOR = "S13", COUNTERPART_SECTOR = "S1"]  +
+      bopObs[sub REF_SECTOR = "S12M", COUNTERPART_SECTOR = "S1"]  +
+      bopObs[sub REF_SECTOR = "S1V", COUNTERPART_SECTOR = "S1"]  
+      =
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S121"]  +
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S122"]  +
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S123"]  +
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S13"]  +
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S12M"]  +
+      bopObs[sub REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1V"]  
+    
+    invalid
+  );
+
+FUNC2:=
+  check(
+        bopObs[sub REF_SECTOR = "S1", INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "_T", CURRENCY_DENOM="_T"]
+        =
+        bopObs[sub REF_SECTOR = "S1", INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "D", CURRENCY_DENOM="_T"] +
+        bopObs[sub REF_SECTOR = "S1", INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "P", CURRENCY_DENOM="_T"] +
+        bopObs[sub REF_SECTOR = "S1", INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "O", CURRENCY_DENOM="_T"] +
+        bopObs[sub REF_SECTOR = "S1", INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "R", CURRENCY_DENOM="X1"]
+    invalid
+  );
+  
+IAI_1 :=
+  check(
+        bopObs[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT= "D", INSTR_ASSET="F"]
+        =
+        bopObs[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT= "D", INSTR_ASSET="F5"] +
+        bopObs[sub INT_ACC_ITEM = "D4Q", FUNCTIONAL_CAT= "D", INSTR_ASSET="FL"]
+    invalid
+  );
+  
+IAI_2 :=
+  check(
+        bopObs[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT= "D", INSTR_ASSET="F"]
+        =
+        bopObs[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT= "D", INSTR_ASSET="F5"] +
+        bopObs[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT= "D", INSTR_ASSET="FL"]
+    invalid
+  ); 
+  
+OW3 :=
+  check(
+        bopObs[sub INT_ACC_ITEM = "D41", INSTR_ASSET="FLA"]
+        <=
+        bopObs[sub INT_ACC_ITEM = "D4P", INSTR_ASSET="F"]
+    invalid
+  );

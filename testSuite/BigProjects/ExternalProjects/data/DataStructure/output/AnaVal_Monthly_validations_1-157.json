@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC010_JN",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "FRGN_BRNCH",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "SPFUND",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "OTHR_TYP_ENTTY",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

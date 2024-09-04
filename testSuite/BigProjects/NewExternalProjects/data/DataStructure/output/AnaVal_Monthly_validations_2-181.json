@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC0010_CC0020",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CC0010",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "CC0020",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

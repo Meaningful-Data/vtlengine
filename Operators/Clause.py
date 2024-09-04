@@ -1,3 +1,4 @@
+from copy import copy
 from typing import List, Union
 
 from AST import RenameNode
@@ -10,13 +11,14 @@ class Calc:
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
 
-        result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
+        result_components = {name: copy(comp) for name, comp in dataset.components.items()}
+        result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
 
         for operand in operands:
 
-            if operand.name in dataset.components:
+            if operand.name in result_dataset.components:
                 # Override component with same name
-                dataset.delete_component(operand.name)
+                result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
                 result_dataset.add_component(Component(
@@ -43,6 +45,10 @@ class Calc:
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
+        # Validate duplicates on identifiers
+        if len(result_dataset.get_identifiers_names()) != len(dataset.get_identifiers_names()):
+            if result_dataset.data[result_dataset.get_identifiers_names()].duplicated().any():
+                raise Exception("Found duplicated identifiers after calc clause")
         return result_dataset
 
 
@@ -102,7 +108,8 @@ class Filter:
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data.copy()
         if len(condition.data) > 0:
-            result_dataset.data = dataset.data[condition.data].reset_index(drop=True)
+            true_indexes = condition.data[condition.data == True].index
+            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
         return result_dataset
 
 

@@ -104,8 +104,8 @@ instr_op_params = [
     ('instr("abcde", "x")', 0),
     ('instr("abcde", "a", 67)', 0),
     ('instr("abcde", "a", 1, 67)', 0),
-    ('instr(null, null, null, null)', 0),
-    ('instr(null, "a")', 0),
+    ('instr(null, null, null, null)', None),
+    ('instr(null, "a")', None),
     ('instr("abc", "a", null)', 1),
     ('instr("abc", "a", 1, null)', 1),
     ('instr("abc", "a", null, 3)', 0),
@@ -231,18 +231,18 @@ comparison_params = [
 ]
 
 string_exception_param = [
-    ('substr("asdf", -3)', 'param length should be >= 0'),
-    ('substr("asdf", 0)', 'zzz'),
-    ('substr("asdf", -2, 3)', 'param length should be >= 0'),
-    ('substr("asdf", 0, 5)', 'zzz'),
+    ('substr("asdf", -3)', 'param start should be >= 1'),
+    ('substr("asdf", 0)', 'param start should be >= 1'),
+    ('substr("asdf", -2, 3)', 'param start should be >= 1'),
+    ('substr("asdf", 0, 5)', 'param start should be >= 1'),
     ('substr("asdf", 1, -9)', 'param length should be >= 0'),
-    ('substr("asdf", _, -1)', 'zzz'),
+    ('substr("asdf", _, -1)', 'param length should be >= 0'),
     ('instr("abcdecfrxcwsd", "c", 0)', 'param start should be >= 1'),
     ('instr("abcdecfrxcwsd", "c", -5, 4)', 'param start should be >= 1'),
     ('instr("abcdecfrxcwsd", "c", 0, 0)', 'param start should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'zzz'),
-    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'zzz'),
-    ('instr("abcdecfrxcwsd", "c", _, -3)', 'zzz'),
+    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'param occurrence should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'param occurrence should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", _, -3)', 'param occurrence should be >= 1'),
 ]
 
 numeric_exception_param = [

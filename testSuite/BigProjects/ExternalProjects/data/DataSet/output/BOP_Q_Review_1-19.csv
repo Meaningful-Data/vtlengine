@@ -1,0 +1,350 @@
+ACCOUNTING_ENTRY,ADJUSTMENT,COMP_METHOD,COUNTERPART_AREA,COUNTERPART_SECTOR,CURRENCY_DENOM,FLOW_STOCK_ENTRY,FREQ,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,MATURITY,REF_AREA,REF_SECTOR,TIME_PERIOD,UNIT_MEASURE,VALUATION,OBS_VALUE,ruleid,errorcode,errorlevel
+C,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1c,sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3c,sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5c,sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6c,sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7c,sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8c,sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,C,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-03-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-06-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-09-30,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,G,_Z,BE,S1,2002-12-31,EUR,_X,0,sign1d,sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-03-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-06-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-09-30,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,S,_Z,BE,S1,2002-12-31,EUR,_X,0,sign3d,sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-03-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-06-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-09-30,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,IN2,_Z,BE,S1,2002-12-31,EUR,_X,0,sign5d,sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-03-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-06-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-09-30,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,D1,_Z,BE,S1,2002-12-31,EUR,_X,0,sign6d,sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,AT,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,AT,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-03-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-06-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-09-30,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,_Z,_Z,KA,_Z,BE,S1,2002-12-31,EUR,_X,0,sign7d,sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-03-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-06-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-09-30,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,O,F,D4P,_Z,BE,S1,2002-12-31,EUR,_X,0,sign8d,sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,1C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4C,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,4S,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,9A,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-03-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-06-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-09-30,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+D,N,N,B09,S1,_T,T,Q,D,FL,D4Q,_Z,BE,S1,2002-12-31,EUR,_X,0,sign9,sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,1C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4C,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,4S,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,L,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,9A,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-03-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-06-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-09-30,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0
+C,N,N,AT,S1,_T,T,Q,P,F3,D41,S,BE,S1,2002-12-31,EUR,_X,0,sign11,sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0'],4.0

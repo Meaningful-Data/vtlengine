@@ -135,9 +135,11 @@ class ASTTemplate(NodeVisitor):
                 self.visit(param)
         """
         for child in node.children:
-            self.visit(child)
+            if isinstance(child, AST.AST):
+                self.visit(child)
         for param in node.params:
-            self.visit(param)
+            if isinstance(param, AST.AST):
+                self.visit(param)
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         """
@@ -335,8 +337,6 @@ class ASTTemplate(NodeVisitor):
 
         """
         self.visit(node.validation)
-        for param in node.params:
-            self.visit(param)
 
         if node.imbalance is not None:
             self.visit(node.imbalance)
@@ -426,10 +426,6 @@ class ASTTemplate(NodeVisitor):
                 self.visit(node.erLevel)
         """
         self.visit(node.rule)
-        if node.erCode is not None:
-            self.visit(node.erCode)
-        if node.erLevel is not None:
-            self.visit(node.erLevel)
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         """
@@ -444,10 +440,6 @@ class ASTTemplate(NodeVisitor):
                 self.visit(node.erLevel)
         """
         self.visit(node.rule)
-        if node.erCode is not None:
-            self.visit(node.erCode)
-        if node.erLevel is not None:
-            self.visit(node.erLevel)
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
         """
@@ -503,10 +495,8 @@ class ASTTemplate(NodeVisitor):
                 self.visit(node.output)
 
         """
-        for child in node.children:
+        for child in node.operands:
             self.visit(child)
-        if node.output is not None:
-            self.visit(node.output)
 
     def visit_NoOp(self, node: AST.NoOp) -> None:  # pylint: disable=unused-argument
         """

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 
 if os.environ.get("SPARK", False):
@@ -59,7 +60,9 @@ def create_ast(text: str) -> AST:
     stream = _lexer(text)
     cst = _parser(stream)
     visitor = ASTVisitor()
-    return visitor.visit(cst)
+    ast = visitor.visit(cst)
+    DAGAnalyzer.createDAG(ast)
+    return ast
 
 
 def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[

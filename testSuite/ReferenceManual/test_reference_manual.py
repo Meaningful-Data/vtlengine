@@ -191,6 +191,7 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     # except NotImplementedError:
     #     pass
 
+
 @pytest.mark.parametrize('param', params)
 def test_reference_defined_operators(input_datasets, reference_datasets,
                                      ast_defined_operators, param, value_domains):

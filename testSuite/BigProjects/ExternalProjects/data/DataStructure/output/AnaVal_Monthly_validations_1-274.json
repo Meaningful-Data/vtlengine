@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "comp_count.CC013_CNTRPRTS_BFR_DT",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}
