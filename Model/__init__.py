@@ -135,10 +135,6 @@ class Dataset:
             for name, component in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
-                if component.data_type == DataTypes.TimePeriod:
-                    self.data[name] = self.data[name].map(self.refactor_time_period, na_action="ignore")
-                elif component.data_type == DataTypes.TimeInterval:
-                    self.data[name] = self.data[name].map(self.refactor_time_interval, na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -254,23 +250,6 @@ class Dataset:
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
-
-    def refactor_time_period(self, date: str):
-        if isinstance(date, str):
-            match = re.match(r"^(\d{1,4})([a-zA-Z_])(\d*)$", date)
-            if match:
-                year, period, value = match.groups()
-                return "{}-{}{}".format(year, period, value) if value else "{}-{}".format(year, period)
-        return date
-
-    def refactor_time_interval(self, date: str):
-        if isinstance(date, str):
-            parts = date.split('/')
-            if len(parts) == 2:
-                start = self.refactor_time_period(parts[0])
-                end = self.refactor_time_period(parts[1])
-                return "{}/{}".format(start, end)
-        return date
 
 
 @dataclass
