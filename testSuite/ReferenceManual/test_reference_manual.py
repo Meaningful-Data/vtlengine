@@ -101,11 +101,7 @@ params = itertools.chain(
     clause_operators
 )
 
-# params = [x for x in list(params) if x not in exceptions_tests]
-# params = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
-params = [100]
-# params = time_operators
-exceptions_tests = []
+params = [x for x in list(params) if x not in exceptions_tests]
 
 
 @pytest.fixture
