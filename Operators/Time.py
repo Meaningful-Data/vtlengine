@@ -11,7 +11,6 @@ from typing import Optional
 
 
 class Time(Operators.Operator):
-
     periods = None
     time_id = None
     other_ids = None
@@ -19,14 +18,15 @@ class Time(Operators.Operator):
 
     TIME_DATA_TYPES = [DataTypes.Date, DataTypes.TimePeriod, DataTypes.TimeInterval]
 
-    PERIOD_PATTERN = r'^(\d{1,4})(?:-([SQMD])(\d{1,3}))?$'
+    PERIOD_PATTERN = r'^(\d{1,4})(?:-?([a-zA-Z_])(\d*))?$'
     TIME_PATTERN = r'^(.+?)/(.+?)$'
 
     FREQUENCY_MAP = {'Y': 'years', 'M': 'months', 'D': 'days'}
-    YEAR_TO_PERIOD = {'S': 2, 'Q': 4, 'M': 12, 'D': 365}
-    PERIOD_ORDER = {'A': 0, 'S': 1, 'Q': 2, 'M': 3, 'D': 4}
+    YEAR_TO_PERIOD = {'S': 2, 'Q': 4, 'M': 12, 'W': 52, 'D': 365}
+    PERIOD_ORDER = {'A': 0, 'S': 1, 'Q': 2, 'M': 3, 'W': 4, 'D': 5}
     DATE_TO_PERIOD_PARSER = {
         'D': lambda x: x.strftime('%Y-D%d'),
+        'W': lambda x: x.strftime('%Y-W%W'),
         'M': lambda x: x.strftime('%Y-M%m'),
         'Q': lambda x: x.strftime('%Y-Q%d'),
         'S': lambda x: x.strftime('%Y-S%d'),
@@ -34,6 +34,7 @@ class Time(Operators.Operator):
     }
     PERIODS_TO_DATE_PARSER = {
         'D': lambda x, y, z: "{}-{}-{}".format(x, y, z),
+        'W': lambda x, y: "{}-W{}".format(x, y),
         'M': lambda x, y: "{}-M{}".format(x, y),
         'Q': lambda x, y: "{}-Q{}".format(x, y),
         'S': lambda x, y: "{}-S{}".format(x, y),
@@ -211,7 +212,8 @@ class Unary(Time):
     def period_accumulation(cls, data):
         data = data.copy()
         data['Period_group_col'] = data[cls.time_id].apply(cls.get_period).apply(lambda x: cls.PERIOD_ORDER[x])
-        data[cls.measures] = data.groupby(cls.other_ids + ['Period_group_col'])[cls.measures].apply(cls.py_op).reset_index(
+        data[cls.measures] = data.groupby(cls.other_ids + ['Period_group_col'])[cls.measures].apply(
+            cls.py_op).reset_index(
             drop=True)
         return data.drop(columns='Period_group_col')
 
@@ -256,12 +258,10 @@ class Period_indicator(Unary):
 
 
 class Flow_to_stock(Unary):
-
     py_op = lambda x: x.cumsum()
 
 
 class Stock_to_flow(Unary):
-
     py_op = lambda x: x.diff().fillna(x)
 
 
@@ -312,6 +312,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def max_min_from_period(cls, data, mode='all'):
+
         data = data.assign(
             Periods_col=data[cls.time_id].apply(cls.get_period),
             Periods_values_col=data[cls.time_id].apply(lambda x: int(re.sub(r'[^\d]', '', x.split('-')[-1]))),
@@ -585,11 +586,13 @@ class Time_Shift(Binary):
         end_date = shift_func(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
 
+
 class Time_Aggregate(Time):
     pass
 
+
 class Current_Date(Time):
 
-        @classmethod
-        def evaluate(cls):
-            return datetime.now()
+    @classmethod
+    def evaluate(cls):
+        return datetime.now()

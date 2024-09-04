@@ -138,9 +138,10 @@ class Dataset:
             for name, component in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
-                if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
-                    self.data[name] = self.data[name].map(self.refactor_time_period,
-                                                          na_action="ignore")
+                if component.data_type == DataTypes.TimePeriod:
+                    self.data[name] = self.data[name].map(self.refactor_time_period, na_action="ignore")
+                elif component.data_type == DataTypes.TimeInterval:
+                    self.data[name] = self.data[name].map(self.refactor_time_interval, na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -228,21 +229,20 @@ class Dataset:
         return json.dumps(self.to_dict(), indent=4)
 
     def refactor_time_period(self, date: str):
-        if not isinstance(date, str):
-            return date
-        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])$", date):
-            year, month = date.split("M")
-            return "{}-M{}".format(year, month)
-        if re.match(r"^\d{1,4}Q[1-4]$", date):
-            year, quarter = date.split("Q")
-            return "{}-Q{}".format(year, quarter)
-        if re.match(r"^\d{1,4}S[1-2]$", date):
-            year, semester = date.split("S")
-            return "{}-S{}".format(year, semester)
-        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])/\d{1,4}M(0?[1-9]|1[0-2])$", date):
-            date1, date2 = date.split("/")
-            return "{}/{}".format(self.refactor_time_period(date1),
-                                  self.refactor_time_period(date2))
+        if isinstance(date, str):
+            match = re.match(r"^(\d{1,4})([a-zA-Z_])(\d*)$", date)
+            if match:
+                year, period, value = match.groups()
+                return "{}-{}{}".format(year, period, value) if value else "{}-{}".format(year, period)
+        return date
+
+    def refactor_time_interval(self, date: str):
+        if isinstance(date, str):
+            parts = date.split('/')
+            if len(parts) == 2:
+                start = self.refactor_time_period(parts[0])
+                end = self.refactor_time_period(parts[1])
+                return "{}/{}".format(start, end)
         return date
 
 
