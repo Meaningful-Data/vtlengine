@@ -258,7 +258,7 @@ class Period_indicator(Unary):
 
 
 class Flow_to_stock(Unary):
-    py_op = lambda x: x.cumsum()
+    py_op = lambda x: x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
