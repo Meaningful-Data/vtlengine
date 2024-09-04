@@ -132,7 +132,9 @@ def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key
     left_type_name = c_left.data_type.__name__
     right_type_name = c_right.data_type.__name__
 
-    if left_type_name == right_type_name:
+    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
+        left_data[join_key] = left_data[join_key].astype(object)
+        right_data[join_key] = right_data[join_key].astype(object)
         return
     if ((left_type_name == "Integer" and right_type_name == "Number") or
             (left_type_name == "Number" and right_type_name == "Integer")):
@@ -140,12 +142,10 @@ def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key
         right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
     elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
         left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
     elif left_type_name in ("Integer", "Number") and right_type_name == "String":
         right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
+    left_data[join_key] = left_data[join_key].astype(object)
+    right_data[join_key] = right_data[join_key].astype(object)
 
 
 def _handle_str_number(x: Union[str, int, float]) -> Union[int, float]:
@@ -479,11 +479,14 @@ class Binary(Operator):
                                          right_operand.get_component(join_key),
                                          join_key, base_operand_data, other_operand_data)
 
-        # Merge the data
-        result_data: pd.DataFrame = pd.merge(
-            base_operand_data, other_operand_data,
-            how='inner', on=join_keys,
-            suffixes=('_x', '_y'))
+        try:
+            # Merge the data
+            result_data: pd.DataFrame = pd.merge(
+                base_operand_data, other_operand_data,
+                how='inner', on=join_keys,
+                suffixes=('_x', '_y'))
+        except ValueError as e:
+            raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():

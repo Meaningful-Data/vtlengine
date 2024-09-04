@@ -172,10 +172,17 @@ class Integer(Number):
     
     @classmethod
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
-        if from_type in {Integer}:
+        if from_type.__name__ == "Integer":
             return value
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        if from_type.__name__ == "Number":
+            if value.is_integer():
+                return int(value)
+            else:
+                raise RuntimeError(f"Value {value} has decimals, cannot cast to integer")
+
+        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
+                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
@@ -334,7 +341,8 @@ class Boolean(ScalarType):
         if from_type in {Boolean}:
             return value
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
+                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
