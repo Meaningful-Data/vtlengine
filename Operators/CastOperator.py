@@ -134,8 +134,7 @@ class Cast(Operator.Unary):
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
         if mask_value not in ["START", "END"]:
-            raise SemanticError("1-1-5-4", op=cls.op, type_1="time_period",
-                                type_2="date")
+            raise SemanticError("1-1-5-4", op=cls.op, type_1="time_period", type_2="date")
 
     @classmethod
     def check_mask_value_from_time_to_string(cls, mask_value) -> None:
@@ -191,9 +190,10 @@ class Cast(Operator.Unary):
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
             explicit_with_mask = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
             if to_type.is_included(explicit_with_mask):
-                raise Exception(f"Cannot cast from {from_type} to {to_type} "
-                                f"without providing a mask.")
-            raise Exception(f"Cannot cast from {from_type} to {to_type}")
+                raise SemanticError("1-1-5-3", op=cls.op, type_1=from_type,
+                                    type_2=to_type)
+            raise SemanticError("1-1-5-4", op=cls.op, type_1=from_type,
+                                type_2=to_type)
 
     @classmethod
     def cast_component(cls, data: pd.Series, from_type: ScalarType,
