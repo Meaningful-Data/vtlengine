@@ -88,9 +88,12 @@ class Aggregation(Operator.Unary):
         if group_op is not None:
             for comp_name in grouping_components:
                 if comp_name not in operand.components:
-                    raise ValueError(f"Component {comp_name} not found in dataset")
+                    raise SemanticError("1-1-2-4", op=cls.op, id_name=comp_name)
                 if operand.components[comp_name].role != Role.IDENTIFIER:
-                    raise ValueError(f"Component {comp_name} is not an identifier")
+                    raise SemanticError("1-1-2-2", op=cls.op,
+                                        id_name=comp_name,
+                                        id_type=operand.components[comp_name].role)
+
             identifiers_to_keep = extract_grouping_identifiers(operand.get_identifiers_names(),
                                                                group_op,
                                                                grouping_components)

@@ -12,6 +12,7 @@ from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOI
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
     FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
+from Exceptions import SemanticError
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
@@ -624,7 +625,7 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == HAVING:
             for id_name in self.aggregation_grouping:
                 if id_name not in self.aggregation_dataset.components:
-                    raise ValueError(f"Component {id_name} not found in dataset")
+                    raise SemanticError("1-1-2-4", op=node.op, id_name=id_name)
             if len(self.aggregation_dataset.get_measures()) != 1:
                 raise ValueError("Only one measure is allowed")
             # Deepcopy is necessary for components to avoid changing the original dataset

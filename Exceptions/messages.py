@@ -58,6 +58,7 @@ centralised_messages = {
     "1-1-2-1": "At op {op}: No measures found to aggregate.",
     "1-1-2-2": "At op {op}: Only Identifiers are allowed for grouping, found {id_name} - {id_type}.",
     "1-1-2-3": "Having component output type must be boolean, found {type}.",
+    "1-1-2-4": "At op {op}: Component {id_name} not found in dataset",
     # Analytic errors
     "1-1-3-1": "At op {op}: No measures found to analyse.",
     "1-1-3-2": "At op {op}: Only Identifiers are allowed for partitioning, found {id_name} - {id_type}.",
