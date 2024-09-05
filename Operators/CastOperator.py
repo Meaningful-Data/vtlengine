@@ -129,7 +129,7 @@ class Cast(Operator.Unary):
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
 
-        raise Exception(f"Cannot cast with mask from type {from_type} to {to_type}.")
+        raise SemanticError("1-1-5-5", op=cls.op, type_1=from_type, type_2=to_type, mask_value=mask_value)
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
@@ -182,7 +182,7 @@ class Cast(Operator.Unary):
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
 
-        raise Exception(f"Cannot cast with mask from {from_type} to {to_type}")
+        raise SemanticError("1-1-5-5", op=cls.op, type_1=from_type, type_2=to_type, mask_value=mask_value)
 
     @classmethod
     def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType):
