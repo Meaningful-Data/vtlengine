@@ -70,7 +70,7 @@ centralised_messages = {
         Mask provided: {mask_value}.",
     "2-1-5-1": "At op {op}: Impossible to cast {value} from type {type_1} to {type_2}.",
     # Clause errors
-    "1-1-6-1": "At op {op}: The component to keep {name} is not present at the left dataset.",
+    "1-1-6-1": "At op {op}: Component {comp_name} not found in dataset {dataset_name}.",
     "1-1-6-2": "At op {op}: The identifier {name} could not be included in the {op} op.",
     "1-1-6-3": "At op {op}: The component to keep {name} is duplicated.",
     "1-1-6-4": "At op {op}: Alias symbol cannot have the name of a component symbol: {symbol_name} - {comp_name}.",
