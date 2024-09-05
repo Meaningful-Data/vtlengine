@@ -637,6 +637,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset.get_identifiers_names() +
                 self.aggregation_dataset.get_measures_names()]
             result = self.visit(node.params)
+
+            # Añadir la verificación del tipo booleano
+            if not isinstance(result.subtype, bool):
+                measure_type = result.subtype.name
+                raise SemanticError("1-1-2-3", type=measure_type)
+
             # We get only the identifiers we need that have true values when grouped
             measure_name = result.get_measures_names()[0]
             result.data = result.data[result.data[measure_name]]
