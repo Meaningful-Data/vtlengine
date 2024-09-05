@@ -230,9 +230,11 @@ class Period_indicator(Unary):
         if isinstance(operand, str):
             return cls.get_period(str(operand))
         if isinstance(operand, Scalar):
-            return Scalar(name='result', data_type=DataTypes.Duration, value=cls.get_period(str(operand.value)))
+            return Scalar(name='result', data_type=DataTypes.Duration,
+                          value=cls.get_period(str(operand.value)))
         if isinstance(operand, DataComponent):
-            return DataComponent(name='result', data_type=DataTypes.Duration, data=operand.data.apply(cls.get_period))
+            return DataComponent(name='result', data_type=DataTypes.Duration,
+                                 data=operand.data.map(cls.get_period, na_action='ignore'))
         cls.time_id = cls.get_time_id(operand)
 
         data = operand.data[cls.time_id].apply(cls.get_period)
@@ -251,10 +253,10 @@ class Period_indicator(Unary):
         if isinstance(operand, Dataset):
             time_id = cls.get_time_id(operand)
             if time_id is None or operand.components[time_id].data_type != DataTypes.TimePeriod:
-                raise ValueError("PeriodIndicator can only be applied to a time dataset")
+                raise ValueError("PeriodIndicator can only be applied to a time period dataset")
         else:
             if operand.data_type != DataTypes.TimePeriod:
-                raise ValueError("PeriodIndicator can only be applied to a time dataset")
+                raise ValueError("PeriodIndicator can only be applied to a time period component")
 
 
 class Flow_to_stock(Unary):
@@ -374,12 +376,10 @@ class Fill_time_series(Binary):
             for period in cls.periods:
                 if period == 'A':
                     filled_data.extend(cls.fill_periods_rows(group_df, period, years))
-                elif period == 'D':
-                    vals = range(period_limits['min'][period], period_limits['max'][period] + 1)
-                    filled_data.extend(cls.fill_periods_rows(group_df, period, years, vals))
                 else:
-                    vals = range(period_limits['min'][period], period_limits['max'][period] + 1)
-                    filled_data.extend(cls.fill_periods_rows(group_df, period, years, vals=vals))
+                    if period in period_limits['min'] and period in period_limits['max']:
+                        vals = range(period_limits['min'][period], period_limits['max'][period] + 1)
+                        filled_data.extend(cls.fill_periods_rows(group_df, period, years, vals=vals))
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         combined_data = pd.concat([filled_data, data], ignore_index=True)

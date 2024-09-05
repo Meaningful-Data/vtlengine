@@ -2938,7 +2938,7 @@ class TimeOperatorsTest(AdditionalHelper):
         code = '7-26'
         number_inputs = 1
         message = "2-1-19-1"
-        self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
 
 class EmptyDatasetsTest(AdditionalHelper):

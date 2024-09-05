@@ -221,7 +221,7 @@ class TimePeriodHandler:
         if self.period_indicator == 'A':
             # return f"{self.year}{self.period_indicator}"
             return f"{self.year}"  # Drop A from exit time period year
-        return f"{self.year}{self.period_indicator}{self.period_number}"
+        return f"{self.year}-{self.period_indicator}{self.period_number}"
 
     @staticmethod
     def _check_year(year: int):
