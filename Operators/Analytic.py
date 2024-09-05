@@ -4,6 +4,8 @@ from typing import List, Optional
 
 import duckdb
 
+from Exceptions import SemanticError
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -44,7 +46,8 @@ class Analytic(Operator.Unary):
             if comp_name not in operand.components:
                 raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
         measures = operand.get_measures()
-
+        if measures is None:
+            raise SemanticError("1-1-3-1", op=cls.op)
         if cls.type_to_check is not None:
             for measure in measures:
                 if not check_unary_implicit_promotion(measure.data_type, cls.type_to_check):
