@@ -41,10 +41,14 @@ class Join(Operator):
         columns = dataset.data.columns.tolist()
         common = cls.get_components_union(operands)
         reference_components = cls.reference_dataset.get_components_names() if cls.reference_dataset else None
+        if cls.how == 'left':
+            reference_components.extend([f'{cls.reference_dataset.name}#{comp}'
+                                         for comp in cls.reference_dataset.get_components_names()])
         for component in common:
-            if (cls.how != 'inner' and reference_components and component.name not in reference_components and
-                    component.role is not Role.IDENTIFIER):
+            if component.role is not Role.IDENTIFIER and (cls.how == 'outer' or
+            (cls.how != 'inner' and reference_components and component.name not in reference_components)):
                 component.nullable = True
+
             if component.name in columns:
                 if (cls.how == 'inner' and
                         component.name in dataset.components and
@@ -147,12 +151,10 @@ class InnerJoin(Join):
                         "Sub-case A: At least one dataset identifiers must be a superset of the others")
 
         else:
-            info = {op.name: [x for x in op.get_components_names() if x in using] for op in
-                    operands}
+            info = {op.name: [x for x in op.get_components_names() if x in using] for op in operands}
             most_identifiers = max(info, key=lambda x: len(info[x]))
             for op_name, identifiers in info.items():
-                if op_name != most_identifiers and not set(identifiers).issubset(
-                        set(info[most_identifiers])):
+                if op_name != most_identifiers and not set(identifiers).issubset( set(info[most_identifiers])):
                     raise Exception(
                         "Sub-case B2: At least one dataset components must be a superset of the others")
 
