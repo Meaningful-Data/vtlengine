@@ -638,7 +638,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset.get_measures_names()]
             result = self.visit(node.params)
 
-            # Añadir la verificación del tipo booleano
             if not isinstance(result.subtype, bool):
                 measure_type = result.subtype.name
                 raise SemanticError("1-1-2-3", type=measure_type)
