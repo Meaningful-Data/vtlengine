@@ -23,7 +23,7 @@ from Operators.General import Eval
 from Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Operators.Time import Fill_time_series
+from Operators.Time import Fill_time_series, Time_Aggregation
 from Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
@@ -40,6 +40,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Flags to change behavior
     is_from_assignment: bool = False
     is_from_regular_aggregation: bool = False
+    is_from_grouping: bool = False
     is_from_having: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
@@ -232,12 +233,22 @@ class InterpreterAnalyzer(ASTTemplate):
         having = None
         grouping_op = node.grouping_op
         if node.grouping is not None:
-            for x in node.grouping:
-                groupings.append(self.visit(x))
-            if node.having_clause is not None:
+            if grouping_op == 'group all':
                 self.aggregation_dataset = Dataset(name=operand.name,
                                                    components=operand.components,
                                                    data=operand.data.copy())
+            # For Component handling in operators like time_agg
+            self.is_from_grouping = True
+            for x in node.grouping:
+                groupings.append(self.visit(x))
+            self.is_from_grouping = False
+            if grouping_op == 'group all':
+                comp_grouped = groupings[0]
+                if len(comp_grouped.data) > 0:
+                    operand.data[comp_grouped.name] = comp_grouped.data
+                groupings = [comp_grouped.name]
+                self.aggregation_dataset = None
+            if node.having_clause is not None:
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(),
                     node.grouping_op,
@@ -247,7 +258,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # Reset to default values
                 self.is_from_having = False
                 self.aggregation_grouping = None
-                self.aggregation_dataset = None
+            self.aggregation_dataset = None
         elif self.is_from_having:
             groupings = self.aggregation_grouping
             # Setting here group by as we have already selected the identifiers we need
@@ -397,7 +408,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return udo_element
             # If it is only the component or dataset name, we rename the node.value
             node.value = udo_element
-        if self.is_from_having:
+        if self.is_from_having or self.is_from_grouping:
             return DataComponent(name=node.value,
                                  data=self.aggregation_dataset.data[node.value],
                                  data_type=self.aggregation_dataset.components[
@@ -1139,4 +1150,8 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
-        raise NotImplementedError("Time Aggregation is not implemented yet")
+        operand = self.visit(node.operand)
+
+        return Time_Aggregation.evaluate(operand=operand, period_from=node.period_from,
+                                         period_to=node.period_to, conf=node.conf)
+

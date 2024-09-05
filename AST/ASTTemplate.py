@@ -304,10 +304,6 @@ class ASTTemplate(NodeVisitor):
         if node.operand is not None:
             self.visit(node.operand)
 
-        if node.params is not None:
-            for param in node.params:
-                self.visit(param)
-
     def visit_If(self, node: AST.If) -> None:
         """
         If: (condition, thenOp, elseOp)
