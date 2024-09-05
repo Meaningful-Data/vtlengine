@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED, TimePeriodHandler, \
     TimeIntervalHandler
+from Exceptions import SemanticError
 
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
@@ -82,6 +83,8 @@ class Aggregation(Operator.Unary):
                  grouping_components: Optional[List[str]],
                  having_data: Optional[List[DataComponent]]) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
+        if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
+            raise SemanticError("1-1-2-1", op=cls.op)
         if group_op is not None:
             for comp_name in grouping_components:
                 if comp_name not in operand.components:

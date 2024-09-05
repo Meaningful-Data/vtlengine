@@ -10,6 +10,7 @@ import pytest
 from API import create_ast
 from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
+from Exceptions import SemanticError
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
 from files.parser import load_datapoints
@@ -136,8 +137,37 @@ class TestHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
-        assert True
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, vd_names: List[str] = None,
+                 sql_names: List[str] = None, text: Optional[str] = None, scalars: Dict[str, Any] = None):
+        # Data Loading.--------------------------------------------------------
+        if text is None:
+            text = cls.LoadVTL(code)
+        ast = create_ast(text)
+        input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+
+        value_domains = None
+        if vd_names is not None:
+            value_domains = cls.LoadValueDomains(vd_names)
+
+        external_routines = None
+        if sql_names is not None:
+            external_routines = cls.LoadExternalRoutines(sql_names)
+
+        if scalars is not None:
+            for scalar_name, scalar_value in scalars.items():
+                if scalar_name not in input_datasets:
+                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                if not isinstance(input_datasets[scalar_name], Scalar):
+                    raise Exception(f"{scalar_name} is a dataset")
+                input_datasets[scalar_name].value = scalar_value
+
+        interpreter = InterpreterAnalyzer(input_datasets,
+                                          value_domains=value_domains,
+                                          external_routines=external_routines)
+        with pytest.raises(SemanticError) as context:
+            interpreter.visit(ast)
+
+        assert exception_code == str(context.value.args[1])
 
     @classmethod
     def LoadValueDomains(cls, vd_names):
