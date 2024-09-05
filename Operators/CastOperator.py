@@ -318,7 +318,7 @@ class Cast(Operator.Unary):
         """
         from_type = operand.data_type
         if not cls.check_cast(from_type, to_type, mask):
-            raise SemanticError("1-1-5-1", op=cls.op, scalar_name=operand.name, type_1=from_type.name, type_2=to_type.name)
+            raise SemanticError("1-1-5-1", op=cls.op, comp_name=operand.name, type_1=from_type.name, type_2=to_type.name)
 
         return Scalar(name=operand.name, data_type=to_type, value=None)
 

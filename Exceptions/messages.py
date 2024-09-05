@@ -63,8 +63,7 @@ centralised_messages = {
     "1-1-3-1": "At op {op}: No measures found to analyse.",
     "1-1-3-2": "At op {op}: Only Identifiers are allowed for partitioning, found {id_name} - {id_type}.",
     # Cast errors
-    "1-1-5-1": "At op {op}: Scalar {scalar_name}, with type {type_1}, cannot be cast to {type_2}.",
-    "1-1-5-2": "At op {op}: Component {comp_name} with type {type_1}, cannot be cast to {type_2}.",
+    "1-1-5-1": "At op {op}: Component {comp_name} with type {type_1}, cannot be cast to {type_2}.",
     "1-1-5-3": "At op {op}: Impossible to cast from type {type_1} to {type_2}, without providing a mask.",
     "1-1-5-4": "At op {op}: Invalid mask to cast from type {type_1} to {type_2}.",
     "1-1-5-5": "At op {op}: A mask can't be provided to cast from type {type_1} to {type_2}.\
