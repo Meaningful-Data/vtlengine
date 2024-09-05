@@ -41,7 +41,7 @@ class Analytic(Operator.Unary):
 
         for comp_name in partitioning:
             if comp_name not in identifier_names:
-                raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
+                raise SemanticError("1-1-3-2", op=cls.op, id_name=comp_name, id_type=operand.components[comp_name].role)
         for comp_name in order_components:
             if comp_name not in operand.components:
                 raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
