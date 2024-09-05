@@ -11,6 +11,7 @@ from DataTypes import (COMP_NAME_MAPPING, ScalarType,
                        IMPLICIT_TYPE_PROMOTION_MAPPING,
                        String, Number, TimeInterval, Date, TimePeriod, Duration)
 from DataTypes.TimeHandling import str_period_to_date
+from Exceptions import SemanticError
 from Model import Component, Dataset, Role, Scalar, DataComponent
 
 duration_mapping = {
@@ -319,7 +320,8 @@ class Cast(Operator.Unary):
         This method validates the operation when the operand is a DataComponent.
         """
         from_type = operand.data_type
-        cls.check_cast(from_type, to_type, mask)
+        if not cls.check_cast(from_type, to_type, mask):
+            raise SemanticError("1-1-5-1", op=cls.op, scalar_name=operand.name, type_1=from_type.name, type_2=to_type.name)
 
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
