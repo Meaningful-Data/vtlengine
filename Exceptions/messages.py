@@ -62,7 +62,6 @@ centralised_messages = {
     # Analytic errors
     "1-1-3-1": "At op {op}: No measures found to analyse.",
     "1-1-3-2": "At op {op}: Only Identifiers are allowed for partitioning, found {id_name} - {id_type}.",
-    "1-1-3-3": "At op {op}: Cannot use order by clause with {type} type for Component {name}.",
     # Cast errors
     "1-1-5-1": "At op {op}: Scalar {scalar_name}, with type {type_1}, cannot be cast to {type_2}.",
     "1-1-5-2": "At op {op}: Component {comp_name} with type {type_1}, cannot be cast to {type_2}.",

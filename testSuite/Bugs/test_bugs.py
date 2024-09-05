@@ -3122,6 +3122,7 @@ class CastBugs(BugHelper):
         code = 'GL_447_1'
         number_inputs = 1
         message = "1-1-3-3"
+        #TODO: Check the message error code
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
