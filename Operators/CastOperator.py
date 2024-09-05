@@ -134,9 +134,8 @@ class Cast(Operator.Unary):
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
         if mask_value not in ["START", "END"]:
-            error_message = cls.invalid_mask_message.format(op=cls.op, type_1="time_period",
-                                                            type_2="date")
-            raise Exception(error_message)
+            raise SemanticError("1-1-5-4", op=cls.op, type_1="time_period",
+                                type_2="date")
 
     @classmethod
     def check_mask_value_from_time_to_string(cls, mask_value) -> None:
