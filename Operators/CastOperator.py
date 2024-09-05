@@ -249,9 +249,7 @@ class Cast(Operator.Unary):
 
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
-
-        raise Exception(
-            f"At op {cls.op}: Impossible to cast {value} from type {provided_type} to {to_type}.")
+        raise SemanticError("2-1-5-1", op=cls.op, value=value, type_1=provided_type, type_2=to_type)
 
     @classmethod
     def validate(
