@@ -78,7 +78,7 @@ centralised_messages = {
     "1-1-6-6": "Membership is not allowed inside a clause, found {dataset_name}#{comp_name}.",
     "1-1-6-7": "Cannot use component {comp_name} as it was generated in another calc expression.",  # all the components used in calccomp must belong to the operand dataset
     "1-1-6-8": "Cannot use component {comp_name} for rename because is yet in the datastructure and can't be duplicated.",  # it is the same error that 1-1-8-1 AND similar but not the same 1-3-1
-    "1-1-6-9": "You have from_componets {from_components} repeated",
+    "1-1-6-9": "At op {op}: The following components are repeated: {from_components}.",
     "1-1-6-10": "At op {op}: Component {operand} in dataset {dataset_name} is not an identifier",
     "1-1-6-11": "Ambiguity for this variable {comp_name} inside a {clause}, exists as scalardataset and component.", # it is the same as the one that appears in joins, but are differents kinds of failures
     "1-1-6-12": "At op {op}: Not allowed to drop the last element.",

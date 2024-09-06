@@ -181,6 +181,11 @@ class Rename:
 
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset):
+        from_names = [operand.old_name for operand in operands]
+        if len(from_names) != len(set(from_names)):
+            duplicates = set(
+                [name for name in from_names if from_names.count(name) > 1])
+            raise SemanticError("1-1-6-9", op=cls.op, from_components=duplicates)
         for operand in operands:
             if operand.old_name not in dataset.components.keys():
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name)
