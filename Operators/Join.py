@@ -39,21 +39,19 @@ class Join(Operator):
     @classmethod
     def merge_components(cls, dataset: Dataset, operands: List[Dataset]) -> Dataset:
         columns = dataset.data.columns.tolist()
-        common = cls.get_components_union(operands)
         reference_components = cls.reference_dataset.get_components_names() if cls.reference_dataset else None
+        common = cls.get_components_union(operands) + cls.reference_dataset.get_components() if cls.reference_dataset else []
+
         if cls.how == 'left':
-            reference_components.extend([f'{cls.reference_dataset.name}#{comp}'
-                                         for comp in cls.reference_dataset.get_components_names()])
+            reference_components.extend([f'{cls.reference_dataset.name}#{comp}'for comp in reference_components])
         for component in common:
             if component.role is not Role.IDENTIFIER and (cls.how == 'outer' or
             (cls.how != 'inner' and reference_components and component.name not in reference_components)):
                 component.nullable = True
 
             if component.name in columns:
-                if (cls.how == 'inner' and
-                        component.name in dataset.components and
-                        component.role is Role.IDENTIFIER and dataset.components[
-                            component.name].role is not Role.IDENTIFIER):
+                if (cls.how == 'inner' and component.name in dataset.components and component.role is Role.IDENTIFIER
+                        and dataset.components[component.name].role is not Role.IDENTIFIER):
                     continue
                 dataset.components.update({component.name: component.copy()})
             else:
@@ -66,9 +64,20 @@ class Join(Operator):
         return dataset
 
     @classmethod
+    def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[str, Component]:
+        components = {}
+        inter_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
+
+        for op in operands:
+            ids = op.get_identifiers_names()
+            for id in inter_identifiers:
+                components.update({id: copy(op.components[id])} if id in ids else {})
+        return components
+
+    @classmethod
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute(operands.copy(), using)
-        if result.get_components_names() != result.data.columns.tolist():
+        if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
             raise Exception(f"Invalid components on result dataset")
         return result
 
@@ -79,7 +88,8 @@ class Join(Operator):
             result.name = result
             return result
         join_keys = using if using else result.get_identifiers_names()
-        result.data = operands[0].data.copy()
+        result.data = cls.reference_dataset.data
+        result.data = result.data.copy()
 
         common = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
         for op in operands:
@@ -87,17 +97,25 @@ class Join(Operator):
                 if component in result.data.columns.tolist():
                     new_name = f"{op.name}#{component}"
                     op.components[component] = Component(name=new_name, data_type=op.components[component].data_type,
-                                                         role=op.components[component].role,
-                                                         nullable=op.components[component].nullable)
+                                         role=op.components[component].role, nullable=op.components[component].nullable)
                     op.data.rename(columns={component: new_name}, inplace=True)
-        result.components = operands[0].components
-        result.data.columns = operands[0].data.columns
+        result.components = cls.reference_dataset.components
+        result.data.columns = cls.reference_dataset.data.columns
 
-        for op in operands[1:]:
-            result.data = pd.merge(result.data, op.data, how=cls.how, on=join_keys)
+
+        for op in operands:
+            if op is not cls.reference_dataset:
+                merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
+                result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
 
         cls.merge_components(result, operands)
         result.data.reset_index(drop=True, inplace=True)
+        # comp_names = result.get_components_names()
+        # comp_names = [comp_name for comp_name in comp_names if comp_name in using] + \
+        #                 [comp_name for comp_name in comp_names if comp_name in result.get_identifiers_names()] + \
+        #                 [comp_name for comp_name in comp_names if comp_name in result.get_measures_names()]
+        # result.components = {comp_name: result.components[comp_name] for comp_name in comp_names}
+        # result.data = result.data.sort_values(by=using) if using else result.data
         return result
 
     @classmethod
@@ -119,16 +137,6 @@ class Join(Operator):
         return Dataset(name="result", components=components, data=None)
 
     @classmethod
-    def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[str, Component]:
-        components = {}
-        min_identifiers = min(operands, key=lambda x: len(x.get_identifiers_names()))
-
-        for op in operands:
-            components.update(
-                {id: copy(op.components[id]) for id in min_identifiers.get_identifiers_names()})
-        return components
-
-    @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: List[str]) -> None:
         for op in operands:
             if op.get_identifiers_names() != operands[0].get_identifiers_names():
@@ -140,23 +148,42 @@ class InnerJoin(Join):
 
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: List[str]) -> None:
+        # (Case A)
+        case_A = True
+        info = {op.name: op.get_identifiers_names() for op in operands}
+        most_identifiers = max(info, key=lambda x: len(info[x]))
+        for op_name, identifiers in info.items():
+            if op_name != most_identifiers and not set(identifiers).issubset(set(info[most_identifiers])):
+                case_A = False
 
         if using is None:
-            info = {op.name: op.get_identifiers_names() for op in operands}
-            most_identifiers = max(info, key=lambda x: len(info[x]))
-            for op_name, identifiers in info.items():
-                if op_name != most_identifiers and not set(identifiers).issubset(
-                        set(info[most_identifiers])):
-                    raise Exception(
-                        "Sub-case A: At least one dataset identifiers must be a superset of the others")
+            if not case_A:
+                raise Exception("Case A: Identifiers from 'using' must be a subset of the common identifiers and respect Case A")
+            return
 
+        common_components = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+        common_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
+
+        # (Case B)
+        if set(using).issubset(common_components):
+            # (Case B1)
+            if case_A and set(using).issubset(common_identifiers):
+                # reference_identifiers = set(operands[0].get_identifiers_names())
+                # for op in operands:
+                #     if not set(op.get_identifiers_names()).issubset(reference_identifiers):
+                #         raise Exception(
+                #             "Sub-case B1: Every non-reference dataset identifiers must be a subset of the reference dataset identifiers")
+                return
+
+            # (Case B2)
+            # reference_identifiers = set(max(operands, key=lambda x: len(x.get_identifiers_names())).get_identifiers_names())
+            # for identifier in using:
+            #     if identifier not in reference_identifiers:
+            #         raise Exception(
+            #             f"Sub-case B2: Using clause must be a subset of the reference dataset identifiers {reference_identifiers}")
         else:
-            info = {op.name: [x for x in op.get_components_names() if x in using] for op in operands}
-            most_identifiers = max(info, key=lambda x: len(info[x]))
-            for op_name, identifiers in info.items():
-                if op_name != most_identifiers and not set(identifiers).issubset( set(info[most_identifiers])):
-                    raise Exception(
-                        "Sub-case B2: At least one dataset components must be a superset of the others")
+            raise Exception(
+                "Case B: 'Using' clause identifiers must be a subset of the common identifiers across all datasets")
 
     @classmethod
     def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[str, Component]:
@@ -164,7 +191,6 @@ class InnerJoin(Join):
         if using is None:
             return super().generate_result_components(operands, using)
 
-        # Sub case B2: if one measure is in using that is the reference dataset
         components = {}
         for op in operands:
             components.update({id: op.components[id] for id in op.get_identifiers_names()})
@@ -180,22 +206,43 @@ class LeftJoin(Join):
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: List[str]) -> None:
         # (Case A)
-        if using is None:
-            reference_identifiers = sorted(operands[0].get_identifiers_names())
-            for op in operands:
-                if sorted(op.get_identifiers_names()) != reference_identifiers:
-                    raise Exception("All datasets must have the same identifiers")
-        # (Case B)
-        else:
-            reference_identifiers = set(operands[0].get_identifiers_names())
-            for op in operands:
-                if not set(op.get_identifiers_names()).issubset(reference_identifiers):
-                    raise Exception("Every non reference dataset identifiers must be a subset of the reference dataset identifiers")
+        case_A = True
+        reference_identifiers = sorted(operands[0].get_identifiers_names())
+        for op in operands:
+            if sorted(op.get_identifiers_names()) != reference_identifiers:
+                case_A = False
 
-            for identifier in using:
-                if identifier not in operands[0].get_identifiers_names():
-                    raise Exception(
-                        f"Using clause must be a subset of the reference dataset identifiers {operands[0].get_identifiers_names()}")
+        if using is None:
+            if not case_A:
+                raise Exception("Case A: All datasets must have the same identifiers")
+            return
+
+        common_components = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+        common_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
+
+        # (Case B)
+        if set(using).issubset(common_components):
+            # (Case B1)
+            if case_A and set(using).issubset(common_identifiers):
+                return
+            # (Case B1)
+            # if set(using).issubset(common_components):
+            #     reference_identifiers = set(operands[0].get_identifiers_names())
+            #     for op in operands:
+            #         if not set(op.get_identifiers_names()).issubset(reference_identifiers):
+            #             raise Exception(
+            #                 "Sub-case B1: Every non-reference dataset identifiers must be a subset of the reference dataset identifiers")
+            else:
+                # (Case B2)
+                # reference_identifiers = set(operands[0].get_identifiers_names())
+                # for identifier in using:
+                #     if identifier not in reference_identifiers:
+                #         raise Exception(
+                #             f"Sub-case B2: Using clause must be a subset of the reference dataset identifiers {reference_identifiers}")
+                return
+        else:
+            raise Exception(
+                "Case B: 'Using' clause identifiers must be a subset of the common identifiers across all datasets")
 
 
 class FullJoin(Join):
