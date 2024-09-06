@@ -86,8 +86,6 @@ centralised_messages = {
     "1-1-6-15": "At op {op}: Component {comp_name} already exists in dataset {dataset_name}",
     # Comparison errors
     "1-1-7-1": "At op {op}: Value in {left_name} of type {left_type} is not comparable to value {right_name} of type {right_type}.",
-    # Complement errors
-    "1-1-8-1": "At op {op}: Component name {comp_name} already in use at dataset {dataset_name}.",
     # Conditional errors
     "1-1-9-1": "At op {op}: The evaluation condition must result in a Boolean expression, found '{type}'.",
     "1-1-9-2": "At op {op}: Conditional clauses with different scalar types. Then: {type_1}. Else: {type_2}.",
