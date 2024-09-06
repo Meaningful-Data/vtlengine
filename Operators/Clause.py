@@ -261,8 +261,7 @@ class Sub:
             if operand.name not in dataset.components:
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.name, dataset_name=dataset.name)
             if operand.role != Role.IDENTIFIER:
-                raise Exception(f"Component {operand.name} in dataset {dataset.name} is not an "
-                                f"{Role.IDENTIFIER}")
+                raise SemanticError("1-1-6-10", op=cls.op, operand=operand.name, dataset_name=dataset.name)
             if isinstance(operand, Scalar):
                 raise SemanticError("1-1-6-5", op=cls.op, name=operand.name)
 
