@@ -2,7 +2,7 @@ from copy import copy
 from typing import List, Union
 
 from AST import RenameNode
-from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC
+from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC, AGGREGATE
 from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Exceptions import SemanticError
 from Model import Component, DataComponent, Dataset, Role, Scalar
@@ -58,13 +58,19 @@ class Calc:
 
 class Aggregate:
 
+    op = AGGREGATE
+
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
 
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name in dataset.components:
+            if operand.name in dataset.get_identifiers_names():
+                raise SemanticError("1-1-6-13", op=cls.op,
+                                    comp_name=operand.name)
+
+            elif operand.name in dataset.components:
                 # Override component with same name
                 dataset.delete_component(operand.name)
 
