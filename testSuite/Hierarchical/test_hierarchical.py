@@ -925,7 +925,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_1'
         number_inputs = 1
-        error_code = "1-1-10-3"
+        error_code = "1-1-10-3" #wrong error code, 1-1-10-8?
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2165,7 +2165,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_5'
         number_inputs = 1
-        error_code = "1-1-10-3"
+        error_code = "1-1-10-3" #wrong error code 1-1-10-8?
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
