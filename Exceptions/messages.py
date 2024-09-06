@@ -101,7 +101,7 @@ centralised_messages = {
     "1-1-9-12": "At op {op}: then clause {then_symbol} and else clause {else_symbol}, both must be Datasets or at least one of them a Scalar.",
     "1-1-9-13": "At op {op}: then {then} and else {else_clause} datasets must contain the same number of components.",
     # Data Validation errors
-    "1-1-10-1": "At op {op}: The Imbalance dataset {name} must contain an unique measure",
+    "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",
     "1-1-10-2": "At op {op}: Number of variable has to be equal between the call and signature.",
     "1-1-10-3": "At op {op}: Name in the call {founded} has to be equal to variable rule in signature {expected} .",
     "1-1-10-4": "At op {op}: When a hierarhical ruleset is defined for value domain, it is necessary to specify the component with the rule clause",
