@@ -179,8 +179,7 @@ class Rename:
             if operand.old_name not in dataset.components.keys():
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name)
             if operand.new_name in dataset.components.keys():
-                raise Exception(
-                    f"Component {operand.new_name} already exists in dataset {dataset.name}")
+                raise SemanticError("1-1-6-15", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name)
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
