@@ -2,13 +2,15 @@ from copy import copy
 from typing import List, Union
 
 from AST import RenameNode
-from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE
+from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC
 from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Exceptions import SemanticError
 from Model import Component, DataComponent, Dataset, Role, Scalar
 
 
 class Calc:
+
+    op = CALC
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
@@ -50,7 +52,7 @@ class Calc:
         # Validate duplicates on identifiers
         if len(result_dataset.get_identifiers_names()) != len(dataset.get_identifiers_names()):
             if result_dataset.data[result_dataset.get_identifiers_names()].duplicated().any():
-                raise Exception("Found duplicated identifiers after calc clause")
+                raise SemanticError("1-1-6-3", op=cls.op)
         return result_dataset
 
 

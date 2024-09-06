@@ -72,7 +72,7 @@ centralised_messages = {
     # Clause errors
     "1-1-6-1": "At op {op}: Component {comp_name} not found in dataset {dataset_name}.",
     "1-1-6-2": "At op {op}: The identifier {name} in dataset {dataset} could not be included in the {op} op.",
-    "1-1-6-3": "At op {op}: The component to keep {name} is duplicated.",
+    "1-1-6-3": "At op {op}: Found duplicated identifiers after {op} clause.",
     "1-1-6-4": "At op {op}: Alias symbol cannot have the name of a component symbol: {symbol_name} - {comp_name}.",
     "1-1-6-5": "At op {op}: Scalar values are not allowed at sub operator, found {name}.",
     "1-1-6-6": "Membership is not allowed inside a clause, found {dataset_name}#{comp_name}.",
