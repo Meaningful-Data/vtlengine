@@ -82,8 +82,7 @@ centralised_messages = {
     "1-1-6-10": "At op {op}: Component {operand} in dataset {dataset_name} is not an identifier",
     "1-1-6-11": "Ambiguity for this variable {comp_name} inside a {clause}, exists as scalardataset and component.", # it is the same as the one that appears in joins, but are differents kinds of failures
     "1-1-6-12": "At op {op}: Not allowed to drop the last element.",
-    "1-1-6-13": "At op {op}: Not allowed to overwrite an identifier: {comp_name}",
-    "1-1-6-14": "At op {op}: Not allowed to create an identifier: {comp_name}",
+    "1-1-6-13": "At op {op}: Not allowed to create or overwrite an identifier: {comp_name}",
     "1-1-6-15": "At op {op}: Component {comp_name} already exists in dataset {dataset_name}",
     # Comparison errors
     "1-1-7-1": "At op {op}: Value in {left_name} of type {left_type} is not comparable to value {right_name} of type {right_type}.",

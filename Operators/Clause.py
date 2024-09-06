@@ -66,9 +66,8 @@ class Aggregate:
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name in dataset.get_identifiers_names():
-                raise SemanticError("1-1-6-13", op=cls.op,
-                                    comp_name=operand.name)
+            if operand.name in dataset.get_identifiers_names() or operand.role == Role.IDENTIFIER:
+                raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
 
             elif operand.name in dataset.components:
                 # Override component with same name

@@ -2093,7 +2093,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = 'GL_422_3'
         number_inputs = 2
-        error_code = "1-1-6-14"
+        error_code = "1-1-6-14" #wrong error code, should be 1-1-6-13
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
