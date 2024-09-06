@@ -249,6 +249,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
             if node.having_clause is not None:
+                self.aggregation_dataset = Dataset(name=operand.name,
+                                                   components=operand.components,
+                                                   data=operand.data.copy())
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(),
                     node.grouping_op,
@@ -258,7 +261,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # Reset to default values
                 self.is_from_having = False
                 self.aggregation_grouping = None
-            self.aggregation_dataset = None
+                self.aggregation_dataset = None
         elif self.is_from_having:
             groupings = self.aggregation_grouping
             # Setting here group by as we have already selected the identifiers we need
