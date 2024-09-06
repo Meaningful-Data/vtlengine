@@ -156,7 +156,8 @@ class Drop:
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand, dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
-
+        if len(dataset.components) == len(operands):
+            raise SemanticError("1-1-6-12", op=cls.op)
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name not in operands}
 
