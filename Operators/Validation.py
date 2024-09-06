@@ -180,10 +180,6 @@ class Check_Hierarchy(Validation):
 
     @staticmethod
     def validate_hr_dataset(dataset: Dataset, component_name: str):
-        # The measure(s) has to be Number or Integer
-        not_numeric_measures = [m for m in dataset.get_measures() if m.data_type not in ['Number', 'Integer']]
-        if not_numeric_measures:
-            raise SemanticError("1-1-10-8", op=CHECK_HIERARCHY, found=not_numeric_measures)
         if len(dataset.get_measures()) != 1:
             raise SemanticError("1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number")
         measure = dataset.get_measures()[0]

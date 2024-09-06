@@ -718,6 +718,12 @@ class InterpreterAnalyzer(ASTTemplate):
             if not isinstance(dataset, Dataset):
                 raise Exception("The operand must be a dataset")
 
+            # The measure(s) has to be Number or Integer
+            not_numeric_measures = [m for m in dataset.get_measures() if m.data_type not in ['Number', 'Integer']]
+            if not_numeric_measures:
+                raise SemanticError("1-1-10-8", op=node.op, found=not_numeric_measures)
+
+
             hr_info = self.hrs[hr_name]
 
             # Condition components check
