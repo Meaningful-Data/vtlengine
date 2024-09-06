@@ -125,9 +125,7 @@ class Keep:
             if operand not in dataset.get_components_names():
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand, dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise Exception(f"Component {operand} in dataset {dataset.name} is an "
-                                f"{Role.IDENTIFIER} and cannot be used in keep clause")
-
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name in operands or comp.role == Role.IDENTIFIER}
 
@@ -155,8 +153,7 @@ class Drop:
             if operand not in dataset.components:
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand, dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise Exception(f"Component {operand} in dataset {dataset.name} is an "
-                                f"{Role.IDENTIFIER} and cannot be used in drop clause")
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
 
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name not in operands}

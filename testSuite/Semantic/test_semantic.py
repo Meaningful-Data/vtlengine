@@ -513,7 +513,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_31'
         number_inputs = 1
-        error_code = "1-1-6-2"
+        error_code = "1-1-6-2" #probably wrong error code
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
