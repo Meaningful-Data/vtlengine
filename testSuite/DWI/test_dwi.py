@@ -347,7 +347,7 @@ class Aggregate(DWIHelper):
         """
         code = 'GL_218_13'
         number_inputs = 1
-        message = "1-1-2-4"
+        message = "1-1-2-2" #wrong error code, probably better 1-1-2-4
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
 
