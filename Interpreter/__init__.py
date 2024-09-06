@@ -723,8 +723,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if not_numeric_measures:
                 raise SemanticError("1-1-10-8", op=node.op, found=not_numeric_measures)
 
-
             hr_info = self.hrs[hr_name]
+
+            if len(cond_components) != len(hr_info['condition']):
+                raise SemanticError("1-1-10-2", op=node.op)
 
             # Condition components check
             if len(cond_components) != len(hr_info['condition']):
