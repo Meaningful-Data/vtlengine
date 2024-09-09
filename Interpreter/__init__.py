@@ -10,7 +10,7 @@ from AST.ASTTemplate import ASTTemplate
 from AST.DAG import HRDAGAnalyzer
 from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
-    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ
+    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
@@ -23,7 +23,7 @@ from Operators.General import Eval
 from Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from Operators.Numeric import Round, Trunc
 from Operators.String import Instr, Replace, Substr
-from Operators.Time import Fill_time_series, Time_Aggregation
+from Operators.Time import Fill_time_series, Time_Aggregation, Current_Date
 from Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
@@ -398,6 +398,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise ValueError(f"Expected dataset, got {type(ds).__name__}")
 
             return SET_MAPPING[node.op].evaluate(datasets)
+
+        elif node.op == CURRENT_DATE:
+            return Current_Date.evaluate()
 
         raise NotImplementedError
 

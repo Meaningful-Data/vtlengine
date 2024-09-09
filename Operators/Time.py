@@ -743,8 +743,9 @@ def _date_access(v, to_param, start: bool):
         return period_value.start_date()
     return period_value.end_date()
 
+
 class Current_Date(Time):
 
     @classmethod
     def evaluate(cls):
-        return datetime.now()
+        return Scalar(name='current_date', data_type=Date, value=date.today().isoformat())
