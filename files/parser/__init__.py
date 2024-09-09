@@ -131,7 +131,7 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame):
                 if not values_correct:
                     raise Exception(f"Duration values are not correct in column {comp_name}")
             else:
-                data[comp_name] = data[comp_name].map(lambda x: str(x).replace('"', '').replace("'", ""),
+                data[comp_name] = data[comp_name].map(lambda x: str(x).replace('"', ''),
                                                       na_action='ignore')
             data[comp_name] = data[comp_name].astype(np.object_, errors='raise')
     except ValueError as e:

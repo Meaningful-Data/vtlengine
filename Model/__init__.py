@@ -148,8 +148,21 @@ class Dataset:
         same_components = self.components == other.components
         if not same_components:
             print("\nComponents mismatch")
-            print("result:", json.dumps(self.to_dict()['components'], indent=4))
-            print("reference:", json.dumps(other.to_dict()['components'], indent=4))
+            result_comps = self.to_dict()['components']
+            reference_comps = other.to_dict()['components']
+            if len(result_comps) != len(reference_comps):
+                print(f"Shape mismatch: result:{len(result_comps)} != reference:{len(reference_comps)}")
+                if len(result_comps) < len(reference_comps):
+                    print("Missing components in result:", set(reference_comps.keys()) - set(result_comps.keys()))
+                else:
+                    print("Additional components in result:", set(result_comps.keys()) - set(reference_comps.keys()))
+                return False
+
+            diff_comps = {k: v for k, v in result_comps.items() if v != reference_comps[k]}
+            ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
+            print(f"Differences in components {self.name}: ")
+            print("result:", json.dumps(diff_comps, indent=4))
+            print("reference:", json.dumps(ref_diff_comps, indent=4))
             return False
 
         if isinstance(self.data, SparkDataFrame):
@@ -182,7 +195,7 @@ class Dataset:
                                check_index_type=False, check_datetimelike_compat=True)
         except AssertionError as e:
             if "DataFrame shape" in str(e):
-                print("\nDataFrame shape mismatch")
+                print(f"\nDataFrame shape mismatch {self.name}:")
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
@@ -191,7 +204,7 @@ class Dataset:
             for comp in self.components.values():
                 if comp.data_type.__name__ in ['Integer', 'Float']:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
-            print("\n Differences between the dataframes")
+            print("\n Differences between the dataframes in", self.name)
             print(diff)
             raise e
         return True
