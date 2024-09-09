@@ -513,4 +513,5 @@ class ASTTemplate(NodeVisitor):
         """
         UDOCall: (name, children, params)
         """
-        pass
+        for param in node.params:
+            self.visit(param)

@@ -55,7 +55,7 @@
           "name": "ALLCTBL_PRTCTN_VL_USD",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
+          "nullable": false
         }
       ]
     }
