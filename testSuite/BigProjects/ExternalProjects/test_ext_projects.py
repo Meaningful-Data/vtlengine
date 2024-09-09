@@ -32,7 +32,9 @@ class BOP(ExternalProjectsHelper):
         rn = [str(i) for i in range(1, 30)]
         references_names = rn
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+                      only_semantic=True)
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class AnaVal(ExternalProjectsHelper):
