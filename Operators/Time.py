@@ -1,13 +1,13 @@
 import re
 from datetime import datetime, date
 from itertools import combinations
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
-from DataTypes import Date, TimePeriod, TimeInterval, Duration
 import Operators
+from DataTypes import Date, TimePeriod, TimeInterval, Duration
 from DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from Exceptions import SemanticError
 from Model import Dataset, DataComponent, Scalar, Component, Role
@@ -17,19 +17,15 @@ class Time(Operators.Operator):
     periods = None
     time_id = None
     other_ids = None
-    measures = None
 
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
-
-    PERIOD_PATTERN = r'^(\d{1,4})(?:-?([a-zA-Z_])(\d*))?$'
-    TIME_PATTERN = r'^(.+?)/(.+?)$'
 
     FREQUENCY_MAP = {'Y': 'years', 'M': 'months', 'D': 'days'}
     YEAR_TO_PERIOD = {'S': 2, 'Q': 4, 'M': 12, 'W': 52, 'D': 365}
     PERIOD_ORDER = {'A': 0, 'S': 1, 'Q': 2, 'M': 3, 'W': 4, 'D': 5}
 
     @classmethod
-    def get_time_id(cls, operand: Dataset) -> Optional[str]:
+    def _get_time_id(cls, operand: Dataset) -> Optional[str]:
         reference_id = None
         for id in operand.get_identifiers():
             if id.data_type in cls.TIME_DATA_TYPES:
@@ -40,7 +36,7 @@ class Time(Operators.Operator):
 
     @classmethod
     def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
-        time_id = cls.get_time_id(operand)
+        time_id = cls._get_time_id(operand)
         if time_id is None:
             return
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
@@ -48,69 +44,13 @@ class Time(Operators.Operator):
         return operand.data.sort_values(by=ids).reset_index(drop=True)
 
     @classmethod
-    def get_period(cls, value) -> str | None:
-        value = str(value)
-        _, period, _ = re.match(cls.PERIOD_PATTERN, value).groups()
-        return period if period else 'A'
-
-    @classmethod
-    def sort_by_period(cls, operand: Dataset) -> Dataset:
-        data = operand.data.copy()
-        data['Periods_col'] = data[cls.time_id].apply(cls.get_period).apply(
-            lambda x: cls.PERIOD_ORDER[x])
-        data['Year_values_col'] = data[cls.time_id].apply(lambda x: int(x.split('-')[0]))
-        data['Period_value_col'] = data[cls.time_id].apply(
-            lambda x: int(re.sub(r'[^\d]', '', x.split('-')[-1])))
-        data = data.sort_values(
-            by=cls.other_ids + ['Year_values_col', 'Periods_col', 'Period_value_col'])
-        data = data.drop(columns=['Periods_col', 'Year_values_col', 'Period_value_col'])
-        return Dataset(name='result', components=operand.components.copy(), data=data)
-
-    @classmethod
-    def is_period(cls, date_str):
-        return bool(re.match(cls.PERIOD_PATTERN, date_str))
-
-    @classmethod
-    def is_date(cls, date_str):
-        date_patterns = [
-            r'^\d{1,4}$',  # YYYY
-            r'^\d{1,4}-\d{1,2}$',  # YYYY-MM
-            r'^\d{1,4}-\d{1,2}-\d{1,2}$'  # YYYY-MM-DD
-        ]
-        return any(bool(re.match(pattern, date_str)) for pattern in date_patterns)
-
-    @classmethod
-    def is_time(cls, date_str):
-        parts = re.match(cls.TIME_PATTERN, date_str)
-        if parts:
-            part1, part2 = parts.groups()
-            return (cls.is_period(part1) or cls.is_date(part1)) and (
-                        cls.is_period(part2) or cls.is_date(part2))
-        return False
-
-    @classmethod
-    def identify_date_type(cls, date_str):
-        if cls.is_time(date_str):
-            return 'Time'
-        elif cls.is_period(date_str):
-            return 'Period'
-        elif cls.is_date(date_str):
-            return 'Date'
-        else:
-            return 'Unknown'
-
-    @classmethod
-    def classify_dates(cls, series):
-        series = series.apply(str)
-        return series.apply(cls.identify_date_type)
+    def _get_period(cls, value: str) -> str:
+        tp_value = TimePeriodHandler(value)
+        return tp_value.period_indicator
 
     @classmethod
     def parse_date(cls, date_str):
-        parts = date_str.split("-")
-        year = int(parts[0])
-        month = int(parts[1]) if len(parts) > 1 else 1
-        day = int(parts[2]) if len(parts) > 2 else 1
-        return datetime(year, month, day)
+        return date.fromisoformat(date_str)
 
     @classmethod
     def value_from_period(cls, date_str: str) -> int:
@@ -134,27 +74,21 @@ class Time(Operators.Operator):
     @classmethod
     def get_frequency_from_time(cls, interval, time_format, time_type):
         start_date, end_date = interval.split('/')
-        if time_type == 'Period':
-            years = cls.get_year(end_date) - cls.get_year(start_date)
-            if time_format == 'A':
-                return years
-            return cls.value_from_period(end_date) - cls.value_from_period(start_date) + 1 + years * \
-                cls.YEAR_TO_PERIOD[time_format]
-        return cls.parse_date(end_date) - cls.parse_date(start_date)
+        # if time_type == 'Period':
+        #     years = cls.get_year(end_date) - cls.get_year(start_date)
+        #     if time_format == 'A':
+        #         return years
+        #     return cls.value_from_period(end_date) - cls.value_from_period(start_date) + 1 + years * \
+        #         cls.YEAR_TO_PERIOD[time_format]
+        return date.fromisoformat(end_date) - date.fromisoformat(start_date)
 
     @classmethod
     def get_format_from_time(cls, interval):
         start_date, end_date = interval.split('/')
-        if cls.is_period(start_date) and cls.is_period(end_date):
-            period = cls.get_period(start_date)
-            if period != cls.get_period(end_date):
-                raise ValueError("Start and end dates must have the same period")
-            return period
-        elif cls.is_date(start_date) and cls.is_date(end_date):
-            init_format = cls.get_date_format(start_date)
-            if init_format != cls.get_date_format(end_date):
-                raise ValueError("Start and end dates must have the same format")
-            return init_format
+        init_format = cls.get_date_format(start_date)
+        if init_format != cls.get_date_format(end_date):
+            raise ValueError("Start and end dates must have the same format")
+        return init_format
 
     @classmethod
     def get_date_format(cls, date_str):
@@ -165,8 +99,13 @@ class Time(Operators.Operator):
 class Unary(Time):
 
     @classmethod
-    def py_op(cls, x):
-        raise NotImplementedError
+    def validate(cls, operand: Dataset) -> Dataset:
+        if not isinstance(operand, Dataset):
+            raise TypeError("FlowToStock can only be applied to a time dataset")
+        if cls._get_time_id(operand) is None:
+            raise ValueError("FlowToStock can only be applied to a time dataset")
+        operand.data = cls.sort_by_time(operand)
+        return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
     def evaluate(cls, operand: Dataset) -> Dataset:
@@ -175,37 +114,29 @@ class Unary(Time):
         if len(operand.data) < 2:
             return result
 
-        cls.time_id = cls.get_time_id(result)
+        cls.time_id = cls._get_time_id(result)
         cls.other_ids = [id.name for id in result.get_identifiers() if id.name != cls.time_id]
-        cls.measures = result.get_measures_names()
-        date_type = cls.classify_dates(operand.data[cls.time_id]).unique()
-        if len(date_type) > 1:
-            raise ValueError("FlowToStock can only be applied to a dataset with a single date type")
+        measure_names = result.get_measures_names()
+
+        data_type = result.components[cls.time_id].data_type
+
         result.data = result.data.sort_values(by=cls.other_ids + [cls.time_id])
-        if date_type[0] == 'Period':
-            result.data = cls.period_accumulation(result.data)
-        elif date_type[0] in ['Date', 'Time']:
-            result.data[cls.measures] = result.data.groupby(cls.other_ids)[cls.measures].apply(
+        if data_type == TimePeriod:
+            result.data = cls._period_accumulation(result.data, measure_names)
+        elif data_type == Date or data_type == TimeInterval:
+            result.data[measure_names] = result.data.groupby(cls.other_ids)[measure_names].apply(
                 cls.py_op)
         else:
             raise ValueError("FlowToStock can only be applied to a dataset with a date type")
         return result
 
     @classmethod
-    def validate(cls, operand: Dataset) -> Dataset:
-        if not isinstance(operand, Dataset):
-            raise TypeError("FlowToStock can only be applied to a time dataset")
-        if cls.get_time_id(operand) is None:
-            raise ValueError("FlowToStock can only be applied to a time dataset")
-        operand.data = cls.sort_by_time(operand)
-        return Dataset(name='result', components=operand.components.copy(), data=None)
-
-    @classmethod
-    def period_accumulation(cls, data):
+    def _period_accumulation(cls, data: pd.DataFrame, measure_names: List[str]) -> pd.DataFrame:
         data = data.copy()
-        data['Period_group_col'] = data[cls.time_id].apply(cls.get_period).apply(
+        data['Period_group_col'] = data[cls.time_id].apply(cls._get_period).apply(
             lambda x: cls.PERIOD_ORDER[x])
-        data[cls.measures] = data.groupby(cls.other_ids + ['Period_group_col'])[cls.measures].apply(
+        data[measure_names] = data.groupby(cls.other_ids + ['Period_group_col'])[
+            measure_names].apply(
             cls.py_op).reset_index(
             drop=True)
         return data.drop(columns='Period_group_col')
@@ -216,42 +147,45 @@ class Binary(Time):
 
 
 class Period_indicator(Unary):
+    @classmethod
+    def validate(cls, operand: Dataset | DataComponent | Scalar
+                 ) -> Dataset | DataComponent | Scalar:
+        if isinstance(operand, Dataset):
+            time_id = cls._get_time_id(operand)
+            if time_id is None or operand.components[time_id].data_type != TimePeriod:
+                raise ValueError("PeriodIndicator can only be applied to a time period dataset")
+            result_components = {comp.name: comp for comp in operand.components.values()
+                                 if comp.role == Role.IDENTIFIER}
+            result_components['duration_var'] = Component(name='duration_var',
+                                                          data_type=Duration,
+                                                          role=Role.MEASURE, nullable=True)
+            return Dataset(name='result', components=result_components, data=None)
+        # DataComponent and Scalar validation
+        if operand.data_type != TimePeriod:
+            raise ValueError("PeriodIndicator can only be applied to a time period component")
+        if isinstance(operand, DataComponent):
+            return DataComponent(name=operand.name, data_type=Duration, data=None)
+        return Scalar(name=operand.name, data_type=Duration, value=None)
 
     @classmethod
     def evaluate(cls,
                  operand: Dataset | DataComponent | Scalar | str) -> Dataset | DataComponent | Scalar | str:
-        cls.validate(operand)
+        result = cls.validate(operand)
         if isinstance(operand, str):
-            return cls.get_period(str(operand))
+            return cls._get_period(str(operand))
         if isinstance(operand, Scalar):
-            return Scalar(name='result', data_type=Duration,
-                          value=cls.get_period(str(operand.value)))
+            result.value = cls._get_period(str(operand.value))
+            return result
         if isinstance(operand, DataComponent):
-            return DataComponent(name='result', data_type=Duration,
-                                 data=operand.data.map(cls.get_period, na_action='ignore'))
-        cls.time_id = cls.get_time_id(operand)
+            result.data = operand.data.map(cls._get_period, na_action='ignore')
+            return result
+        cls.time_id = cls._get_time_id(operand)
 
-        data = operand.data[cls.time_id].apply(cls.get_period)
-        operand.data = operand.data.drop(columns=operand.get_measures_names())
-        operand.data['duration_var'] = data
-        for measure in operand.get_measures_names():
-            operand.components.pop(measure)
-        operand.components['duration_var'] = Component(name='duration_var',
-                                                       data_type=Duration,
-                                                       role=Role.MEASURE, nullable=True)
-        return Dataset(name='result', components=operand.components, data=operand.data)
+        result.data = operand.data.copy()[result.get_identifiers_names()]
+        period_series = result.data[cls.time_id].map(cls._get_period)
+        result.data['duration_var'] = period_series
 
-    @classmethod
-    def validate(cls, operand: Dataset | DataComponent | Scalar | str) -> None:
-        if isinstance(operand, str):
-            return
-        if isinstance(operand, Dataset):
-            time_id = cls.get_time_id(operand)
-            if time_id is None or operand.components[time_id].data_type != TimePeriod:
-                raise ValueError("PeriodIndicator can only be applied to a time period dataset")
-        else:
-            if operand.data_type != TimePeriod:
-                raise ValueError("PeriodIndicator can only be applied to a time period component")
+        return result
 
 
 class Flow_to_stock(Unary):
@@ -271,25 +205,23 @@ class Fill_time_series(Binary):
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
             return result
-        date_type = cls.classify_dates(operand.data[cls.time_id]).unique()
-        if len(date_type) > 1:
-            raise ValueError(
-                "FillTimeSeries can only be applied to a dataset with a single date type")
-        if date_type[0] == 'Period':
+        data_type = result.components[cls.time_id].data_type
+        if data_type == TimePeriod:
             result.data = cls.fill_periods(result.data, fill_type)
-        elif date_type[0] == 'Date':
+        elif data_type == Date:
             frequencies = cls.get_frequencies(operand.data[cls.time_id].apply(cls.parse_date))
             result.data = cls.fill_dates(result.data, fill_type,
                                          cls.find_min_frequency(frequencies))
-        elif date_type[0] == 'Time':
+        elif data_type == TimeInterval:
             interval_format = result.data[cls.time_id].apply(cls.get_format_from_time).unique()
-            time_type = 'Period' if interval_format[0] in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
             if len(interval_format) > 1:
                 raise ValueError(
                     "FillTimeSeries can only be applied to a dataset with a single time interval format")
+            time_type = 'Period' if interval_format[0] in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
             frequencies = result.data[cls.time_id].apply(cls.get_frequency_from_time,
                                                          args=(
-                                                         interval_format[0], time_type)).unique()
+                                                             interval_format[0],
+                                                             time_type)).unique()
             if len(frequencies) > 1:
                 raise ValueError(
                     "FillTimeSeries can only be applied to a dataset with a single time interval frequency")
@@ -303,7 +235,7 @@ class Fill_time_series(Binary):
     def validate(cls, operand: Dataset, fill_type: str) -> Dataset:
         if not isinstance(operand, Dataset):
             raise TypeError("FillTimeSeries can only be applied to a time dataset")
-        cls.time_id = cls.get_time_id(operand)
+        cls.time_id = cls._get_time_id(operand)
         cls.other_ids = [id.name for id in operand.get_identifiers() if id.name != cls.time_id]
         cls.measures = operand.get_measures_names()
         if cls.time_id is None:
@@ -316,7 +248,7 @@ class Fill_time_series(Binary):
     def max_min_from_period(cls, data, mode='all'):
 
         data = data.assign(
-            Periods_col=data[cls.time_id].apply(cls.get_period),
+            Periods_col=data[cls.time_id].apply(cls._get_period),
             Periods_values_col=data[cls.time_id].apply(
                 lambda x: int(re.sub(r'[^\d]', '', x.split('-')[-1]))),
             Year_values_col=data[cls.time_id].apply(lambda x: int(x.split('-')[0]))
@@ -517,7 +449,7 @@ class Fill_time_series(Binary):
             if time_type == 'Period':
                 return start_filled[
                     start_filled[cls.time_id].apply(
-                        lambda x: cls.get_period(x.split('/')[0])) == time_format]
+                        lambda x: cls._get_period(x.split('/')[0])) == time_format]
             return start_filled
 
         filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
@@ -532,23 +464,23 @@ class Time_Shift(Binary):
         result = cls.validate(operand)
         result.data = operand.data.copy()
         shift_value = int(shift_value.value)
-        cls.time_id = cls.get_time_id(result)
-        date_type = cls.classify_dates(result.data[cls.time_id]).unique()[0]
+        cls.time_id = cls._get_time_id(result)
+        data_type = result.components[cls.time_id].data_type
 
-        if date_type == 'Date':
+        if data_type == Date:
             freq = cls.find_min_frequency(
                 cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
-        elif date_type == 'Time':
+        elif data_type == Time:
             interval_format = cls.get_format_from_time(result.data[cls.time_id].iloc[0])
             time_type = 'Period' if interval_format in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
             freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0], interval_format,
                                                time_type)
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_interval(x, shift_value, interval_format, freq))
-        elif date_type == 'Period':
-            periods = result.data[cls.time_id].apply(cls.get_period).unique()
+        elif data_type == TimePeriod:
+            periods = result.data[cls.time_id].apply(cls._get_period).unique()
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_period(x, shift_value))
             if len(periods) == 1 and periods[0] == 'A':
@@ -559,7 +491,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset) -> Dataset:
-        if not isinstance(operand, Dataset) or cls.get_time_id(operand) is None:
+        if not isinstance(operand, Dataset) or cls._get_time_id(operand) is None:
             raise TypeError("Timeshift can only be applied to a time dataset")
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
@@ -569,7 +501,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_period(cls, period_str, shift_value, frequency=None):
-        period_type = cls.get_period(period_str)
+        period_type = cls._get_period(period_str)
 
         if period_type == 'A':
             return str(int(period_str) + shift_value)
@@ -577,7 +509,8 @@ class Time_Shift(Binary):
         if frequency:
             shift_value *= frequency
 
-        match = re.match(cls.PERIOD_PATTERN, period_str)
+        tp_value = TimePeriodHandler(period_str)
+        year, period, value = tp_value.year, tp_value.period_indicator, tp_value.period_value
         year, period, value = int(match.group(1)), match.group(2), int(match.group(3)) + shift_value
         period_limit = cls.YEAR_TO_PERIOD[period]
 
@@ -619,6 +552,7 @@ class Time_Aggregation(Time):
     @classmethod
     def dataset_validation(cls, operand: Dataset, period_from: Optional[str], period_to: str,
                            conf: str) -> Dataset:
+        # TODO: Review with VTL TF as this makes no sense
         count_time_types = 0
         for id_ in operand.get_identifiers():
             if id_.data_type in cls.TIME_DATA_TYPES:
@@ -642,7 +576,7 @@ class Time_Aggregation(Time):
                             "with a single time measure")
 
         result_components = {comp.name: comp for comp in operand.components.values()
-                                if comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+                             if comp.role in [Role.IDENTIFIER, Role.MEASURE]}
 
         return Dataset(name=operand.name, components=result_components, data=None)
 
@@ -696,15 +630,16 @@ class Time_Aggregation(Time):
                                                     period_from, period_to, conf),
             na_action='ignore')
 
-
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, period_from: Optional[str], period_to: str,
+    def component_evaluation(cls, operand: DataComponent, period_from: Optional[str],
+                             period_to: str,
                              conf: str) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         result.data = operand.data.map(
-            lambda x: cls._execute_time_aggregation(x, operand.data_type, period_from, period_to, conf),
+            lambda x: cls._execute_time_aggregation(x, operand.data_type, period_from, period_to,
+                                                    conf),
             na_action='ignore')
         return result
 
@@ -747,5 +682,11 @@ def _date_access(v, to_param, start: bool):
 class Current_Date(Time):
 
     @classmethod
+    def validate(cls):
+        return Scalar(name='current_date', data_type=Date, value=None)
+
+    @classmethod
     def evaluate(cls):
-        return Scalar(name='current_date', data_type=Date, value=date.today().isoformat())
+        result = cls.validate()
+        result.value = date.today().isoformat()
+        return result
