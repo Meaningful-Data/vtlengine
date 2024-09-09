@@ -53,15 +53,6 @@ class Time(Operators.Operator):
         return date.fromisoformat(date_str)
 
     @classmethod
-    def value_from_period(cls, date_str: str) -> int:
-        match = re.match(cls.PERIOD_PATTERN, date_str)
-        return int(match.group(3)) if match else int(date_str)
-
-    @classmethod
-    def get_year(cls, value: str) -> int:
-        return int(re.match(r'^(\d{1,4})', value).group(1))
-
-    @classmethod
     def get_frequencies(cls, dates):
         return [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
 
@@ -72,23 +63,9 @@ class Time(Operators.Operator):
         return 'D' if min_days else 'M' if min_months else 'Y'
 
     @classmethod
-    def get_frequency_from_time(cls, interval, time_format, time_type):
+    def get_frequency_from_time(cls, interval):
         start_date, end_date = interval.split('/')
-        # if time_type == 'Period':
-        #     years = cls.get_year(end_date) - cls.get_year(start_date)
-        #     if time_format == 'A':
-        #         return years
-        #     return cls.value_from_period(end_date) - cls.value_from_period(start_date) + 1 + years * \
-        #         cls.YEAR_TO_PERIOD[time_format]
         return date.fromisoformat(end_date) - date.fromisoformat(start_date)
-
-    @classmethod
-    def get_format_from_time(cls, interval):
-        start_date, end_date = interval.split('/')
-        init_format = cls.get_date_format(start_date)
-        if init_format != cls.get_date_format(end_date):
-            raise ValueError("Start and end dates must have the same format")
-        return init_format
 
     @classmethod
     def get_date_format(cls, date_str):
@@ -213,20 +190,11 @@ class Fill_time_series(Binary):
             result.data = cls.fill_dates(result.data, fill_type,
                                          cls.find_min_frequency(frequencies))
         elif data_type == TimeInterval:
-            interval_format = result.data[cls.time_id].apply(cls.get_format_from_time).unique()
-            if len(interval_format) > 1:
-                raise ValueError(
-                    "FillTimeSeries can only be applied to a dataset with a single time interval format")
-            time_type = 'Period' if interval_format[0] in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
-            frequencies = result.data[cls.time_id].apply(cls.get_frequency_from_time,
-                                                         args=(
-                                                             interval_format[0],
-                                                             time_type)).unique()
+            frequencies = result.data[cls.time_id].apply(cls.get_frequency_from_time).unique()
             if len(frequencies) > 1:
                 raise ValueError(
                     "FillTimeSeries can only be applied to a dataset with a single time interval frequency")
-            result.data = cls.fill_time_intervals(result.data, fill_type, time_type,
-                                                  interval_format[0], frequencies[0])
+            result.data = cls.fill_time_intervals(result.data, fill_type, frequencies[0])
         else:
             raise ValueError("FillTimeSeries can only be applied to a dataset with a date type")
         return result
@@ -407,15 +375,15 @@ class Fill_time_series(Binary):
                     data.groupby(cls.other_ids)}
 
     @classmethod
-    def fill_time_intervals(cls, data: pd.DataFrame, fill_type, time_type, time_format,
+    def fill_time_intervals(cls, data: pd.DataFrame, fill_type,
                             frequency) -> pd.DataFrame:
-        result_data = cls.time_filler(data, fill_type, time_type, time_format, frequency)
+        result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def time_filler(cls, data: pd.DataFrame, fill_type, time_type, time_format,
+    def time_filler(cls, data: pd.DataFrame, fill_type,
                     frequency) -> pd.DataFrame:
         MAX_MIN = cls.max_min_from_time(data, fill_type)
 
@@ -438,18 +406,10 @@ class Fill_time_series(Binary):
                 lambda x: x.split('/')[0])
             end_group_df = group_df.copy()
             end_group_df[cls.time_id] = end_group_df[cls.time_id].apply(lambda x: x.split('/')[1])
-            if time_type == 'Period':
-                start_filled = cls.period_filler(start_group_df, single=(fill_type == 'single'))
-                end_filled = cls.period_filler(end_group_df, single=(fill_type == 'single'))
-            else:
-                start_filled = cls.date_filler(start_group_df, fill_type, frequency)
-                end_filled = cls.date_filler(end_group_df, fill_type, frequency)
+            start_filled = cls.date_filler(start_group_df, fill_type, frequency)
+            end_filled = cls.date_filler(end_group_df, fill_type, frequency)
             start_filled[cls.time_id] = start_filled[cls.time_id].str.cat(end_filled[cls.time_id],
                                                                           sep='/')
-            if time_type == 'Period':
-                return start_filled[
-                    start_filled[cls.time_id].apply(
-                        lambda x: cls._get_period(x.split('/')[0])) == time_format]
             return start_filled
 
         filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
@@ -473,12 +433,9 @@ class Time_Shift(Binary):
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
         elif data_type == Time:
-            interval_format = cls.get_format_from_time(result.data[cls.time_id].iloc[0])
-            time_type = 'Period' if interval_format in ['A', 'S', 'Q', 'M', 'D'] else 'Date'
-            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0], interval_format,
-                                               time_type)
+            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
             result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_interval(x, shift_value, interval_format, freq))
+                lambda x: cls.shift_interval(x, shift_value, freq))
         elif data_type == TimePeriod:
             periods = result.data[cls.time_id].apply(cls._get_period).unique()
             result.data[cls.time_id] = result.data[cls.time_id].apply(
@@ -510,8 +467,7 @@ class Time_Shift(Binary):
             shift_value *= frequency
 
         tp_value = TimePeriodHandler(period_str)
-        year, period, value = tp_value.year, tp_value.period_indicator, tp_value.period_value
-        year, period, value = int(match.group(1)), match.group(2), int(match.group(3)) + shift_value
+        year, period, value = tp_value.year, tp_value.period_indicator, tp_value.period_number + shift_value
         period_limit = cls.YEAR_TO_PERIOD[period]
 
         if value <= 0:
@@ -524,12 +480,10 @@ class Time_Shift(Binary):
         return f"{year}-{period}{value}"
 
     @classmethod
-    def shift_interval(cls, interval, shift_value, time_format, frequency):
+    def shift_interval(cls, interval, shift_value, frequency):
         start_date, end_date = interval.split('/')
-        shift_func = cls.shift_period if time_format in ['A', 'S', 'Q', 'M',
-                                                         'D'] else cls.shift_date
-        start_date = shift_func(start_date, shift_value, frequency)
-        end_date = shift_func(end_date, shift_value, frequency)
+        start_date = cls.shift_date(start_date, shift_value, frequency)
+        end_date = cls.shift_date(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
 
 
