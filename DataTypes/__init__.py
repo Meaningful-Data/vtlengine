@@ -227,7 +227,8 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
-        if from_type in {TimeInterval}:
+        # TODO: Remove String, only for compatibility with previous engine
+        if from_type in {TimeInterval, String}:
             return value
         if from_type in {Date}:
             value = check_max_date(value)
@@ -255,13 +256,17 @@ class Date(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
-        if from_type in {Date}:
+        # TODO: Remove String, only for compatibility with previous engine
+        if from_type in {Date, String}:
             return value
 
         raise Exception(f"Cannot implicit cast {from_type} to {cls}")
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        # TODO: Remove String, only for compatibility with previous engine
+        if from_type == String:
+            return value
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
@@ -274,7 +279,8 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
-        if from_type in {TimePeriod}:
+        # TODO: Remove String, only for compatibility with previous engine
+        if from_type in {TimePeriod, String}:
             return value
 
         raise Exception(f"Cannot implicit cast {from_type} to {cls}")
@@ -284,6 +290,9 @@ class TimePeriod(TimeInterval):
         if from_type in {Date}:
             period_str = date_to_period_str(value,"D")
             return period_str
+        # TODO: Remove String, only for compatibility with previous engine
+        elif from_type == String:
+            return value
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
@@ -292,13 +301,15 @@ class Duration(ScalarType):
     
     @classmethod
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
-        if from_type in {Duration}:
+        if from_type in {Duration, String}:
             return value
 
         raise Exception(f"Cannot implicit cast {from_type} to {cls}")
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+        if from_type == String:
+            return value
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
@@ -413,12 +424,14 @@ COMP_NAME_MAPPING = {
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
-    String: {String, Boolean},
+    # TODO: Remove Time types, only for compatibility with previous engine
+    String: {String, Boolean, TimePeriod, Date, TimeInterval, Duration},
     Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
-    TimeInterval: {TimeInterval},
-    Date: {TimeInterval, Date},
-    TimePeriod: {TimeInterval, TimePeriod},
+    # TODO: Remove String, only for compatibility with previous engine
+    TimeInterval: {TimeInterval, String},
+    Date: {TimeInterval, Date, String},
+    TimePeriod: {TimeInterval, TimePeriod, String},
     Duration: {String, Duration},
     Boolean: {String, Boolean},
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
@@ -426,13 +439,15 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
 
 # TODO: Implicit are valid as cast without mask
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
-    String: {Integer, String},
+    # TODO: Remove time types, only for compatibility with previous engine
+    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration},
     Number: {Integer, Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
-    TimeInterval: {TimeInterval},
-    Date: {TimePeriod, Date},
-    TimePeriod: {String, TimePeriod},
-    Duration: {Duration},
+    # TODO: Remove String on time types, only for compatibility with previous engine
+    TimeInterval: {TimeInterval, String},
+    Date: {TimePeriod, Date, String},
+    TimePeriod: {TimePeriod, String},
+    Duration: {Duration, String},
     Boolean: {Integer, Number, String, Boolean},
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
