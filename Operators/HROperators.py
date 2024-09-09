@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Dict
+from typing import Dict, Any
 
 import pandas as pd
 from pandas import DataFrame
@@ -114,6 +114,12 @@ class HRLessEqual(HRComparison):
 
 
 class HRBinNumeric(Operators.Binary):
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if not pd.isnull(x) and x == "REMOVE_VALUE":
+            return "REMOVE_VALUE"
+        return super().op_func(x, y)
 
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:

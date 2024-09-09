@@ -178,8 +178,6 @@ class Binary(Operator):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls.py_op(x, y)
