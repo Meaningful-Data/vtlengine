@@ -53,7 +53,7 @@ class TestHelper(TestCase):
                                                  nullable=component['nullable'])
                     for component in dataset_json['DataStructure']}
                 if only_semantic:
-                    data = load_datapoints(components, None)
+                    data = None
                 else:
                     data = load_datapoints(components, Path(dp_path))
 
@@ -135,7 +135,8 @@ class TestHelper(TestCase):
                 input_datasets[scalar_name].value = scalar_value
         interpreter = InterpreterAnalyzer(input_datasets,
                                           value_domains=value_domains,
-                                          external_routines=external_routines)
+                                          external_routines=external_routines,
+                                          only_semantic=only_semantic)
         result = interpreter.visit(ast)
         assert result == reference_datasets
 

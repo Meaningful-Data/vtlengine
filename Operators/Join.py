@@ -110,7 +110,11 @@ class Join(Operator):
         cls.identifiers_validation(operands, using)
 
         components = cls.generate_result_components(operands, using)
-        data = next(op.data[[x for x in components.keys() if x in op.data.columns]] for op in operands if isinstance(op, Dataset))
+        if operands[0].data is None:
+            data = None
+        else:
+            data = next(op.data[[x for x in components.keys() if x in op.data.columns]] for op in operands if isinstance(op, Dataset))
+
         if using is not None:
             for op in operands:
                 components.update(

@@ -165,6 +165,8 @@ class Dataset:
             print("reference:", json.dumps(ref_diff_comps, indent=4))
             return False
 
+        if self.data is None and other.data is None:
+            return True
         if isinstance(self.data, SparkDataFrame):
             self.data = self.data.to_pandas()
         if isinstance(other.data, SparkDataFrame):
@@ -258,7 +260,7 @@ class Dataset:
         return {
             'name': self.name,
             'components': {k: v.to_dict() for k, v in self.components.items()},
-            'data': self.data.to_dict(orient='records')
+            'data': self.data.to_dict(orient='records') if self.data is not None else None
         }
 
     def to_json(self):

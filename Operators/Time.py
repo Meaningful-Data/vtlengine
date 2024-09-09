@@ -41,6 +41,8 @@ class Time(Operators.Operator):
             return
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
         ids.append(time_id)
+        if operand.data is None:
+            return None
         return operand.data.sort_values(by=ids).reset_index(drop=True)
 
     @classmethod
@@ -421,7 +423,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
-        result = cls.validate(operand)
+        result = cls.validate(operand, shift_value)
         result.data = operand.data.copy()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
@@ -447,7 +449,7 @@ class Time_Shift(Binary):
         return result
 
     @classmethod
-    def validate(cls, operand: Dataset) -> Dataset:
+    def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
         if not isinstance(operand, Dataset) or cls._get_time_id(operand) is None:
             raise TypeError("Timeshift can only be applied to a time dataset")
         return Dataset(name='result', components=operand.components.copy(), data=None)
@@ -604,6 +606,17 @@ class Time_Aggregation(Time):
         result.value = cls._execute_time_aggregation(operand.value, operand.data_type,
                                                      period_from, period_to, conf)
         return result
+
+    @classmethod
+    def validate(cls, operand: Union[Dataset, DataComponent, Scalar], period_from: Optional[str],
+                 period_to: str, conf: str) -> Union[Dataset, DataComponent, Scalar]:
+        cls._check_params(period_from, period_to)
+        if isinstance(operand, Dataset):
+            return cls.dataset_validation(operand, period_from, period_to, conf)
+        elif isinstance(operand, DataComponent):
+            return cls.component_validation(operand, period_from, period_to, conf)
+        else:
+            return cls.scalar_validation(operand, period_from, period_to, conf)
 
     @classmethod
     def evaluate(cls, operand: Union[Dataset, DataComponent, Scalar],

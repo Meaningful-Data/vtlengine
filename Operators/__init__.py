@@ -23,6 +23,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 
+only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
@@ -31,6 +32,12 @@ class Operator:
     spark_op = None
     type_to_check = None
     return_type = None
+
+    @classmethod
+    def analyze(cls, *args, **kwargs):
+        if only_semantic:
+            return cls.validate(*args, **kwargs)
+        return cls.evaluate(*args, **kwargs)
 
     @classmethod
     def cast_time_types(cls, data_type: ScalarType, series: pd.Series) -> pd.Series:
@@ -96,7 +103,11 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate(cls, *args):
+    def validate(cls, *args, **kwargs):
+        raise Exception("Method should be implemented by inheritors")
+
+    @classmethod
+    def evaluate(cls, *args, **kwargs):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
