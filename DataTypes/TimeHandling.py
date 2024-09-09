@@ -565,10 +565,10 @@ def check_max_date(str_: str):
 
     # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
     if len(str_) != 10 or str_[7] != '-':
-        raise ValueError
+        raise ValueError("Invalid date format, must be YYYY-MM-DD")
 
-    date.fromisoformat(str_)
-    return str_
+    result = date.fromisoformat(str_)
+    return result.isoformat()
 
 
 def str_period_to_date(value: str, start=False) -> date:
@@ -586,6 +586,7 @@ def str_period_to_date(value: str, start=False) -> date:
 
 def date_to_period_str(date_value: date, period_indicator):
     if isinstance(date_value, str):
+        date_value = check_max_date(date_value)
         date_value = date.fromisoformat(date_value)
     if period_indicator == "A":
         return f"{date_value.year}A"
