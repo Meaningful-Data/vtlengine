@@ -1,6 +1,0 @@
-define hierarchical ruleset sectorsHierarchy (variable rule COUNTERPART_SECTOR) is 
-    S1 = S121 + S12T + S13 + S1P errorcode "total economy" errorlevel 4;
-    S12T = S122 + S123 errorcode "Monetary financial institutions other than central bank" errorlevel 4;
-    S1P = S12M + S1V errorcode "Other sectors than MFIs and general government" errorlevel 4;
-    S1Z = S123 + S1P errorcode "Sectors other than deposit-taking corporations and general government (Other Sectors - BPM6)"
-end hierarchical ruleset;
