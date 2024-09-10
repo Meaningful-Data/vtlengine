@@ -139,6 +139,7 @@ centralised_messages = {
     "1-1-14-6": "At op {op}: {comp_name} with type {comp_type} and scalar_set with type {scalar_type} is not compatible with {op}",
     "1-1-14-7": "At op {op}: The role of {measure_role} for {measure_name} cannot be promoted to {target_type}.",
     "1-1-14-8": "At op {op}: Operation not allowed for multimeasure datasets.",
+    "1-1-14-9": "At op {op}: {names} with type/s {types} is not compatible with {op} on datasets {datasets}.",
 
     # Numeric Operators
     "2-1-15-1": "At op {op}: Component {comp_name} from dataset {dataset_name} contains negative values.",

@@ -248,12 +248,10 @@ class Binary(Operator):
 
         for left_measure, right_measure in zip(left_measures, right_measures):
             if not cls.validate_type_compatibility(left_measure.data_type, right_measure.data_type):
-                raise Exception(
-                    f"{left_measure.name} with type {left_measure.data_type} "
-                    f"and {right_measure.name} with type {right_measure.data_type} "
-                    f"is not compatible with {cls.op} on datasets "
-                    f"{left_operand.name} and {right_operand.name}"
-                )
+                names = [left_measure.name, right_measure.name]
+                types = [left_measure.data_type, right_measure.data_type]
+                datasets = [left_operand.name, right_operand.name]
+                raise SemanticError("1-1-14-9", op=cls.op, names=names, types=types, datasets=datasets)
 
         # We do not need anymore these variables
         del left_measures
