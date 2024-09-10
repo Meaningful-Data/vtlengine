@@ -1,15 +1,13 @@
-import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 from AST.DAG import DAGAnalyzer
-from DataTypes import SCALAR_TYPES
 
 if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
+    pass
 else:
-    import pandas as pd
+    pass
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
@@ -18,7 +16,7 @@ from AST import AST
 from AST.ASTConstructor import ASTVisitor
 from AST.Grammar.lexer import Lexer
 from AST.Grammar.parser import Parser
-from Model import Dataset, Component, ExternalRoutine, Role
+from Model import ExternalRoutine
 
 
 class __VTLSingleErrorListener(ErrorListener):
@@ -63,9 +61,6 @@ def create_ast(text: str) -> AST:
     ast = visitor.visit(cst)
     DAGAnalyzer.createDAG(ast)
     return ast
-
-
-
 
 
 def _load_single_external_routine_from_file(input: Path):
