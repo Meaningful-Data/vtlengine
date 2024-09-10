@@ -6,6 +6,7 @@ from API import create_ast, load_external_routines
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
+from files.parser import load_datapoints
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -35,12 +36,14 @@ def load_dataset(data_structures: Union[dict, Path], datapoints: Optional[Union[
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-
-            # data = load_datapoints(components, Path(datapoints))
+            if datapoints == None:
+                data = None
+            else:
+                data = load_datapoints(components, Path(datapoints))
 
             datasets[dataset_name] = Dataset(name=dataset_name,
                                              components=components,
-                                             data=None)
+                                             data=data)
     if 'scalars' in structures:
         for scalar_json in structures['scalars']:
             scalar_name = scalar_json['name']
@@ -94,5 +97,6 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
 
 
 if __name__ == '__main__':
-    print(semantic_analysis(script=(filepath_VTL / '1-1-1-1.vtl'), data_structures=(filepath_json / '1-1-1-1-1.json'),
-                            value_domains=None, external_routines=None))
+    # print(semantic_analysis(script=(filepath_VTL / '1-1-1-1.vtl'), data_structures=(filepath_json / '1-1-1-1-1.json'),
+    #                         value_domains=None, external_routines=None))
+    print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
