@@ -132,7 +132,7 @@ centralised_messages = {
     "1-1-13-17": "At op {op}: {comp_name} not present in the dataset(result from join VDS) at the time it is called",
     "2-1-13-1": "At op {op}: No available using clause.",  # TODO: Delete this
     # Operators Operators
-    "1-1-14-1": "At op {op}: Different measures names: {left} - {right}.",
+    "1-1-14-1": "At op {op}: Measure names don't match: {left} - {right}.",
     "1-1-14-2": "At op {op}: Different measures scalar types: {left} - {right}.",
     "1-1-14-3": "At op {op}: Invalid scalar types for identifiers at DataSet {dataset}. One {type} identifier expected, {count} found.",
     "1-1-14-4": "At op {op}: Data types {types} are not compatible.",

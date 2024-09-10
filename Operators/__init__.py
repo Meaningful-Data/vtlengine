@@ -7,6 +7,7 @@ from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
 from DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
+from Exceptions import SemanticError
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -243,7 +244,7 @@ class Binary(Operator):
         right_measures_names = [measure.name for measure in right_measures]
 
         if left_measures_names != right_measures_names:
-            raise Exception("Measures do not match")
+            raise SemanticError("1-1-14-1", op=cls.op, left=left_measures_names, right=right_measures_names)
 
         for left_measure, right_measure in zip(left_measures, right_measures):
             if not cls.validate_type_compatibility(left_measure.data_type, right_measure.data_type):
