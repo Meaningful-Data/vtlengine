@@ -347,10 +347,7 @@ class Binary(Operator):
 
         for measure in dataset.get_measures():
             if not cls.validate_type_compatibility(measure.data_type, scalar_set.data_type):
-                raise Exception(
-                    f"{measure.name} with type {measure.data_type} "
-                    f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-                )
+                raise SemanticError("1-1-14-6", op=cls.op, comp_name=measure.name, comp_type=measure.data_type, scalar_type=scalar_set.data_type)
 
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              dataset.components.items() if
@@ -366,10 +363,7 @@ class Binary(Operator):
                                  scalar_set: ScalarSet) -> DataComponent:
 
         if not cls.validate_type_compatibility(component.data_type, scalar_set.data_type):
-            raise Exception(
-                f"{component.name} with type {component.data_type} "
-                f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-            )
+            raise SemanticError("1-1-14-6", op=cls.op, comp_name=component.name, comp_type=component.data_type, scalar_type=scalar_set.data_type)
 
         result = DataComponent(name="result", data_type=cls.type_validation(component.data_type,
                                                                             scalar_set.data_type),
@@ -381,10 +375,7 @@ class Binary(Operator):
     @classmethod
     def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
         if not cls.validate_type_compatibility(scalar.data_type, scalar_set.data_type):
-            raise Exception(
-                f"{scalar.name} with type {scalar.data_type} "
-                f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-            )
+            raise SemanticError("1-1-14-6", op=cls.op, comp_name=scalar.name, comp_type=scalar.data_type, scalar_type= scalar_set.data_type)
         return Scalar(name="result",
                       data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
                       value=None)
