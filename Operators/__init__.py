@@ -441,7 +441,7 @@ class Binary(Operator):
                   is_mono_measure is False and
                   left_type.promotion_changed_type(result_data_type)
             ):
-                raise Exception("Operation not allowed for multimeasure datasets")
+                raise SemanticError("1-1-14-8", op=cls.op)
             else:
                 measure.data_type = result_data_type
 
@@ -713,7 +713,7 @@ class Unary(Operator):
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif changed_allowed is False and is_mono_measure is False and operand_type.promotion_changed_type(
                     result_data_type):
-                raise Exception("Operation not allowed for multimeasure datasets")
+                raise SemanticError("1-1-14-8", op=cls.op)
             else:
                 measure.data_type = result_data_type
 
