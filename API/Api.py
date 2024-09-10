@@ -96,6 +96,23 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
     return result
 
 
+def run(script: Union[str, Path], data_structures: Union[dict, Path], datapoints: Union[dict, Path],
+        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
+    datasets = load_dataset(data_structures, datapoints)
+    vd = None
+    if value_domains is not None:
+        vd = load_value_domains(value_domains)
+    ext_routines = None
+    if external_routines is not None:
+        ext_routines = load_external_routines(external_routines)
+
+    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd, external_routines=ext_routines)
+    result = interpreter.visit(ast)
+    return result
+
+
 if __name__ == '__main__':
     # print(semantic_analysis(script=(filepath_VTL / '1-1-1-1.vtl'), data_structures=(filepath_json / '1-1-1-1-1.json'),
     #                         value_domains=None, external_routines=None))
