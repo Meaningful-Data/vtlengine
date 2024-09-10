@@ -1412,6 +1412,22 @@ class SetOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_6(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1 ,DS_2);"""
+
+        code = '8-6'
+        number_inputs = 2
+        message = "1-1-17-1"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
     def test_7(self):
         '''
         Basic behaviour.
