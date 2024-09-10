@@ -295,10 +295,9 @@ class Binary(Operator):
     @classmethod
     def scalar_validation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            raise Exception(
-                f"{left_operand.name} with type {left_operand.data_type} "
-                f"and {right_operand.name} with type {right_operand.data_type} is not compatible with {cls.op}"
-            )
+            names = [left_operand.name, right_operand.name]
+            types = [left_operand.data_type, right_operand.data_type]
+            raise SemanticError("1-1-14-5", op=cls.op, names=names, types=types)
 
         return Scalar(name="result",
                       data_type=cls.type_validation(left_operand.data_type,
@@ -316,10 +315,9 @@ class Binary(Operator):
         """
         # We can ommite the first validation because we check again in the next line
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            raise Exception(
-                f"{left_operand.name} with type {left_operand.data_type} "
-                f"and {right_operand.name} with type {right_operand.data_type} is not compatible with {cls.op}"
-            )
+            names = [left_operand.name, right_operand.name]
+            types = [left_operand.data_type, right_operand.data_type]
+            raise SemanticError("1-1-14-5", op=cls.op, names=names, types=types)
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
 
         result = DataComponent(name="result",
@@ -333,10 +331,9 @@ class Binary(Operator):
     @classmethod
     def component_scalar_validation(cls, component: DataComponent, scalar: Scalar):
         if not cls.validate_type_compatibility(component.data_type, scalar.data_type):
-            raise Exception(
-                f"{component.name} with type {component.data_type} "
-                f"and {scalar.name} with type {scalar.data_type} is not compatible with {cls.op}"
-            )
+            names = [component.name, scalar.name]
+            types = [component.data_type, scalar.data_type]
+            raise SemanticError("1-1-14-5", op=cls.op, names=names, types=types)
 
         result = DataComponent(name=component.name,
                                data_type=cls.type_validation(component.data_type, scalar.data_type),
@@ -670,8 +667,7 @@ class Unary(Operator):
     @classmethod
     def scalar_validation(cls, operand: Scalar) -> Scalar:
         if not cls.validate_type_compatibility(operand.data_type):
-            raise Exception(
-                f"{operand.name} with type {operand.data_type} is not compatible with {cls.op}")
+            raise SemanticError("1-1-14-5", op=cls.op, names=operand.name, types=operand.data_type)
         result_type = cls.type_validation(operand.data_type)
         result = Scalar(name="result", data_type=result_type, value=None)
         return result
