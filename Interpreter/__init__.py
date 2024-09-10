@@ -229,6 +229,11 @@ class InterpreterAnalyzer(ASTTemplate):
                                   data=data_to_keep)
         else:
             operand = self.visit(node.operand)
+
+        for comp in operand.components.values():
+            if isinstance(comp.data_type, ScalarType):
+                raise SemanticError("2-1-12-1", op=node.op)
+
         groupings = []
         having = None
         grouping_op = node.grouping_op
@@ -718,10 +723,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if not isinstance(dataset, Dataset):
                 raise Exception("The operand must be a dataset")
 
-            # The measure(s) has to be Number or Integer
-            not_numeric_measures = [m for m in dataset.get_measures() if m.data_type not in ['Number', 'Integer']]
-            if not_numeric_measures:
-                raise SemanticError("1-1-10-8", op=node.op, found=not_numeric_measures)
+            # # The measure(s) has to be Number or Integer
+            # not_numeric_measures = [m for m in dataset.get_measures() if m.data_type not in ['Number', 'Integer']]
+            # if not_numeric_measures:
+            #     raise SemanticError("1-1-10-8", op=node.op, found=not_numeric_measures)   #TODO: review and fix this implementation
 
             hr_info = self.hrs[hr_name]
 
