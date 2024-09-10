@@ -4,7 +4,7 @@ import pandas as pd
 from pandasql import sqldf
 
 from DataTypes import COMP_NAME_MAPPING
-from Model import Dataset, ExternalRoutine, Role, Component
+from Model import Dataset, ExternalRoutine, Role, Component, DataComponent
 from Operators import Binary, Unary
 
 
@@ -23,14 +23,21 @@ class Membership(Binary):
                                                                role=Role.MEASURE,
                                                                nullable=component.nullable)
             left_operand.data[right_operand] = left_operand.data[component.name]
+
         result_components = {name: comp for name, comp in left_operand.components.items()
                              if comp.role == Role.IDENTIFIER or comp.name == right_operand}
         result_dataset = Dataset(name="result", components=result_components, data=None)
         return result_dataset
 
     @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+    def evaluate(cls, left_operand: Dataset, right_operand: str, is_from_component_assignment=False) -> Dataset:
         result_dataset = cls.validate(left_operand, right_operand)
+        if is_from_component_assignment:
+            return DataComponent(name=right_operand,
+                                 data_type=left_operand.components[right_operand].data_type,
+                                 role=Role.MEASURE,
+                                 nullable=left_operand.components[right_operand].nullable,
+                                 data=left_operand.data[right_operand])
         result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
 

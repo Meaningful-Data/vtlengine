@@ -6,7 +6,7 @@ if os.environ.get("SPARK", False):
 else:
     import pandas as pd
 
-from Model import DataComponent, Role, Scalar
+from Model import DataComponent, Role, Scalar, Component
 from Operators import Unary
 
 ALLOWED_MODEL_TYPES = [DataComponent, Scalar]
@@ -17,10 +17,10 @@ class RoleSetter(Unary):
 
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES):
-        if isinstance(operand, Scalar):
+        if isinstance(operand, Scalar) or isinstance(operand, Component):
 
             nullable = True
-            if cls.role == Role.IDENTIFIER or operand.value is not None:
+            if isinstance(operand, Scalar) and (cls.role == Role.IDENTIFIER or operand.value is not None):
                 nullable = False
 
             return DataComponent(

@@ -39,6 +39,7 @@ class InterpreterAnalyzer(ASTTemplate):
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Flags to change behavior
     is_from_assignment: bool = False
+    is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_having: bool = False
     is_from_rule: bool = False
@@ -171,10 +172,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
+        if self.is_from_join and isinstance(node.left, AST.Identifier) and node.left.kind == 'ComponentID':
+            self.is_from_component_assignment = True
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
+        self.is_from_component_assignment = False
         return Assignment.evaluate(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
@@ -192,6 +196,11 @@ class InterpreterAnalyzer(ASTTemplate):
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
+        if node.op == MEMBERSHIP:
+            if right_operand not in left_operand.components and '#' in right_operand:
+                right_operand = right_operand.split('#')[1]
+            if self.is_from_component_assignment:
+                return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand, self.is_from_component_assignment)
         return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
@@ -501,8 +510,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return REGULAR_AGGREGATION_MAPPING[node.op].evaluate(operands[0], dataset)
         if self.is_from_join:
             if node.op in [DROP, KEEP]:
-                operands = [operand.get_measures_names() if isinstance(operand,
-                                                                       Dataset) else operand.name if
+                operands = [operand.get_measures_names() if isinstance(operand, Dataset) else operand.name if
                 isinstance(operand, DataComponent) and operand.role is not Role.IDENTIFIER else
                 operand for operand in operands]
                 operands = list(set([item for sublist in operands for item in
