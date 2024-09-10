@@ -134,7 +134,6 @@ centralised_messages = {
     # Operators Operators
     "1-1-14-1": "At op {op}: Measure names don't match: {left} - {right}.",
     "1-1-14-3": "At op {op}: Invalid scalar types for identifiers at DataSet {dataset}. One {type} identifier expected, {count} found.",
-    "1-1-14-4": "At op {op}: Data types {types} are not compatible.",
     "1-1-14-5": "At op {op}: {names} with type/s {types} is not compatible with {op}",
     "1-1-14-6": "At op {op}: {comp_name} with type {comp_type} and scalar_set with type {scalar_type} is not compatible with {op}",
     "1-1-14-7": "At op {op}: {entity} {name} cannot be promoted to {target_type}.",
