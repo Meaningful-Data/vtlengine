@@ -133,9 +133,13 @@ centralised_messages = {
     "2-1-13-1": "At op {op}: No available using clause.",  # TODO: Delete this
     # Operators Operators
     "1-1-14-1": "At op {op}: Measure names don't match: {left} - {right}.",
-    "1-1-14-2": "At op {op}: Different measures scalar types: {left} - {right}.",
     "1-1-14-3": "At op {op}: Invalid scalar types for identifiers at DataSet {dataset}. One {type} identifier expected, {count} found.",
     "1-1-14-4": "At op {op}: Data types {types} are not compatible.",
+    "1-1-14-5": "At op {op}: {names} with type/s {types} is not compatible with {op}",
+    "1-1-14-6": "At op {op}: {comp_name} with type {comp_type} and scalar_set with type {scalar_type} is not compatible with {op}",
+    "1-1-14-7": "At op {op}: The role of {measure_role} for {measure_name} cannot be promoted to {target_type}.",
+    "1-1-14-8": "At op {op}: Operation not allowed for multimeasure datasets.",
+
     # Numeric Operators
     "2-1-15-1": "At op {op}: Component {comp_name} from dataset {dataset_name} contains negative values.",
     "2-1-15-2": "At op {op}: Value {value} could not be negative.",
