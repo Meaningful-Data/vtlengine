@@ -490,6 +490,8 @@ class InterpreterAnalyzer(ASTTemplate):
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
         if node.op == AGGREGATE:
+            # Extracting the role encoded inside the children assignments
+            role_info = {child.left.value: child.left.role for child in node.children}
             dataset = copy(operands[0])
             dataset.name = self.regular_aggregation_dataset.name
             dataset.components = {comp_name: comp for comp_name, comp in dataset.components.items()
@@ -500,10 +502,21 @@ class InterpreterAnalyzer(ASTTemplate):
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
                 data = operand.data[measure.name] if operand.data is not None else None
+                # Getting role from encoded information
+                # (handling also UDO params as it is present in the value of the mapping)
+                if (self.udo_params is not None and
+                        operand.name in self.udo_params[-1].values()):
+                    role = None
+                    for k, v in self.udo_params[-1].items():
+                        if isinstance(v, str) and v == operand.name:
+                            role_key = k
+                            role = role_info[role_key]
+                else:
+                    role = role_info[operand.name]
                 aux_operands.append(DataComponent(name=operand.name,
                                                   data=data,
                                                   data_type=measure.data_type,
-                                                  role=measure.role,
+                                                  role=role,
                                                   nullable=measure.nullable))
             operands = aux_operands
         self.regular_aggregation_dataset = None

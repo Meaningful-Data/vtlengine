@@ -1339,21 +1339,20 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         if isinstance(c, Parser.ComponentRoleContext):
-            Unop_node = Terminals().visitComponentRole(c)
-
-            left_node = Terminals().visitSimpleComponentId(ctx_list[1])
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[3])
-            left_node = UnaryOp(Unop_node.role, left_node)
-
-            return Assignment(left_node, op_node, right_node)
-
+            role = Terminals().visitComponentRole(c)
+            base_index = 1
         else:
-            left_node = Terminals().visitSimpleComponentId(c)
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[2])
+            base_index = 0
+            role = Role.MEASURE
 
-            return Assignment(left_node, op_node, right_node)
+        left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
+        op_node = ':='
+        right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[base_index + 2])
+        # Encoding the role information inside the Assignment for easiness and simplicity.
+        # Cannot find another way with less lines of code
+        setattr(left_node, 'role', role)
+
+        return Assignment(left_node, op_node, right_node)
 
     def visitAggrClause(self, ctx: Parser.AggrClauseContext):
         """
