@@ -4,9 +4,10 @@ from typing import List, Union
 from AST import RenameNode
 from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role, Scalar
+from Operators import Operator
 
 
-class Calc:
+class Calc(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
@@ -52,7 +53,7 @@ class Calc:
         return result_dataset
 
 
-class Aggregate:
+class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
@@ -95,7 +96,7 @@ class Aggregate:
         return result_dataset
 
 
-class Filter:
+class Filter(Operator):
 
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset):
@@ -113,7 +114,7 @@ class Filter:
         return result_dataset
 
 
-class Keep:
+class Keep(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -141,7 +142,7 @@ class Keep:
         return result_dataset
 
 
-class Drop:
+class Drop(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -164,7 +165,7 @@ class Drop:
         return result_dataset
 
 
-class Rename:
+class Rename(Operator):
 
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset):
@@ -195,7 +196,7 @@ class Rename:
         return result_dataset
 
 
-class Pivot:
+class Pivot(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -206,7 +207,7 @@ class Pivot:
         raise NotImplementedError
 
 
-class Unpivot:
+class Unpivot(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -245,7 +246,7 @@ class Unpivot:
         return result_dataset
 
 
-class Sub:
+class Sub(Operator):
 
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset):

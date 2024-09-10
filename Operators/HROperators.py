@@ -13,7 +13,11 @@ from Model import DataComponent, Dataset, Role, Component
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     measure_name = dataset.get_measures_names()[0]
-    return DataComponent(name=code_item, data=dataset.data[measure_name],
+    if dataset.data is None:
+        data = None
+    else:
+        data = dataset.data[measure_name]
+    return DataComponent(name=code_item, data=data,
                          data_type=dataset.components[measure_name].data_type,
                          role=dataset.components[measure_name].role,
                          nullable=dataset.components[measure_name].nullable)
@@ -162,7 +166,7 @@ class HRUnMinus(HRUnNumeric):
 class HAAssignment(Operators.Binary):
 
     @classmethod
-    def validate(cls, left: Dataset, right: DataComponent) -> Dataset:
+    def validate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              left.components.items()}
         return Dataset(name=f"{left.name}",
@@ -171,7 +175,7 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
-        result = cls.validate(left, right)
+        result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy()
         result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
