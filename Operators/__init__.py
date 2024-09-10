@@ -684,15 +684,13 @@ class Unary(Operator):
         if cls.type_to_check is not None:
             for measure in dataset.get_measures():
                 if not cls.validate_type_compatibility(measure.data_type):
-                    raise Exception(
-                        f"{measure.role.value} {measure.name} can't be promoted to {cls.type_to_check}"
-                    )
+                    raise SemanticError("1-1-14-7", op=cls.op, entity=measure.role.value, name=measure.name, target_type=cls.type_to_check)
 
     @classmethod
     def validate_scalar_type(cls, scalar: Scalar) -> None:
         if (cls.type_to_check is not None and not cls.validate_type_compatibility(
                 scalar.data_type)):
-            raise Exception(f"{scalar.name} can't be promoted to {cls.type_to_check}")
+            raise SemanticError("1-1-14-7", op=cls.op, entity=scalar.data_type, name=scalar.name, target_type=cls.type_to_check)
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
