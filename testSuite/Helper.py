@@ -13,6 +13,8 @@ from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
 from files.parser import load_datapoints
+from files.output import TimePeriodRepresentation, \
+    format_time_period_external_representation
 
 
 class TestHelper(TestCase):
@@ -137,6 +139,8 @@ class TestHelper(TestCase):
                                           value_domains=value_domains,
                                           external_routines=external_routines)
         result = interpreter.visit(ast)
+        result = format_time_period_external_representation(result,
+                                                            TimePeriodRepresentation.SDMX_REPORTING)
         assert result == reference_datasets
 
     @classmethod

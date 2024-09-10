@@ -221,7 +221,13 @@ class TimePeriodHandler:
         if self.period_indicator == 'A':
             # return f"{self.year}{self.period_indicator}"
             return f"{self.year}"  # Drop A from exit time period year
-        return f"{self.year}-{self.period_indicator}{self.period_number}"
+        if self.period_indicator in ["W", "M"]:
+            period_number_str = f"{self.period_number:02}"
+        elif self.period_indicator == "D":
+            period_number_str = f"{self.period_number:03}"
+        else:
+            period_number_str = str(self.period_number)
+        return f"{self.year}-{self.period_indicator}{period_number_str}"
 
     @staticmethod
     def _check_year(year: int):
@@ -329,6 +335,20 @@ class TimePeriodHandler:
         self.period_number = date_to_period(date_value,
                                             period_indicator=new_indicator).period_number
 
+    def vtl_representation(self):
+        if self.period_indicator == 'A':
+            # return f"{self.year}{self.period_indicator}"
+            return f"{self.year}"  # Drop A from exit time period year
+        if self.period_indicator in ["W", "M"]:
+            period_number_str = f"{self.period_number:02}"
+        elif self.period_indicator == "D":
+            period_number_str = f"{self.period_number:03}"
+        else:
+            period_number_str = str(self.period_number)
+        return f"{self.year}{self.period_indicator}{period_number_str}"
+
+    def sdmx_gregorian_representation(self):
+        raise NotImplementedError
 
 class TimeIntervalHandler:
     _date1: str = '0'
