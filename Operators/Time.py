@@ -562,7 +562,7 @@ class Time_Aggregation(Time):
     def scalar_validation(cls, operand: Scalar, period_from: Optional[str], period_to: str,
                           conf: str) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
-            raise Exception("Time Aggregation can only be applied to a time scalar")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
 
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
