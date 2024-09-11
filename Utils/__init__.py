@@ -84,7 +84,7 @@ UNARY_MAPPING = {
     RTRIM: Rtrim,
     TRIM: Trim,
     UCASE: Upper,
-    #Time
+    # Time
     PERIOD_INDICATOR: Period_indicator,
     FLOW_TO_STOCK: Flow_to_stock,
     STOCK_TO_FLOW: Stock_to_flow

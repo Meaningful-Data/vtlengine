@@ -114,10 +114,7 @@ class TimePeriodTest(TimePeriodHelper):
         """
         code = 'GL_440_2'
         number_inputs = 1
-        message = "{} Errors found: {}".format(
-            "The datapoints could not be loaded.",
-            "{'DT3': ['DT3 Not possible to cast time period for component Me_1']}"
-        )
+        message = "Not possible to cast column Me_1 to Time_Period"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_message=message)

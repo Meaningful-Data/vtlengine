@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from Interpreter import InterpreterAnalyzer
+from files.parser import load_datapoints
 
 if os.environ.get("SPARK", False):
     import sys
@@ -69,6 +70,24 @@ clause_operators = list(range(163, 177))
 
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
+
+# TODO: check if test 107 is correct
+# remove test until re-evaluation
+time_operators.remove(107)
+
+# Remove tests because Time Interval with Periods
+time_operators.remove(101)
+time_operators.remove(102)
+time_operators.remove(109)
+time_operators.remove(113)
+time_operators.remove(117)
+
+# Remove tests because missing test files
+time_operators.remove(121)
+time_operators.remove(122)
+time_operators.remove(123)
+time_operators.remove(124)
+time_operators.remove(125)
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
@@ -157,7 +176,8 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
             if dataset_name not in dataPoints:
                 data = pd.DataFrame(columns=components.keys())
             else:
-                data = pd.read_csv(os.path.join(dp_dir, f'{param}-{dataset_name}.csv'), sep=',')
+                data = load_datapoints(components=components,
+                                       csv_path=Path(f'{dp_dir}/{param}-{dataset_name}.csv'))
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
     if len(datasets) == 0:

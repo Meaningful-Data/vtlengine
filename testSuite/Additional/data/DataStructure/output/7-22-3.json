@@ -6,7 +6,7 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "Integer",
+          "type": "Time_Period",
           "nullable": false
         },
         {

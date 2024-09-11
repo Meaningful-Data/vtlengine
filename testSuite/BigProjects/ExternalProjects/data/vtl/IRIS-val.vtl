@@ -1,5 +1,0 @@
-valResult_nonFiltered := check_hierarchy(BIS_LOC_STATS, sectorsHierarchy rule COUNT_SECTOR all);
-
-valResult_filtered := filRoundEr(valResult_nonFiltered, 'imbalance', 1);
-
-valResult <- valResult_nonFiltered[calc DSD_ID := "BIS_LOC_STATS"];

@@ -6,6 +6,7 @@ from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, P
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
+from Exceptions import SemanticError
 
 
 class ExprComp(VtlVisitor):
@@ -545,12 +546,12 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        param_node = [Constant('STRING_CONSTANT', str(ctx.periodIndTo.text)[1:-1])]
+        period_to = str(ctx.periodIndTo.text)[1:-1]
+        period_from = None
 
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
             # raise SemanticError("periodIndFrom is not allowed in Time_agg")
-            periodIndFrom_node = Constant('STRING_CONSTANT', str(ctx.periodIndFrom.text)[1:-1])
-            param_node.append(periodIndFrom_node)
+            period_from = str(ctx.periodIndFrom.text)[1:-1]
 
         conf = [str_.getSymbol().text for str_ in ctx_list if
                 isinstance(str_, TerminalNodeImpl) and str_.getSymbol().type in [Parser.FIRST, Parser.LAST]]
@@ -564,15 +565,16 @@ class ExprComp(VtlVisitor):
             operand_node = self.visitOptionalExprComponent(ctx.op)
             if isinstance(operand_node, ID):
                 operand_node = None
+            elif isinstance(operand_node, Identifier):
+                operand_node = VarID(operand_node.value) # Converting Identifier to VarID
         else:
             operand_node = None
 
         if operand_node is None:
             # AST_ASTCONSTRUCTOR.17
             raise SemanticError("1-4-2-2")
-        elif isinstance(operand_node, VarID):
-            operand_node = Identifier(operand_node.value, 'ComponentID')
-        return TimeAggregation(op=op, operand=operand_node, params=param_node, conf=conf)
+        return TimeAggregation(op=op, operand=operand_node, period_to=period_to,
+                               period_from=period_from, conf=conf)
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
         c = list(ctx.getChildren())[0]
