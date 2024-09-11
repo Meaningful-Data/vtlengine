@@ -282,10 +282,9 @@ class Substr(Parameterized):
     @classmethod
     def check_param_value(cls, param: Optional[Union[int, str]], position: int):
         if not pd.isnull(param) and not param >= 1 and position == 1:
-            raise Exception("param start should be >= 1")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif not pd.isnull(param) and not param >= 0 and position == 2:
-            raise Exception("param length should be >= 0")
-
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 class Replace(Parameterized):
     op = REPLACE
@@ -361,10 +360,10 @@ class Instr(Parameterized):
     def check_param_value(cls, param: Optional[Union[int, str]], position: int):
         if position == 2:
             if not pd.isnull(param) and param < 1:
-                raise Exception("param start should be >= 1")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3:
             if not pd.isnull(param) and param < 1:
-                raise Exception("param occurrence should be >= 1")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Ocurrence", correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any,
