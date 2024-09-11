@@ -522,21 +522,23 @@ class Time_Aggregation(Time):
     def dataset_validation(cls, operand: Dataset, period_from: Optional[str], period_to: str,
                            conf: str) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
-        count_time_types = 0
-        for id_ in operand.get_identifiers():
-            if id_.data_type in cls.TIME_DATA_TYPES:
-                count_time_types += 1
-        if count_time_types != 1:
-            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="single time identifier")
 
         count_time_types = 0
         for measure in operand.get_measures():
             if measure.data_type in cls.TIME_DATA_TYPES:
                 count_time_types += 1
                 if measure.data_type == TimePeriod and period_to == "D":
-                    raise SemanticError("1-1-19-9", op=cls.op, comp_type="time period dataset", param="time period measure")
+                    raise SemanticError("1-1-19-5", op=cls.op)
                 if measure.data_type == TimeInterval:
-                    raise SemanticError("1-1-19-6", op=cls.op, comp=measure.name)
+                    raise SemanticError("1-1-19-6", op=cls.op,
+                                        comp=measure.name)
+
+        count_time_types = 0
+        for id_ in operand.get_identifiers():
+            if id_.data_type in cls.TIME_DATA_TYPES:
+                count_time_types += 1
+        if count_time_types != 1:
+            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="single time identifier")
 
         if count_time_types != 1:
             raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param= "single time measure")
@@ -552,7 +554,7 @@ class Time_Aggregation(Time):
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
         if operand.data_type == TimePeriod and period_to == "D":
-            raise SemanticError("1-1-19-9", op=cls.op, comp_type="time period dataset", param="time period measure")
+            raise SemanticError("1-1-19-5", op=cls.op)
         if operand.data_type == TimeInterval:
             raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
 
