@@ -194,13 +194,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            left_operand = self.regular_aggregation_dataset
-            right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
+            comp_name = node.left.value + '#' + node.right.value
+            ast_var_id = AST.VarID(value=comp_name)
+            return self.visit(ast_var_id)
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(
-                self.if_stack) > 0:
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -466,10 +466,12 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
                 return self.datasets[node.value]
 
-            if self.regular_aggregation_dataset.data is None:
-                data = None
-            else:
+            if self.regular_aggregation_dataset.data is not None:
+                if self.is_from_join and node.value not in self.regular_aggregation_dataset.get_components_names():
+                    node.value = node.value.split('#')[1]
                 data = self.regular_aggregation_dataset.data[node.value]
+            else:
+                data = None
 
             return DataComponent(name=node.value,
                                  data=data,
@@ -1090,12 +1092,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return node.value
         """
+
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            return self.udo_params[-1][node.value]
         if node.value in self.datasets:
             if self.is_from_assignment:
                 return self.datasets[node.value].name
             return self.datasets[node.value]
-        if self.udo_params is not None and node.value in self.udo_params[-1]:
-            return self.udo_params[-1][node.value]
         return node.value
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> AST.AST:

@@ -53,7 +53,7 @@ class Join(Operator):
                 if (cls.how == 'inner' and component.name in dataset.components and component.role is Role.IDENTIFIER
                         and dataset.components[component.name].role is not Role.IDENTIFIER):
                     continue
-                dataset.components.update({component.name: component.copy()})
+                dataset.components.update({component.name: component})
             else:
                 for op_name in [op.name for op in operands]:
                     if op_name + '#' + component.name in columns:
@@ -76,7 +76,7 @@ class Join(Operator):
 
     @classmethod
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.execute(operands.copy(), using)
+        result = cls.execute([op for op in operands], using)
         if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
             raise Exception(f"Invalid components on result dataset")
         return result
@@ -99,9 +99,9 @@ class Join(Operator):
                     op.components[component] = Component(name=new_name, data_type=op.components[component].data_type,
                                          role=op.components[component].role, nullable=op.components[component].nullable)
                     op.data.rename(columns={component: new_name}, inplace=True)
-        result.components = cls.reference_dataset.components
+        # TODO: use a copy like function instead of this assigment
+        result.components = {comp.name: Component(name=comp.name, data_type=comp.data_type, role=comp.role, nullable=comp.nullable) for comp in cls.reference_dataset.components.values()}
         result.data.columns = cls.reference_dataset.data.columns
-
 
         for op in operands:
             if op is not cls.reference_dataset:
@@ -125,7 +125,7 @@ class Join(Operator):
         if not all([isinstance(op, Dataset) for op in operands]):
             raise Exception("All operands must be datasets")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
-            return operands[0]
+            return Dataset(name="result", components=operands[0].components, data=operands[0].data)
         cls.identifiers_validation(operands, using)
 
         cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names()))

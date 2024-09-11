@@ -622,9 +622,7 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
-    def evaluate(cls,
-                 left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+    def evaluate(cls, left_operand: ALL_MODEL_DATA_TYPES, right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
         """
         Evaluate the operation (based on validation output)
         :param left_operand: The left operand
