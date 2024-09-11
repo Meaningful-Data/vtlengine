@@ -7,6 +7,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import Operators
+from AST.Grammar.tokens import TIME_AGG, TIMESHIFT
 from DataTypes import Date, TimePeriod, TimeInterval, Duration
 from DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from Exceptions import SemanticError
@@ -421,6 +422,8 @@ class Fill_time_series(Binary):
 
 class Time_Shift(Binary):
 
+    op = TIMESHIFT
+
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
         result = cls.validate(operand, shift_value)
@@ -445,7 +448,7 @@ class Time_Shift(Binary):
             if len(periods) == 1 and periods[0] == 'A':
                 result.data[cls.time_id] = result.data[cls.time_id].astype(int)
         else:
-            raise ValueError("Unknown date type for Timeshift")
+            raise SemanticError("1-1-19-2", op=cls.op)
         return result
 
     @classmethod
@@ -491,10 +494,12 @@ class Time_Shift(Binary):
 
 class Time_Aggregation(Time):
 
+    op = TIME_AGG
+
     @classmethod
     def _check_duration(cls, value: str):
         if value not in DURATION_MAPPING:
-            raise Exception(f"Invalid duration on Time Aggregation: {value}")
+            raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
     def _check_params(cls, period_from: Optional[str], period_to: str):
