@@ -166,6 +166,8 @@ centralised_messages = {
     "1-1-19-5": "At op {op}: periodIndTo parameter must be a larger duration value than the values to aggregate.",
     "1-1-19-6": "At op {op}: Time type used in the component {comp} is not supported.",
     "1-1-19-7": "At op {op}: can be applied only on Data Sets (of time series) and returns a Data Set (of time series).",  #flow_to_stock, stock_to_flow
+    "1-1-19-8": "At op {op}: {op} can only be applied to a {comp_type}",
+    "1-1-19-9": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo parameter must be a larger duration value than the values to aggregate.",
     # ----------- Interpreter Common ------
     "2-3-1": "No {type} {value} found.",

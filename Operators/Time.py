@@ -7,7 +7,8 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 import Operators
-from AST.Grammar.tokens import TIME_AGG, TIMESHIFT
+from AST.Grammar.tokens import TIME_AGG, TIMESHIFT, PERIOD_INDICATOR, \
+    FILL_TIME_SERIES, FLOW_TO_STOCK
 from DataTypes import Date, TimePeriod, TimeInterval, Duration
 from DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from Exceptions import SemanticError
@@ -25,13 +26,15 @@ class Time(Operators.Operator):
     YEAR_TO_PERIOD = {'S': 2, 'Q': 4, 'M': 12, 'W': 52, 'D': 365}
     PERIOD_ORDER = {'A': 0, 'S': 1, 'Q': 2, 'M': 3, 'W': 4, 'D': 5}
 
+    op = FLOW_TO_STOCK
+
     @classmethod
     def _get_time_id(cls, operand: Dataset) -> Optional[str]:
         reference_id = None
         for id in operand.get_identifiers():
             if id.data_type in cls.TIME_DATA_TYPES:
                 if reference_id is not None:
-                    raise ValueError("FlowToStock can only be applied to a time dataset")
+                    raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
                 reference_id = id.name
         return reference_id
 
@@ -81,9 +84,9 @@ class Unary(Time):
     @classmethod
     def validate(cls, operand: Dataset) -> Dataset:
         if not isinstance(operand, Dataset):
-            raise TypeError("FlowToStock can only be applied to a time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
-            raise ValueError("FlowToStock can only be applied to a time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         operand.data = cls.sort_by_time(operand)
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
@@ -107,7 +110,7 @@ class Unary(Time):
             result.data[measure_names] = result.data.groupby(cls.other_ids)[measure_names].apply(
                 cls.py_op)
         else:
-            raise ValueError("FlowToStock can only be applied to a dataset with a date type")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="dataset", param="date type")
         return result
 
     @classmethod
@@ -127,13 +130,16 @@ class Binary(Time):
 
 
 class Period_indicator(Unary):
+
+    op = PERIOD_INDICATOR
+
     @classmethod
     def validate(cls, operand: Dataset | DataComponent | Scalar
                  ) -> Dataset | DataComponent | Scalar:
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if time_id is None or operand.components[time_id].data_type != TimePeriod:
-                raise ValueError("PeriodIndicator can only be applied to a time period dataset")
+                raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period dataset")
             result_components = {comp.name: comp for comp in operand.components.values()
                                  if comp.role == Role.IDENTIFIER}
             result_components['duration_var'] = Component(name='duration_var',
@@ -142,7 +148,7 @@ class Period_indicator(Unary):
             return Dataset(name='result', components=result_components, data=None)
         # DataComponent and Scalar validation
         if operand.data_type != TimePeriod:
-            raise ValueError("PeriodIndicator can only be applied to a time period component")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period component")
         if isinstance(operand, DataComponent):
             return DataComponent(name=operand.name, data_type=Duration, data=None)
         return Scalar(name=operand.name, data_type=Duration, value=None)
@@ -178,6 +184,8 @@ class Stock_to_flow(Unary):
 
 class Fill_time_series(Binary):
 
+    op = FILL_TIME_SERIES
+
     @classmethod
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
@@ -195,22 +203,21 @@ class Fill_time_series(Binary):
         elif data_type == TimeInterval:
             frequencies = result.data[cls.time_id].apply(cls.get_frequency_from_time).unique()
             if len(frequencies) > 1:
-                raise ValueError(
-                    "FillTimeSeries can only be applied to a dataset with a single time interval frequency")
+                raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="single time interval frequency" )
             result.data = cls.fill_time_intervals(result.data, fill_type, frequencies[0])
         else:
-            raise ValueError("FillTimeSeries can only be applied to a dataset with a date type")
+            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="date type")
         return result
 
     @classmethod
     def validate(cls, operand: Dataset, fill_type: str) -> Dataset:
         if not isinstance(operand, Dataset):
-            raise TypeError("FillTimeSeries can only be applied to a time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         cls.time_id = cls._get_time_id(operand)
         cls.other_ids = [id.name for id in operand.get_identifiers() if id.name != cls.time_id]
         cls.measures = operand.get_measures_names()
         if cls.time_id is None:
-            raise ValueError("FillTimeSeries can only be applied to a time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if fill_type not in ['all', 'single']:
             fill_type = 'all'
         return Dataset(name='result', components=operand.components.copy(), data=None)
@@ -454,7 +461,8 @@ class Time_Shift(Binary):
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
         if not isinstance(operand, Dataset) or cls._get_time_id(operand) is None:
-            raise TypeError("Timeshift can only be applied to a time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
@@ -519,22 +527,19 @@ class Time_Aggregation(Time):
             if id_.data_type in cls.TIME_DATA_TYPES:
                 count_time_types += 1
         if count_time_types != 1:
-            raise Exception("Time Aggregation can only be applied to a dataset "
-                            "with a single time identifier")
+            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="single time identifier")
 
         count_time_types = 0
         for measure in operand.get_measures():
             if measure.data_type in cls.TIME_DATA_TYPES:
                 count_time_types += 1
                 if measure.data_type == TimePeriod and period_to == "D":
-                    raise Exception("Time Aggregation can only be applied to a time period "
-                                    "dataset with a time period measure")
+                    raise SemanticError("1-1-19-9", op=cls.op, comp_type="time period dataset", param="time period measure")
                 if measure.data_type == TimeInterval:
                     raise SemanticError("1-1-19-6", op=cls.op, comp=measure.name)
 
         if count_time_types != 1:
-            raise Exception("Time Aggregation can only be applied to a dataset "
-                            "with a single time measure")
+            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param= "single time measure")
 
         result_components = {comp.name: comp for comp in operand.components.values()
                              if comp.role in [Role.IDENTIFIER, Role.MEASURE]}
@@ -545,10 +550,9 @@ class Time_Aggregation(Time):
     def component_validation(cls, operand: DataComponent, period_from: Optional[str],
                              period_to: str, conf: str) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
-            raise Exception("Time Aggregation can only be applied to a time component")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
         if operand.data_type == TimePeriod and period_to == "D":
-            raise Exception("Time Aggregation can only be applied to a time period "
-                            "dataset with a time period measure")
+            raise SemanticError("1-1-19-9", op=cls.op, comp_type="time period dataset", param="time period measure")
         if operand.data_type == TimeInterval:
             raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
 
