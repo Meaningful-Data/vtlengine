@@ -2446,7 +2446,7 @@ class StringOperatorsTest(TestAttributesHelper):
         """
         code = '3-4-1-23'
         number_inputs = 1
-        message = "1-1-18-1"
+        message = "1-1-18-1" #returns '1-1-14-8'
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_24(self):
