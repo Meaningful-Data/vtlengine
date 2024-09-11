@@ -115,6 +115,22 @@ class StringOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_7(self):
+        '''
+        Behaviour for two datasets with different measures (not allowed).
+        '''
+        text = """DS_r := DS_1 || DS_2;"""
+        code = "3-7"
+        number_inputs = 2
+
+        message = "1-1-18-6" #1-1-14-1 probably
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
     def test_11(self):
         '''
         Behaviour for dataset.
