@@ -244,6 +244,11 @@ class Substr(Parameterized):
     return_type = String
 
     @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
+
+    @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         x = str(x)
         param1 = None if pd.isnull(param1) else int(param1)
@@ -267,7 +272,7 @@ class Substr(Parameterized):
         if not param:
             return
         if position not in (1, 2):
-            raise SemanticError("1-1-18-9", op=cls.op)
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, Integer):
@@ -304,11 +309,16 @@ class Replace(Parameterized):
         if not param:
             return
         if position not in (1, 2):
-            raise SemanticError("1-1-18-9", op=cls.op)
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
+
+    @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
 
 class Instr(Parameterized):
@@ -323,7 +333,7 @@ class Instr(Parameterized):
 
         if isinstance(param1, Dataset) or isinstance(param2, Dataset) or isinstance(param3,
                                                                                     Dataset):
-            raise Exception(f"{cls.op} cannot have a Dataset as parameter")
+            raise SemanticError("1-1-18-10", op=cls.op)
         if param1 is not None:
             cls.check_param(param1, 1)
         if param2 is not None:
@@ -332,6 +342,12 @@ class Instr(Parameterized):
             cls.check_param(param3, 3)
 
         return super().validate(operand)
+
+    @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
+
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
