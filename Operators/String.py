@@ -305,7 +305,7 @@ class Replace(Parameterized):
         if not param:
             return
         if position not in (1, 2):
-            raise Exception("param position is not specified")
+            raise SemanticError("1-1-18-9", op=cls.op)
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
@@ -339,7 +339,7 @@ class Instr(Parameterized):
         if not param:
             return
         if position not in (1, 2, 3):
-            raise Exception("param position is not specified")
+            raise SemanticError("1-1-18-9", op=cls.op)
         data_type: ScalarType = param.data_type
 
         if position == 1:
