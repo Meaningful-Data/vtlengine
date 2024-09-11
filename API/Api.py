@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union, Optional, Dict, List
 
 import pandas as pd
+from pandas import read_csv
 
 from API import create_ast, load_external_routines
 from DataTypes import SCALAR_TYPES
@@ -22,7 +23,7 @@ def _check_columns(component_names: List[str], columns: List[str]):
 
 
 def _add_data_to_dataset(data: pd.DataFrame, dataset: Dataset):
-    _check_columns(dataset.get_components_names(), data.columns())
+    _check_columns(dataset.get_components_names(), data.columns)
     dataset.data = data
 
 
@@ -57,6 +58,33 @@ def _load_dataset_from_structure(structures: dict):
             datasets[scalar_name] = scalar
     return datasets
 
+
+def _load_single_datapoint(datapoint: Union[dict, Path]):
+    if isinstance(datapoint, dict):
+        dict_data = datapoint
+    elif datapoint.is_dir():
+        datapoints = {}
+        for f in datapoint.iterdir():
+            dp = _load_single_datapoint(f)
+            datapoints = {**datapoints, **dp}
+        dict_data = datapoints
+    else:
+        dict_data = {}
+        with open(datapoint, 'r') as file:
+            dict_data[datapoint.name.removesuffix('.csv')] = read_csv(file) # TODO: Use data_load functions.
+    return dict_data
+
+
+def load_datapoints(datapoints: Union[dict, Path, List[Path]]):
+    if isinstance(datapoints, list):
+        dict_datapoints = {}
+        for x in datapoints:
+            result = _load_single_datapoint(x)
+            dict_datapoints = {**dict_datapoints, **result}
+        return dict_datapoints
+    return _load_single_datapoint(datapoints)
+
+
 def _load_datastructure_single(data_structure: Union[dict, Path]):
     if isinstance(data_structure, dict):
         structures = data_structure
@@ -72,7 +100,7 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     return _load_dataset_from_structure(structures)
 
 
-def load_datastructures(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     if isinstance(data_structure, list):
         ds_structures = {}
         for x in data_structure:
@@ -82,26 +110,20 @@ def load_datastructures(data_structure: Union[dict, Path, List[Union[dict, Path]
     return _load_datastructure_single(data_structure)
 
 
-def load_dataset(data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                 datapoints: Optional[Union[dict, Path, List[Path]]] = None) -> Dict[
+def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
+                            datapoints: Optional[Union[dict, Path, List[Path]]] = None) -> Dict[
     str, Union[Dataset, Scalar]]:
-    datasets = load_datastructures(data_structures)
-    if datapoints == None:
+    datasets = load_datasets(data_structures)
+    if datapoints is None:
         return _fill_datasets_empty_data(datasets)
-    if isinstance(datapoints, dict):
-        for dataset_name, data in datapoints.items():
-            if dataset_name not in datasets:
-                raise Exception('Not found dataset name')
-            dataset = datasets[dataset_name]
-            _add_data_to_dataset(data, dataset)
-        return datasets
-    if isinstance(datapoints, Path):
-        dataset_name = datapoints.name
+    dict_datapoints = load_datapoints(datapoints)
+    for dataset_name, data in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception('Not found dataset name')
-
         dataset = datasets[dataset_name]
         _add_data_to_dataset(data, dataset)
+    return datasets
+
 
 
 def load_vtl(input: Union[str, Path]):
@@ -133,7 +155,7 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
                       value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
     vtl = load_vtl(script)
     ast = create_ast(vtl)
-    structures = load_datastructures(data_structures)
+    structures = load_datasets(data_structures)
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
@@ -152,7 +174,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
     vtl = load_vtl(script)
     ast = create_ast(vtl)
-    datasets = load_dataset(data_structures, datapoints)
+    datasets = load_datasets_with_data(data_structures, datapoints)
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
@@ -168,7 +190,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 if __name__ == '__main__':
     print(run(script=(filepath_VTL / '1-1-1-1.vtl'),
               data_structures=[filepath_json / '2-1-DS_1.json', filepath_json / '2-1-DS_2.json'],
-              datapoints=[filepath_csv / '2-1-DS_1.csv', filepath_csv / '2-1-DS_2.csv'],
+              datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
               value_domains=None, external_routines=None))
     # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
     # print(load_datastructures(filepath_json))
