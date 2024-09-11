@@ -153,7 +153,7 @@ centralised_messages = {
     "1-1-18-1": "At op {op}: Invalid Dataset {name}. Dataset with one measure expected.",
     "1-1-18-2": "At op {op}: Composition of DataSet and Component is not allowed.",
     "1-1-18-3": "At op {op}: Invalid {pos} parameter {value}.",
-    "1-1-18-4": "At op {op}: Invalid type {type} for {pos} parameter {value}.",
+    "1-1-18-4": "At op {op}: {param_type} parameter should be {correct_type}.",
     "1-1-18-6": "At op {op}: Datasets have different measures.",
     "1-1-18-7": "At op {op}: Invalid number of parameters {number}, {expected} expected.",
     "1-1-18-8": "At op {op}: {msg} in regexp: {regexp},  in position {pos}.",

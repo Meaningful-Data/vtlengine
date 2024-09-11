@@ -271,7 +271,7 @@ class Substr(Parameterized):
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, Integer):
-            raise Exception("Substr params should be Integer")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
 
         if isinstance(param, DataComponent):
             if param.data is not None:
@@ -309,7 +309,7 @@ class Replace(Parameterized):
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
-            raise Exception("Replace params should be String")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
 
 
 class Instr(Parameterized):
@@ -344,13 +344,13 @@ class Instr(Parameterized):
 
         if position == 1:
             if not check_unary_implicit_promotion(data_type, String):
-                raise Exception("Instr pattern param should be String")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Pattern", correct_type="String")
         elif position == 2:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise Exception("Instr start param should be Integer")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer")
         else:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise Exception("Instr occurrence param should be Integer")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer")
         if isinstance(param, DataComponent):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
@@ -475,7 +475,7 @@ class Instr(Parameterized):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
-                raise Exception(f"At op {cls.op}: Start parameter value {start} should be integer.")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer")
         else:
             start = 0
 
@@ -484,8 +484,7 @@ class Instr(Parameterized):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
-                raise Exception(
-                    f"At op {cls.op}: Occurrence parameter value {occurrence} should be integer.")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer")
         else:
             occurrence = 0
         if pd.isnull(str_to_find):
