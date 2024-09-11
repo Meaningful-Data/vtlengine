@@ -135,9 +135,6 @@ class Dataset:
             for name, component in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
-                if component.data_type == DataTypes.TimePeriod or component.data_type == DataTypes.TimeInterval:
-                    self.data[name] = self.data[name].map(self.refactor_time_period,
-                                                          na_action="ignore")
 
     def __eq__(self, other):
         if not isinstance(other, Dataset):
@@ -151,10 +148,25 @@ class Dataset:
         same_components = self.components == other.components
         if not same_components:
             print("\nComponents mismatch")
-            print("result:", json.dumps(self.to_dict()['components'], indent=4))
-            print("reference:", json.dumps(other.to_dict()['components'], indent=4))
+            result_comps = self.to_dict()['components']
+            reference_comps = other.to_dict()['components']
+            if len(result_comps) != len(reference_comps):
+                print(f"Shape mismatch: result:{len(result_comps)} != reference:{len(reference_comps)}")
+                if len(result_comps) < len(reference_comps):
+                    print("Missing components in result:", set(reference_comps.keys()) - set(result_comps.keys()))
+                else:
+                    print("Additional components in result:", set(result_comps.keys()) - set(reference_comps.keys()))
+                return False
+
+            diff_comps = {k: v for k, v in result_comps.items() if v != reference_comps[k]}
+            ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
+            print(f"Differences in components {self.name}: ")
+            print("result:", json.dumps(diff_comps, indent=4))
+            print("reference:", json.dumps(ref_diff_comps, indent=4))
             return False
 
+        if self.data is None and other.data is None:
+            return True
         if isinstance(self.data, SparkDataFrame):
             self.data = self.data.to_pandas()
         if isinstance(other.data, SparkDataFrame):
@@ -185,7 +197,7 @@ class Dataset:
                                check_index_type=False, check_datetimelike_compat=True)
         except AssertionError as e:
             if "DataFrame shape" in str(e):
-                print("\nDataFrame shape mismatch")
+                print(f"\nDataFrame shape mismatch {self.name}:")
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
@@ -194,7 +206,7 @@ class Dataset:
             for comp in self.components.values():
                 if comp.data_type.__name__ in ['Integer', 'Float']:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
-            print("\n Differences between the dataframes")
+            print("\n Differences between the dataframes in", self.name)
             print(diff)
             raise e
         return True
@@ -248,29 +260,11 @@ class Dataset:
         return {
             'name': self.name,
             'components': {k: v.to_dict() for k, v in self.components.items()},
-            'data': self.data.to_dict(orient='records')
+            'data': self.data.to_dict(orient='records') if self.data is not None else None
         }
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
-
-    def refactor_time_period(self, date: str):
-        if not isinstance(date, str):
-            return date
-        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])$", date):
-            year, month = date.split("M")
-            return "{}-M{}".format(year, month)
-        if re.match(r"^\d{1,4}Q[1-4]$", date):
-            year, quarter = date.split("Q")
-            return "{}-Q{}".format(year, quarter)
-        if re.match(r"^\d{1,4}S[1-2]$", date):
-            year, semester = date.split("S")
-            return "{}-S{}".format(year, semester)
-        if re.match(r"^\d{1,4}M(0?[1-9]|1[0-2])/\d{1,4}M(0?[1-9]|1[0-2])$", date):
-            date1, date2 = date.split("/")
-            return "{}/{}".format(self.refactor_time_period(date1),
-                                  self.refactor_time_period(date2))
-        return date
 
 
 @dataclass

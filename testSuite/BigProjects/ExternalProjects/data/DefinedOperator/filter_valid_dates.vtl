@@ -1,4 +1,0 @@
-define operator filter_valid_dates (ds dataset, DT_RFRNC component, VLD_FRM component, VLD_T component)
-  returns dataset is
-    max(ds[filter DT_RFRNC >= VLD_FRM and DT_RFRNC <= VLD_T] group except VLD_FRM, VLD_T)
-end operator;

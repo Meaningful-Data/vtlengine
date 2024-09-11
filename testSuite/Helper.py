@@ -14,6 +14,8 @@ from Exceptions import SemanticError
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
 from files.parser import load_datapoints
+from files.output import TimePeriodRepresentation, \
+    format_time_period_external_representation
 
 
 class TestHelper(TestCase):
@@ -38,7 +40,7 @@ class TestHelper(TestCase):
     ds_input_prefix = ""
 
     @classmethod
-    def LoadDataset(cls, ds_path, dp_path) -> Dict[str, Union[Dataset, Scalar]]:
+    def LoadDataset(cls, ds_path, dp_path, only_semantic=False) -> Dict[str, Union[Dataset, Scalar]]:
         with open(ds_path, 'r') as file:
             structures = json.load(file)
 
@@ -53,7 +55,10 @@ class TestHelper(TestCase):
                                                  role=Role(component['role']),
                                                  nullable=component['nullable'])
                     for component in dataset_json['DataStructure']}
-                data = load_datapoints(components, Path(dp_path))
+                if only_semantic:
+                    data = None
+                else:
+                    data = load_datapoints(components, Path(dp_path))
 
                 datasets[dataset_name] = Dataset(name=dataset_name,
                                                  components=components,
@@ -68,7 +73,7 @@ class TestHelper(TestCase):
         return datasets
 
     @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int) -> Dict[str, Dataset]:
+    def LoadInputs(cls, code: str, number_inputs: int, only_semantic=False) -> Dict[str, Dataset]:
         '''
 
         '''
@@ -76,13 +81,13 @@ class TestHelper(TestCase):
         for i in range(number_inputs):
             json_file_name = str(cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
             csv_file_name = str(cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
-            new_datasets = cls.LoadDataset(json_file_name, csv_file_name)
+            new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             datasets.update(new_datasets)
 
         return datasets
 
     @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str]) -> Dict[str, Dataset]:
+    def LoadOutputs(cls, code: str, references_names: List[str], only_semantic=False) -> Dict[str, Dataset]:
         """
 
         """
@@ -90,7 +95,7 @@ class TestHelper(TestCase):
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            new_datasets = cls.LoadDataset(json_file_name, csv_file_name)
+            new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             datasets.update(new_datasets)
 
         return datasets
@@ -106,15 +111,16 @@ class TestHelper(TestCase):
 
     @classmethod
     def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None,
-                 sql_names: List[str] = None, text: Optional[str] = None, scalars: Dict[str, Any] = None):
+                 sql_names: List[str] = None, text: Optional[str] = None, scalars: Dict[str, Any] = None,
+                 only_semantic=False):
         '''
 
         '''
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
-        input_datasets = cls.LoadInputs(code, number_inputs)
-        reference_datasets = cls.LoadOutputs(code, references_names)
+        input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
+        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
         value_domains = None
         if vd_names is not None:
             value_domains = cls.LoadValueDomains(vd_names)
@@ -132,8 +138,11 @@ class TestHelper(TestCase):
                 input_datasets[scalar_name].value = scalar_value
         interpreter = InterpreterAnalyzer(input_datasets,
                                           value_domains=value_domains,
-                                          external_routines=external_routines)
+                                          external_routines=external_routines,
+                                          only_semantic=only_semantic)
         result = interpreter.visit(ast)
+        result = format_time_period_external_representation(result,
+                                                            TimePeriodRepresentation.SDMX_REPORTING)
         assert result == reference_datasets
 
     @classmethod

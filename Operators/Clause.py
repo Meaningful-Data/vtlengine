@@ -6,9 +6,10 @@ from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC, AGGREGATE
 from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from Exceptions import SemanticError
 from Model import Component, DataComponent, Dataset, Role, Scalar
+from Operators import Operator
 
 
-class Calc:
+class Calc(Operator):
 
     op = CALC
 
@@ -59,7 +60,7 @@ class Calc:
         return result_dataset
 
 
-class Aggregate:
+class Aggregate(Operator):
 
     op = AGGREGATE
 
@@ -107,7 +108,7 @@ class Aggregate:
         return result_dataset
 
 
-class Filter:
+class Filter(Operator):
 
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset):
@@ -125,7 +126,7 @@ class Filter:
         return result_dataset
 
 
-class Keep:
+class Keep(Operator):
 
     op = KEEP
 
@@ -153,7 +154,7 @@ class Keep:
         return result_dataset
 
 
-class Drop:
+class Drop(Operator):
 
     op = DROP
 
@@ -178,7 +179,7 @@ class Drop:
         return result_dataset
 
 
-class Rename:
+class Rename(Operator):
 
     op = RENAME
 
@@ -215,7 +216,7 @@ class Rename:
         return result_dataset
 
 
-class Pivot:
+class Pivot(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -226,7 +227,7 @@ class Pivot:
         raise NotImplementedError
 
 
-class Unpivot:
+class Unpivot(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
@@ -265,7 +266,7 @@ class Unpivot:
         return result_dataset
 
 
-class Sub:
+class Sub(Operator):
 
     op = SUBSPACE
 

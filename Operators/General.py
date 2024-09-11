@@ -23,7 +23,8 @@ class Membership(Binary):
                                                                data_type=component.data_type,
                                                                role=Role.MEASURE,
                                                                nullable=component.nullable)
-            left_operand.data[right_operand] = left_operand.data[component.name]
+            if left_operand.data is not None:
+                left_operand.data[right_operand] = left_operand.data[component.name]
         result_components = {name: comp for name, comp in left_operand.components.items()
                              if comp.role == Role.IDENTIFIER or comp.name == right_operand}
         result_dataset = Dataset(name="result", components=result_components, data=None)

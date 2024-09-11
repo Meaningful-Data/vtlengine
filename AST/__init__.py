@@ -328,7 +328,8 @@ class TimeAggregation(AST):
     """
 
     op: str
-    params: List[AST]
+    period_to: str
+    period_from: Optional[str] = None
     operand: Optional[AST] = None
     conf: Optional[str] = None
 

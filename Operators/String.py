@@ -249,7 +249,8 @@ class Substr(Parameterized):
             raise Exception("Substr params should be Integer")
 
         if isinstance(param, DataComponent):
-            param.data.map(lambda x: cls.check_param_value(x, position))
+            if param.data is not None:
+                param.data.map(lambda x: cls.check_param_value(x, position))
         else:
             cls.check_param_value(param.value, position)
 
@@ -326,7 +327,8 @@ class Instr(Parameterized):
             if not check_unary_implicit_promotion(data_type, Integer):
                 raise Exception("Instr occurrence param should be Integer")
         if isinstance(param, DataComponent):
-            param.data.map(lambda x: cls.check_param_value(x, position))
+            if param.data is not None:
+                param.data.map(lambda x: cls.check_param_value(x, position))
         else:
             cls.check_param_value(param.value, position)
 

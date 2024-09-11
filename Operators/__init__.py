@@ -24,6 +24,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 
+only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
@@ -32,6 +33,12 @@ class Operator:
     spark_op = None
     type_to_check = None
     return_type = None
+
+    @classmethod
+    def analyze(cls, *args, **kwargs):
+        if only_semantic:
+            return cls.validate(*args, **kwargs)
+        return cls.evaluate(*args, **kwargs)
 
     @classmethod
     def cast_time_types(cls, data_type: ScalarType, series: pd.Series) -> pd.Series:
@@ -47,6 +54,20 @@ class Operator:
             series = series.map(lambda x: DURATION_MAPPING[x],
                                 na_action='ignore')
         return series
+
+    @classmethod
+    def cast_time_types_scalar(cls, data_type: ScalarType, value: str):
+        if cls.op not in BINARY_COMPARISON_OPERATORS:
+            return value
+        if data_type.__name__ == "TimeInterval":
+            return TimeIntervalHandler.from_iso_format(value)
+        elif data_type.__name__ == "TimePeriod":
+            return TimePeriodHandler(value)
+        elif data_type.__name__ == "Duration":
+            if value not in DURATION_MAPPING:
+                raise Exception(f"Duration {value} is not valid")
+            return DURATION_MAPPING[value]
+        return value
 
     @classmethod
     def modify_measure_column(cls, result: Dataset) -> None:
@@ -83,7 +104,11 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate(cls, *args):
+    def validate(cls, *args, **kwargs):
+        raise Exception("Method should be implemented by inheritors")
+
+    @classmethod
+    def evaluate(cls, *args, **kwargs):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -165,8 +190,6 @@ class Binary(Operator):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls.py_op(x, y)
@@ -520,10 +543,14 @@ class Binary(Operator):
         result_data = dataset.data.copy()
         result_dataset.data = result_data
 
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+
         for measure in dataset.get_measures():
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
+            if measure.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+                scalar_value = DURATION_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar.value, dataset_left)
+                measure_data, scalar_value, dataset_left)
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
@@ -545,8 +572,11 @@ class Binary(Operator):
                                     component_left: bool) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = cls.cast_time_types(component.data_type, component.data.copy())
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+        if component.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+            scalar_value = DURATION_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(comp_data,
-                                                                  scalar.value, component_left)
+                                                                  scalar_value, component_left)
         return result_component
 
     @classmethod
