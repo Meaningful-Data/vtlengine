@@ -159,7 +159,6 @@ centralised_messages = {
     "1-1-18-8": "At op {op}: {msg} in regexp: {regexp},  in position {pos}.",
     "1-1-18-10": "At op {op}: Cannot have a Dataset as parameter",
     # Time operators
-    "1-1-19-1": "At op {op}: Operation with {type} is not defined.",
     "1-1-19-2": "At op {op}: Unknown date type for {op}.",
     "1-1-19-3": "At op {op}: Invalid {param} for {op}.",
     "1-1-19-4": "At op {op}: Invalid values {value_1} and {value_2}, periodIndTo parameter must be a larger duration value than periodIndFrom parameter.",
