@@ -41,6 +41,8 @@ class Join(Operator):
         columns = dataset.data.columns.tolist()
         reference_components = cls.reference_dataset.get_components_names() if cls.reference_dataset else None
         common = cls.get_components_union(operands) + cls.reference_dataset.get_components() if cls.reference_dataset else []
+        a = cls.get_components_union(operands) + cls.reference_dataset.get_components() if cls.reference_dataset else None
+        common = [Component(name=comp.name, data_type=comp.data_type, role=comp.role, nullable=comp.nullable) for comp in a] if a else []
 
         if cls.how == 'left':
             reference_components.extend([f'{cls.reference_dataset.name}#{comp}'for comp in reference_components])
@@ -99,10 +101,9 @@ class Join(Operator):
                     op.components[component] = Component(name=new_name, data_type=op.components[component].data_type,
                                          role=op.components[component].role, nullable=op.components[component].nullable)
                     op.data.rename(columns={component: new_name}, inplace=True)
-        # TODO: use a copy like function instead of this assigment
-        result.components = {comp.name: Component(name=comp.name, data_type=comp.data_type, role=comp.role, nullable=comp.nullable) for comp in cls.reference_dataset.components.values()}
+        result.components = {comp.name: copy(comp) for comp in cls.reference_dataset.components.values()}
         result.data.columns = cls.reference_dataset.data.columns
-
+        #TODO: nullability = or between all comp nullability
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
@@ -110,12 +111,6 @@ class Join(Operator):
 
         cls.merge_components(result, operands)
         result.data.reset_index(drop=True, inplace=True)
-        # comp_names = result.get_components_names()
-        # comp_names = [comp_name for comp_name in comp_names if comp_name in using] + \
-        #                 [comp_name for comp_name in comp_names if comp_name in result.get_identifiers_names()] + \
-        #                 [comp_name for comp_name in comp_names if comp_name in result.get_measures_names()]
-        # result.components = {comp_name: result.components[comp_name] for comp_name in comp_names}
-        # result.data = result.data.sort_values(by=using) if using else result.data
         return result
 
     @classmethod
