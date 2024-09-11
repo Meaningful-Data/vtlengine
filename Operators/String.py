@@ -2,6 +2,7 @@ import operator
 import os
 import re
 
+from Exceptions import SemanticError
 from Model import DataComponent, Dataset, Scalar
 
 if os.environ.get("SPARK", False):
@@ -29,6 +30,30 @@ class Unary(Operator.Unary):
         """Applies the operation to a component"""
         return series.map(lambda x: cls.py_op(str(x)), na_action='ignore')
 
+    @classmethod
+    def validate_dataset(cls, dataset: Dataset) -> None:
+        """
+        Validate that the dataset has exactly one measure.
+        """
+        measures = dataset.get_measures()
+
+        if measures is None or len(measures) != 1:
+            raise SemanticError("1-1-18-1", op=cls.op, name=dataset.name)
+
+    @classmethod
+    def dataset_evaluation(cls, dataset_element: Dataset) -> Dataset:
+        """
+        Evaluates the dataset by first validating and then applying the operation.
+        """
+        cls.validate_dataset(dataset_element)
+
+        measures_names = dataset_element.get_measures_names()
+        for measure_name in measures_names:
+            component = dataset_element.get_component(measure_name)
+
+            component.data = cls.apply_operation_component(component.data)
+
+        return dataset_element
 
 class Length(Unary):
     op = LEN
