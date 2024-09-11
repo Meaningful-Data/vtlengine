@@ -157,6 +157,7 @@ centralised_messages = {
     "1-1-18-6": "At op {op}: Datasets have different measures.",
     "1-1-18-7": "At op {op}: Invalid number of parameters {number}, {expected} expected.",
     "1-1-18-8": "At op {op}: {msg} in regexp: {regexp},  in position {pos}.",
+    "1-1-18-9": "At op {op}: Parameter position is not specified.",
     # Time operators
     "1-1-19-1": "At op {op}: Operation with {type} is not defined.",
     "1-1-19-2": "At op {op}: Invalid type {type} for parameter {param}.",
