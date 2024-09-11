@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, List
+
+import pandas as pd
 
 from API import create_ast, load_external_routines
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
-from files.parser import load_datapoints
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -16,15 +17,22 @@ filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
 
 
-def load_datastructures(data_structures: Union[dict, Path, list[dict, Path]]):
-    with open(data_structures, 'r') as file:
-        structures = json.load(file)
-        return structures
+def _check_columns(component_names: List[str], columns: List[str]):
+    pass
 
 
-def load_dataset(data_structures: Union[dict, Path], datapoints: Optional[Union[dict, Path]] = None) -> Dict[
-    str, Union[Dataset, Scalar]]:
-    structures = load_datastructures(data_structures)
+def _add_data_to_dataset(data: pd.DataFrame, dataset: Dataset):
+    _check_columns(dataset.get_components_names(), data.columns())
+    dataset.data = data
+
+
+def _fill_datasets_empty_data(datasets: dict):
+    for dataset in datasets.values():
+        dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))
+    return datasets
+
+
+def _load_dataset_from_structure(structures: dict):
     datasets = {}
 
     if 'datasets' in structures:
@@ -36,14 +44,10 @@ def load_dataset(data_structures: Union[dict, Path], datapoints: Optional[Union[
                                              role=Role(component['role']),
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
-            if datapoints == None:
-                data = None
-            else:
-                data = load_datapoints(components, Path(datapoints))
 
             datasets[dataset_name] = Dataset(name=dataset_name,
                                              components=components,
-                                             data=data)
+                                             data=None)
     if 'scalars' in structures:
         for scalar_json in structures['scalars']:
             scalar_name = scalar_json['name']
@@ -52,6 +56,52 @@ def load_dataset(data_structures: Union[dict, Path], datapoints: Optional[Union[
                             value=None)
             datasets[scalar_name] = scalar
     return datasets
+
+def _load_datastructure_single(data_structure: Union[dict, Path]):
+    if isinstance(data_structure, dict):
+        structures = data_structure
+    elif data_structure.is_dir():
+        ds_structures = {}
+        for f in data_structure.iterdir():
+            ds_r = _load_datastructure_single(f)
+            ds_structures = {**ds_structures, **ds_r}
+        structures = ds_structures
+    else:
+        with open(data_structure, 'r') as file:
+            structures = json.load(file)
+    return _load_dataset_from_structure(structures)
+
+
+def load_datastructures(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+    if isinstance(data_structure, list):
+        ds_structures = {}
+        for x in data_structure:
+            result = _load_datastructure_single(x)
+            ds_structures = {**ds_structures, **result}  # Overwrite ds_structures dict.
+        return ds_structures
+    return _load_datastructure_single(data_structure)
+
+
+def load_dataset(data_structures: Union[dict, Path, List[Union[dict, Path]]],
+                 datapoints: Optional[Union[dict, Path, List[Path]]] = None) -> Dict[
+    str, Union[Dataset, Scalar]]:
+    datasets = load_datastructures(data_structures)
+    if datapoints == None:
+        return _fill_datasets_empty_data(datasets)
+    if isinstance(datapoints, dict):
+        for dataset_name, data in datapoints.items():
+            if dataset_name not in datasets:
+                raise Exception('Not found dataset name')
+            dataset = datasets[dataset_name]
+            _add_data_to_dataset(data, dataset)
+        return datasets
+    if isinstance(datapoints, Path):
+        dataset_name = datapoints.name
+        if dataset_name not in datasets:
+            raise Exception('Not found dataset name')
+
+        dataset = datasets[dataset_name]
+        _add_data_to_dataset(data, dataset)
 
 
 def load_vtl(input: Union[str, Path]):
@@ -79,7 +129,7 @@ def load_value_domains(input: Union[dict, Path]):
     return value_domains
 
 
-def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Path],
+def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
                       value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
     vtl = load_vtl(script)
     ast = create_ast(vtl)
@@ -91,12 +141,14 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
 
-    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd, external_routines=ext_routines)
+    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd, external_routines=ext_routines,
+                                      only_semantic=True)
     result = interpreter.visit(ast)
     return result
 
 
-def run(script: Union[str, Path], data_structures: Union[dict, Path], datapoints: Union[dict, Path],
+def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
+        datapoints: Union[dict, Path, List[Path]],
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
     vtl = load_vtl(script)
     ast = create_ast(vtl)
@@ -114,6 +166,9 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path], datapoints
 
 
 if __name__ == '__main__':
-    # print(semantic_analysis(script=(filepath_VTL / '1-1-1-1.vtl'), data_structures=(filepath_json / '1-1-1-1-1.json'),
-    #                         value_domains=None, external_routines=None))
-    print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
+    print(run(script=(filepath_VTL / '1-1-1-1.vtl'),
+              data_structures=[filepath_json / '2-1-DS_1.json', filepath_json / '2-1-DS_2.json'],
+              datapoints=[filepath_csv / '2-1-DS_1.csv', filepath_csv / '2-1-DS_2.csv'],
+              value_domains=None, external_routines=None))
+    # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
+    # print(load_datastructures(filepath_json))
