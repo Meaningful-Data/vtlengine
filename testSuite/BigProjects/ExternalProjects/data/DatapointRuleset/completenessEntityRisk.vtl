@@ -1,6 +1,0 @@
-define datapoint ruleset completenessEntityRisk(variable CD0030, CD0039, CD0040, CD0060, CD0170, PD, NEVS_PD) is
-    
-    CT0640: when not (CD0030 or CD0039 or CD0040 or if DT_RFRNC >= cast("2021-03-31", date) then CD0060 else false or CD0170) then not isnull(PD) or NEVS_PD = "0" errorcode "CT0640" errorlevel 2
-
-end datapoint ruleset;
-

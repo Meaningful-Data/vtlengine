@@ -1,9 +1,0 @@
-/*Count number of datapoints per country and year*/
-numDPCouYear <- count(BIS_LOC_STATS group by REP_COUNTRY, REF_DATE);
-
-/*Count number of countries by year*/
-numCouYear <- count(numDPCouYear group by REF_DATE);
-
-
-/*Count number of years by country*/
-numYearCou <- count(numDPCouYear group by REP_COUNTRY);

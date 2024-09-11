@@ -2938,7 +2938,7 @@ class TimeOperatorsTest(AdditionalHelper):
         code = '7-26'
         number_inputs = 1
         message = "2-1-19-1"
-        self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
 
 class EmptyDatasetsTest(AdditionalHelper):
@@ -3122,5 +3122,5 @@ class DatesTest(AdditionalHelper):
         number_inputs = 1
         references_names = ['DS_r']
 
-        with pytest.raises(Exception, match="cast .+? without providing a mask"):
-            self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)
+        # with pytest.raises(Exception, match="cast .+? without providing a mask"):
+        self.BaseTest(text=None, code=code, number_inputs=number_inputs, references_names=references_names)

@@ -7,7 +7,7 @@ from AST import If, BinOp, RenameNode, UDOCall, UnaryOp, JoinOp, Identifier, Par
     ParamConstant, \
     Types, MulOp, \
     RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, \
-    Analytic, Windowing
+    Analytic, Windowing, VarID
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.ASTDataExchange import de_ruleset_elements
@@ -761,10 +761,11 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        param_node = [Constant('STRING_CONSTANT', str(ctx.periodIndTo.text)[1:-1])]
+        period_to = str(ctx.periodIndTo.text)[1:-1]
+        period_from = None
 
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
-            raise SemanticError("PeriodIndTo is not allowed in Time_agg")
+            period_from = str(ctx.periodIndFrom.text)[1:-1]
 
         conf = [str_.getSymbol().text for str_ in ctx_list if
                 isinstance(str_, TerminalNodeImpl) and str_.getSymbol().type in [Parser.FIRST,
@@ -779,13 +780,16 @@ class Expr(VtlVisitor):
             operand_node = self.visitOptionalExpr(ctx.op)
             if isinstance(operand_node, ID):
                 operand_node = None
+            elif isinstance(operand_node, Identifier):
+                operand_node = VarID(operand_node.value)
         else:
             operand_node = None
 
         if operand_node is None:
             # AST_ASTCONSTRUCTOR.17
-            raise SemanticError("Optional as expression node is not allowed")
-        return TimeAggregation(op=op, operand=operand_node, params=param_node, conf=conf)
+            raise Exception("Optional as expression node is not allowed in Time Aggregation")
+        return TimeAggregation(op=op, operand=operand_node, period_to=period_to,
+                               period_from=period_from, conf=conf)
 
     def visitFlowAtom(self, ctx: Parser.FlowAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -1335,21 +1339,20 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         if isinstance(c, Parser.ComponentRoleContext):
-            Unop_node = Terminals().visitComponentRole(c)
-
-            left_node = Terminals().visitSimpleComponentId(ctx_list[1])
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[3])
-            left_node = UnaryOp(Unop_node.role, left_node)
-
-            return Assignment(left_node, op_node, right_node)
-
+            role = Terminals().visitComponentRole(c)
+            base_index = 1
         else:
-            left_node = Terminals().visitSimpleComponentId(c)
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[2])
+            base_index = 0
+            role = Role.MEASURE
 
-            return Assignment(left_node, op_node, right_node)
+        left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
+        op_node = ':='
+        right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[base_index + 2])
+        # Encoding the role information inside the Assignment for easiness and simplicity.
+        # Cannot find another way with less lines of code
+        setattr(left_node, 'role', role)
+
+        return Assignment(left_node, op_node, right_node)
 
     def visitAggrClause(self, ctx: Parser.AggrClauseContext):
         """

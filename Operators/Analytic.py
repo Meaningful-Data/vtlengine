@@ -29,7 +29,8 @@ class Analytic(Operator.Unary):
     def validate(cls, operand: Dataset,
                  partitioning: List[str],
                  ordering: Optional[List[OrderBy]],
-                 window: Windowing) -> Dataset:
+                 window: Optional[Windowing],
+                 params: Optional[List[int]]) -> Dataset:
         if ordering is None:
             order_components = []
         else:
@@ -142,7 +143,7 @@ class Analytic(Operator.Unary):
                  ordering: Optional[List[OrderBy]],
                  window: Optional[Windowing],
                  params: Optional[List[int]]) -> Dataset:
-        result = cls.validate(operand, partitioning, ordering, window)
+        result = cls.validate(operand, partitioning, ordering, window, params)
         df = operand.data.copy()
         measure_names = operand.get_measures_names()
         identifier_names = operand.get_identifiers_names()
