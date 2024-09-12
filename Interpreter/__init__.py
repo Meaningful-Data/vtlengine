@@ -324,13 +324,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     if comp_name in self.udo_params[-1]:
                         partitioning.append(self.udo_params[-1][comp_name])
                     else:
-                        raise Exception(f"Component {comp_name} not found in UDO parameters")
+                        raise SemanticError("2-3-9", comp_type="Component", comp_name=comp_name, param="UDO parameters")
             if node.order_by is not None:
                 for o in node.order_by:
                     if o.component in self.udo_params[-1]:
                         o.component = self.udo_params[-1][o.component]
                     else:
-                        raise Exception(f"Component {o.component} not found in UDO parameters")
+                        raise SemanticError("2-3-9", comp_type="Component", comp_name=o.component, param="UDO parameters")
                 ordering = node.order_by
 
         else:
@@ -479,11 +479,10 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].nullable)
         if self.is_from_rule:
             if node.value not in self.ruleset_signature:
-                raise Exception(f"Component {node.value} not found in ruleset signature")
+                raise SemanticError("2-3-9", comp_type="Component", comp_name=node.value, param="ruleset signature")
             comp_name = self.ruleset_signature[node.value]
             if comp_name not in self.ruleset_dataset.components:
-                raise Exception(f"Component {comp_name} not found in dataset "
-                                f"{self.ruleset_dataset.name}")
+                raise SemanticError("2-3-9", comp_type="Component", comp_name=comp_name, param=f"dataset {self.ruleset_dataset.name}")
             if self.rule_data is None:
                 data = None
             else:
@@ -514,7 +513,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.value_domains is None:
                 raise Exception(f"No Value Domains have been loaded, expected {node.name}.")
             if node.name not in self.value_domains:
-                raise Exception(f"Value Domain {node.name} not found")
+                raise SemanticError("2-3-1", comp_type="Value Domain", comp_name=node.name)
             vd = self.value_domains[node.name]
             return ScalarSet(data_type=vd.type, values=vd.setlist)
 
@@ -526,7 +525,7 @@ class InterpreterAnalyzer(ASTTemplate):
         operands = []
         dataset = self.visit(node.dataset)
         if isinstance(dataset, Scalar):
-            raise Exception(f"Scalar {dataset.name} cannot be used with clause operators")
+            raise SemanticError("2-3-2", op_type=f"Scalar {dataset.name}", node_op=node.op)
         self.regular_aggregation_dataset = dataset
         if node.op == APPLY:
             op_map = BINARY_MAPPING
@@ -742,15 +741,14 @@ class InterpreterAnalyzer(ASTTemplate):
             if dpr_name in self.dprs:
                 dpr_info = self.dprs[dpr_name]
             else:
-                raise Exception(f"Datapoint Ruleset {dpr_name} not found")
+                raise SemanticError("2-3-1", comp_type="Datapoint Ruleset", comp_name=dpr_name)
             # Extracting dataset
             dataset_element = self.visit(node.children[0])
             # Checking if list of components supplied is valid
             if len(node.children) > 2:
                 for comp_name in node.children[2:]:
                     if comp_name not in dataset_element.components:
-                        raise ValueError(
-                            f"Component {comp_name} not found in dataset {dataset_element.name}")
+                        raise SemanticError("2-3-9", comp_type="Component", comp_name=comp_name, param=f"dataset {dataset_element.name}")
 
             output = node.params[0]  # invalid, all_measures, all
 
@@ -788,7 +786,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.hrs is None:
                 raise Exception("No Hierarchical Rulesets have been defined.")
             if hr_name not in self.hrs:
-                raise Exception(f"Hierarchical Ruleset {hr_name} not found")
+                raise SemanticError("2-3-1", comp_type="Hierarchical Ruleset", comp_name=hr_name)
 
             if not isinstance(dataset, Dataset):
                 raise Exception("The operand must be a dataset")
@@ -1022,7 +1020,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise Exception(f"No External Routines have been loaded.")
 
         if node.name not in self.external_routines:
-            raise Exception(f"External Routine {node.name} not found")
+            raise SemanticError("2-3-1", comp_type="External Routine", comp_name=node.name)
         external_routine = self.external_routines[node.name]
         operands = {}
         for operand in node.operands:
@@ -1193,7 +1191,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udos is None:
             raise Exception("No User Defined Operators have been loaded.")
         elif node.op not in self.udos:
-            raise Exception(f"User Defined Operator {node.op} not found")
+            raise SemanticError("2-3-1", comp_type="User Defined Operator", comp_name=node.op)
 
         signature_values = {}
 

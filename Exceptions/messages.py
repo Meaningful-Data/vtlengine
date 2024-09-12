@@ -169,14 +169,15 @@ centralised_messages = {
     "1-1-19-9": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo parameter must be a larger duration value than the values to aggregate.",
     # ----------- Interpreter Common ------
-    "2-3-1": "No {type} {value} found.",
-    "2-3-2": "Not valid {op_type} for {node_op}.",
+    "2-3-1": "{comp_type} {comp_name} not found.",
+    "2-3-2": "{op_type} cannot be used with {node_op} operators.",
     "2-3-3": "Internal error: Not able to categorize {value}.",
     "2-3-4": "At op {op} inside a calc: No {option} found.",
     "2-3-5": "Element Not found, expect found {name_1} but retrieved {name_2}.",
     "2-3-6": "Components in structure and data points are not the same on dataset {dataset_name}. {names} found",
     "2-3-7": "Internal Error. Ambiguity in component extraction. {values}",
     "2-3-8": "At op {op}:{msg}.",
+    "2-3-9": "{comp_type} {comp_name} not found in {param}.",
     # ---------Semantic Analyzer Common----
     "1-3-1": "Please don't use twice {alias} like var_to.",
     "1-3-2": "No parent found for {varId_value}.",
