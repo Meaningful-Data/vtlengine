@@ -107,7 +107,6 @@ class InterpreterAnalyzer(ASTTemplate):
             param_info.append({"name": param.name, "type": type_})
             if param.default is not None:
                 param_info[-1]["default"] = param.default
-
             if len(param_info) > 1:
                 previous_default = param_info[0]
                 for i in [1, len(param_info) - 1]:
