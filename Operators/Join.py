@@ -1,5 +1,6 @@
 import os
 from copy import copy
+from functools import reduce
 from typing import List, Dict
 
 from AST import BinOp
@@ -37,33 +38,52 @@ class Join(Operator):
         return result
 
     @classmethod
-    def merge_components(cls, dataset: Dataset, operands: List[Dataset]) -> Dataset:
-        columns = dataset.data.columns.tolist()
-        reference_components = cls.reference_dataset.get_components_names() if cls.reference_dataset else None
-        common = cls.get_components_union(operands) + cls.reference_dataset.get_components() if cls.reference_dataset else []
-        a = cls.get_components_union(operands) + cls.reference_dataset.get_components() if cls.reference_dataset else None
-        common = [Component(name=comp.name, data_type=comp.data_type, role=comp.role, nullable=comp.nullable) for comp in a] if a else []
+    def merge_components(cls, operands, using=None):
+        nullability = {}
+        merged_components = {}
+        using = using or []
+        common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+        totally_common = list(reduce(lambda x, y: x & set(y.get_components_names()), operands[1:], set(operands[0].get_components_names())))
 
-        if cls.how == 'left':
-            reference_components.extend([f'{cls.reference_dataset.name}#{comp}'for comp in reference_components])
-        for component in common:
-            if component.role is not Role.IDENTIFIER and (cls.how == 'outer' or
-            (cls.how != 'inner' and reference_components and component.name not in reference_components)):
-                component.nullable = True
+        for op in operands:
+            for comp in op.components.values():
+                if comp.name not in nullability:
+                    nullability[comp.name] = comp.nullable
 
-            if component.name in columns:
-                if (cls.how == 'inner' and component.name in dataset.components and component.role is Role.IDENTIFIER
-                        and dataset.components[component.name].role is not Role.IDENTIFIER):
-                    continue
-                dataset.components.update({component.name: component})
-            else:
-                for op_name in [op.name for op in operands]:
-                    if op_name + '#' + component.name in columns:
-                        dataset.components.update({op_name + '#' + component.name: component.copy()})
-                        dataset.components[op_name + '#' + component.name].name = op_name + '#' + component.name
+                if comp.role == Role.IDENTIFIER:
+                    nullability[comp.name] = False
+                elif comp.name in totally_common:
+                    nullability[comp.name] |= comp.nullable
+                elif cls.how == 'left' and comp.name not in cls.reference_dataset.get_components_names():
+                    nullability[comp.name] = True
+                else:
+                    nullability[comp.name] = comp.nullable
 
-        dataset.components = {column: dataset.components[column] for column in columns}
-        return dataset
+                if comp.name in using:
+                    is_identifier = all(operand.components[comp.name].role == Role.IDENTIFIER
+                                        for operand in operands if comp.name in operand.get_components_names())
+                    comp.role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+
+        for operand in operands:
+            operand_name = operand.name
+            components = operand.components
+
+            for component_name, component in components.items():
+                component.nullable = nullability[component_name]
+
+                if component_name in common and component_name not in using:
+                    if component.role != Role.IDENTIFIER or cls.how == 'cross':
+                        new_name = f'{operand_name}#{component_name}'
+                        while new_name in common:
+                            new_name += '_dup'
+                        merged_components[new_name] = copy(component)
+                        merged_components[new_name].name = new_name
+                    else:
+                        merged_components[component_name] = copy(component)
+                else:
+                    merged_components[component_name] = copy(component)
+
+        return merged_components
 
     @classmethod
     def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[str, Component]:
@@ -78,7 +98,7 @@ class Join(Operator):
 
     @classmethod
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.execute([op for op in operands], using)
+        result = cls.execute([copy(operand) for operand in operands], using)
         if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
             raise Exception(f"Invalid components on result dataset")
         return result
@@ -86,30 +106,26 @@ class Join(Operator):
     @classmethod
     def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.validate(operands, using)
+        using = using if using else []
         if len(operands) == 1:
-            result.name = result
+            result.data = operands[0].data
             return result
-        join_keys = using if using else result.get_identifiers_names()
-        result.data = cls.reference_dataset.data
-        result.data = result.data.copy()
 
-        common = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
+        common_measures = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
         for op in operands:
-            for component in common:
-                if component in result.data.columns.tolist():
-                    new_name = f"{op.name}#{component}"
-                    op.components[component] = Component(name=new_name, data_type=op.components[component].data_type,
-                                         role=op.components[component].role, nullable=op.components[component].nullable)
-                    op.data.rename(columns={component: new_name}, inplace=True)
-        result.components = {comp.name: copy(comp) for comp in cls.reference_dataset.components.values()}
-        result.data.columns = cls.reference_dataset.data.columns
-        #TODO: nullability = or between all comp nullability
+            for column in op.data.columns.tolist():
+                if column in common_measures and column not in using:
+                    op.data = op.data.rename(columns={column: op.name + '#' + column})
+        result.data = copy(cls.reference_dataset.data)
+
+        join_keys = using if using else result.get_identifiers_names()
+
+        # TODO: nullability = or between all comp nullability
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
                 result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
 
-        cls.merge_components(result, operands)
         result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -120,15 +136,16 @@ class Join(Operator):
         if not all([isinstance(op, Dataset) for op in operands]):
             raise Exception("All operands must be datasets")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
-            return Dataset(name="result", components=operands[0].components, data=operands[0].data)
+            return Dataset(name="result", components=operands[0].components, data=None)
         cls.identifiers_validation(operands, using)
 
-        cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names()))
+        cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names())) if cls.how not in ['cross', 'left'] else operands[0]
         components = cls.generate_result_components(operands, using)
         if using is not None:
             for op in operands:
-                components.update(
-                    {id: op.components[id] for id in using if id in op.get_measures_names()})
+                components.update({id: op.components[id] for id in using if id in op.get_measures_names()})
+        components = cls.merge_components(operands, using)
+
         return Dataset(name="result", components=components, data=None)
 
     @classmethod
@@ -255,13 +272,41 @@ class FullJoin(Join):
 class CrossJoin(Join):
     how = 'cross'
 
+    # @classmethod
+    # def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
+    #     result = cls.validate(operands, using)
+    #     if len(operands) == 1:
+    #         result.name = 'result'
+    #         return result
+    #
+    #     common_measures = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
+    #     for op in operands:
+    #         for column in op.data.columns.tolist():
+    #             if column in common_measures:
+    #                 op.data = op.data.rename(columns={column: op.name + '#' + column})
+    #     result.data = copy(cls.reference_dataset.data)
+    #
+    #     # TODO: nullability = or between all comp nullability
+    #     for op in operands:
+    #         if op is operands[0]:
+    #             result.data = op.data
+    #         else:
+    #             result.data = pd.merge(result.data, op.data, how=cls.how)
+    #         result.data = result.data.rename(
+    #             columns={column: op.name + '#' + column for column in result.data.columns.tolist()
+    #                      if column in common_measures})
+    #
+    #     result.data.reset_index(drop=True, inplace=True)
+    #     return result
+
     @classmethod
     def execute(cls, operands: List[Dataset], using=None) -> Dataset:
         result = cls.validate(operands, using)
-        if result.name != "result":
-            result.name = result
+        if len(operands) == 1:
+            result.data = operands[0].data
             return result
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+
         for op in operands:
             if op is operands[0]:
                 result.data = op.data
@@ -270,7 +315,6 @@ class CrossJoin(Join):
             result.data = result.data.rename(
                 columns={column: op.name + '#' + column for column in result.data.columns.tolist()
                          if column in common})
-        cls.merge_components(result, operands)
         result.data.reset_index(drop=True, inplace=True)
         return result
 
