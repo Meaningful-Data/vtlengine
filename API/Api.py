@@ -3,12 +3,12 @@ from pathlib import Path
 from typing import Union, Optional, Dict, List
 
 import pandas as pd
-from pandas import read_csv
 
 from API import create_ast, load_external_routines
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
+from files.parser import _validate_pandas, load_datapoints
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -16,15 +16,6 @@ filepath_ValueDomains = base_path / "data" / "ValueDomain"
 filepath_sql = base_path / "data" / "sql"
 filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
-
-
-def _check_columns(component_names: List[str], columns: List[str]):
-    pass
-
-
-def _add_data_to_dataset(data: pd.DataFrame, dataset: Dataset):
-    _check_columns(dataset.get_components_names(), data.columns)
-    dataset.data = data
 
 
 def _fill_datasets_empty_data(datasets: dict):
@@ -59,23 +50,20 @@ def _load_dataset_from_structure(structures: dict):
     return datasets
 
 
-def _load_single_datapoint(datapoint: Union[dict, Path]):
-    if isinstance(datapoint, dict):
-        dict_data = datapoint
-    elif datapoint.is_dir():
+def _load_single_datapoint(datapoint: Path):
+    if datapoint.is_dir():
         datapoints = {}
         for f in datapoint.iterdir():
             dp = _load_single_datapoint(f)
             datapoints = {**datapoints, **dp}
         dict_data = datapoints
     else:
-        dict_data = {}
-        with open(datapoint, 'r') as file:
-            dict_data[datapoint.name.removesuffix('.csv')] = read_csv(file) # TODO: Use data_load functions.
+        dataset_name = datapoint.name.removesuffix('.csv')
+        dict_data = {dataset_name: datapoint}
     return dict_data
 
 
-def load_datapoints(datapoints: Union[dict, Path, List[Path]]):
+def _load_datapoints_path(datapoints: Union[Path, List[Path]]):
     if isinstance(datapoints, list):
         dict_datapoints = {}
         for x in datapoints:
@@ -116,14 +104,24 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
     datasets = load_datasets(data_structures)
     if datapoints is None:
         return _fill_datasets_empty_data(datasets)
-    dict_datapoints = load_datapoints(datapoints)
-    for dataset_name, data in dict_datapoints.items():
+    if isinstance(datapoints, dict):
+        for dataset_name, data in datapoints.items():
+            if dataset_name not in datasets:
+                raise Exception(f"Not found dataset {dataset_name}")
+            datasets[dataset_name].data = _validate_pandas(datasets[dataset_name].components, data)
+        for dataset_name in datasets:
+            if datasets[dataset_name].data is None:
+                datasets[dataset_name].data = pd.DataFrame(columns=list(datasets[dataset_name].components.keys()))
+        return datasets
+    dict_datapoints = _load_datapoints_path(datapoints)
+    for dataset_name, file_path in dict_datapoints.items():
         if dataset_name not in datasets:
-            raise Exception('Not found dataset name')
-        dataset = datasets[dataset_name]
-        _add_data_to_dataset(data, dataset)
+            raise Exception(f"Not found dataset {dataset_name}")
+        datasets[dataset_name].data = load_datapoints(datasets[dataset_name].components, file_path)
+    for dataset_name in datasets:
+        if datasets[dataset_name].data is None:
+            datasets[dataset_name].data = pd.DataFrame(columns=list(datasets[dataset_name].components.keys()))
     return datasets
-
 
 
 def load_vtl(input: Union[str, Path]):
@@ -190,7 +188,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 if __name__ == '__main__':
     print(run(script=(filepath_VTL / '1-1-1-1.vtl'),
               data_structures=[filepath_json / '2-1-DS_1.json', filepath_json / '2-1-DS_2.json'],
-              datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
+              datapoints=[filepath_csv / 'DS_1.csv'],
               value_domains=None, external_routines=None))
     # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
     # print(load_datastructures(filepath_json))
