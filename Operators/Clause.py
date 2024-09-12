@@ -162,7 +162,7 @@ class Drop(Operator):
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
             if operand not in dataset.components:
-                raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand, dataset_name=dataset.name)
+                raise SemanticError("1-3-16", name=operand.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         if len(dataset.components) == len(operands):
