@@ -81,9 +81,6 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = False
         results = {}
         for child in node.children:
-            if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
-                if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                    raise SemanticError("1-3-17")
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
             if isinstance(result, Union[Dataset, Scalar]):
@@ -535,11 +532,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.value_domains is None:
                 raise SemanticError("2-3-10", comp_type="Value Domains")
             if node.name not in self.value_domains:
-                raise SemanticError("2-3-1", comp_type="Value Domain", comp_name=node.name)
+                raise SemanticError("1-3-23", name=node.name)
             vd = self.value_domains[node.name]
             return ScalarSet(data_type=vd.type, values=vd.setlist)
-
-        raise SemanticError("2-3-3", value=node.name)
+        else:
+            raise SemanticError("2-3-1", type='Collection', node_op=node.kind)
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
         if node.op not in REGULAR_AGGREGATION_MAPPING:
