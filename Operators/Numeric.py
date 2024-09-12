@@ -118,11 +118,14 @@ class Logarithm(Binary):
     def py_op(cls, x: Any, param: Any) -> Any:
         if pd.isnull(param):
             return None
+        if param <= 0:
+            raise SemanticError("2-1-15-3", op=cls.op, value=param)
+
         return math.log(x, param)
 
     @classmethod
     def dataset_validation(cls, left_operand, right_operand):
-        raise Exception("Logarithm operator base cannot be a Dataset")
+        raise SemanticError("2-1-15-7", op=cls.op)
 
 
 class Modulo(Binary):
@@ -142,8 +145,7 @@ class Power(Binary):
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset):
-        raise Exception("Power operator exponent cannot be a Dataset")
-
+        raise SemanticError("2-1-15-7", op=cls.op)
 
 class Parameterized(Unary):
 
@@ -153,11 +155,10 @@ class Parameterized(Unary):
 
         if param is not None:
             if isinstance(param, Dataset):
-                raise Exception(f"{cls.op} cannot have a Dataset as parameter")
+                raise SemanticError("2-1-15-8", op=cls.op, comp_type="Dataset")
             if isinstance(param, DataComponent):
                 if isinstance(operand, Scalar):
-                    raise Exception(f"{cls.op} cannot have an Scalar operand and "
-                                    f"a DataComponent as parameter")
+                    raise SemanticError("2-1-15-8", op=cls.op, comp_type="DataComponent and an Scalar operand")
                 cls.validate_type_compatibility(param.data_type)
             else:
                 cls.validate_scalar_type(param)
@@ -195,6 +196,8 @@ class Parameterized(Unary):
                     result.data[measure_name] = cls.apply_operation_series_scalar(
                         result.data[measure_name], param_value
                     )
+            except ZeroDivisionError:
+                raise SemanticError("2-1-15-6", op=cls.op)
             except ValueError:
                 raise SemanticError("2-1-15-1", op=cls.op, comp_name=measure_name, dataset_name=operand.name) from None
         result.data = result.data[result.get_components_names()]
@@ -204,31 +207,38 @@ class Parameterized(Unary):
     def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]):
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
-        if isinstance(param, DataComponent):
-            result.data = cls.apply_operation_two_series(operand.data, param.data)
-        else:
-            param_value = None if param is None else param.value
-            result.data = cls.apply_operation_series_scalar(operand.data, param_value)
+        try:
+            if isinstance(param, DataComponent):
+                result.data = cls.apply_operation_two_series(operand.data, param.data)
+            else:
+                param_value = None if param is None else param.value
+                result.data = cls.apply_operation_series_scalar(operand.data, param_value)
+        except ZeroDivisionError:
+            raise SemanticError("2-1-15-6", op=cls.op)
         return result
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Scalar):
-        result = cls.validate(operand, param)
-        param_value = None if param is None else param.value
-        if param_value < 0.0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=param_value)
-        result.value = cls.op_func(operand.value, param_value)
+        try:
+            result = cls.validate(operand, param)
+            param_value = None if param is None else param.value
+            result.value = cls.op_func(operand.value, param_value)
+        except ZeroDivisionError:
+            raise SemanticError("2-1-15-6", op=cls.op)
         return result
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES,
                  param: Optional[Union[DataComponent, Scalar]] = None) -> ALL_MODEL_DATA_TYPES:
-        if isinstance(operand, Dataset):
-            return cls.dataset_evaluation(operand, param)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand, param)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand, param)
+        try:
+            if isinstance(operand, Dataset):
+                return cls.dataset_evaluation(operand, param)
+            if isinstance(operand, DataComponent):
+                return cls.component_evaluation(operand, param)
+            if isinstance(operand, Scalar):
+                return cls.scalar_evaluation(operand, param)
+        except ZeroDivisionError:
+            raise SemanticError("2-1-15-6", op=cls.op)
 
 
 class Round(Parameterized):

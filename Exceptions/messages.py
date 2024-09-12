@@ -147,6 +147,8 @@ centralised_messages = {
     "2-1-15-4": "At op {op}: Invalid values in Component {name}.",
     "2-1-15-5": "At op {op}: Invalid values in {name_1} and {name_2}.",
     "2-1-15-6": "At op {op}: Scalar division by Zero.",
+    "2-1-15-7": "At op {op}: {op} operator cannot be a dataset.",
+    "2-1-15-8": "At op {op}: {op} operator cannot have a {comp_type} as parameter.",
     # Set Operators
     "1-1-17-1": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number of components",
     # String Operators
