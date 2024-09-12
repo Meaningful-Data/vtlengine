@@ -194,7 +194,6 @@ centralised_messages = {
     "1-3-15": "Missing datastructure definition for required input Dataset {input}.",
     "1-3-16": "Component {name} not found.",
     "1-3-17": "Operations without output assigned are not available.",
-    "1-3-18": "No scalar outputs are available.",
     "1-3-19": "No {node_type} {node_value} found.",
     "1-3-20": "RuleComp of Hierarchical Ruleset can only be an identifier, found {name}.",
     "1-3-21": "Value {value} not valid, kind {node_kind}.",
