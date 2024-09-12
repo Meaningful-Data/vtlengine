@@ -1104,7 +1104,11 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.kind == 'RuleID':
             if self.hrs is None or node.value not in self.hrs:
                 raise SemanticError("1-3-6", node_value=node.value)
-            return node.value
+
+        if node.kind == 'DPRuleID':
+            if self.dprs is None or node.value not in self.dprs:
+                raise SemanticError("1-3-7", node_value=node.value)
+
         if node.value in self.datasets:
             if self.is_from_assignment:
                 return self.datasets[node.value].name
