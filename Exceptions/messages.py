@@ -191,8 +191,6 @@ centralised_messages = {
     "1-3-9": "Not valid set declaration, found duplicates {duplicates}.",
     "1-3-10": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
     "1-3-12": "Default arguments cannot be followed by non-default arguments.",
-    "1-3-13": "Not a valid {node_type} node kind, found {node_kind}.",
-    "1-3-14": "Not valid data set {name} no Identifiers defined.",
     "1-3-15": "Missing datastructure definition for required input Dataset {input}.",
     "1-3-16": "Component {name} not found.",
     "1-3-17": "Operations without output assigned are not available.",

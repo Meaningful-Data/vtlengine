@@ -108,6 +108,13 @@ class InterpreterAnalyzer(ASTTemplate):
             if param.default is not None:
                 param_info[-1]["default"] = param.default
 
+            if len(param_info) > 1:
+                previous_default = param_info[0]
+                for i in [1, len(param_info) - 1]:
+                    if previous_default is True and param_info[i] is False:
+                        raise SemanticError("1-3-12")
+                    previous_default = param_info[i]
+
         self.udos[node.op] = {
             'params': param_info,
             'expression': node.expression,
