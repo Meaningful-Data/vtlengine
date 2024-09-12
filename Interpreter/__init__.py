@@ -1,5 +1,4 @@
 from copy import copy, deepcopy
-from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
@@ -337,7 +336,7 @@ class InterpreterAnalyzer(ASTTemplate):
             partitioning = node.partition_by
             ordering = node.order_by if node.order_by is not None else []
         if not isinstance(operand, Dataset):
-            raise Exception("Analytic operator must have a dataset as operand")
+            raise SemanticError("2-3-4", op=node.op, comp="dataset")
         if node.partition_by is None:
             order_components = [x.component for x in node.order_by]
             partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
@@ -404,10 +403,10 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == EXISTS_IN:
             dataset_1 = self.visit(node.children[0])
             if not isinstance(dataset_1, Dataset):
-                raise Exception("First operand must be a dataset")
+                raise SemanticError("2-3-11", pos="First")
             dataset_2 = self.visit(node.children[1])
             if not isinstance(dataset_2, Dataset):
-                raise Exception("Second operand must be a dataset")
+                raise SemanticError("2-3-11", pos="Second")
 
             retain_element = None
             if len(node.children) == 3:
@@ -511,7 +510,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return ScalarSet(data_type=BASIC_TYPES[type(elements[0])], values=elements)
         elif node.kind == 'ValueDomain':
             if self.value_domains is None:
-                raise Exception(f"No Value Domains have been loaded, expected {node.name}.")
+                raise SemanticError("2-3-10", comp_type="Value Domains")
             if node.name not in self.value_domains:
                 raise SemanticError("2-3-1", comp_type="Value Domain", comp_name=node.name)
             vd = self.value_domains[node.name]
@@ -735,7 +734,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         elif node.op == CHECK_DATAPOINT:
             if self.dprs is None:
-                raise Exception("No Datapoint Rulesets have been defined.")
+                raise SemanticError("2-3-10", comp_type="Datapoint Rulesets")
             # Checking if ruleset exists
             dpr_name = node.children[1]
             if dpr_name in self.dprs:
@@ -784,12 +783,12 @@ class InterpreterAnalyzer(ASTTemplate):
             mode, input_, output = (self.visit(param) for param in node.params)
 
             if self.hrs is None:
-                raise Exception("No Hierarchical Rulesets have been defined.")
+                raise SemanticError("2-3-10", comp_type="Hierarchical Rulesets")
             if hr_name not in self.hrs:
                 raise SemanticError("2-3-1", comp_type="Hierarchical Ruleset", comp_name=hr_name)
 
             if not isinstance(dataset, Dataset):
-                raise Exception("The operand must be a dataset")
+                raise SemanticError("2-3-11", pos="The")
 
             # # The measure(s) has to be Number or Integer
             # not_numeric_measures = [m for m in dataset.get_measures() if m.data_type not in ['Number', 'Integer']]
@@ -1017,7 +1016,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise Exception(f"Language {node.language} not supported on Eval")
 
         if self.external_routines is None:
-            raise Exception(f"No External Routines have been loaded.")
+            raise SemanticError("2-3-10", comp_type="External Routines")
 
         if node.name not in self.external_routines:
             raise SemanticError("2-3-1", comp_type="External Routine", comp_name=node.name)
@@ -1189,7 +1188,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:
         if self.udos is None:
-            raise Exception("No User Defined Operators have been loaded.")
+            raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("2-3-1", comp_type="User Defined Operator", comp_name=node.op)
 
@@ -1203,7 +1202,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     signature_values[param['name']] = Scalar(name=str(value), value=value,
                                                              data_type=BASIC_TYPES[type(value)])
                 else:
-                    raise Exception(f"Missing parameter {param['name']} for UDO {node.op}")
+                    raise SemanticError("2-3-4", op=node.op, comp=param['name'])
             else:
                 if isinstance(param['type'], str):  # Scalar, Dataset, Component
                     if param['type'] == 'Scalar':
@@ -1220,13 +1219,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     # We validate the type is correct and cast the value
                     param_element = self.visit(node.params[i])
                     if isinstance(param_element, (Dataset, DataComponent)):
-                        raise Exception(
-                            f"Expected {param['type'].__name__}, got {type(param_element).__name__} "
-                            f"on UDO {node.op}, parameter {param['name']}")
+                        raise SemanticError("2-3-5", param_type=param['type'].__name__, type_name=type(param_element).__name__, op=node.op, param_name=param['name'])
                     scalar_type = param['type']
                     if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
-                        raise Exception(f"Expected {scalar_type}, got {param_element.data_type} "
-                                        f"on UDO {node.op}, parameter {param['name']}")
+                        raise SemanticError("2-3-5", param_type=scalar_type, type_name=param_element.data_type, op=node.op, param_name=param['name'])
                     signature_values[param['name']] = Scalar(name=param_element.name,
                                                              value=scalar_type.cast(
                                                                  param_element.value),
