@@ -9,6 +9,7 @@ import Operators as Operator
 from AST.Grammar.tokens import ABS, CEIL, DIV, EXP, FLOOR, LN, LOG, MINUS, MOD, MULT, PLUS, POWER, \
     ROUND, SQRT, TRUNC
 from DataTypes import Integer, Number
+from Exceptions import SemanticError
 from Model import DataComponent, Dataset, Scalar
 from Operators import ALL_MODEL_DATA_TYPES
 
@@ -184,15 +185,18 @@ class Parameterized(Unary):
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
         for measure_name in result.get_measures_names():
-            if isinstance(param, DataComponent):
-                result.data[measure_name] = cls.apply_operation_two_series(
-                    result.data[measure_name], param.data
-                )
-            else:
-                param_value = None if param is None else param.value
-                result.data[measure_name] = cls.apply_operation_series_scalar(
-                    result.data[measure_name], param_value
-                )
+            try:
+                if isinstance(param, DataComponent):
+                    result.data[measure_name] = cls.apply_operation_two_series(
+                        result.data[measure_name], param.data
+                    )
+                else:
+                    param_value = None if param is None else param.value
+                    result.data[measure_name] = cls.apply_operation_series_scalar(
+                        result.data[measure_name], param_value
+                    )
+            except ValueError:
+                raise SemanticError("2-1-15-1", op=cls.op, comp_name=measure_name, dataset_name=operand.name) from None
         result.data = result.data[result.get_components_names()]
         return result
 
@@ -211,6 +215,8 @@ class Parameterized(Unary):
     def scalar_evaluation(cls, operand: Scalar, param: Scalar):
         result = cls.validate(operand, param)
         param_value = None if param is None else param.value
+        if param_value < 0.0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=param_value)
         result.value = cls.op_func(operand.value, param_value)
         return result
 
@@ -261,3 +267,4 @@ class Trunc(Parameterized):
             return truncated_value
 
         return int(truncated_value)
+
