@@ -517,7 +517,7 @@ class InterpreterAnalyzer(ASTTemplate):
             vd = self.value_domains[node.name]
             return ScalarSet(data_type=vd.type, values=vd.setlist)
 
-        raise NotImplementedError
+        raise SemanticError("2-3-3", value=node.name)
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
         if node.op not in REGULAR_AGGREGATION_MAPPING:
