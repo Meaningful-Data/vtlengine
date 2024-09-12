@@ -433,7 +433,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == CURRENT_DATE:
             return Current_Date.analyze()
 
-        raise NotImplementedError
+        else:
+            raise SemanticError("1-3-5", op_type='MulOp', node_op=node.op)
+
 
     def visit_VarID(self, node: AST.VarID) -> Any:
         if self.is_from_assignment:
@@ -870,7 +872,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_rules_computed = None
             return result
 
-        raise NotImplementedError
+        raise SemanticError("1-3-5", op_type='ParamOp', node_op=node.op)
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
@@ -1098,6 +1100,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return node.value
         """
+
+        if node.kind == 'RuleID':
+            if self.hrs is None or node.value not in self.hrs:
+                raise SemanticError("1-3-6", node_value=node.value)
+            return node.value
         if node.value in self.datasets:
             if self.is_from_assignment:
                 return self.datasets[node.value].name
