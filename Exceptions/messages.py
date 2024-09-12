@@ -190,7 +190,6 @@ centralised_messages = {
     "1-3-8": "Defined Operator {node_value} not previously defined.",  # 0-1-2-5
     "1-3-9": "Not valid set declaration, found duplicates {duplicates}.",
     "1-3-10": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
-    "1-3-11": "No Parameters {node_params} available for operation: {node_op}.",
     "1-3-12": "Default arguments cannot be followed by non-default arguments.",
     "1-3-13": "Not a valid {node_type} node kind, found {node_kind}.",
     "1-3-14": "Not valid data set {name} no Identifiers defined.",
