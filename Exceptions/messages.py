@@ -175,7 +175,6 @@ centralised_messages = {
     "2-3-4": "{op} operator must have a {comp}",
     "2-3-5": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}",
     "2-3-6": "Dataset {dataset_name} not found, please check input datastructures",
-    "2-3-7": "Internal Error. Ambiguity in component extraction. {values}",
     "2-3-9": "{comp_type} {comp_name} not found in {param}.",
     "2-3-10": "No {comp_type} have been defined.",
     "2-3-11": "{pos} operand must be a dataset.",
