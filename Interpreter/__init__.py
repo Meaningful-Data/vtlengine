@@ -500,8 +500,17 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Collection(self, node: AST.Collection) -> Any:
         if node.kind == 'Set':
             elements = []
+            duplicates = []
             for child in node.children:
+                if isinstance(child, AST.ParamOp):
+                    ref_element = child.children[1]
+                else:
+                    ref_element = child
+                if ref_element in elements:
+                    duplicates.append(ref_element)
                 elements.append(self.visit(child).value)
+            if len(duplicates) > 0:
+                raise SemanticError("1-3-9", duplicates=duplicates)
             for element in elements:
                 if type(element) != type(elements[0]):
                     raise Exception("All elements in a set must be of the same type")
