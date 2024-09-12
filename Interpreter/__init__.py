@@ -8,9 +8,12 @@ import AST
 import Operators
 from AST.ASTTemplate import ASTTemplate
 from AST.DAG import HRDAGAnalyzer
-from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, EXISTS_IN, \
-    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
-    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE
+from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, \
+    CHECK_DATAPOINT, DROP, EXISTS_IN, \
+    EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, \
+    TRUNC, WHEN, \
+    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE, \
+    IDENTIFIER
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
 from Exceptions import SemanticError
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
@@ -78,6 +81,9 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = False
         results = {}
         for child in node.children:
+            if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
+                if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+                    raise SemanticError("1-3-17")
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
             if isinstance(result, Union[Dataset, Scalar]):
