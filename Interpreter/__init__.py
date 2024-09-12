@@ -493,7 +493,7 @@ class InterpreterAnalyzer(ASTTemplate):
                                  role=self.ruleset_dataset.components[comp_name].role,
                                  nullable=self.ruleset_dataset.components[comp_name].nullable)
         if node.value not in self.datasets:
-            raise Exception(f"Dataset {node.value} not found, please check input datastructures")
+            raise SemanticError("2-3-6", dataset_name=node.value)
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:

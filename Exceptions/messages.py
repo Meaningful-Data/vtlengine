@@ -174,9 +174,8 @@ centralised_messages = {
     "2-3-3": "Internal error: Not able to categorize {value}.",
     "2-3-4": "At op {op} inside a calc: No {option} found.",
     "2-3-5": "Element Not found, expect found {name_1} but retrieved {name_2}.",
-    "2-3-6": "Components in structure and data points are not the same on dataset {dataset_name}. {names} found",
+    "2-3-6": "Dataset {dataset_name} not found, please check input datastructures",
     "2-3-7": "Internal Error. Ambiguity in component extraction. {values}",
-    "2-3-8": "At op {op}:{msg}.",
     "2-3-9": "{comp_type} {comp_name} not found in {param}.",
     # ---------Semantic Analyzer Common----
     "1-3-1": "Please don't use twice {alias} like var_to.",
