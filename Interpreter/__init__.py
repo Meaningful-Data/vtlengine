@@ -42,6 +42,7 @@ class InterpreterAnalyzer(ASTTemplate):
     only_semantic: bool = False
     # Flags to change behavior
     is_from_assignment: bool = False
+    is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
     is_from_grouping: bool = False
     is_from_having: bool = False
@@ -179,10 +180,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
+        if self.is_from_join and isinstance(node.left, AST.Identifier) and node.left.kind == 'ComponentID':
+            self.is_from_component_assignment = True
         self.is_from_assignment = True
         left_operand: str = self.visit(node.left)
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
+        self.is_from_component_assignment = False
         return Assignment.analyze(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
@@ -190,16 +194,24 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            left_operand = self.regular_aggregation_dataset
-            right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
+            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+            else:
+                comp_name = node.left.value + '#' + node.right.value
+            ast_var_id = AST.VarID(value=comp_name)
+            return self.visit(ast_var_id)
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(
-                self.if_stack) > 0:
+        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
+        if node.op == MEMBERSHIP:
+            if right_operand not in left_operand.components and '#' in right_operand:
+                right_operand = right_operand.split('#')[1]
+            if self.is_from_component_assignment:
+                return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand, self.is_from_component_assignment)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
@@ -457,10 +469,12 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
                 return self.datasets[node.value]
 
-            if self.regular_aggregation_dataset.data is None:
-                data = None
-            else:
+            if self.regular_aggregation_dataset.data is not None:
+                if self.is_from_join and node.value not in self.regular_aggregation_dataset.get_components_names():
+                    node.value = node.value.split('#')[1]
                 data = self.regular_aggregation_dataset.data[node.value]
+            else:
+                data = None
 
             return DataComponent(name=node.value,
                                  data=data,
@@ -571,8 +585,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands[0], dataset)
         if self.is_from_join:
             if node.op in [DROP, KEEP]:
-                operands = [operand.get_measures_names() if isinstance(operand,
-                                                                       Dataset) else operand.name if
+                operands = [operand.get_measures_names() if isinstance(operand, Dataset) else operand.name if
                 isinstance(operand, DataComponent) and operand.role is not Role.IDENTIFIER else
                 operand for operand in operands]
                 operands = list(set([item for sublist in operands for item in
@@ -636,6 +649,9 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 if node.old_name in self.udo_params[-1]:
                     node.old_name = self.udo_params[-1][node.old_name]
+
+        if self.is_from_join and node.old_name not in self.regular_aggregation_dataset.components:
+            node.old_name = node.old_name.split('#')[1]
 
         return node
 
@@ -1082,12 +1098,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
             return node.value
         """
+
+        if self.udo_params is not None and node.value in self.udo_params[-1]:
+            return self.udo_params[-1][node.value]
         if node.value in self.datasets:
             if self.is_from_assignment:
                 return self.datasets[node.value].name
             return self.datasets[node.value]
-        if self.udo_params is not None and node.value in self.udo_params[-1]:
-            return self.udo_params[-1][node.value]
         return node.value
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> AST.AST:
