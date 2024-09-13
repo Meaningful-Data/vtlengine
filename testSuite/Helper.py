@@ -145,7 +145,7 @@ class TestHelper(TestCase):
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None, vd_names: List[str] = None):
         assert True
 
     @classmethod
