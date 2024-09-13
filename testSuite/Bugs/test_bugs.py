@@ -1490,7 +1490,7 @@ class DataValidationBugs(BugHelper):
         """
         code = 'VTLEN_503'
         number_inputs = 1
-        message = "1-3-7"
+        message = "1-3-7" #1-3-19
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
@@ -2598,7 +2598,7 @@ class OtherBugs(BugHelper):
         code = 'VTLEN_495'
         number_inputs = 1
 
-        message = "1-3-6"
+        message = "1-3-6" #1-3-19
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,

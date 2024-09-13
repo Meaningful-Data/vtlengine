@@ -185,8 +185,6 @@ centralised_messages = {
     "1-3-3": "Overwriting a dataset/variable is not allowed, trying it with {varId_value}.",
     "1-3-4": "Cannot perform a rename with two equal values: {left_value} -> {right_value}.",
     "1-3-5": "{node_op} not found or not valid for {op_type}.",
-    "1-3-6": "Hierarchical ruleset {node_value} not previously defined.",  #1-3-19
-    "1-3-7": "Datapoint ruleset {node_value} not previously defined.",  #1-3-19
     "1-3-8": "Defined Operator {node_value} not previously defined.",  # 0-1-2-5
     "1-3-9": "Not valid set declaration, found duplicates {duplicates}.",
     "1-3-10": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
