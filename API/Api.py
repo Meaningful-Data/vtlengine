@@ -1,4 +1,3 @@
-import enum
 import json
 from pathlib import Path
 from typing import Union, Optional, Dict, List
@@ -6,12 +5,13 @@ from typing import Union, Optional, Dict, List
 import pandas as pd
 
 from API import create_ast, load_external_routines
+from AST import AST, PersistentAssignment
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
-from files.parser import _validate_pandas, load_datapoints
-from files.output import _format_vtl_representation, format_time_period_external_representation, \
+from files.output import format_time_period_external_representation, \
     TimePeriodRepresentation
+from files.parser import _validate_pandas, load_datapoints
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -154,6 +154,15 @@ def load_value_domains(input: Union[dict, Path]):
     return value_domains
 
 
+def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: AST):
+    persistent = []
+    for child in ast.children:
+        if isinstance(child, PersistentAssignment):
+            persistent.append(child.left.value)
+    return {dataset.name: dataset for dataset in datasets.values() if
+            isinstance(dataset, Dataset) and dataset.name in persistent}
+
+
 def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
                       value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
     vtl = load_vtl(script)
@@ -190,6 +199,8 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd, external_routines=ext_routines)
     result = interpreter.visit(ast)
     result = format_time_period_external_representation(result, time_period_output_format)
+    if return_only_persistent:
+        result = _return_only_persistent_datasets(result, ast)
     return result
 
 
@@ -197,6 +208,7 @@ if __name__ == '__main__':
     print(run(script=(filepath_VTL / '1-1-1-1.vtl'),
               data_structures=[filepath_json / '2-1-DS_1.json', filepath_json / '2-1-DS_2.json'],
               datapoints=[filepath_csv / 'DS_1.csv'],
-              value_domains=None, external_routines=None))
+              value_domains=None, external_routines=None,
+              return_only_persistent=False))
     # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
     # print(load_datastructures(filepath_json))
