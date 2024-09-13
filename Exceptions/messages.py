@@ -200,7 +200,6 @@ centralised_messages = {
     "1-3-22": "Unable to categorize {node_value}.",
     "1-3-23": "Missing value domain '{name}' definition, please provide an structure.",
     "1-3-24": "Internal error on Analytic operators inside a calc, No partition or order symbol found.",
-    "1-3-25": "No symbols found.",
     "1-3-26": "collection or value domain not found.",  # TODO:
     "1-3-27": "Dataset without identifiers are not allowed in {op} operator.",
     "1-3-28": "At op {op}: invalid number of parameters: received {received}, expected at least: {expected}",
