@@ -1,3 +1,4 @@
+import enum
 import json
 from pathlib import Path
 from typing import Union, Optional, Dict, List
@@ -9,6 +10,8 @@ from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
 from files.parser import _validate_pandas, load_datapoints
+from files.output import _format_vtl_representation, format_time_period_external_representation, \
+    TimePeriodRepresentation
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -16,6 +19,8 @@ filepath_ValueDomains = base_path / "data" / "ValueDomain"
 filepath_sql = base_path / "data" / "sql"
 filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
+filepath_out_json = base_path / "data" / "DataStructure" / "output"
+filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
 def _fill_datasets_empty_data(datasets: dict):
@@ -169,7 +174,9 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
 
 def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
         datapoints: Union[dict, Path, List[Path]],
-        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
+        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
+        time_period_output_format: str = "vtl", memory_efficient=False,
+        return_only_persistent=False):
     vtl = load_vtl(script)
     ast = create_ast(vtl)
     datasets = load_datasets_with_data(data_structures, datapoints)
@@ -179,9 +186,10 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
-
+    time_period_output_format = TimePeriodRepresentation.check_value(time_period_output_format)
     interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd, external_routines=ext_routines)
     result = interpreter.visit(ast)
+    result = format_time_period_external_representation(result, time_period_output_format)
     return result
 
 

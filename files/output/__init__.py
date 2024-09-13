@@ -14,7 +14,7 @@ class TimePeriodRepresentation(Enum):
 
     @classmethod
     def check_value(cls, value: str):
-        if value not in cls.__dict__:
+        if value not in cls._value2member_map_:
             raise Exception("Invalid Time Period Representation")
         return cls(value)
 
