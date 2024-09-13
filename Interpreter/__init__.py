@@ -194,7 +194,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            comp_name = node.left.value + '#' + node.right.value
+            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+            else:
+                comp_name = node.left.value + '#' + node.right.value
             ast_var_id = AST.VarID(value=comp_name)
             return self.visit(ast_var_id)
         else:

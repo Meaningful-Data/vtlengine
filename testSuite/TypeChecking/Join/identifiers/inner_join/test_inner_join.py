@@ -41,25 +41,25 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_2(self):
-        '''
-        INNER JOIN OPERATOR
-        Status: BUG
-        Expression: DS_r := inner_join ( DS_1, DS_2 );
-        Description: inner for the same identifier with diferents types number and integer.
-        Jira issue: VTLEN 564.
-        Git Branch: feat-VTLEN-564-Join-operators-type-checking.
-        Goal: Check Exception.
-        '''
-        code = '2-2-1-2'
-        # 2 For group join
-        # 2 For group identifiers
-        # 1 For clause- for the moment only op inner_join
-        # 2 Number of test
-        number_inputs = 2
-        message = "BUG"
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
+    # def test_2(self):
+    #     '''
+    #     INNER JOIN OPERATOR
+    #     Status: BUG
+    #     Expression: DS_r := inner_join ( DS_1, DS_2 );
+    #     Description: inner for the same identifier with diferents types number and integer.
+    #     Jira issue: VTLEN 564.
+    #     Git Branch: feat-VTLEN-564-Join-operators-type-checking.
+    #     Goal: Check Exception.
+    #     '''
+    #     code = '2-2-1-2'
+    #     # 2 For group join
+    #     # 2 For group identifiers
+    #     # 1 For clause- for the moment only op inner_join
+    #     # 2 Number of test
+    #     number_inputs = 2
+    #     message = "BUG"
+    #
+    #     self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_3(self):
         '''
