@@ -49,7 +49,7 @@
           "name": "At_3",
           "role": "Attribute",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

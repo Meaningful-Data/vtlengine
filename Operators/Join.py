@@ -47,26 +47,28 @@ class Join(Operator):
 
         for op in operands:
             for comp in op.components.values():
-                if comp.name not in nullability:
-                    nullability[comp.name] = comp.nullable
-
-                if comp.role == Role.IDENTIFIER:
-                    nullability[comp.name] = False
-                elif comp.name in totally_common:
-                    nullability[comp.name] |= comp.nullable
-                elif cls.how == 'left' and comp.name not in cls.reference_dataset.get_components_names():
-                    nullability[comp.name] = True
-                else:
-                    nullability[comp.name] = comp.nullable
-
                 if comp.name in using:
                     is_identifier = all(operand.components[comp.name].role == Role.IDENTIFIER
                                         for operand in operands if comp.name in operand.get_components_names())
                     comp.role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+                    # role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+                    # comp = Component(name=comp.name, data_type=comp.data_type, role=role, nullable=comp.nullable)
+
+                if comp.name not in nullability:
+                    nullability[comp.name] = copy(comp.nullable)
+
+                if comp.role == Role.IDENTIFIER:
+                    nullability[comp.name] = False
+                elif comp.name in totally_common:
+                    nullability[comp.name] |= copy(comp.nullable)
+                elif cls.how == 'outer' or (cls.how == 'left' and comp.name not in cls.reference_dataset.get_components_names()):
+                    nullability[comp.name] = True
+                else:
+                    nullability[comp.name] = copy(comp.nullable)
 
         for operand in operands:
             operand_name = operand.name
-            components = operand.components
+            components = {comp.name: copy(comp) for comp in operand.components.values()}
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
@@ -76,12 +78,12 @@ class Join(Operator):
                         new_name = f'{operand_name}#{component_name}'
                         while new_name in common:
                             new_name += '_dup'
-                        merged_components[new_name] = copy(component)
+                        merged_components[new_name] = component
                         merged_components[new_name].name = new_name
                     else:
-                        merged_components[component_name] = copy(component)
+                        merged_components[component_name] = component
                 else:
-                    merged_components[component_name] = copy(component)
+                    merged_components[component_name] = component
 
         return merged_components
 
@@ -120,7 +122,6 @@ class Join(Operator):
 
         join_keys = using if using else result.get_identifiers_names()
 
-        # TODO: nullability = or between all comp nullability
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
