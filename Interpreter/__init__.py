@@ -665,6 +665,8 @@ class InterpreterAnalyzer(ASTTemplate):
             clause_elements.append(self.visit(clause))
             if hasattr(clause, 'op') and clause.op == AS:
                 # TODO: We need to delete somewhere the join datasets with alias that are added here
+                a = clause_elements[-1]
+                b = clause_elements[-1].name
                 self.datasets[clause_elements[-1].name] = clause_elements[-1]
 
         # No need to check using, regular aggregation is executed afterwards
