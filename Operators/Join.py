@@ -111,7 +111,7 @@ class Join(Operator):
             result.data = operands[0].data
             return result
 
-        common_measures = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
+        common_measures = cls.get_components_intersection(*[op.get_measures_names() + op.get_attributes_names() for op in operands])
         for op in operands:
             for column in op.data.columns.tolist():
                 if column in common_measures and column not in using:
