@@ -262,7 +262,10 @@ class InterpreterAnalyzer(ASTTemplate):
         for comp in operand.components.values():
             if isinstance(comp.data_type, ScalarType):
                 raise SemanticError("2-1-12-1", op=node.op)
-        
+
+        if node.having_clause is not None and node.grouping is None:
+            raise SemanticError("1-3-33")
+
         groupings = []
         having = None
         grouping_op = node.grouping_op
@@ -1127,11 +1130,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if node.kind == 'RuleID':
             if self.hrs is None or node.value not in self.hrs:
-                raise SemanticError("1-3-6", node_value=node.value)
+                raise SemanticError("1-3-19", node_type="Hierarchical ruleset", node_value=node.value)
 
         if node.kind == 'DPRuleID':
             if self.dprs is None or node.value not in self.dprs:
-                raise SemanticError("1-3-7", node_value=node.value)
+                raise SemanticError("1-3-19", node_type="Datapoint ruleset", node_value=node.value)
 
         if node.value in self.datasets:
             if self.is_from_assignment:
