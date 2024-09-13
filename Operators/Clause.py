@@ -241,6 +241,9 @@ class Unpivot(Operator):
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
+
+        if len(dataset.get_identifiers()) <1:
+            raise SemanticError("1-3-27", op=cls.op)
         if identifier in dataset.components:
             raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
 
@@ -279,6 +282,8 @@ class Sub(Operator):
 
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset):
+        if len(dataset.get_identifiers()) <1:
+            raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
                 raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.name, dataset_name=dataset.name)

@@ -112,8 +112,15 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def dataset_validation(cls, *args) -> None:
-        raise Exception("Method should be implemented by inheritors")
+    def dataset_validation(cls, left_operand, right_operand):
+        """
+
+        """
+        left_identifiers = left_operand.getIdentifiers()
+        right_identifiers = right_operand.getIdentifiers()
+
+        if left_identifiers is None or right_identifiers is None:
+            raise SemanticError("1-3-27", op=cls.op)
 
     @classmethod
     def scalar_validation(cls, *args) -> None:
