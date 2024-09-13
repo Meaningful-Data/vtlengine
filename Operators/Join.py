@@ -51,8 +51,6 @@ class Join(Operator):
                     is_identifier = all(operand.components[comp.name].role == Role.IDENTIFIER
                                         for operand in operands if comp.name in operand.get_components_names())
                     comp.role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
-                    # role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
-                    # comp = Component(name=comp.name, data_type=comp.data_type, role=role, nullable=comp.nullable)
 
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)

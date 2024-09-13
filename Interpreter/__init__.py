@@ -647,6 +647,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 if node.old_name in self.udo_params[-1]:
                     node.old_name = self.udo_params[-1][node.old_name]
 
+        if self.is_from_join and node.old_name not in self.regular_aggregation_dataset.components:
+            node.old_name = node.old_name.split('#')[1]
+
         return node
 
     def visit_Constant(self, node: AST.Constant) -> Any:
