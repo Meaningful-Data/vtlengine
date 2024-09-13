@@ -13,7 +13,8 @@ from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, \
     TRUNC, WHEN, \
     FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE, \
-    IDENTIFIER
+    IDENTIFIER, GT, GTE, LT, LTE, NEQ, PLUS, MINUS, MULT, NOT_IN, IN, DIV, AND, \
+    OR
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
 from Exceptions import SemanticError
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
@@ -201,6 +202,9 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
+        if self.is_from_having and node.op not in [GT, GTE, LT, LTE, EQ, NEQ, PLUS,
+                                                 MINUS, MULT, DIV, AND, OR, IN, NOT_IN]:
+            raise SemanticError("1-3-32", op=node.op)
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
             left_operand = self.regular_aggregation_dataset
             right_operand = self.visit(node.left).name + '#' + self.visit(node.right)
@@ -258,7 +262,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for comp in operand.components.values():
             if isinstance(comp.data_type, ScalarType):
                 raise SemanticError("2-1-12-1", op=node.op)
-
+        
         groupings = []
         having = None
         grouping_op = node.grouping_op
