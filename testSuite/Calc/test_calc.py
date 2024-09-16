@@ -425,7 +425,7 @@ class CalcOperatorTest(TestCalcHelper):
         """
         code = 'GL_300_14'
         number_inputs = 2
-        message = "1-3-16"
+        message = "1-1-13-9"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 

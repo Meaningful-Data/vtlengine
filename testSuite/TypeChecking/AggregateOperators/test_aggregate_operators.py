@@ -716,12 +716,10 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         '''
         code = '10-1-42'
         number_inputs = 1
-        message = '1-1-1-7'
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-        # references_names = ["DS_r"]
-        #
-        #
-        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        references_names = ["DS_r"]
+
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_43(self):
         '''

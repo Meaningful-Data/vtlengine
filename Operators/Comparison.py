@@ -225,7 +225,7 @@ class Between(Operator.Operator):
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif is_mono_measure is False and operand_type.promotion_changed_type(result_data_type):
-                raise SemanticError("1-1-14-8", op=cls.op)
+                raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
 

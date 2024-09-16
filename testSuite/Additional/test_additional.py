@@ -123,7 +123,7 @@ class StringOperatorsTest(AdditionalHelper):
         code = "3-7"
         number_inputs = 2
 
-        message = "1-1-18-6" #1-1-14-1 probably
+        message = "1-1-14-1"
         self.NewSemanticExceptionTest(
             text=text,
             code=code,
@@ -2985,7 +2985,7 @@ class TimeOperatorsTest(AdditionalHelper):
         '''
         code = '7-26'
         number_inputs = 1
-        message = "2-1-19-1"
+        message = "1-1-19-9"
         self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
 

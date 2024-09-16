@@ -14,7 +14,7 @@ else:
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
                                 VAR_SAMP)
-from DataTypes import Integer, Number, check_unary_implicit_promotion
+from DataTypes import Integer, Number, unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role
 
 
@@ -111,7 +111,7 @@ class Aggregation(Operator.Unary):
         # Change Measure data type
         for comp_name, comp in result_components.items():
             if comp.role == Role.MEASURE:
-                check_unary_implicit_promotion(comp.data_type, cls.type_to_check)
+                unary_implicit_promotion(comp.data_type, cls.type_to_check)
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:

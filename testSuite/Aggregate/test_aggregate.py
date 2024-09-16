@@ -873,7 +873,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = '1-1-1-44'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-2-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 

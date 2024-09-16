@@ -40,20 +40,6 @@ class Unary(Operator.Unary):
         if measures is None or len(measures) != 1:
             raise SemanticError("1-1-18-1", op=cls.op, name=dataset.name)
 
-    @classmethod
-    def dataset_evaluation(cls, dataset_element: Dataset) -> Dataset:
-        """
-        Evaluates the dataset by first validating and then applying the operation.
-        """
-        cls.validate_dataset(dataset_element)
-
-        measures_names = dataset_element.get_measures_names()
-        for measure_name in measures_names:
-            component = dataset_element.get_component(measure_name)
-
-            component.data = cls.apply_operation_component(component.data)
-
-        return dataset_element
 
 class Length(Unary):
     op = LEN
@@ -379,7 +365,8 @@ class Instr(Parameterized):
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3:
             if not pd.isnull(param) and param < 1:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Ocurrence", correct_type=">= 1")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence",
+                                    correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any,

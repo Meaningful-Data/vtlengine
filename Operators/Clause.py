@@ -45,18 +45,11 @@ class Calc(Operator):
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
-        identifier_names = result_dataset.get_identifiers_names()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
-            if operand.name in identifier_names:
-                raise SemanticError("1-1-12-1", op=cls.op, name=operand.name)
-        # Validate duplicates on identifiers
-        if len(result_dataset.get_identifiers_names()) != len(dataset.get_identifiers_names()):
-            if result_dataset.data[result_dataset.get_identifiers_names()].duplicated().any():
-                raise SemanticError("1-1-6-3", op=cls.op)
         return result_dataset
 
 

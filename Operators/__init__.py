@@ -5,7 +5,7 @@ from typing import Any, Union
 from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
-    unary_implicit_promotion
+    unary_implicit_promotion, SCALAR_TYPES_CLASS_REVERSE
 from DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
 from Exceptions import SemanticError
 
@@ -275,13 +275,13 @@ class Binary(Operator):
 
         if left_measures_names != right_measures_names:
             raise SemanticError("1-1-14-1", op=cls.op, left=left_measures_names, right=right_measures_names)
-
+        elif len(left_measures) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=left_operand.name)
         for left_measure, right_measure in zip(left_measures, right_measures):
             if not cls.validate_type_compatibility(left_measure.data_type, right_measure.data_type):
-                names = [left_measure.name, right_measure.name]
-                types = [left_measure.data_type, right_measure.data_type]
-                datasets = [left_operand.name, right_operand.name]
-                raise SemanticError("1-1-14-9", op=cls.op, names=names, types=types, datasets=datasets)
+                raise SemanticError("1-1-1-2", op=cls.op, comp_name=right_measure.name,
+                                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_measure.data_type],
+                                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_measure.data_type])
 
         # We do not need anymore these variables
         del left_measures
@@ -323,9 +323,8 @@ class Binary(Operator):
     @classmethod
     def scalar_validation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            names = [left_operand.name, right_operand.name]
-            types = [left_operand.data_type, right_operand.data_type]
-            raise SemanticError("1-1-14-5", op=cls.op, names=names, types=types)
+
+            raise SemanticError("1-1-1-2", )
 
         return Scalar(name="result",
                       data_type=cls.type_validation(left_operand.data_type,
@@ -719,13 +718,16 @@ class Unary(Operator):
         if cls.type_to_check is not None:
             for measure in dataset.get_measures():
                 if not cls.validate_type_compatibility(measure.data_type):
-                    raise SemanticError("1-1-14-7", op=cls.op, entity=measure.role.value, name=measure.name, target_type=cls.type_to_check)
+                    raise SemanticError("1-1-14-7",
+                                        op=cls.op, entity=measure.role.value,
+                                        name=measure.name,
+                                        target_type=SCALAR_TYPES_CLASS_REVERSE[cls.type_to_check])
 
     @classmethod
     def validate_scalar_type(cls, scalar: Scalar) -> None:
         if (cls.type_to_check is not None and not cls.validate_type_compatibility(
                 scalar.data_type)):
-            raise SemanticError("1-1-14-7", op=cls.op, entity=scalar.data_type, name=scalar.name, target_type=cls.type_to_check)
+            raise SemanticError("1-1-1-5", op=cls.op, name=scalar.name, type=SCALAR_TYPES_CLASS_REVERSE[scalar.data_type])
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:

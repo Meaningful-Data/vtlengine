@@ -134,10 +134,16 @@ class InterpreterAnalyzer(ASTTemplate):
         # If provided, all must be provided
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
-            raise ValueError("All rules must have a name, or none of them")
+            raise SemanticError("1-4-1-7", type="Datapoint Ruleset", name=node.name)
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
                 rule.name = i + 1
+
+        if len(rule_names) != len(set(rule_names)):
+            not_unique = [name for name in rule_names if rule_names.count(name) > 1]
+            raise SemanticError("1-4-1-5", type="Datapoint Ruleset",
+                                names=', '.join(not_unique),
+                                ruleset_name=node.name)
 
         # Signature has the actual parameters names or aliases if provided
         signature_actual_names = {}
@@ -200,15 +206,15 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         self.is_from_component_assignment = False
+        if self.is_from_regular_aggregation and isinstance(right_operand, DataComponent):
+            if right_operand.role == Role.IDENTIFIER and left_operand in self.regular_aggregation_dataset.get_identifiers_names():
+                raise SemanticError("1-1-12-1", op="Calc", name=left_operand)
         return Assignment.analyze(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
-        if self.is_from_having and node.op not in [GT, GTE, LT, LTE, EQ, NEQ, PLUS,
-                                                 MINUS, MULT, DIV, AND, OR, IN, NOT_IN]:
-            raise SemanticError("1-3-32", op=node.op)
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
             if self.udo_params is not None and node.right.value in self.udo_params[-1]:
                 comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
@@ -221,13 +227,13 @@ class InterpreterAnalyzer(ASTTemplate):
             right_operand = self.visit(node.right)
         if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
-        if node.op not in BINARY_MAPPING:
-            raise NotImplementedError
         if node.op == MEMBERSHIP:
             if right_operand not in left_operand.components and '#' in right_operand:
                 right_operand = right_operand.split('#')[1]
             if self.is_from_component_assignment:
                 return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand, self.is_from_component_assignment)
+            elif self.is_from_regular_aggregation:
+                raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
@@ -497,6 +503,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if self.regular_aggregation_dataset.data is not None:
                 if self.is_from_join and node.value not in self.regular_aggregation_dataset.get_components_names():
+                    if '#' not in node.value:
+                        raise SemanticError("1-1-13-9", comp_name=node.value)
                     node.value = node.value.split('#')[1]
                 data = self.regular_aggregation_dataset.data[node.value]
             else:
@@ -779,13 +787,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
         elif node.op == CHECK_DATAPOINT:
             if self.dprs is None:
-                raise SemanticError("2-3-10", comp_type="Datapoint Rulesets")
+                raise SemanticError("1-3-19", node_type="Datapoint Rulesets", node_value="")
             # Checking if ruleset exists
             dpr_name = node.children[1]
-            if dpr_name in self.dprs:
-                dpr_info = self.dprs[dpr_name]
-            else:
-                raise SemanticError("2-3-1", comp_type="Datapoint Ruleset", comp_name=dpr_name)
+            if dpr_name not in self.dprs:
+                raise SemanticError("1-3-19", comp_type="Datapoint Ruleset", node_value=dpr_name)
+            dpr_info = self.dprs[dpr_name]
+
             # Extracting dataset
             dataset_element = self.visit(node.children[0])
             # Checking if list of components supplied is valid
@@ -828,9 +836,9 @@ class InterpreterAnalyzer(ASTTemplate):
             mode, input_, output = (self.visit(param) for param in node.params)
 
             if self.hrs is None:
-                raise SemanticError("2-3-10", comp_type="Hierarchical Rulesets")
+                raise SemanticError("1-3-19", node_type="Hierarchical Rulesets", node_value="")
             if hr_name not in self.hrs:
-                raise SemanticError("2-3-1", comp_type="Hierarchical Ruleset", comp_name=hr_name)
+                raise SemanticError("1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name)
 
             if not isinstance(dataset, Dataset):
                 raise SemanticError("2-3-11", pos="The")
@@ -845,12 +853,6 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(cond_components) != len(hr_info['condition']):
                 raise SemanticError("1-1-10-2", op=node.op)
 
-            # Condition components check
-            if len(cond_components) != len(hr_info['condition']):
-                raise Exception(
-                    f"Cannot match condition components, different number of components on call"
-                    f"from those defined on the signature: "
-                    f"{len(cond_components)} <> {len(hr_info['condition'])}")
             cond_info = {}
             for i, cond_comp in enumerate(hr_info['condition']):
                 cond_info[cond_comp] = cond_components[i]

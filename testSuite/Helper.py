@@ -151,7 +151,6 @@ class TestHelper(TestCase):
         # Data Loading.--------------------------------------------------------
         if text is None:
             text = cls.LoadVTL(code)
-        ast = create_ast(text)
         input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
 
         value_domains = None
@@ -174,6 +173,7 @@ class TestHelper(TestCase):
                                           value_domains=value_domains,
                                           external_routines=external_routines)
         with pytest.raises(SemanticError) as context:
+            ast = create_ast(text)
             interpreter.visit(ast)
 
         assert exception_code == str(context.value.args[1])

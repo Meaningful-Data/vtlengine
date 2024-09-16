@@ -37,17 +37,6 @@ class Binary(Operator.Binary):
             return int(result)
         return result
 
-    @classmethod
-    def datasetValidation(cls, left_operand, right_operand):
-        """
-
-        """
-        left_identifiers = left_operand.getIdentifiers()
-        right_identifiers = right_operand.getIdentifiers()
-
-        if left_identifiers is None or right_identifiers is None:
-            raise SemanticError("1-3-27", op=cls.op)
-
 
 class UnPlus(Unary):
     op = PLUS
@@ -134,10 +123,6 @@ class Logarithm(Binary):
 
         return math.log(x, param)
 
-    @classmethod
-    def dataset_validation(cls, left_operand, right_operand):
-        raise SemanticError("2-1-15-7", op=cls.op)
-
 
 class Modulo(Binary):
     op = MOD
@@ -153,10 +138,6 @@ class Power(Binary):
         if pd.isnull(param):
             return None
         return x ** param
-
-    @classmethod
-    def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset):
-        raise SemanticError("2-1-15-7", op=cls.op)
 
 class Parameterized(Unary):
 
@@ -207,8 +188,6 @@ class Parameterized(Unary):
                     result.data[measure_name] = cls.apply_operation_series_scalar(
                         result.data[measure_name], param_value
                     )
-            except ZeroDivisionError:
-                raise SemanticError("2-1-15-6", op=cls.op)
             except ValueError:
                 raise SemanticError("2-1-15-1", op=cls.op, comp_name=measure_name, dataset_name=operand.name) from None
         result.data = result.data[result.get_components_names()]
@@ -218,38 +197,29 @@ class Parameterized(Unary):
     def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]):
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
-        try:
-            if isinstance(param, DataComponent):
-                result.data = cls.apply_operation_two_series(operand.data, param.data)
-            else:
-                param_value = None if param is None else param.value
-                result.data = cls.apply_operation_series_scalar(operand.data, param_value)
-        except ZeroDivisionError:
-            raise SemanticError("2-1-15-6", op=cls.op)
+        if isinstance(param, DataComponent):
+            result.data = cls.apply_operation_two_series(operand.data, param.data)
+        else:
+            param_value = None if param is None else param.value
+            result.data = cls.apply_operation_series_scalar(operand.data, param_value)
         return result
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Scalar):
-        try:
-            result = cls.validate(operand, param)
-            param_value = None if param is None else param.value
-            result.value = cls.op_func(operand.value, param_value)
-        except ZeroDivisionError:
-            raise SemanticError("2-1-15-6", op=cls.op)
+        result = cls.validate(operand, param)
+        param_value = None if param is None else param.value
+        result.value = cls.op_func(operand.value, param_value)
         return result
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES,
                  param: Optional[Union[DataComponent, Scalar]] = None) -> ALL_MODEL_DATA_TYPES:
-        try:
-            if isinstance(operand, Dataset):
-                return cls.dataset_evaluation(operand, param)
-            if isinstance(operand, DataComponent):
-                return cls.component_evaluation(operand, param)
-            if isinstance(operand, Scalar):
-                return cls.scalar_evaluation(operand, param)
-        except ZeroDivisionError:
-            raise SemanticError("2-1-15-6", op=cls.op)
+        if isinstance(operand, Dataset):
+            return cls.dataset_evaluation(operand, param)
+        if isinstance(operand, DataComponent):
+            return cls.component_evaluation(operand, param)
+        if isinstance(operand, Scalar):
+            return cls.scalar_evaluation(operand, param)
 
 
 class Round(Parameterized):

@@ -5,6 +5,8 @@ import pandas as pd
 
 import pandas as pd
 
+from Exceptions import SemanticError
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'float64',
@@ -469,8 +471,7 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
 def binary_implicit_promotion(left_type: ScalarType,
                               right_type: ScalarType,
                               type_to_check: ScalarType = None,
-                              return_type: ScalarType = None
-                              ) -> ScalarType:
+                              return_type: ScalarType = None) -> ScalarType:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -493,7 +494,11 @@ def binary_implicit_promotion(left_type: ScalarType,
             if right_type.is_included(left_implicities):
                 return right_type
             return type_to_check
-        raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
+        raise SemanticError(code="1-1-1-2",
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                            type_check=SCALAR_TYPES_CLASS_REVERSE[type_to_check])
+        # raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (left_type.is_included(
             right_implicities) or right_type.is_included(left_implicities)):
@@ -503,7 +508,9 @@ def binary_implicit_promotion(left_type: ScalarType,
     if right_type.is_included(left_implicities):
         return right_type
 
-    raise Exception(f"Implicit cast not allowed from {left_type} to {right_type}")
+    raise SemanticError(code="1-1-1-1",
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[right_type])
 
 
 def check_binary_implicit_promotion(
@@ -540,7 +547,9 @@ def unary_implicit_promotion(
     operand_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[operand_type]
     if type_to_check:
         if not type_to_check.is_included(operand_implicities):
-            raise Exception(f"Implicit cast not allowed from {operand_type} to {type_to_check}")
+            raise SemanticError(code="1-1-1-1",
+                                type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
+                                type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check])
 
     if return_type:
         return return_type

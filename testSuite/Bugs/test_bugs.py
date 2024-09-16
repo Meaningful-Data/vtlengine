@@ -695,7 +695,7 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_169_5'
         number_inputs = 1
-        message = "1-1-1-4"
+        message = "1-1-14-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_169_6(self):
@@ -843,7 +843,7 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_165_1'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_165_2(self):
@@ -1005,7 +1005,7 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_165_10'
         number_inputs = 1
-        message = "1-1-1-7"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
 
