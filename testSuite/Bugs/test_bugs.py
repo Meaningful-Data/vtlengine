@@ -145,6 +145,8 @@ class JoinBugs(BugHelper):
         vd_names = ["GL_133_1-1"]
 
         message = "1-1-13-4"
+
+        # HUH!!!!!!!!!
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names)
 
     def test_GL_133_2(self):

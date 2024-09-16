@@ -24,7 +24,7 @@ def check_date(value: str):
                                        f"Use YYYY-MM-DD.")
 
     # Check date is between 1900 and 9999
-    if not 1900 <= date_value.year <= 9999:
+    if not 1800 <= date_value.year <= 9999:
         raise InputValidationException(f"Date {value} is invalid. "
                                        f"Year must be between 1900 and 9999.")
 

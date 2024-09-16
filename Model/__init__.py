@@ -176,8 +176,11 @@ class Dataset:
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
-        self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
-        other.data = other.data.sort_values(by=other.get_identifiers_names()).reset_index(drop=True)
+        # self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
+        # other.data = other.data.sort_values(by=other.get_identifiers_names().sort()).reset_index(drop=True)
+        sorted_identifiers = sorted(self.get_identifiers_names())
+        self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
+        other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
@@ -223,6 +226,9 @@ class Dataset:
         self.components.pop(component_name, None)
         if self.data is not None:
             self.data.drop(columns=[component_name], inplace=True)
+
+    def get_components(self) -> List[Component]:
+        return list(self.components.values())
 
     def get_identifiers(self) -> List[Component]:
         return [component for component in self.components.values() if

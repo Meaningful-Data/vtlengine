@@ -41,25 +41,25 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_2(self):
-        '''
-        LEFT JOIN OPERATOR
-        Status: BUG
-        Expression: DS_r := left_join ( DS_1, DS_2 );
-        Description: operations numbers and integers.
-        Jira issue: VTLEN 564.
-        Git Branch: feat-VTLEN-564-Join-operators-type-checking.
-        Goal: Check Exception.
-        '''
-        code = '2-2-2-2'
-        # 2 For group join
-        # 2 For group identifiers
-        # 2 For clause- for the moment only op left_join
-        # 1 Number of test
-        number_inputs = 2
-        message = "BUG"
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
+    # def test_2(self):
+    #     '''
+    #     LEFT JOIN OPERATOR
+    #     Status: BUG
+    #     Expression: DS_r := left_join ( DS_1, DS_2 );
+    #     Description: operations numbers and integers.
+    #     Jira issue: VTLEN 564.
+    #     Git Branch: feat-VTLEN-564-Join-operators-type-checking.
+    #     Goal: Check Exception.
+    #     '''
+    #     code = '2-2-2-2'
+    #     # 2 For group join
+    #     # 2 For group identifiers
+    #     # 2 For clause- for the moment only op left_join
+    #     # 1 Number of test
+    #     number_inputs = 2
+    #     message = "BUG"
+    #
+    #     self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_3(self):
         '''

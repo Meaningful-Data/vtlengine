@@ -18,6 +18,8 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if isinstance(condition, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+            if result.role != Role.IDENTIFIER:
+                result.nullable = True
         if isinstance(condition, Dataset):
             result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result

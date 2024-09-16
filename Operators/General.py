@@ -25,14 +25,22 @@ class Membership(Binary):
                                                                nullable=component.nullable)
             if left_operand.data is not None:
                 left_operand.data[right_operand] = left_operand.data[component.name]
+            left_operand.data[right_operand] = left_operand.data[component.name]
+
         result_components = {name: comp for name, comp in left_operand.components.items()
                              if comp.role == Role.IDENTIFIER or comp.name == right_operand}
         result_dataset = Dataset(name="result", components=result_components, data=None)
         return result_dataset
 
     @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+    def evaluate(cls, left_operand: Dataset, right_operand: str, is_from_component_assignment=False) -> Dataset:
         result_dataset = cls.validate(left_operand, right_operand)
+        if is_from_component_assignment:
+            return DataComponent(name=right_operand,
+                                 data_type=left_operand.components[right_operand].data_type,
+                                 role=Role.MEASURE,
+                                 nullable=left_operand.components[right_operand].nullable,
+                                 data=left_operand.data[right_operand])
         result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
 
@@ -41,9 +49,10 @@ class Alias(Binary):
 
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: str):
-        if left_operand.name == right_operand:
+        new_name = right_operand if isinstance(right_operand, str) else right_operand.name
+        if left_operand.name == new_name:
             raise ValueError("Alias operation requires different names")
-        return Dataset(name=right_operand, components=left_operand.components, data=None)
+        return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
     def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
@@ -71,9 +80,7 @@ class Eval(Unary):
         return df_result
 
     @classmethod
-    def validate(cls,
-                 operands: Dict[str, Dataset],
-                 external_routine: ExternalRoutine,
+    def validate(cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine,
                  output: Dataset) -> Dataset:
 
         empty_data_dict = {}
@@ -101,9 +108,7 @@ class Eval(Unary):
         return output
 
     @classmethod
-    def evaluate(cls,
-                 operands: Dict[str, Dataset],
-                 external_routine: ExternalRoutine,
+    def evaluate(cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine,
                  output: Dataset) -> Dataset:
         result = cls.validate(operands, external_routine, output)
 
