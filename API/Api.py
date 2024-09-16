@@ -5,13 +5,14 @@ from typing import Union, Optional, Dict, List
 import pandas as pd
 
 from API import create_ast, load_external_routines
-from AST import AST, PersistentAssignment
+from AST import PersistentAssignment, Start
+from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import ValueDomain, Dataset, Scalar, Component, Role
 from files.output import format_time_period_external_representation, \
     TimePeriodRepresentation
-from files.parser import _validate_pandas, load_datapoints
+from files.parser import _validate_pandas, _fill_dataset_empty_data
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -21,12 +22,6 @@ filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
 filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
-
-
-def _fill_datasets_empty_data(datasets: dict):
-    for dataset in datasets.values():
-        dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))
-    return datasets
 
 
 def _load_dataset_from_structure(structures: dict):
@@ -104,29 +99,31 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
 
 
 def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                            datapoints: Optional[Union[dict, Path, List[Path]]] = None) -> Dict[
-    str, Union[Dataset, Scalar]]:
+                            datapoints: Optional[Union[dict, Path, List[Path]]] = None):
     datasets = load_datasets(data_structures)
     if datapoints is None:
-        return _fill_datasets_empty_data(datasets)
+        for dataset in datasets.values():
+            if isinstance(dataset, Dataset):
+                _fill_dataset_empty_data(dataset)
+        return datasets, None
     if isinstance(datapoints, dict):
+        # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name}")
             datasets[dataset_name].data = _validate_pandas(datasets[dataset_name].components, data)
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:
-                datasets[dataset_name].data = pd.DataFrame(columns=list(datasets[dataset_name].components.keys()))
-        return datasets
+                datasets[dataset_name].data = pd.DataFrame(
+                    columns=list(datasets[dataset_name].components.keys()))
+        return datasets, None
+    # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
     for dataset_name, file_path in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
-        datasets[dataset_name].data = load_datapoints(datasets[dataset_name].components, file_path)
-    for dataset_name in datasets:
-        if datasets[dataset_name].data is None:
-            datasets[dataset_name].data = pd.DataFrame(columns=list(datasets[dataset_name].components.keys()))
-    return datasets
+
+    return datasets, dict_datapoints
 
 
 def load_vtl(input: Union[str, Path]):
@@ -154,7 +151,7 @@ def load_value_domains(input: Union[dict, Path]):
     return value_domains
 
 
-def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: AST):
+def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
     persistent = []
     for child in ast.children:
         if isinstance(child, PersistentAssignment):
@@ -163,11 +160,18 @@ def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: AST):
             isinstance(dataset, Dataset) and dataset.name in persistent}
 
 
-def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                      value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None):
+def semantic_analysis(script: Union[str, Path],
+                      data_structures: Union[dict, Path, List[Union[dict, Path]]],
+                      value_domains: Union[dict, Path] = None,
+                      external_routines: Union[str, Path] = None):
+    # AST generation
     vtl = load_vtl(script)
     ast = create_ast(vtl)
+
+    # Loading datasets
     structures = load_datasets(data_structures)
+
+    # Handling of library items
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
@@ -175,7 +179,9 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
 
-    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd, external_routines=ext_routines,
+    # Running the interpreter
+    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd,
+                                      external_routines=ext_routines,
                                       only_semantic=True)
     result = interpreter.visit(ast)
     return result
@@ -184,30 +190,55 @@ def semantic_analysis(script: Union[str, Path], data_structures: Union[dict, Pat
 def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
         datapoints: Union[dict, Path, List[Path]],
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
-        time_period_output_format: str = "vtl", memory_efficient=False,
-        return_only_persistent=False):
+        time_period_output_format: str = "vtl",
+        return_only_persistent=False, output_path: Optional[Path] = None):
+    # AST generation
     vtl = load_vtl(script)
     ast = create_ast(vtl)
-    datasets = load_datasets_with_data(data_structures, datapoints)
+
+
+    # Loading datasets and datapoints
+    datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
+
+    # Handling of library items
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
-    time_period_output_format = TimePeriodRepresentation.check_value(time_period_output_format)
-    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd, external_routines=ext_routines)
+
+    # Checking time period output format value
+    time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
+
+    # VTL Efficient analysis
+    ds_analysis = DAGAnalyzer.ds_structure(ast)
+    if output_path and not isinstance(output_path, Path):
+        raise Exception('Output path must be a Path object')
+    # Running the interpreter
+    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,
+                                      external_routines=ext_routines,
+                                      ds_analysis=ds_analysis,
+                                      datapoints_paths=path_dict,
+                                      output_path=output_path,
+                                      time_period_representation=time_period_representation)
     result = interpreter.visit(ast)
-    result = format_time_period_external_representation(result, time_period_output_format)
+
+    # Applying time period output format
+    if output_path is None:
+        for dataset in result.values():
+            format_time_period_external_representation(dataset, time_period_representation)
+
+    # Returning only persistent datasets
     if return_only_persistent:
-        result = _return_only_persistent_datasets(result, ast)
+        return _return_only_persistent_datasets(result, ast)
     return result
 
 
 if __name__ == '__main__':
-    print(run(script=(filepath_VTL / '1-1-1-1.vtl'),
-              data_structures=[filepath_json / '2-1-DS_1.json', filepath_json / '2-1-DS_2.json'],
-              datapoints=[filepath_csv / 'DS_1.csv'],
+    print(run(script=(filepath_VTL / 'test.vtl'),
+              data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+              datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
               value_domains=None, external_routines=None,
               return_only_persistent=False))
     # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))

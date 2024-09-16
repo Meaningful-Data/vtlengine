@@ -12,7 +12,7 @@ else:
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from AST import AST
+from AST import Start
 from AST.ASTConstructor import ASTVisitor
 from AST.Grammar.lexer import Lexer
 from AST.Grammar.parser import Parser
@@ -51,7 +51,7 @@ def _parser(stream: CommonTokenStream) -> Any:
     return vtl_parser.start()
 
 
-def create_ast(text: str) -> AST:
+def create_ast(text: str) -> Start:
     """
     Generates the AST
     """

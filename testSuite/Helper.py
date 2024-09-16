@@ -1,20 +1,17 @@
 import json
-import os.path
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Any
 from unittest import TestCase
 
-import pandas as pd
 import pytest
 
 from API import create_ast
-from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
-from files.parser import load_datapoints
 from files.output import TimePeriodRepresentation, \
     format_time_period_external_representation
+from files.parser import load_datapoints
 
 
 class TestHelper(TestCase):
@@ -39,7 +36,8 @@ class TestHelper(TestCase):
     ds_input_prefix = ""
 
     @classmethod
-    def LoadDataset(cls, ds_path, dp_path, only_semantic=False) -> Dict[str, Union[Dataset, Scalar]]:
+    def LoadDataset(cls, ds_path, dp_path, only_semantic=False) -> Dict[
+        str, Union[Dataset, Scalar]]:
         with open(ds_path, 'r') as file:
             structures = json.load(file)
 
@@ -78,15 +76,18 @@ class TestHelper(TestCase):
         '''
         datasets = {}
         for i in range(number_inputs):
-            json_file_name = str(cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
-            csv_file_name = str(cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
+            json_file_name = str(
+                cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
+            csv_file_name = str(
+                cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             datasets.update(new_datasets)
 
         return datasets
 
     @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str], only_semantic=False) -> Dict[str, Dataset]:
+    def LoadOutputs(cls, code: str, references_names: List[str], only_semantic=False) -> Dict[
+        str, Dataset]:
         """
 
         """
@@ -109,8 +110,10 @@ class TestHelper(TestCase):
             return file.read()
 
     @classmethod
-    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str], vd_names: List[str] = None,
-                 sql_names: List[str] = None, text: Optional[str] = None, scalars: Dict[str, Any] = None,
+    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str],
+                 vd_names: List[str] = None,
+                 sql_names: List[str] = None, text: Optional[str] = None,
+                 scalars: Dict[str, Any] = None,
                  only_semantic=False):
         '''
 
@@ -140,12 +143,14 @@ class TestHelper(TestCase):
                                           external_routines=external_routines,
                                           only_semantic=only_semantic)
         result = interpreter.visit(ast)
-        result = format_time_period_external_representation(result,
-                                                            TimePeriodRepresentation.SDMX_REPORTING)
+        for dataset in result.values():
+            _ = format_time_period_external_representation(dataset,
+                                                           TimePeriodRepresentation.SDMX_REPORTING)
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str,
+                                 text: Optional[str] = None):
         assert True
 
     @classmethod
@@ -177,7 +182,6 @@ class TestHelper(TestCase):
             references = cls.LoadOutputs(code=code, references_names=references_names)
             assert inputs == references
         assert True
-
 
     @classmethod
     def DataLoadExceptionTest(cls, code: str, number_inputs: int, exception_message: str):
