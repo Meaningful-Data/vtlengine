@@ -129,21 +129,26 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
 def load_vtl(input: Union[str, Path]):
     if isinstance(input, str):
         return input
-    if isinstance(input, Path):
-        input = Path(input)
     if not isinstance(input, Path):
-        raise Exception('Input invalid')
+        raise Exception('Invalid vtl file. Input is not a Path object')
     if not input.exists():
-        raise Exception('Input does not exist')
+        raise Exception('Invalid vtl file. Input does not exist')
+    if input.suffix != '.vtl':
+        raise Exception('Invalid vtl file. Must have .vtl extension')
     with open(input, 'r') as f:
         return f.read()
 
 
 def load_value_domains(input: Union[dict, Path]):
     if isinstance(input, dict):
-        return input
+        vd = ValueDomain.from_dict(input)
+        return {vd.name: vd}
     if not isinstance(input, Path):
-        raise Exception('Invalid input')
+        raise Exception('Invalid vd file. Input is not a Path object')
+    if not input.exists():
+        raise Exception('Invalid vd file. Input does not exist')
+    if input.suffix != '.json':
+        raise Exception('Invalid vd file. Must have .json extension')
     value_domains = {}
     with open(input, 'r') as file:
         vd = ValueDomain.from_json(file.read())
@@ -236,10 +241,9 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
 
 if __name__ == '__main__':
-    print(run(script=(filepath_VTL / 'test.vtl'),
-              data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
-              datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
-              value_domains=None, external_routines=None,
-              return_only_persistent=False))
-    # print(load_dataset(data_structures=(filepath_json / '1-2-DS_1.json'), datapoints=(filepath_csv / '1-2-DS_1.csv')))
-    # print(load_datastructures(filepath_json))
+    # print(run(script=(filepath_VTL / 'test.vtl'),
+    #           data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+    #           datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
+    #           value_domains=None, external_routines=None,
+    #           return_only_persistent=False))
+    print(load_value_domains(filepath_json / '2-1-DS_1.json'))

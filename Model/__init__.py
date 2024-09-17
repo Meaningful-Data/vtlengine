@@ -300,12 +300,18 @@ class ValueDomain:
             raise ValueError("Empty JSON string for ValueDomain")
 
         json_info = json.loads(json_str)
+        return cls.from_dict(json_info)
 
-        if json_info['type'] not in SCALAR_TYPES:
+    @classmethod
+    def from_dict(cls, value: dict):
+        for x in ('name', 'type', 'setlist'):
+            if x not in value:
+                raise Exception('Invalid format for ValueDomain. Requires name, type and setlist.')
+        if value['type'] not in SCALAR_TYPES:
             raise ValueError(
-                f"Invalid data type {json_info['type']} for ValueDomain {json_info['name']}")
+                f"Invalid data type {value['type']} for ValueDomain {value['name']}")
 
-        return cls(json_info['name'], SCALAR_TYPES[json_info['type']], json_info['setlist'])
+        return cls(value['name'], SCALAR_TYPES[value['type']], value['setlist'])
 
     def to_dict(self):
         return {
@@ -319,7 +325,6 @@ class ValueDomain:
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
-
 
 @dataclass
 class ExternalRoutine:
