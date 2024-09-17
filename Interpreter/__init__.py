@@ -203,7 +203,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != '#' and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+        if node.op != MEMBERSHIP and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -1031,15 +1031,17 @@ class InterpreterAnalyzer(ASTTemplate):
         return Eval.analyze(operands, external_routine, output_to_check)
 
     def generate_then_else_datasets(self, condition):
+        components = {}
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != \
                     BASIC_TYPES[bool]:
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
-            if condition.data is None:
+            if condition.data.empty:
                 data = None
             else:
                 data = condition.data[name]
+                components = {comp.name: comp for comp in condition.get_identifiers()}
 
         else:
             if condition.data_type != BASIC_TYPES[bool]:
@@ -1049,41 +1051,50 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = None
             else:
                 data = condition.data
+
         if data is not None:
             data.fillna(False, inplace=True)
-            then_index = pd.DataFrame({name: [i for i, data in enumerate(data) if data]})
-            else_index = pd.DataFrame({name: [i for i, data in enumerate(data) if not data]})
+
+            if isinstance(condition, Dataset):
+                then_data = condition.data[condition.data[name]]
+                then_data[name] = [i for i, data in enumerate(data) if data]
+                else_data = condition.data[~condition.data[name]]
+                else_data[name] = [i for i, data in enumerate(data) if not data]
+            else:
+                then_data = pd.DataFrame({name: [i for i, data in enumerate(data) if data]})
+                else_data = pd.DataFrame({name: [i for i, data in enumerate(data) if not data]})
         else:
-            then_index = pd.DataFrame({name: []})
-            else_index = pd.DataFrame({name: []})
-        component = Component(name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE,
-                              nullable=True)
+            then_data = pd.DataFrame({name: []})
+            else_data = pd.DataFrame({name: []})
+        components.update(
+            {name: Component(name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE, nullable=True)})
         self.then_condition_dataset.append(
-            Dataset(name=name, components={name: component}, data=then_index))
+            Dataset(name=name, components=components, data=then_data))
         self.else_condition_dataset.append(
-            Dataset(name=name, components={name: component}, data=else_index))
+            Dataset(name=name, components=components, data=else_data))
 
     def merge_then_else_datasets(self, left_operand: Dataset | DataComponent, right_operand):
-        merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE[
-            'then'] else (
+        merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE['then'] else (
             self.else_condition_dataset.pop())
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
+        ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, Dataset | DataComponent):
             if isinstance(left_operand, Dataset):
+                dataset_index = left_operand.data.index[left_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 left_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 left = left_operand.data[left_operand.get_measures_names()[0]]
-                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(merge_index,
-                                                                                       fill_value=None)
+                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(dataset_index, fill_value=None)
             else:
                 left_operand.data_type = BASIC_TYPES[int]
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
         if isinstance(right_operand, Dataset | DataComponent):
             if isinstance(right_operand, Dataset):
+                dataset_index = right_operand.data.index[right_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 right_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 right = right_operand.data[right_operand.get_measures_names()[0]]
                 right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(
-                    merge_index, fill_value=None)
+                    dataset_index, fill_value=None)
             else:
                 right_operand.data_type = BASIC_TYPES[int]
                 right = right_operand.data

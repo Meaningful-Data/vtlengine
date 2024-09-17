@@ -45,7 +45,7 @@ class If(Operator):
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0:
                 true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                true_data.dropna(subset=[condition_measure], inplace=True)
+                # true_data = true_data.dropna(subset=[condition_measure])
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
         else:
@@ -53,7 +53,7 @@ class If(Operator):
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0:
                 false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                false_data.dropna(subset=[condition_measure], inplace=True)
+                # false_data.dropna(subset=[condition_measure])
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
         else:
@@ -62,7 +62,7 @@ class If(Operator):
         result.data = pd.concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         if isinstance(result, Dataset):
             drop_columns = [column for column in result.data.columns if column not in result.components.keys()]
-            result.data.drop(columns=drop_columns, inplace=True)
+            result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
             result.get_measures()[0].data_type = true_branch.data_type
             result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
@@ -96,9 +96,9 @@ class If(Operator):
         if isinstance(right, Scalar):
             for component in left.get_measures():
                 if component.data_type != right.data_type:
-                    component.data_type = binary_implicit_promotion(left.data_type, right.data_type)
+                    component.data_type = binary_implicit_promotion(component.data_type, right.data_type)
         if isinstance(right, Dataset):
-            if left.components != right.components:
+            if left.get_components_names() != right.get_components_names():
                 raise ValueError("If operands at dataset level must have the same components")
             for component in left.get_measures():
                 if component.data_type != right.components[component.name].data_type:
