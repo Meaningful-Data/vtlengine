@@ -1081,22 +1081,18 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(left_operand, Dataset | DataComponent):
             if isinstance(left_operand, Dataset):
                 dataset_index = left_operand.data.index[left_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
-                left_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 left = left_operand.data[left_operand.get_measures_names()[0]]
                 left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(dataset_index, fill_value=None)
             else:
-                left_operand.data_type = BASIC_TYPES[int]
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
         if isinstance(right_operand, Dataset | DataComponent):
             if isinstance(right_operand, Dataset):
                 dataset_index = right_operand.data.index[right_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
-                right_operand.get_measures()[0].data_type = BASIC_TYPES[int]
                 right = right_operand.data[right_operand.get_measures_names()[0]]
                 right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(
                     dataset_index, fill_value=None)
             else:
-                right_operand.data_type = BASIC_TYPES[int]
                 right = right_operand.data
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
