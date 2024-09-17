@@ -54,10 +54,8 @@ class Identifier(RoleSetter):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
         result = super().validate(operand)
-        if result.nullable and result.data is not None and any(result.data.isnull()):
+        if result.nullable:
             raise SemanticError("1-1-1-16")
-        elif result.nullable:
-            result.nullable = False
         return result
 
     @classmethod

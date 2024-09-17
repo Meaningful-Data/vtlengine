@@ -1746,7 +1746,7 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = '2-4-1-60'
         number_inputs = 2
-        message = "1-1-13-17"
+        message = "1-1-6-9"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
@@ -2446,7 +2446,7 @@ class StringOperatorsTest(TestAttributesHelper):
         """
         code = '3-4-1-23'
         number_inputs = 1
-        message = "1-1-18-1" #returns '1-1-14-8'
+        message = "1-1-1-4"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_24(self):
@@ -2510,7 +2510,7 @@ class StringOperatorsTest(TestAttributesHelper):
         """
         code = '3-4-1-26'
         number_inputs = 1
-        message = "1-1-18-1"
+        message = "1-1-1-4"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_27(self):
@@ -4010,9 +4010,9 @@ class SetOperatorsTest(TestAttributesHelper):
         """
         code = '8-4-1-4'
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
         """
@@ -4060,9 +4060,9 @@ class SetOperatorsTest(TestAttributesHelper):
         """
         code = '8-4-1-6'
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
         """
@@ -4089,9 +4089,9 @@ class SetOperatorsTest(TestAttributesHelper):
         """
         code = '8-4-1-7'
         number_inputs = 2
-        message = '[At_1,At_2] not in index'
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
         """
@@ -4121,35 +4121,6 @@ class SetOperatorsTest(TestAttributesHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_9(self):
-        """
-        SIMMETRIC DIFFERENCE: symdiff
-        Dataset --> Dataset
-        Status: OK
-        Expression: DS_r := symdiff(DS_1, DS_2)
-                            DS_1 Dataset
-                            DS_2 Dataset
-
-        Description: The operator implements the symmetric set difference between
-        functions (i.e. Data Sets), interpreting the Data Points of the input
-        Data Sets as the elements in the operand Sets. The operator returns one
-        Data Set, with the same Identifier, Measure and Attribute Components as
-        the operand Data Sets, containing the Data Points that appear in the
-        first Data Set but not in the second and the Data Points that appear in
-        the second Data Set but not in the first one.
-
-        Git Branch: #208 Set operators attributes tests.
-        Goal: implements the symmetric set difference between
-        functions (i.e. Data Sets), interpreting the Data Points of the input
-        Data Sets as the elements in the operand Sets and check their attributes.
-        """
-        code = '8-4-1-9'
-        number_inputs = 2
-        message = '[At_1,At_2] not in index'
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
     def test_10(self):
         """
         SIMMETRIC DIFFERENCE: symdiff

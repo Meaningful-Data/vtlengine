@@ -136,9 +136,12 @@ class Join(Operator):
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
         if not all([isinstance(op, Dataset) for op in operands]):
-            raise Exception("All operands must be datasets")
+            raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
             return Dataset(name="result", components=operands[0].components, data=None)
+        for op in operands:
+            if len(op.get_identifiers()) == 0:
+                raise SemanticError("1-3-27", op=cls.op)
         cls.identifiers_validation(operands, using)
 
         cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names())) if cls.how not in ['cross', 'left'] else operands[0]

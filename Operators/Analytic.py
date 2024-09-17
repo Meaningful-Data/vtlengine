@@ -48,7 +48,7 @@ class Analytic(Operator.Unary):
                 raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
         measures = operand.get_measures()
         if measures is None:
-            raise SemanticError("1-1-3-1", op=cls.op)
+            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         if cls.type_to_check is not None:
             for measure in measures:
                 if not check_unary_implicit_promotion(measure.data_type, cls.type_to_check):

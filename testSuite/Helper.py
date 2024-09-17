@@ -58,7 +58,7 @@ class TestHelper(TestCase):
                 if only_semantic:
                     data = None
                 else:
-                    data = load_datapoints(components, Path(dp_path))
+                    data = load_datapoints(components, dataset_name, Path(dp_path))
 
                 datasets[dataset_name] = Dataset(name=dataset_name,
                                                  components=components,
@@ -82,6 +82,9 @@ class TestHelper(TestCase):
             json_file_name = str(cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
             csv_file_name = str(cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
+            for x in new_datasets:
+                if x in datasets:
+                    raise Exception(f"Trying to redefine input datasets: {x}")
             datasets.update(new_datasets)
 
         return datasets
@@ -176,7 +179,10 @@ class TestHelper(TestCase):
             ast = create_ast(text)
             interpreter.visit(ast)
 
-        assert exception_code == str(context.value.args[1])
+        result = exception_code == str(context.value.args[1])
+        if result is False:
+            print(f"\n{exception_code} != {context.value.args[1]}")
+        assert result
 
     @classmethod
     def LoadValueDomains(cls, vd_names):
@@ -210,7 +216,18 @@ class TestHelper(TestCase):
 
 
     @classmethod
-    def DataLoadExceptionTest(cls, code: str, number_inputs: int, exception_message: str):
+    def DataLoadExceptionTest(cls, code: str, number_inputs: int,
+                              exception_message: Optional[str] = None,
+                              exception_code: Optional[str] = None):
+        if exception_code is not None:
+            with pytest.raises(SemanticError) as context:
+                cls.LoadInputs(code=code, number_inputs=number_inputs)
+        else:
+            with pytest.raises(Exception, match=exception_message) as context:
+                cls.LoadInputs(code=code, number_inputs=number_inputs)
         # Test Assertion.------------------------------------------------------
-        with pytest.raises(Exception, match=exception_message):
-            cls.LoadInputs(code=code, number_inputs=number_inputs)
+
+        if len(context.value.args) > 1 and exception_code is not None:
+            assert exception_code == str(context.value.args[1])
+        else:
+            assert exception_message in str(context.value.args[0])

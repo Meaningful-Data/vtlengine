@@ -25,6 +25,7 @@ from AST.ASTDataExchange import de_ruleset_elements
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from DataTypes import ScalarType
+from Exceptions import SemanticError
 from Model import Scalar, Component, Dataset
 
 
@@ -152,7 +153,7 @@ class ASTVisitor(VtlVisitor):
         expr = [Expr().visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)][0]
 
         if len(return_) == 0:
-            return_node = None
+            raise SemanticError("1-4-2-5", op=operator)
         else:
             return_node = return_[0]
 
@@ -174,16 +175,18 @@ class ASTVisitor(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         ruleset_name = Terminals().visitRulesetID(ctx_list[3])
-        ruleset_elements = self.visitRulesetSignature(ctx_list[5])
+        signature_type, ruleset_elements = self.visitRulesetSignature(ctx_list[5])
         ruleset_rules = self.visitRuleClauseDatapoint(ctx_list[8])
 
-        return DPRuleset(name=ruleset_name, params=ruleset_elements, rules=ruleset_rules)
+        return DPRuleset(name=ruleset_name, params=ruleset_elements, rules=ruleset_rules,
+                         signature_type=signature_type)
 
     def visitRulesetSignature(self, ctx: Parser.RulesetSignatureContext):
         """
         rulesetSignature: (VALUE_DOMAIN|VARIABLE) varSignature (',' varSignature)* ;
         """
         ctx_list = list(ctx.getChildren())
+        signature_type = ctx_list[0].getSymbol().text
 
         value_domains = [value_domain for value_domain in ctx_list if isinstance(value_domain, TerminalNodeImpl) and
                          value_domain.getSymbol().type == Parser.VALUE_DOMAIN]
@@ -198,7 +201,7 @@ class ASTVisitor(VtlVisitor):
         component_nodes = [Terminals().visitSignature(component, kind) for component in ctx_list if
                            isinstance(component, Parser.SignatureContext)]
 
-        return component_nodes
+        return signature_type, component_nodes
 
     def visitRuleClauseDatapoint(self, ctx: Parser.RuleClauseDatapointContext):
         """
@@ -284,6 +287,10 @@ class ASTVisitor(VtlVisitor):
 
         ruleset_name = Terminals().visitRulesetID(ctx_list[3])
         signature_type, ruleset_elements = self.visitHierRuleSignature(ctx_list[5])
+        if signature_type == "variable" and isinstance(ruleset_elements, list):
+            unique_id_names = list(set([elto.value for elto in ruleset_elements]))
+            if len(ruleset_elements) > 2 or len(unique_id_names) < 1:
+                raise SemanticError("1-1-10-9", ruleset=ruleset_name)
         ruleset_rules = self.visitRuleClauseHierarchical(ctx_list[8])
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
@@ -321,11 +328,6 @@ class ASTVisitor(VtlVisitor):
             identifiers_list = [
                 DefIdentifier(value=elto.alias if getattr(elto, "alias", None) else elto.value, kind=kind) for elto in conditions[0]]
             identifiers_list.append(DefIdentifier(value=dataset.getSymbol().text, kind=kind))
-            if signature_type == "variable":
-                unique_id_names = list(set([elto.value for elto in identifiers_list]))
-                if len(identifiers_list) > 2 or len(unique_id_names) < 1:
-                    raise Exception(f"Invalid signature for the ruleset {dataset.getSymbol().text}. "
-                                    f"On variables, condComp and ruleComp must be the same.")
             return signature_type, identifiers_list
         else:
             return signature_type, DefIdentifier(value=dataset.getSymbol().text, kind=kind)

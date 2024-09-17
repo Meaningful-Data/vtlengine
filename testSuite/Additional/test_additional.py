@@ -1557,7 +1557,7 @@ class AggregateOperatorsTest(AdditionalHelper):
         text = """DS_r := median(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
         code = '10-6'
         number_inputs = 1
-        message = "1-1-2-1"
+        message = "1-1-1-8"
         self.NewSemanticExceptionTest(
             text=text,
             code=code,
@@ -2193,7 +2193,7 @@ class DataValidationOperatorsTest(AdditionalHelper):
         '''
         DAG Error: R070, R020 and R110 generate a cycle.
         '''
-        text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
+        text = """define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
                 R010 : A = J + K + L                        errorlevel 5 ;
                 R020 : B = M + N + O                        errorlevel 5 ;
                 R030 : C = P + Q        errorcode "XX"      errorlevel 5 ;

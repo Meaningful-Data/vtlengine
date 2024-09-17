@@ -53,9 +53,8 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         '''
         code = '2-2-3-2'
         number_inputs = 2
-        exception_code = "BUG"
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=exception_code)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
         '''
@@ -69,8 +68,8 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         '''
         code = '2-2-3-3'
         number_inputs = 2
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
         '''
@@ -84,5 +83,5 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         '''
         code = '2-2-3-4'
         number_inputs = 2
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

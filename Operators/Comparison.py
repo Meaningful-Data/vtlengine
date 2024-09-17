@@ -234,6 +234,8 @@ class Between(Operator.Operator):
                  from_: Union[DataComponent, Scalar],
                  to: Union[DataComponent, Scalar]) -> Any:
         if isinstance(operand, Dataset):
+            if len(operand.get_measures()) == 0:
+                raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
             result_components = {comp_name: copy(comp) for comp_name, comp in
                                  operand.components.items()
                                  if comp.role == Role.IDENTIFIER or comp.role == Role.MEASURE}

@@ -374,8 +374,9 @@ class DatapointRulesetTests(TestDataPointRuleset):
         """
         code = '1-1-1-12'
         number_inputs = 1
+        message = "1-1-10-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-3")
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     # Value domain
     def test_13(self):
@@ -392,8 +393,9 @@ class DatapointRulesetTests(TestDataPointRuleset):
         """
         code = '1-1-1-13'
         number_inputs = 1
+        message = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-5")
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_14(self):
         """
@@ -409,5 +411,6 @@ class DatapointRulesetTests(TestDataPointRuleset):
         """
         code = '1-1-1-14'
         number_inputs = 1
+        message = "1-1-10-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code="1-1-10-3")
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

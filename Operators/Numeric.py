@@ -147,10 +147,10 @@ class Parameterized(Unary):
 
         if param is not None:
             if isinstance(param, Dataset):
-                raise SemanticError("2-1-15-8", op=cls.op, comp_type="Dataset")
+                raise SemanticError("1-1-15-8", op=cls.op, comp_type="Dataset")
             if isinstance(param, DataComponent):
                 if isinstance(operand, Scalar):
-                    raise SemanticError("2-1-15-8", op=cls.op, comp_type="DataComponent and an Scalar operand")
+                    raise SemanticError("1-1-15-8", op=cls.op, comp_type="DataComponent and an Scalar operand")
                 cls.validate_type_compatibility(param.data_type)
             else:
                 cls.validate_scalar_type(param)

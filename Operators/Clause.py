@@ -22,7 +22,11 @@ class Calc(Operator):
         for operand in operands:
 
             if operand.name in result_dataset.components:
+                if result_dataset.components[operand.name].role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-6-13", op=cls.op,
+                                        comp_name=operand.name)
                 # Override component with same name
+                # TODO: Check this for version 2.1
                 result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
@@ -127,7 +131,8 @@ class Keep(Operator):
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
             if operand not in dataset.get_components_names():
-                raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand, dataset_name=dataset.name)
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand,
+                                    dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         result_components = {name: comp for name, comp in dataset.components.items()
@@ -155,7 +160,7 @@ class Drop(Operator):
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
             if operand not in dataset.components:
-                raise SemanticError("1-3-16", name=operand.name)
+                raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         if len(dataset.components) == len(operands):
@@ -192,9 +197,9 @@ class Rename(Operator):
 
         for operand in operands:
             if operand.old_name not in dataset.components.keys():
-                raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name)
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name)
             if operand.new_name in dataset.components.keys():
-                raise SemanticError("1-1-6-15", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name)
+                raise SemanticError("1-1-6-8", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name)
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
@@ -238,7 +243,7 @@ class Unpivot(Operator):
         if len(dataset.get_identifiers()) <1:
             raise SemanticError("1-3-27", op=cls.op)
         if identifier in dataset.components:
-            raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
+            raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset.name)
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
@@ -279,7 +284,7 @@ class Sub(Operator):
             raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
-                raise SemanticError("1-1-6-1", op=cls.op, comp_name=operand.name, dataset_name=dataset.name)
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.name, dataset_name=dataset.name)
             if operand.role != Role.IDENTIFIER:
                 raise SemanticError("1-1-6-10", op=cls.op, operand=operand.name, dataset_name=dataset.name)
             if isinstance(operand, Scalar):

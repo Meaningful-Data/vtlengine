@@ -186,7 +186,8 @@ class Check_Hierarchy(Validation):
         if not check_unary_implicit_promotion(measure.data_type, Number):
             raise SemanticError("1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number")
         if component_name not in dataset.components:
-            raise ValueError(f"Component {component_name} not found in dataset {dataset.name}")
+            raise SemanticError("1-1-1-10", op=Check_Hierarchy.op, comp_name=component_name,
+                                dataset_name=dataset.name)
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():

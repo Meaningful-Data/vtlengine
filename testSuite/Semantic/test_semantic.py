@@ -50,7 +50,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_2'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -178,7 +178,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_10'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -210,7 +210,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_12'
         number_inputs = 1
-        error_code = "1-1-1-7"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -258,7 +258,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_15'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -306,7 +306,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_18'
         number_inputs = 1
-        error_code = '1-1-1-2'
+        error_code = '1-1-1-1'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -354,7 +354,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_21'
         number_inputs = 1
-        error_code = '1-1-1-2'
+        error_code = '1-1-1-1'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -417,7 +417,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_25'
         number_inputs = 1
-        error_code = '1-1-6-7'
+        error_code = '1-1-1-10'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -449,7 +449,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_27'
         number_inputs = 1
-        error_code = '1-1-6-7'
+        error_code = '1-1-1-10'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -465,7 +465,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_28'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -481,7 +481,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_29'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -513,7 +513,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_31'
         number_inputs = 1
-        error_code = "1-1-6-2" #probably wrong error code
+        error_code = "1-1-6-2"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -529,7 +529,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_32'
         number_inputs = 1
-        error_code = "1-1-6-7"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -666,7 +666,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_40'
         number_inputs = 2
-        error_code = "1-1-1-15"
+        error_code = "1-1-14-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -698,7 +698,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_42'
         number_inputs = 1
-        error_code = "1-1-6-7"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -714,7 +714,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_43'
         number_inputs = 1
-        error_code = "1-1-12-1"
+        error_code = "1-1-6-13"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -795,7 +795,7 @@ class ClauseClauseTests(SemanticHelper):
         """
         code = 'CC_48'
         number_inputs = 1
-        error_code = "1-1-1-7"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1001,7 +1001,7 @@ class MembershipTests(SemanticHelper):
         """
         code = 'Memb_2'
         number_inputs = 1
-        error_code = "1-1-6-6"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1246,7 +1246,7 @@ class AliasTests(SemanticHelper):
         """
         code = 'Al_10'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1310,7 +1310,7 @@ class AliasTests(SemanticHelper):
         """
         code = 'Al_14'
         number_inputs = 1
-        error_code = '1-1-6-7'
+        error_code = '1-1-1-10'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1374,7 +1374,7 @@ class AliasTests(SemanticHelper):
         """
         code = 'Al_18'
         number_inputs = 1
-        error_code = '1-3-16'
+        error_code = '1-1-1-10'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1390,7 +1390,7 @@ class AliasTests(SemanticHelper):
         """
         code = 'Al_19'
         number_inputs = 1
-        error_code = '1-1-12-1'
+        error_code = '1-1-6-13'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1527,7 +1527,7 @@ class JoinTests(SemanticHelper):
         """
         code = 'J_5'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1543,7 +1543,7 @@ class JoinTests(SemanticHelper):
         """
         code = 'J_6'
         number_inputs = 2
-        error_code = "1-1-13-9"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1575,7 +1575,7 @@ class JoinTests(SemanticHelper):
         """
         code = 'J_8'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1751,7 +1751,7 @@ class JoinTests(SemanticHelper):
         """
         code = 'J_19'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1805,7 +1805,7 @@ class AggregateTests(SemanticHelper):
         """
         code = 'Ag_2'
         number_inputs = 1
-        error_code = "1-1-1-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1911,9 +1911,8 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_6'
         number_inputs = 2
-        error_code = "0-1-0-1"
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        message = "Trying to redefine input datasets"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_7(self):
         """
@@ -1927,7 +1926,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_7'
         number_inputs = 1  # number of files
-        error_code = "1-1-1-5"
+        error_code = "1-1-1-2"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2023,7 +2022,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_13'
         number_inputs = 1
-        error_code = "1-1-1-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2176,7 +2175,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_22'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2194,7 +2193,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_23'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2212,7 +2211,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_24'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2231,7 +2230,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_25'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2317,7 +2316,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_30'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-20"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2367,7 +2366,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_32'
         number_inputs = 1
-        error_code = "1-4-1-9"
+        error_code = "1-1-1-20"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2389,7 +2388,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_33'
         number_inputs = 1
-        error_code = "1-4-1-9"
+        error_code = "1-1-1-20"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2586,7 +2585,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_43'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2612,7 +2611,7 @@ class ScalarTests(SemanticHelper):
         """
         code = 'Sc_44'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "2-3-4"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 

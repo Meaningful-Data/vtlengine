@@ -84,11 +84,12 @@ class Aggregation(Operator.Unary):
                  having_data: Optional[List[DataComponent]]) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
-            raise SemanticError("1-1-2-1", op=cls.op)
+            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         if group_op is not None:
             for comp_name in grouping_components:
                 if comp_name not in operand.components:
-                    raise SemanticError("1-1-2-4", op=cls.op, id_name=comp_name)
+                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name,
+                                        dataset_name=operand.name)
                 if operand.components[comp_name].role != Role.IDENTIFIER:
                     raise SemanticError("1-1-2-2", op=cls.op,
                                         id_name=comp_name,

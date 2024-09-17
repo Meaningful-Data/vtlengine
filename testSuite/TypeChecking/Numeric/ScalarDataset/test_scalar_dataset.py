@@ -56,8 +56,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-2'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_3(self):
         '''
@@ -140,7 +140,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_8(self):
@@ -158,7 +158,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_9(self):
@@ -192,8 +192,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-10'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_11(self):
         '''
@@ -258,8 +258,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-14'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_15(self):
         '''
@@ -276,7 +276,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_16(self):
@@ -294,7 +294,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_17(self):
@@ -328,8 +328,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-18'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_19(self):
         '''
@@ -394,8 +394,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-22'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_23(self):
         '''
@@ -412,7 +412,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_24(self):
@@ -430,7 +430,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_25(self):
@@ -464,8 +464,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-26'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_27(self):
         '''
@@ -530,8 +530,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-30'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_31(self):
         '''
@@ -548,7 +548,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_32(self):
@@ -566,7 +566,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_33(self):
@@ -600,8 +600,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-34'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_35(self):
         '''
@@ -666,8 +666,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-38'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_39(self):
         '''
@@ -684,7 +684,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_40(self):
@@ -702,7 +702,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_41(self):
@@ -736,8 +736,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-42'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_43(self):
         '''
@@ -802,8 +802,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-46'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_47(self):
         '''
@@ -820,7 +820,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_48(self):
@@ -838,7 +838,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_49(self):
@@ -872,8 +872,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-50'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_51(self):
         '''
@@ -938,8 +938,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-54'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_55(self):
         '''
@@ -956,7 +956,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_56(self):
@@ -974,7 +974,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_57(self):
@@ -1008,8 +1008,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-58'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_59(self):
         '''
@@ -1074,8 +1074,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-62'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_63(self):
         '''
@@ -1092,7 +1092,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_64(self):
@@ -1110,7 +1110,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_65(self):
@@ -1144,8 +1144,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-66'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_67(self):
         '''
@@ -1210,8 +1210,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-70'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_71(self):
         '''
@@ -1228,7 +1228,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_72(self):
@@ -1246,7 +1246,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_73(self):
@@ -1280,8 +1280,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-74'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_75(self):
         '''
@@ -1346,8 +1346,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-78'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_79(self):
         '''
@@ -1364,7 +1364,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_80(self):
@@ -1382,7 +1382,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_81(self):
@@ -1416,8 +1416,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-82'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_83(self):
         '''
@@ -1482,8 +1482,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-86'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_87(self):
         '''
@@ -1500,7 +1500,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_88(self):
@@ -1518,7 +1518,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_89(self):
@@ -1552,8 +1552,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-90'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_91(self):
         '''
@@ -1618,8 +1618,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-94'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_95(self):
         '''
@@ -1636,7 +1636,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_96(self):
@@ -1654,7 +1654,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_97(self):
@@ -1688,8 +1688,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-98'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_99(self):
         '''
@@ -1754,8 +1754,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-102'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_103(self):
         '''
@@ -1772,7 +1772,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_104(self):
@@ -1790,7 +1790,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_105(self):
@@ -1824,8 +1824,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-106'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_107(self):
         '''
@@ -1890,8 +1890,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-110'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_111(self):
         '''
@@ -1908,7 +1908,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_112(self):
@@ -1926,7 +1926,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_113(self):
@@ -1960,8 +1960,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-114'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_115(self):
         '''
@@ -2026,8 +2026,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-118'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_119(self):
         '''
@@ -2044,7 +2044,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_120(self):
@@ -2062,7 +2062,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_121(self):
@@ -2096,8 +2096,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-122'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_123(self):
         '''
@@ -2162,8 +2162,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-126'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_127(self):
         '''
@@ -2180,7 +2180,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_128(self):
@@ -2198,7 +2198,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_129(self):
@@ -2215,7 +2215,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-129'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_130(self):
@@ -2232,8 +2232,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-130'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_131(self):
         '''
@@ -2249,7 +2249,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-131'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_132(self):
@@ -2266,7 +2266,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-132'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_133(self):
@@ -2282,7 +2282,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-133'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_134(self):
@@ -2298,8 +2298,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-134'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_135(self):
         '''
@@ -2316,7 +2316,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_136(self):
@@ -2334,7 +2334,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_137(self):
@@ -2351,7 +2351,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-137'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_138(self):
@@ -2368,8 +2368,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-138'
         number_inputs = 1
 
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_139(self):
         '''
@@ -2385,7 +2385,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-139'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_140(self):
@@ -2402,7 +2402,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-140'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_141(self):
@@ -2418,7 +2418,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-141'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_142(self):
@@ -2434,8 +2434,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-142'
         number_inputs = 1
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_143(self):
         '''
@@ -2451,7 +2451,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-143'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_144(self):
@@ -2467,7 +2467,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-144'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_145(self):
@@ -2484,7 +2484,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-145'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_146(self):
@@ -2501,8 +2501,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-146'
         number_inputs = 1
 
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_147(self):
         '''
@@ -2518,7 +2518,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-147'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_148(self):
@@ -2535,7 +2535,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-148'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_149(self):
@@ -2551,7 +2551,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-149'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_150(self):
@@ -2567,8 +2567,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-150'
         number_inputs = 1
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_151(self):
         '''
@@ -2583,7 +2583,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-151'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_152(self):
@@ -2599,7 +2599,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-152'
         number_inputs = 1
-        message = '1-1-1-14'
+        message = '1-1-15-8'
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
@@ -2617,7 +2617,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-153'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_154(self):
@@ -2634,8 +2634,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-154'
         number_inputs = 1
 
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_155(self):
         '''
@@ -2651,7 +2651,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-155'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_156(self):
@@ -2668,7 +2668,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-156'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_157(self):
@@ -2684,7 +2684,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-157'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_158(self):
@@ -2700,40 +2700,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-158'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
-    def test_159(self):
-        '''
-        ADD OPERATOR
-        integer round number --> integer
-        Status: OK
-        Expression: DS_r := round(DS_1 , 1.0) ;
-        Description: Forbid implicit cast integer to number in round operator.
-        Jira issue: VTLEN 562.
-        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-        Goal: Check Exception.
-        '''
-        code = '4-3-3-159'
-        number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
-    def test_160(self):
-        '''
-        ADD OPERATOR
-        number round number --> number
-        Status: OK
-        Expression: DS_r := round(DS_1 , 1.0) ;
-        Description: Forbid implicit cast number to number in round operator.
-        Jira issue: VTLEN 562.
-        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-        Goal: Check Exception.
-        '''
-        code = '4-3-3-160'
-        number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_161(self):
         '''
@@ -2749,7 +2717,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-161'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_162(self):
@@ -2766,8 +2734,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-162'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_163(self):
         '''
@@ -2783,7 +2751,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-163'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_164(self):
@@ -2800,7 +2768,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-164'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_165(self):
@@ -2816,7 +2784,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-165'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_166(self):
@@ -2832,8 +2800,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-166'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_167(self):
         '''
@@ -2850,7 +2818,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_168(self):
@@ -2868,7 +2836,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_169(self):
@@ -2885,7 +2853,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-169'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_170(self):
@@ -2902,8 +2870,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-170'
         number_inputs = 1
 
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_171(self):
         '''
@@ -2919,7 +2887,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-171'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_172(self):
@@ -2936,7 +2904,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-172'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_173(self):
@@ -2952,8 +2920,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-174'
         number_inputs = 1
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_174(self):
         '''
@@ -2968,8 +2936,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-174'
         number_inputs = 1
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_175(self):
         '''
@@ -2984,7 +2952,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-175'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_176(self):
@@ -3000,7 +2968,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-176'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_177(self):
@@ -3017,7 +2985,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-177'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_178(self):
@@ -3034,8 +3002,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-178'
         number_inputs = 1
 
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_179(self):
         '''
@@ -3051,7 +3019,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-179'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_180(self):
@@ -3068,7 +3036,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-180'
         number_inputs = 1
 
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_181(self):
@@ -3084,7 +3052,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-181'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_182(self):
@@ -3100,8 +3068,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-182'
         number_inputs = 1
-        message = "1-1-1-14"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_183(self):
         '''
@@ -3116,8 +3084,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-183'
         number_inputs = 1
-
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_184(self):
@@ -3133,7 +3100,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-184'
         number_inputs = 1
-        message = "1-1-1-14"
+        message = "1-1-15-8"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_185(self):
@@ -3149,7 +3116,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-185'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_186(self):
@@ -3165,8 +3132,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-186'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_187(self):
         '''
@@ -3181,7 +3148,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-187'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_188(self):
@@ -3198,7 +3165,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-188'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_189(self):
@@ -3214,7 +3181,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-189'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_190(self):
@@ -3230,8 +3197,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-190'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_191(self):
         '''
@@ -3246,8 +3213,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-191'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_192(self):
         '''
@@ -3262,8 +3229,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-192'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_193(self):
         '''
@@ -3279,7 +3246,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-193'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_194(self):
@@ -3296,8 +3263,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-194'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_195(self):
         '''
@@ -3313,7 +3280,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-195'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_196(self):
@@ -3330,7 +3297,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-196'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_197(self):
@@ -3346,7 +3313,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-197'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_198(self):
@@ -3362,8 +3329,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-198'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_199(self):
         '''
@@ -3380,7 +3347,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_200(self):
@@ -3398,7 +3365,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_201(self):
@@ -3415,7 +3382,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-201'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_202(self):
@@ -3432,8 +3399,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-202'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_203(self):
         '''
@@ -3449,7 +3416,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-203'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_204(self):
@@ -3466,7 +3433,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-204'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_205(self):
@@ -3482,7 +3449,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-205'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_206(self):
@@ -3498,8 +3465,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-206'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_207(self):
         '''
@@ -3516,7 +3483,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_208(self):
@@ -3534,7 +3501,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_209(self):
@@ -3551,7 +3518,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-209'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_210(self):
@@ -3568,8 +3535,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-210'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_211(self):
         '''
@@ -3585,7 +3552,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-211'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_212(self):
@@ -3602,7 +3569,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-212'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_213(self):
@@ -3618,7 +3585,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-213'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_214(self):
@@ -3634,8 +3601,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-214'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_215(self):
         '''
@@ -3652,7 +3619,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_216(self):
@@ -3670,7 +3637,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_217(self):
@@ -3687,7 +3654,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-217'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_218(self):
@@ -3704,8 +3671,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-218'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_219(self):
         '''
@@ -3721,7 +3688,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-219'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_220(self):
@@ -3738,7 +3705,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-220'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_221(self):
@@ -3754,7 +3721,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-221'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_222(self):
@@ -3770,8 +3737,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-222'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_223(self):
         '''
@@ -3788,7 +3755,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_224(self):
@@ -3806,7 +3773,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_225(self):
@@ -3823,7 +3790,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-225'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_226(self):
@@ -3840,8 +3807,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-226'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_227(self):
         '''
@@ -3857,7 +3824,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-227'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_228(self):
@@ -3874,7 +3841,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-228'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_229(self):
@@ -3890,7 +3857,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-229'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_230(self):
@@ -3906,8 +3873,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-230'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_231(self):
         '''
@@ -3924,7 +3891,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_232(self):
@@ -3942,7 +3909,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_233(self):
@@ -3959,7 +3926,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-233'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_234(self):
@@ -3976,8 +3943,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-234'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_235(self):
         '''
@@ -3993,7 +3960,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-235'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_236(self):
@@ -4010,7 +3977,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-236'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_237(self):
@@ -4026,7 +3993,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-237'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_238(self):
@@ -4042,8 +4009,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-238'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_239(self):
         '''
@@ -4060,7 +4027,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_240(self):
@@ -4078,7 +4045,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_241(self):
@@ -4095,7 +4062,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-241'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_242(self):
@@ -4112,8 +4079,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-242'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_243(self):
         '''
@@ -4129,7 +4096,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-243'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_244(self):
@@ -4146,7 +4113,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-244'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_245(self):
@@ -4162,7 +4129,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-245'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_246(self):
@@ -4178,8 +4145,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-246'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_247(self):
         '''
@@ -4196,7 +4163,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_248(self):
@@ -4214,7 +4181,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_249(self):
@@ -4231,7 +4198,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-249'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_250(self):
@@ -4248,8 +4215,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-250'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_251(self):
         '''
@@ -4265,7 +4232,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-251'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_252(self):
@@ -4282,7 +4249,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-252'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_253(self):
@@ -4298,7 +4265,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-253'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_254(self):
@@ -4314,8 +4281,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-254'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_255(self):
         '''
@@ -4332,7 +4299,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_256(self):
@@ -4350,7 +4317,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_257(self):
@@ -4367,7 +4334,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-257'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_258(self):
@@ -4384,8 +4351,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-258'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_259(self):
         '''
@@ -4401,7 +4368,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-259'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_260(self):
@@ -4418,7 +4385,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-260'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_261(self):
@@ -4434,7 +4401,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-261'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_262(self):
@@ -4450,8 +4417,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-262'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_263(self):
         '''
@@ -4468,7 +4435,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_264(self):
@@ -4486,7 +4453,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_265(self):
@@ -4503,7 +4470,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-265'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_266(self):
@@ -4520,8 +4487,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-266'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_267(self):
         '''
@@ -4537,7 +4504,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-267'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_268(self):
@@ -4554,7 +4521,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-268'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_269(self):
@@ -4570,7 +4537,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-269'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_270(self):
@@ -4586,8 +4553,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-270'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_271(self):
         '''
@@ -4604,7 +4571,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_272(self):
@@ -4622,7 +4589,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_273(self):
@@ -4639,7 +4606,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-273'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_274(self):
@@ -4656,8 +4623,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-274'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_275(self):
         '''
@@ -4673,7 +4640,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-275'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_276(self):
@@ -4690,7 +4657,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-276'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_277(self):
@@ -4706,7 +4673,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-277'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_278(self):
@@ -4722,8 +4689,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-278'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_279(self):
         '''
@@ -4740,7 +4707,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_280(self):
@@ -4758,7 +4725,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_281(self):
@@ -4775,7 +4742,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-281'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_282(self):
@@ -4792,8 +4759,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-282'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_283(self):
         '''
@@ -4809,7 +4776,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-283'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_284(self):
@@ -4826,7 +4793,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-284'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_285(self):
@@ -4842,7 +4809,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-285'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_286(self):
@@ -4858,8 +4825,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-286'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_287(self):
         '''
@@ -4876,7 +4843,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_288(self):
@@ -4894,7 +4861,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_289(self):
@@ -4911,7 +4878,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-289'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_290(self):
@@ -4928,8 +4895,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-290'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_291(self):
         '''
@@ -4945,7 +4912,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-291'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_292(self):
@@ -4962,7 +4929,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-292'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_293(self):
@@ -4978,7 +4945,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-293'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_294(self):
@@ -4994,8 +4961,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-294'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_295(self):
         '''
@@ -5012,7 +4979,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_296(self):
@@ -5030,7 +4997,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_297(self):
@@ -5047,7 +5014,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-297'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_298(self):
@@ -5064,9 +5031,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-298'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
     def test_299(self):
         '''
         ADD OPERATOR
@@ -5081,7 +5047,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-299'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_300(self):
@@ -5098,7 +5064,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-300'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_301(self):
@@ -5114,7 +5080,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-301'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_302(self):
@@ -5130,8 +5096,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-302'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_303(self):
         '''
@@ -5148,7 +5114,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_304(self):
@@ -5166,7 +5132,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_305(self):
@@ -5183,7 +5149,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-305'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_306(self):
@@ -5200,8 +5166,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-306'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_307(self):
         '''
@@ -5217,7 +5183,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-307'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_308(self):
@@ -5234,7 +5200,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-308'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_309(self):
@@ -5250,7 +5216,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-309'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_310(self):
@@ -5266,8 +5232,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-310'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_311(self):
         '''
@@ -5284,7 +5250,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_312(self):
@@ -5302,7 +5268,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_313(self):
@@ -5319,7 +5285,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-313'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_314(self):
@@ -5336,8 +5302,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-314'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_315(self):
         '''
@@ -5353,7 +5319,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-315'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_316(self):
@@ -5370,7 +5336,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-316'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_317(self):
@@ -5386,7 +5352,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-317'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_318(self):
@@ -5402,8 +5368,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-318'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_319(self):
         '''
@@ -5420,7 +5386,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_320(self):
@@ -5438,7 +5404,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_321(self):
@@ -5455,7 +5421,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-321'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_322(self):
@@ -5472,8 +5438,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-322'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_323(self):
         '''
@@ -5489,7 +5455,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-323'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_324(self):
@@ -5506,7 +5472,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-324'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_325(self):
@@ -5522,7 +5488,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-325'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_326(self):
@@ -5538,8 +5504,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-326'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_327(self):
         '''
@@ -5556,7 +5522,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_328(self):
@@ -5574,7 +5540,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_329(self):
@@ -5591,7 +5557,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-329'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_330(self):
@@ -5608,8 +5574,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-330'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_331(self):
         '''
@@ -5625,7 +5591,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-331'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_332(self):
@@ -5642,7 +5608,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-332'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_333(self):
@@ -5658,7 +5624,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-333'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_334(self):
@@ -5674,8 +5640,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-334'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_335(self):
         '''
@@ -5692,7 +5658,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_336(self):
@@ -5710,7 +5676,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_337(self):
@@ -5727,7 +5693,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-337'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_338(self):
@@ -5744,8 +5710,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-338'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_339(self):
         '''
@@ -5761,7 +5727,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-339'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_340(self):
@@ -5778,7 +5744,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-340'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_341(self):
@@ -5794,7 +5760,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-341'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_342(self):
@@ -5810,8 +5776,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-342'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_343(self):
         '''
@@ -5828,7 +5794,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_344(self):
@@ -5846,7 +5812,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_345(self):
@@ -5863,7 +5829,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-345'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_346(self):
@@ -5880,8 +5846,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-346'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_347(self):
         '''
@@ -5897,7 +5863,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-347'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_348(self):
@@ -5914,7 +5880,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-348'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_349(self):
@@ -5930,7 +5896,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-349'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_350(self):
@@ -5946,8 +5912,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-350'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_351(self):
         '''
@@ -5964,7 +5930,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_352(self):
@@ -5982,7 +5948,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_353(self):
@@ -6016,9 +5982,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-354'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
     def test_355(self):
         '''
         ADD OPERATOR
@@ -6082,8 +6047,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-358'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_359(self):
         '''
@@ -6100,7 +6065,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_360(self):
@@ -6118,7 +6083,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_361(self):
@@ -6135,7 +6100,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-361'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_362(self):
@@ -6152,8 +6117,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-362'
         number_inputs = 1
 
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_363(self):
         '''
@@ -6169,7 +6134,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-363'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_364(self):
@@ -6186,7 +6151,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-364'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_365(self):
@@ -6202,7 +6167,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-365'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_366(self):
@@ -6218,44 +6183,42 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-366'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
-    # def test_367(self):
-    #     '''
-    #     ADD OPERATOR
-    #     integer power integer --> integer
-    #     Status: OK
-    #     Expression: DS_r := power(1 , DS_1) ;
-    #     Description: Forbid implicit cast integer to integer in power operator.
-    #     Jira issue: VTLEN 562.
-    #     Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-    #     Goal: Check Exception.
-    #     '''
-    #     code = '4-3-3-367'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
+    def test_367(self):
+        '''
+        ADD OPERATOR
+        integer power integer --> integer
+        Status: OK
+        Expression: DS_r := power(1 , DS_1) ;
+        Description: Forbid implicit cast integer to integer in power operator.
+        Jira issue: VTLEN 562.
+        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
+        Goal: Check Exception.
+        '''
+        code = '4-3-3-367'
+        number_inputs = 1
+        references_names = ["DS_r"]
 
-    #     
-    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # def test_368(self):
-    #     '''
-    #     ADD OPERATOR
-    #     integer power number --> number
-    #     Status: OK
-    #     Expression: DS_r := power(1 , DS_1) ;
-    #     Description: Forbid implicit cast integer to number in power operator.
-    #     Jira issue: VTLEN 562.
-    #     Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-    #     Goal: Check Exception.
-    #     '''
-    #     code = '4-3-3-368'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
+    def test_368(self):
+        '''
+        ADD OPERATOR
+        integer power number --> number
+        Status: OK
+        Expression: DS_r := power(1 , DS_1) ;
+        Description: Forbid implicit cast integer to number in power operator.
+        Jira issue: VTLEN 562.
+        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
+        Goal: Check Exception.
+        '''
+        code = '4-3-3-368'
+        number_inputs = 1
+        references_names = ["DS_r"]
 
-    #     
-    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_369(self):
         '''
@@ -6271,7 +6234,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-369'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_370(self):
@@ -6288,8 +6251,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-370'
         number_inputs = 1
 
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_371(self):
         '''
@@ -6305,7 +6268,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-371'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_372(self):
@@ -6322,7 +6285,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-372'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_373(self):
@@ -6338,7 +6301,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-373'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_374(self):
@@ -6353,44 +6316,44 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-374'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
-    # def test_375(self):
-    #     '''
-    #     ADD OPERATOR
-    #     number power integer --> integer
-    #     Status: OK
-    #     Expression: DS_r := power(1.0 , DS_1) ;
-    #     Description: Forbid implicit cast number to integer in power operator.
-    #     Jira issue: VTLEN 562.
-    #     Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-    #     Goal: Check Exception.
-    #     '''
-    #     code = '4-3-3-375'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
+    def test_375(self):
+        '''
+        ADD OPERATOR
+        number power integer --> integer
+        Status: OK
+        Expression: DS_r := power(1.0 , DS_1) ;
+        Description: Forbid implicit cast number to integer in power operator.
+        Jira issue: VTLEN 562.
+        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
+        Goal: Check Exception.
+        '''
+        code = '4-3-3-375'
+        number_inputs = 1
+        references_names = ["DS_r"]
 
-    #     
-    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # def test_376(self):
-    #     '''
-    #     ADD OPERATOR
-    #     number power number --> number
-    #     Status: OK
-    #     Expression: DS_r := power(1.0 , DS_1) ;
-    #     Description: Forbid implicit cast number to number in power operator.
-    #     Jira issue: VTLEN 562.
-    #     Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
-    #     Goal: Check Exception.
-    #     '''
-    #     code = '4-3-3-376'
-    #     number_inputs = 1
-    #     references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    #     
-    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+    def test_376(self):
+        '''
+        ADD OPERATOR
+        number power number --> number
+        Status: OK
+        Expression: DS_r := power(1.0 , DS_1) ;
+        Description: Forbid implicit cast number to number in power operator.
+        Jira issue: VTLEN 562.
+        Git Branch: feat-VTLEN-562-Binary-Add-Numeric-tests.
+        Goal: Check Exception.
+        '''
+        code = '4-3-3-376'
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_377(self):
         '''
@@ -6423,8 +6386,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-378'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_379(self):
         '''
@@ -6489,8 +6452,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-382'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_383(self):
         '''
@@ -6507,7 +6470,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_384(self):
@@ -6525,7 +6488,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_385(self):
@@ -6559,8 +6522,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-386'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_387(self):
         '''
@@ -6625,8 +6588,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-390'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_391(self):
         '''
@@ -6643,7 +6606,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_392(self):
@@ -6661,7 +6624,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_393(self):
@@ -6695,8 +6658,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-394'
         number_inputs = 1
 
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_395(self):
         '''
@@ -6712,7 +6675,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-395'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_396(self):
@@ -6729,7 +6692,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-396'
         number_inputs = 1
 
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_397(self):
@@ -6745,7 +6708,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-397'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_398(self):
@@ -6761,8 +6724,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-398'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_399(self):
         '''
@@ -6777,8 +6740,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-399'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_400(self):
         '''
@@ -6793,8 +6756,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-400'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_401(self):
         '''
@@ -6809,7 +6772,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-401'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_402(self):
@@ -6825,8 +6788,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-402'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_403(self):
         '''
@@ -6841,7 +6804,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-403'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_404(self):
@@ -6857,7 +6820,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-404'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_405(self):
@@ -6873,7 +6836,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-405'
         number_inputs = 1
-        message = "1-1-1-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_406(self):
@@ -6889,8 +6852,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-406'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_407(self):
         '''
@@ -6905,8 +6868,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-407'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_408(self):
         '''
@@ -6921,8 +6884,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-408'
         number_inputs = 1
-        message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_409(self):
         '''
@@ -6937,7 +6900,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-409'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_410(self):
@@ -6953,8 +6916,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-410'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_411(self):
         '''
@@ -6970,7 +6933,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-411'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_412(self):
@@ -6987,7 +6950,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-412'
         number_inputs = 1
 
-        message = "1-1-1-5"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_413(self):
@@ -7003,7 +6966,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-413'
         number_inputs = 1
-        message = "1-1-1-5"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_414(self):
@@ -7019,8 +6982,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-414'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_415(self):
         '''
@@ -7035,8 +6998,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-415'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_416(self):
         '''
@@ -7051,8 +7014,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-416'
         number_inputs = 1
-        message = "1-1-1-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["DS_r"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_417(self):
         '''
@@ -7068,7 +7031,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-417'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_418(self):
@@ -7085,8 +7048,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-418'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_419(self):
         '''
@@ -7102,7 +7065,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-419'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_420(self):
@@ -7118,7 +7081,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-420'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_421(self):
@@ -7134,7 +7097,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-421'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_422(self):
@@ -7150,8 +7113,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-422'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_423(self):
         '''
@@ -7168,7 +7131,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_424(self):
@@ -7186,7 +7149,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_425(self):
@@ -7203,7 +7166,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-425'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_426(self):
@@ -7220,8 +7183,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-426'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_427(self):
         '''
@@ -7237,7 +7200,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-427'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_428(self):
@@ -7254,7 +7217,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-428'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_429(self):
@@ -7270,7 +7233,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-429'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_430(self):
@@ -7286,8 +7249,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-430'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_431(self):
         '''
@@ -7304,7 +7267,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_432(self):
@@ -7322,7 +7285,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_433(self):
@@ -7339,7 +7302,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-433'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_434(self):
@@ -7356,8 +7319,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-434'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_435(self):
         '''
@@ -7373,7 +7336,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-435'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_436(self):
@@ -7390,7 +7353,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-436'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_437(self):
@@ -7406,7 +7369,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-437'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_438(self):
@@ -7422,8 +7385,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-438'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_439(self):
         '''
@@ -7440,7 +7403,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_440(self):
@@ -7458,7 +7421,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_441(self):
@@ -7475,7 +7438,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-441'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_442(self):
@@ -7492,8 +7455,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-442'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_443(self):
         '''
@@ -7509,7 +7472,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-443'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_444(self):
@@ -7526,7 +7489,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-444'
         number_inputs = 1
 
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_445(self):
@@ -7542,7 +7505,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-445'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_446(self):
@@ -7558,8 +7521,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-446'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_447(self):
         '''
@@ -7576,7 +7539,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_448(self):
@@ -7594,7 +7557,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_449(self):
@@ -7628,8 +7591,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-450'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_451(self):
         '''
@@ -7694,8 +7657,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-454'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_455(self):
         '''
@@ -7712,7 +7675,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_456(self):
@@ -7730,7 +7693,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_457(self):
@@ -7764,8 +7727,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-458'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_459(self):
         '''
@@ -7830,8 +7793,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-462'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_463(self):
         '''
@@ -7848,7 +7811,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_464(self):
@@ -7866,7 +7829,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_465(self):
@@ -7900,8 +7863,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-466'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_467(self):
         '''
@@ -7966,8 +7929,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-470'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_471(self):
         '''
@@ -7984,7 +7947,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_472(self):
@@ -8002,7 +7965,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         number_inputs = 1
         references_names = ["DS_r"]
 
-        
+
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_473(self):
@@ -8036,8 +7999,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         code = '4-3-3-474'
         number_inputs = 1
 
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_475(self):
         '''
@@ -8102,8 +8065,8 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
         '''
         code = '4-3-3-478'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_479(self):
         '''

@@ -429,12 +429,8 @@ class NumericBugs(BugHelper):
         """
         code = 'GL_413'
         number_inputs = 1
-        references_names = ["1"]
-
-        with pytest.raises(Exception, match="has decimals, cannot cast to integer"):
-            self.BaseTest(
-                code=code, number_inputs=number_inputs,
-                references_names=references_names)
+        message = "2-1-5-1"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
 
 class ComparisonBugs(BugHelper):
@@ -610,7 +606,7 @@ class ComparisonBugs(BugHelper):
         code = 'GL_88_4'
         number_inputs = 1
 
-        message = "1-1-1-12"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_169_1(self):
@@ -695,7 +691,7 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_169_5'
         number_inputs = 1
-        message = "1-1-14-8"
+        message = "1-1-1-4"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_169_6(self):
@@ -708,8 +704,12 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_169_6'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        references_names = ["1"]
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names
+        )
 
     def test_GL_169_7(self):
         """
@@ -757,7 +757,7 @@ class ComparisonBugs(BugHelper):
         """
         code = 'GL_169_9'
         number_inputs = 1
-        message = "1-1-7-1"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_169_10(self):
@@ -1181,7 +1181,7 @@ class AggregationBugs(BugHelper):
         """
         code = 'GL_11'
         number_inputs = 33
-        message = "1-1-1-2"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
@@ -1492,7 +1492,7 @@ class DataValidationBugs(BugHelper):
         """
         code = 'VTLEN_503'
         number_inputs = 1
-        message = "1-3-7" #1-3-19
+        message = "1-3-19"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
@@ -1658,7 +1658,7 @@ class ConditionalBugs(BugHelper):
         """
         code = 'GL_44'
         number_inputs = 1
-        error_code = "1-1-1-3"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1905,7 +1905,7 @@ class ClauseBugs(BugHelper):
         """
         code = 'GL_25_1'
         number_inputs = 2
-        message = "1-3-16"
+        message = "1-1-1-10"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_25_2(self):
@@ -1918,7 +1918,7 @@ class ClauseBugs(BugHelper):
         code = 'GL_25_2'
         number_inputs = 1
 
-        message = "1-1-12-1"
+        message = "1-1-6-13"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     # unpivot
@@ -2109,7 +2109,7 @@ class ClauseBugs(BugHelper):
         code = 'GL_124_9'
         number_inputs = 1
 
-        message = "1-1-1-9"
+        message = "1-1-1-1"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     # Drop
@@ -2412,7 +2412,7 @@ class ClauseBugs(BugHelper):
         """
         code = 'GL_292'
         number_inputs = 1
-        error_code = "1-1-6-7"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2614,7 +2614,7 @@ class OtherBugs(BugHelper):
         code = 'VTLEN_456'
         number_inputs = 18
         vd_names = ["VTLEN_456-1", "VTLEN_456-2"]
-        message = "1-1-13-11"
+        message = "1-3-19"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names)
 
     def test_VTLEN_563(self):
@@ -2920,7 +2920,7 @@ class OtherBugs(BugHelper):
         code = 'GL_364'
         number_inputs = 1
 
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_366(self):
@@ -2946,7 +2946,7 @@ class OtherBugs(BugHelper):
         """
 
         code = "GL_377"
-        number_inputs = 2
+        number_inputs = 1
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -3002,9 +3002,8 @@ class CastBugs(BugHelper):
         """
         code = 'GL_449_1'
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-16"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_449_2(self):
         """
@@ -3044,10 +3043,8 @@ class CastBugs(BugHelper):
         """
         code = 'GL_449_4'
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
+        message = "1-1-1-16"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
     def test_GL_449_5(self):
         """
         Status: OK
@@ -3056,9 +3053,8 @@ class CastBugs(BugHelper):
         """
         code = 'GL_449_5'
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-1-1-16"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_449_6(self):
         """
@@ -3123,8 +3119,7 @@ class CastBugs(BugHelper):
         """
         code = 'GL_447_1'
         number_inputs = 1
-        message = "1-1-3-3"
-        #TODO: Check the message error code
+        message = "1-1-1-16"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
