@@ -1,6 +1,7 @@
 import os
 from copy import copy
 
+import DataTypes
 from DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion
 from Model import Scalar, DataComponent, Dataset, Role
 from Operators import Operator, Binary
@@ -82,7 +83,13 @@ class If(Operator):
 
         # Datacomponent
         if isinstance(condition, DataComponent):
-            nullable = condition.nullable
+            if not isinstance(left, Scalar) or not isinstance(right, Scalar):
+                nullable = condition.nullable
+            else:
+                if isinstance(left, Scalar) and left.data_type == DataTypes.Null:
+                    nullable = True
+                if isinstance(right, Scalar) and right.data_type == DataTypes.Null:
+                    nullable = True
             if isinstance(left, DataComponent):
                 nullable |= left.nullable
             if isinstance(right, DataComponent):

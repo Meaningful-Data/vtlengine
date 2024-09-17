@@ -49,8 +49,8 @@ class Alias(Binary):
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: str):
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
-        if left_operand.name == new_name:
-            raise ValueError("Alias operation requires different names")
+        # if left_operand.name == new_name:
+        #     raise ValueError("Alias operation requires different names")
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
