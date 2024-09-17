@@ -2,9 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from API.Api import load_vtl, load_value_domains
+import DataTypes
+from API.Api import load_vtl, load_value_domains, load_datasets
 from DataTypes import String
-from Model import ValueDomain
+from Model import ValueDomain, Dataset, Component, Role
 
 # Path selection
 base_path = Path(__file__).parent
@@ -37,10 +38,23 @@ input_vd_OK = [
 input_vd_error_params = [
     (filepath_VTL / 'VD_1.json', 'Invalid vd file. Input does not exist'),
     (filepath_VTL / '1.vtl', 'Invalid vd file. Must have .json extension'),
-    (filepath_json / '2-1-DS_1.json', 'Invalid format for ValueDomain. Requires name, type and setlist.'),
+    (filepath_json / 'DS_1.json', 'Invalid format for ValueDomain. Requires name, type and setlist.'),
     (2, 'Invalid vd file. Input is not a Path object'),
     ({"setlist": ["AT", "BE", "CY"], "type": "String"},
      'Invalid format for ValueDomain. Requires name, type and setlist.')
+]
+
+load_datasets_input_params_OK = [
+    (filepath_json / 'DS_1.json'),
+    ({"datasets": [{"name": "DS_1",
+                    "DataStructure": [{"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                                      {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+                                      {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True}]}]})
+]
+
+load_datasets_wrong_input_params = [
+    (filepath_json / 'VD_1.json', 'Invalid datastructure. Input does not exist'),
+    (filepath_csv / 'DS_1.csv', 'Invalid datastructure. Must have .json extension')
 ]
 
 
@@ -69,3 +83,22 @@ def test_load_input_vd(input):
 def test_load_wrong_inputs_vd(input, error_message):
     with pytest.raises(Exception, match=error_message):
         load_value_domains(input)
+
+
+@pytest.mark.parametrize('datastructure', load_datasets_input_params_OK)
+def test_load_datastructures(datastructure):
+    result = load_datasets(datastructure)
+    reference = Dataset(name="DS_1", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                        data=None)
+    assert "DS_1" in result
+    assert result["DS_1"] == reference
+
+
+@pytest.mark.parametrize('input, error_message', load_datasets_wrong_input_params)
+def test_load_wrong_inputs_datastructures(input, error_message):
+    with pytest.raises(Exception, match=error_message):
+        load_datasets(input)
+

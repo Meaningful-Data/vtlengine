@@ -89,6 +89,10 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
 
 
 def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+    if not data_structure.exists():
+        raise Exception('Invalid datastructure. Input does not exist')
+    if data_structure.suffix != '.json':
+        raise Exception('Invalid datastructure. Must have .json extension')
     if isinstance(data_structure, list):
         ds_structures = {}
         for x in data_structure:
@@ -246,4 +250,4 @@ if __name__ == '__main__':
     #           datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
     #           value_domains=None, external_routines=None,
     #           return_only_persistent=False))
-    print(load_value_domains(filepath_json / '2-1-DS_1.json'))
+    print(load_datasets(filepath_csv / 'DS_1.csv'))
