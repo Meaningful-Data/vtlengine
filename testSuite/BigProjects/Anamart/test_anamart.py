@@ -167,7 +167,7 @@ class CSeries(AnamartHelper):
                             "INSTRMNT_PRTCTN_ALLCTN_DS", "ANAMART_PRTCTN_PV_ALLCTN"]
         message = "2-1-15-6"
 
-        self.NewExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
+        self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
         '''

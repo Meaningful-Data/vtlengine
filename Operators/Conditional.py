@@ -27,11 +27,21 @@ class If(Operator):
     def component_level_evaluation(cls, condition, true_branch, false_branch):
         data = []
         for i, row in enumerate(condition.data):
-            if row:
-                data.append(true_branch.value if isinstance(true_branch, Scalar) else true_branch.data[i])
+            if row == True:
+                if isinstance(true_branch, Scalar):
+                    data.append(true_branch.value)
+                elif i in true_branch.data.index:
+                    data.append(true_branch.data[i])
+                else:
+                    data.append(None)
             else:
-                data.append(false_branch.value if isinstance(false_branch, Scalar) else false_branch.data[i])
-        return pd.Series(data)
+                if isinstance(false_branch, Scalar):
+                    data.append(false_branch.value)
+                elif i in false_branch.data.index:
+                    data.append(false_branch.data[i])
+                else:
+                    data.append(None)
+        return pd.Series(data).dropna()
 
     @classmethod
     def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):
