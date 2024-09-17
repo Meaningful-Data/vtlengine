@@ -18,8 +18,6 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if isinstance(condition, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
-            if result.role != Role.IDENTIFIER:
-                result.nullable = True
         if isinstance(condition, Dataset):
             result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
@@ -71,6 +69,7 @@ class If(Operator):
 
     @classmethod
     def validate(cls, condition, true_branch, false_branch) -> Scalar | DataComponent | Dataset:
+        nullable = False
         left = true_branch
         right = false_branch
         if true_branch.__class__ != false_branch.__class__:
@@ -83,9 +82,14 @@ class If(Operator):
 
         # Datacomponent
         if isinstance(condition, DataComponent):
+            nullable = condition.nullable
+            if isinstance(left, DataComponent):
+                nullable |= left.nullable
+            if isinstance(right, DataComponent):
+                nullable |= right.nullable
             return DataComponent(name='result', data=None,
                                  data_type=binary_implicit_promotion(left.data_type, right.data_type),
-                                 role=Role.MEASURE, nullable=False)
+                                 role=Role.MEASURE, nullable=nullable)
 
         # Dataset
         if isinstance(left, DataComponent):
@@ -126,9 +130,6 @@ class Nvl(Binary):
             else:
                 result.value = left.value
             return result
-        if isinstance(left, Dataset):
-            for component in result.get_measures():
-                component.nullable = False
         if isinstance(right, Scalar):
             result.data = left.data.fillna(right.value)
         if isinstance(right, Dataset) or isinstance(right, DataComponent):
@@ -166,4 +167,6 @@ class Nvl(Binary):
                                                                   right.components[component.name].data_type)
             result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()
                                  if comp.role != Role.ATTRIBUTE}
+            for comp in result_components.values():
+                comp.nullable = False
             return Dataset(name='result', components=result_components, data=None)
