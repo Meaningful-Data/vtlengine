@@ -46,6 +46,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_regular_aggregation: bool = False
     is_from_grouping: bool = False
     is_from_having: bool = False
+    is_from_if: bool = False
     is_from_rule: bool = False
     is_from_join: bool = False
     is_from_condition: bool = False
@@ -193,6 +194,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> None:
+
+        is_from_if = False
+        if not self.is_from_condition and node.op != MEMBERSHIP and self.if_stack is not None and len(self.if_stack) > 0:
+            is_from_if = self.is_from_if
+            self.is_from_if = False
+
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
             if self.udo_params is not None and node.right.value in self.udo_params[-1]:
                 comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
@@ -203,7 +210,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-        if node.op != MEMBERSHIP and not self.is_from_condition and self.if_stack is not None and len(self.if_stack) > 0:
+        if is_from_if:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op not in BINARY_MAPPING:
             raise NotImplementedError
@@ -627,14 +634,16 @@ class InterpreterAnalyzer(ASTTemplate):
             self.generate_then_else_datasets(condition)
 
         self.if_stack.append(THEN_ELSE['then'])
+        self.is_from_if = True
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
             self.then_condition_dataset.pop()
             self.if_stack.pop()
 
         self.if_stack.append(THEN_ELSE['else'])
+        self.is_from_if = True
         elseOp = self.visit(node.elseOp)
-        if isinstance(elseOp, Scalar) or not isinstance(node.elseOp, AST.BinOp):
+        if isinstance(elseOp, Scalar) or (not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)):
             self.else_condition_dataset.pop()
             self.if_stack.pop()
 
