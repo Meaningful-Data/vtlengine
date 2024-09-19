@@ -882,7 +882,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-7'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -900,7 +900,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-8'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -918,7 +918,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-9'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -971,7 +971,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-12'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -989,7 +989,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-13'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1025,7 +1025,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-15'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2094,7 +2094,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = 'GL_422_3'
         number_inputs = 2
-        error_code = "1-1-6-13" #wrong error code, should be 1-1-6-13
+        error_code = "1-1-6-13"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
