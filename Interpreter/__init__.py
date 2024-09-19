@@ -41,6 +41,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Analysis mode
     only_semantic: bool = False
     # Flags to change behavior
+    nested_if = False
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -615,6 +616,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.is_from_condition = True
         condition = self.visit(node.condition)
+        # if self.if_stack is not None and len(self.if_stack) > 0:
+        #     df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
+        #     indexes = df.data[df.data.columns[0]]
+        #     condition.data = condition.data[indexes]
         self.is_from_condition = False
 
         if isinstance(condition, Scalar):
@@ -635,6 +640,12 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['then'])
         self.is_from_if = True
+        # self.nested_if = False
+        # if isinstance(node.thenOp, AST.If):
+        #     op = node.thenOp.condition
+        #     if isinstance(op, AST.BinOp):
+        #         if condition.name not in op.left and condition.name not in op.right:
+        #             self.nested_if = True
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
             self.then_condition_dataset.pop()
@@ -642,6 +653,12 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['else'])
         self.is_from_if = True
+        # self.nested_if = False
+        # if isinstance(node.elseOp, AST.If):
+        #     op = node.elseOp.condition
+        #     if isinstance(op, AST.BinOp):
+        #         if condition.name not in op.left and condition.name not in op.right:
+        #             self.nested_if = True
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)):
             self.else_condition_dataset.pop()
@@ -1062,16 +1079,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = condition.data
 
         if data is not None:
+            indexes = data.index
             data.fillna(False, inplace=True)
 
             if isinstance(condition, Dataset):
                 then_data = condition.data[condition.data[name]]
-                then_data[name] = [i for i, data in enumerate(data) if data]
+                then_data[name] = [i for i in indexes if data[i]]
                 else_data = condition.data[~condition.data[name]]
-                else_data[name] = [i for i, data in enumerate(data) if not data]
+                else_data[name] = [i for i in indexes if not data[i]]
             else:
-                then_data = pd.DataFrame({name: [i for i, data in enumerate(data) if data]})
-                else_data = pd.DataFrame({name: [i for i, data in enumerate(data) if not data]})
+                then_data = pd.DataFrame({name: [i for i in indexes if data[i]]})
+                else_data = pd.DataFrame({name: [i for i in indexes if not data[i]]})
         else:
             then_data = pd.DataFrame({name: []})
             else_data = pd.DataFrame({name: []})

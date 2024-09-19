@@ -5,7 +5,7 @@
       "DataStructure": [
         {
           "name": "LGL_ENTTY_CD",
-          "role": "Identifier",
+          "role": "Measure",
           "type": "String",
           "nullable": false
         },
