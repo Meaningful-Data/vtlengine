@@ -75,26 +75,3 @@ def _load_single_external_routine_from_file(input: Path):
     return ext_rout
 
 
-def load_external_routines(input: Union[dict, Path]) -> Optional[
-    Dict[str, ExternalRoutine]]:
-    """
-    Load the external routines
-    """
-    external_routines = {}
-    if isinstance(input, dict):
-        for name, query in input.items():
-            ext_routine = ExternalRoutine.from_sql_query(name, query)
-            external_routines[ext_routine.name] = ext_routine
-        return external_routines
-    if not isinstance(input, Path):
-        raise Exception('Input invalid')
-    if not input.exists():
-        raise Exception('Input does not exist')
-    if input.is_dir():
-        for f in input.iterdir():
-            ext_rout = _load_single_external_routine_from_file(f)
-            external_routines[ext_rout.name] = ext_rout
-        return external_routines
-    ext_rout = _load_single_external_routine_from_file(input)
-    external_routines[ext_rout.name] = ext_rout
-    return external_routines

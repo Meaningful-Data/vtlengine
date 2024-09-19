@@ -4,12 +4,12 @@ from typing import Union, Optional, Dict, List
 
 import pandas as pd
 
-from API import create_ast, load_external_routines
+from API import create_ast, _load_single_external_routine_from_file
 from AST import PersistentAssignment, Start
 from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
-from Model import ValueDomain, Dataset, Scalar, Component, Role
+from Model import ValueDomain, Dataset, Scalar, Component, Role, ExternalRoutine
 from files.output import format_time_period_external_representation, \
     TimePeriodRepresentation
 from files.parser import _validate_pandas, _fill_dataset_empty_data
@@ -75,24 +75,28 @@ def _load_datapoints_path(datapoints: Union[Path, List[Path]]):
 
 def _load_datastructure_single(data_structure: Union[dict, Path]):
     if isinstance(data_structure, dict):
-        structures = data_structure
-    elif data_structure.is_dir():
+        return _load_dataset_from_structure(data_structure)
+    if not isinstance(data_structure, Path):
+        raise Exception('Invalid datastructure. Input must be a dict or Path object')
+    if not data_structure.exists():
+        raise Exception('Invalid datastructure. Input does not exist')
+    if data_structure.is_dir():
         ds_structures = {}
         for f in data_structure.iterdir():
             ds_r = _load_datastructure_single(f)
             ds_structures = {**ds_structures, **ds_r}
         structures = ds_structures
     else:
+        if data_structure.suffix != '.json':
+            raise Exception('Invalid datastructure. Must have .json extension')
         with open(data_structure, 'r') as file:
             structures = json.load(file)
     return _load_dataset_from_structure(structures)
 
 
 def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
-    if not data_structure.exists():
-        raise Exception('Invalid datastructure. Input does not exist')
-    if data_structure.suffix != '.json':
-        raise Exception('Invalid datastructure. Must have .json extension')
+    if isinstance(data_structure, dict):
+        return _load_datastructure_single(data_structure)
     if isinstance(data_structure, list):
         ds_structures = {}
         for x in data_structure:
@@ -160,6 +164,31 @@ def load_value_domains(input: Union[dict, Path]):
     return value_domains
 
 
+def load_external_routines(input: Union[dict, Path]) -> Optional[
+    Dict[str, ExternalRoutine]]:
+    """
+    Load the external routines
+    """
+    external_routines = {}
+    if isinstance(input, dict):
+        for name, query in input.items():
+            ext_routine = ExternalRoutine.from_sql_query(name, query)
+            external_routines[ext_routine.name] = ext_routine
+        return external_routines
+    if not isinstance(input, Path):
+        raise Exception('Input invalid')
+    if not input.exists():
+        raise Exception('Input does not exist')
+    if input.is_dir():
+        for f in input.iterdir():
+            ext_rout = _load_single_external_routine_from_file(f)
+            external_routines[ext_rout.name] = ext_rout
+        return external_routines
+    ext_rout = _load_single_external_routine_from_file(input)
+    external_routines[ext_rout.name] = ext_rout
+    return external_routines
+
+
 def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
     persistent = []
     for child in ast.children:
@@ -205,7 +234,6 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-
     # Loading datasets and datapoints
     datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
 
@@ -250,4 +278,4 @@ if __name__ == '__main__':
     #           datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
     #           value_domains=None, external_routines=None,
     #           return_only_persistent=False))
-    print(load_datasets(filepath_csv / 'DS_1.csv'))
+    print(load_datasets_with_data(filepath_json / '2-1-DS_1.json', filepath_csv / 'DS_1.csv'))

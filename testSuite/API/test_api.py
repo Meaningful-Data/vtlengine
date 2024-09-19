@@ -1,9 +1,10 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 import DataTypes
-from API.Api import load_vtl, load_value_domains, load_datasets
+from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data
 from DataTypes import String
 from Model import ValueDomain, Dataset, Component, Role
 
@@ -57,6 +58,37 @@ load_datasets_wrong_input_params = [
     (filepath_csv / 'DS_1.csv', 'Invalid datastructure. Must have .json extension')
 ]
 
+load_datasets_with_data_without_dp_params_OK = [
+    (filepath_json / 'DS_1.json', None, ({'DS_1': Dataset(name="DS_1", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                                          data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]))}, None))
+]
+
+load_datasets_with_data_path_params_OK = [
+    (filepath_json / 'DS_1.json', filepath_csv / 'DS_1.csv', ({'DS_1': Dataset(name="DS_1", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                                                               data=None)},
+                                                              {'DS_1': filepath_csv / 'DS_1.csv'})),
+    ([filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'], [filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
+     ({'DS_1': Dataset(name="DS_1", components={
+         'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+         'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+         'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                       data=None),
+      'DS_2': Dataset(name="DS_2", components={
+          'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+          'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+          'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                         data=None)},
+        {'DS_1': filepath_csv / 'DS_1.csv', 'DS_2': filepath_csv / 'DS_2.csv'})
+     )
+]
+
+
 
 @pytest.mark.parametrize('input, expression', input_vtl_params_OK)
 def test_load_input_vtl(input, expression):
@@ -101,4 +133,16 @@ def test_load_datastructures(datastructure):
 def test_load_wrong_inputs_datastructures(input, error_message):
     with pytest.raises(Exception, match=error_message):
         load_datasets(input)
+
+
+@pytest.mark.parametrize('ds_r, dp, reference', load_datasets_with_data_without_dp_params_OK)
+def test_load_datasets_with_data_without_dp(ds_r, dp, reference):
+    result = load_datasets_with_data(data_structures=ds_r, datapoints=dp)
+    assert result == reference
+
+
+@pytest.mark.parametrize('ds_r, dp, reference', load_datasets_with_data_path_params_OK)
+def test_load_datasets_with_data_path(ds_r, dp, reference):
+    result = load_datasets_with_data(data_structures=ds_r, datapoints=dp)
+    assert result == reference
 
