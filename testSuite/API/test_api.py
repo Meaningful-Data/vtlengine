@@ -79,15 +79,20 @@ load_datasets_with_data_path_params_OK = [
          'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
          'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
                        data=None),
-      'DS_2': Dataset(name="DS_2", components={
-          'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
-          'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
-          'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
-                         data=None)},
-        {'DS_1': filepath_csv / 'DS_1.csv', 'DS_2': filepath_csv / 'DS_2.csv'})
+       'DS_2': Dataset(name="DS_2", components={
+           'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+           'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+           'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                       data=None)},
+      {'DS_1': filepath_csv / 'DS_1.csv', 'DS_2': filepath_csv / 'DS_2.csv'})
      )
 ]
 
+load_datasets_with_data_and_wrong_inputs = [
+    (filepath_csv / 'DS_1.csv', filepath_csv / 'DS_1.csv', 'Invalid datastructure. Must have .json extension'),
+    (filepath_json / 'DS_1.json', filepath_json / 'DS_2.json', 'Not found dataset DS_2.json'),
+    (2, 2, 'Invalid datastructure. Input must be a dict or Path object')
+]
 
 
 @pytest.mark.parametrize('input, expression', input_vtl_params_OK)
@@ -145,4 +150,10 @@ def test_load_datasets_with_data_without_dp(ds_r, dp, reference):
 def test_load_datasets_with_data_path(ds_r, dp, reference):
     result = load_datasets_with_data(data_structures=ds_r, datapoints=dp)
     assert result == reference
+
+
+@pytest.mark.parametrize('ds_r, dp, error_message', load_datasets_with_data_and_wrong_inputs)
+def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
+    with pytest.raises(Exception, match=error_message):
+        load_datasets_with_data(ds_r, dp)
 
