@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 
 import DataTypes
-from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data
+from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data, load_external_routines
 from DataTypes import String
-from Model import ValueDomain, Dataset, Component, Role
+from Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
 
 # Path selection
 base_path = Path(__file__).parent
@@ -93,6 +93,32 @@ load_datasets_with_data_and_wrong_inputs = [
     (filepath_json / 'DS_1.json', filepath_json / 'DS_2.json', 'Not found dataset DS_2.json'),
     (2, 2, 'Invalid datastructure. Input must be a dict or Path object')
 ]
+
+ext_params_OK = [
+    (filepath_sql / '1.sql')
+]
+
+ext_params_wrong = [
+    (filepath_json / 'DS_1.json', 'Input must be a sql file'),
+    (5, 'Input invalid. Input must be a sql file.'),
+    (filepath_sql / '2.sql', 'Input invalid. Input does not exist')
+]
+
+
+@pytest.mark.parametrize('input', ext_params_OK)
+def test_load_external_routine(input):
+    result = load_external_routines(input)
+    reference = {'1': ExternalRoutine(dataset_names=['BNFCRS_TRNSFRS', 'BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4'],
+                                      query='SELECT\n    date(DT_RFRNC) as DT_RFRNC,\n    PRSPCTV_ID,\n    INSTRMNT_UNQ_ID,\n    BNFCRS_CNTRPRTY_ID,\n    TRNSFR_CNTRPRTY_ID,\n    BNFCR_ID,\n    TRNSFR_ID\nFROM\n    BNFCRS_TRNSFRS\nWHERE\n    INSTRMNT_UNQ_ID NOT IN(\n\t\tSELECT\n\t\t\tINSTRMNT_UNQ_ID\n\t\tFROM\n\t\t\tBNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);\n',
+                                      name='1')}
+
+    assert result == reference
+
+
+@pytest.mark.parametrize('input, error_message', ext_params_wrong)
+def test_load_external_routine_with_wrong_params(input, error_message):
+    with pytest.raises(Exception, match=error_message):
+        load_external_routines(input)
 
 
 @pytest.mark.parametrize('input, expression', input_vtl_params_OK)

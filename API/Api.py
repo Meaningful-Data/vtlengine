@@ -176,9 +176,9 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
             external_routines[ext_routine.name] = ext_routine
         return external_routines
     if not isinstance(input, Path):
-        raise Exception('Input invalid')
+        raise Exception('Input invalid. Input must be a sql file.')
     if not input.exists():
-        raise Exception('Input does not exist')
+        raise Exception('Input invalid. Input does not exist')
     if input.is_dir():
         for f in input.iterdir():
             ext_rout = _load_single_external_routine_from_file(f)
@@ -278,4 +278,4 @@ if __name__ == '__main__':
     #           datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
     #           value_domains=None, external_routines=None,
     #           return_only_persistent=False))
-    print(load_datasets_with_data(filepath_json / '2-1-DS_1.json', filepath_csv / 'DS_1.csv'))
+    print(load_external_routines(filepath_sql / 'GL_67_Ok-1.sql'))
