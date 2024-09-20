@@ -273,9 +273,11 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
 
 if __name__ == '__main__':
-    # print(run(script=(filepath_VTL / 'test.vtl'),
-    #           data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
-    #           datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
-    #           value_domains=None, external_routines=None,
-    #           return_only_persistent=False))
-    print(load_external_routines(filepath_sql / 'GL_67_Ok-1.sql'))
+    # print(semantic_analysis(script=(filepath_VTL / '1.vtl'),
+    #                         data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+    #                         value_domains=filepath_ValueDomains / 'VD_1.json', external_routines=filepath_sql / '1.sql')
+    #       )
+    print(run(script=(filepath_VTL / '1.vtl'),
+              data_structures=[filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+              datapoints=[filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'],
+              value_domains=filepath_ValueDomains / 'VD_1.json', external_routines=filepath_sql / '1.sql'))

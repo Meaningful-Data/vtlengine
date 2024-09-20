@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 
 import DataTypes
-from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data, load_external_routines
+from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data, load_external_routines, \
+    semantic_analysis, run
 from DataTypes import String
 from Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
 
@@ -19,14 +20,14 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 input_vtl_params_OK = [
-    (filepath_VTL / '1.vtl', 'DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;'),
+    (filepath_VTL / '2.vtl', 'DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;'),
     ('DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;', 'DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;')
 ]
 
 input_vtl_error_params = [
     (filepath_VTL, 'Invalid vtl file. Must have .vtl extension'),
     (filepath_csv / 'DS_1.csv', 'Invalid vtl file. Must have .vtl extension'),
-    (filepath_VTL / '2.vtl', 'Invalid vtl file. Input does not exist'),
+    (filepath_VTL / '3.vtl', 'Invalid vtl file. Input does not exist'),
     ({'DS': 'dataset'}, 'Invalid vtl file. Input is not a Path object'),
     (2, 'Invalid vtl file. Input is not a Path object')
 ]
@@ -102,6 +103,17 @@ ext_params_wrong = [
     (filepath_json / 'DS_1.json', 'Input must be a sql file'),
     (5, 'Input invalid. Input must be a sql file.'),
     (filepath_sql / '2.sql', 'Input invalid. Input does not exist')
+]
+
+params_semantic = [
+    (filepath_VTL / '1.vtl', [filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+     filepath_ValueDomains / 'VD_1.json', filepath_sql / '1.sql')
+]
+
+params_run = [
+    (filepath_VTL / '2.vtl', [filepath_json / 'DS_1.json', filepath_json / 'DS_2.json'],
+     [filepath_csv / 'DS_1.csv', filepath_csv / 'DS_2.csv'], filepath_ValueDomains / 'VD_1.json',
+     filepath_sql / '1.sql')
 ]
 
 
@@ -183,3 +195,47 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
     with pytest.raises(Exception, match=error_message):
         load_datasets_with_data(ds_r, dp)
 
+
+@pytest.mark.parametrize('script, data_structures, value_domains, external_routines', params_semantic)
+def test_semantic(script, data_structures, value_domains, external_routines):
+    result = semantic_analysis(script, data_structures, value_domains, external_routines)
+    reference = {'DS_r': Dataset(name="DS_r", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                 data=None)}
+
+    assert result == reference
+
+
+@pytest.mark.parametrize('script, data_structures, datapoints, value_domains, external_routines', params_run)
+def test_run(script, data_structures, datapoints, value_domains, external_routines):
+    result = run(script, data_structures, datapoints, value_domains, external_routines)
+    reference = {'DS_r': Dataset(name="DS_r", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                 data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"], index=[0, 1],
+                                                   data=[(1, 'A', 2), (1, 'B', 4)])),
+                 'DS_r2': Dataset(name="DS_r2", components={
+                     'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+                     'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+                     'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                  data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"], index=[0, 1],
+                                                    data=[(1, 'A', 3), (1, 'B', 6)]))}
+
+    assert result == reference
+
+
+@pytest.mark.parametrize('script, data_structures, datapoints, value_domains, external_routines',
+                         params_run)
+def test_run_only_persistent(script, data_structures, datapoints, value_domains, external_routines):
+    result = run(script, data_structures, datapoints, value_domains, external_routines, return_only_persistent=True)
+    reference = {'DS_r2': Dataset(name="DS_r2", components={
+        'Id_1': Component(name='Id_1', data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False),
+        'Id_2': Component(name='Id_2', data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False),
+        'Me_1': Component(name='Me_1', data_type=DataTypes.Number, role=Role.MEASURE, nullable=True)},
+                                  data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"], index=[0, 1],
+                                                    data=[(1, 'A', 3), (1, 'B', 6)]))}
+
+    assert result == reference
