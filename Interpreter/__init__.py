@@ -1275,6 +1275,10 @@ class InterpreterAnalyzer(ASTTemplate):
         signature_values = {}
 
         operator = self.udos[node.op]
+
+        if operator['output'] == 'Component' and not (self.is_from_regular_aggregation or self.is_from_rule):
+            raise SemanticError("1-3-29", op=node.op)
+
         for i, param in enumerate(operator['params']):
             if i >= len(node.params):
                 if 'default' in param:
@@ -1292,7 +1296,18 @@ class InterpreterAnalyzer(ASTTemplate):
                         if isinstance(node.params[i], AST.VarID):
                             signature_values[param['name']] = node.params[i].value
                         else:
-                            signature_values[param['name']] = self.visit(node.params[i])
+                            param_element = self.visit(node.params[i])
+                            if isinstance(param_element, Dataset):
+                                if param['type'] == 'Component':
+                                    raise SemanticError("1-4-1-1", op=node.op,
+                                                        option=param['name'], type_1=param['type'],
+                                                        type_2='Dataset')
+                            elif isinstance(param_element, Scalar) and param['type'] in ['Dataset', 'Component']:
+                                raise SemanticError("1-4-1-1", op=node.op,
+                                                    option=param['name'], type_1=param['type'],
+                                                    type_2='Scalar')
+                            signature_values[param['name']] = param_element
+
                     else:
                         raise NotImplementedError
                 elif issubclass(param['type'], ScalarType):  # Basic types
@@ -1300,7 +1315,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     # We validate the type is correct and cast the value
                     param_element = self.visit(node.params[i])
                     if isinstance(param_element, (Dataset, DataComponent)):
-                        raise SemanticError("2-3-5", param_type=param['type'].__name__, type_name=type(param_element).__name__, op=node.op, param_name=param['name'])
+                        type_2 = 'Dataset' if isinstance(param_element, Dataset) else 'Component'
+                        raise SemanticError("1-4-1-1", op=node.op,
+                                            option=param['name'], type_1=param['type'],
+                                            type_2=type_2)
                     scalar_type = param['type']
                     if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
                         raise SemanticError("2-3-5", param_type=scalar_type, type_name=param_element.data_type, op=node.op, param_name=param['name'])
@@ -1321,9 +1339,21 @@ class InterpreterAnalyzer(ASTTemplate):
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         result = self.visit(deepcopy(operator['expression']))
 
+        if self.is_from_regular_aggregation or self.is_from_rule:
+            result_type = 'Component' if isinstance(result, DataComponent) else 'Scalar'
+        else:
+            result_type = 'Scalar' if isinstance(result, Scalar) else 'Dataset'
+
+        if result_type != operator['output']:
+            raise SemanticError("1-4-1-1", op=node.op, option='output',
+                                type_1=operator['output'],
+                                type_2=result_type)
+
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
         self.udo_params.pop()
+
+
 
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:

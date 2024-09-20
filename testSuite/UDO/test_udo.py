@@ -373,7 +373,7 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_381'
         number_inputs = 0
-        message = "1-1-1-20"
+        message = "1-4-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

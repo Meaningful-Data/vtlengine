@@ -209,7 +209,7 @@ centralised_messages = {
     "1-3-26": "collection or value domain not found.",  # TODO:
     "1-3-27": "Dataset without identifiers are not allowed in {op} operator.",
     "1-3-28": "At op {op}: invalid number of parameters: received {received}, expected at least: {expected}",
-    "1-3-29": "At op {op}: can not use user defined operator that returns a component outside clause operator",
+    "1-3-29": "At op {op}: can not use user defined operator that returns a component outside clause operator or rule",
     "1-3-30": "At op {op}: too many parameters: received {received}, expected: {expected}",
     "1-3-31": "Cannot use component {name} outside an aggregate function in a having clause.",
     "1-3-32": "Cannot perform operation {op} inside having clause.",

@@ -2568,24 +2568,25 @@ class ScalarTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: define operator drop_identifier (ds dataset, comp component)
-                        returns dataset is
-                            max(ds group except comp)
+                      returns dataset is
+                        max(ds group except comp)
                     end operator;
 
-                    define operator suma (scds1 dataset, scds2 dataset)
-                        returns dataset is
-                            scds1 + scds2
+                    define operator suma (scds1 scalar, scds2 scalar)
+                      returns scalar is
+                        scds1 + scds2
                     end operator;
 
                     DS_r := drop_identifier (suma (sc_1, sc_2), Id_3);
-        Description: Component Id_3 not found. Please check transformation with output dataset DS_r
+
+        Description: Invalid input parameter dataset -> scalar
 
         Git Branch: 398-scalar-tests
         Goal: 
         """
         code = 'Sc_43'
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-4-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2594,24 +2595,24 @@ class ScalarTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: define operator drop_identifier (ds dataset, comp component)
-                        returns dataset is
-                            max(ds group except comp)
+                      returns dataset is
+                        max(ds group except comp)
                     end operator;
 
-                    define operator suma (scds1 dataset, scds2 dataset)
-                        returns dataset is
-                            scds1 + scds2
+                    define operator suma (scds1 scalar, scds2 scalar)
+                      returns scalar is
+                        scds1 + scds2
                     end operator;
 
                     DS_r := drop_identifier (suma (sc_1, sc_2), sc_1);
-        Description: Component sc_1 not found. Please check transformation with output dataset DS_r
+        Description: Invalid input parameter component -> scalar
 
         Git Branch: 398-scalar-tests
         Goal: 
         """
         code = 'Sc_44'
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-4-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
