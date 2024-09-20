@@ -31,7 +31,7 @@
           "name": "Me_4",
           "role": "Measure",
           "type": "Number",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

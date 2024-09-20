@@ -1,6 +1,7 @@
 import os
 from copy import copy
 
+import DataTypes
 from DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion
 from Model import Scalar, DataComponent, Dataset, Role
 from Operators import Operator, Binary
@@ -18,8 +19,6 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if isinstance(condition, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
-            if result.role != Role.IDENTIFIER:
-                result.nullable = True
         if isinstance(condition, Dataset):
             result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
@@ -28,11 +27,21 @@ class If(Operator):
     def component_level_evaluation(cls, condition, true_branch, false_branch):
         data = []
         for i, row in enumerate(condition.data):
-            if row:
-                data.append(true_branch.value if isinstance(true_branch, Scalar) else true_branch.data[i])
+            if row == True:
+                if isinstance(true_branch, Scalar):
+                    data.append(true_branch.value)
+                elif i in true_branch.data.index:
+                    data.append(true_branch.data[i])
+                else:
+                    data.append(None)
             else:
-                data.append(false_branch.value if isinstance(false_branch, Scalar) else false_branch.data[i])
-        return pd.Series(data)
+                if isinstance(false_branch, Scalar):
+                    data.append(false_branch.value)
+                elif i in false_branch.data.index:
+                    data.append(false_branch.data[i])
+                else:
+                    data.append(None)
+        return pd.Series(data).dropna()
 
     @classmethod
     def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):
@@ -45,7 +54,7 @@ class If(Operator):
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0:
                 true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                true_data.dropna(subset=[condition_measure], inplace=True)
+                # true_data = true_data.dropna(subset=[condition_measure])
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
         else:
@@ -53,7 +62,7 @@ class If(Operator):
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0:
                 false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                false_data.dropna(subset=[condition_measure], inplace=True)
+                # false_data.dropna(subset=[condition_measure])
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
         else:
@@ -62,7 +71,7 @@ class If(Operator):
         result.data = pd.concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         if isinstance(result, Dataset):
             drop_columns = [column for column in result.data.columns if column not in result.components.keys()]
-            result.data.drop(columns=drop_columns, inplace=True)
+            result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
             result.get_measures()[0].data_type = true_branch.data_type
             result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
@@ -71,6 +80,7 @@ class If(Operator):
 
     @classmethod
     def validate(cls, condition, true_branch, false_branch) -> Scalar | DataComponent | Dataset:
+        nullable = False
         left = true_branch
         right = false_branch
         if true_branch.__class__ != false_branch.__class__:
@@ -83,9 +93,20 @@ class If(Operator):
 
         # Datacomponent
         if isinstance(condition, DataComponent):
+            if not isinstance(left, Scalar) or not isinstance(right, Scalar):
+                nullable = condition.nullable
+            else:
+                if isinstance(left, Scalar) and left.data_type == DataTypes.Null:
+                    nullable = True
+                if isinstance(right, Scalar) and right.data_type == DataTypes.Null:
+                    nullable = True
+            if isinstance(left, DataComponent):
+                nullable |= left.nullable
+            if isinstance(right, DataComponent):
+                nullable |= right.nullable
             return DataComponent(name='result', data=None,
                                  data_type=binary_implicit_promotion(left.data_type, right.data_type),
-                                 role=Role.MEASURE, nullable=False)
+                                 role=Role.MEASURE, nullable=nullable)
 
         # Dataset
         if isinstance(left, DataComponent):
@@ -96,9 +117,9 @@ class If(Operator):
         if isinstance(right, Scalar):
             for component in left.get_measures():
                 if component.data_type != right.data_type:
-                    component.data_type = binary_implicit_promotion(left.data_type, right.data_type)
+                    component.data_type = binary_implicit_promotion(component.data_type, right.data_type)
         if isinstance(right, Dataset):
-            if left.components != right.components:
+            if left.get_components_names() != right.get_components_names():
                 raise ValueError("If operands at dataset level must have the same components")
             for component in left.get_measures():
                 if component.data_type != right.components[component.name].data_type:
@@ -126,9 +147,6 @@ class Nvl(Binary):
             else:
                 result.value = left.value
             return result
-        if isinstance(left, Dataset):
-            for component in result.get_measures():
-                component.nullable = False
         if isinstance(right, Scalar):
             result.data = left.data.fillna(right.value)
         if isinstance(right, Dataset) or isinstance(right, DataComponent):
@@ -161,4 +179,6 @@ class Nvl(Binary):
                     cls.type_validation(component.data_type, right.components[component.name].data_type)
             result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()
                                  if comp.role != Role.ATTRIBUTE}
+            for comp in result_components.values():
+                comp.nullable = False
             return Dataset(name='result', components=result_components, data=None)

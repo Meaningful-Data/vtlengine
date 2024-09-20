@@ -60,7 +60,9 @@ class Time(Operators.Operator):
 
     @classmethod
     def get_frequencies(cls, dates):
-        return [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
+        dates = [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
+        dates = abs(pd.Series(dates))
+        return dates
 
     @classmethod
     def find_min_frequency(cls, differences):
@@ -76,7 +78,7 @@ class Time(Operators.Operator):
     @classmethod
     def get_date_format(cls, date_str):
         date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
-        return '%Y-%m-%d' if date.day > 1 else '%Y-%m' if date.month > 1 else '%Y'
+        return '%Y-%m-%d' if date.day >= 1 else '%Y-%m' if date.month >= 1 else '%Y'
 
 
 class Unary(Time):

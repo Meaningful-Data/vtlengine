@@ -139,7 +139,7 @@
           "name": "IS_LGL_ENTTY_EA_ANCRDT_CVRD",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

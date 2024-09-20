@@ -19,7 +19,7 @@
           "name": "int_var",
           "role": "Measure",
           "type": "Number",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

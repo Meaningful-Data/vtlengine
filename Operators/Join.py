@@ -52,10 +52,8 @@ class Join(Operator):
                     is_identifier = all(operand.components[comp.name].role == Role.IDENTIFIER
                                         for operand in operands if comp.name in operand.get_components_names())
                     comp.role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
-
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)
-
                 if comp.role == Role.IDENTIFIER:
                     nullability[comp.name] = False
                 elif comp.name in totally_common:
@@ -145,10 +143,10 @@ class Join(Operator):
         cls.identifiers_validation(operands, using)
 
         cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names())) if cls.how not in ['cross', 'left'] else operands[0]
-        components = cls.generate_result_components(operands, using)
-        if using is not None:
-            for op in operands:
-                components.update({id: op.components[id] for id in using if id in op.get_measures_names()})
+        # components = cls.generate_result_components(operands, using)
+        # if using is not None:
+        #     for op in operands:
+        #         components.update({id: op.components[id] for id in using if id in op.get_measures_names() and id not in components.keys()})
         components = cls.merge_components(operands, using)
 
         return Dataset(name="result", components=components, data=None)
@@ -210,9 +208,9 @@ class InnerJoin(Join):
 
         components = {}
         for op in operands:
-            components.update({id: op.components[id] for id in op.get_identifiers_names()})
-        for op in operands:
             components.update({id: op.components[id] for id in using if id in op.get_measures_names()})
+        for op in operands:
+            components.update({id: op.components[id] for id in op.get_identifiers_names()})
         return components
 
 
@@ -276,33 +274,6 @@ class FullJoin(Join):
 
 class CrossJoin(Join):
     how = 'cross'
-
-    # @classmethod
-    # def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-    #     result = cls.validate(operands, using)
-    #     if len(operands) == 1:
-    #         result.name = 'result'
-    #         return result
-    #
-    #     common_measures = cls.get_components_intersection(*[op.get_measures_names() for op in operands])
-    #     for op in operands:
-    #         for column in op.data.columns.tolist():
-    #             if column in common_measures:
-    #                 op.data = op.data.rename(columns={column: op.name + '#' + column})
-    #     result.data = copy(cls.reference_dataset.data)
-    #
-    #     # TODO: nullability = or between all comp nullability
-    #     for op in operands:
-    #         if op is operands[0]:
-    #             result.data = op.data
-    #         else:
-    #             result.data = pd.merge(result.data, op.data, how=cls.how)
-    #         result.data = result.data.rename(
-    #             columns={column: op.name + '#' + column for column in result.data.columns.tolist()
-    #                      if column in common_measures})
-    #
-    #     result.data.reset_index(drop=True, inplace=True)
-    #     return result
 
     @classmethod
     def execute(cls, operands: List[Dataset], using=None) -> Dataset:
