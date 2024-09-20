@@ -1,6 +1,7 @@
 from copy import copy, deepcopy
 from copy import copy, deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
@@ -29,6 +30,8 @@ from Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
     HR_UNARY_MAPPING, HR_COMP_MAPPING, HR_NUM_BINARY_MAPPING
+from files.output import TimePeriodRepresentation, format_time_period_external_representation
+from files.parser import load_datapoints, _fill_dataset_empty_data
 
 
 # noinspection PyTypeChecker
@@ -40,6 +43,12 @@ class InterpreterAnalyzer(ASTTemplate):
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
     only_semantic: bool = False
+    # Memory efficient
+    ds_analysis: Optional[dict] = None
+    datapoints_paths: Optional[Dict[str, Path]] = None
+    output_path: Optional[Path] = None
+    # Time Period Representation
+    time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
     nested_if = False
     is_from_assignment: bool = False
@@ -74,18 +83,53 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Dict[str, Dict[str, Any]] = None
     hrs: Dict[str, Dict[str, Any]] = None
 
+    # Memory efficient handling
+
+    def _load_datapoints_efficient(self, statement_num: int):
+        if self.datapoints_paths is None:
+            return
+        for ds_name in self.ds_analysis['insertion'][statement_num]:
+            if ds_name in self.datapoints_paths:
+                self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
+                                                          self.datapoints_paths[ds_name])
+            elif self.datasets[ds_name].data is None:
+                _fill_dataset_empty_data(self.datasets[ds_name])
+
+    def _save_datapoints_efficient(self, statement_num: int):
+        if self.output_path is not None:
+            for ds_name in self.ds_analysis['deletion'][statement_num]:
+                if self.time_period_representation is not None:
+                    format_time_period_external_representation(self.datasets[ds_name],self.time_period_representation)
+                self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv", index=False)
+                self.datasets[ds_name].data = None
+        # Keeping the data in memory if no output path is provided
+
+
+
+
+    # **********************************
+    # *                                *
+    # *          AST Visitors          *
+    # *                                *
+    # **********************************
+
     def visit_Start(self, node: AST.Start) -> Any:
+        statement_num = 1
         if self.only_semantic:
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
         results = {}
         for child in node.children:
+            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)) and not self.only_semantic:
+                self._load_datapoints_efficient(statement_num)
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
             if isinstance(result, Union[Dataset, Scalar]):
                 self.datasets[result.name] = result
                 results[result.name] = result
+                self._save_datapoints_efficient(statement_num)
+
         return results
 
     # Definition Language

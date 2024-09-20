@@ -1,20 +1,17 @@
 import json
-import os.path
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Any
 from unittest import TestCase
 
-import pandas as pd
 import pytest
 
 from API import create_ast
-from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
-from files.parser import load_datapoints
 from files.output import TimePeriodRepresentation, \
     format_time_period_external_representation
+from files.parser import load_datapoints
 
 
 class TestHelper(TestCase):
@@ -140,12 +137,13 @@ class TestHelper(TestCase):
                                           external_routines=external_routines,
                                           only_semantic=only_semantic)
         result = interpreter.visit(ast)
-        result = format_time_period_external_representation(result,
-                                                            TimePeriodRepresentation.SDMX_REPORTING)
+        for dataset in result.values():
+            _ = format_time_period_external_representation(dataset,
+                                                           TimePeriodRepresentation.SDMX_REPORTING)
         assert result == reference_datasets
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None, vd_names: List[str] = None):
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
         assert True
 
     @classmethod
@@ -177,7 +175,6 @@ class TestHelper(TestCase):
             references = cls.LoadOutputs(code=code, references_names=references_names)
             assert inputs == references
         assert True
-
 
     @classmethod
     def DataLoadExceptionTest(cls, code: str, number_inputs: int, exception_message: str):
