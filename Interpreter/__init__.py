@@ -588,7 +588,7 @@ class InterpreterAnalyzer(ASTTemplate):
             vd = self.value_domains[node.name]
             return ScalarSet(data_type=vd.type, values=vd.setlist)
         else:
-            raise SemanticError("1-3-26")
+            raise SemanticError("1-3-26", name=node.name)
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
         operands = []
         dataset = self.visit(node.dataset)

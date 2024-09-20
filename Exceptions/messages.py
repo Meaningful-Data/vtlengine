@@ -45,15 +45,15 @@ centralised_messages = {
     "1-1-1-8": "At op {op}: Invalid Dataset {name}, no measures defined.",
     "1-1-1-9": "At op {op}: Invalid Dataset {name}, all measures must have the same type: {type}.",
     "1-1-1-10": "Component {comp_name} not found in Dataset {dataset_name}.",
-    "1-1-1-11": "At op {op}: Identifier {name} is specified more than once.",
-    "1-1-1-12": "At op {op}: Different scalar types for component {comp_name} and set {set_name}.",
+    # "1-1-1-11": "At op {op}: Identifier {name} is specified more than once.",
+    # "1-1-1-12": "At op {op}: Different scalar types for component {comp_name} and set {set_name}.",
     "1-1-1-13": "At op {op}: Component {comp_name} role must be '{role_1}', found '{role_2}'.",
     # "1-1-1-14": "At op {op}: Dataset {name} type must be '{type_1}'.",
     "1-1-1-15": "At op {op}: Datasets {name_1} and {name_2} does not contain the same number of {type}.",
     "1-1-1-16": "Found structure not nullable and null values.",
-    "1-1-1-17": "At op {op}: Problem with nullability for this components {name_1} and {name_2}.",
+    # "1-1-1-17": "At op {op}: Problem with nullability for this components {name_1} and {name_2}.",
     # "1-1-1-18": "No {type} {value} found.",
-    "1-1-1-19": "At op {op}: Invalid data type for Scalar {scalar_name_1} and Scalar {scalar_name_2}.",
+    # "1-1-1-19": "At op {op}: Invalid data type for Scalar {scalar_name_1} and Scalar {scalar_name_2}.",
     "1-1-1-20": "At op {op}: Only applies to datasets, instead of this a Scalar was provided.",
     # General Interpreter errors
     # "2-1-1-1": "At op {op}: Unable to evaluate.",
@@ -96,13 +96,10 @@ centralised_messages = {
     "1-1-7-1": "At op {op}: Value in {left_name} of type {left_type} is not comparable to value {right_name} of type {right_type}.",
     # Conditional errors
     "1-1-9-1": "At op {op}: The evaluation condition must result in a Boolean expression, found '{type}'.",
-    # "1-1-9-2": "At op {op}: Conditional clauses with different scalar types. Then: {type_1}. Else: {type_2}.",
     "1-1-9-3": "At op {op}: Then clause {then_name} and else clause {else_name}, both must be Scalars.",
     "1-1-9-4": "At op {op}: The condition dataset {name} must contain an unique measure.",
     "1-1-9-5": "At op {op}: The condition dataset Measure must be a Boolean, found '{type}'.",
     "1-1-9-6": "At op {op}: Then-else datasets have different number of identifiers compared with condition dataset.",
-    "1-1-9-7": "At op {op}: {clause} component {clause_name} not present at dataset {dataset_name}.",
-    "1-1-9-8": "At op {op}: {clause} component {clause_name} type must be {type_1}, found {type_2}.",
     "1-1-9-9": "At op {op}: {clause} component {clause_name} role must be {role_1}, found {role_2}.",
     "1-1-9-10": "At op {op}: {clause} dataset have different number of identifiers compared with condition dataset.",
     "1-1-9-11": "At op {op}: Condition component {name} must be Boolean, found {type}.",
@@ -125,7 +122,7 @@ centralised_messages = {
     "1-1-13-1": "At op {op}: Duplicated alias {duplicates}.",
     "1-1-13-2": "At op {op}: Missing mandatory aliasing.",
     "1-1-13-3": "At op {op}: Join conflict with duplicated names for column {name} from original datasets.",
-    "1-1-13-4": "At op {op}: Using clause, using={using_names}, does not define all the identifiers, identifiers= {identifiers_names} of non reference dataset {dataset}.",
+    "1-1-13-4": "At op {op}: Using clause, using={using_names}, does not define all the identifiers, of non reference dataset {dataset}.",
     "1-1-13-5": "At op {op}: Invalid subcase B1, All the datasets must share as identifiers the using ones.",  # not in use but we keep for later, in use 1-1-13-4
     "1-1-13-6": "At op {op}: Invalid subcase B2, All the declared using components '{using_components}' must be present as components in the reference dataset '{reference}'.",
     "1-1-13-7": "At op {op}: Invalid subcase B2, All the non reference datasets must share as identifiers the using ones.",
@@ -159,7 +156,6 @@ centralised_messages = {
     # Set Operators
     "1-1-17-1": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number of components",
     # String Operators
-    # TODO: Use error message 1-1-1-4
     # "1-1-18-1": "At op {op}: Invalid Dataset {name}. Dataset with one measure expected.",
     "1-1-18-2": "At op {op}: Composition of DataSet and Component is not allowed.",
     "1-1-18-3": "At op {op}: Invalid parameter position: {pos}.",
@@ -206,7 +202,7 @@ centralised_messages = {
     "1-3-22": "Unable to categorize {node_value}.",
     "1-3-23": "Missing value domain '{name}' definition, please provide an structure.",
     "1-3-24": "Internal error on Analytic operators inside a calc, No partition or order symbol found.",
-    "1-3-26": "collection or value domain not found.",  # TODO:
+    "1-3-26": "Value domain {name} not found.",
     "1-3-27": "Dataset without identifiers are not allowed in {op} operator.",
     "1-3-28": "At op {op}: invalid number of parameters: received {received}, expected at least: {expected}",
     "1-3-29": "At op {op}: can not use user defined operator that returns a component outside clause operator or rule",
