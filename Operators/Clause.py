@@ -2,12 +2,16 @@ from copy import copy
 from typing import List, Union
 
 from AST import RenameNode
+from AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC, AGGREGATE
 from DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
+from Exceptions import SemanticError
 from Model import Component, DataComponent, Dataset, Role, Scalar
 from Operators import Operator
 
 
 class Calc(Operator):
+
+    op = CALC
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
@@ -18,7 +22,11 @@ class Calc(Operator):
         for operand in operands:
 
             if operand.name in result_dataset.components:
+                if result_dataset.components[operand.name].role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-6-13", op=cls.op,
+                                        comp_name=operand.name)
                 # Override component with same name
+                # TODO: Check this for version 2.1
                 result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
@@ -46,14 +54,12 @@ class Calc(Operator):
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
-        # Validate duplicates on identifiers
-        if len(result_dataset.get_identifiers_names()) != len(dataset.get_identifiers_names()):
-            if result_dataset.data[result_dataset.get_identifiers_names()].duplicated().any():
-                raise Exception("Found duplicated identifiers after calc clause")
         return result_dataset
 
 
 class Aggregate(Operator):
+
+    op = AGGREGATE
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
@@ -61,7 +67,10 @@ class Aggregate(Operator):
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name in dataset.components:
+            if operand.name in dataset.get_identifiers_names() or operand.role == Role.IDENTIFIER:
+                raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
+
+            elif operand.name in dataset.components:
                 # Override component with same name
                 dataset.delete_component(operand.name)
 
@@ -116,15 +125,16 @@ class Filter(Operator):
 
 class Keep(Operator):
 
+    op = KEEP
+
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
             if operand not in dataset.get_components_names():
-                raise Exception(f"Component {operand} not found in dataset {dataset.name}")
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand,
+                                    dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise Exception(f"Component {operand} in dataset {dataset.name} is an "
-                                f"{Role.IDENTIFIER} and cannot be used in keep clause")
-
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name in operands or comp.role == Role.IDENTIFIER}
 
@@ -144,15 +154,17 @@ class Keep(Operator):
 
 class Drop(Operator):
 
+    op = DROP
+
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset):
         for operand in operands:
             if operand not in dataset.components:
-                raise Exception(f"Component {operand} not found in dataset {dataset.name}")
+                raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset.name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise Exception(f"Component {operand} in dataset {dataset.name} is an "
-                                f"{Role.IDENTIFIER} and cannot be used in drop clause")
-
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
+        if len(dataset.components) == len(operands):
+            raise SemanticError("1-1-6-12", op=cls.op)
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name not in operands}
 
@@ -167,14 +179,27 @@ class Drop(Operator):
 
 class Rename(Operator):
 
+    op = RENAME
+
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset):
+        from_names = [operand.old_name for operand in operands]
+        if len(from_names) != len(set(from_names)):
+            duplicates = set(
+                [name for name in from_names if from_names.count(name) > 1])
+            raise SemanticError("1-1-6-9", op=cls.op, from_components=duplicates)
+
+        to_names = [operand.new_name for operand in operands]
+        if len(to_names) != len(set(to_names)):  # Si hay duplicados
+            duplicates = set(
+                [name for name in to_names if to_names.count(name) > 1])
+            raise SemanticError("1-3-1", alias=duplicates)
+
         for operand in operands:
             if operand.old_name not in dataset.components.keys():
-                raise Exception(f"Component {operand.old_name} not found in dataset {dataset.name}")
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name)
             if operand.new_name in dataset.components.keys():
-                raise Exception(
-                    f"Component {operand.new_name} already exists in dataset {dataset.name}")
+                raise SemanticError("1-1-6-8", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name)
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
@@ -214,8 +239,11 @@ class Unpivot(Operator):
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
+
+        if len(dataset.get_identifiers()) <1:
+            raise SemanticError("1-3-27", op=cls.op)
         if identifier in dataset.components:
-            raise ValueError(f"Component {identifier} already exists in dataset {dataset.name}")
+            raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset.name)
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
@@ -248,14 +276,19 @@ class Unpivot(Operator):
 
 class Sub(Operator):
 
+    op = SUBSPACE
+
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset):
+        if len(dataset.get_identifiers()) <1:
+            raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
-                raise Exception(f"Component {operand.name} not found in dataset {dataset.name}")
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.name, dataset_name=dataset.name)
             if operand.role != Role.IDENTIFIER:
-                raise Exception(f"Component {operand.name} in dataset {dataset.name} is not an "
-                                f"{Role.IDENTIFIER}")
+                raise SemanticError("1-1-6-10", op=cls.op, operand=operand.name, dataset_name=dataset.name)
+            if isinstance(operand, Scalar):
+                raise SemanticError("1-1-6-5", op=cls.op, name=operand.name)
 
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name not in [operand.name for operand in operands]}

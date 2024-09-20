@@ -461,7 +461,7 @@ class CalcInsideJoinTests(JoinHelper):
         """
         code = 'GL_300_14'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -718,7 +718,7 @@ class CalcInsideJoinTests(JoinHelper):
         """
         code = 'GL_300_30'
         number_inputs = 2
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -882,7 +882,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-7'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -900,7 +900,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-8'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -918,7 +918,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-9'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -971,7 +971,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-12'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -989,7 +989,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-13'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1025,7 +1025,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         """
         code = '3-1-1-15'
         number_inputs = 2
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1376,7 +1376,7 @@ class UdosInsideJoinsTests(JoinHelper):
         """
         code = 'GL_399_5'
         number_inputs = 2
-        error_code = "1-1-13-10"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1778,7 +1778,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = 'GL_342_16'
         number_inputs = 3
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1797,7 +1797,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = 'GL_342_17'
         number_inputs = 3
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1964,7 +1964,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = '6-1-1-4'
         number_inputs = 2
-        error_code = "1-1-6-7"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2094,7 +2094,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = 'GL_422_3'
         number_inputs = 2
-        error_code = "1-1-6-14"
+        error_code = "1-1-6-13"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 

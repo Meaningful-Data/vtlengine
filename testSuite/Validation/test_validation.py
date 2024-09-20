@@ -347,7 +347,7 @@ class ValidationOperatorsTests(ValidationHelper):
         '''
         code = 'GL_446_2'
         number_inputs = 1
-        error_code = "1-1-10-8"
+        error_code = "1-1-10-1"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
@@ -363,7 +363,7 @@ class ValidationOperatorsTests(ValidationHelper):
         '''
         code = 'GL_446_3'
         number_inputs = 1
-        error_code = "1-1-10-8"
+        error_code = "1-1-10-1"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,

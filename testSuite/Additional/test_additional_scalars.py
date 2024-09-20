@@ -1,15 +1,11 @@
-import json
 from pathlib import Path
-from typing import Dict, List
 
-import pandas as pd
 import pytest
-from pandas import read_csv
 
 from API import create_ast
-from DataTypes import String, Integer, Number, SCALAR_TYPES
+from DataTypes import String, Integer, Number
+from Exceptions import SemanticError
 from Interpreter import InterpreterAnalyzer
-from Model import Component, Role, Dataset
 from testSuite.Helper import TestHelper
 
 
@@ -191,22 +187,22 @@ comparison_params = [
 ]
 
 string_exception_param = [
-    ('substr("asdf", -3)', 'param start should be >= 1'),
-    ('substr("asdf", 0)', 'param start should be >= 1'),
-    ('substr("asdf", -2, 3)', 'param start should be >= 1'),
-    ('substr("asdf", 0, 5)', 'param start should be >= 1'),
-    ('substr("asdf", 1, -9)', 'param length should be >= 0'),
-    ('substr("asdf", _, -1)', 'param length should be >= 0'),
-    ('instr("abcdecfrxcwsd", "c", 0)', 'param start should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", -5, 4)', 'param start should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", 0, 0)', 'param start should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'param occurrence should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'param occurrence should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", _, -3)', 'param occurrence should be >= 1'),
+    ('substr("asdf", -3)', '1-1-18-4'),
+    ('substr("asdf", 0)', '1-1-18-4'),
+    ('substr("asdf", -2, 3)', '1-1-18-4'),
+    ('substr("asdf", 0, 5)', '1-1-18-4'),
+    ('substr("asdf", 1, -9)', '1-1-18-4'),
+    ('substr("asdf", _, -1)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", 0)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", -5, 4)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", 0, 0)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", 6, 0)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", 5, -5)', '1-1-18-4'),
+    ('instr("abcdecfrxcwsd", "c", _, -3)', '1-1-18-4'),
 ]
 
 numeric_exception_param = [
-    ('log(5.0, -8)', 'math domain error'),
+    ('log(5.0, -8)', '2-1-15-3'),
     ('log(0.0, 6)', 'math domain error'),
 ]
 
@@ -256,7 +252,7 @@ def test_exception_string_op(text, exception_message):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
-    with pytest.raises(Exception, match=exception_message):
+    with pytest.raises(SemanticError, match=f".*{exception_message}"):
         interpreter.visit(ast)
 
 

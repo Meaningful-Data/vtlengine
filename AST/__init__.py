@@ -268,14 +268,8 @@ class Analytic(AST):
     order_by: Optional[List[OrderBy]] = None
 
     def __post_init__(self):
-        if self.window is None and self.op not in ['lag', 'lead', 'rank', 'ratio_to_report']:
-            raise ValueError("Windowing must be provided.")
-
         if self.partition_by is None and self.order_by is None:
             raise ValueError("Partition by or order by must be provided on Analytic.")
-
-        if self.op != 'rank' and self.operand is None:
-            raise ValueError("Operand must be provided on Analytic.")
 
 
 @dataclass
@@ -510,6 +504,7 @@ class DPRuleset(AST):
     """
 
     name: str
+    signature_type: str
     params: Union[DefIdentifier, list]
     rules: List[DPRule]
 

@@ -1,6 +1,8 @@
 import os
 from typing import List
 
+from Exceptions import SemanticError
+
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
 else:
@@ -16,8 +18,7 @@ class Set(Operator):
     @classmethod
     def check_same_structure(cls, dataset_1: Dataset, dataset_2: Dataset) -> None:
         if len(dataset_1.components) != len(dataset_2.components):
-            raise Exception(f"Datasets {dataset_1.name} and {dataset_2.name} "
-                            f"have different number of components")
+            raise SemanticError("1-1-17-1", op=cls.op, dataset_1=dataset_1.name, dataset_2=dataset_2.name)
 
         for comp in dataset_1.components.values():
             if comp.name not in dataset_2.components:

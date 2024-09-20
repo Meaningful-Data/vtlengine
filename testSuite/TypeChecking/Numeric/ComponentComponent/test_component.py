@@ -95,8 +95,8 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         '''
         code = '4-2-3-4'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
         '''
@@ -113,8 +113,8 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         '''
         code = '4-2-3-5'
         number_inputs = 1
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_6(self):
         '''
