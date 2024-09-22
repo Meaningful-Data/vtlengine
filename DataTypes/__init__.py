@@ -104,7 +104,7 @@ class String(ScalarType):
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
         # if pd.isna(value):
         #     return cls.default
-        if from_type in {Number, Integer, Boolean, String}:
+        if from_type in {Number, Integer, Boolean, String, Date, TimePeriod, TimeInterval, Duration}:
             return str(value)
 
         raise Exception(f"Cannot implicit cast {from_type} to {cls}")
@@ -549,7 +549,8 @@ def unary_implicit_promotion(
 
     if return_type:
         return return_type
-    if type_to_check and not issubclass(operand_type, type_to_check):
+    if (type_to_check and not issubclass(operand_type, type_to_check)
+            and not issubclass(type_to_check, operand_type)):
         return type_to_check
     return operand_type
 
