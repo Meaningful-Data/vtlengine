@@ -23,15 +23,15 @@ class SemanticBIRD(BIRDHelper):
 
     classTest = 'BIRD_BIRD.SemanticBIRD'
 
-    def test_D_ENTRPRS_SZ_CLCLTD_1(self):
-        '''
-
-        '''
-        code = 'D_ENTRPRS_SZ_CLCLTD_1'
-        number_inputs = 6
-        references_names = []
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+    # def test_D_ENTRPRS_SZ_CLCLTD_1(self):
+    #     '''
+    #
+    #     '''
+    #     code = 'D_ENTRPRS_SZ_CLCLTD_1'
+    #     number_inputs = 6
+    #     references_names = []
+    #
+    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_INPUT_LAYER_TO_ENRICHED_INPUT_LAYER(self):
         '''

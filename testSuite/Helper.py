@@ -172,7 +172,8 @@ class TestHelper(TestCase):
             dataset.data.to_csv(csv_file_name, index=False, header=True)
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None):
+    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, text: Optional[str] = None, vd_names: List[str] = None,
+                                 sql_names: List[str] = None):
         assert True
 
     @classmethod

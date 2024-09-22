@@ -953,7 +953,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None:
                 aux = self.rule_data[self.ruleset_dataset.get_components_names()]
-                aux[validation_data.name] = validation_data.data
+                aux['bool_var'] = validation_data.data
                 validation_data = aux
         self.rule_data = None
         self.is_from_rule = False
@@ -1109,7 +1109,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     BASIC_TYPES[bool]:
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
-            if condition.data.empty:
+            if condition.data is None or condition.data.empty:
                 data = None
             else:
                 data = condition.data[name]
