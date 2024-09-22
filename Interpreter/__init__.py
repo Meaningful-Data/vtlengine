@@ -121,7 +121,7 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = False
         results = {}
         for child in node.children:
-            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)) and not self.only_semantic:
+            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 self._load_datapoints_efficient(statement_num)
             result = self.visit(child)
             # TODO: Execute collected operations from Spark and add explain
@@ -129,6 +129,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.datasets[result.name] = result
                 results[result.name] = result
                 self._save_datapoints_efficient(statement_num)
+
+            # Reset some handlers (joins and if)
+            self.is_from_join = False
+            self.if_stack = None
 
         return results
 
@@ -539,7 +543,7 @@ class InterpreterAnalyzer(ASTTemplate):
                                      node.value].nullable)
         if self.is_from_rule:
             if node.value not in self.ruleset_signature:
-                raise Exception(f"Component {node.value} not found in ruleset signature")
+                raise Exception(f"Component {node.value} not found in ruleset signature {self.ruleset_signature}")
             comp_name = self.ruleset_signature[node.value]
             if comp_name not in self.ruleset_dataset.components:
                 raise Exception(f"Component {comp_name} not found in dataset "
@@ -644,15 +648,18 @@ class InterpreterAnalyzer(ASTTemplate):
                                      (sublist if isinstance(sublist, list) else [sublist])]))
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
-                result.data.rename(
-                    columns={col: col[col.find('#') + 1:] for col in result.data.columns},
-                    inplace=True)
+                if result.data is not None:
+                    result.data.rename(
+                        columns={col: col[col.find('#') + 1:] for col in result.data.columns},
+                        inplace=True)
                 result.components = {comp_name[comp_name.find('#') + 1:]: comp for comp_name, comp
                                      in
                                      result.components.items()}
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find('#') + 1:]
-                result.data.reset_index(drop=True, inplace=True)
+                if result.data is not None:
+                    result.data.reset_index(drop=True, inplace=True)
+                self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
 
@@ -697,8 +704,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.nested_if = 'E' if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)):
-            self.else_condition_dataset.pop()
-            self.if_stack.pop()
+            if len(self.else_condition_dataset) > 0:
+                self.else_condition_dataset.pop()
+            if len(self.if_stack) > 0:
+                self.if_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -942,9 +951,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
-            aux = self.rule_data[self.ruleset_dataset.get_components_names()]
-            aux['bool_var'] = validation_data.data
-            validation_data = aux
+            if self.rule_data is not None:
+                aux = self.rule_data[self.ruleset_dataset.get_components_names()]
+                aux[validation_data.name] = validation_data.data
+                validation_data = aux
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1146,6 +1156,8 @@ class InterpreterAnalyzer(ASTTemplate):
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, Dataset | DataComponent):
+            if left_operand.data is None:
+                return left_operand, right_operand
             if isinstance(left_operand, Dataset):
                 dataset_index = left_operand.data.index[left_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 left = left_operand.data[left_operand.get_measures_names()[0]]
@@ -1154,6 +1166,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
         if isinstance(right_operand, Dataset | DataComponent):
+            if right_operand.data is None:
+                return left_operand, right_operand
             if isinstance(right_operand, Dataset):
                 dataset_index = right_operand.data.index[right_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 right = right_operand.data[right_operand.get_measures_names()[0]]

@@ -272,6 +272,25 @@ class Dataset:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
+    def to_json_datastructure(self):
+        dict_dataset = self.to_dict()['components']
+        order_keys = ['name', 'role', 'type', 'nullable']
+        # Rename data_type to type
+        for k in dict_dataset:
+            dict_dataset[k] = {ik if ik != 'data_type' else 'type': v for ik, v in dict_dataset[k].items()}
+
+        # Order keys
+        for k in dict_dataset:
+            dict_dataset[k] = {ik: dict_dataset[k][ik] for ik in order_keys}
+        comp_values = list(dict_dataset.values())
+        ds_info = {
+            'name': self.name,
+            'DataStructure': comp_values
+        }
+        result = {"datasets": [ds_info]}
+        return json.dumps(result, indent=2)
+
+
 
 @dataclass
 class ScalarSet:

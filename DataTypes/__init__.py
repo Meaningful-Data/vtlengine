@@ -144,6 +144,11 @@ class Number(ScalarType):
                 return 1.0
             else:
                 return 0.0
+        elif from_type in {Integer, Number, String}:
+            try:
+                return float(value)
+            except ValueError:
+                raise Exception(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
         
         raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
 
@@ -440,7 +445,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
 # TODO: Implicit are valid as cast without mask
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
     # TODO: Remove time types, only for compatibility with previous engine
-    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration},
+    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
     Number: {Integer, Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
     # TODO: Remove String on time types, only for compatibility with previous engine
