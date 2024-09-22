@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 
 import DataTypes
-from API.Api import load_vtl, load_value_domains, load_datasets, load_datasets_with_data, load_external_routines, \
-    semantic_analysis, run
+from API._InternalApi import load_vtl, load_value_domains, load_datasets, load_datasets_with_data, load_external_routines
+from API import semantic_analysis, run
 from DataTypes import String
 from Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
 
