@@ -4,16 +4,40 @@
       "name": "INSTRMNT_CMPLTNSS",
       "DataStructure": [
         {
-          "name": "CMMTMNT_INCPTN",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CMMTMNT_INCPTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         },
         {
           "name": "CRRNCY_DNMNTN",
@@ -40,12 +64,6 @@
           "nullable": true
         },
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
           "name": "DT_STTLMNT",
           "role": "Measure",
           "type": "Date",
@@ -62,12 +80,6 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "INSTRMNT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "INTRST_RT_CP",
@@ -232,12 +244,6 @@
           "nullable": true
         },
         {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "PRJCT_FNNC_LN",
           "role": "Measure",
           "type": "String",
@@ -349,12 +355,6 @@
           "name": "CD0170",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {

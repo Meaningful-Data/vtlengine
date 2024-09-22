@@ -4,15 +4,27 @@
       "name": "dsPrep.CN0622_DTST",
       "DataStructure": [
         {
-          "name": "CNTRCT_ID",
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
           "nullable": false
         },
         {
-          "name": "DT_RFRNC",
+          "name": "PRTCTN_PRVDR_CD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CNTRCT_ID",
           "role": "Identifier",
-          "type": "Date",
+          "type": "String",
           "nullable": false
         },
         {
@@ -34,12 +46,6 @@
           "nullable": true
         },
         {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "PRTCTN_ALLCTD_VL",
           "role": "Measure",
           "type": "Number",
@@ -49,12 +55,6 @@
           "name": "THRD_PRTY_PRRTY_CLMS",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "PRTCTN_PRVDR_CD",
-          "role": "Measure",
-          "type": "String",
           "nullable": true
         },
         {

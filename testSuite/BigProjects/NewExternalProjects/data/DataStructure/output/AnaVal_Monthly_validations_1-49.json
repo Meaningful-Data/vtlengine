@@ -4,64 +4,16 @@
       "name": "dsPrep.INSTRMTNS_PRTCTNS",
       "DataStructure": [
         {
-          "name": "CNTRCT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "NEVS_PRTCTN_ALLCTD_VL",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_THRD_PRTY_PRRTY_CLMS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRTCTN_ALLCTD_VL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "THRD_PRTY_PRRTY_CLMS",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "CMMTMNT_INCPTN",
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "CRRNCY_DNMNTN",
@@ -88,6 +40,12 @@
           "nullable": true
         },
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
           "name": "DT_STTLMNT",
           "role": "Measure",
           "type": "Date",
@@ -104,6 +62,12 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "INTRST_RT_CP",
@@ -268,6 +232,12 @@
           "nullable": true
         },
         {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PRJCT_FNNC_LN",
           "role": "Measure",
           "type": "String",
@@ -331,6 +301,36 @@
           "name": "TYP_INTRST_RT",
           "role": "Measure",
           "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_PRTCTN_ALLCTD_VL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_THRD_PRTY_PRRTY_CLMS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ALLCTD_VL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "THRD_PRTY_PRRTY_CLMS",
+          "role": "Measure",
+          "type": "Number",
           "nullable": true
         },
         {

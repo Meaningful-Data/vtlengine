@@ -28,18 +28,6 @@
           "nullable": false
         },
         {
-          "name": "JNT_LBLTY_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_JNT_LBLTY_AMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
@@ -50,6 +38,18 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "JNT_LBLTY_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_JNT_LBLTY_AMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
         },
         {
           "name": "errorcode",

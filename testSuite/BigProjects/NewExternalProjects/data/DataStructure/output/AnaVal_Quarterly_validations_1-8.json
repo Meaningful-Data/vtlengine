@@ -28,6 +28,12 @@
           "nullable": false
         },
         {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "ACCMLTD_CHNGS_FV_CR",
           "role": "Measure",
           "type": "Number",
@@ -626,12 +632,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

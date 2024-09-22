@@ -4,10 +4,16 @@
       "name": "comp_cred.ENTTY_DFLT_INSTRMNT",
       "DataStructure": [
         {
-          "name": "CNTRCT_ID",
-          "role": "Identifier",
+          "name": "DFLT_STTS",
+          "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
         },
         {
           "name": "DT_RFRNC",
@@ -17,6 +23,30 @@
         },
         {
           "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NEVS_DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -32,36 +62,6 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
         }
       ]
     }

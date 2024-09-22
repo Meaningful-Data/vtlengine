@@ -16,6 +16,12 @@
           "nullable": false
         },
         {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "INSTRMNT_ID",
           "role": "Identifier",
           "type": "String",
@@ -32,12 +38,6 @@
           "role": "Measure",
           "type": "Boolean",
           "nullable": true
-        },
-        {
-          "name": "ENTTY_RIAD_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "imbalance",

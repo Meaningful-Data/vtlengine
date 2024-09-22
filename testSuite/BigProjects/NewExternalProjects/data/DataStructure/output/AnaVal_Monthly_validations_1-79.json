@@ -16,12 +16,6 @@
           "nullable": false
         },
         {
-          "name": "ENTTY_RIAD_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "INSTRMNT_ID",
           "role": "Identifier",
           "type": "String",
@@ -29,6 +23,18 @@
         },
         {
           "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -248,12 +254,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

@@ -4,22 +4,10 @@
       "name": "DP_RLST_INSTRMNT_LST_MNTH_RSLT",
       "DataStructure": [
         {
-          "name": "CMMTMNT_INCPTN",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "FV_CHNG_CR_BFR_PRCHS",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
         },
         {
           "name": "INSTRMNT_ID",
@@ -34,6 +22,24 @@
           "nullable": false
         },
         {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CMMTMNT_INCPTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "FV_CHNG_CR_BFR_PRCHS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "CMMTMNT_INCPTN_T1",
           "role": "Measure",
           "type": "Number",
@@ -44,12 +50,6 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

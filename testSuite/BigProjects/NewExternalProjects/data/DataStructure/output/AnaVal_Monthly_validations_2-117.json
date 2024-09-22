@@ -16,16 +16,22 @@
           "nullable": false
         },
         {
-          "name": "NEVS_PD",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NEVS_PD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
         },
         {
           "name": "PD",
@@ -61,12 +67,6 @@
           "name": "CD0170",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {

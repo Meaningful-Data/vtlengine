@@ -4,12 +4,6 @@
       "name": "RI0191",
       "DataStructure": [
         {
-          "name": "bool_var",
-          "role": "Measure",
-          "type": "Boolean",
-          "nullable": false
-        },
-        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -25,6 +19,12 @@
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
           "nullable": false
         },
         {

@@ -4,6 +4,30 @@
       "name": "DP_RLST_PRTCTN_RCVD_RSLT",
       "DataStructure": [
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "DT_MTRTY_PRTCTN",
           "role": "Measure",
           "type": "Date",
@@ -20,12 +44,6 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
         },
         {
           "name": "NEVS_DT_MTRTY_PRTCTN",
@@ -106,22 +124,10 @@
           "nullable": true
         },
         {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ORGNL_PRTCTN_VL",
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "PRTCTN_PRVDR_CD",
@@ -176,12 +182,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

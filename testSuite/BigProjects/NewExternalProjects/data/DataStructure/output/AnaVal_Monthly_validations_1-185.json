@@ -4,6 +4,24 @@
       "name": "CNTRPRTY_CMPLTNSS",
       "DataStructure": [
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "ACCNTNG_FRMWRK_SL",
           "role": "Measure",
           "type": "String",
@@ -58,12 +76,6 @@
           "nullable": true
         },
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
           "name": "ECNMC_ACTVTY",
           "role": "Measure",
           "type": "String",
@@ -74,12 +86,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ENTTY_RIAD_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "HD_OFFC_UNDRT_CD",
@@ -415,12 +421,6 @@
           "name": "CC0202",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {

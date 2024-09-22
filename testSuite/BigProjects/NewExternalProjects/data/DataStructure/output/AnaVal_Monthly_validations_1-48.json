@@ -4,18 +4,6 @@
       "name": "GRNLR_CMA_ENTTY_RSK",
       "DataStructure": [
         {
-          "name": "DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -28,6 +16,30 @@
           "nullable": false
         },
         {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
           "name": "NEVS_DFLT_STTS",
           "role": "Measure",
           "type": "String",
@@ -38,12 +50,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "NEVS_PD",
@@ -212,12 +218,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

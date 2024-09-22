@@ -22,6 +22,18 @@
           "nullable": false
         },
         {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_SCRTSTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "NEVS_PRTCTN_ALLCTD_VL",
           "role": "Measure",
           "type": "String",
@@ -32,12 +44,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "PRTCTN_ALLCTD_VL",
@@ -55,12 +61,6 @@
           "name": "THRD_PRTY_PRRTY_CLMS",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "TYP_SCRTSTN",
-          "role": "Measure",
-          "type": "String",
           "nullable": true
         }
       ]

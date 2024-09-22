@@ -4,18 +4,6 @@
       "name": "DP_RLST_CNTRPRTY_DFLT_RSLT",
       "DataStructure": [
         {
-          "name": "DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -28,18 +16,6 @@
           "nullable": false
         },
         {
-          "name": "NEVS_DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
@@ -50,6 +26,30 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "NEVS_DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
         },
         {
           "name": "errorcode",
