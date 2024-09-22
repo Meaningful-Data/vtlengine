@@ -87,6 +87,9 @@ class Validation(Operator):
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data['output']
             rule_df['ruleid'] = rule_name
+            if 'bool_var' not in rule_df.columns and 'result' in rule_df.columns:
+                rule_df['bool_var'] = rule_df['result']
+                del rule_df['result']
             rule_df['errorcode'] = rule_df['bool_var'].map({False: rule_data['errorcode']})
             rule_df['errorlevel'] = rule_df['bool_var'].map({False: rule_data['errorlevel']})
             if df is None:

@@ -11,7 +11,7 @@ else:
     import pandas as pd
 
 from Model import Dataset, Component, Role
-from Operators import Operator
+from Operators import Operator, _id_type_promotion_join_keys
 
 
 class Join(Operator):
@@ -121,6 +121,10 @@ class Join(Operator):
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
+                for join_key in merge_join_keys:
+                    _id_type_promotion_join_keys(result.get_component(join_key),
+                                                 op.get_component(join_key),
+                                                 join_key, result.data, op.data)
                 result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
 
         result.data.reset_index(drop=True, inplace=True)
