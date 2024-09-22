@@ -21,11 +21,11 @@ class AnaVal(ExternalProjectsHelper):
 
     classTest = 'NewExternalProjects.AnaVal'
 
-    def test_Monthly_validations_1(self):
+    def test_Monthly_validations_only_semantic(self):
         """
         Description: EEAS_OA30
         Git Branch: feat-test-projects
-        Goal: Check semantic result and interpreter results.
+        Goal: AnaValMonthly with empty data successful execution
         """
         code = 'AnaVal_Monthly_validations_1'
         number_inputs = 16
@@ -37,14 +37,34 @@ class AnaVal(ExternalProjectsHelper):
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
-            vd_names=vd_names
+            vd_names=vd_names,
+            only_semantic=True
+        )
+
+    def test_Monthly_validations_1(self):
+        """
+        Description: EEAS_OA30
+        Git Branch: feat-test-projects
+        Goal: AnaValMonthly with empty data successful execution
+        """
+        code = 'AnaVal_Monthly_validations_1'
+        number_inputs = 16
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 186)]
+        references_names = rn
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
         )
 
     def test_Monthly_validations_2(self):
         """
         Description: EEAS_OA26
         Git Branch: feat-test-projects
-        Goal: Check semantic result and interpreter results.
+        Goal: AnaValMonthly execution with data.
         """
         code = 'AnaVal_Monthly_validations_2'
         number_inputs = 16
@@ -57,6 +77,26 @@ class AnaVal(ExternalProjectsHelper):
             number_inputs=number_inputs,
             references_names=references_names,
             vd_names=vd_names
+        )
+
+    def test_Quarterly_validations_only_semantic(self):
+        """
+        Description: EEAS_OA30
+        Git Branch: feat-test-projects
+        Goal: Check semantic result and interpreter results.
+        """
+        code = 'AnaVal_Quarterly_validations_1'
+        number_inputs = 11
+        vd_names = ["EU_countries", "AnaCreditCountries"]
+        rn = [str(i) for i in range(1, 24)]
+        references_names = rn
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+            only_semantic=True
         )
 
     def test_Quarterly_validations_1(self):
