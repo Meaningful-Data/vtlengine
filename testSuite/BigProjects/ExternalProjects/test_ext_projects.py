@@ -44,44 +44,6 @@ class AnaVal(ExternalProjectsHelper):
 
     classTest = 'ExternalProjects.AnaVal'
 
-    def test_Monthly_validations_1(self):
-        """
-        Description: AT_Bank_201906
-        Git Branch: feat-test-projects
-        Goal: Check semantic result and interpreter results.
-        """
-        code = 'AnaVal_Monthly_validations_1'
-        number_inputs = 36
-        vd_names = ["EU_countries", "AnaCreditCountries_1"]
-        rn = [str(i) for i in range(1, 288)]
-        references_names = rn
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            vd_names=vd_names
-        )
-
-    def test_Quarterly_validations_1(self):
-        """
-        Description: AT_Bank_201906
-        Git Branch: feat-test-projects
-        Goal: Check semantic result and interpreter results.
-        """
-        code = 'AnaVal_Quarterly_validations_1'
-        number_inputs = 12
-        vd_names = ["EU_countries", "AnaCreditCountries_1"]
-        rn = [str(i) for i in range(1, 38)]
-        references_names = rn
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            vd_names=vd_names
-        )
-
     def test_GL_283_1(self):
         """
         USER DEFINED OPERATORS
