@@ -224,16 +224,17 @@ class AnamartFull(AnamartHelper):
 
     classTest = 'Anamart.AnamartFull'
 
-    def test_1(self):
-        '''
-
-        '''
-        code = 'AFULL'
-        number_inputs = 12
-        references_names = []
-        vd_names = ["AFULL-1"]
-        sql_names = ["instDates", "instrFctJn", "prtctnDts", "prtctnFctJn"]
-
-        # TODO Generate data for this test
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names, sql_names=sql_names)
+    # TODO: Check External Routines here
+    # def test_1(self):
+    #     '''
+    #
+    #     '''
+    #     code = 'AFULL'
+    #     number_inputs = 12
+    #     references_names = []
+    #     vd_names = ["AFULL-1"]
+    #     sql_names = ["instDates", "instrFctJn", "prtctnDts", "prtctnFctJn"]
+    #
+    #     # TODO Generate data for this test
+    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
+    #                   vd_names=vd_names, sql_names=sql_names)

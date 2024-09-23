@@ -75,7 +75,7 @@ period_pattern = r'^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M][0-1]?\d$
 # and further_options_period_pattern matches
 # with other kinds of inputs that we have to accept for the period.
 further_options_period_pattern = (r'\d{4}-\d{2}-\d{2}|^\d{4}-D[0-3]\d\d$|^\d{4}-W([0-4]'
-                                  r'\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]))$|^'
+                                  r'\d|5[0-3])|^\d{4}-(0[1-9]|1[0-2]|M(0[1-9]|1[0-2]|[1-9]))$|^'
                                   r'\d{4}-Q[1-4]$|^\d{4}-S[1-2]$|^\d{4}-A1$')
 
 

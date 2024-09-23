@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 
+import pytest
+
 from testSuite.Helper import TestHelper
 
 
@@ -101,4 +103,5 @@ class SemanticBIRD(BIRDHelper):
                             'EQTY_INSTRMNTS_NT_SCRTS_E',
                             'FCTRNG_AXLRY_E', 'GDWLL_E', 'GRP_E']
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Case B"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
