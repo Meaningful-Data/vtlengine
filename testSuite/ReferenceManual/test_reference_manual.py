@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from Interpreter import InterpreterAnalyzer
+from files.parser import load_datapoints
 
 if os.environ.get("SPARK", False):
     import sys
@@ -41,7 +42,7 @@ import pytest
 
 from API import create_ast
 from DataTypes import SCALAR_TYPES
-from Model import Component, Role, Dataset
+from Model import Component, Role, Dataset, ValueDomain
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / 'data/DataSet/input'
@@ -49,6 +50,8 @@ reference_dp_dir = base_path / 'data/DataSet/output'
 input_ds_dir = base_path / 'data/DataStructure/input'
 reference_ds_dir = base_path / 'data/DataStructure/output'
 vtl_dir = base_path / 'data/vtl'
+vtl_def_operators_dir = base_path / 'data/vtl_defined_operators'
+value_domain_dir = base_path / 'data/ValueDomain'
 
 general_operators = list(range(1, 6))
 join_operators = list(range(6, 13))
@@ -65,18 +68,26 @@ validation_operators = list(range(157, 161))
 conditional_operators = list(range(161, 163))
 clause_operators = list(range(163, 177))
 
-# Remove tests not implemented (Value Domains)
-comparison_operators.remove(84)
-
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
 
-comparison_operators.remove(85)
+# TODO: check if test 107 is correct
+# remove test until re-evaluation
+time_operators.remove(107)
 
-analytic_operators.remove(155)
+# Remove tests because Time Interval with Periods
+time_operators.remove(101)
+time_operators.remove(102)
+time_operators.remove(109)
+time_operators.remove(113)
+time_operators.remove(117)
 
-# TODO: Median test 144 inconsistent result on odd number of elements on pyspark
-aggregation_operators.remove(144)
+# Remove tests because missing test files
+time_operators.remove(121)
+time_operators.remove(122)
+time_operators.remove(123)
+time_operators.remove(124)
+time_operators.remove(125)
 
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
@@ -100,11 +111,29 @@ params = itertools.chain(
 
 params = [x for x in list(params) if x not in exceptions_tests]
 
+
 @pytest.fixture
 def ast(input_datasets, param):
     with open(os.path.join(vtl_dir, f'RM{param:03d}.vtl'), 'r') as f:
         vtl = f.read()
     return create_ast(vtl)
+
+
+@pytest.fixture
+def ast_defined_operators(input_datasets, param):
+    with open(os.path.join(vtl_def_operators_dir, f'RM{param:03d}.vtl'), 'r') as f:
+        vtl = f.read()
+    return create_ast(vtl)
+
+
+@pytest.fixture
+def value_domains():
+    vds = {}
+    for f in os.listdir(value_domain_dir):
+        with open(os.path.join(value_domain_dir, f), 'r') as file:
+            value_domain = ValueDomain.from_json(file.read())
+            vds[value_domain.name] = value_domain
+    return vds
 
 
 @pytest.fixture
@@ -147,7 +176,8 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
             if dataset_name not in dataPoints:
                 data = pd.DataFrame(columns=components.keys())
             else:
-                data = pd.read_csv(os.path.join(dp_dir, f'{param}-{dataset_name}.csv'), sep=',')
+                data = load_datapoints(components=components,
+                                       csv_path=Path(f'{dp_dir}/{param}-{dataset_name}.csv'))
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
     if len(datasets) == 0:
@@ -155,19 +185,27 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
-# params = [131]
-# params = [144]
-
 @pytest.mark.parametrize('param', params)
-def test_reference(input_datasets, reference_datasets, ast, param):
+def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
-    interpreter = InterpreterAnalyzer(input_datasets)
+    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
     # except NotImplementedError:
     #     pass
+
+
+@pytest.mark.parametrize('param', params)
+def test_reference_defined_operators(input_datasets, reference_datasets,
+                                     ast_defined_operators, param, value_domains):
+    input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
+    reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
+    interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
+    result = interpreter.visit(ast_defined_operators)
+    assert result == reference_datasets
+
 
 @pytest.mark.parametrize('param', exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):

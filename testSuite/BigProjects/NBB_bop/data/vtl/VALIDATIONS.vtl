@@ -1,0 +1,269 @@
+define operator filRoundEr (ds dataset, comp component, margin number)
+  returns dataset is
+    ds[filter comp > margin or comp < -margin]
+end operator;
+define hierarchical ruleset maturity (variable rule MATURITY) is 
+  T = S + L errorcode "All original maturities"
+end hierarchical ruleset;
+define hierarchical ruleset instrAsset (variable rule INSTR_ASSET) is 
+  F = F11 + F12 + FK + FR2 errorcode "Total financial assets/liabilities (reserve assets)";
+  F11 = F11A + F11B	errorcode "Monetary gold"; 
+  F5 = F51 + F52 errorcode "Equity and investment fund shares/units"; 
+  FR1 = F3 + F5	errorcode "Securities (Equity, investment fund shares/units and debt securities)";
+  FR2 = F2 + FR1 + F71 + FR41	errorcode "Other reserve assets .currency, deposits, securities, financial derivatives and other claims"
+end hierarchical ruleset;
+define hierarchical ruleset intAccItem (variable rule INT_ACC_ITEM) is 
+  CA = G + S + IN1 + IN2 errorcode "Current account";
+  D4P = D4S + D4Q errorcode "Income: Investment income";
+  D4P = D4S + D41 + D44P errorcode "Income: Investment income";
+  GS = G + S errorcode "GS=G+S";
+  IN1 = D1 + D4P + D4O errorcode "Primary income"
+end hierarchical ruleset;
+define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+    B = C - D errorcode "Balance (credit-debet)" errorlevel 4;
+    N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+end hierarchical ruleset;
+define hierarchical ruleset areas (variable rule COUNTERPART_AREA) is 
+    W1 = I8 + J8 errorcode "Rest of the world";
+    W1 = B5 + D5 errorcode "Rest of the world";
+    W1 = B6 + D6 errorcode "Rest of the world"
+end hierarchical ruleset;
+define hierarchical ruleset sectorsHierarchy (variable rule COUNTERPART_SECTOR) is 
+    S1 = S121 + S12T + S13 + S1P errorcode "total economy" errorlevel 4;
+    S12T = S122 + S123 errorcode "Monetary financial institutions other than central bank" errorlevel 4;
+    S1P = S12M + S1V errorcode "Other sectors than MFIs and general government" errorlevel 4;
+    S1Z = S123 + S1P errorcode "Sectors other than deposit-taking corporations and general government (Other Sectors - BPM6)"
+end hierarchical ruleset;
+define datapoint ruleset zeroValidation (variable COUNTERPART_AREA as CA, REF_SECTOR as RS, COUNTERPART_SECTOR as CS, FLOW_STOCK_ENTRY as FSE, ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+  EQ0_1: when CA = "I8" and RS = "S1" and CS = "S121" and FSE = "T" and AE = "A" and IAI = "FA" and FC = "P" and IA = "F3" then O = 0 errorcode "EQ0_1";
+  EQ0_2: when CA = "W1" and RS = "S121" and CS = "S1" and FSE = "T" and AE = "L" and IAI = "FA" and FC = "P" and IA = "F3" then O = 0 errorcode "EQ0_2"
+end datapoint ruleset;
+define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+  sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c";
+  sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c";
+  sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c";
+  sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c";
+  sign5c: when AE = "C" and IAI = "IN2" then O > 0 errorcode "sign5c";
+  sign6c: when AE = "C" and IAI = "D1" then O > 0 errorcode "sign6c";
+  sign7c: when AE = "C" and IAI = "KA" then O > 0 errorcode "sign7c";
+  sign8c: when AE = "C" and IAI = "D4P" then O > 0 errorcode "sign8c";
+  sign1d: when AE = "D" and IAI = "G" then O > 0 errorcode "sign1d";
+  sign2d: when AE = "D" and IAI = "GA" then O > 0 errorcode "sign2d";
+  sign3d: when AE = "D" and IAI = "S" then O > 0 errorcode "sign3d";
+  sign4d: when AE = "D" and IAI = "IN1" then O > 0 errorcode "sign4d";
+  sign5d: when AE = "D" and IAI = "IN2" then O > 0 errorcode "sign5d";
+  sign6d: when AE = "D" and IAI = "D1" then O > 0 errorcode "sign6d";
+  sign7d: when AE = "D" and IAI = "KA" then O > 0 errorcode "sign7d";
+  sign8d: when AE = "D" and IAI = "D4P" then O > 0 errorcode "sign8d";
+  sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9";
+  sign10: when IAI = "D4S" and FC = "P" and IA = "F" then O > 0 errorcode "sign10";
+  sign11: when IAI = "D41" and FC = "P" and IA = "F3" then O > 0 errorcode "sign11";
+  sign12: when IAI = "D41" and FC = "O" and IA = "FLA" then O > 0 errorcode "sign12"
+end datapoint ruleset;
+/*******************************************************************************
+*       Module val
+*******************************************************************************/
+val.bopObs :=
+	BOP
+		[keep OBS_VALUE];
+val.instrAssetVal :=
+	check_hierarchy(
+		val.bopObs,
+		instrAsset
+		rule INSTR_ASSET);
+val.refSectorVal :=
+	check_hierarchy(
+		val.bopObs,
+		sectorsHierarchy
+		rule REF_SECTOR);
+val.maturityVal :=
+	check_hierarchy(
+		val.bopObs,
+		maturity
+		rule MATURITY);
+val.intAccItemVal :=
+	check_hierarchy(
+		val.bopObs,
+		intAccItem
+		rule INT_ACC_ITEM);
+val.counterpartAreaVal :=
+	check_hierarchy(
+		val.bopObs,
+		areas
+		rule COUNTERPART_AREA);
+val.counterpartSectorVal :=
+	check_hierarchy(
+		val.bopObs,
+		sectorsHierarchy
+		rule COUNTERPART_SECTOR);
+val.accountingEntryVal :=
+	check_hierarchy(
+		val.bopObs,
+		accountingEntry
+		rule ACCOUNTING_ENTRY);
+val.valResult :=
+	union(val.instrAssetVal,val.refSectorVal,val.maturityVal,val.intAccItemVal,val.counterpartAreaVal,val.counterpartSectorVal,val.accountingEntryVal);
+val.signVal :=
+	check_datapoint(
+		val.bopObs,
+		signValidation);
+val.notZero :=
+	check_datapoint(
+		val.bopObs,
+		zeroValidation);
+val.BAL :=
+	check(
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "N",INT_ACC_ITEM = "EO"] 
+		=
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "N",INT_ACC_ITEM = "FA"] 
+		-
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "B",INT_ACC_ITEM = "CKA"] 
+		invalid);
+val.FUNC1 :=
+	check(
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "N",FUNCTIONAL_CAT = "_T"] 
+		=
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "A",FUNCTIONAL_CAT = "D"] 
+		-
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "L",FUNCTIONAL_CAT = "D"] 
+		+
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "A",FUNCTIONAL_CAT = "P"] 
+		-
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "L",FUNCTIONAL_CAT = "P"] 
+		+
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "A",FUNCTIONAL_CAT = "O"] 
+		-
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "L",FUNCTIONAL_CAT = "O"] 
+		+
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "A",FUNCTIONAL_CAT = "F"] 
+		+
+		val.bopObs
+			[sub ACCOUNTING_ENTRY = "A",FUNCTIONAL_CAT = "R"] 
+		invalid);
+val.OW1 :=
+	check(
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F"] 
+		-
+		val.bopObs
+			[sub INT_ACC_ITEM = "D43S",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F5"] 
+		>
+		 0 
+		invalid);
+val.OW2 :=
+	check(
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4S",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F5"] 
+		-
+		val.bopObs
+			[sub INT_ACC_ITEM = "D43S",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F5"] 
+		>
+		 0 
+		invalid);
+val.STR :=
+	check(
+		val.bopObs
+			[sub FUNCTIONAL_CAT = "P",INSTR_ASSET = "F"] 
+		=
+		val.bopObs
+			[sub FUNCTIONAL_CAT = "P",INSTR_ASSET = "F5"] 
+		+
+		val.bopObs
+			[sub FUNCTIONAL_CAT = "P",INSTR_ASSET = "F3"] 
+		invalid);
+val.RSCS :=
+	check(
+		val.bopObs
+			[sub REF_SECTOR = "S121",COUNTERPART_SECTOR = "S1"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S122",COUNTERPART_SECTOR = "S1"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S123",COUNTERPART_SECTOR = "S1"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S13",COUNTERPART_SECTOR = "S1"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S12M",COUNTERPART_SECTOR = "S1"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1V",COUNTERPART_SECTOR = "S1"] 
+		=
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S121"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S122"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S123"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S13"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S12M"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",COUNTERPART_SECTOR = "S1V"] 
+		invalid);
+val.FUNC2 :=
+	check(
+		val.bopObs
+			[sub REF_SECTOR = "S1",INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "_T",CURRENCY_DENOM = "_T"] 
+		=
+		val.bopObs
+			[sub REF_SECTOR = "S1",INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "D",CURRENCY_DENOM = "_T"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "P",CURRENCY_DENOM = "_T"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "O",CURRENCY_DENOM = "_T"] 
+		+
+		val.bopObs
+			[sub REF_SECTOR = "S1",INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "R",CURRENCY_DENOM = "X1"] 
+		invalid);
+val.IAI_1 :=
+	check(
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4P",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F"] 
+		=
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4S",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F5"] 
+		+
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4Q",FUNCTIONAL_CAT = "D",INSTR_ASSET = "FL"] 
+		invalid);
+val.IAI_2 :=
+	check(
+		val.bopObs
+			[sub INT_ACC_ITEM = "FA",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F"] 
+		=
+		val.bopObs
+			[sub INT_ACC_ITEM = "FA",FUNCTIONAL_CAT = "D",INSTR_ASSET = "F5"] 
+		+
+		val.bopObs
+			[sub INT_ACC_ITEM = "FA",FUNCTIONAL_CAT = "D",INSTR_ASSET = "FL"] 
+		invalid);
+val.OW3 :=
+	check(
+		val.bopObs
+			[sub INT_ACC_ITEM = "D41",INSTR_ASSET = "FLA"] 
+		<=
+		val.bopObs
+			[sub INT_ACC_ITEM = "D4P",INSTR_ASSET = "F"] 
+		invalid);

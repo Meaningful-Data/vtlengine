@@ -1,0 +1,5 @@
+define operator Test154 (x dataset, c component, d component, e component)
+    returns dataset is
+    lead ( x, 1 over ( partition by c, d order by e ))
+end operator;
+DS_r := Test154(DS_1, Id_1, Id_2, Id_3);

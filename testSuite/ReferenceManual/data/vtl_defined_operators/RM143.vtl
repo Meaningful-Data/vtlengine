@@ -1,0 +1,5 @@
+define operator Test143 (x dataset, y component)
+    returns dataset is
+    max ( x group by y )
+end operator;
+DS_r := Test143(DS_1, Id_1);

@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "instrument_protection_item_assignments.instrument_protection_item_assignments",
+      "DataStructure": [
+        {
+          "name": "instrument_identifier",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "protection_item_identifier",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "reference_date",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "protection_allocated_value",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "third_party_priority_claim_against_the_protection",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

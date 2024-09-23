@@ -1,0 +1,6 @@
+define operator Test011 (x dataset, c component, d component, e component)
+    returns dataset is
+        inner_join ( x  filter c ="B" calc d := d || "_NEW" keep d, e)
+end operator;
+
+DS_r := Test011 (DS_1, Id_2, Me_2, Me_1);

@@ -1,0 +1,46 @@
+{
+  "datasets": [
+    {
+      "name": "SUM_BIS_TOPIC.filtered_ds",
+      "DataStructure": [
+        {
+          "name": "BIS_SUFFIX",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "BIS_TOPIC",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "FREQ",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "type": "Number",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "REF_AREA",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "type": "Time_Period",
+          "role": "Identifier",
+          "nullable": false
+        }
+      ],
+      "DataPoints": null
+    }
+  ]
+}

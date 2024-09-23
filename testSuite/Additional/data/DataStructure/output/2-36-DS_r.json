@@ -37,7 +37,7 @@
           "name": "Me_2_2",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "Me_1_3",
@@ -49,7 +49,7 @@
           "name": "Me_2_3",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

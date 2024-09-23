@@ -44,8 +44,11 @@ class And(Binary):
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        return None if (pd.isnull(x) and y is not False) or (
-                pd.isnull(y) and x is not False) else x and y
+        if (pd.isnull(x) and y == False) or (x == False and pd.isnull(y)):
+            return False
+        elif pd.isnull(x) or pd.isnull(y):
+            return None
+        return x and y
 
     @classmethod
     def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
@@ -57,10 +60,10 @@ class Or(Binary):
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (pd.isnull(x) and (pd.isnull(y) or y == False)) or (pd.isnull(y) and x == False):
-            return None
-        elif pd.isnull(x):
+        if (pd.isnull(x) and y == True) or (x == True and pd.isnull(y)):
             return True
+        elif pd.isnull(x) or pd.isnull(y):
+            return None
         return x or y
 
     @classmethod

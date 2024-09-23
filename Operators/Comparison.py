@@ -4,7 +4,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-from Model import Component, DataComponent, Dataset, Role, Scalar
+from Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 
 if os.environ.get("SPARK"):
     import pyspark.pandas as pd
@@ -12,7 +12,7 @@ else:
     import pandas as pd
 
 from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ, NOT_IN
-from DataTypes import Boolean, COMP_NAME_MAPPING, String
+from DataTypes import Boolean, COMP_NAME_MAPPING, String, Number
 import Operators as Operator
 
 
@@ -59,6 +59,58 @@ class Binary(Operator.Binary):
     """
     return_type = Boolean
 
+    @classmethod
+    def _cast_values(cls, x: Union[int, float, str, bool], y: Union[int, float, str, bool]) -> tuple:
+        # Cast both values to the same data type
+        # An integer can be considered a bool, we must check first boolean, then numbers
+        if isinstance(x, str) and isinstance(y, bool):
+            y = String.cast(y)
+        elif isinstance(x, bool) and isinstance(y, str):
+            x = String.cast(x)
+        elif isinstance(x, str) and isinstance(y, (int, float)):
+            x = Number.cast(x)
+        elif isinstance(x, (int, float)) and isinstance(y, str):
+            y = Number.cast(y)
+
+        return x, y
+
+    @classmethod
+    def op_func(cls, x: Any, y: Any) -> Any:
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        x, y = cls._cast_values(x, y)
+        return cls.py_op(x, y)
+
+    @classmethod
+    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
+                                      series_left: bool) -> Any:
+        if scalar is None:
+            return pd.Series(None, index=series.index)
+        if series_left:
+            return series.map(lambda x: cls.op_func(x, scalar), na_action='ignore')
+        else:
+            return series.map(lambda x: cls.op_func(scalar, x), na_action='ignore')
+
+    @classmethod
+    def apply_return_type_dataset(
+            cls, result_dataset: Dataset, left_operand: Dataset,
+            right_operand: Union[Dataset, Scalar, ScalarSet]
+    ) -> None:
+        super().apply_return_type_dataset(result_dataset, left_operand, right_operand)
+        is_mono_measure = len(result_dataset.get_measures()) == 1
+        if is_mono_measure:
+            measure = result_dataset.get_measures()[0]
+            component = Component(
+                name=COMP_NAME_MAPPING[Boolean],
+                data_type=Boolean,
+                role=Role.MEASURE,
+                nullable=measure.nullable
+            )
+            result_dataset.delete_component(measure.name)
+            result_dataset.add_component(component)
+            if result_dataset.data is not None:
+                result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
+
 
 class Equal(Binary):
     op = EQ
@@ -96,8 +148,11 @@ class In(Binary):
     @classmethod
     def apply_operation_two_series(cls,
                                    left_series: Any,
-                                   right_series: Any) -> Any:
-        return left_series.isin(right_series)
+                                   right_series: list) -> Any:
+        right = pd.Series(right_series)
+        if left_series.dtype != right.dtype:
+            right = right.astype(left_series.dtype)
+        return left_series.map(lambda x: x in right.values, na_action='ignore')
 
     @classmethod
     def py_op(cls, x, y):
@@ -110,8 +165,9 @@ class NotIn(Binary):
     @classmethod
     def apply_operation_two_series(cls,
                                    left_series: Any,
-                                   right_series: Any) -> Any:
-        return ~left_series.isin(right_series)
+                                   right_series: list) -> Any:
+        series_result = In.apply_operation_two_series(left_series, right_series)
+        return series_result.map(lambda x: not x, na_action='ignore')
 
     @classmethod
     def py_op(cls, x, y):
@@ -123,10 +179,12 @@ class Match(Binary):
     type_to_check = String
 
     @classmethod
-    def py_op(cls, x, y):
+    def op_func(cls, x, y):
+        if pd.isnull(x) or pd.isnull(y):
+            return None
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
-        return bool(re.fullmatch(y, x))
+        return bool(re.fullmatch(str(y), str(x)))
 
 
 class Between(Operator.Operator):
@@ -146,10 +204,10 @@ class Between(Operator.Operator):
         
     """
     @classmethod
-    def op_function(cls,
-                    x: Optional[Union[int, float, bool, str]],
-                    y: Optional[Union[int, float, bool, str]],
-                    z: Optional[Union[int, float, bool, str]]):
+    def op_func(cls,
+                x: Optional[Union[int, float, bool, str]],
+                y: Optional[Union[int, float, bool, str]],
+                z: Optional[Union[int, float, bool, str]]):
         return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z
 
     @classmethod
@@ -165,10 +223,10 @@ class Between(Operator.Operator):
             if not isinstance(to_data, pd.Series):
                 to_data = pd.Series(to_data, index=series.index)
             df = pd.DataFrame({'operand': series, 'from_data': from_data, 'to_data': to_data})
-            return df.apply(lambda x: cls.op_function(x['operand'], x['from_data'], x['to_data']),
+            return df.apply(lambda x: cls.op_func(x['operand'], x['from_data'], x['to_data']),
                             axis=1)
 
-        return series.map(lambda x: cls.op_function(x, from_data, to_data))
+        return series.map(lambda x: cls.op_func(x, from_data, to_data))
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
@@ -292,11 +350,12 @@ class ExistIn(Operator.Operator):
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 
+        is_subset_right = set(right_identifiers).issubset(left_identifiers)
         is_subset_left = set(left_identifiers).issubset(right_identifiers)
-        if not is_subset_left:
+        if not (is_subset_left or is_subset_right):
             raise ValueError("Datasets must have common identifiers")
 
-        result_components = {comp.name: comp for comp in dataset_1.get_identifiers()}
+        result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name="result", components=result_components, data=None)
         result_dataset.add_component(Component(
             name='bool_var',
@@ -310,13 +369,45 @@ class ExistIn(Operator.Operator):
     def evaluate(cls, dataset_1: Dataset, dataset_2: Dataset,
                  retain_element: Optional[Boolean]) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
-        common = result_dataset.get_identifiers_names()
-        df1: pd.DataFrame = dataset_1.data[common]
-        df2: pd.DataFrame = dataset_2.data[common]
-        compare_result = (df1 == df2).apply(cls.check_all_columns, axis=1)
-        result_dataset.data = df1
-        result_dataset.data['bool_var'] = compare_result
 
+        # Checking the subset
+        left_id_names = dataset_1.get_identifiers_names()
+        right_id_names = dataset_2.get_identifiers_names()
+        is_subset_left = set(left_id_names).issubset(right_id_names)
+
+        # Identifiers for the result dataset
+        reference_identifiers_names = left_id_names
+
+        # Checking if the left dataset is a subset of the right dataset
+        if is_subset_left:
+            common_columns = left_id_names
+        else:
+            common_columns = right_id_names
+
+        # Check if the common identifiers are equal between the two datasets
+        true_results = pd.merge(dataset_1.data, dataset_2.data, how='inner',
+                                left_on=common_columns,
+                                right_on=common_columns, copy=False)
+        true_results = true_results[reference_identifiers_names]
+
+        # Check for empty values
+        if true_results.empty:
+            true_results['bool_var'] = None
+        else:
+            true_results['bool_var'] = True
+
+        final_result = pd.merge(dataset_1.data, true_results, how='left',
+                                left_on=reference_identifiers_names,
+                                right_on=reference_identifiers_names, copy=False)
+        final_result = final_result[reference_identifiers_names + ['bool_var']]
+
+        # No null values are returned, only True or False
+        final_result.fillna(False, axis=1, inplace=True)
+
+        # Adding to the result dataset
+        result_dataset.data = final_result
+
+        # Retain only the elements that are specified (True or False)
         if retain_element is not None:
             result_dataset.data = result_dataset.data[
                 result_dataset.data['bool_var'] == retain_element]
@@ -324,5 +415,6 @@ class ExistIn(Operator.Operator):
 
         return result_dataset
 
-    def check_all_columns(row):
-        return all(col_value > 0 for col_value in row)
+    @staticmethod
+    def _check_all_columns(row):
+        return all(col_value == True for col_value in row)

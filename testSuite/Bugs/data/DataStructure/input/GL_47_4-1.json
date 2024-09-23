@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "loans_and_advances_by_debtor.loans_and_advances_by_debtor",
+      "DataStructure": [
+        {
+          "name": "debtor_party_identifier",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "instrument_identifier",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "pulling_effect_indicator",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "street",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

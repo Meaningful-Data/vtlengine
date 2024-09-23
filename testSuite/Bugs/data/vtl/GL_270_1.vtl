@@ -1,0 +1,5 @@
+ENTTY_INSTRMNT_JN_LBLTS_AGG :=
+    ENTTY_INSTRMNT_JN_LBLTS
+    [aggr
+    IS_JNT_LBLTY_RPRTD_ALL := min(if isnull(JNT_LBLTY_AMNT) then false else true)
+    group by OBSRVD_AGNT_CD, DT_RFRNC, CNTRCT_ID, INSTRMNT_ID];

@@ -1,0 +1,5 @@
+ACCOUNTING_ENTRY,ADJUSTMENT,COMP_METHOD,bool_var
+AA,aa,aa,
+bb,bb,bb,False
+cc,cc,cc,True
+ee,ee,ee,True

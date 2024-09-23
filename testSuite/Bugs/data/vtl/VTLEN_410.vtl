@@ -1,0 +1,33 @@
+define operator D_INSTTTNL_SCTR_FINREP(INSTTTNL_SCTR component, INTRNTNL_ORGNSTN_CD component)
+returns string is 
+    if (INSTTTNL_SCTR in {"S122_A"} or INTRNTNL_ORGNSTN_CD in {1,2}) 
+    then "S1_MDB" 
+    else 
+        if (INSTTTNL_SCTR in {1,2} or INTRNTNL_ORGNSTN_CD in {1,2}) 
+        then "S13_IO" 
+        else INSTTTNL_SCTR 
+end operator;
+
+define operator D_CNTRY_FINREP(CNTRY component, INTRNTNL_ORGNSTN_CD component) 
+returns string is 
+    if (INTRNTNL_ORGNSTN_CD in {1,2} or INTRNTNL_ORGNSTN_CD in {1,2}) 
+    then "_X" 
+    else CNTRY 
+end operator;
+
+define operator G_IS_ELGBL_CNTRPRTY_AC(INSTTTNL_SCTR component) 
+returns string is 
+    if (INSTTTNL_SCTR in {"S14_A", "S14_B"}) 
+    then "F" 
+    else "T" 
+end operator;
+
+CNTRPRTS_E_JN := inner_join(CNTRPRTS, 
+                        D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD, 
+                        CRDT_ASSSSMNT_SPLT.ECA_CNTRPRTS);
+
+/*What is this about? IS_CMPNNT_LGL_ENTTY is not a cube
+CNTRPRTS_E3 := inner_join(CNTRPRTS_E2, IS_CMPNNT_LGL_ENTTY using CNTRPRTY_ID);*/
+CNTRPRTS_E <- CNTRPRTS_E_JN[calc INSTTTNL_SCTR_FINREP := D_INSTTTNL_SCTR_FINREP(INSTTTNL_SCTR, INTRNTNL_ORGNSTN)]
+                        [calc CNTRY_FINREP := D_CNTRY_FINREP(CNTRY, INTRNTNL_ORGNSTN)]
+                        [calc IS_ELGBL_CNTRPRTY := G_IS_ELGBL_CNTRPRTY_AC(INSTTTNL_SCTR)];

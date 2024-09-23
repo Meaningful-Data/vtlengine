@@ -1,0 +1,5 @@
+define operator Test124 (s string)
+    returns string is
+    time_agg ( "A", cast ( s, date, "YYYYMMDD" ), last )
+end operator;
+DS_r := Test124("2012M1");

@@ -1,0 +1,22 @@
+{
+  "datasets": [
+    {
+      "name": "added",
+      "DataStructure": [
+        {
+          "name": "Id1",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "date_var",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        }
+      ],
+      "DataPoints": null
+    }
+  ]
+}

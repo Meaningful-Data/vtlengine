@@ -1,0 +1,183 @@
+{
+    "datasets": [
+      {
+        "name": "ENTITIES",
+        "DataStructure": [
+          {
+            "name": "Entity.EntityCategory",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.EntityCreationDate",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.EntityStatus",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.EntitySubCategory",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.HeadquartersAddress.City",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.HeadquartersAddress.FirstAddressLine",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.HeadquartersAddress.PostalCode",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.HeadquartersAddress.Region",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.HeadquartersAddress.xmllang",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalAddress.City",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalAddress.Country",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalAddress.FirstAddressLine",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalAddress.PostalCode",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalAddress.Region",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalForm.EntityLegalFormCode",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalForm.OtherLegalForm",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalJurisdiction",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.LegalName",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.OtherEntityNames.OtherEntityName.1",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.OtherEntityNames.OtherEntityName.1.type",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.RegistrationAuthority.OtherRegistrationAuthorityID",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.RegistrationAuthority.RegistrationAuthorityEntityID",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.RegistrationAuthority.RegistrationAuthorityID",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1.type",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Entity.TransliteratedOtherEntityNames.TransliteratedOtherEntityName.1.xmllang",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "LEI",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "Registration.InitialRegistrationDate",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Registration.ValidationSources",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          }
+        ]
+      }
+    ]
+  }

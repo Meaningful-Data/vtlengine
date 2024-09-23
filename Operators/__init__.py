@@ -2,10 +2,11 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from AST.Grammar.tokens import CEIL, FLOOR, ROUND
+from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
+from DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -20,7 +21,9 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # when the operator is applied to mono-measure Data Sets.
 # TODO: Check if there are more operators that allow this
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
+BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 
+only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
@@ -29,6 +32,41 @@ class Operator:
     spark_op = None
     type_to_check = None
     return_type = None
+
+    @classmethod
+    def analyze(cls, *args, **kwargs):
+        if only_semantic:
+            return cls.validate(*args, **kwargs)
+        return cls.evaluate(*args, **kwargs)
+
+    @classmethod
+    def cast_time_types(cls, data_type: ScalarType, series: pd.Series) -> pd.Series:
+        if cls.op not in BINARY_COMPARISON_OPERATORS:
+            return series
+        if data_type.__name__ == "TimeInterval":
+            series = series.map(lambda x: TimeIntervalHandler.from_iso_format(x),
+                                na_action='ignore')
+        elif data_type.__name__ == "TimePeriod":
+            series = series.map(lambda x: TimePeriodHandler(x),
+                                na_action='ignore')
+        elif data_type.__name__ == "Duration":
+            series = series.map(lambda x: DURATION_MAPPING[x],
+                                na_action='ignore')
+        return series
+
+    @classmethod
+    def cast_time_types_scalar(cls, data_type: ScalarType, value: str):
+        if cls.op not in BINARY_COMPARISON_OPERATORS:
+            return value
+        if data_type.__name__ == "TimeInterval":
+            return TimeIntervalHandler.from_iso_format(value)
+        elif data_type.__name__ == "TimePeriod":
+            return TimePeriodHandler(value)
+        elif data_type.__name__ == "Duration":
+            if value not in DURATION_MAPPING:
+                raise Exception(f"Duration {value} is not valid")
+            return DURATION_MAPPING[value]
+        return value
 
     @classmethod
     def modify_measure_column(cls, result: Dataset) -> None:
@@ -65,7 +103,11 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate(cls, *args):
+    def validate(cls, *args, **kwargs):
+        raise Exception("Method should be implemented by inheritors")
+
+    @classmethod
+    def evaluate(cls, *args, **kwargs):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -109,11 +151,47 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
 
+def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key: str,
+                                 left_data: pd.DataFrame,
+                                 right_data: pd.DataFrame) -> None:
+    left_type_name = c_left.data_type.__name__
+    right_type_name = c_right.data_type.__name__
+
+    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
+        left_data[join_key] = left_data[join_key].astype(object)
+        right_data[join_key] = right_data[join_key].astype(object)
+        return
+    if ((left_type_name == "Integer" and right_type_name == "Number") or
+            (left_type_name == "Number" and right_type_name == "Integer")):
+        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
+        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
+    elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
+        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
+    elif left_type_name in ("Integer", "Number") and right_type_name == "String":
+        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
+    left_data[join_key] = left_data[join_key].astype(object)
+    right_data[join_key] = right_data[join_key].astype(object)
+
+
+def _handle_str_number(x: Union[str, int, float]) -> Union[int, float]:
+    if isinstance(x, int):
+        return x
+    try:
+        x = float(x)
+        if x.is_integer():
+            return int(x)
+        return x
+    except ValueError:  # Unable to get to string, return the same value that will not be matched
+        return x
+
+
 class Binary(Operator):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else cls.py_op(x, y)
+        if pd.isnull(x) or pd.isnull(y):
+            return None
+        return cls.py_op(x, y)
 
     @classmethod
     def apply_operation_two_series(cls,
@@ -219,7 +297,6 @@ class Binary(Operator):
                 left_comp = left_operand.components[comp.name]
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
-
 
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
@@ -420,23 +497,35 @@ class Binary(Operator):
         join_keys = list(set(left_operand.get_identifiers_names()).intersection(
             right_operand.get_identifiers_names()))
 
-        # Merge the data
-        result_data: pd.DataFrame = pd.merge(
-            base_operand_data, other_operand_data,
-            how='inner', on=join_keys,
-            suffixes=('_x', '_y'))
+        for join_key in join_keys:
+            _id_type_promotion_join_keys(left_operand.get_component(join_key),
+                                         right_operand.get_component(join_key),
+                                         join_key, base_operand_data, other_operand_data)
+
+        try:
+            # Merge the data
+            result_data: pd.DataFrame = pd.merge(
+                base_operand_data, other_operand_data,
+                how='inner', on=join_keys,
+                suffixes=('_x', '_y'))
+        except ValueError as e:
+            raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
-        for measure_name in left_operand.get_measures_names():
+        for measure in left_operand.get_measures():
+            result_data[measure.name + '_x'] = cls.cast_time_types(measure.data_type,
+                                                                   result_data[measure.name + '_x'])
+            result_data[measure.name + '_y'] = cls.cast_time_types(measure.data_type,
+                                                                   result_data[measure.name + '_y'])
             if use_right_as_base:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    result_data[measure_name + '_y'],
-                    result_data[measure_name + '_x'])
+                result_data[measure.name] = cls.apply_operation_two_series(
+                    result_data[measure.name + '_y'],
+                    result_data[measure.name + '_x'])
             else:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    result_data[measure_name + '_x'],
-                    result_data[measure_name + '_y'])
-            result_data = result_data.drop([measure_name + '_x', measure_name + '_y'], axis=1)
+                result_data[measure.name] = cls.apply_operation_two_series(
+                    result_data[measure.name + '_x'],
+                    result_data[measure.name + '_y'])
+            result_data = result_data.drop([measure.name + '_x', measure.name + '_y'], axis=1)
 
         # Delete attributes from the result data
         attributes = list(
@@ -467,9 +556,14 @@ class Binary(Operator):
         result_data = dataset.data.copy()
         result_dataset.data = result_data
 
-        for measure_name in dataset.get_measures_names():
-            result_dataset.data[measure_name] = cls.apply_operation_series_scalar(
-                result_data[measure_name], scalar.value, dataset_left)
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+
+        for measure in dataset.get_measures():
+            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
+            if measure.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+                scalar_value = DURATION_MAPPING[scalar_value]
+            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
+                measure_data, scalar_value, dataset_left)
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
@@ -481,16 +575,21 @@ class Binary(Operator):
     def component_evaluation(cls, left_operand: DataComponent,
                              right_operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
-        result_component.data = cls.apply_operation_two_series(left_operand.data.copy(),
-                                                               right_operand.data.copy())
+        left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy())
+        right_data = cls.cast_time_types(right_operand.data_type, right_operand.data.copy())
+        result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
 
     @classmethod
     def component_scalar_evaluation(cls, component: DataComponent, scalar: Scalar,
                                     component_left: bool) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        result_component.data = cls.apply_operation_series_scalar(component.data.copy(),
-                                                                  scalar.value, component_left)
+        comp_data = cls.cast_time_types(component.data_type, component.data.copy())
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+        if component.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+            scalar_value = DURATION_MAPPING[scalar_value]
+        result_component.data = cls.apply_operation_series_scalar(comp_data,
+                                                                  scalar_value, component_left)
         return result_component
 
     @classmethod
@@ -523,9 +622,7 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
-    def evaluate(cls,
-                 left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+    def evaluate(cls, left_operand: ALL_MODEL_DATA_TYPES, right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
         """
         Evaluate the operation (based on validation output)
         :param left_operand: The left operand
@@ -570,7 +667,7 @@ class Unary(Operator):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(cls.op_func, na_action='ignore')
+        return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
     def validate(cls, operand: ALL_MODEL_DATA_TYPES):

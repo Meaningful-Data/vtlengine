@@ -1,0 +1,8 @@
+TYP_ENTTY_IS_PRTCTN_PRVDR :=
+                        left_join(
+                            TYP_ENTTY,
+                            dsPrep.PRTCTN_PRVDR_USD
+                                [calc IS_PRTCTN_PRVDR := true]
+                                [keep IS_PRTCTN_PRVDR]
+                                as B
+                        );

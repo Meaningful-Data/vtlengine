@@ -1,0 +1,5 @@
+define operator Test170 (x dataset, y component)
+    returns dataset is
+    x [ drop y ]
+end operator;
+DS_r := Test170(DS_1, At_1);

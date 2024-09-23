@@ -1,0 +1,5 @@
+define operator Test155 (x dataset, c component, d component, e component, out component)
+    returns dataset is
+    x [ calc out := rank ( over ( partition by c , d order by e ) ) ]
+end operator;
+DS_r := Test155(DS_1, Id_1, Id_2, Me_1, Me_2);

@@ -1,0 +1,24 @@
+{
+  "name": "MLTLTRL_DVLPMNT_BNKS_FINREP",
+  "setlist": [
+    "1E",
+    "1M",
+    "1N",
+    "4C",
+    "4G",
+    "5C",
+    "5D",
+    "5E",
+    "5F",
+    "5G",
+    "5H",
+    "5L",
+    "5T",
+    "5U",
+    "7B",
+    "7E",
+    "7G",
+    "7L"
+  ],
+  "type": "String"
+}

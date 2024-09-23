@@ -1,0 +1,5 @@
+define operator Test076 (x component, y scalar)
+    returns component is
+    x <> y
+end operator;
+DS_r := DS_1 [ calc Me_2 := Test076(Me_1, 7.5) ];

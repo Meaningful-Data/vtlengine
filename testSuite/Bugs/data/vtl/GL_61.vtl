@@ -1,0 +1,9 @@
+define operator D_CRRYNG_AMNT(ACCNTNG_CLSSFCTN component, FV component, GRSS_CRRYNG_AMNT_E_INTRST component,
+                              ACCRD_INTRST component, FV_CHNG_HDG_ACCNTNG component, ACCMLTD_IMPRMNT component,
+                              CRRYNG_AMNT component, IS_CRRYNG_AMNT_DRVD component) returns component is
+      if IS_CRRYNG_AMNT_DRVD = "T"
+      then FV
+      else CRRYNG_AMNT
+end operator;
+
+DS_r := D_CRRYNG_AMNT_SCRTS_1.OWND_SCRTS_PRMTR [ calc CRRYNG_AMNT := D_CRRYNG_AMNT ( ACCNTNG_CLSSFCTN , FV , GRSS_CRRYNG_AMNT_E_INTRST , ACCRD_INTRST , FV_CHNG_HDG_ACCNTNG , ACCMLTD_IMPRMNT , CRRYNG_AMNT , IS_CRRYNG_AMNT_DRVD ) ] [ keep CRRYNG_AMNT ] ;

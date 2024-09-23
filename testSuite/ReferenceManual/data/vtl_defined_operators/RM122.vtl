@@ -1,0 +1,5 @@
+define operator Test122 (s string)
+    returns string is
+    time_agg ( "Q", cast ( s , time_period, "YYYY\MMM" ) )
+end operator;
+DS_r := Test122("2012M01");

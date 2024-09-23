@@ -1,0 +1,4 @@
+time_periodReference,securityId,typeInstrument,issuerId
+2021Q1,"123",F32,ABC
+2021Q1,"456",F511,DEF
+2021Q1,"789",F511,GHI

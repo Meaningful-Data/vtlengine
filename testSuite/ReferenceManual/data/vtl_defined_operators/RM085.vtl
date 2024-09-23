@@ -1,0 +1,5 @@
+define operator Test085 (x dataset)
+    returns dataset is
+    match_characters(x, "[:alpha:]{2}[:digit:]{3}")
+end operator;
+DS_r:= Test085(DS_1);

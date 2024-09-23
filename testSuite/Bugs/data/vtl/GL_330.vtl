@@ -1,0 +1,5 @@
+MLTPL_DBTRS_ONA_EQL :=
+    MLTPL_DBTRS
+        [aggr IS_ONA_MNR := min(IS_ONA_MNR),
+              IS_ONA_EQL := max(IS_ONA_EQL)
+              group except ENTTY_RL, ENTTY_RIAD_CD];

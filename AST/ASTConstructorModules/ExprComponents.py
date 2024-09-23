@@ -2,10 +2,11 @@ from antlr4.tree.Tree import TerminalNodeImpl
 
 from AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, ParamConstant, \
     TimeAggregation, \
-    Identifier, EvalOp, Types, VarID, Analytic
+    Identifier, EvalOp, VarID, Analytic, UDOCall
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
+from Exceptions import SemanticError
 
 
 class ExprComp(VtlVisitor):
@@ -244,11 +245,10 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = Terminals().visitOperatorID(c)
-        operator_node = Identifier(op, kind='OperatorID')
         param_nodes = [self.visitParameterComponent(element) for element in ctx_list if
                        isinstance(element, Parser.ParameterComponentContext)]
 
-        return ParamOp(op=op, children=[operator_node], params=param_nodes)
+        return UDOCall(op=op, params=param_nodes)
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
@@ -281,7 +281,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes[0], output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
@@ -309,8 +309,7 @@ class ExprComp(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 
@@ -547,12 +546,12 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        param_node = [Constant('STRING_CONSTANT', str(ctx.periodIndTo.text)[1:-1])]
+        period_to = str(ctx.periodIndTo.text)[1:-1]
+        period_from = None
 
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
             # raise SemanticError("periodIndFrom is not allowed in Time_agg")
-            periodIndFrom_node = Constant('STRING_CONSTANT', str(ctx.periodIndFrom.text)[1:-1])
-            param_node.append(periodIndFrom_node)
+            period_from = str(ctx.periodIndFrom.text)[1:-1]
 
         conf = [str_.getSymbol().text for str_ in ctx_list if
                 isinstance(str_, TerminalNodeImpl) and str_.getSymbol().type in [Parser.FIRST, Parser.LAST]]
@@ -566,15 +565,16 @@ class ExprComp(VtlVisitor):
             operand_node = self.visitOptionalExprComponent(ctx.op)
             if isinstance(operand_node, ID):
                 operand_node = None
+            elif isinstance(operand_node, Identifier):
+                operand_node = VarID(operand_node.value) # Converting Identifier to VarID
         else:
             operand_node = None
 
         if operand_node is None:
             # AST_ASTCONSTRUCTOR.17
             raise SemanticError("1-4-2-2")
-        elif isinstance(operand_node, VarID):
-            operand_node = Identifier(operand_node.value, 'ComponentID')
-        return TimeAggregation(op=op, operand=operand_node, params=param_node, conf=conf)
+        return TimeAggregation(op=op, operand=operand_node, period_to=period_to,
+                               period_from=period_from, conf=conf)
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
         c = list(ctx.getChildren())[0]

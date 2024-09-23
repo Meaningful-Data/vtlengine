@@ -1,0 +1,5 @@
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+DS_r := drop_identifier ( C08.SHR_PV_DS [ keep SHR_PAV_INSTRMNT ] , PRTCTN_ID );

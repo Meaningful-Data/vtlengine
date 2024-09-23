@@ -1,0 +1,195 @@
+CNTRPRTS_OBJCTV:=max(CNTRPRTS group except PRSPCTV_ID);/*Why does counterparties have perspective ID? Shouldn't the value be objective?*/
+
+
+
+CNTRPRTS_ATNMS0 := CNTRPRTS_OBJCTV [filter ENTRPRS_SZ_CHC = "0" and TYP_ENTRPRS in {"1", "2"}];
+CNTRPRTS_ATNMS := CNTRPRTS_ATNMS0 [keep NMBR_EMPLYS, BLNC_SHT_TTL, ANNL_TRNVR, TYP_ENTRPRS, CNTRL_PBLC_BDS, EXCPTN_MRG_ACQSTN];
+
+
+/*Why specialLeftJoin?? A simple left join is allowed here. Why the rename?*/
+/*CNTRPRTS_PRVS := specialLeftJoin(CNTRPRTS, ENTRPRS_SZ_PRVS_PRD[rename CNTRPRTY_ID to CNTRPRTY_ID]);*/
+CNTRPRTS_PRVS := left_join(CNTRPRTS_OBJCTV, ENTRPRS_SZ_PRVS_PRD using DT_RFRNC, CNTRPRTY_ID);
+
+
+PRTNR_ENTRPRSS_AGG := PRTNR_ENTRPRSS [calc measure AGGRGBL_BLNC_SHT_TTL := PRCNTG_INTRST_CPTL_VTNG_RGHTS * BLNC_SHT_TTL][rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS, ANNL_TRNVR to AGGRGBL_ANNL_TRNVR];
+
+GRP_ENTRPRSS_AGG0 := inner_join(GRP_DT as A, GRP_CNTRPRTY_RLTNSHP as B using DT_RFRNC, GRP_INTRNL_ID);
+GRP_ENTRPRSS_AGG1 := GRP_ENTRPRSS_AGG0 [keep NMBR_EMPLYS, BLNC_SHT_TTL, ANNL_TRNVR];
+GRP_ENTRPRSS_AGG := GRP_ENTRPRSS_AGG1 [rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS, BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL, ANNL_TRNVR to AGGRGBL_ANNL_TRNVR];
+
+TTL_AGG0 := PRTNR_ENTRPRSS_AGG [keep AGGRGBL_BLNC_SHT_TTL, AGGRGBL_NMBR_EMPLYS, AGGRGBL_ANNL_TRNVR][rename PRTNR_ENTRPRS_ID to RLTD_ID];
+TTL_AGG1 := LNKD_ENTRPRSS [keep NMBR_EMPLYS, BLNC_SHT_TTL, ANNL_TRNVR];
+TTL_AGG2 := TTL_AGG1 [rename NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS, BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL, ANNL_TRNVR to AGGRGBL_ANNL_TRNVR, LNKD_ENTRPRS_ID to RLTD_ID];
+TTL_AGG3 := GRP_ENTRPRSS_AGG [keep AGGRGBL_BLNC_SHT_TTL, AGGRGBL_NMBR_EMPLYS, AGGRGBL_ANNL_TRNVR][rename GRP_INTRNL_ID to RLTD_ID];
+TTL_AGG4 := CNTRPRTS_ATNMS [keep BLNC_SHT_TTL, NMBR_EMPLYS, ANNL_TRNVR];
+TTL_AGG5 := TTL_AGG4 [rename BLNC_SHT_TTL to AGGRGBL_BLNC_SHT_TTL, NMBR_EMPLYS to AGGRGBL_NMBR_EMPLYS, ANNL_TRNVR to AGGRGBL_ANNL_TRNVR];
+TTL_AGG6 := TTL_AGG0 + TTL_AGG2 + TTL_AGG3 + TTL_AGG5;
+TTL_AGG := sum(TTL_AGG6 group except RLTD_ID);
+
+PRLMNRY_STTNG := TTL_AGG_DFLT [calc ENTRPRS_SZ_PRLMNRY_T := 
+      if (isnull(AGGRGBL_NMBR_EMPLYS) or isnull(AGGRGBL_BLNC_SHT_TTL) and isnull(AGGRGBL_ANNL_TRNVR)) 
+      then "7"
+      else 
+        if (AGGRGBL_NMBR_EMPLYS < 10 and AGGRGBL_BLNC_SHT_TTL <= 2000000 or AGGRGBL_ANNL_TRNVR <= 2000000) 
+        then "4" 
+        else 
+          if (AGGRGBL_NMBR_EMPLYS < 50 and AGGRGBL_BLNC_SHT_TTL <= 10000000 or AGGRGBL_ANNL_TRNVR <= 10000000) 
+          then "3" 
+          else 
+            if (AGGRGBL_NMBR_EMPLYS < 250 and AGGRGBL_BLNC_SHT_TTL <= 43000000 or AGGRGBL_ANNL_TRNVR <= 50000000) 
+            then "2" 
+            else defaultValue
+      ][drop defaultValue];TTL_AGG_DFLT:=TTL_AGG[calc defaultValue:="6"];
+
+
+ALL0 := inner_join(PRLMNRY_STTNG, CNTRPRTS_PRVS);
+ALL1 := inner_join(ALL0[keep ENTRPRS_SZ_PRLMNRY_T, ENTRPRS_SZ_CLCLTD, ENTRPRS_SZ_PRLMNRY] as A, CNTRPRTS_OBJCTV as C);
+ALL2 := ALL1 [keep ENTRPRS_SZ_PRLMNRY, ENTRPRS_SZ_PRLMNRY_T, ENTRPRS_SZ_CLCLTD, TYP_ENTRPRS, CNTRL_PBLC_BDS, EXCPTN_MRG_ACQSTN][rename EXCPTN_MRG_ACQSTN to MRGACQ];
+
+
+FNL_STTNG0 := ALL2_DFLT[calc ENTRPRS_SZ_CLCLTD_T := 
+  if (TYP_ENTRPRS = "1") 
+  then "9" 
+  else 
+    if (CNTRL_PBLC_BDS = "1") 
+    then "6" 
+    else 
+      if (ENTRPRS_SZ_PRLMNRY_T = "7") 
+      then "7" 
+      else 
+        if isnull(ENTRPRS_SZ_CLCLTD) 
+        then ENTRPRS_SZ_PRLMNRY_T 
+        else 
+          if (MRGACQ = "1") 
+          then ENTRPRS_SZ_PRLMNRY_T 
+          else 
+            if (ENTRPRS_SZ_PRLMNRY_T = "4") 
+            then 
+              if (ENTRPRS_SZ_CLCLTD = "4") 
+              then "4" 
+              else 
+                if (ENTRPRS_SZ_CLCLTD in {"6", "2", "3", "7"} and ENTRPRS_SZ_PRLMNRY = "4") 
+                then "4" 
+                else 
+                  if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in {"6", "2", "3", "7"}) 
+                  then "3" 
+                  else 
+                    if (ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY = "3") 
+                    then "3" 
+                    else 
+                      if (ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in {"6", "2", "7"}) 
+                      then "2" 
+                      else 
+                        if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY = "3") 
+                        then "3" 
+                        else 
+                          if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY = "2") 
+                          then "2" 
+                          else 
+                            if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                            then "6" 
+                            else defaultVariable 
+            else 
+              if (ENTRPRS_SZ_PRLMNRY_T = "3") 
+              then 
+                if (ENTRPRS_SZ_CLCLTD = "3") 
+                then "3" 
+                else 
+                  if (ENTRPRS_SZ_CLCLTD in {"6", "2", "4", "7"} and ENTRPRS_SZ_PRLMNRY = "3") 
+                  then "3" 
+                  else 
+                    if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4") 
+                    then "4" 
+                    else 
+                      if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY in {"6", "2", "7"}) 
+                      then "3" 
+                      else 
+                        if (ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY = "4") 
+                        then "3" 
+                        else 
+                          if (ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in {"6", "2", "7"}) 
+                          then "2" 
+                          else 
+                            if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY = "4") 
+                            then "3" 
+                            else 
+                              if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY = "2") 
+                              then "2" 
+                              else 
+                                if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                                then "6" 
+                                else defaultVariable 
+              else 
+                if (ENTRPRS_SZ_PRLMNRY_T = "2") 
+                then 
+                  if (ENTRPRS_SZ_CLCLTD = "2") 
+                  then "2" 
+                  else 
+                    if (ENTRPRS_SZ_CLCLTD in {"6", "3", "4", "7"} and ENTRPRS_SZ_PRLMNRY = "2") 
+                    then "2" 
+                    else 
+                      if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4") 
+                      then "4" 
+                      else 
+                        if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "3") 
+                        then "3" 
+                        else 
+                          if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                          then "2" 
+                          else 
+                            if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "4") 
+                            then "3" 
+                            else 
+                              if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                              then "2" 
+                              else 
+                                if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "3") 
+                                then "3" 
+                                else 
+                                  if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY in {"3", "4"}) 
+                                  then "2" 
+                                  else 
+                                    if (ENTRPRS_SZ_CLCLTD in {"6", "7"} and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                                    then "6" 
+                                    else defaultVariable 
+                else 
+                  if (ENTRPRS_SZ_PRLMNRY_T = "6") 
+                  then 
+                    if (ENTRPRS_SZ_CLCLTD in {"6", "7"}) 
+                    then "6" 
+                    else 
+                      if (ENTRPRS_SZ_CLCLTD in {"2", "3", "4"} and ENTRPRS_SZ_PRLMNRY in {"6", "7"}) 
+                      then "6" 
+                      else 
+                        if (ENTRPRS_SZ_CLCLTD = "2" and ENTRPRS_SZ_PRLMNRY in {"2", "3", "4"}) 
+                        then "2" 
+                        else 
+                          if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY = "2") 
+                          then "2" 
+                          else 
+                            if (ENTRPRS_SZ_CLCLTD = "3" and ENTRPRS_SZ_PRLMNRY in {"3", "4"}) 
+                            then "3" 
+                            else 
+                              if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "2") 
+                              then "2" 
+                              else 
+                                if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "3") 
+                                then "3" 
+                                else 
+                                  if (ENTRPRS_SZ_CLCLTD = "4" and ENTRPRS_SZ_PRLMNRY = "4") 
+                                  then "4" 
+                                  else defaultVariable 
+                  else defaultVariable];ALL2_DFLT:=ALL2[calc defaultVariable :=""];
+                  
+FNL_STTNG1 := replace(FNL_STTNG0, "", null);
+
+FNL_STTNG2 := FNL_STTNG1 [keep ENTRPRS_SZ_CLCLTD_T];
+FNL_STTNG3 := FNL_STTNG2[rename ENTRPRS_SZ_CLCLTD_T to ENTRPRS_SZ_CLCLTD][calc measure IS_DRVD_ENTRPRS_SZ := "T"];
+
+CNTRPRTS_INPT0 := CNTRPRTS_OBJCTV [filter ENTRPRS_SZ_CHC = "1"][keep ENTRPRS_SZ_INPT][rename ENTRPRS_SZ_INPT to ENTRPRS_SZ_CLCLTD];
+CNTRPRTS_INPT1 := CNTRPRTS_INPT0 [calc measure IS_DRVD_ENTRPRS_SZ := "F"];
+
+D_ENTRPRS_SZ_CLCLTD0 := union(FNL_STTNG3, CNTRPRTS_INPT1);
+D_ENTRPRS_SZ_CLCLTD1 := D_ENTRPRS_SZ_CLCLTD0 [calc ENTRPRS_SZ := if (ENTRPRS_SZ_CLCLTD in {"0", "9"}) then "0" else if (ENTRPRS_SZ_CLCLTD in {"1", "6", "7"}) then "1" else ENTRPRS_SZ_CLCLTD];
+D_ENTRPRS_SZ_CLCLTD := D_ENTRPRS_SZ_CLCLTD1 [keep ENTRPRS_SZ, IS_DRVD_ENTRPRS_SZ];
+

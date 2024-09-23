@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "BIRD_CMPSTN_LGL_ENTTY_IL",
+      "DataStructure": [
+        {
+          "name": "CMPNNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "LGL_ENTTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_CMPNNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

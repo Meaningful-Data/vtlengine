@@ -1,0 +1,5 @@
+define operator Test168 (x dataset, c component, d component, e component, out2 component, i integer)
+    returns dataset is
+    x [ aggr e:= sum( e ), out2 := max( e) group by c , d having avg (e ) > i ]
+end operator;
+DS_r := Test168(DS_1, Id_1, Id_2, Me_1, Me_2, 2);

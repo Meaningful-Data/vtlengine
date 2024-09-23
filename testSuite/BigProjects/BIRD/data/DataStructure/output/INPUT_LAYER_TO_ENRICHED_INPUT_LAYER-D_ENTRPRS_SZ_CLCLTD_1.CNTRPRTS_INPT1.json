@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_INPT1",
+      "DataStructure": [
+        {
+          "name": "IS_DRVD_ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "ENTRPRS_SZ_CLCLTD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

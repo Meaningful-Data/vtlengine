@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "A05.ENTTY_RSK_ONA4",
+      "DataStructure": [
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DBTR_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INDSTRY_PD_WGHTD_AVRG",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

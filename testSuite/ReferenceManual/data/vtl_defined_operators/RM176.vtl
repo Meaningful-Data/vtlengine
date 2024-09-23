@@ -1,0 +1,5 @@
+define operator Test176 (x dataset, c component)
+    returns dataset is
+    x [ sub c = "A" ] + x [ sub c = "B" ]
+end operator;
+DS_r := Test176(DS_1, Id_2);

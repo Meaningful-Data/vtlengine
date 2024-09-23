@@ -1,0 +1,29 @@
+/*Working */
+
+/*1. Dataset with the number of creditors per instrument*/
+INSTRMNT_FCT_CRDTR_NLL:= B01.INSTRMNT_FCT_1[filter ENTTY_RL="1"];
+INSTRMNT_FCT_CRDTR := INSTRMNT_FCT_CRDTR_NLL[calc col:= if isnull(JNT_LBLTY_AMNT) then 0.0 else JNT_LBLTY_AMNT][drop JNT_LBLTY_AMNT];
+
+NMBR_CRDTRS_PR_INSTRMNT_P := count(INSTRMNT_FCT_CRDTR group by OBSRVD_AGNT_ID, DT_RFRNC, CNTRCT_ID, INSTRMNT_ID);
+NMBR_CRDTRS_PR_INSTRMNT:=NMBR_CRDTRS_PR_INSTRMNT_P[rename int_var to NMBR_CRDTRS];
+ 
+/*2. Dataset with the number of creditors per instrument that are not the observed agent*/
+INSTRMNT_FCT_CRDTR_NOA := INSTRMNT_FCT_CRDTR[filter ENTTY_RIAD_ID<>OBSRVD_AGNT_ID];
+NMBR_CRDTRS_NT_OA_P := count(INSTRMNT_FCT_CRDTR_NOA group by OBSRVD_AGNT_ID, DT_RFRNC, CNTRCT_ID, INSTRMNT_ID);
+NMBR_CRDTRS_NT_OA_D := NMBR_CRDTRS_NT_OA_P[rename int_var to NMBR_CRDTRS_NT_OA];
+ 
+/*3. Joining the relevant datasets*/
+INSTRMNT_FCT_TRNSFRRD_AMNT := left_join(B01.INSTRMNT_FCT_4, 
+                                        FNNCL[keep OTSTNDNG_NMNL_AMNT, TRNSFRRD_AMNT] as FNNCL_AS, 
+                                        NMBR_CRDTRS_PR_INSTRMNT, 
+                                        NMBR_CRDTRS_NT_OA_D
+                                        using OBSRVD_AGNT_ID, DT_RFRNC, CNTRCT_ID, INSTRMNT_ID);
+ 
+/*4. Calculation of the new variable*/
+
+ANAMART_INSTRMNT_SHR_ONA_CRDTR := INSTRMNT_FCT_TRNSFRRD_AMNT[calc SHR_ONA_CRDTR :=
+        if OTSTNDNG_NMNL_AMNT=0 then 1/NMBR_CRDTRS else
+            (if OBSRVD_AGNT_ID=CRDTR_ID then (OTSTNDNG_NMNL_AMNT-TRNSFRRD_AMNT)/OTSTNDNG_NMNL_AMNT else
+                (if OTSTNDNG_NMNL_AMNT*NMBR_CRDTRS_NT_OA = 0.0 then 1 else
+                    TRNSFRRD_AMNT/(OTSTNDNG_NMNL_AMNT*NMBR_CRDTRS_NT_OA)))]
+                                                            [keep SHR_ONA_CRDTR];

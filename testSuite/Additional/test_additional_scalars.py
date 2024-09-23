@@ -10,57 +10,17 @@ from API import create_ast
 from DataTypes import String, Integer, Number, SCALAR_TYPES
 from Interpreter import InterpreterAnalyzer
 from Model import Component, Role, Dataset
-
-base_path = Path(__file__).parent
-filepath_json = base_path / "data" / "DataStructure" / "input"
-filepath_csv = base_path / "data" / "DataSet" / "input"
-filepath_out_json = base_path / "data" / "DataStructure" / "output"
-filepath_out_csv = base_path / "data" / "DataSet" / "output"
+from testSuite.Helper import TestHelper
 
 
-def LoadDataset(ds_path, dp_path):
-    with open(ds_path, 'r') as file:
-        structures = json.load(file)
+class AdditionalScalarsTests(TestHelper):
+    base_path = Path(__file__).parent
+    filepath_json = base_path / "data" / "DataStructure" / "input"
+    filepath_csv = base_path / "data" / "DataSet" / "input"
+    filepath_out_json = base_path / "data" / "DataStructure" / "output"
+    filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
-    for dataset_json in structures['datasets']:
-        dataset_name = dataset_json['name']
-        components = {
-            component['name']: Component(name=component['name'],
-                                         data_type=SCALAR_TYPES[component['type']],
-                                         role=Role(component['role']),
-                                         nullable=component['nullable'])
-            for component in dataset_json['DataStructure']}
-        data = read_csv(dp_path, sep=',')
-
-        return Dataset(name=dataset_name, components=components, data=data)
-
-
-def LoadInputs(code: str, number_inputs: int) -> Dict[str, Dataset]:
-    '''
-
-    '''
-    datasets = {}
-    for i in range(number_inputs):
-        json_file_name = str(filepath_json / f"{code}-DS_{str(i + 1)}.json")
-        csv_file_name = str(filepath_csv / f"{code}-DS_{str(i + 1)}.csv")
-        dataset = LoadDataset(json_file_name, csv_file_name)
-        datasets[dataset.name] = dataset
-
-    return datasets
-
-
-def LoadOutputs(code: str, references_names: List[str]) -> Dict[str, Dataset]:
-    """
-
-    """
-    datasets = {}
-    for name in references_names:
-        json_file_name = str(filepath_out_json / f"{code}-{name}.json")
-        csv_file_name = str(filepath_out_csv / f"{code}-{name}.csv")
-        dataset = LoadDataset(json_file_name, csv_file_name)
-        datasets[dataset.name] = dataset
-
-    return datasets
+    ds_input_prefix = "DS_"
 
 
 string_params = [
@@ -104,8 +64,8 @@ instr_op_params = [
     ('instr("abcde", "x")', 0),
     ('instr("abcde", "a", 67)', 0),
     ('instr("abcde", "a", 1, 67)', 0),
-    ('instr(null, null, null, null)', 0),
-    ('instr(null, "a")', 0),
+    ('instr(null, null, null, null)', None),
+    ('instr(null, "a")', None),
     ('instr("abc", "a", null)', 1),
     ('instr("abc", "a", 1, null)', 1),
     ('instr("abc", "a", null, 3)', 0),
@@ -186,7 +146,7 @@ numeric_params = [
 boolean_params = [
     ('false and false', False),
     ('false and true', False),
-    ('false and null', None),
+    ('false and null', False),
     ('true and false', False),
     ('true and true', True),
     ('true and null', None),
@@ -196,7 +156,7 @@ boolean_params = [
     ('false or null', None),
     ('true or false', True),
     ('true or true', True),
-    ('true or null', None),
+    ('true or null', True),
     ('null or null', None),
     ('false xor false', False),
     ('false xor true', True),
@@ -231,18 +191,18 @@ comparison_params = [
 ]
 
 string_exception_param = [
-    ('substr("asdf", -3)', 'param length should be >= 0'),
-    ('substr("asdf", 0)', 'zzz'),
-    ('substr("asdf", -2, 3)', 'param length should be >= 0'),
-    ('substr("asdf", 0, 5)', 'zzz'),
+    ('substr("asdf", -3)', 'param start should be >= 1'),
+    ('substr("asdf", 0)', 'param start should be >= 1'),
+    ('substr("asdf", -2, 3)', 'param start should be >= 1'),
+    ('substr("asdf", 0, 5)', 'param start should be >= 1'),
     ('substr("asdf", 1, -9)', 'param length should be >= 0'),
-    ('substr("asdf", _, -1)', 'zzz'),
+    ('substr("asdf", _, -1)', 'param length should be >= 0'),
     ('instr("abcdecfrxcwsd", "c", 0)', 'param start should be >= 1'),
     ('instr("abcdecfrxcwsd", "c", -5, 4)', 'param start should be >= 1'),
     ('instr("abcdecfrxcwsd", "c", 0, 0)', 'param start should be >= 1'),
-    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'zzz'),
-    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'zzz'),
-    ('instr("abcdecfrxcwsd", "c", _, -3)', 'zzz'),
+    ('instr("abcdecfrxcwsd", "c", 6, 0)', 'param occurrence should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", 5, -5)', 'param occurrence should be >= 1'),
+    ('instr("abcdecfrxcwsd", "c", _, -3)', 'param occurrence should be >= 1'),
 ]
 
 numeric_exception_param = [
@@ -251,7 +211,7 @@ numeric_exception_param = [
 ]
 
 ds_param = [
-    ('3-51', 'DS_1[calc Me_2:=instr(Me_1, sc_1, null, 4)]'),  # stringop with ds
+    ('3-51', 'DS_1[calc Me_2:=instr(Me_1, "", null, 4)]'),
     ('4-3', 'DS_1 + null'),
     ('4-3', 'null + DS_1'),
     ('4-3', 'DS_1 - null'),
@@ -265,7 +225,9 @@ ds_param = [
     ('4-6', 'DS_1[calc Me_4:= Me_1 - null]'),
     ('4-6', 'DS_1[calc Me_4:= null - Me_1]'),
     ('4-6', 'DS_1[calc Me_4:= Me_1 * null]'),
-    ('4-6', 'DS_1[calc Me_4:= null * Me_1]')
+    ('4-6', 'DS_1[calc Me_4:= null * Me_1]'),
+    ('7-27', 'DS_1[calc Me_2:=current_date()]'),
+    ('13-9', 'DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]')
 ]
 
 
@@ -322,8 +284,8 @@ def test_exception_numeric_op(text, exception_message):
 
 @pytest.mark.parametrize('code, text', ds_param)
 def test_datasets_params(code, text):
-    datasets = LoadInputs(code, 1)
-    reference = LoadOutputs(code, ["DS_r"])
+    datasets = AdditionalScalarsTests.LoadInputs(code, 1)
+    reference = AdditionalScalarsTests.LoadOutputs(code, ["DS_r"])
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer(datasets)

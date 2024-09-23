@@ -1,0 +1,34 @@
+{
+  "datasets": [
+    {
+      "name": "filtered_ds",
+      "DataStructure": [
+        {
+          "name": "EXR_CURRENCY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "FREQ",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Time_Period",
+          "nullable": false
+        }
+      ],
+      "DataPoints": null
+    }
+  ]
+}

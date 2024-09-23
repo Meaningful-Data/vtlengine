@@ -7,13 +7,20 @@ name = "pypi"
 antlr4-python3-runtime = "==4.9.3"
 numpy = "==1.23.5"
 pandas = "==1.5.1"
+pandasql = "==0.7.3"
+sqlalchemy = "==1.4.53"
 pyspark = "==3.3.0"
 pyarrow = "*"
 pytest = "==7.0.1"
 duckdb = "*"
+sqlglot = "*"
+sqlparse = "*"
+networkx = "*"
 
 [dev-packages]
 pyspark-stubs = "*"
+pytest-cov = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.10"

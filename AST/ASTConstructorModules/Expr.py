@@ -7,10 +7,11 @@ from AST import If, BinOp, RenameNode, UDOCall, UnaryOp, JoinOp, Identifier, Par
     ParamConstant, \
     Types, MulOp, \
     RegularAggregation, Assignment, Aggregation, ID, TimeAggregation, Constant, Validation, \
-    Analytic, Windowing
+    Analytic, Windowing, VarID
 from AST.ASTConstructorModules.ExprComponents import ExprComp
 from AST.ASTConstructorModules.Terminals import Terminals
 from AST.ASTDataExchange import de_ruleset_elements
+from AST.Grammar.tokens import DATASET_PRIORITY
 from AST.VtlVisitor import VtlVisitor
 from AST.Grammar.parser import Parser
 from Exceptions import SemanticError
@@ -418,9 +419,6 @@ class Expr(VtlVisitor):
                           isinstance(scalar, Parser.ScalarItemContext)]
         children_nodes = var_ids_nodes + constant_nodes
 
-        if len(children_nodes) > 1:
-            raise Exception("Only one operand is allowed in Eval")
-
         # Reference manual says it is mandatory.
         language_name = [language for language in ctx_list if
                          isinstance(language,
@@ -435,7 +433,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.13
             raise SemanticError("1-4-2-1", option='output')
 
-        return EvalOp(name=routine_name, operand=children_nodes[0], output=output_node[0],
+        return EvalOp(name=routine_name, operands=children_nodes, output=output_node[0],
                       language=language_name[0].getSymbol().text)
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
@@ -465,9 +463,7 @@ class Expr(VtlVisitor):
             param_node = []
 
         if len(basic_scalar_type) == 1:
-            basic_scalar_type_node = [
-                Types(kind='Scalar', type_=basic_scalar_type[0], constraints=[], nullable=None)]
-            children_nodes = expr_node + basic_scalar_type_node
+            children_nodes = expr_node + basic_scalar_type
 
             return ParamOp(op=op, children=children_nodes, params=param_node)
 
@@ -765,10 +761,11 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        param_node = [Constant('STRING_CONSTANT', str(ctx.periodIndTo.text)[1:-1])]
+        period_to = str(ctx.periodIndTo.text)[1:-1]
+        period_from = None
 
         if ctx.periodIndFrom is not None and ctx.periodIndFrom.type != Parser.OPTIONAL:
-            raise SemanticError("PeriodIndTo is not allowed in Time_agg")
+            period_from = str(ctx.periodIndFrom.text)[1:-1]
 
         conf = [str_.getSymbol().text for str_ in ctx_list if
                 isinstance(str_, TerminalNodeImpl) and str_.getSymbol().type in [Parser.FIRST,
@@ -783,13 +780,16 @@ class Expr(VtlVisitor):
             operand_node = self.visitOptionalExpr(ctx.op)
             if isinstance(operand_node, ID):
                 operand_node = None
+            elif isinstance(operand_node, Identifier):
+                operand_node = VarID(operand_node.value)
         else:
             operand_node = None
 
         if operand_node is None:
             # AST_ASTCONSTRUCTOR.17
-            raise SemanticError("Optional as expression node is not allowed")
-        return TimeAggregation(op=op, operand=operand_node, params=param_node, conf=conf)
+            raise Exception("Optional as expression node is not allowed in Time Aggregation")
+        return TimeAggregation(op=op, operand=operand_node, period_to=period_to,
+                               period_from=period_from, conf=conf)
 
     def visitFlowAtom(self, ctx: Parser.FlowAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -885,9 +885,9 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        modes = "non_null"
+        inputs = "rule"
+        retains = "computed"
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -905,18 +905,13 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.22
             conditions = conditions[0]
 
-        if inputs is None:
-            inputs = 'dataset'
+        if inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
-
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -993,9 +988,10 @@ class Expr(VtlVisitor):
         rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind='RuleID')
 
         conditions = []
-        modes = None
-        inputs = None
-        retains = None
+        # Default values
+        modes = 'non_null'
+        inputs = 'dataset'
+        retains = 'invalid'
         rule_comp = None
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
@@ -1015,14 +1011,12 @@ class Expr(VtlVisitor):
 
         param_constant_node = []
 
-        if modes is not None:
-            param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        if inputs == DATASET_PRIORITY:
+            raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
 
-        if retains is not None:
-            param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
-
-        if inputs is not None:
-            param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_MODE', modes))
+        param_constant_node.append(ParamConstant('PARAM_INPUT', inputs))
+        param_constant_node.append(ParamConstant('PARAM_OUTPUT', retains))
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -1206,6 +1200,10 @@ class Expr(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
+        if len(params) == 0:
+            # AST_ASTCONSTRUCTOR.16
+            raise Exception(f"{op_node} requires an offset parameter.")
+
         return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
                         params=params)
 
@@ -1341,21 +1339,20 @@ class Expr(VtlVisitor):
         c = ctx_list[0]
 
         if isinstance(c, Parser.ComponentRoleContext):
-            Unop_node = Terminals().visitComponentRole(c)
-
-            left_node = Terminals().visitSimpleComponentId(ctx_list[1])
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[3])
-            left_node = UnaryOp(Unop_node.role, left_node)
-
-            return Assignment(left_node, op_node, right_node)
-
+            role = Terminals().visitComponentRole(c)
+            base_index = 1
         else:
-            left_node = Terminals().visitSimpleComponentId(c)
-            op_node = ':='
-            right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[2])
+            base_index = 0
+            role = Role.MEASURE
 
-            return Assignment(left_node, op_node, right_node)
+        left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
+        op_node = ':='
+        right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[base_index + 2])
+        # Encoding the role information inside the Assignment for easiness and simplicity.
+        # Cannot find another way with less lines of code
+        setattr(left_node, 'role', role)
+
+        return Assignment(left_node, op_node, right_node)
 
     def visitAggrClause(self, ctx: Parser.AggrClauseContext):
         """

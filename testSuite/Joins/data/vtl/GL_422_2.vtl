@@ -1,0 +1,5 @@
+DS_r := full_join ( DS_1 as d1, DS_2 as d2
+			filter d1#Me_1 + d2#Me_2 <10
+			aggr Me_1 := sum(d1#Me_1), attribute At20 := avg(d2#Me_2)
+			group by Id_1, Id_2
+			having sum(Me_3) > 0);

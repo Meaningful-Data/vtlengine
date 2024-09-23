@@ -1,11 +1,14 @@
 import os
+from copy import copy
 from typing import List, Optional
+
+from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED, TimePeriodHandler, \
+    TimeIntervalHandler
 
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
 else:
     import pandas as pd
-from pyspark.sql.functions import col, stddev
 
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
@@ -27,23 +30,58 @@ def extract_grouping_identifiers(identifier_names: List[str],
 
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
-    """
-        Annotation class
+    @classmethod
+    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str):
+        if cls.op == COUNT:
+            return
+        if mode == 'input':
+            to_replace = [None]
+            new_value = ['']
+        else:
+            to_replace = ['']
+            new_value = [None]
 
-        Class that inheritance from Unary.
-        It is the base to perform the aggregate operators.
-
-        Class methods:
-            Validate: Validates the Dataset.
-            Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
-        """
+        for measure in measures:
+            if measure.data_type.__name__ == 'Date':
+                if cls.op == MIN:
+                    if mode == 'input':
+                        # Invalid date only for null values
+                        new_value = ['9999-99-99']
+                    else:
+                        to_replace = ['9999-99-99']
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)
+            elif measure.data_type.__name__ == 'TimePeriod':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].astype(object).map(
+                        lambda x: TimePeriodHandler(x),
+                        na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: str(x), na_action='ignore')
+            elif measure.data_type.__name__ == 'TimeInterval':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].astype(object).map(
+                        lambda x: TimeIntervalHandler.from_iso_format(x),
+                        na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: str(x), na_action='ignore')
+            elif measure.data_type.__name__ == 'String':
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)
+            elif measure.data_type.__name__ == 'Duration':
+                if mode == 'input':
+                    data[measure.name] = data[measure.name].map(lambda x: DURATION_MAPPING[x],
+                                                                na_action='ignore')
+                else:
+                    data[measure.name] = data[measure.name].map(
+                        lambda x: DURATION_MAPPING_REVERSED[x], na_action='ignore')
 
     @classmethod
     def validate(cls, operand: Dataset,
                  group_op: Optional[str],
                  grouping_components: Optional[List[str]],
                  having_data: Optional[List[DataComponent]]) -> Dataset:
-        result_components = operand.components.copy()
+        result_components = {k: copy(v) for k, v in operand.components.items()}
         if group_op is not None:
             for comp_name in grouping_components:
                 if comp_name not in operand.components:
@@ -94,62 +132,71 @@ class Aggregation(Operator.Unary):
             else:
                 result.data = result.data[grouping_keys].drop_duplicates(keep='first')
             return result
-        if len(grouping_keys) == 0:
+        if len(grouping_keys) == 0 and group_op is not None:
             grouping_keys = operand.get_identifiers_names()
+        elif group_op is None:
+            grouping_keys = []
         measure_names = operand.get_measures_names()
         result_df = result.data[grouping_keys + measure_names]
         if having_data is not None:
             result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
+        comps_to_keep = grouping_keys + measure_names
         if cls.op == COUNT:
-            result_df = result_df.dropna(subset=measure_names, how='any')
-            result_df = result_df.groupby(grouping_keys).size().reset_index(name='int_var')
+            if len(grouping_keys) == 0:
+                result_df = result_df.dropna(subset=measure_names, how='any')
+                result_df = result_df.count().reset_index(name='int_var')
+                result_df = result_df['int_var'].to_frame().drop_duplicates().reset_index(drop=True)
+            else:
+                # As Count does not include null values,
+                # we remove them and merge using the grouping keys,
+                # to ensure we do not lose any group that only has null values
+                aux_df = result_df.dropna(subset=measure_names, how='any')
+                aux_df = aux_df.groupby(grouping_keys).size().reset_index(name='int_var')
+                result_df = result_df.drop_duplicates(subset=grouping_keys)[grouping_keys].reset_index(drop=True)
+                result_df = result_df.merge(aux_df, how="left", on=grouping_keys)
         else:
-            comps_to_keep = grouping_keys + measure_names
-
             if os.getenv('SPARK', False) and cls.spark_op is not None:
                 result_df = cls.spark_op(result_df, grouping_keys)
-            elif cls.py_op.__name__ != 'py_op':
-                agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict
-                    ).reset_index(drop=False)
             else:
-                agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
-                result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
-                    drop=False)
-
+                cls._handle_data_types(result_df, operand.get_measures(), mode='input')
+                if cls.op == SUM:
+                    # Min_count is used to ensure we return null if all elements are null,
+                    # instead of 0
+                    agg_dict = {measure_name: lambda x: x.sum(min_count=1)
+                                for measure_name in measure_names}
+                elif cls.py_op.__name__ != 'py_op':
+                    agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
+                else:
+                    agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
+                if len(grouping_keys) > 0:
+                    result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
+                            drop=False)
+                else:
+                    result_df = result_df[comps_to_keep].agg(agg_dict)
+                    if isinstance(result_df, pd.Series):
+                        result_df = result_df.to_frame().T
+                cls._handle_data_types(result_df, operand.get_measures(), 'result')
         result.data = result_df
         return result
 
 
 class Max(Aggregation):
-    """
-    Max operator
-    """
     op = MAX
     py_op = pd.DataFrame.max
 
 
 class Min(Aggregation):
-    """
-    Min operator
-    """
     op = MIN
     py_op = pd.DataFrame.min
 
 
 class Sum(Aggregation):
-    """
-    Sum operator
-    """
     op = SUM
     type_to_check = Number
     py_op = pd.DataFrame.sum
 
 
 class Count(Aggregation):
-    """
-    Count operator
-    """
     op = COUNT
     type_to_check = None
     return_type = Integer
@@ -157,9 +204,6 @@ class Count(Aggregation):
 
 
 class Avg(Aggregation):
-    """
-    Average operator
-    """
     op = AVG
     type_to_check = Number
     return_type = Number
@@ -167,9 +211,6 @@ class Avg(Aggregation):
 
 
 class Median(Aggregation):
-    """
-    Median operator
-    """
     # TODO: Median has inconsistent behavior in spark
     #  test 144 has a median of 3, but the result is 2
     op = MEDIAN
@@ -186,9 +227,6 @@ class Median(Aggregation):
 
 
 class PopulationStandardDeviation(Aggregation):
-    """
-    Population Standard Deviation Operator
-    """
     op = STDDEV_POP
     type_to_check = Number
     return_type = Number
@@ -203,9 +241,6 @@ class PopulationStandardDeviation(Aggregation):
 
 
 class SampleStandardDeviation(Aggregation):
-    """
-    Sample Standard Deviation operator
-    """
     op = STDDEV_SAMP
     type_to_check = Number
     return_type = Number
@@ -220,9 +255,6 @@ class SampleStandardDeviation(Aggregation):
 
 
 class PopulationVariance(Aggregation):
-    """
-    Population Variance operator
-    """
     op = VAR_POP
     type_to_check = Number
     return_type = Number
@@ -237,9 +269,6 @@ class PopulationVariance(Aggregation):
 
 
 class SampleVariance(Aggregation):
-    """
-    Sample Variance operator
-    """
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number

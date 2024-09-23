@@ -1,0 +1,7 @@
+ENTTY_INSTRMNT_CRDTR_LE := 
+    inner_join(
+        ANCRDT_ENTTY_INSTRMNT_C
+            [sub ENTTY_RL = "1"] as A, 
+        ENTTY_LE
+        calc identifier LE_CD := ENTTY_RIAD_CD_LE
+        drop ENTTY_RIAD_CD_LE);

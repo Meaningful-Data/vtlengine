@@ -1,0 +1,3 @@
+INSTTTNL_SCTR_DS_CJ :=
+    cross_join(INSTTTNL_SCTR_DS_MSR as RIAD, DT_RFRNC_DS as DT filter DT#DT_RFRNC >= RIAD#VLD_FRM and DT_RFRNC <= VLD_T);
+

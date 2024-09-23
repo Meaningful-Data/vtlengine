@@ -1,0 +1,5 @@
+define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is 
+    N >= A + L errorcode "Net(assets-liabilities)" errorlevel 4    
+end hierarchical ruleset;
+
+DS_r := hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY non_zero all);

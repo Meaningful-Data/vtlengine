@@ -1,0 +1,6 @@
+define operator Test009 (x dataset, y dataset, c component, d component, e component, f component, g component)
+    returns dataset is
+        cross_join (x as d1, y as d2 rename d1#c to Id11, d1#d to Id12, d2#e to Id21, d2#f to Id22, d1#g to Me12 )
+end operator;
+
+DS_r := Test009 (DS_1, DS_2, Id_1, Id_2, Id_1, Id_2, Me_2);

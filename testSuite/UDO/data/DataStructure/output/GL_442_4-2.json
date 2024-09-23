@@ -1,0 +1,1 @@
+{"datasets": [{"name": "lei_statistcs.ENTITIES_PER_LEGAL_FORM", "DataStructure": [{"name": "Entity.LegalForm.EntityLegalFormCode", "role": "Identifier", "type": "String", "nullable": false}, {"name": "int_var", "role": "Measure", "type": "Integer", "nullable": true}], "DataPoints": null}]}

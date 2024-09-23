@@ -1,0 +1,117 @@
+{
+    "datasets": [
+      {
+        "name": "MARKET_DATA",
+        "DataStructure": [
+          {
+            "name": "CapitalListed",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "High",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Interest",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "ISIN",
+            "type": "String",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "IssuerID",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "LastRate",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Low",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "MarketCap",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "MaturityDate",
+            "type": "Date",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Name",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "OpeningPrice",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "SecurityID",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "SecurityType",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Symbol",
+            "type": "String",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "TimePeriod",
+            "type": "Date",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
+            "name": "Transactions",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Turnover",
+            "type": "Number",
+            "nullable": true,
+            "role": "Measure"
+          },
+          {
+            "name": "Volume",
+            "type": "Integer",
+            "nullable": true,
+            "role": "Measure"
+          }
+        ]
+      }
+    ]
+  }

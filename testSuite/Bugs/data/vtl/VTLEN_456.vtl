@@ -1,0 +1,329 @@
+define datapoint ruleset completenessProtection(variable CD0050, CD0060, TYP_PRTCTN,
+                                                         PRTCTN_VL, TYP_PRTCTN_VL, PRTCTN_VLTN_APPRCH,
+                                                         RL_ESTT_CLLTRL_LCTN, DT_PRTCTN_VL, DT_MTRTY_PRTCTN,
+                                                         ORGNL_PRTCTN_VL, DT_ORGNL_PRTCTN_VL) is
+
+    CT0530: when not CD0060 then not isnull(TYP_PRTCTN) errorcode "CT0530" errorlevel 2;
+    CT0540: when not CD0060 then not isnull(PRTCTN_VL) errorcode "CT0540" errorlevel 2;
+    CT0550: when not CD0060 then not isnull(TYP_PRTCTN_VL) errorcode "CT0550" errorlevel 2;
+    CT0560: when not CD0060 then not isnull(PRTCTN_VLTN_APPRCH) errorcode "CT0560" errorlevel 2;
+    CT0570: when not CD0060 then not isnull(RL_ESTT_CLLTRL_LCTN) errorcode "CT0570" errorlevel 2;
+    CT0580: when not CD0060 then not isnull(DT_PRTCTN_VL) errorcode "CT0580" errorlevel 2;
+    CT0590: when not CD0060 then not isnull(DT_MTRTY_PRTCTN) errorcode "CT0590" errorlevel 2;
+    CT0600: when not CD0050 or not CD0060 then not isnull(ORGNL_PRTCTN_VL) errorcode "CT0600" errorlevel 2;
+    CT0610: when not CD0050 or not CD0060 then not isnull(DT_ORGNL_PRTCTN_VL) errorcode "CT0610" errorlevel 2
+
+end datapoint ruleset;
+
+
+
+define datapoint ruleset completenessInstrument (variable CD0020, CD0030, CD0039, CD0040,
+                                                          CD0050, CD0060,
+                                                          TYP_INSTRMNT, TYP_AMRTSTN, CRRNCY_DNMNTN,
+                                                          FDCRY, DT_INCPTN, DT_END_INTRST_ONLY, INTRST_RT_CP,INTRST_RT_FLR,
+                                                          INTRST_RT_RST_FRQNCY, INTRST_RT_SPRD, TYP_INTRST_RT,
+                                                          DT_LGL_FNL_MTRTY, CMMTMNT_INCPTN, PYMNT_FRQNCY, PRJCT_FNNC_LN,
+                                                          PRPS, RCRS, RFRNC_RT, DT_STTLMNT, SBRDNTD_DBT, SYNDCTD_CNTRCT_ID,
+                                                          RPYMNT_RGHTS, FV_CHNG_CR_BFR_PRCHS) is
+
+    CT0010: when not CD0060 then not isnull(TYP_INSTRMNT) errorcode "CT0010" errorlevel 2;
+    CT0020: when not CD0020 or not CD0050 or not CD0060 then not isnull(TYP_AMRTSTN) errorcode "CT0020" errorlevel 2;
+    CT0030: when not CD0060 then not isnull(CRRNCY_DNMNTN) errorcode "CT0030" errorlevel 2;
+    CT0040: when not CD0060 then not isnull(FDCRY) errorcode "CT0040" errorlevel 2;
+    CT0050: when not CD0020 or not CD0060 then not isnull(DT_INCPTN) errorcode "CT0050" errorlevel 2;
+    CT0060: when not CD0020 or not CD0050 or not CD0060 then not isnull(DT_END_INTRST_ONLY) errorcode "CT0060" errorlevel 2;
+    CT0070: when not CD0020 or not CD0039 or not CD0040 or not CD0060 then not isnull(INTRST_RT_CP) errorcode "CT0070" errorlevel 2;
+    CT0080: when not CD0020 or not CD0039 or not CD0040 or not CD0060 then not isnull(INTRST_RT_FLR) errorcode "CT0080" errorlevel 2;
+    CT0090: when not CD0020 or not CD0060 then not isnull(INTRST_RT_RST_FRQNCY) errorcode "CT0090" errorlevel 2;
+    CT0100: when not CD0020 or not CD0060 then not isnull(INTRST_RT_SPRD) errorcode "CT0100" errorlevel 2;
+    CT0110: when not CD0020 or not CD0060 then not isnull(TYP_INTRST_RT) errorcode "CT0110" errorlevel 2;
+    CT0120: when not CD0060 then not isnull(DT_LGL_FNL_MTRTY) errorcode "CT0120" errorlevel 2;
+    CT0130: when not CD0060 then not isnull(CMMTMNT_INCPTN) errorcode "CT0130" errorlevel 2;
+    CT0140: when not CD0020 or not CD0050 or not CD0060 then not isnull(PYMNT_FRQNCY) errorcode "CT0140" errorlevel 2;
+    CT0150: when not CD0020 or not CD0060 then not isnull(PRJCT_FNNC_LN) errorcode "CT0150" errorlevel 2;
+    CT0160: when not CD0060 then not isnull(PRPS) errorcode "CT0160" errorlevel 2;
+    CT0170: when not CD0060 then not isnull(RCRS) errorcode "CT0170" errorlevel 2;
+    CT0180: when not CD0020 or not CD0060 then not isnull(RFRNC_RT) errorcode "CT0180" errorlevel 2;
+    CT0190: when not CD0060 then not isnull(DT_STTLMNT) errorcode "CT0190" errorlevel 2;
+    CT0200: when not CD0060 then not isnull(SBRDNTD_DBT) errorcode "CT0200" errorlevel 2;
+    CT0210: when not CD0060 then not isnull(SYNDCTD_CNTRCT_ID) errorcode "CT0210" errorlevel 2;
+    CT0220: when not CD0060 then not isnull(RPYMNT_RGHTS) errorcode "CT0220" errorlevel 2;
+    CT0230: when not CD0030 or not CD0039 or not CD0040 or not CD0060 then not isnull(FV_CHNG_CR_BFR_PRCHS) errorcode "CT0230" errorlevel 2
+
+end datapoint ruleset;define datapoint ruleset completenessJointLiability(variable CD0060, JNT_LBLTY_AMNT) is
+
+    CT0360: when not CD0060 then not isnull(JNT_LBLTY_AMNT) errorcode "CT0360" errorlevel 2
+
+end datapoint ruleset;
+
+
+
+define datapoint ruleset completenessInstrumentProtection(variable CD0060, PRTCTN_ALLCTD_VL,
+                                                          THRD_PRTY_PRRTY_CLMS) is
+
+    CT0620: when not CD0060 then not isnull(PRTCTN_ALLCTD_VL) errorcode "CT0620" errorlevel 2;
+    CT0630: when not CD0060 then not isnull(THRD_PRTY_PRRTY_CLMS) errorcode "CT0630" errorlevel 2
+
+end datapoint ruleset;
+
+
+define datapoint ruleset completenessEntityDefault(variable CD0030, CD0039, CD0040,
+                                                          CD0060, DFLT_STTS,
+                                                          DT_DFLT_STTS) is
+
+    CT0650: when not CD0030 or not CD0039 or not CD0040 or not CD0060 then not isnull(DFLT_STTS) errorcode "CT0650" errorlevel 2;
+    CT0660: when not CD0030 or not CD0039 or not CD0040 or not CD0060 then not isnull(DT_DFLT_STTS) errorcode "CT0660" errorlevel 2
+
+end datapoint ruleset;
+
+
+define datapoint ruleset completenessFinancial(variable CD0020, CD0030, CD0060,
+                                                        ANNLSD_AGRD_RT, DT_NXT_INTRST_RT_RST,
+                                                        DFLT_STTS, DT_DFLT_STTS, TRNSFRRD_AMNT,
+                                                        ARRRS, DT_PST_D, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT,
+                                                        ACCRD_INTRST) is
+
+    CT0240: when not CD0060 then not isnull(ANNLSD_AGRD_RT) errorcode "CT0240" errorlevel 2;
+    CT0250: when not CD0020 or not CD0060 then not isnull(DT_NXT_INTRST_RT_RST) errorcode "CT0250" errorlevel 2;
+    CT0260: when not CD0030 or not CD0060 then not isnull(DFLT_STTS) errorcode "CT0260" errorlevel 2;
+    CT0270: when not CD0030 or not CD0060 then not isnull(DT_DFLT_STTS) errorcode "CT0270" errorlevel 2;
+    CT0280: when not CD0060 then not isnull(TRNSFRRD_AMNT) errorcode "CT0280" errorlevel 2;
+    CT0290: when not CD0060 then not isnull(ARRRS) errorcode "CT0290" errorlevel 2;
+    CT0300: when not CD0060 then not isnull(DT_PST_D) errorcode "CT0300" errorlevel 2;
+    CT0310: when not CD0060 then not isnull(TYP_SCRTSTN) errorcode "CT0310" errorlevel 2;
+    CT0320: not isnull(OTSTNDNG_NMNL_AMNT) errorcode "CT0320" errorlevel 2;
+    CT0330: when not CD0020 or not CD0060 then not isnull(ACCRD_INTRST) errorcode "CT0330" errorlevel 2;
+    CT0340: not isnull(OFF_BLNC_SHT_AMNT) errorcode "CT0340" errorlevel 2
+
+end datapoint ruleset;
+
+
+
+define datapoint ruleset anacreditProtectionReceivedLastMonth (variable DT_PRTCTN_VL, DT_PRTCTN_VL_T1,
+                                                                         DT_ORGNL_PRTCTN_VL, DT_ORGNL_PRTCTN_VL_T1,
+                                                                         ORGNL_PRTCTN_VL, ORGNL_PRTCTN_VL_T1,
+                                                                         TYP_PRTCTN, TYP_PRTCTN_T1) is
+
+  CN0661: DT_PRTCTN_VL >= DT_PRTCTN_VL_T1 errorcode "CN0661" errorlevel 2;
+  CN0812: ORGNL_PRTCTN_VL = ORGNL_PRTCTN_VL_T1 errorcode "CN0812" errorlevel 1;
+  CN0813: DT_ORGNL_PRTCTN_VL = DT_ORGNL_PRTCTN_VL_T1 errorcode "CN0813" errorlevel 1;
+  CN0950: when TYP_PRTCTN not_in {"8", "9", "10"} or TYP_PRTCTN_T1 not_in {"8", "9", "10"}
+            then TYP_PRTCTN = TYP_PRTCTN_T1 errorcode "CN0950" errorlevel 3
+
+end datapoint ruleset;define datapoint ruleset anacreditCounterpartyDefault (variable DT_DFLT_STTS, DT_RFRNC, DFLT_STTS) is
+
+  CN0630: DT_RFRNC >= DT_DFLT_STTS errorcode "CN0630" errorlevel 3;
+  CN0816: when isnull(DT_DFLT_STTS) then DFLT_STTS = "0" or DFLT_STTS = "14"  errorcode "CN0816" errorlevel 3
+
+end datapoint ruleset;define datapoint ruleset anacreditInstrumentProtection (variable DT_INCPTN, DT_MTRTY_PRTCTN,
+                                                                 TYP_PRTCTN_VL,  PRTCTN_VL, PRTCTN_ALLCTD_VL) is
+
+    CN0650: DT_MTRTY_PRTCTN >= DT_INCPTN errorcode "CN0650" errorlevel 1;
+    CN0868: when  TYP_PRTCTN_VL <> "4" then  PRTCTN_VL >= PRTCTN_ALLCTD_VL errorcode "CN0868" errorlevel 3
+
+end datapoint ruleset;
+
+define datapoint ruleset anaCreditInstrumentMonthly (variable DT_STTLMNT, DT_INCPTN, DT_END_INTRST_ONLY, DT_LGL_FNL_MTRTY,
+                                                              DT_RFRNC, DT_NXT_INTRST_RT_RST, DT_DFLT_STTS, DT_PST_D,
+                                                              ARRRS, DFLT_STTS, OFF_BLNC_SHT_AMNT, TYP_INSTRMNT,
+                                                              TYP_AMRTSTN, TYP_INTRST_RT, INTRST_RT_CP, INTRST_RT_FLR,
+                                                              INTRST_RT_SPRD, RFRNC_RT, OTSTNDNG_NMNL_AMNT, TYP_SCRTSTN,
+                                                              CMMTMNT_INCPTN, RCRS) is
+
+    CN0010: DT_STTLMNT >= DT_INCPTN errorcode "CN0010" errorlevel 3;
+    CN0030: DT_END_INTRST_ONLY >= DT_INCPTN errorcode "CN0030" errorlevel 1;
+    CN0040: DT_LGL_FNL_MTRTY >= DT_STTLMNT errorcode "CN0040" errorlevel 3;
+    CN0050: DT_LGL_FNL_MTRTY >= DT_END_INTRST_ONLY errorcode "CN0050" errorlevel 1;
+    CN0080: when DT_LGL_FNL_MTRTY >= DT_RFRNC then DT_LGL_FNL_MTRTY >= DT_NXT_INTRST_RT_RST errorcode "CN0080" errorlevel 1;
+    CN0140: DT_RFRNC >= DT_INCPTN errorcode "CN0140" errorlevel 3;
+    CN0141: DT_RFRNC >= DT_STTLMNT errorcode "CN0140" errorlevel 3;
+    CN0150: DT_NXT_INTRST_RT_RST >= DT_INCPTN errorcode "CN0150"  errorlevel 1;
+    CN0160: DT_DFLT_STTS >= DT_INCPTN errorcode "CN0160" errorlevel 2;
+    CN0170: DT_PST_D >= DT_INCPTN errorcode "CN0170" errorlevel 2;
+    CN0200: DT_NXT_INTRST_RT_RST >= DT_STTLMNT errorcode "CN0200" errorlevel 1;
+    CN0210: DT_NXT_INTRST_RT_RST >= DT_RFRNC errorcode "CN0210" errorlevel 1;
+    CN0220: DT_END_INTRST_ONLY >= DT_STTLMNT errorcode "CN0220" errorlevel 1;
+    CN0240: DT_RFRNC >= DT_DFLT_STTS errorcode "CN0240" errorlevel 2;
+    CN0250: DT_RFRNC >= DT_PST_D errorcode "CN0250" errorlevel 2;
+    CN0270a: when not isnull(DT_PST_D) then ARRRS > 0 errorcode "CN0270a" errorlevel 2;
+    CN0270b: when ARRRS > 0 then not isnull(DT_PST_D) errorcode "CN0270b" errorlevel 2;
+    CN0280: when DFLT_STTS in {"18", "20"} then ARRRS > 0 errorcode "CN0280" errorlevel 2;
+    CN0814: when isnull(DT_STTLMNT) then OFF_BLNC_SHT_AMNT > 0 errorcode "CN0814" errorlevel 3;
+    CN0821: when TYP_INSTRMNT = "1003" then isnull(OFF_BLNC_SHT_AMNT) errorcode "CN0821" errorlevel 2;
+    CN0835: when TYP_AMRTSTN in {"1","3"} then isnull(DT_END_INTRST_ONLY) errorcode "CN0835" errorlevel 1;
+    CN0836: when TYP_INTRST_RT = "1" then isnull(INTRST_RT_CP) errorcode "CN0836" errorlevel 1;
+    CN0837: when TYP_INTRST_RT = "1" then isnull(INTRST_RT_FLR) errorcode "CN0837" errorlevel 1;
+    CN0838: when TYP_INTRST_RT = "1" then isnull(INTRST_RT_SPRD) errorcode "CN0838" errorlevel 2;
+    CN0839: when TYP_INTRST_RT = "1" then isnull(RFRNC_RT) errorcode "CN0839" errorlevel 1;
+    CN0847: when OFF_BLNC_SHT_AMNT > 0 and OTSTNDNG_NMNL_AMNT = 0 then TYP_SCRTSTN = "7" errorcode "CN0847" errorlevel 2;
+    CN0945: when not isnull(DT_STTLMNT) and DT_INCPTN < DT_STTLMNT and isnull(OFF_BLNC_SHT_AMNT) and TYP_INSTRMNT <> "1000" and not (TYP_INSTRMNT = "71" and RCRS = "2")
+                then not isnull(CMMTMNT_INCPTN) errorcode "CN0945" errorlevel 3
+
+end datapoint ruleset;define datapoint ruleset anacreditProtectionReceived (variable DT_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, DT_RFRNC,
+                                                               RL_ESTT_CLLTRL_LCTN, TYP_PRTCTN) is
+
+    CN0142: DT_PRTCTN_VL >= DT_ORGNL_PRTCTN_VL errorcode "CN0142" errorlevel 3;
+    CN0660: DT_RFRNC >= DT_PRTCTN_VL errorcode "CN0660" errorlevel 2;
+    CN0831: when isnull(RL_ESTT_CLLTRL_LCTN) then not TYP_PRTCTN in {"8", "9", "10"} errorcode "CN0831" errorlevel 1;
+    CN0960: when TYP_PRTCTN in {"8", "9", "10"} then not isnull(RL_ESTT_CLLTRL_LCTN) errorcode "CN0960" errorlevel 1
+
+end datapoint ruleset;define datapoint ruleset anacreditInstrumentLastMonth(variable CMMTMNT_INCPTN, CMMTMNT_INCPTN_T1, FV_CHNG_CR_BFR_PRCHS, FV_CHNG_CR_BFR_PRCHS_T1,
+                                                               TYP_INSTRMNT, OFF_BLNC_SHT_AMNT, DT_LGL_FNL_MTRTY, DT_INCPTN, DT_INCPTN_T1,
+                                                               DFLT_STTS, DFLT_STTS_T1, DT_DFLT_STTS, DT_DFLT_STTS_T1,
+                                                               DT_STTLMNT, DT_STTLMNT_T1) is
+
+    CN0290: when DFLT_STTS <> DFLT_STTS_T1 then DT_DFLT_STTS > DT_DFLT_STTS_T1 errorcode "CN0290" errorlevel 2;
+    CN0804: CMMTMNT_INCPTN = CMMTMNT_INCPTN_T1 errorcode "CN0804" errorlevel 1;
+    CN0810: FV_CHNG_CR_BFR_PRCHS = FV_CHNG_CR_BFR_PRCHS_T1 errorcode "CN0810" errorlevel 2;
+    CN0925: when not (TYP_INSTRMNT = "20" and isnull(OFF_BLNC_SHT_AMNT) or TYP_INSTRMNT = "1000" and isnull(DT_LGL_FNL_MTRTY))
+                then DT_INCPTN = DT_INCPTN_T1 errorcode "CN0925" errorlevel 3;
+    CN0935: when not isnull(DT_DFLT_STTS_T1) and not (TYP_INSTRMNT = "20" and isnull(OFF_BLNC_SHT_AMNT)
+                or TYP_INSTRMNT = "1000" and isnull(DT_LGL_FNL_MTRTY))
+                    then DT_STTLMNT = DT_STTLMNT_T1 errorcode "CN0935" errorlevel 3
+
+end datapoint ruleset;
+define datapoint ruleset anacreditCounterpartyDefaultLastMonth(variable DFLT_STTS, DFLT_STTS_T1, DT_DFLT_STTS, DT_DFLT_STTS_T1) is
+
+  CN0640: when DFLT_STTS <> DFLT_STTS_T1 then DT_DFLT_STTS > DT_DFLT_STTS_T1 errorcode "CN0640" errorlevel 3
+
+end datapoint ruleset;
+/*******************************************************************************
+*       Module comp_count
+*******************************************************************************/
+comp_count.CC0010 := dsPrep.ENTTY [ calc CC0010 := CNTRY in AnaCreditCountries ] [ keep CC0010 ] ;
+comp_count.CC0010_CC0020 := comp_count.CC0010 [ calc CC0020 := not CC0010 ] ;
+comp_count.FRGN_BRNCH_DS := dsPrep.ENTTY_HD_QRTR [ filter not isnull ( HD_QRTR_CD_CRDTR ) ] [ calc FRGN_BRNCH := true ] [ keep FRGN_BRNCH ] ;
+comp_count.SPFUND_DS := dsPrep.ENTTY [ filter LGL_FRM = "SPFUND" ] [ calc SPFUND := true ] [ keep SPFUND ] ;
+comp_count.FRGN_BRNCHS_SPFUND := left_join ( dsPrep.ENTTY , comp_count.FRGN_BRNCH_DS , comp_count.SPFUND_DS ) ;
+comp_count.TYP_ENTTY := comp_count.FRGN_BRNCHS_SPFUND [ calc OTHR_TYP_ENTTY := not SPFUND and not FRGN_BRNCH ] ;
+comp_count.CC010_FLTR := dsPrep.ENTTY [ filter CNTRY in AnaCreditCountries and INSTTTNL_SCTR = "S122_A" ] ;
+comp_count.CC010_MX := max ( comp_count.CC010_FLTR group by ENTTY_RIAD_CD ) ;
+comp_count.CC010_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC010_MX [ keep CNTRY ] [ drop CNTRY ] as B ) ;
+comp_count.CC010 := comp_count.CC010_JN [ calc CC0100 := OTHR_TYP_ENTTY , CC0101 := FRGN_BRNCH ] [ keep CC0100 , CC0101 ] ;
+comp_count.CC011_MX := max ( ANCRDT_INSTRMNT_C group by OBSRVD_AGNT_CD ) ;
+comp_count.CC011_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC011_MX [ rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD ] as B ) ;
+comp_count.CC011 := comp_count.CC011_JN [ calc CC0110 := OTHR_TYP_ENTTY , CC0111 := FRGN_BRNCH ] [ keep CC0110 , CC0111 ] ;
+comp_count.CC012_FLTR := ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "1" ] ;
+comp_count.CC012_MX := max ( comp_count.CC012_FLTR group by OBSRVD_AGNT_CD ) ;
+comp_count.CC012_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC012_MX [ rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD ] as B ) ;
+comp_count.CC012 := comp_count.CC012_JN [ calc CC0120 := OTHR_TYP_ENTTY , CC0121 := FRGN_BRNCH , CC0122 := SPFUND ] [ keep CC0120 , CC0121 , CC0122 ] ;
+comp_count.CC013_INSTRMNT := inner_join ( ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "2" ] as A , ANCRDT_INSTRMNT_C [ keep DT_INCPTN , TYP_INSTRMNT ] as B ) ;
+comp_count.CC013 := comp_count.TYP_ENTTY [ calc CC0130 := OTHR_TYP_ENTTY , CC0131 := FRGN_BRNCH , CC0132 := SPFUND ] [ keep CC0130 , CC0131 , CC0132 ] ;
+comp_count.CC015_CD := ANCRDT_PRTCTN_RCVD_C [ calc identifier ENTTY_RIAD_CD := nvl ( PRTCTN_PRVDR_CD , "" ) ] ;
+comp_count.CC015_MX := max ( comp_count.CC015_CD group by ENTTY_RIAD_CD ) ;
+comp_count.CC015_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC015_MX ) ;
+comp_count.CC015 := comp_count.CC015_JN [ calc CC0150 := OTHR_TYP_ENTTY , CC0151 := FRGN_BRNCH , CC0152 := SPFUND ] [ keep CC0150 , CC0151 , CC0152 ] ;
+comp_count.CC019_FLTR := ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "3" ] ;
+comp_count.CC019_MX := max ( comp_count.CC019_FLTR group by OBSRVD_AGNT_CD ) ;
+comp_count.CC019_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC019_MX [ rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD ] as B ) ;
+comp_count.CC019 := comp_count.CC019_JN [ calc CC0190 := OTHR_TYP_ENTTY , CC0191 := FRGN_BRNCH , CC0192 := SPFUND ] [ keep CC0190 , CC0191 , CC0192 ] ;
+comp_count.CC020_FLTR := ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "7" ] ;
+comp_count.CC020_MX := max ( comp_count.CC020_FLTR group by OBSRVD_AGNT_CD ) ;
+comp_count.CC020_JN := inner_join ( comp_count.TYP_ENTTY , comp_count.CC020_MX [ rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD ] as B ) ;
+comp_count.CC020 := comp_count.CC020_JN [ calc CC0200 := OTHR_TYP_ENTTY , CC0201 := FRGN_BRNCH , CC0202 := SPFUND ] [ keep CC0200 , CC0201 , CC0202 ] ;
+comp_count.ENTTY_VLDTN := left_join ( dsPrep.ENTTY , comp_count.CC0010_CC0020 , comp_count.CC010 , comp_count.CC011 , comp_count.CC012 , comp_count.CC015 , comp_count.CC019 , comp_count.CC020 ) ;
+/*******************************************************************************
+*       Module comp_cred
+*******************************************************************************/
+comp_cred.CD0020 := dsPrep.INSTRMNT_OBSRVD_AGNT [ filter CNTRY not_in AnaCreditCountries ] [ calc CD0020 := true ] [ keep CD0020 ] ;
+comp_cred.CD0030 := dsPrep.INSTRMNT_OBSRVD_AGNT [ filter CNTRY not_in AnaCreditCountries and ( HD_QRTR_CNTRY not_in EU_countries or SSMSIGNIFICANCE = "EXI" ) ] [ calc CD0030 := true ] [ keep CD0030 ] ;
+comp_cred.CD0039_P := exists_in ( ANCRDT_INSTRMNT_C , ANCRDT_ACCNTNG_C , false ) ;
+comp_cred.CD0039_DS := comp_cred.CD0039_P [ calc CD0039 := not ( bool_var ) ] [ keep CD0039 ] ;
+comp_cred.CD0040 := dsPrep.CRDTR_SRVCR_PVT [ filter RCGNTN_STTS = 3 and not CRDTR and SRVCR ] [ calc CD0040 := true ] [ keep CD0040 ] ;
+comp_cred.CD0041 := dsPrep.ENTTY_HD_QRTR [ filter HD_QRTR_CD_CRDTR = HD_QRTR_CD_DBTR or HD_QRTR_CD_CRDTR = DBTR_CD or HD_QRTR_CD_DBTR = CRDTR_CD ] [ calc CD0041 := true ] [ keep CD0041 ] ;
+comp_cred.CD0050 := ANCRDT_INSTRMNT_C [ filter DT_INCPTN < cast ( "2018-09-01" , date ) ] [ calc CD0050 := true ] [ keep CD0050 ] ;
+comp_cred.CRDTR_OBSRVD_AGNT := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "1" ] [ filter OBSRVD_AGNT_CD = ENTTY_RIAD_CD ] ;
+comp_cred.CRDTR_OBSRVD_AGNT_MX := max ( comp_cred.CRDTR_OBSRVD_AGNT group except ENTTY_RIAD_CD ) ;
+comp_cred.CD0060_P := left_join ( comp_cred.CRDTR_OBSRVD_AGNT_MX , ANCRDT_FNNCL_C , ANCRDT_ACCNTNG_C_Z keep OTSTNDNG_NMNL_AMNT , OFF_BLNC_SHT_AMNT , ACCMLTD_WRTFFS , RCGNTN_STTS ) ;
+comp_cred.CD0060 := comp_cred.CD0060_P [ calc CD0060 := if isnull ( RCGNTN_STTS ) then if OTSTNDNG_NMNL_AMNT = 0 and isnull ( OFF_BLNC_SHT_AMNT ) then true else null else if OTSTNDNG_NMNL_AMNT = 0 and isnull ( OFF_BLNC_SHT_AMNT ) and RCGNTN_STTS = "1" and ACCMLTD_WRTFFS > 0 then true else null ] [ keep CD0060 ] ;
+comp_cred.INSTRMNT_CHCK := inner_join ( ANCRDT_INSTRMNT_C , comp_cred.CD0020 , comp_cred.CD0030 , comp_cred.CD0039_DS , comp_cred.CD0040 , comp_cred.CD0050 , comp_cred.CD0060 ) ;
+INSTRMNT_CMPLTNSS <- check_datapoint ( comp_cred.INSTRMNT_CHCK , completenessInstrument ) ;
+comp_cred.ENTTY_DFLT_INSTRMNT := inner_join ( ANCRDT_ENTTY_DFLT_C , ANCRDT_ENTTY_INSTRMNT_C ) ;
+comp_cred.ENTTY_DFLT_CHK := inner_join ( comp_cred.ENTTY_DFLT_INSTRMNT , comp_cred.CD0030 , comp_cred.CD0039_DS , comp_cred.CD0040 , comp_cred.CD0060 ) ;
+ENTTY_DFLT_CMPLTNSS <- check_datapoint ( comp_cred.ENTTY_DFLT_CHK , completenessEntityDefault ) ;
+comp_cred.FNNCL_CHCK := inner_join ( ANCRDT_FNNCL_C , comp_cred.CD0020 , comp_cred.CD0030 , comp_cred.CD0060 ) ;
+FNNCL_CMPLTNSS <- check_datapoint ( comp_cred.FNNCL_CHCK , completenessFinancial ) ;
+comp_cred.INSTRMNT_PRTCTN_RCVD_CHK := inner_join ( ANCRDT_INSTRMNT_PRTCTN_RCVD_C , comp_cred.CD0060 ) ;
+INSTRMNT_PRTCTN_RCVD_CMPLNTNSS <- check_datapoint ( comp_cred.INSTRMNT_PRTCTN_RCVD_CHK , completenessInstrumentProtection ) ;
+comp_cred.JNT_LBLTS_CHK := inner_join ( ANCRDT_JNT_LBLTS_C , comp_cred.CD0060 ) ;
+JNT_LBLTS_CMPLTNSS <- check_datapoint ( comp_cred.JNT_LBLTS_CHK , completenessJointLiability ) ;
+comp_cred.PRTCN_INSTRMNT := inner_join ( ANCRDT_PRTCTN_RCVD_C , ANCRDT_INSTRMNT_PRTCTN_RCVD_C ) ;
+comp_cred.PRTCTN_RCVD_CHK := inner_join ( comp_cred.PRTCN_INSTRMNT , comp_cred.CD0050 , comp_cred.CD0060 ) ;
+PRTCTN_RCVD_CMPLTNSS <- check_datapoint ( comp_cred.PRTCTN_RCVD_CHK , completenessProtection ) ;
+/*******************************************************************************
+*       Module con
+*******************************************************************************/
+INSTRMNTS_FLL_MNTHLY_RSLT <- check_datapoint ( dsPrep.INSTRMNTS_FLL_MNTHLY , anaCreditInstrumentMonthly ) ;
+INSTRMNTS_FLL_LST_MNTH_RSLT <- check_datapoint ( dsPrep.INSTRMNT_FLL_T_T1 , anacreditInstrumentLastMonth ) ;
+CNTRPRTY_DFLT_RSLT <- check_datapoint ( ANCRDT_ENTTY_DFLT_C , anacreditCounterpartyDefault ) ;
+CNTRPRTY_DFLT_LST_MNTH_RSLT <- check_datapoint ( dsPrep.CNTRPRTY_DFLT_T_T1 , anacreditCounterpartyDefaultLastMonth ) ;
+INSTRMNT_PRTCTNS_RSLT <- check_datapoint ( dsPrep.INSTRMTNS_PRTCTNS , anacreditInstrumentProtection ) ;
+PRTCTN_RCVD_RSLT <- check_datapoint ( ANCRDT_PRTCTN_RCVD_C , anacreditProtectionReceived ) ;
+PRTCTN_RCVD_LST_MNTH_RSLT <- check_datapoint ( dsPrep.PRTCTN_RCVD_T_T1 , anacreditProtectionReceivedLastMonth ) ;
+CN0230 <- check ( not isnull ( dsPrep.CN0230_DTST # TYP_PRTCTN ) errorcode "CN0230" errorlevel 2 invalid ) ;
+CN0330 <- check ( ANCRDT_FNNCL_C [ keep OTSTNDNG_NMNL_AMNT ] [ rename OTSTNDNG_NMNL_AMNT to obs ] >= ANCRDT_JNT_LBLTS_C [ keep JNT_LBLTY_AMNT ] [ rename JNT_LBLTY_AMNT to obs ] errorcode "CN0330" errorlevel 3 invalid ) ;
+CN0621 <- check ( ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "1" ] [ calc dummy := "T" ] <> ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] [ calc dummy := "T" ] errorcode "CN0621" errorlevel 3 invalid ) ;
+CN0622 <- check ( isnull ( dsPrep.CN0622_DTST # PRTCTN_PRVDR_CD ) errorcode "CN0622" errorlevel 2 invalid ) ;
+/*******************************************************************************
+*       Module dsPrep
+*******************************************************************************/
+dsPrep.PRTCTN_RCVD_P := ANCRDT_PRTCTN_RCVD_C [ filter not isnull ( PRTCTN_PRVDR_CD ) ] [ calc identifier ENTTY_RIAD_CD := nvl ( PRTCTN_PRVDR_CD , "" ) ] [ keep PRTCTN_PRVDR_CD ] [ drop PRTCTN_PRVDR_CD ] ;
+dsPrep.PRTCTN_RCVD := min ( dsPrep.PRTCTN_RCVD_P group by DT_RFRNC , OBSRVD_AGNT_CD , ENTTY_RIAD_CD ) ;
+dsPrep.ENTTY_INSTRMNT_P := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] ;
+dsPrep.ENTTY_INSTRMNT := min ( dsPrep.ENTTY_INSTRMNT_P group by DT_RFRNC , OBSRVD_AGNT_CD , ENTTY_RIAD_CD ) ;
+dsPrep.DBTRS_PRTCTRS := union ( dsPrep.ENTTY_INSTRMNT , dsPrep.PRTCTN_RCVD ) ;
+dsPrep.DBTRS := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "2" ] ;
+dsPrep.NMBR_DBTRS := count ( dsPrep.DBTRS group except ENTTY_RIAD_CD ) ;
+dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR := inner_join ( dsPrep.DBTRS , dsPrep.NMBR_DBTRS [ filter int_var > 1 ] as B ) ;
+dsPrep.INSTRMNTS_FLL_MNTHLY := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_FNNCL_C ) ;
+dsPrep.CNTRPRTY_DFLT_T_T1 := inner_join ( ANCRDT_ENTTY_DFLT_C [ keep DT_DFLT_STTS , DFLT_STTS ] as A , ANCRDT_ENTTY_DFLT_C_T1 [ keep DT_DFLT_STTS , DFLT_STTS ] [ rename DT_DFLT_STTS to DT_DFLT_STTS_T1 , DFLT_STTS to DFLT_STTS_T1 ] as B ) ;
+dsPrep.PRTCTN_RCVD_T_T1 := inner_join ( ANCRDT_PRTCTN_RCVD_C [ keep DT_PRTCTN_VL , DT_ORGNL_PRTCTN_VL , ORGNL_PRTCTN_VL , TYP_PRTCTN ] as A , ANCRDT_PRTCTN_RCVD_C_T1 [ keep DT_PRTCTN_VL , DT_ORGNL_PRTCTN_VL , ORGNL_PRTCTN_VL , TYP_PRTCTN ] [ rename DT_PRTCTN_VL to DT_PRTCTN_VL_T1 , DT_ORGNL_PRTCTN_VL to DT_ORGNL_PRTCTN_VL_T1 , ORGNL_PRTCTN_VL to ORGNL_PRTCTN_VL_T1 , TYP_PRTCTN to TYP_PRTCTN_T1 ] as B ) ;
+dsPrep.INSTRMNTS_SYNTHTC := ANCRDT_FNNCL_C [ filter TYP_SCRTSTN = "6" ] [ keep TYP_SCRTSTN ] ;
+dsPrep.PRTCTNS_SYNTHTC_SCRTSTN := ANCRDT_PRTCTN_RCVD_C [ filter TYP_PRTCTN in { "4" , "5" , "12" , "15" } ] [ keep TYP_PRTCTN ] ;
+dsPrep.INSTRMNTS_SYNTHTC_PRTCTNS := inner_join ( dsPrep.INSTRMNTS_SYNTHTC , ANCRDT_INSTRMNT_PRTCTN_RCVD_C ) ;
+dsPrep.CN0230_DTST := left_join ( dsPrep.INSTRMNTS_SYNTHTC_PRTCTNS , dsPrep.PRTCTNS_SYNTHTC_SCRTSTN using DT_RFRNC , OBSRVD_AGNT_CD , PRTCTN_ID ) ;
+dsPrep.PRTCTN_RCVD_PRVDR_ID := ANCRDT_PRTCTN_RCVD_C [ keep PRTCTN_PRVDR_CD ] [ filter not isnull ( PRTCTN_PRVDR_CD ) ] [ calc identifier ENTTY_RIAD_CD := nvl ( PRTCTN_PRVDR_CD , "" ) ] ;
+dsPrep.PRTCTN_PRVDR_ID := min ( dsPrep.PRTCTN_RCVD_PRVDR_ID group except PRTCTN_ID ) ;
+dsPrep.CN0622_DTST := inner_join ( dsPrep.PRTCTN_PRVDR_ID , ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = "1" ] as B ) ;
+dsPrep.INSTRMNT_FLL_T_T1 := inner_join ( ANCRDT_INSTRMNT_C [ keep CMMTMNT_INCPTN , FV_CHNG_CR_BFR_PRCHS , TYP_INSTRMNT , DT_LGL_FNL_MTRTY , DT_INCPTN , DT_STTLMNT ] as A , ANCRDT_INSTRMNT_C_T1 [ keep CMMTMNT_INCPTN , FV_CHNG_CR_BFR_PRCHS , DT_INCPTN , DT_STTLMNT ] [ rename CMMTMNT_INCPTN to CMMTMNT_INCPTN_T1 , FV_CHNG_CR_BFR_PRCHS to FV_CHNG_CR_BFR_PRCHS_T1 , DT_INCPTN to DT_INCPTN_T1 , DT_STTLMNT to DT_STTLMNT_T1 ] as B , ANCRDT_FNNCL_C [ keep DT_DFLT_STTS , DFLT_STTS ] as C , ANCRDT_FNNCL_C_T1 [ keep DT_DFLT_STTS , DFLT_STTS , OFF_BLNC_SHT_AMNT ] [ rename DT_DFLT_STTS to DT_DFLT_STTS_T1 , DFLT_STTS to DFLT_STTS_T1 ] as D ) ;
+dsPrep.INSTRMTNS_PRTCTNS := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_INSTRMNT_PRTCTN_RCVD_C , ANCRDT_PRTCTN_RCVD_C ) ;
+dsPrep.INSTTTNL_SCTR_DS := RIAD_INSTTTNL_SCTR_C [ keep OBS_VALUE ] [ rename OBS_VALUE to INSTTTNL_SCTR ] [ filter VLD_T = cast ( "2020-12-31" , date ) ] ;
+dsPrep.LGL_FRM_DS := RIAD_LGL_FRM_C [ keep OBS_VALUE ] [ rename OBS_VALUE to LGL_FRM ] [ filter VLD_T = cast ( "2020-12-31" , date ) ] ;
+dsPrep.SSMSIGNIFICANCE_DS := RIAD_SSMSIGNIFICANCE_C [ keep OBS_VALUE ] [ rename OBS_VALUE to SSMSIGNIFICANCE ] [ filter VLD_T = cast ( "2020-12-31" , date ) ] ;
+dsPrep.HD_QRTR_DS_OBS := RIAD_IS_BRNCH_C [ keep OBS_VALUE ] [ calc measure OBS_VALUE := TRGT_ENTTY_RIAD_CD ] [ filter VLD_T = cast ( "2020-12-31" , date ) ] ;
+dsPrep.HD_QRTR_DS_MX := max ( dsPrep.HD_QRTR_DS_OBS group except TRGT_ENTTY_RIAD_CD ) ;
+dsPrep.HD_QRTR_DS := dsPrep.HD_QRTR_DS_MX [ rename OBS_VALUE to HD_QRTR_CD ] ;
+dsPrep.ENTTY_JN := inner_join ( dsPrep.INSTTTNL_SCTR_DS , dsPrep.LGL_FRM_DS , dsPrep.HD_QRTR_DS , dsPrep.SSMSIGNIFICANCE_DS ) ;
+dsPrep.ENTTY_CNTRY := dsPrep.ENTTY_JN [ calc CNTRY := substr ( ENTTY_RIAD_CD , 1 , 2 ) , HD_QRTR_CNTRY := substr ( HD_QRTR_CD , 1 , 2 ) ] ;
+dsPrep.ENTTY := max ( dsPrep.ENTTY_CNTRY group except VLD_FRM , VLD_T ) ;
+dsPrep.LST_RIAD_CDS := min ( dsPrep.ENTTY group by ENTTY_RIAD_CD ) ;
+dsPrep.INSTR_ACCNTNG_Z := inner_join ( ANCRDT_INSTRMNT_C , ANCRDT_ACCNTNG_C_Z keep RCGNTN_STTS ) ;
+dsPrep.ENTTY_INSTRUMNT_OA := ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RIAD_CD = OBSRVD_AGNT_CD ] ;
+dsPrep.ENTTY_INSTRUMNT_MX := max ( dsPrep.ENTTY_INSTRUMNT_OA group except ENTTY_RIAD_CD ) ;
+dsPrep.CRDTR_PVT := left_join ( dsPrep.INSTR_ACCNTNG_Z , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 1 ] [ calc CRDTR := true ] as B ) ;
+dsPrep.CRDTR_SRVCR_PVT := left_join ( dsPrep.CRDTR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 7 ] [ calc SRVCR := true ] as B ) ;
+dsPrep.CRDTR_SRVCR_DBTR_PVT := left_join ( dsPrep.CRDTR_SRVCR_PVT , dsPrep.ENTTY_INSTRUMNT_MX [ sub ENTTY_RL = 2 ] [ calc DBTR := true ] as B ) ;
+dsPrep.INSTRMNT_OBSRVD_AGNT := inner_join ( ANCRDT_INSTRMNT_C , dsPrep.ENTTY [ rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD ] as B ) ;
+dsPrep.ENTTY_INSTRUMNT_CRDTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = 1 ] [ calc CRDTR_CD := ENTTY_RIAD_CD ] ;
+dsPrep.ENTTY_INSTRUMNT_DBTR := ANCRDT_ENTTY_INSTRMNT_C [ sub ENTTY_RL = 2 ] [ calc DBTR_CD := ENTTY_RIAD_CD ] ;
+dsPrep.ENTTY_HD_QRTR_CRDTR_P := inner_join ( dsPrep.ENTTY_INSTRUMNT_CRDTR , dsPrep.ENTTY_INSTRUMNT_DBTR ) ;
+dsPrep.ENTTY_HD_QRTR_CRDTR := inner_join ( dsPrep.ENTTY_HD_QRTR_CRDTR_P , dsPrep.ENTTY [ rename ENTTY_RIAD_CD to CRDTR_CD ] [ calc HD_QRTR_CD_CRDTR := HD_QRTR_CD ] [ keep HD_QRTR_CD_CRDTR ] as C using CRDTR_CD ) ;
+dsPrep.ENTTY_HD_QRTR := inner_join ( dsPrep.ENTTY_HD_QRTR_CRDTR , dsPrep.ENTTY [ rename ENTTY_RIAD_CD to DBTR_CD ] [ calc HD_QRTR_CD_DBTR := HD_QRTR_CD ] [ keep HD_QRTR_CD_DBTR ] as B using DBTR_CD ) ;
+/*******************************************************************************
+*       Module refInt
+*******************************************************************************/
+RI0030 <- check ( exists_in ( ANCRDT_FNNCL_C , ANCRDT_INSTRMNT_C , false ) errorcode "RI0030" errorlevel 5 ) ;
+RI0050 <- check ( exists_in ( ANCRDT_FNNCL_C , ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "1" ] , false ) errorcode "RI0050" errorlevel 4 ) ;
+RI0060 <- check ( exists_in ( ANCRDT_FNNCL_C , ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "2" ] , false ) errorcode "RI0060" errorlevel 5 ) ;
+RI0070 <- check ( exists_in ( ANCRDT_FNNCL_C , ANCRDT_ENTTY_INSTRMNT_C [ filter ENTTY_RL = "7" ] , false ) errorcode "RI0070" errorlevel 4 ) ;
+RI0090 <- check ( exists_in ( ANCRDT_INSTRMNT_C , ANCRDT_FNNCL_C , false ) errorcode "RI0090" errorlevel 3 ) ;
+RI0110 <- check ( exists_in ( ANCRDT_ENTTY_INSTRMNT_C , ANCRDT_FNNCL_C , false ) errorcode "RI0110" errorlevel 3 ) ;
+RI0120 <- check ( exists_in ( min ( ANCRDT_JNT_LBLTS_C group except ENTTY_RIAD_CD ) , ANCRDT_FNNCL_C , false ) errorcode "RI0120" errorlevel 4 ) ;
+RI0130 <- check ( exists_in ( min ( ANCRDT_INSTRMNT_PRTCTN_RCVD_C group except PRTCTN_ID ) , ANCRDT_FNNCL_C , false ) errorcode "RI0130" errorlevel 5 ) ;
+RI0191 <- check ( exists_in ( ANCRDT_ENTTY_DFLT_C , dsPrep.DBTRS_PRTCTRS , false ) errorcode "RI0191" errorlevel 4 ) ;
+RI0201 <- check ( exists_in ( ANCRDT_ENTTY_RSK_C , dsPrep.DBTRS_PRTCTRS , false ) errorcode "RI0201" errorlevel 4 ) ;
+RI0210 <- check ( exists_in ( dsPrep.PRTCTN_RCVD_P , dsPrep.LST_RIAD_CDS , false ) errorcode "RI0210" errorlevel 4 ) ;
+RI0220 <- check ( exists_in ( ANCRDT_PRTCTN_RCVD_C , ANCRDT_INSTRMNT_PRTCTN_RCVD_C , false ) errorcode "RI0220" errorlevel 4 ) ;
+RI0250 <- check ( exists_in ( ANCRDT_INSTRMNT_PRTCTN_RCVD_C , ANCRDT_PRTCTN_RCVD_C , false ) errorcode "RI0250" errorlevel 4 ) ;
+RI0260 <- check ( exists_in ( dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR , ANCRDT_JNT_LBLTS_C , false ) errorcode "RI0260" errorlevel 4 ) ;
+RI0290 <- check ( exists_in ( ANCRDT_JNT_LBLTS_C , dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR , false ) errorcode "RI0290" errorlevel 4 ) ;

@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "BLNC_SHT_TTL_CRRNCY_DS",
+      "DataStructure": [
+        {
+          "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "BLNC_SHT_TTL_CRRNCY",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        }
+      ]
+    }
+  ]
+}

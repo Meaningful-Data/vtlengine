@@ -1,0 +1,30 @@
+/*To be completed*/
+ANAMART_ENTTY:=inner_join(A02.ANAMART_ENTTY_LE, A03.ANAMART_ENTTY_PRFRMNG, A04.ANAMART_ENTTY_DYS, A05.ANAMART_ENTTY_RSK, A06.ANAMART_ENTTY_GGRPHCL);
+
+
+ANCRDT_DBTR := inner_join(  ANAMART_ENTTY[drop ACCNTNG_FRMWRK_SL], 
+                            ANCRDT_ENTTY_INSTRMNT_S[filter ENTTY_RL="2"]
+                        using DT_RFRNC, ENTTY_RIAD_ID);
+ 
+ANCRDT_DBTR_NN_ANNYMSD_D_1 := ANCRDT_DBTR[drop ANNYMSD_ENTTY_ID];
+ 
+ANCRDT_DBTR_ANNYMSD_D_1 :=ANCRDT_DBTR
+                            [calc identifier ANNYMSD_ENTTY_ID := ANNYMSD_ENTTY_ID]
+                            [calc measure ENTTY_RIAD_ID := ENTTY_RIAD_ID]
+                            [drop ENTTY_RIAD_ID];
+ 
+ 
+ 
+ 
+ANCRDT_CRDTR := inner_join(
+                            ANAMART_ENTTY[drop CV_NPL_RT, DV_NPL_RT, INDSTRY_PD_SD, INDSTRY_PD_SMPL_AVRG, INDSTRY_PD_WGHTD_AVRG,
+                                                MAX_PST_D_DYS, MAX_RSDL_MTRTY_DYS,RSDL_MTRTY_DYS_WGHTD_AVRG], 
+                            ANCRDT_ENTTY_INSTRMNT_S[filter ENTTY_RL="1"]
+                        using DT_RFRNC, ENTTY_RIAD_ID);
+ 
+ANCRDT_CRDTR_NN_ANNYMSD_D_1 := ANCRDT_CRDTR[drop ANNYMSD_ENTTY_ID];
+ 
+ANCRDT_CRDTR_ANNYMSD_D_1 :=ANCRDT_CRDTR
+                            [calc identifier ANNYMSD_ENTTY_ID := ANNYMSD_ENTTY_ID]
+                            [calc measure ENTTY_RIAD_ID := ENTTY_RIAD_ID]
+                            [drop ENTTY_RIAD_ID];

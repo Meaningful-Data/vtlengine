@@ -1,0 +1,6 @@
+Id_1,Id_2,Id_3,bool_var
+2011,A,XX,True
+2011,A,YY,True
+2011,B,YY,True
+2012,A,XX,False
+2012,B,YY,True

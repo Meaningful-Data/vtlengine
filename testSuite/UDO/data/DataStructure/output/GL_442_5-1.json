@@ -1,0 +1,1 @@
+{"datasets": [{"name": "market.market", "DataStructure": [{"name": "ISIN", "role": "Identifier", "type": "String", "nullable": false}, {"name": "LastRate", "role": "Measure", "type": "Number", "nullable": true}, {"name": "TimePeriod", "role": "Identifier", "type": "Date", "nullable": false}], "DataPoints": null}]}

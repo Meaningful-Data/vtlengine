@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "RFA",
+      "DataStructure": [
+        {
+          "name": "Currency",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "BKAR",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
