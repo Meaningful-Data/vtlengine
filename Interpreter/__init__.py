@@ -667,10 +667,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.is_from_condition = True
         condition = self.visit(node.condition)
-        # if self.nested_if:
-        #     merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
-        #     indexes = merge_df.data[merge_df.data.columns[0]]
-        #     condition.data = condition.data[indexes]
         self.is_from_condition = False
 
         if isinstance(condition, Scalar):
@@ -691,7 +687,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['then'])
         self.is_from_if = True
-        # self.nested_if = True if isinstance(node.thenOp, AST.If) and 'op=/' in node.__str__() else False
         self.nested_if = 'T' if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
@@ -700,7 +695,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['else'])
         self.is_from_if = True
-        # self.nested_if = True if isinstance(node.elseOp, AST.If) and 'op=/' in node.elseOp.__str__() else False
         self.nested_if = 'E' if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)):
@@ -1128,15 +1122,21 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.nested_if:
                 merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
                 indexes = merge_df.data[merge_df.data.columns[-1]]
-                data = data[indexes]
-            indexes = data.index
+            else:
+                indexes = data.index
             data = data.fillna(False)
 
             if isinstance(condition, Dataset):
-                then_data = condition.data[condition.data[name]]
-                then_data[name] = [i for i in indexes if data[i]]
-                else_data = condition.data[~condition.data[name]]
-                else_data[name] = [i for i in indexes if not data[i]]
+                then_data = condition.data[condition.data[name] == True]
+                then_indexes = [i for i in indexes if data[i] == True]
+                if len(then_data) > len(then_indexes):
+                    then_data = then_data.iloc[then_indexes]
+                then_data[name] = then_indexes
+                else_data = condition.data[condition.data[name] != True]
+                else_indexes = [i for i in indexes if data[i] != True]
+                if len(else_data) > len(else_indexes):
+                    else_data = else_data.iloc[else_indexes]
+                else_data[name] = else_indexes
             else:
                 then_data = pd.DataFrame({name: [i for i in indexes if data[i]]})
                 else_data = pd.DataFrame({name: [i for i in indexes if not data[i]]})
