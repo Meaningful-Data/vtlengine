@@ -63,7 +63,7 @@ class Identifier(RoleSetter):
         if isinstance(operand, Scalar):
             if operand.value is None:
                 raise Exception("An Identifier cannot be nullable")
-        return cls.validate(operand)
+        return super().evaluate(operand, data_size)
 
 
 class Attribute(RoleSetter):
