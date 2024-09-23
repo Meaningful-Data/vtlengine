@@ -462,7 +462,8 @@ COMP_NAME_MAPPING = {
     TimePeriod: 'time_period_var',
     Date: 'date_var',
     Duration: 'duration_var',
-    Boolean: 'bool_var'
+    Boolean: 'bool_var',
+    Null: 'null_var'
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {

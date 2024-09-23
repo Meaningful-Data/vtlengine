@@ -1,6 +1,7 @@
 import os
 from copy import copy
 
+from Exceptions import SemanticError
 import DataTypes
 from DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion
 from Model import Scalar, DataComponent, Dataset, Role
@@ -48,8 +49,10 @@ class If(Operator):
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
 
-        true_data = condition.data[condition.data[condition_measure]]
-        false_data = condition.data[~condition.data[condition_measure]]
+        # true_data = condition.data[condition.data[condition_measure] == True]
+        # false_data = condition.data[condition.data[condition_measure] != True]
+        true_data = condition.data[condition.data[condition_measure] == True]
+        false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0:
@@ -93,6 +96,8 @@ class If(Operator):
 
         # Datacomponent
         if isinstance(condition, DataComponent):
+            if not condition.data_type == Boolean:
+                raise SemanticError("1-1-9-11", op=cls.op, type=DataTypes.SCALAR_TYPES_CLASS_REVERSE[condition.data_type])
             if not isinstance(left, Scalar) or not isinstance(right, Scalar):
                 nullable = condition.nullable
             else:
@@ -110,27 +115,32 @@ class If(Operator):
 
         # Dataset
         if isinstance(left, DataComponent):
-            raise ValueError("If operation at dataset level cannot have component type on left (condition) side")
+            raise SemanticError("1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name)
         if isinstance(left, Scalar):
             left.data_type = right.data_type = binary_implicit_promotion(left.data_type, right.data_type)
-            return Dataset(name='result', components=condition.components.copy(), data=None)
+            return Dataset(name='result', components=copy(condition.components), data=None)
+        if left.get_identifiers() != condition.get_identifiers():
+            raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
         if isinstance(right, Scalar):
             for component in left.get_measures():
                 if component.data_type != right.data_type:
                     component.data_type = binary_implicit_promotion(component.data_type, right.data_type)
         if isinstance(right, Dataset):
+            if left.get_identifiers() != condition.get_identifiers():
+                raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
             if left.get_components_names() != right.get_components_names():
-                raise ValueError("If operands at dataset level must have the same components")
+                raise SemanticError("1-1-9-13", op=cls.op, then=left.name, else_clause=right.name)
             for component in left.get_measures():
                 if component.data_type != right.components[component.name].data_type:
                     component.data_type = right.components[component.name].data_type = \
                         binary_implicit_promotion(component.data_type, right.components[component.name].data_type)
         if isinstance(condition, Dataset):
-            if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != Boolean:
-                raise ValueError("If operation at dataset level condition side must be a dataset having an unique "
-                                 "boolean measure")
+            if len(condition.get_measures()) != 1:
+                raise SemanticError("1-1-9-4", op=cls.op, name=condition.name)
+            if condition.get_measures()[0].data_type != Boolean:
+                raise SemanticError("1-1-9-5", op=cls.op, type=DataTypes.SCALAR_TYPES_CLASS_REVERSE[condition.get_measures()[0].data_type])
             if left.get_identifiers() != condition.get_identifiers():
-                raise ValueError("If operands at dataset level must have the same identifiers as condition")
+                raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         return Dataset(name='result', components=result_components, data=None)
 

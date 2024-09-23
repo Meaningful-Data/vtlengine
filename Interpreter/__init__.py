@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
 
 import AST
@@ -682,6 +683,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_condition = False
 
         if isinstance(condition, Scalar):
+            thenValue = self.visit(node.thenOp)
+            elseValue = self.visit(node.elseOp)
+            if not isinstance(thenValue, Scalar) or not isinstance(elseValue, Scalar):
+                raise SemanticError("1-1-9-3", op='If_op', then_name=thenValue.name, else_name=elseValue.name)
             if condition.value:
                 return self.visit(node.thenOp)
             else:
@@ -695,7 +700,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.then_condition_dataset = []
             if self.else_condition_dataset is None:
                 self.else_condition_dataset = []
-            self.generate_then_else_datasets(condition)
+            self.generate_then_else_datasets(copy(condition))
 
         self.if_stack.append(THEN_ELSE['then'])
         self.is_from_if = True
@@ -1151,16 +1156,16 @@ class InterpreterAnalyzer(ASTTemplate):
         if data is not None:
             if self.nested_if:
                 merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
-                indexes = merge_df.data[merge_df.data.columns[-1]]
+                indexes = merge_df.data[merge_df.data.columns[-1]].index
+                condition.data = condition.data.iloc[indexes]
                 data = data[indexes]
             indexes = data.index
-            data = data.fillna(False)
 
             if isinstance(condition, Dataset):
-                then_data = condition.data[condition.data[name]]
-                then_data[name] = [i for i in indexes if data[i]]
-                else_data = condition.data[~condition.data[name]]
-                else_data[name] = [i for i in indexes if not data[i]]
+                then_data = condition.data[condition.data[name] == True]
+                then_data[name] = [i for i in indexes if data[i] == True]
+                else_data = condition.data[condition.data[name] != True]
+                else_data[name] = [i for i in indexes if data[i] != True]
             else:
                 then_data = pd.DataFrame({name: [i for i in indexes if data[i]]})
                 else_data = pd.DataFrame({name: [i for i in indexes if not data[i]]})
