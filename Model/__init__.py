@@ -308,6 +308,14 @@ class ScalarSet:
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
 
+    def __contains__(self, item):
+        if isinstance(item, float) and item.is_integer():
+            item = int(item)
+        if self.data_type == DataTypes.Null:
+            return None
+        value = self.data_type.cast(item)
+        return value in self.values
+
 
 @dataclass
 class ValueDomain:
