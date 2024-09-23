@@ -1,1 +1,81 @@
-{"datasets": [{"name": "filtered_ds", "DataStructure": [{"name": "CONF_STATUS", "role": "Attribute", "type": "String", "nullable": true}, {"name": "DECIMALS", "role": "Attribute", "type": "String", "nullable": true}, {"name": "EMBARGO_TIME", "role": "Attribute", "type": "Date", "nullable": true}, {"name": "FREQ", "role": "Identifier", "type": "String", "nullable": false}, {"name": "INDEX_BASE", "role": "Identifier", "type": "String", "nullable": false}, {"name": "MARKET_GEO", "role": "Identifier", "type": "String", "nullable": false}, {"name": "NBB_ISTI", "role": "Identifier", "type": "String", "nullable": false}, {"name": "OBS_STATUS", "role": "Attribute", "type": "String", "nullable": true}, {"name": "OBS_VALUE", "role": "Measure", "type": "Number", "nullable": true}, {"name": "TIME_PERIOD", "role": "Identifier", "type": "Time_Period", "nullable": false}, {"name": "UNIT_MEASURE", "role": "Attribute", "type": "String", "nullable": true}, {"name": "UNIT_MULT", "role": "Attribute", "type": "String", "nullable": true}], "DataPoints": null}]}
+{
+  "datasets": [
+    {
+      "name": "filtered_ds",
+      "DataStructure": [
+        {
+          "name": "CONF_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DECIMALS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "EMBARGO_TIME",
+          "role": "Attribute",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "FREQ",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INDEX_BASE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "MARKET_GEO",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "NBB_ISTI",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "Time_Period",
+          "nullable": false
+        },
+        {
+          "name": "UNIT_MEASURE",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "UNIT_MULT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
