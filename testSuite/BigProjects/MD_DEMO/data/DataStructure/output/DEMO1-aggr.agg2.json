@@ -40,6 +40,12 @@
           "nullable": false
         },
         {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "PARENT_COUNTRY",
           "role": "Identifier",
           "type": "String",
@@ -74,12 +80,6 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "OBS_VALUE",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
         }
       ]
     }

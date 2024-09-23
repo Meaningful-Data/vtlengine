@@ -1,3 +1,2 @@
 TIME_PERIOD,bool_var,imbalance,errorcode,errorlevel
-2019-02-28,False,-0.30939226519337015,DS1 is not between 75% and 125% of DS2,3
-
+2019-02-28,False,-0.3093922652,DS1 is not between 75% and 125% of DS2,3
