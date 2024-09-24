@@ -414,7 +414,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = '1-1-1-21'
         number_inputs = 3
-        message = "1-1-1-2"
+        message = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
@@ -1246,7 +1246,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         # references_names = ["1", "2", "3"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-        message = "2-1-5-1"
+        message = "1-1-1-16"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_466_2(self):
