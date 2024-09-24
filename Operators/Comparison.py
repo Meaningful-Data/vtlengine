@@ -53,14 +53,17 @@ class Binary(Operator.Binary):
     def _cast_values(cls, x: Union[int, float, str, bool], y: Union[int, float, str, bool]) -> tuple:
         # Cast both values to the same data type
         # An integer can be considered a bool, we must check first boolean, then numbers
-        if isinstance(x, str) and isinstance(y, bool):
-            y = String.cast(y)
-        elif isinstance(x, bool) and isinstance(y, str):
-            x = String.cast(x)
-        elif isinstance(x, str) and isinstance(y, (int, float)):
-            x = Number.cast(x)
-        elif isinstance(x, (int, float)) and isinstance(y, str):
-            y = Number.cast(y)
+        try:
+            if isinstance(x, str) and isinstance(y, bool):
+                y = String.cast(y)
+            elif isinstance(x, bool) and isinstance(y, str):
+                x = String.cast(x)
+            elif isinstance(x, str) and isinstance(y, (int, float)):
+                x = Number.cast(x)
+            elif isinstance(x, (int, float)) and isinstance(y, str):
+                y = Number.cast(y)
+        except ValueError:
+            pass
 
         return x, y
 

@@ -76,11 +76,11 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     if not data_structure.exists():
         raise Exception('Invalid datastructure. Input does not exist')
     if data_structure.is_dir():
-        ds_structures = {}
+        datasets = {}
         for f in data_structure.iterdir():
-            ds_r = _load_datastructure_single(f)
-            ds_structures = {**ds_structures, **ds_r}
-        structures = ds_structures
+            dataset = _load_datastructure_single(f)
+            datasets = {**datasets, **dataset}
+        return datasets
     else:
         if data_structure.suffix != '.json':
             raise Exception('Invalid datastructure. Must have .json extension')
@@ -141,6 +141,10 @@ def load_vtl(input: Union[str, Path]):
     with open(input, 'r') as f:
         return f.read()
 
+def _load_single_value_domain(input: Path):
+    with open(input, 'r') as f:
+        vd = ValueDomain.from_dict(json.load(f))
+    return {vd.name: vd}
 
 def load_value_domains(input: Union[dict, Path]):
     if isinstance(input, dict):
@@ -150,13 +154,15 @@ def load_value_domains(input: Union[dict, Path]):
         raise Exception('Invalid vd file. Input is not a Path object')
     if not input.exists():
         raise Exception('Invalid vd file. Input does not exist')
+    if input.is_dir():
+        value_domains = {}
+        for f in input.iterdir():
+            vd = _load_single_value_domain(f)
+            value_domains = {**value_domains, **vd}
+        return value_domains
     if input.suffix != '.json':
         raise Exception('Invalid vd file. Must have .json extension')
-    value_domains = {}
-    with open(input, 'r') as file:
-        vd = ValueDomain.from_json(file.read())
-        value_domains[vd.name] = vd
-    return value_domains
+    return _load_single_value_domain(input)
 
 
 def load_external_routines(input: Union[dict, Path]) -> Optional[

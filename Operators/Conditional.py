@@ -41,7 +41,7 @@ class If(Operator):
                     data.append(false_branch.data[i])
                 else:
                     data.append(None)
-        return pd.Series(data).dropna()
+        return pd.Series(data, dtype=object).dropna()
 
     @classmethod
     def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):

@@ -1,7 +1,7 @@
 from copy import copy, deepcopy
-from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
+from time import time
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
@@ -88,20 +88,23 @@ class InterpreterAnalyzer(ASTTemplate):
     def _load_datapoints_efficient(self, statement_num: int):
         if self.datapoints_paths is None:
             return
+        if statement_num not in self.ds_analysis['insertion']:
+            return
         for ds_name in self.ds_analysis['insertion'][statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
                                                           self.datapoints_paths[ds_name])
-            elif self.datasets[ds_name].data is None:
+            elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
     def _save_datapoints_efficient(self, statement_num: int):
-        if self.output_path is not None:
+        if self.output_path is not None and statement_num in self.ds_analysis['deletion']:
             for ds_name in self.ds_analysis['deletion'][statement_num]:
-                if self.time_period_representation is not None:
-                    format_time_period_external_representation(self.datasets[ds_name],self.time_period_representation)
-                self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv", index=False)
-                self.datasets[ds_name].data = None
+                if ds_name in self.datasets and self.datasets[ds_name].data is not None:
+                    if self.time_period_representation is not None:
+                        format_time_period_external_representation(self.datasets[ds_name], self.time_period_representation)
+                    self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv", index=False)
+                    self.datasets[ds_name].data = None
         # Keeping the data in memory if no output path is provided
 
 
@@ -129,6 +132,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.datasets[result.name] = result
                 results[result.name] = result
                 self._save_datapoints_efficient(statement_num)
+                statement_num += 1
 
             # Reset some handlers (joins and if)
             self.is_from_join = False

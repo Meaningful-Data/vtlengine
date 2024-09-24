@@ -40,7 +40,7 @@ class RoleSetter(Unary):
                 raise Exception(f"Found null values in {operand.name} with nullable=False")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
-            result.data = pd.Series([operand.value] * data_size)
+            result.data = pd.Series([operand.value] * data_size, dtype=object)
         else:
             result.data = operand.data
         return result
