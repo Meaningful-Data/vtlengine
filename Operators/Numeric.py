@@ -30,6 +30,9 @@ class Binary(Operator.Binary):
         x = float(x)
         y = float(y)
         # Handles precision to avoid floating point errors
+        if cls.op == DIV and y == 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=y)
+
         decimal_value = cls.py_op(Decimal(x), Decimal(y))
         getcontext().prec = 10
         result = float(decimal_value)
