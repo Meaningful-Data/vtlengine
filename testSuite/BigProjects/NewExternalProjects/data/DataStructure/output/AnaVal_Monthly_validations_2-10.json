@@ -4,12 +4,6 @@
       "name": "RI0050",
       "DataStructure": [
         {
-          "name": "bool_var",
-          "role": "Measure",
-          "type": "Boolean",
-          "nullable": false
-        },
-        {
           "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
@@ -31,6 +25,12 @@
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
           "nullable": false
         },
         {

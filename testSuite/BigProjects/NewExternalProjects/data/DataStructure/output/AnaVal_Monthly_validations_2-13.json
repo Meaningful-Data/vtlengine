@@ -16,16 +16,16 @@
           "nullable": false
         },
         {
-          "name": "PRTCTN_ALLCTD_VL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "PRTCTN_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "PRTCTN_ALLCTD_VL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         }
       ]
     }

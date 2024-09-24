@@ -42,7 +42,7 @@ class RoleSetter(Unary):
                 raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
-            result.data = pd.Series([operand.value] * data_size)
+            result.data = pd.Series([operand.value] * data_size, dtype=object)
         else:
             result.data = operand.data
         return result
@@ -63,7 +63,7 @@ class Identifier(RoleSetter):
         if isinstance(operand, Scalar):
             if operand.value is None:
                 raise SemanticError("1-1-1-16")
-        return cls.validate(operand)
+        return super().evaluate(operand, data_size)
 
 
 class Attribute(RoleSetter):

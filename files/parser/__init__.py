@@ -9,7 +9,7 @@ from DataTypes import Date, TimePeriod, TimeInterval, Integer, Number, Boolean, 
     SCALAR_TYPES_CLASS_REVERSE
 from DataTypes.TimeHandling import DURATION_MAPPING
 from Exceptions import InputValidationException, SemanticError
-from Model import Component, Role
+from Model import Component, Role, Dataset
 from files.parser._rfc_dialect import register_rfc
 from files.parser._time_checking import check_date, check_time_period, check_time
 
@@ -154,3 +154,7 @@ def load_datapoints(components: Dict[str, Component],
     data = _validate_pandas(components, data, dataset_name)
 
     return data
+
+
+def _fill_dataset_empty_data(dataset: Dataset):
+    dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))

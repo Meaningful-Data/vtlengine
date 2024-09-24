@@ -1,16 +1,21 @@
 import json
+from pathlib import Path
 
-from API import create_ast, load_datasets
-from Interpreter import InterpreterAnalyzer
+from API import run
+
+base_path = Path(__file__).parent / 'development' / 'data'
+input_dp = base_path / 'dataPoints' / 'input'
+output_dp = base_path / 'dataPoints' / 'output'
+input_ds = base_path / 'dataStructures' / 'input'
+ext_routines = base_path / 'externalRoutines'
+vds = base_path / 'valueDomains'
+vtl = base_path / 'vtl' / 'monthVal.vtl'
 
 if __name__ == '__main__':
-    ast = create_ast('DS_r := DS_1;')
-    datasets = load_datasets("development/data/dataPoints", "development/data/dataStructures")
-    interpreter = InterpreterAnalyzer(datasets)
-    result = interpreter.visit(ast)
-
-    # with open('development/tests/results/binary_boolean/Xor.json', 'w') as f:
-    #     f.write(result['DS_r'].to_json())
-    print(result['DS_r'].name)
-    print(result['DS_r'].components)
-    print(result['DS_r'].data)
+    run(
+        script=vtl,
+        data_structures=input_ds,
+        datapoints=input_dp,
+        value_domains=vds,
+        output_path=output_dp,
+    )

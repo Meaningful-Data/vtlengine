@@ -1,24 +1,25 @@
-import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Union, List, Optional
 
+from API._InternalApi import load_vtl, load_datasets, load_value_domains, load_external_routines, \
+    load_datasets_with_data, _return_only_persistent_datasets
 from AST.DAG import DAGAnalyzer
-from DataTypes import SCALAR_TYPES
+from Interpreter import InterpreterAnalyzer
+from files.output import TimePeriodRepresentation, format_time_period_external_representation
 
 if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
+    pass
 else:
-    import pandas as pd
+    pass
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from AST import AST
+from AST import Start
 from AST.ASTConstructor import ASTVisitor
 from AST.Grammar.lexer import Lexer
 from AST.Grammar.parser import Parser
-from Model import Dataset, Component, ExternalRoutine, Role
 
 
 class __VTLSingleErrorListener(ErrorListener):
@@ -53,7 +54,7 @@ def _parser(stream: CommonTokenStream) -> Any:
     return vtl_parser.start()
 
 
-def create_ast(text: str) -> AST:
+def create_ast(text: str) -> Start:
     """
     Generates the AST
     """
@@ -65,59 +66,75 @@ def create_ast(text: str) -> AST:
     return ast
 
 
-def load_datasets(dataPoints_path: Union[str, Path], dataStructures_path: Union[str, Path]) -> Dict[
-    str, Dataset]:
-    """
-    Load the datasets
-    """
+def semantic_analysis(script: Union[str, Path],
+                      data_structures: Union[dict, Path, List[Union[dict, Path]]],
+                      value_domains: Union[dict, Path] = None,
+                      external_routines: Union[str, Path] = None):
+    # AST generation
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
 
-    if isinstance(dataPoints_path, str):
-        dataPoints_path = Path(dataPoints_path)
+    # Loading datasets
+    structures = load_datasets(data_structures)
 
-    if isinstance(dataStructures_path, str):
-        dataStructures_path = Path(dataStructures_path)
+    # Handling of library items
+    vd = None
+    if value_domains is not None:
+        vd = load_value_domains(value_domains)
+    ext_routines = None
+    if external_routines is not None:
+        ext_routines = load_external_routines(external_routines)
 
-    datasets = {}
-    dataStructures = [dataStructures_path / f for f in os.listdir(dataStructures_path)
-                      if f.lower().endswith('.json')]
-
-    for f in dataStructures:
-        with open(f, 'r') as file:
-            structures = json.load(file)
-
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
-            components = {component['name']: Component(name=component['name'],
-                                                       data_type=SCALAR_TYPES[component['type']],
-                                                       role=Role(component['role']),
-                                                       nullable=component['nullable'])
-                          for component in dataset_json['DataStructure']}
-            dataPoint = dataPoints_path / f"{dataset_name}.csv"
-            if not os.path.exists(dataPoint):
-                data = pd.DataFrame(columns=components.keys())
-            else:
-                data = pd.read_csv(str(dataPoint), sep=',')
-
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
-    if len(datasets) == 0:
-        raise FileNotFoundError("No datasets found")
-    return datasets
+    # Running the interpreter
+    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd,
+                                      external_routines=ext_routines,
+                                      only_semantic=True)
+    result = interpreter.visit(ast)
+    return result
 
 
-def load_external_routines(external_routines_path: Union[str, Path]) -> Optional[
-    Dict[str, ExternalRoutine]]:
-    """
-    Load the external routines
-    """
-    if isinstance(external_routines_path, str):
-        external_routines_path = Path(external_routines_path)
+def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
+        datapoints: Union[dict, Path, List[Path]],
+        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
+        time_period_output_format: str = "vtl",
+        return_only_persistent=False, output_path: Optional[Path] = None):
+    # AST generation
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
 
-    if len(list(external_routines_path.iterdir())) == 0:
-        return
+    # Loading datasets and datapoints
+    datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
 
-    external_routines = {}
-    for f in external_routines_path.iterdir():
-        with open(f, 'r') as file:
-            sql_query = file.read()
-        external_routines[f.stem] = ExternalRoutine.from_sql_query(f.stem, sql_query)
-    return external_routines
+    # Handling of library items
+    vd = None
+    if value_domains is not None:
+        vd = load_value_domains(value_domains)
+    ext_routines = None
+    if external_routines is not None:
+        ext_routines = load_external_routines(external_routines)
+
+    # Checking time period output format value
+    time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
+
+    # VTL Efficient analysis
+    ds_analysis = DAGAnalyzer.ds_structure(ast)
+    if output_path and not isinstance(output_path, Path):
+        raise Exception('Output path must be a Path object')
+    # Running the interpreter
+    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,
+                                      external_routines=ext_routines,
+                                      ds_analysis=ds_analysis,
+                                      datapoints_paths=path_dict,
+                                      output_path=output_path,
+                                      time_period_representation=time_period_representation)
+    result = interpreter.visit(ast)
+
+    # Applying time period output format
+    if output_path is None:
+        for dataset in result.values():
+            format_time_period_external_representation(dataset, time_period_representation)
+
+    # Returning only persistent datasets
+    if return_only_persistent:
+        return _return_only_persistent_datasets(result, ast)
+    return result

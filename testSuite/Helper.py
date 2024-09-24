@@ -1,21 +1,18 @@
 import json
-import os.path
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Any
 from unittest import TestCase
 
-import pandas as pd
 import pytest
 
 from API import create_ast
-from AST.DAG import DAGAnalyzer
 from DataTypes import SCALAR_TYPES
 from Exceptions import SemanticError
 from Interpreter import InterpreterAnalyzer
 from Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
-from files.parser import load_datapoints
 from files.output import TimePeriodRepresentation, \
     format_time_period_external_representation
+from files.parser import load_datapoints
 
 
 class TestHelper(TestCase):
@@ -99,6 +96,8 @@ class TestHelper(TestCase):
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
+            for dataset in new_datasets.values():
+                setattr(dataset, 'ref_name', name)
             datasets.update(new_datasets)
 
         return datasets
@@ -144,9 +143,37 @@ class TestHelper(TestCase):
                                           external_routines=external_routines,
                                           only_semantic=only_semantic)
         result = interpreter.visit(ast)
-        result = format_time_period_external_representation(result,
-                                                            TimePeriodRepresentation.SDMX_REPORTING)
+        for dataset in result.values():
+            _ = format_time_period_external_representation(dataset,
+                                                           TimePeriodRepresentation.SDMX_REPORTING)
+
+        if len(result) != len(reference_datasets):
+            diff_datasets = set(result.keys()) ^ set(reference_datasets.keys())
+            raise Exception(f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}")
+
+        # cls._override_structures(code, result, reference_datasets)
+        # cls._override_data(code, result, reference_datasets)
+
         assert result == reference_datasets
+
+    @classmethod
+    def _override_structures(cls, code, result, reference_datasets):
+        for dataset in result.values():
+            ref_dataset = reference_datasets[dataset.name]
+            param_name = ref_dataset.ref_name
+            json_file_name = str(cls.filepath_out_json / f"{code}-{param_name}{cls.JSON}")
+            with open(json_file_name, 'w') as file:
+                file.write(dataset.to_json_datastructure())
+
+    @classmethod
+    def _override_data(cls, code, result, reference_datasets):
+        for dataset in result.values():
+            if dataset.data is None:
+                continue
+            ref_dataset = reference_datasets[dataset.name]
+            param_name = ref_dataset.ref_name
+            csv_file_name = str(cls.filepath_out_csv / f"{code}-{param_name}{cls.CSV}")
+            dataset.data.to_csv(csv_file_name, index=False, header=True)
 
     @classmethod
     def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str, vd_names: List[str] = None,
@@ -213,7 +240,6 @@ class TestHelper(TestCase):
             references = cls.LoadOutputs(code=code, references_names=references_names)
             assert inputs == references
         assert True
-
 
     @classmethod
     def DataLoadExceptionTest(cls, code: str, number_inputs: int,

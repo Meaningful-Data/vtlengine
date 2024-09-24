@@ -42,22 +42,18 @@ class If(Operator):
                     data.append(false_branch.data[i])
                 else:
                     data.append(None)
-        return pd.Series(data).dropna()
+        return pd.Series(data, dtype=object).dropna()
 
     @classmethod
     def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
-
-        # true_data = condition.data[condition.data[condition_measure] == True]
-        # false_data = condition.data[condition.data[condition_measure] != True]
         true_data = condition.data[condition.data[condition_measure] == True]
         false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0:
                 true_data = pd.merge(true_data, true_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                # true_data = true_data.dropna(subset=[condition_measure])
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
         else:
@@ -65,7 +61,6 @@ class If(Operator):
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0:
                 false_data = pd.merge(false_data, false_branch.data, on=ids, how='right', suffixes=('_condition', ''))
-                # false_data.dropna(subset=[condition_measure])
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
         else:

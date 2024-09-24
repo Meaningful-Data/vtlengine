@@ -10,18 +10,6 @@
           "nullable": false
         },
         {
-          "name": "DFLT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
           "name": "INSTRMNT_ID",
           "role": "Identifier",
           "type": "String",
@@ -32,6 +20,24 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DFLT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
         },
         {
           "name": "OFF_BLNC_SHT_AMNT",
@@ -50,12 +56,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

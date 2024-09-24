@@ -28,15 +28,15 @@
           "nullable": false
         },
         {
-          "name": "bool_var",
-          "role": "Measure",
-          "type": "Boolean",
-          "nullable": false
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
           "nullable": false
         },
         {

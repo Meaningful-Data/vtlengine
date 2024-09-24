@@ -4,15 +4,15 @@
       "name": "aggr.numDPCouYear",
       "DataStructure": [
         {
-          "name": "REP_COUNTRY",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "REF_DATE",
           "role": "Identifier",
           "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "REP_COUNTRY",
+          "role": "Identifier",
+          "type": "String",
           "nullable": false
         },
         {

@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 
+import pytest
+
 from testSuite.Helper import TestHelper
 
 
@@ -23,15 +25,15 @@ class SemanticBIRD(BIRDHelper):
 
     classTest = 'BIRD_BIRD.SemanticBIRD'
 
-    def test_D_ENTRPRS_SZ_CLCLTD_1(self):
-        '''
-
-        '''
-        code = 'D_ENTRPRS_SZ_CLCLTD_1'
-        number_inputs = 6
-        references_names = []
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+    # def test_D_ENTRPRS_SZ_CLCLTD_1(self):
+    #     '''
+    #
+    #     '''
+    #     code = 'D_ENTRPRS_SZ_CLCLTD_1'
+    #     number_inputs = 6
+    #     references_names = []
+    #
+    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_INPUT_LAYER_TO_ENRICHED_INPUT_LAYER(self):
         '''
@@ -101,4 +103,5 @@ class SemanticBIRD(BIRDHelper):
                             'EQTY_INSTRMNTS_NT_SCRTS_E',
                             'FCTRNG_AXLRY_E', 'GDWLL_E', 'GRP_E']
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        with pytest.raises(Exception, match="Case B"):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

@@ -4,12 +4,6 @@
       "name": "ENTTY_DFLT_CMPLTNSS",
       "DataStructure": [
         {
-          "name": "CNTRCT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -17,6 +11,18 @@
         },
         {
           "name": "ENTTY_RIAD_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -34,7 +40,7 @@
           "nullable": false
         },
         {
-          "name": "OBSRVD_AGNT_CD",
+          "name": "ruleid",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -85,12 +91,6 @@
           "name": "CD0060",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {

@@ -563,8 +563,8 @@ define datapoint ruleset completenessFinancial(variable CD0060, CD0020, CD0030,
                                                         ARRRS, DT_PST_D, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT,  ACCRD_INTRST, NEVS_ANNLSD_AGRD_RT, 
                                                         NEVS_DT_NXT_INTRST_RT_RST, NEVS_DFLT_STTS, NEVS_DT_DFLT_STTS, NEVS_TRNSFRRD_AMNT, NEVS_ARRRS, 
                                                         NEVS_DT_PST_D, NEVS_TYP_SCRTSTN, NEVS_OTSTNDNG_NMNL_AMNT, NEVS_ACCRD_INTRST, 
-                                                        NEVS_OFF_BLNC_SHT_AMNT, OFF_BLNC_SHT_AMNT ) is
-    
+                                                        NEVS_OFF_BLNC_SHT_AMNT, OFF_BLNC_SHT_AMNT, DT_RFRNC ) is
+
     CT0240: when not CD0060 then not isnull(ANNLSD_AGRD_RT) or NEVS_ANNLSD_AGRD_RT = "0" errorcode "CT0240" errorlevel 2;
     CT0250: when not (CD0060 or CD0020) then not isnull(DT_NXT_INTRST_RT_RST) or NEVS_DT_NXT_INTRST_RT_RST = "0" errorcode "CT0250" errorlevel 2;
     CT0260: when not (CD0030 or if DT_RFRNC >= cast("2021-03-31", date) then CD0060 else false) then not isnull(DFLT_STTS) or NEVS_DFLT_STTS = "0" errorcode "CT0260" errorlevel 2;
@@ -576,7 +576,7 @@ define datapoint ruleset completenessFinancial(variable CD0060, CD0020, CD0030,
     CT0320: not isnull(OTSTNDNG_NMNL_AMNT) or NEVS_OTSTNDNG_NMNL_AMNT = "0" errorcode "CT0320" errorlevel 2;
     CT0330: when not (CD0060 or CD0020) then not isnull(ACCRD_INTRST) or NEVS_ACCRD_INTRST = "0" errorcode "CT0330" errorlevel 2;
     CT0340: not isnull(OFF_BLNC_SHT_AMNT) or NEVS_OFF_BLNC_SHT_AMNT = "0" errorcode "CT0340" errorlevel 2
-    
+
 end datapoint ruleset;
 
 
@@ -586,159 +586,159 @@ define datapoint ruleset instrument (variable DT_STTLMNT, DT_INCPTN, DT_END_INTR
                                               NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_SPRD, NEVS_RFRNC_RT, INTRST_RT_CP,
                                               INTRST_RT_FLR, INTRST_RT_SPRD, CMMTMNT_INCPTN, FV_CHNG_CR_BFR_PRCHS) is
 
-    CN0010: 
+    CN0010:
         if
-            isnull(DT_STTLMNT) or isnull(DT_INCPTN) then true 
+            isnull(DT_STTLMNT) or isnull(DT_INCPTN) then true
         else
-            DT_STTLMNT >= DT_INCPTN 
+            DT_STTLMNT >= DT_INCPTN
         errorcode "CN0010" errorlevel 3;
-    CN0030: 
+    CN0030:
         if
             isnull(DT_END_INTRST_ONLY) or isnull(DT_INCPTN) then true
         else
-            DT_END_INTRST_ONLY >= DT_INCPTN 
+            DT_END_INTRST_ONLY >= DT_INCPTN
         errorcode "CN0030" errorlevel 1;
     CN0040:
         if
             isnull(DT_LGL_FNL_MTRTY) or isnull(DT_STTLMNT) then true
         else
-            DT_LGL_FNL_MTRTY >= DT_STTLMNT 
+            DT_LGL_FNL_MTRTY >= DT_STTLMNT
         errorcode "CN0040" errorlevel 3;
-    CN0050: 
+    CN0050:
         if
             isnull(DT_LGL_FNL_MTRTY) or isnull(DT_END_INTRST_ONLY) then true
         else
-            DT_LGL_FNL_MTRTY >= DT_END_INTRST_ONLY 
+            DT_LGL_FNL_MTRTY >= DT_END_INTRST_ONLY
         errorcode "CN0050" errorlevel 1;
     CN0140:
         if
             isnull(DT_RFRNC) or isnull(DT_INCPTN) then true
         else
-            DT_RFRNC >= DT_INCPTN 
+            DT_RFRNC >= DT_INCPTN
         errorcode "CN0140" errorlevel 3;
     CN0141:
         if
             isnull(DT_RFRNC) or isnull(DT_STTLMNT) then true
         else
-            DT_RFRNC >= DT_STTLMNT 
+            DT_RFRNC >= DT_STTLMNT
         errorcode "CN0141" errorlevel 3;
     CN0220:
         if
             isnull(DT_END_INTRST_ONLY) or isnull(DT_STTLMNT) then true
         else
-            DT_END_INTRST_ONLY >= DT_STTLMNT 
+            DT_END_INTRST_ONLY >= DT_STTLMNT
         errorcode "CN0220" errorlevel 1;
-    CN0835: 
-        when 
+    CN0835:
+        when
             if NEVS_DT_END_INTRST_ONLY in {"-2", "-3", "-5"} then false else
-            TYP_AMRTSTN in {"1","3"} 
-        then 
-            NEVS_DT_END_INTRST_ONLY = "0" 
+            TYP_AMRTSTN in {"1","3"}
+        then
+            NEVS_DT_END_INTRST_ONLY = "0"
         errorcode "CN0835" errorlevel 1;
-    CN0836: 
+    CN0836:
         when
             if NEVS_INTRST_RT_CP in {"-2", "-3", "-5"} then false else
-            TYP_INTRST_RT = "1" 
-        then 
-            NEVS_INTRST_RT_CP = "0" 
+            TYP_INTRST_RT = "1"
+        then
+            NEVS_INTRST_RT_CP = "0"
         errorcode "CN0836" errorlevel 1;
-    CN0837: 
+    CN0837:
         when
             if NEVS_INTRST_RT_FLR in {"-2", "-3", "-5"} then false else
-            TYP_INTRST_RT = "1" 
-        then 
-            NEVS_INTRST_RT_FLR = "0" 
+            TYP_INTRST_RT = "1"
+        then
+            NEVS_INTRST_RT_FLR = "0"
         errorcode "CN0837" errorlevel 1;
-    CN0838: 
-        when 
+    CN0838:
+        when
             if NEVS_INTRST_RT_SPRD in {"-2", "-3", "-5"} then false else
-            TYP_INTRST_RT = "1" 
-        then 
-            NEVS_INTRST_RT_SPRD = "0" 
+            TYP_INTRST_RT = "1"
+        then
+            NEVS_INTRST_RT_SPRD = "0"
         errorcode "CN0838" errorlevel 2;
-    CN0839: 
-        when 
+    CN0839:
+        when
             if NEVS_RFRNC_RT in {"-2", "-3", "-5"} then false else
-            TYP_INTRST_RT = "1" 
-        then 
-            NEVS_RFRNC_RT = "0" 
+            TYP_INTRST_RT = "1"
+        then
+            NEVS_RFRNC_RT = "0"
         errorcode "CN0839" errorlevel 1;
-    GCMA_TH_L_DT_INCPTN: 
+    GCMA_TH_L_DT_INCPTN:
         if
             isnull(DT_INCPTN) then true
         else
-            DT_INCPTN > cast("1901-01-01", date) 
+            DT_INCPTN > cast("1901-01-01", date)
         errorcode "GCMA_TH_L_DT_INCPTN" errorlevel 4;
     /*GCMA_TH_H_DT_END_INTRST_ONLY: DT_END_INTRST_ONLY < 150 errorcode "GCMA_TH_H_DT_END_INTRST_ONLY" errorlevel 4; Not implementable with VTL at the moment*/
-    GCMA_TH_L_DT_END_INTRST_ONLY: 
+    GCMA_TH_L_DT_END_INTRST_ONLY:
         if
-            isnull(DT_END_INTRST_ONLY) then true 
+            isnull(DT_END_INTRST_ONLY) then true
         else
-            DT_END_INTRST_ONLY > cast("1901-01-01", date) 
+            DT_END_INTRST_ONLY > cast("1901-01-01", date)
         errorcode "GCMA_TH_L_DT_END_INTRST_ONLY" errorlevel 4;
     GCMA_TH_H_INTRST_RT_CP:
         if
-            isnull(INTRST_RT_CP) then true 
+            isnull(INTRST_RT_CP) then true
         else
-            INTRST_RT_CP < 3 
+            INTRST_RT_CP < 3
         errorcode "GCMA_TH_H_INTRST_RT_CP" errorlevel 4;
-    GCMA_TH_L_INTRST_RT_CP: 
+    GCMA_TH_L_INTRST_RT_CP:
         if
-            isnull(INTRST_RT_CP) then true 
+            isnull(INTRST_RT_CP) then true
         else
-            INTRST_RT_CP > cast("-0.5", number) 
+            INTRST_RT_CP > cast("-0.5", number)
         errorcode "GCMA_TH_L_INTRST_RT_CP" errorlevel 4;
     GCMA_TH_H_INTRST_RT_FLR:
         if
-            isnull(INTRST_RT_FLR) then true 
+            isnull(INTRST_RT_FLR) then true
         else
-            INTRST_RT_FLR < 3 
+            INTRST_RT_FLR < 3
         errorcode "GCMA_TH_H_INTRST_RT_FLR" errorlevel 4;
     GCMA_TH_L_INTRST_RT_FLR:
         if
-            isnull(INTRST_RT_FLR) then true 
+            isnull(INTRST_RT_FLR) then true
         else
-            INTRST_RT_FLR > cast("-0.5", number) 
+            INTRST_RT_FLR > cast("-0.5", number)
         errorcode "GCMA_TH_L_INTRST_RT_FLR" errorlevel 4;
     GCMA_TH_H_INTRST_RT_SPRD:
         if
-            isnull(INTRST_RT_SPRD) then true 
+            isnull(INTRST_RT_SPRD) then true
         else
-            INTRST_RT_SPRD < 3 
+            INTRST_RT_SPRD < 3
         errorcode "GCMA_TH_H_INTRST_RT_SPRD" errorlevel 4;
     GCMA_TH_L_INTRST_RT_SPRD:
         if
-            isnull(INTRST_RT_SPRD) then true 
+            isnull(INTRST_RT_SPRD) then true
         else
-            INTRST_RT_SPRD > cast("-0.5", number) 
+            INTRST_RT_SPRD > cast("-0.5", number)
         errorcode "GCMA_TH_L_INTRST_RT_SPRD" errorlevel 4;
     /*GCMA_TH_H_DT_LGL_FNL_MTRTY: DT_LGL_FNL_MTRTY < 150 errorcode "GCMA_TH_H_DT_LGL_FNL_MTRTY" errorlevel 4;Not implementable with VTL at the moment*/
     GCMA_TH_L_DT_LGL_FNL_MTRTY:
         if
-            isnull(DT_LGL_FNL_MTRTY) then true 
+            isnull(DT_LGL_FNL_MTRTY) then true
         else
-            DT_LGL_FNL_MTRTY > cast("1950-01-01", date) 
+            DT_LGL_FNL_MTRTY > cast("1950-01-01", date)
         errorcode "GCMA_TH_L_DT_LGL_FNL_MTRTY" errorlevel 4;
     GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT:
         if
-            isnull(CMMTMNT_INCPTN) then true 
+            isnull(CMMTMNT_INCPTN) then true
         else
-            CMMTMNT_INCPTN < 1000000000 
+            CMMTMNT_INCPTN < 1000000000
         errorcode "GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT" errorlevel 4;
     /*GCMA_TH_H_DT_STTLMNT: DT_STTLMNT < 5 errorcode "GCMA_TH_H_DT_STTLMNT" errorlevel 4; Not implementable with VTL at the moment*/
     GCMA_TH_L_DT_STTLMNT:
         if
-            isnull(DT_STTLMNT) then true 
+            isnull(DT_STTLMNT) then true
         else
-            DT_STTLMNT > cast("1901-01-01", date) 
+            DT_STTLMNT > cast("1901-01-01", date)
         errorcode "GCMA_TH_L_DT_STTLMNT" errorlevel 4;
     GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT:
         if
-            isnull(FV_CHNG_CR_BFR_PRCHS) then true 
+            isnull(FV_CHNG_CR_BFR_PRCHS) then true
         else
-            FV_CHNG_CR_BFR_PRCHS < 1000000000 
+            FV_CHNG_CR_BFR_PRCHS < 1000000000
         errorcode "GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT" errorlevel 4
-      
+
 end datapoint ruleset;define datapoint ruleset completenessInstrument (variable CD0020, CD0030, CD0039, CD0040, CD0050, CD0060,
                                                           TYP_INSTRMNT, TYP_AMRTSTN, CRRNCY_DNMNTN,
                                                           FDCRY, DT_INCPTN, DT_END_INTRST_ONLY, INTRST_RT_CP,INTRST_RT_FLR,
@@ -746,7 +746,7 @@ end datapoint ruleset;define datapoint ruleset completenessInstrument (variable 
                                                           DT_LGL_FNL_MTRTY, CMMTMNT_INCPTN, PYMNT_FRQNCY, PRJCT_FNNC_LN,
                                                           PRPS, RCRS, RFRNC_RT, DT_STTLMNT, SBRDNTD_DBT, SYNDCTD_CNTRCT_ID,
                                                           RPYMNT_RGHTS, FV_CHNG_CR_BFR_PRCHS, NEVS_TYP_INSTRMNT, NEVS_TYP_AMRTSTN, NEVS_CRRNCY_DNMNTN, NEVS_FDCRY, NEVS_DT_INCPTN, NEVS_DT_END_INTRST_ONLY, NEVS_INTRST_RT_CP, NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_RST_FRQNCY, NEVS_INTRST_RT_SPRD, NEVS_TYP_INTRST_RT, NEVS_DT_LGL_FNL_MTRTY, NEVS_CMMTMNT_INCPTN, NEVS_PYMNT_FRQNCY, NEVS_PRJCT_FNNC_LN, NEVS_PRPS, NEVS_RCRS, NEVS_RFRNC_RT, NEVS_DT_STTLMNT, NEVS_SBRDNTD_DBT, NEVS_SYNDCTD_CNTRCT_ID, NEVS_RPYMNT_RGHTS, NEVS_FV_CHNG_CR_BFR_PRCHS) is
-    
+
     CT0010: when not CD0060 then not isnull(TYP_INSTRMNT) or NEVS_TYP_INSTRMNT = "0" errorcode "CT0010" errorlevel 2;
     CT0020: when not (CD0020 or CD0050 or CD0060) then not isnull(TYP_AMRTSTN) or NEVS_TYP_AMRTSTN = "0" errorcode "CT0020" errorlevel 2;
     CT0030: when not CD0060 then not isnull(CRRNCY_DNMNTN) or NEVS_CRRNCY_DNMNTN = "0" errorcode "CT0030" errorlevel 2;
@@ -770,36 +770,36 @@ end datapoint ruleset;define datapoint ruleset completenessInstrument (variable 
     CT0210: when not CD0060 then not isnull(SYNDCTD_CNTRCT_ID) or NEVS_SYNDCTD_CNTRCT_ID = "0" errorcode "CT0210" errorlevel 2;
     CT0220: when not CD0060 then not isnull(RPYMNT_RGHTS) or NEVS_RPYMNT_RGHTS = "0" errorcode "CT0220" errorlevel 2;
     CT0230: when not (CD0030 or CD0039 or CD0040 or CD0060) then not isnull(FV_CHNG_CR_BFR_PRCHS) or NEVS_FV_CHNG_CR_BFR_PRCHS = "0" errorcode "CT0230" errorlevel 2
-    
-end datapoint ruleset;define datapoint ruleset granularCmaEntityRisk (variable ENTRPRS_SZ, 
+
+end datapoint ruleset;define datapoint ruleset granularCmaEntityRisk (variable ENTRPRS_SZ,
                                                      PD, INSTTTNL_SCTR, DFLT_STTS, LGL_PRCDNG_STTS) is
 
-    IG0020: 
-        when 
+    IG0020:
+        when
             if isnull(PD) then false else
             ENTRPRS_SZ = "1" or INSTTTNL_SCTR = "S122"
-        then 
+        then
             PD >= 0.0003
         errorcode "IG0020" errorlevel 1;
 
-    IG0080: 
-        when 
+    IG0080:
+        when
             if isnull(PD) then false else
             DFLT_STTS <> "14"
-        then 
-            PD = 1 
+        then
+            PD = 1
         errorcode "IG0080" errorlevel 1;
-    
-    IG0090: 
-        when 
+
+    IG0090:
+        when
             if isnull(DFLT_STTS) then false else
             LGL_PRCDNG_STTS = "3"
-        then 
+        then
             DFLT_STTS <> "14"
         errorcode "IG0090" errorlevel 1
 
 
-end datapoint ruleset;define datapoint ruleset completenessEntityRisk(variable CD0030, CD0039, CD0040, CD0060, CD0170, PD, NEVS_PD) is
+end datapoint ruleset;define datapoint ruleset completenessEntityRisk(variable CD0030, CD0039, CD0040, CD0060, CD0170, PD, NEVS_PD, DT_RFRNC) is
     
     CT0640: when not (CD0030 or CD0039 or CD0040 or if DT_RFRNC >= cast("2021-03-31", date) then CD0060 else false or CD0170) then not isnull(PD) or NEVS_PD = "0" errorcode "CT0640" errorlevel 2
 

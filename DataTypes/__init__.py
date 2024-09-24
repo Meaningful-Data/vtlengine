@@ -7,6 +7,8 @@ import pandas as pd
 
 from Exceptions import SemanticError
 
+from Exceptions import SemanticError
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'float64',
@@ -106,7 +108,7 @@ class String(ScalarType):
     def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
         # if pd.isna(value):
         #     return cls.default
-        if from_type in {Number, Integer, Boolean, String}:
+        if from_type in {Number, Integer, Boolean, String, Date, TimePeriod, TimeInterval, Duration}:
             return str(value)
 
         raise SemanticError("2-1-5-1", value=value,
@@ -152,6 +154,11 @@ class Number(ScalarType):
                 return 1.0
             else:
                 return 0.0
+        elif from_type in {Integer, Number, String}:
+            try:
+                return float(value)
+            except ValueError:
+                pass
 
         raise SemanticError("2-1-5-1", value=value,
                             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -483,7 +490,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
 # TODO: Implicit are valid as cast without mask
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
     # TODO: Remove time types, only for compatibility with previous engine
-    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration},
+    String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
     Number: {Integer, Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
     # TODO: Remove String on time types, only for compatibility with previous engine
@@ -594,7 +601,8 @@ def unary_implicit_promotion(
 
     if return_type:
         return return_type
-    if type_to_check and not issubclass(operand_type, type_to_check):
+    if (type_to_check and not issubclass(operand_type, type_to_check)
+            and not issubclass(type_to_check, operand_type)):
         return type_to_check
     return operand_type
 

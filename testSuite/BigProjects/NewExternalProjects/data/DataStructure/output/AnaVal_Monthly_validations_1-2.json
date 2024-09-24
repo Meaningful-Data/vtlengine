@@ -22,12 +22,6 @@
           "nullable": false
         },
         {
-          "name": "bool_var",
-          "role": "Measure",
-          "type": "Boolean",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
@@ -37,6 +31,12 @@
           "name": "PRTCTN_ID",
           "role": "Identifier",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
           "nullable": false
         },
         {

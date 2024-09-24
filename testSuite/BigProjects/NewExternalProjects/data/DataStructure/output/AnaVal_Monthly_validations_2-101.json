@@ -4,6 +4,36 @@
       "name": "DP_RLST_FNNCL_RSLT",
       "DataStructure": [
         {
+          "name": "CNTRCT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "ACCRD_INTRST",
           "role": "Measure",
           "type": "Number",
@@ -20,12 +50,6 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "CNTRCT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "DFLT_STTS",
@@ -50,18 +74,6 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "NEVS_ACCRD_INTRST",
@@ -130,12 +142,6 @@
           "nullable": true
         },
         {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "OFF_BLNC_SHT_AMNT",
           "role": "Measure",
           "type": "Number",
@@ -158,12 +164,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

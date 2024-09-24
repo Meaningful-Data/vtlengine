@@ -28,6 +28,18 @@
           "nullable": false
         },
         {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "JNT_LBLTY_AMNT",
           "role": "Measure",
           "type": "Number",
@@ -40,21 +52,9 @@
           "nullable": true
         },
         {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "CD0060",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {

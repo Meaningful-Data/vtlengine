@@ -146,6 +146,7 @@ class Validation(Operator):
             result.data = result.data[
                 result.get_identifiers_names() + dataset_element.get_measures_names() + validation_measures]
 
+        result.data = result.data[result.get_components_names()]
         return result
 
 

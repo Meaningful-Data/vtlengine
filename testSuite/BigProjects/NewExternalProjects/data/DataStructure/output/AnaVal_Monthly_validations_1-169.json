@@ -49,13 +49,13 @@
           "name": "CC0140",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "CC0140B",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

@@ -571,7 +571,7 @@ class Binary(Operator):
 
         for measure_name in dataset.get_measures_names():
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
-                                                                       scalar_set.values)
+                                                                       scalar_set)
 
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
         result_dataset.data = result_data[cols_to_keep]
@@ -584,13 +584,13 @@ class Binary(Operator):
                                  scalar_set: ScalarSet) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(component.data.copy(),
-                                                               scalar_set.values)
+                                                               scalar_set)
         return result_component
 
     @classmethod
     def scalar_set_evaluation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
         result_scalar = cls.scalar_set_validation(scalar, scalar_set)
-        result_scalar.value = cls.op_func(scalar.value, scalar_set.values)
+        result_scalar.value = cls.op_func(scalar.value, scalar_set)
         return result_scalar
 
     @classmethod

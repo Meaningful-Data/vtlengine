@@ -4,16 +4,34 @@
       "name": "DP_RLST_INSTRMNTS_FLL_LST_QRTR_RSLT",
       "DataStructure": [
         {
-          "name": "ACCMLTD_WRTFFS",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "CNTRCT_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_CD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_WRTFFS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         },
         {
           "name": "CRRYNG_AMNT",
@@ -38,18 +56,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "INSTRMNT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "OBSRVD_AGNT_CD",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "PRFRMNG_STTS",
@@ -212,12 +218,6 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
-        },
-        {
-          "name": "ruleid",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "errorcode",

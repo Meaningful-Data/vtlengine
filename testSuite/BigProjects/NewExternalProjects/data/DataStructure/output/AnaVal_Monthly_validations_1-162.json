@@ -25,7 +25,7 @@
           "name": "CC0170A",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "CC0172",

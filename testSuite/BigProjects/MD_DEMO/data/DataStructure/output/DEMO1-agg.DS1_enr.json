@@ -22,6 +22,12 @@
           "nullable": false
         },
         {
+          "name": "CONF_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "COUNTERPART_AREA",
           "role": "Identifier",
           "type": "String",
@@ -38,6 +44,12 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "DECIMALS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
         },
         {
           "name": "FLOW_STOCK_ENTRY",
@@ -76,6 +88,18 @@
           "nullable": false
         },
         {
+          "name": "OBS_STATUS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "PARTY",
           "role": "Identifier",
           "type": "String",
@@ -94,6 +118,12 @@
           "nullable": false
         },
         {
+          "name": "TIME_PER_COLLECT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "TIME_PERIOD",
           "role": "Identifier",
           "type": "Date",
@@ -106,46 +136,16 @@
           "nullable": false
         },
         {
-          "name": "VALUATION",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "OBS_VALUE",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "CONF_STATUS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DECIMALS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "OBS_STATUS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TIME_PER_COLLECT",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "UNIT_MULT",
           "role": "Attribute",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "VALUATION",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "EXCHANGE_RATE",

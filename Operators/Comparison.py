@@ -13,7 +13,7 @@ else:
     import pandas as pd
 
 from AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ, NOT_IN
-from DataTypes import Boolean, COMP_NAME_MAPPING, String, Number
+from DataTypes import Boolean, COMP_NAME_MAPPING, String, Number, Null
 import Operators as Operator
 
 
@@ -54,14 +54,18 @@ class Binary(Operator.Binary):
     def _cast_values(cls, x: Union[int, float, str, bool], y: Union[int, float, str, bool]) -> tuple:
         # Cast both values to the same data type
         # An integer can be considered a bool, we must check first boolean, then numbers
-        if isinstance(x, str) and isinstance(y, bool):
-            y = String.cast(y)
-        elif isinstance(x, bool) and isinstance(y, str):
-            x = String.cast(x)
-        elif isinstance(x, str) and isinstance(y, (int, float)):
-            x = Number.cast(x)
-        elif isinstance(x, (int, float)) and isinstance(y, str):
-            y = Number.cast(y)
+        try:
+            if isinstance(x, str) and isinstance(y, bool):
+                y = String.cast(y)
+            elif isinstance(x, bool) and isinstance(y, str):
+                x = String.cast(x)
+            elif isinstance(x, str) and isinstance(y, (int, float)):
+                x = Number.cast(x)
+            elif isinstance(x, (int, float)) and isinstance(y, str):
+                y = Number.cast(y)
+        except ValueError:
+            x = str(x)
+            y = str(y)
 
         return x, y
 
@@ -139,14 +143,16 @@ class In(Binary):
     @classmethod
     def apply_operation_two_series(cls,
                                    left_series: Any,
-                                   right_series: list) -> Any:
-        right = pd.Series(right_series)
-        if left_series.dtype != right.dtype:
-            right = right.astype(left_series.dtype)
-        return left_series.map(lambda x: x in right.values, na_action='ignore')
+                                   right_series: ScalarSet) -> Any:
+        if right_series.data_type == Null:
+            return pd.Series(None, index=left_series.index)
+
+        return left_series.map(lambda x: x in right_series, na_action='ignore')
 
     @classmethod
     def py_op(cls, x, y):
+        if y.data_type == Null:
+            return None
         return operator.contains(y, x)
 
 

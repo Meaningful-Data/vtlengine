@@ -1,5 +1,7 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
+from pathlib import Path
+from time import time
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -35,6 +37,8 @@ from Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
     HR_UNARY_MAPPING, HR_COMP_MAPPING, HR_NUM_BINARY_MAPPING
+from files.output import TimePeriodRepresentation, format_time_period_external_representation
+from files.parser import load_datapoints, _fill_dataset_empty_data
 
 
 # noinspection PyTypeChecker
@@ -46,6 +50,12 @@ class InterpreterAnalyzer(ASTTemplate):
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
     only_semantic: bool = False
+    # Memory efficient
+    ds_analysis: Optional[dict] = None
+    datapoints_paths: Optional[Dict[str, Path]] = None
+    output_path: Optional[Path] = None
+    # Time Period Representation
+    time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
     nested_if = False
     is_from_assignment: bool = False
@@ -80,13 +90,49 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Dict[str, Dict[str, Any]] = None
     hrs: Dict[str, Dict[str, Any]] = None
 
+    # Memory efficient handling
+
+    def _load_datapoints_efficient(self, statement_num: int):
+        if self.datapoints_paths is None:
+            return
+        if statement_num not in self.ds_analysis['insertion']:
+            return
+        for ds_name in self.ds_analysis['insertion'][statement_num]:
+            if ds_name in self.datapoints_paths:
+                self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
+                                                          self.datapoints_paths[ds_name])
+            elif ds_name in self.datasets and self.datasets[ds_name].data is None:
+                _fill_dataset_empty_data(self.datasets[ds_name])
+
+    def _save_datapoints_efficient(self, statement_num: int):
+        if self.output_path is not None and statement_num in self.ds_analysis['deletion']:
+            for ds_name in self.ds_analysis['deletion'][statement_num]:
+                if ds_name in self.datasets and self.datasets[ds_name].data is not None:
+                    if self.time_period_representation is not None:
+                        format_time_period_external_representation(self.datasets[ds_name], self.time_period_representation)
+                    self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv", index=False)
+                    self.datasets[ds_name].data = None
+        # Keeping the data in memory if no output path is provided
+
+
+
+
+    # **********************************
+    # *                                *
+    # *          AST Visitors          *
+    # *                                *
+    # **********************************
+
     def visit_Start(self, node: AST.Start) -> Any:
+        statement_num = 1
         if self.only_semantic:
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
         results = {}
         for child in node.children:
+            if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+                self._load_datapoints_efficient(statement_num)
             if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
                 if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                     raise SemanticError("1-3-17")
@@ -95,6 +141,13 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(result, Union[Dataset, Scalar]):
                 self.datasets[result.name] = result
                 results[result.name] = result
+                self._save_datapoints_efficient(statement_num)
+                statement_num += 1
+
+            # Reset some handlers (joins and if)
+            self.is_from_join = False
+            self.if_stack = None
+
         return results
 
     # Definition Language
@@ -660,15 +713,18 @@ class InterpreterAnalyzer(ASTTemplate):
                                      (sublist if isinstance(sublist, list) else [sublist])]))
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
-                result.data.rename(
-                    columns={col: col[col.find('#') + 1:] for col in result.data.columns},
-                    inplace=True)
+                if result.data is not None:
+                    result.data.rename(
+                        columns={col: col[col.find('#') + 1:] for col in result.data.columns},
+                        inplace=True)
                 result.components = {comp_name[comp_name.find('#') + 1:]: comp for comp_name, comp
                                      in
                                      result.components.items()}
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find('#') + 1:]
-                result.data.reset_index(drop=True, inplace=True)
+                if result.data is not None:
+                    result.data.reset_index(drop=True, inplace=True)
+                self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
 
@@ -676,10 +732,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.is_from_condition = True
         condition = self.visit(node.condition)
-        # if self.nested_if:
-        #     merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
-        #     indexes = merge_df.data[merge_df.data.columns[0]]
-        #     condition.data = condition.data[indexes]
         self.is_from_condition = False
 
         if isinstance(condition, Scalar):
@@ -704,7 +756,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['then'])
         self.is_from_if = True
-        # self.nested_if = True if isinstance(node.thenOp, AST.If) and 'op=/' in node.__str__() else False
         self.nested_if = 'T' if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
@@ -713,12 +764,13 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.if_stack.append(THEN_ELSE['else'])
         self.is_from_if = True
-        # self.nested_if = True if isinstance(node.elseOp, AST.If) and 'op=/' in node.elseOp.__str__() else False
         self.nested_if = 'E' if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)):
-            self.else_condition_dataset.pop()
-            self.if_stack.pop()
+            if len(self.else_condition_dataset) > 0:
+                self.else_condition_dataset.pop()
+            if len(self.if_stack) > 0:
+                self.if_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -981,9 +1033,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
-            aux = self.rule_data[self.ruleset_dataset.get_components_names()]
-            aux['bool_var'] = validation_data.data
-            validation_data = aux
+            if self.rule_data is not None:
+                aux = self.rule_data[self.ruleset_dataset.get_components_names()]
+                aux['bool_var'] = validation_data.data
+                validation_data = aux
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1138,7 +1191,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     BASIC_TYPES[bool]:
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
-            if condition.data.empty:
+            if condition.data is None or condition.data.empty:
                 data = None
             else:
                 data = condition.data[name]
@@ -1156,16 +1209,22 @@ class InterpreterAnalyzer(ASTTemplate):
         if data is not None:
             if self.nested_if:
                 merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE['then'] else self.else_condition_dataset[-1]
-                indexes = merge_df.data[merge_df.data.columns[-1]].index
-                condition.data = condition.data.iloc[indexes]
-                data = data[indexes]
-            indexes = data.index
+                indexes = merge_df.data[merge_df.data.columns[-1]]
+            else:
+                indexes = data.index
+            data = data.fillna(False)
 
             if isinstance(condition, Dataset):
                 then_data = condition.data[condition.data[name] == True]
-                then_data[name] = [i for i in indexes if data[i] == True]
+                then_indexes = [i for i in indexes if data[i] == True]
+                if len(then_data) > len(then_indexes):
+                    then_data = then_data.iloc[then_indexes]
+                then_data[name] = then_indexes
                 else_data = condition.data[condition.data[name] != True]
-                else_data[name] = [i for i in indexes if data[i] != True]
+                else_indexes = [i for i in indexes if data[i] != True]
+                if len(else_data) > len(else_indexes):
+                    else_data = else_data.iloc[else_indexes]
+                else_data[name] = else_indexes
             else:
                 then_data = pd.DataFrame({name: [i for i in indexes if data[i]]})
                 else_data = pd.DataFrame({name: [i for i in indexes if not data[i]]})
@@ -1185,6 +1244,8 @@ class InterpreterAnalyzer(ASTTemplate):
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, Dataset | DataComponent):
+            if left_operand.data is None:
+                return left_operand, right_operand
             if isinstance(left_operand, Dataset):
                 dataset_index = left_operand.data.index[left_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 left = left_operand.data[left_operand.get_measures_names()[0]]
@@ -1193,6 +1254,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
         if isinstance(right_operand, Dataset | DataComponent):
+            if right_operand.data is None:
+                return left_operand, right_operand
             if isinstance(right_operand, Dataset):
                 dataset_index = right_operand.data.index[right_operand.data[ids].apply(tuple, 1).isin(merge_dataset.data[ids].apply(tuple, 1))]
                 right = right_operand.data[right_operand.get_measures_names()[0]]

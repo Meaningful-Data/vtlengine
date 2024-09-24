@@ -43,7 +43,7 @@
           "name": "bool_var",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "imbalance",

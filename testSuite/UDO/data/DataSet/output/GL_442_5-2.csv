@@ -1,4 +1,4 @@
-ISIN,TimePeriod,input_measure,LastRate
+ISIN,TimePeriod,LastRate,input_measure
 IL0011016669,2024-02-04,328.4,328.4
 IL0007700169,2024-02-04,67.0,67.0
 IL0077003478,2024-02-04,1.9,1.9

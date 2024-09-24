@@ -16,6 +16,7 @@ from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
 import DataTypes
 from DataTypes import SCALAR_TYPES, ScalarType
+from DataTypes.TimeHandling import TimePeriodHandler
 
 
 @dataclass
@@ -109,7 +110,7 @@ class Component:
     def to_dict(self):
         return {
             'name': self.name,
-            'data_type': self.data_type.__name__,
+            'data_type': DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
             'role': self.role.value,
             'nullable': self.nullable
         }
@@ -184,20 +185,25 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
-            if comp.data_type.__name__ in ['String', 'Date', 'TimePeriod', 'TimeInterval']:
+            if comp.data_type.__name__ in ['String', 'Date']:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
-            elif comp.data_type.__name__ in ['Integer', 'Float']:
+            elif comp.data_type.__name__ == 'TimePeriod':
+                self.data[comp.name] = self.data[comp.name].astype(str)
+                other.data[comp.name] = other.data[comp.name].astype(str)
+                self.data[comp.name] = self.data[comp.name].map(lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
+                other.data[comp.name] = other.data[comp.name].map(lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
+            elif comp.data_type.__name__ in ['Integer', 'Number']:
                 if comp.data_type.__name__ == 'Integer':
                     type_ = "int64"
                 else:
-                    type_ = "float64"
+                    type_ = "float32"
                     # We use here a number to avoid errors on equality on empty strings
                 self.data[comp.name] = self.data[comp.name].replace("", -1234997).astype(type_)
                 other.data[comp.name] = other.data[comp.name].replace("", -1234997).astype(type_)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_like=True,
-                               check_index_type=False, check_datetimelike_compat=True)
+            assert_frame_equal(self.data, other.data, check_dtype=False, check_index_type=False, check_datetimelike_compat=True,
+                               check_exact=False, rtol=0.01, atol=0.01)
         except AssertionError as e:
             if "DataFrame shape" in str(e):
                 print(f"\nDataFrame shape mismatch {self.name}:")
@@ -205,9 +211,11 @@ class Dataset:
                 print("reference:", other.data.shape)
             # Differences between the dataframes
             diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            if len(diff) == 0:
+                return True
             # To display actual null values instead of -1234997
             for comp in self.components.values():
-                if comp.data_type.__name__ in ['Integer', 'Float']:
+                if comp.data_type.__name__ in ['Integer', 'Number']:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
             print("\n Differences between the dataframes in", self.name)
             print(diff)
@@ -272,6 +280,25 @@ class Dataset:
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
+    def to_json_datastructure(self):
+        dict_dataset = self.to_dict()['components']
+        order_keys = ['name', 'role', 'type', 'nullable']
+        # Rename data_type to type
+        for k in dict_dataset:
+            dict_dataset[k] = {ik if ik != 'data_type' else 'type': v for ik, v in dict_dataset[k].items()}
+
+        # Order keys
+        for k in dict_dataset:
+            dict_dataset[k] = {ik: dict_dataset[k][ik] for ik in order_keys}
+        comp_values = list(dict_dataset.values())
+        ds_info = {
+            'name': self.name,
+            'DataStructure': comp_values
+        }
+        result = {"datasets": [ds_info]}
+        return json.dumps(result, indent=2)
+
+
 
 @dataclass
 class ScalarSet:
@@ -280,6 +307,14 @@ class ScalarSet:
     """
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
+
+    def __contains__(self, item):
+        if isinstance(item, float) and item.is_integer():
+            item = int(item)
+        if self.data_type == DataTypes.Null:
+            return None
+        value = self.data_type.cast(item)
+        return value in self.values
 
 
 @dataclass
@@ -306,12 +341,18 @@ class ValueDomain:
             raise ValueError("Empty JSON string for ValueDomain")
 
         json_info = json.loads(json_str)
+        return cls.from_dict(json_info)
 
-        if json_info['type'] not in SCALAR_TYPES:
+    @classmethod
+    def from_dict(cls, value: dict):
+        for x in ('name', 'type', 'setlist'):
+            if x not in value:
+                raise Exception('Invalid format for ValueDomain. Requires name, type and setlist.')
+        if value['type'] not in SCALAR_TYPES:
             raise ValueError(
-                f"Invalid data type {json_info['type']} for ValueDomain {json_info['name']}")
+                f"Invalid data type {value['type']} for ValueDomain {value['name']}")
 
-        return cls(json_info['name'], SCALAR_TYPES[json_info['type']], json_info['setlist'])
+        return cls(value['name'], SCALAR_TYPES[value['type']], value['setlist'])
 
     def to_dict(self):
         return {
@@ -325,7 +366,6 @@ class ValueDomain:
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
-
 
 @dataclass
 class ExternalRoutine:

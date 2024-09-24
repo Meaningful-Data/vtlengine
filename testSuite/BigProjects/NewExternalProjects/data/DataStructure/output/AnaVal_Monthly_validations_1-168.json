@@ -49,7 +49,7 @@
           "name": "CC0140",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

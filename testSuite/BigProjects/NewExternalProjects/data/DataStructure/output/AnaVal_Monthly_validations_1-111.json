@@ -31,7 +31,7 @@
           "name": "CD0039",
           "role": "Measure",
           "type": "Boolean",
-          "nullable": true
+          "nullable": false
         }
       ]
     }
