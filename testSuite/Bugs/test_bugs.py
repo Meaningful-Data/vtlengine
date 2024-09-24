@@ -2614,7 +2614,7 @@ class OtherBugs(BugHelper):
         code = 'VTLEN_456'
         number_inputs = 18
         vd_names = ["VTLEN_456-1", "VTLEN_456-2"]
-        message = "2-3-6"
+        message = "1-1-13-11"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names)
 
     def test_VTLEN_563(self):

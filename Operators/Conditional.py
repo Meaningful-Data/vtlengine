@@ -109,6 +109,8 @@ class If(Operator):
                                  role=Role.MEASURE, nullable=nullable)
 
         # Dataset
+        if isinstance(left, Scalar) and isinstance(right, Scalar):
+            raise SemanticError("1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name)
         if isinstance(left, DataComponent):
             raise SemanticError("1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name)
         if isinstance(left, Scalar):

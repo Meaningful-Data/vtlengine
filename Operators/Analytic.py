@@ -19,7 +19,7 @@ from AST.Grammar.tokens import AVG, COUNT, FIRST_VALUE, LAG, LAST_VALUE, LEAD, M
     SUM, VAR_POP, \
     VAR_SAMP
 from DataTypes import COMP_NAME_MAPPING, Integer, Number, \
-    check_unary_implicit_promotion
+    unary_implicit_promotion
 from Model import Component, Dataset, Role
 
 
@@ -41,18 +41,21 @@ class Analytic(Operator.Unary):
         result_components = operand.components.copy()
 
         for comp_name in partitioning:
+            if comp_name not in operand.components:
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name)
             if comp_name not in identifier_names:
-                raise SemanticError("1-1-3-2", op=cls.op, id_name=comp_name, id_type=operand.components[comp_name].role)
+                raise SemanticError("1-1-3-2", op=cls.op, id_name=comp_name,
+                                    id_type=operand.components[comp_name].role)
         for comp_name in order_components:
             if comp_name not in operand.components:
-                raise Exception(f"Component {comp_name} is not in the dataset {operand.name}")
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name,
+                                    dataset_name=operand.name)
         measures = operand.get_measures()
         if measures is None:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         if cls.type_to_check is not None:
             for measure in measures:
-                if not check_unary_implicit_promotion(measure.data_type, cls.type_to_check):
-                    raise Exception(f"Measure {measure.name} is not a {cls.type_to_check.__name__}")
+                unary_implicit_promotion(measure.data_type, cls.type_to_check)
         if cls.return_type is not None:
             for measure in measures:
                 new_measure = copy(measure)

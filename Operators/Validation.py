@@ -189,6 +189,8 @@ class Check_Hierarchy(Validation):
         if component_name not in dataset.components:
             raise SemanticError("1-1-1-10", op=Check_Hierarchy.op, comp_name=component_name,
                                 dataset_name=dataset.name)
+        if dataset.components[component_name].role != Role.IDENTIFIER:
+            raise SemanticError("1-3-20", name=component_name, role=dataset.components[component_name].role.value)
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():

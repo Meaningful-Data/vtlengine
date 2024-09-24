@@ -197,7 +197,7 @@ centralised_messages = {
     # "1-3-16": "Component {name} not found.",
     "1-3-17": "Operations without output assigned are not available.",
     "1-3-19": "No {node_type} {node_value} found.",
-    "1-3-20": "RuleComp of Hierarchical Ruleset can only be an identifier, found {name}.",
+    "1-3-20": "RuleComp of Hierarchical Ruleset can only be an identifier, {name} is a {role}.",
     "1-3-21": "Value {value} not valid, kind {node_kind}.",
     "1-3-22": "Unable to categorize {node_value}.",
     "1-3-23": "Missing value domain '{name}' definition, please provide an structure.",

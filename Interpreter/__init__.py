@@ -15,9 +15,7 @@ from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, \
     CHECK_DATAPOINT, DROP, EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, \
     TRUNC, WHEN, \
-    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE, \
-    IDENTIFIER, GT, GTE, LT, LTE, NEQ, PLUS, MINUS, MULT, NOT_IN, IN, DIV, AND, \
-    OR
+    FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE,  CALC
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType, \
     SCALAR_TYPES_CLASS_REVERSE, Boolean
 from Exceptions import SemanticError
@@ -665,6 +663,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
+        if node.op == CALC:
+            if any([isinstance(operand, Dataset) for operand in operands]):
+                raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
             role_info = {child.left.value: child.left.role for child in node.children}
