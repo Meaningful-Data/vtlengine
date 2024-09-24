@@ -63,7 +63,8 @@ class Binary(Operator.Binary):
             elif isinstance(x, (int, float)) and isinstance(y, str):
                 y = Number.cast(y)
         except ValueError:
-            pass
+            x = str(x)
+            y = str(y)
 
         return x, y
 
