@@ -2935,8 +2935,7 @@ class OtherBugs(BugHelper):
         number_inputs = 1
         references_names = ["1"]
 
-        with pytest.raises(Exception, match="Windowing must be provided"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_377(self):
         """

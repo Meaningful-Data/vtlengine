@@ -100,6 +100,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for ds_name in self.ds_analysis['insertion'][statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
+                                                              ds_name,
                                                           self.datapoints_paths[ds_name])
             elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])

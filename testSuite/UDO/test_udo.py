@@ -410,9 +410,9 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_452_1'
         number_inputs = 1
-        references_names = ["1"]
-        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-4-1-1"
+
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_452_2(self):
         """
@@ -458,9 +458,9 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_452_5'
         number_inputs = 2
-        references_names = ["1"]
-        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, scalars={'sc_2': "4"})
+        message = "1-4-1-1"
+
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_442_1(self):
         """
