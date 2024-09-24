@@ -205,7 +205,9 @@ class Binary(Operator):
             result = cls.spark_op(left_series, right_series)
             result.loc[nulls] = None
             return result
-        return left_series.combine(right_series, cls.op_func)
+        result = list(map(cls.op_func, left_series.values, right_series.values))
+        return pd.Series(result, index=list(range(len(result))),
+                         dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
