@@ -20,6 +20,9 @@ filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
 def _load_dataset_from_structure(structures: dict):
+    """
+    Loads a dataset with the structure given.
+    """
     datasets = {}
 
     if 'datasets' in structures:
@@ -46,6 +49,9 @@ def _load_dataset_from_structure(structures: dict):
 
 
 def _load_single_datapoint(datapoint: Path):
+    """
+    Returns a dict with the data given from one dataset.
+    """
     if datapoint.is_dir():
         datapoints = {}
         for f in datapoint.iterdir():
@@ -59,6 +65,9 @@ def _load_single_datapoint(datapoint: Path):
 
 
 def _load_datapoints_path(datapoints: Union[Path, List[Path]]):
+    """
+    Returns a dict with the data given from a Path.
+    """
     if isinstance(datapoints, list):
         dict_datapoints = {}
         for x in datapoints:
@@ -69,6 +78,9 @@ def _load_datapoints_path(datapoints: Union[Path, List[Path]]):
 
 
 def _load_datastructure_single(data_structure: Union[dict, Path]):
+    """
+    Loads a single data structure.
+    """
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
@@ -90,6 +102,9 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
 
 
 def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+    """
+    Loads multiple datasets.
+    """
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure)
     if isinstance(data_structure, list):
@@ -103,6 +118,10 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
 
 def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
                             datapoints: Optional[Union[dict, Path, List[Path]]] = None):
+    """
+    Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
+    structure and a pandas dataframe.
+    """
     datasets = load_datasets(data_structures)
     if datapoints is None:
         for dataset in datasets.values():
@@ -130,6 +149,9 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
 
 
 def load_vtl(input: Union[str, Path]):
+    """
+    Returns the vtl expression from the String or Path given.
+    """
     if isinstance(input, str):
         return input
     if not isinstance(input, Path):
@@ -147,6 +169,9 @@ def _load_single_value_domain(input: Path):
     return {vd.name: vd}
 
 def load_value_domains(input: Union[dict, Path]):
+    """
+    Returns a dict with the data of the value domains.
+    """
     if isinstance(input, dict):
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
@@ -168,7 +193,7 @@ def load_value_domains(input: Union[dict, Path]):
 def load_external_routines(input: Union[dict, Path]) -> Optional[
     Dict[str, ExternalRoutine]]:
     """
-    Load the external routines
+    Load the external routines.
     """
     external_routines = {}
     if isinstance(input, dict):
@@ -191,6 +216,9 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
 
 
 def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
+    """
+    Returns only the datasets with a persistent assignment.
+    """
     persistent = []
     for child in ast.children:
         if isinstance(child, PersistentAssignment):
@@ -200,6 +228,9 @@ def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
 
 
 def _load_single_external_routine_from_file(input: Path):
+    """
+    Returns a single external routine.
+    """
     if not isinstance(input, Path):
         raise Exception('Input invalid')
     if not input.exists():

@@ -23,6 +23,16 @@ from Model import Component, Dataset, Role
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
+    """
+    Analytic class
+
+    Class that inherits from Unary.
+
+    Class methods:
+        Validate: Validates the Dataset.
+        analyticfunc: Specify class method that returns a dataframe using the duckdb library.
+        Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
+    """
     sql_op = None
 
     @classmethod
@@ -76,8 +86,17 @@ class Analytic(Operator.Unary):
                      ordering: List[OrderBy],
                      window: Optional[Windowing],
                      params: Optional[List[int]] = None):
-        """
+        """Annotation class
 
+        It is used to analyze the attributes specified bellow ensuring that the type of data is the correct one to perform
+        the operation.
+
+        Attributes:
+            identifier_names: List with the id names.
+            measure_names: List with the measures names.
+            ordering: List with the ordering modes.
+            window: ...
+            params: No params are related to this class.
         """
         # Windowing
         window_str = ""
@@ -156,16 +175,25 @@ class Analytic(Operator.Unary):
 
 
 class Max(Analytic):
+    """
+    Max operator
+    """
     op = MAX
     sql_op = "MAX"
 
 
 class Min(Analytic):
+    """
+    Min operator
+    """
     op = MIN
     sql_op = "MIN"
 
 
 class Sum(Analytic):
+    """
+    Sum operator
+    """
     op = SUM
     type_to_check = Number
     return_type = Number
@@ -173,6 +201,9 @@ class Sum(Analytic):
 
 
 class Count(Analytic):
+    """
+    Count operator
+    """
     op = COUNT
     type_to_check = None
     return_type = Integer
@@ -180,6 +211,9 @@ class Count(Analytic):
 
 
 class Avg(Analytic):
+    """
+    Average operator
+    """
     op = AVG
     type_to_check = Number
     return_type = Number
@@ -187,6 +221,9 @@ class Avg(Analytic):
 
 
 class Median(Analytic):
+    """
+    Median operator
+    """
     op = MEDIAN
     type_to_check = Number
     return_type = Number
@@ -194,6 +231,9 @@ class Median(Analytic):
 
 
 class PopulationStandardDeviation(Analytic):
+    """
+    Population deviation operator
+    """
     op = STDDEV_POP
     type_to_check = Number
     return_type = Number
@@ -201,6 +241,9 @@ class PopulationStandardDeviation(Analytic):
 
 
 class SampleStandardDeviation(Analytic):
+    """
+    Sample standard deviation operator.
+    """
     op = STDDEV_SAMP
     type_to_check = Number
     return_type = Number
@@ -208,6 +251,9 @@ class SampleStandardDeviation(Analytic):
 
 
 class PopulationVariance(Analytic):
+    """
+    Variance operator
+    """
     op = VAR_POP
     type_to_check = Number
     return_type = Number
@@ -215,6 +261,9 @@ class PopulationVariance(Analytic):
 
 
 class SampleVariance(Analytic):
+    """
+    Sample variance operator
+    """
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number
@@ -222,32 +271,50 @@ class SampleVariance(Analytic):
 
 
 class FirstValue(Analytic):
+    """
+    First value operator
+    """
     op = FIRST_VALUE
     sql_op = "FIRST"
 
 
 class LastValue(Analytic):
+    """
+    Last value operator
+    """
     op = LAST_VALUE
     sql_op = "LAST"
 
 
 class Lag(Analytic):
+    """
+    Lag operator
+    """
     op = LAG
     sql_op = "LAG"
 
 
 class Lead(Analytic):
+    """
+    Lead operator
+    """
     op = LEAD
     sql_op = "LEAD"
 
 
 class Rank(Analytic):
+    """
+    Rank operator
+    """
     op = RANK
     sql_op = "RANK"
     return_type = Integer
 
 
 class RatioToReport(Analytic):
+    """
+    Ratio operator
+    """
     op = RATIO_TO_REPORT
     type_to_check = Number
     return_type = Number

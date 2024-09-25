@@ -17,10 +17,17 @@ import Operators as Operator
 
 
 class Unary(Operator.Unary):
+    """
+    Unary comparison operator. It returns a boolean.
+    """
     return_type = Boolean
 
 
 class IsNull(Unary):
+    """
+    Class that allows to perform the isnull comparison operator. It has different class methods to allow performing
+    the operation with different datatypes.
+    """
     op = ISNULL
     py_op = pd.isnull
 
@@ -47,6 +54,9 @@ class IsNull(Unary):
 
 
 class Binary(Operator.Binary):
+    """
+    Binary comparison operator. It returns a boolean.
+    """
     return_type = Boolean
 
     @classmethod
@@ -185,7 +195,20 @@ class Match(Binary):
 
 class Between(Operator.Operator):
     return_type = Boolean
-
+    """
+    This comparison operator has the following class methods.
+    
+    Class methods:
+        op_function: Sets the data to be manipulated.
+        
+        apply_operation_component: Returns a pandas dataframe with the operation, considering each component with the
+        schema of op_function. 
+        
+        apply_return_type_dataset: Because the result must be a boolean, this function evaluates if the measure 
+        is actually a boolean one.
+        
+        
+    """
     @classmethod
     def op_func(cls,
                 x: Optional[Union[int, float, bool, str]],
@@ -319,6 +342,11 @@ class Between(Operator.Operator):
 
 
 class ExistIn(Operator.Operator):
+    """
+    Class methods:
+        validate: Sets the identifiers and check if the left one exists in the right one.
+        evaluate: Evaluates if the result data type is actually a boolean.
+    """
     op = IN
 
     # noinspection PyTypeChecker

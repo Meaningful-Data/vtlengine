@@ -14,10 +14,16 @@ from Operators import ALL_MODEL_DATA_TYPES
 
 
 class Unary(Operator.Unary):
+    """
+    Checks that the unary operation is performed with a number.
+    """
     type_to_check = Number
 
 
 class Binary(Operator.Binary):
+    """
+    Checks that the binary operation is performed with numbers.
+    """
     type_to_check = Number
 
     @classmethod
@@ -38,6 +44,9 @@ class Binary(Operator.Binary):
 
 
 class UnPlus(Unary):
+    """
+    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator
+    """
     op = PLUS
     py_op = operator.pos
 
@@ -47,69 +56,109 @@ class UnPlus(Unary):
 
 
 class UnMinus(Unary):
+    """
+    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator
+    """
     op = MINUS
     py_op = operator.neg
 
 
 class AbsoluteValue(Unary):
+    """
+    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator
+    """
     op = ABS
     py_op = operator.abs
 
 
 class Exponential(Unary):
+    """
+    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator
+    """
     op = EXP
     py_op = math.exp
     return_type = Number
 
 
 class NaturalLogarithm(Unary):
+    """
+    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_
+    unary operator
+    """
     op = LN
     py_op = math.log
     return_type = Number
 
 
 class SquareRoot(Unary):
+    """
+    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_
+    unary operator
+    """
     op = SQRT
     py_op = math.sqrt
     return_type = Number
 
 
 class Ceil(Unary):
+    """
+    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
+    """
     op = CEIL
     py_op = math.ceil
     return_type = Integer
 
 
 class Floor(Unary):
+    """
+    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
+    """
     op = FLOOR
     py_op = math.floor
     return_type = Integer
 
 
 class BinPlus(Binary):
+    """
+    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator
+    """
     op = PLUS
     py_op = operator.add
     type_to_check = Number
 
 
 class BinMinus(Binary):
+    """
+    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator
+    """
     op = MINUS
     py_op = operator.sub
     type_to_check = Number
 
 
 class Mult(Binary):
+    """
+    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_
+    binary operator
+    """
     op = MULT
     py_op = operator.mul
 
 
 class Div(Binary):
+    """
+    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_
+    binary operator
+    """
     op = DIV
     py_op = operator.truediv
     return_type = Number
 
 
 class Logarithm(Binary):
+    """
+    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator
+    """
     op = LOG
     return_type = Number
 
@@ -125,11 +174,17 @@ class Logarithm(Binary):
 
 
 class Modulo(Binary):
+    """
+    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator
+    """
     op = MOD
     py_op = operator.mod
 
 
 class Power(Binary):
+    """
+    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator
+    """
     op = POWER
     return_type = Number
 
@@ -145,7 +200,10 @@ class Power(Binary):
 
 
 class Parameterized(Unary):
-
+    """Parametrized class
+        Inherits from Unary class, to validate the data type and evaluate if it is the correct one to
+        perform the operation. Similar to Unary, but in the end, the param validation is added.
+    """
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
                  param: Optional[Union[DataComponent, Scalar]] = None):
@@ -226,6 +284,9 @@ class Parameterized(Unary):
 
 
 class Round(Parameterized):
+    """
+    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator
+    """
     op = ROUND
     return_type = Integer
 
@@ -247,6 +308,9 @@ class Round(Parameterized):
 
 
 class Trunc(Parameterized):
+    """
+    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator.
+    """
     op = TRUNC
 
     @classmethod
