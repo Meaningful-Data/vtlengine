@@ -73,6 +73,8 @@ class Join(Operator):
                 if component_name in common and component_name not in using:
                     if component.role != Role.IDENTIFIER or cls.how == 'cross':
                         new_name = f'{operand_name}#{component_name}'
+                        if new_name in merged_components:
+                            raise SemanticError("1-1-13-9", comp_name=new_name)
                         while new_name in common:
                             new_name += '_dup'
                         merged_components[new_name] = component
@@ -147,6 +149,8 @@ class Join(Operator):
         cls.reference_dataset = max(operands, key=lambda x: len(x.get_identifiers_names())) if cls.how not in ['cross', 'left'] else operands[0]
         cls.identifiers_validation(operands, using)
         components = cls.merge_components(operands, using)
+        if len(set(components.keys())) != len(components):
+            raise SemanticError("1-1-13-9", comp_name="")
 
         return Dataset(name="result", components=components, data=None)
 
@@ -159,44 +163,46 @@ class Join(Operator):
             if len(identifiers) == 0:
                 raise SemanticError("1-1-13-14", op=cls.op, name=op_name)
 
-        most_identifiers = max(info, key=lambda x: len(info[x]))
         for op_name, identifiers in info.items():
-            if op_name != most_identifiers and not set(identifiers).issubset(set(info[most_identifiers])):
+            if op_name != cls.reference_dataset.name and not set(identifiers).issubset(set(info[cls.reference_dataset.name])):
                 if using is None:
-                    missing_components = list(set(identifiers) - set(info[most_identifiers]))
-                    raise SemanticError("1-1-13-11", op=cls.op, dataset_reference=most_identifiers, component=missing_components[0])
+                    missing_components = list(set(identifiers) - set(info[cls.reference_dataset.name]))
+                    raise SemanticError("1-1-13-11", op=cls.op, dataset_reference=cls.reference_dataset.name, component=missing_components[0])
         if using is None:
             return
-        common_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
 
-        for op in operands:
-            if not set(using).issubset(op.get_components_names()):
-                missing = list(set(using) - set(op.get_components_names()))
-                raise SemanticError("1-1-1-10", op=cls.op, comp_name=missing[0], dataset_name=op.name)
-        if set(using).issubset(common_identifiers):
-            return
+        # common_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
+        # for op in operands:
+        #     if not set(using).issubset(op.get_components_names()):
+        #         missing = list(set(using) - set(op.get_components_names()))
+        #         raise SemanticError("1-1-1-10", op=cls.op, comp_name=missing[0], dataset_name=op.name)
+        # if set(using).issubset(common_identifiers):
+        #     return
 
-        reference_components = cls.reference_dataset.get_components_names()
+        # (Case B1)
         for op_name, identifiers in info.items():
             if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
                 raise SemanticError("1-1-13-4", op=cls.op, using_names=using, dataset=op_name)
-            if not set(using).issubset(reference_components):
-                raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
-                                    reference=cls.reference_dataset.name)
+        reference_components = cls.reference_dataset.get_components_names()
+        if not set(using).issubset(reference_components):
+            raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
+                                reference=cls.reference_dataset.name)
+
+        for op_name, identifiers in info.items():
             if not set(using).issubset(identifiers):
                 # (Case B2)
-                if set(using).issubset(reference_components):
-                    for op in operands:
-                        if op is not cls.reference_dataset:
-                            for component in using:
-                                if component not in op.get_components_names():
-                                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=component, dataset_name=op.name)
-                                if component not in op.get_identifiers_names():
-                                    raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
-                                                        reference=cls.reference_dataset.name)
-                # (Case B1)
-                else:
+                if not set(using).issubset(reference_components):
                     raise SemanticError("1-1-13-5", op=cls.op, using_names=using)
+            else:
+                for op in operands:
+                    if op is not cls.reference_dataset:
+                        for component in using:
+                            if component not in op.get_components_names():
+                                raise SemanticError("1-1-1-10", op=cls.op, comp_name=component, dataset_name=op.name)
+                # if component not in op.get_identifiers_names():
+                #     raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
+                #                         reference=cls.reference_dataset.name)
+
 
 class InnerJoin(Join):
 
@@ -217,7 +223,6 @@ class InnerJoin(Join):
 
 
 class LeftJoin(Join):
-
     how = 'left'
 
 
@@ -227,10 +232,14 @@ class FullJoin(Join):
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using=None) -> None:
         if using is not None:
-            raise Exception("Full join does not accept using clause")
+            raise SemanticError("1-1-13-8", op=cls.op)
         for op in operands:
-            if op.get_identifiers_names() != operands[0].get_identifiers_names():
-                raise Exception("All datasets must have the same identifiers")
+            if op is cls.reference_dataset:
+                continue
+            if len(op.get_identifiers_names()) != len(cls.reference_dataset.get_identifiers_names()):
+                raise SemanticError("1-1-13-13", op=cls.op)
+            if op.get_identifiers_names() != cls.reference_dataset.get_identifiers_names():
+                raise SemanticError("1-1-13-12", op=cls.op)
 
 
 class CrossJoin(Join):
@@ -258,7 +267,7 @@ class CrossJoin(Join):
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using=None) -> None:
         if using is not None:
-            raise Exception("Cross join does not accept using clause")
+            raise SemanticError("1-1-13-8", op=cls.op)
 
 
 class Apply(Operator):

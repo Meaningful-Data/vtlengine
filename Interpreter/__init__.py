@@ -277,9 +277,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
             if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+                comp_name = f'{node.left.value}#{self.udo_params[-1][node.right.value]}'
             else:
-                comp_name = node.left.value + '#' + node.right.value
+                comp_name = f'{node.left.value}#{node.right.value}'
             ast_var_id = AST.VarID(value=comp_name)
             return self.visit(ast_var_id)
         else:
@@ -296,7 +296,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
             elif len(left_operand.get_identifiers()) == 0:
                 raise SemanticError("1-3-27", op=node.op)
-
+        # if node.op == AS:
+        #     alias = right_operand if isinstance(right_operand, str) else right_operand.name
+        #     if alias in self.datasets.keys():
+        #         dataset_name = left_operand.name
+        #         if dataset_name != alias:
+        #             raise SemanticError("1-1-13-1", op=node.op, duplicates=alias)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
