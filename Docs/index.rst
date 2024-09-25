@@ -11,7 +11,23 @@ Add your content using ``reStructuredText`` syntax. See the
 documentation for details.
 
 
+*****
+Index
+*****
+
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+
+   Api
+   Analytic
+   String
+   Numeric
+   General_operation
+   General
+   Conditional
+   Comparison
+   Aggregate Operators
+
 
