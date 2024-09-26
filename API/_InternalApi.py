@@ -150,7 +150,12 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
 
 def load_vtl(input: Union[str, Path]):
     """
-    Returns the vtl expression from the String or Path given.
+    Reads the vtl expression.
+
+    :param input: String or Path of the vtl expression.
+
+    :return: If it is a string, it will return the input. If it is a Path, it will return the expression contained in
+    the file.
     """
     if isinstance(input, str):
         return input
@@ -166,7 +171,11 @@ def load_vtl(input: Union[str, Path]):
 
 def load_value_domains(input: Union[dict, Path]):
     """
-    Returns a dict with the data of the value domains.
+    Loads the value domains.
+
+    :param input: Dict or Path of the json file that contains the value domains data.
+
+    :return: A dictionary with the value domains data.
     """
     if isinstance(input, dict):
         vd = ValueDomain.from_dict(input)
@@ -188,6 +197,10 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
     Dict[str, ExternalRoutine]]:
     """
     Load the external routines.
+
+    :param input: Dict or Path of the sql file that contains the external routine data.
+
+    :return: A dictionary with the external routine data.
     """
     external_routines = {}
     if isinstance(input, dict):
