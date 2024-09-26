@@ -243,7 +243,7 @@ class Substr(Parameterized):
             return x
         if param1 is None:
             param1 = 0
-        elif param1 is not 0:
+        elif param1 != 0:
             param1 -= 1
         elif param1 > (len(x)):
             return ""

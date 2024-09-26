@@ -173,7 +173,7 @@ class Nvl(Binary):
             if isinstance(right, Dataset):
                 raise ValueError("Nvl operation at component level cannot have dataset type on right (applicable) side")
             cls.type_validation(left.data_type, right.data_type)
-            return DataComponent(name='result', data=pd.Series(), data_type=left.data_type,
+            return DataComponent(name='result', data=pd.Series(dtype=object), data_type=left.data_type,
                                  role=Role.MEASURE, nullable=False)
         if isinstance(left, Dataset):
             if isinstance(right, DataComponent):
