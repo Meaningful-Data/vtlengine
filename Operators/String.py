@@ -203,7 +203,7 @@ class Parameterized(Unary):
     @classmethod
     def generate_series_from_param(cls, param: Optional[Union[DataComponent, Scalar]], length: int):
         if param is None:
-            return pd.Series(index=range(length))
+            return pd.Series(index=range(length), dtype=object)
         if isinstance(param, Scalar):
             return pd.Series(data=[param.value], index=range(length))
         return param.data

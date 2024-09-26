@@ -1063,7 +1063,7 @@ class InterpreterAnalyzer(ASTTemplate):
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None:
-                aux = self.rule_data[self.ruleset_dataset.get_components_names()]
+                aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
                 aux['bool_var'] = validation_data.data
                 validation_data = aux
         self.rule_data = None

@@ -1,18 +1,15 @@
 import json
-import re
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-import sqlparse
 from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
 from pandas._testing import assert_frame_equal
-from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
+# from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
 import DataTypes
 from DataTypes import SCALAR_TYPES, ScalarType
@@ -55,7 +52,8 @@ class Role(Enum):
 class DataComponent:
     """A component of a dataset with data"""
     name: str
-    data: Optional[Union[PandasSeries, SparkSeries]]
+    # data: Optional[Union[PandasSeries, SparkSeries]]
+    data: Optional[PandasSeries]
     data_type: ScalarType
     role: Role = Role.MEASURE
     nullable: bool = True
@@ -126,7 +124,8 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    data: Optional[Union[SparkDataFrame, PandasDataFrame]]
+    # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
+    data: Optional[PandasDataFrame]
 
     def __post_init__(self):
         if self.data is not None:
@@ -168,10 +167,10 @@ class Dataset:
 
         if self.data is None and other.data is None:
             return True
-        if isinstance(self.data, SparkDataFrame):
-            self.data = self.data.to_pandas()
-        if isinstance(other.data, SparkDataFrame):
-            other.data = other.data.to_pandas()
+        # if isinstance(self.data, SparkDataFrame):
+        #     self.data = self.data.to_pandas()
+        # if isinstance(other.data, SparkDataFrame):
+        #     other.data = other.data.to_pandas()
         if len(self.data) == len(other.data) == 0:
             assert self.data.shape == other.data.shape
 
@@ -380,24 +379,6 @@ class ExternalRoutine:
     def from_sql_query(cls, name: str, query: str):
         dataset_names = cls._extract_dataset_names(query)
         return cls(dataset_names, query, name)
-
-    @classmethod
-    def _get_tables(cls, d):
-        """Using https://stackoverflow.com/questions/69684115/python-library-for-extracting-table-names-from-from-clause-in-sql-statetments"""
-        f = False
-        for i in getattr(d, 'tokens', []):
-            if isinstance(i, sqlparse.sql.Token) and i.value.lower() == 'from':
-                f = True
-            elif isinstance(i, (sqlparse.sql.Identifier, sqlparse.sql.IdentifierList)) and f:
-                f = False
-                if not any(
-                        isinstance(x, sqlparse.sql.Parenthesis) or 'select' in x.value.lower()
-                        for x in getattr(i, 'tokens', [])):
-                    fr = ''.join(str(j) for j in i if j.value not in {'as', '\n'})
-                    for t in re.findall('(?:\w+\.\w+|\w+)\s+\w+|(?:\w+\.\w+|\w+)', fr):
-                        yield {'table': (t1 := t.split())[0],
-                               'alias': None if len(t1) < 2 else t1[-1]}
-            yield from cls._get_tables(i)
 
     @classmethod
     def _extract_dataset_names(cls, query) -> List[str]:

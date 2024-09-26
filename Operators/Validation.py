@@ -62,7 +62,7 @@ class Check(Operator):
                               invalid)
         columns_to_keep = (validation_element.get_identifiers_names() +
                            validation_element.get_measures_names())
-        result.data = validation_element.data[columns_to_keep]
+        result.data = validation_element.data.loc[:, columns_to_keep]
         if imbalance_element is not None:
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
             result.data['imbalance'] = imbalance_element.data[imbalance_measure_name]
