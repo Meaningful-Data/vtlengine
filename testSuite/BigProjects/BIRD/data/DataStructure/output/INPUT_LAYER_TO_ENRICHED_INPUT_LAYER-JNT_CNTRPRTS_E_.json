@@ -22,16 +22,16 @@
           "nullable": false
         },
         {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "JNT_CNTRPRTY_PRCNTG",
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         }
       ]
     }

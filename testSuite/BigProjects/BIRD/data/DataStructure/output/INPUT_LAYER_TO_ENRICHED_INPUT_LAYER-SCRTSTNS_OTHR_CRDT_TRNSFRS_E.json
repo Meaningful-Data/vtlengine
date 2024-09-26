@@ -10,18 +10,6 @@
           "nullable": false
         },
         {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "SCRTSTN_TRNSFR_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "IS_RSCRTSTN",
           "role": "Measure",
           "type": "String",
@@ -30,6 +18,18 @@
         {
           "name": "LBLTY_PL_ID",
           "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "SCRTSTN_TRNSFR_ID",
+          "role": "Identifier",
           "type": "String",
           "nullable": false
         },

@@ -10,24 +10,6 @@
           "nullable": false
         },
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV_CR",
           "role": "Measure",
           "type": "Number",
@@ -47,12 +29,6 @@
         },
         {
           "name": "ADDTNL_PRTCTN",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": false
-        },
-        {
-          "name": "ANNLSD_AGRD_RT",
           "role": "Measure",
           "type": "Number",
           "nullable": false
@@ -88,16 +64,16 @@
           "nullable": false
         },
         {
-          "name": "DT_STTLMNT",
-          "role": "Measure",
+          "name": "DT_RFRNC",
+          "role": "Identifier",
           "type": "Date",
           "nullable": false
         },
         {
-          "name": "ERLY_RDMPTN_DT",
+          "name": "DT_STTLMNT",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "EXCLDD_FRM_BL_IN",
@@ -142,6 +118,12 @@
           "nullable": false
         },
         {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "IS_HFS",
           "role": "Measure",
           "type": "String",
@@ -172,16 +154,10 @@
           "nullable": false
         },
         {
-          "name": "PRCNTG_RDMPTN",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "RDMPTN_NTC_PRD",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "SBRDNTD_DBT",
@@ -193,7 +169,31 @@
           "name": "TYP_INSTRMNT",
           "role": "Measure",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRCNTG_RDMPTN",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "RDMPTN_NTC_PRD",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "ERLY_RDMPTN_DT",
+          "role": "Measure",
+          "type": "Date",
           "nullable": true
+        },
+        {
+          "name": "ANNLSD_AGRD_RT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
         }
       ]
     }

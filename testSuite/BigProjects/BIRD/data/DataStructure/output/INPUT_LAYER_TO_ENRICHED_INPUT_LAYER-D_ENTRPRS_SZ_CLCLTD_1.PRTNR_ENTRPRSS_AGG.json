@@ -4,25 +4,7 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.PRTNR_ENTRPRSS_AGG",
       "DataStructure": [
         {
-          "name": "AGGRGBL_BLNC_SHT_TTL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "PRCNTG_INTRST_CPTL_VTNG_RGHTS",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "BLNC_SHT_TTL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "AGGRGBL_NMBR_EMPLYS",
           "role": "Measure",
           "type": "Number",
           "nullable": true
@@ -40,10 +22,28 @@
           "nullable": false
         },
         {
+          "name": "PRCNTG_INTRST_CPTL_VTNG_RGHTS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
           "name": "PRTNR_ENTRPRS_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "AGGRGBL_BLNC_SHT_TTL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "AGGRGBL_NMBR_EMPLYS",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         },
         {
           "name": "AGGRGBL_ANNL_TRNVR",

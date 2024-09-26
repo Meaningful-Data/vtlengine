@@ -4,180 +4,6 @@
       "name": "P_IMPLCT_FNNCL_GRNTS_GVN_1.FNNCL_GRNTS_GVN_E",
       "DataStructure": [
         {
-          "name": "DT_NXT_INTRST_RT_RST",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "RPYMNT_RGHTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "RFRNC_RT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_INTRST_RT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_END_INTRST_ONLY",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "IS_DBT_FNNCNG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_CMMTMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_RVCBL",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "RCRS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INTRST_RT_FLR",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "IS_PRFRMNG_FRBRN_UNDR_PRBTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INTRST_RT_CP",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "INTRST_RT_SPRD",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "TYP_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "PYMNT_FRQNCY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_DFLT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "ANNLSD_AGRD_RT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "GRNTD_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "TYP_AMRTSTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "PRPS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "SBRDNTD_DBT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_FCLTY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INSTRMNT_ID",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "PRJCT_FNNC_LN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_NN_PRFRMNG_PRR_FRBRNC",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INTRST_RT_RST_FRQNCY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "CMMTMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -232,6 +58,12 @@
           "nullable": false
         },
         {
+          "name": "CMMTMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "CNTRCT_ID",
           "role": "Measure",
           "type": "String",
@@ -270,6 +102,12 @@
         {
           "name": "DT_PRFRMNG_STTS",
           "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
           "type": "Date",
           "nullable": false
         },
@@ -328,6 +166,12 @@
           "nullable": false
         },
         {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PRVSNS_OFF_BLNC_SHT",
           "role": "Measure",
           "type": "Number",
@@ -347,6 +191,162 @@
         },
         {
           "name": "SYNDCTD_CNTRCT_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_NXT_INTRST_RT_RST",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "RPYMNT_RGHTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "RFRNC_RT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_INTRST_RT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_END_INTRST_ONLY",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "IS_DBT_FNNCNG",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_CMMTMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_RVCBL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "RCRS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INTRST_RT_FLR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IS_PRFRMNG_FRBRN_UNDR_PRBTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INTRST_RT_CP",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "INTRST_RT_SPRD",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TYP_INSTRMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PYMNT_FRQNCY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_DFLT_STTS",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "ANNLSD_AGRD_RT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "GRNTD_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "TYP_AMRTSTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRPS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "SBRDNTD_DBT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_FCLTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PRJCT_FNNC_LN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_NN_PRFRMNG_PRR_FRBRNC",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INTRST_RT_RST_FRQNCY",
           "role": "Measure",
           "type": "String",
           "nullable": false

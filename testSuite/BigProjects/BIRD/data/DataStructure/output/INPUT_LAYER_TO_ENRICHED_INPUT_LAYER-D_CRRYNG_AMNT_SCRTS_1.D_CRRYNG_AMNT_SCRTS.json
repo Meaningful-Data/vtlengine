@@ -4,12 +4,6 @@
       "name": "D_CRRYNG_AMNT_SCRTS_1.D_CRRYNG_AMNT_SCRTS",
       "DataStructure": [
         {
-          "name": "CRRYNG_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -26,6 +20,12 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         }
       ]
     }

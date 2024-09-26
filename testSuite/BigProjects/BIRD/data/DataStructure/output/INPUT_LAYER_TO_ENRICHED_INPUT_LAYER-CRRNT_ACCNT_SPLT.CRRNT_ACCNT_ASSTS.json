@@ -4,30 +4,6 @@
       "name": "CRRNT_ACCNT_SPLT.CRRNT_ACCNT_ASSTS",
       "DataStructure": [
         {
-          "name": "IS_ASST",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -214,6 +190,12 @@
           "nullable": false
         },
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
           "name": "DT_STTLMNT",
           "role": "Measure",
           "type": "Date",
@@ -310,6 +292,12 @@
           "nullable": false
         },
         {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "INTRST_RT_CP",
           "role": "Measure",
           "type": "Number",
@@ -331,6 +319,12 @@
           "name": "INTRST_RT_SPRD",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "IS_ASST",
+          "role": "Measure",
+          "type": "String",
           "nullable": false
         },
         {
@@ -438,6 +432,12 @@
         {
           "name": "PRPS",
           "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
           "type": "String",
           "nullable": false
         },

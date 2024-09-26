@@ -4,6 +4,12 @@
       "name": "OTHR_INTNGBL_ASSTS_E",
       "DataStructure": [
         {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -37,12 +43,6 @@
           "name": "PRSPCTV_ID",
           "role": "Identifier",
           "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "CRRYNG_AMNT",
-          "role": "Measure",
-          "type": "Number",
           "nullable": false
         }
       ]

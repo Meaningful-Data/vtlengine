@@ -4,12 +4,6 @@
       "name": "INSTRMNTS_SRVCRS_E",
       "DataStructure": [
         {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -19,12 +13,6 @@
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
           "nullable": false
         },
         {
@@ -44,6 +32,18 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         }
       ]
     }

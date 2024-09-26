@@ -4,30 +4,6 @@
       "name": "GRP_E",
       "DataStructure": [
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "GRP_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "LGL_ENTTY_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_EQTY_INTRST",
           "role": "Measure",
           "type": "Number",
@@ -64,6 +40,12 @@
           "nullable": false
         },
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
           "name": "FV_INVSTMNT_QTTN",
           "role": "Measure",
           "type": "Number",
@@ -73,6 +55,12 @@
           "name": "GDWLL_INVST",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "GRP_ID",
+          "role": "Identifier",
+          "type": "String",
           "nullable": false
         },
         {
@@ -86,6 +74,12 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "LGL_ENTTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "NM_DGS",
@@ -110,6 +104,12 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "PRT_RSLTN_GRP",

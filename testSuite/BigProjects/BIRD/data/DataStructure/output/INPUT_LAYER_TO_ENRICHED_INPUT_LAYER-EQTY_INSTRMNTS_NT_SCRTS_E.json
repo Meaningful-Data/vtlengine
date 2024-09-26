@@ -4,42 +4,6 @@
       "name": "EQTY_INSTRMNTS_NT_SCRTS_E",
       "DataStructure": [
         {
-          "name": "ACCMLTD_IMPRMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "IMPRMNT_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -112,6 +76,12 @@
           "nullable": false
         },
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
           "name": "ELGBL_CNTRL_BNK_FNDNG",
           "role": "Measure",
           "type": "String",
@@ -148,6 +118,12 @@
           "nullable": false
         },
         {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "IS_HFS",
           "role": "Measure",
           "type": "String",
@@ -163,6 +139,30 @@
           "name": "OTSTNDNG_NMNL_AMNT",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_IMPRMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "IMPRMNT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_INSTRMNT",
+          "role": "Measure",
+          "type": "String",
           "nullable": false
         }
       ]

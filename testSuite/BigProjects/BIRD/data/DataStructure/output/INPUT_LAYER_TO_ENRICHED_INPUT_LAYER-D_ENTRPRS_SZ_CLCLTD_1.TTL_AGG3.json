@@ -10,25 +10,19 @@
           "nullable": false
         },
         {
-          "name": "RLTD_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
         },
         {
-          "name": "AGGRGBL_BLNC_SHT_TTL",
+          "name": "AGGRGBL_NMBR_EMPLYS",
           "role": "Measure",
           "type": "Number",
           "nullable": true
         },
         {
-          "name": "AGGRGBL_NMBR_EMPLYS",
+          "name": "AGGRGBL_BLNC_SHT_TTL",
           "role": "Measure",
           "type": "Number",
           "nullable": true
@@ -38,6 +32,12 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "RLTD_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         }
       ]
     }

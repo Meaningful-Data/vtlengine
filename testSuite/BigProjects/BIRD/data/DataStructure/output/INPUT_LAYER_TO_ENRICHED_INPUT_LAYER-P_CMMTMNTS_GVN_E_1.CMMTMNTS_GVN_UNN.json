@@ -4,36 +4,6 @@
       "name": "P_CMMTMNTS_GVN_E_1.CMMTMNTS_GVN_UNN",
       "DataStructure": [
         {
-          "name": "TYP_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_CMMTMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "CMMTMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -94,6 +64,12 @@
           "nullable": true
         },
         {
+          "name": "CMMTMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "CNTRCT_ID",
           "role": "Measure",
           "type": "String",
@@ -152,6 +128,12 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "FRBRNC_STTS",
@@ -280,6 +262,12 @@
           "nullable": true
         },
         {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PRVSNS_OFF_BLNC_SHT",
           "role": "Measure",
           "type": "Number",
@@ -340,6 +328,12 @@
           "nullable": true
         },
         {
+          "name": "TYP_CMMTMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "TYP_FCLTY",
           "role": "Measure",
           "type": "String",
@@ -350,6 +344,12 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "TYP_INSTRMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
         }
       ]
     }

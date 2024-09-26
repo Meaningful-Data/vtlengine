@@ -4,6 +4,12 @@
       "name": "NN_FNNCL_LBLTS_E",
       "DataStructure": [
         {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
           "name": "DT_RFRNC",
           "role": "Identifier",
           "type": "Date",
@@ -31,12 +37,6 @@
           "name": "TYP_NN_FNNCL_LBLTY_PRVSN",
           "role": "Identifier",
           "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "CRRYNG_AMNT",
-          "role": "Measure",
-          "type": "Number",
           "nullable": false
         }
       ]

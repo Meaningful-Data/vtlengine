@@ -4,24 +4,6 @@
       "name": "P_SCRTS_ISSD_E_1.SCRTS_ISSD_E",
       "DataStructure": [
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "SCTRY_ISSD_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -49,6 +31,12 @@
           "name": "CRRYNG_AMNT",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
           "nullable": false
         },
         {
@@ -118,6 +106,12 @@
           "nullable": false
         },
         {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "RLTNSHP_SCRTSTN_CRDT_TRNSFR",
           "role": "Measure",
           "type": "String",
@@ -132,6 +126,12 @@
         {
           "name": "SCRTY_ID",
           "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "SCTRY_ISSD_ID",
+          "role": "Identifier",
           "type": "String",
           "nullable": false
         },

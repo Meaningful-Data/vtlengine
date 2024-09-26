@@ -4,24 +4,6 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD1",
       "DataStructure": [
         {
-          "name": "ENTRPRS_SZ",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_DRVD_ENTRPRS_SZ",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "ENTRPRS_SZ_CLCLTD",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -32,6 +14,24 @@
           "role": "Identifier",
           "type": "Date",
           "nullable": false
+        },
+        {
+          "name": "ENTRPRS_SZ_CLCLTD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_DRVD_ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
         }
       ]
     }

@@ -4,60 +4,6 @@
       "name": "CNTRPRTS_E",
       "DataStructure": [
         {
-          "name": "INSTTTNL_SCTR_FINREP",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INSTTTNL_SCTR",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INTRNTNL_ORGNSTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "CNTRY_FINREP",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "CNTRY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_ELGBL_CNTRPRTY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "CNTRPRTY_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCNTNG_FRMWRK_SL",
           "role": "Measure",
           "type": "String",
@@ -94,6 +40,18 @@
           "nullable": true
         },
         {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CNTRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "CRDT_QLTY_STTS",
           "role": "Measure",
           "type": "String",
@@ -122,6 +80,12 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "DT_STTS",
@@ -172,7 +136,19 @@
           "nullable": true
         },
         {
+          "name": "INSTTTNL_SCTR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "INSTTTNL_SCTR_CNTRL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "INTRNTNL_ORGNSTN",
           "role": "Measure",
           "type": "String",
           "nullable": true
@@ -262,6 +238,12 @@
           "nullable": false
         },
         {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PSTL_CD",
           "role": "Measure",
           "type": "String",
@@ -304,13 +286,13 @@
           "nullable": true
         },
         {
-          "name": "ENTRPRS_SZ",
+          "name": "IS_DRVD_ENTRPRS_SZ",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "IS_DRVD_ENTRPRS_SZ",
+          "name": "ENTRPRS_SZ",
           "role": "Measure",
           "type": "String",
           "nullable": true
@@ -362,6 +344,24 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "INSTTTNL_SCTR_FINREP",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CNTRY_FINREP",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "IS_ELGBL_CNTRPRTY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
         }
       ]
     }
