@@ -1115,7 +1115,8 @@ class Expr(VtlVisitor):
         if len(groups) != 0:
             grouping_op, group_node = self.visitGroupingClause(groups[0])
         if len(haves) != 0:
-            have_node = self.visitHavingClause(haves[0])
+            have_node, expr = self.visitHavingClause(haves[0])
+            setattr(have_node, 'expr', expr)
 
         return Aggregation(op=op_node, operand=operand, grouping_op=grouping_op,
                            grouping=group_node, having_clause=have_node)
@@ -1376,7 +1377,8 @@ class Expr(VtlVisitor):
         if len(groups) != 0:
             grouping_op, group_node = self.visitGroupingClause(groups[0])
         if len(haves) > 0:
-            have_node = self.visitHavingClause(haves[0])
+            have_node, expr = self.visitHavingClause(haves[0])
+            setattr(have_node, 'expr', expr)
         for element in aggregate_nodes:
             element.right = Aggregation(op=element.right.op, operand=element.right.operand,
                                         grouping_op=grouping_op, grouping=group_node,
@@ -1406,6 +1408,18 @@ class Expr(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
 
+        text = ctx_list[1].start.source[1].strdata
+        expr = re.split('having', text)[1]
+        expr = 'having ' + expr[:-2].strip()
+
+        if '{' in expr or '}' in expr:
+            expr = expr.replace('{', '(')
+            expr = expr.replace('}', ')')
+        if 'not_in' in expr:
+            expr = expr.replace('not_in', 'not in')
+        if '"' in expr:
+            expr = expr.replace('"', "'")
+
         if isinstance(ctx_list[1], Parser.ComparisonExprCompContext):
             param_nodes = ExprComp().visitComparisonExprComp(ctx_list[1])
         elif isinstance(ctx_list[1], Parser.InNotInExprCompContext):
@@ -1415,7 +1429,7 @@ class Expr(VtlVisitor):
         else:
             raise NotImplementedError
 
-        return ParamOp(op=op_node, children=None, params=param_nodes)
+        return ParamOp(op=op_node, children=None, params=param_nodes), expr
 
     def visitGroupByOrExcept(self, ctx: Parser.GroupByOrExceptContext):
         ctx_list = list(ctx.getChildren())

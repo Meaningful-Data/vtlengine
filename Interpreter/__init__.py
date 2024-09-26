@@ -340,17 +340,19 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.having_clause is not None:
                 self.aggregation_dataset = Dataset(name=operand.name,
                                                    components=operand.components,
-                                                   data=operand.data.copy())
+                                                   data=pd.DataFrame(columns=operand.get_components_names()))
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(),
                     node.grouping_op,
                     groupings)
                 self.is_from_having = True
-                having = self.visit(node.having_clause)
+                # Empty data analysis on having - we do not care about the result
+                self.visit(node.having_clause)
                 # Reset to default values
                 self.is_from_having = False
                 self.aggregation_grouping = None
                 self.aggregation_dataset = None
+                having = getattr(node.having_clause, 'expr', None)
         elif self.is_from_having:
             groupings = self.aggregation_grouping
             # Setting here group by as we have already selected the identifiers we need
@@ -790,13 +792,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.aggregation_dataset.data = self.aggregation_dataset.data[
                 self.aggregation_dataset.get_identifiers_names() +
                 self.aggregation_dataset.get_measures_names()]
-            result = self.visit(node.params)
-            # We get only the identifiers we need that have true values when grouped
-            measure_name = result.get_measures_names()[0]
-            result.data = result.data[result.data[measure_name]]
-            # result.data.drop(columns=[measure_name], inplace=True)
-            result.data.drop(columns=[measure_name])
-            return result.data
+            self.visit(node.params)
+            return None
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else 'all'
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
