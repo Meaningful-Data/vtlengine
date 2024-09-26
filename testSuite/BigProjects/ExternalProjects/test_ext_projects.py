@@ -97,5 +97,5 @@ class AnaMart(ExternalProjectsHelper):
         # )
         exception_code = "1-1-13-4"
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=exception_code
+            code=code, number_inputs=number_inputs, exception_code=exception_code, vd_names=vd_names, sql_names=sql_names
         )
