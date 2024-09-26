@@ -869,6 +869,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if measure.data_type != Boolean:
                 raise SemanticError("1-1-2-3", type=SCALAR_TYPES_CLASS_REVERSE[Boolean])
             result.data = result.data[result.data[measure.name]]
+            # if result.data.empty:
+            #     return result.data
             # result.data.drop(columns=[measure_name], inplace=True)
             result.data.drop(columns=[measure.name])
             return result.data

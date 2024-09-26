@@ -4,6 +4,7 @@ from functools import reduce
 from typing import List, Dict
 
 from AST import BinOp
+from DataTypes import binary_implicit_promotion
 from Exceptions import SemanticError
 
 if os.environ.get("SPARK"):
@@ -82,6 +83,9 @@ class Join(Operator):
                     else:
                         merged_components[component_name] = component
                 else:
+                    if component_name in using and component_name in merged_components:
+                        data_type = binary_implicit_promotion(merged_components[component_name].data_type, component.data_type)
+                        component.data_type = data_type
                     merged_components[component_name] = component
 
         return merged_components
@@ -101,7 +105,10 @@ class Join(Operator):
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
-            raise Exception(f"Invalid components on result dataset")
+            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
+            if len(missing) == 0:
+                missing.append("None")
+            raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
         return result
 
     @classmethod

@@ -1515,8 +1515,8 @@ class JoinUsingTests(JoinHelper):
         """
         code = 'GL_251_2'
         number_inputs = 3
-        error_code = "1-1-1-2"
-
+        error_code = "1-1-1-1"
+        # TODO: check the error code, there is no type to check on join operation type promotion
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
     def test_GL_342_1(self):
