@@ -143,6 +143,8 @@ class DAGAnalyzer(ASTTemplate):
             raise Exception(
                 'Vtl Script contains Cycles, no DAG established.\nSuggestion {}, more_info:{}'.format(
                     error, error_keys)) from None
+        except SemanticError as error:
+            raise error
         except Exception as error:
             raise Exception('Error creating DAG.') from error
 

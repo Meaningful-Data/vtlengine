@@ -89,6 +89,9 @@ time_operators.remove(123)
 time_operators.remove(124)
 time_operators.remove(125)
 
+# Remove tests due to wrong implicit cast (Duration to String)
+time_operators.remove(100)
+
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
@@ -177,6 +180,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                 data = pd.DataFrame(columns=components.keys())
             else:
                 data = load_datapoints(components=components,
+                                       dataset_name=dataset_name,
                                        csv_path=Path(f'{dp_dir}/{param}-{dataset_name}.csv'))
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)

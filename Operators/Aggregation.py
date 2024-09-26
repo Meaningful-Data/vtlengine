@@ -16,7 +16,7 @@ else:
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
                                 VAR_SAMP)
-from DataTypes import Integer, Number, check_unary_implicit_promotion
+from DataTypes import Integer, Number, unary_implicit_promotion
 from Model import Component, DataComponent, Dataset, Role
 
 
@@ -85,12 +85,18 @@ class Aggregation(Operator.Unary):
                  grouping_columns: Optional[List[str]],
                  having_data: Optional[List[DataComponent]]) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
+        if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         if group_op is not None:
             for comp_name in grouping_columns:
                 if comp_name not in operand.components:
-                    raise ValueError(f"Component {comp_name} not found in dataset")
+                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name,
+                                        dataset_name=operand.name)
                 if operand.components[comp_name].role != Role.IDENTIFIER:
-                    raise ValueError(f"Component {comp_name} is not an identifier")
+                    raise SemanticError("1-1-2-2", op=cls.op,
+                                        id_name=comp_name,
+                                        id_type=operand.components[comp_name].role)
+
             identifiers_to_keep = extract_grouping_identifiers(operand.get_identifiers_names(),
                                                                group_op,
                                                                grouping_columns)
@@ -108,7 +114,7 @@ class Aggregation(Operator.Unary):
         # Change Measure data type
         for comp_name, comp in result_components.items():
             if comp.role == Role.MEASURE:
-                check_unary_implicit_promotion(comp.data_type, cls.type_to_check)
+                unary_implicit_promotion(comp.data_type, cls.type_to_check)
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:

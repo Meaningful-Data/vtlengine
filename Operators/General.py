@@ -4,7 +4,8 @@ import pandas as pd
 from pandasql import sqldf
 
 from DataTypes import COMP_NAME_MAPPING
-from Model import Dataset, ExternalRoutine, Role, Component, DataComponent
+from Exceptions import SemanticError
+from Model import Dataset, ExternalRoutine, Role, Component
 from Operators import Binary, Unary
 
 
@@ -13,7 +14,8 @@ class Membership(Binary):
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: str):
         if right_operand not in left_operand.components:
-            raise ValueError(f"Component {right_operand} not found in dataset {left_operand.name}")
+            raise SemanticError("1-1-1-10", op=cls.op, comp_name=right_operand,
+                                dataset_name=left_operand.name)
 
         component = left_operand.components[right_operand]
         if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
@@ -96,7 +98,7 @@ class Eval(Unary):
         component_names = [name for name in df.columns]
         for comp_name in component_names:
             if comp_name not in output.components:
-                raise ValueError(f"Component {comp_name} not found in output dataset")
+                raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=df.name)
 
         for comp_name in output.components:
             if comp_name not in component_names:

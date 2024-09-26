@@ -2,6 +2,7 @@ import operator
 import os
 import re
 
+from Exceptions import SemanticError
 from Model import DataComponent, Dataset, Scalar
 
 if os.environ.get("SPARK", False):
@@ -28,6 +29,16 @@ class Unary(Operator.Unary):
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
         return series.map(lambda x: cls.py_op(str(x)), na_action='ignore')
+
+    @classmethod
+    def validate_dataset(cls, dataset: Dataset) -> None:
+        """
+        Validate that the dataset has exactly one measure.
+        """
+        measures = dataset.get_measures()
+
+        if measures is None or len(measures) != 1:
+            raise SemanticError("1-1-18-1", op=cls.op, name=dataset.name)
 
 
 class Length(Unary):
@@ -219,6 +230,11 @@ class Substr(Parameterized):
     return_type = String
 
     @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
+
+    @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
         x = str(x)
         param1 = None if pd.isnull(param1) else int(param1)
@@ -242,11 +258,11 @@ class Substr(Parameterized):
         if not param:
             return
         if position not in (1, 2):
-            raise Exception("param position is not specified")
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, Integer):
-            raise Exception("Substr params should be Integer")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
 
         if isinstance(param, DataComponent):
             if param.data is not None:
@@ -257,10 +273,9 @@ class Substr(Parameterized):
     @classmethod
     def check_param_value(cls, param: Optional[Union[int, str]], position: int):
         if not pd.isnull(param) and not param >= 1 and position == 1:
-            raise Exception("param start should be >= 1")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif not pd.isnull(param) and not param >= 0 and position == 2:
-            raise Exception("param length should be >= 0")
-
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 class Replace(Parameterized):
     op = REPLACE
@@ -280,11 +295,16 @@ class Replace(Parameterized):
         if not param:
             return
         if position not in (1, 2):
-            raise Exception("param position is not specified")
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: ScalarType = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
-            raise Exception("Replace params should be String")
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
+
+    @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
 
 class Instr(Parameterized):
@@ -299,7 +319,7 @@ class Instr(Parameterized):
 
         if isinstance(param1, Dataset) or isinstance(param2, Dataset) or isinstance(param3,
                                                                                     Dataset):
-            raise Exception(f"{cls.op} cannot have a Dataset as parameter")
+            raise SemanticError("1-1-18-10", op=cls.op)
         if param1 is not None:
             cls.check_param(param1, 1)
         if param2 is not None:
@@ -310,22 +330,28 @@ class Instr(Parameterized):
         return super().validate(operand)
 
     @classmethod
+    def validate_params(cls, params: Optional[Any]):
+        if len(params) != 2:
+            raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
+
+
+    @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
         if not param:
             return
         if position not in (1, 2, 3):
-            raise Exception("param position is not specified")
+            raise SemanticError("1-1-18-9", op=cls.op)
         data_type: ScalarType = param.data_type
 
         if position == 1:
             if not check_unary_implicit_promotion(data_type, String):
-                raise Exception("Instr pattern param should be String")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Pattern", correct_type="String")
         elif position == 2:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise Exception("Instr start param should be Integer")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer")
         else:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise Exception("Instr occurrence param should be Integer")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer")
         if isinstance(param, DataComponent):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
@@ -336,10 +362,11 @@ class Instr(Parameterized):
     def check_param_value(cls, param: Optional[Union[int, str]], position: int):
         if position == 2:
             if not pd.isnull(param) and param < 1:
-                raise Exception("param start should be >= 1")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3:
             if not pd.isnull(param) and param < 1:
-                raise Exception("param occurrence should be >= 1")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence",
+                                    correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any,
@@ -450,7 +477,7 @@ class Instr(Parameterized):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
-                raise Exception(f"At op {cls.op}: Start parameter value {start} should be integer.")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer")
         else:
             start = 0
 
@@ -459,8 +486,7 @@ class Instr(Parameterized):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
-                raise Exception(
-                    f"At op {cls.op}: Occurrence parameter value {occurrence} should be integer.")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer")
         else:
             occurrence = 0
         if pd.isnull(str_to_find):

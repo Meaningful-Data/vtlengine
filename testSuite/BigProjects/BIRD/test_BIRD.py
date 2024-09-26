@@ -41,7 +41,6 @@ class SemanticBIRD(BIRDHelper):
         '''
         code = 'INPUT_LAYER_TO_ENRICHED_INPUT_LAYER'
         number_inputs = 62
-        # references_names = []
         references_names = ['ADVNCS_NT_LNS_E', 'INSTRMNTS_BNFCRS_E', 'INSTRMNTS_CRDTRS_E', 'INSTRMNTS_CSTMRS_E',
                             'INSTRMNTS_ORGNTRS_E', 'INSTRMNTS_PRTCTNS_E', 'INSTRMNTS_SRVCRS_E', 'INVSTMNT_PRPRTY_E',
                             'JNT_CNTRPRTS_E_', 'LNS_E', 'MSTR_NTTNG_AGRMNT_E', 'NN_FNNCL_ASSTS_E', 'NN_FNNCL_LBLTS_E',
@@ -103,5 +102,4 @@ class SemanticBIRD(BIRDHelper):
                             'EQTY_INSTRMNTS_NT_SCRTS_E',
                             'FCTRNG_AXLRY_E', 'GDWLL_E', 'GRP_E']
 
-        with pytest.raises(Exception, match="Case B"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

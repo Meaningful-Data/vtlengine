@@ -585,7 +585,7 @@ def check_max_date(str_: str):
 
     # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
     if len(str_) != 10 or str_[7] != '-':
-        raise ValueError(f"Invalid date format, must be YYYY-MM-DD, {str_}")
+        raise ValueError(f"Invalid date format, must be YYYY-MM-DD: {str_}")
 
     result = date.fromisoformat(str_)
     return result.isoformat()

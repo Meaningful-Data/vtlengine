@@ -394,6 +394,7 @@ class CalcOperatorTest(TestCalcHelper):
         code = 'GL_300_12'
         number_inputs = 2
         message = "1-1-13-17"
+        #need to be checked
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
@@ -425,7 +426,7 @@ class CalcOperatorTest(TestCalcHelper):
         """
         code = 'GL_300_14'
         number_inputs = 2
-        message = "1-3-16"
+        message = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 

@@ -4,13 +4,13 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "DS_1#Id_1",
+          "name": "Id_1",
           "role": "Identifier",
           "type": "Integer",
           "nullable": false
         },
         {
-          "name": "DS_1#Id_2",
+          "name": "Id_2",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -26,18 +26,6 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
-        },
-        {
-          "name": "DS_2#Id_1",
-          "role": "Identifier",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
-          "name": "DS_2#Id_2",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
         },
         {
           "name": "Me_1A",

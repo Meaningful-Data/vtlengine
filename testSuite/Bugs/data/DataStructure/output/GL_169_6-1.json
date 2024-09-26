@@ -6,7 +6,7 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "Integer",
+          "type": "String",
           "nullable": false
         },
         {
@@ -28,27 +28,9 @@
           "nullable": false
         },
         {
-          "name": "Me_1",
+          "name": "bool_var",
           "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "Me_2",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_1",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
-          "type": "Number",
+          "type": "Boolean",
           "nullable": true
         }
       ]

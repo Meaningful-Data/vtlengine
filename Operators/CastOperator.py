@@ -9,8 +9,10 @@ from DataTypes import (COMP_NAME_MAPPING, ScalarType,
                        EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
                        EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
                        IMPLICIT_TYPE_PROMOTION_MAPPING,
-                       String, Number, TimeInterval, Date, TimePeriod, Duration)
+                       String, Number, TimeInterval, Date, TimePeriod, Duration,
+                       SCALAR_TYPES_CLASS_REVERSE)
 from DataTypes.TimeHandling import str_period_to_date
+from Exceptions import SemanticError
 from Model import Component, Dataset, Role, Scalar, DataComponent
 
 duration_mapping = {
@@ -128,14 +130,12 @@ class Cast(Operator.Unary):
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
 
-        raise Exception(f"Cannot cast with mask from type {from_type} to {to_type}.")
+        raise SemanticError("1-1-5-5", op=cls.op, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type], type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
         if mask_value not in ["START", "END"]:
-            error_message = cls.invalid_mask_message.format(op=cls.op, type_1="time_period",
-                                                            type_2="date")
-            raise Exception(error_message)
+            raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
 
     @classmethod
     def check_mask_value_from_time_to_string(cls, mask_value) -> None:
@@ -182,7 +182,9 @@ class Cast(Operator.Unary):
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
 
-        raise Exception(f"Cannot cast with mask from {from_type} to {to_type}")
+        raise SemanticError("1-1-5-5", op=cls.op,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
 
     @classmethod
     def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType):
@@ -191,9 +193,10 @@ class Cast(Operator.Unary):
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
             explicit_with_mask = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
             if to_type.is_included(explicit_with_mask):
-                raise Exception(f"Cannot cast from {from_type} to {to_type} "
-                                f"without providing a mask.")
-            raise Exception(f"Cannot cast from {from_type} to {to_type}")
+                raise SemanticError("1-1-5-3", op=cls.op, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                    type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
+            raise SemanticError("1-1-5-4", op=cls.op, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
     def cast_component(cls, data: pd.Series, from_type: ScalarType,
@@ -249,9 +252,9 @@ class Cast(Operator.Unary):
 
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
-
-        raise Exception(
-            f"At op {cls.op}: Impossible to cast {value} from type {provided_type} to {to_type}.")
+        raise SemanticError("2-1-5-1", op=cls.op, value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[provided_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
     def validate(

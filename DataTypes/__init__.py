@@ -5,6 +5,10 @@ import pandas as pd
 
 import pandas as pd
 
+from Exceptions import SemanticError
+
+from Exceptions import SemanticError
+
 DTYPE_MAPPING = {
     'String': 'string',
     'Number': 'float64',
@@ -107,14 +111,18 @@ class String(ScalarType):
         if from_type in {Number, Integer, Boolean, String, Date, TimePeriod, TimeInterval, Duration}:
             return str(value)
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
-        if from_type in {TimePeriod, String}:
+        if from_type in {TimePeriod, Date, String}:
             return str(value)
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class Number(ScalarType):
@@ -135,7 +143,9 @@ class Number(ScalarType):
         if from_type in {Integer, Number}:
             return float(value)
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> float:
@@ -148,9 +158,11 @@ class Number(ScalarType):
             try:
                 return float(value)
             except ValueError:
-                raise Exception(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+                pass
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
     def cast(cls, value):
@@ -184,10 +196,13 @@ class Integer(Number):
             if value.is_integer():
                 return int(value)
             else:
-                raise RuntimeError(f"Value {value} has decimals, cannot cast to integer")
+                raise SemanticError("2-1-5-1", value=value,
+                                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
-        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
-                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
@@ -199,12 +214,18 @@ class Integer(Number):
         if from_type in {Number, String}:
             try:
                 if float(value) - int(value) != 0:
-                    raise RuntimeError(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
+                    raise SemanticError("2-1-5-1", value=value,
+                                        type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                        type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
             except ValueError:
-                raise RuntimeError(f"Cannot explicit cast the value {value} from {from_type} to {cls}")
+                raise SemanticError("2-1-5-1", value=value,
+                                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
             return int(value)
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
     def cast(cls, value):
@@ -245,12 +266,16 @@ class TimeInterval(ScalarType):
             end_value = str_period_to_date(value, start=False).isoformat()
             return f"{init_value}/{end_value}"
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class Date(TimeInterval):
@@ -265,15 +290,19 @@ class Date(TimeInterval):
         if from_type in {Date, String}:
             return value
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
             return value
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class TimePeriod(TimeInterval):
@@ -288,18 +317,26 @@ class TimePeriod(TimeInterval):
         if from_type in {TimePeriod, String}:
             return value
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
         if from_type in {Date}:
-            period_str = date_to_period_str(value,"D")
+            try:
+                period_str = date_to_period_str(value,"D")
+            except ValueError:
+                raise SemanticError("2-1-5-1", value=value, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
             return period_str
         # TODO: Remove String, only for compatibility with previous engine
         elif from_type == String:
             return value
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class Duration(ScalarType):
@@ -309,14 +346,18 @@ class Duration(ScalarType):
         if from_type in {Duration, String}:
             return value
 
-        raise Exception(f"Cannot implicit cast {from_type} to {cls}")
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
         if from_type == String:
             return value
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class Boolean(ScalarType):
@@ -357,8 +398,9 @@ class Boolean(ScalarType):
         if from_type in {Boolean}:
             return value
 
-        raise Exception(f"Cannot implicit cast {SCALAR_TYPES_CLASS_REVERSE[from_type]} "
-                        f"to {SCALAR_TYPES_CLASS_REVERSE[cls]}")
+        raise SemanticError("2-1-5-1", value=value,
+                                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                                type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
     
     @classmethod
     def explicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
@@ -366,8 +408,10 @@ class Boolean(ScalarType):
             if value in {0, 0.0}:
                 return False
             return True
-        
-        raise Exception(f"Cannot explicit without mask cast {from_type} to {cls}")
+
+        raise SemanticError("2-1-5-1", value=value,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
 
 class Null(ScalarType):
@@ -425,19 +469,20 @@ COMP_NAME_MAPPING = {
     TimePeriod: 'time_period_var',
     Date: 'date_var',
     Duration: 'duration_var',
-    Boolean: 'bool_var'
+    Boolean: 'bool_var',
+    Null: 'null_var'
 }
 
 IMPLICIT_TYPE_PROMOTION_MAPPING = {
     # TODO: Remove Time types, only for compatibility with previous engine
-    String: {String, Boolean, TimePeriod, Date, TimeInterval, Duration},
+    String: {String, Boolean, TimePeriod},
     Number: {String, Number, Integer},
     Integer: {String, Number, Integer},
     # TODO: Remove String, only for compatibility with previous engine
-    TimeInterval: {TimeInterval, String},
-    Date: {TimeInterval, Date, String},
-    TimePeriod: {TimeInterval, TimePeriod, String},
-    Duration: {String, Duration},
+    TimeInterval: {TimeInterval},
+    Date: {TimeInterval, Date},
+    TimePeriod: {TimeInterval, TimePeriod},
+    Duration: {Duration},
     Boolean: {String, Boolean},
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
@@ -474,8 +519,7 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
 def binary_implicit_promotion(left_type: ScalarType,
                               right_type: ScalarType,
                               type_to_check: ScalarType = None,
-                              return_type: ScalarType = None
-                              ) -> ScalarType:
+                              return_type: ScalarType = None) -> ScalarType:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -498,7 +542,11 @@ def binary_implicit_promotion(left_type: ScalarType,
             if right_type.is_included(left_implicities):
                 return right_type
             return type_to_check
-        raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
+        raise SemanticError(code="1-1-1-2",
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                            type_check=SCALAR_TYPES_CLASS_REVERSE[type_to_check])
+        # raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (left_type.is_included(
             right_implicities) or right_type.is_included(left_implicities)):
@@ -508,7 +556,9 @@ def binary_implicit_promotion(left_type: ScalarType,
     if right_type.is_included(left_implicities):
         return right_type
 
-    raise Exception(f"Implicit cast not allowed from {left_type} to {right_type}")
+    raise SemanticError(code="1-1-1-1",
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[right_type])
 
 
 def check_binary_implicit_promotion(
@@ -545,7 +595,9 @@ def unary_implicit_promotion(
     operand_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[operand_type]
     if type_to_check:
         if not type_to_check.is_included(operand_implicities):
-            raise Exception(f"Implicit cast not allowed from {operand_type} to {type_to_check}")
+            raise SemanticError(code="1-1-1-1",
+                                type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
+                                type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check])
 
     if return_type:
         return return_type

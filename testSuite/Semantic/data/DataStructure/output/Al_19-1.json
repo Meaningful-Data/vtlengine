@@ -6,23 +6,11 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "Integer",
+          "type": "Time",
           "nullable": false
         },
         {
           "name": "Id_2",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "Id_3",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "Id_4",
           "role": "Identifier",
           "type": "String",
           "nullable": false
@@ -36,18 +24,6 @@
         {
           "name": "Me_2",
           "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_1",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
           "type": "Number",
           "nullable": true
         }

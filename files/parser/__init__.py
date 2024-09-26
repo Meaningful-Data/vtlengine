@@ -8,7 +8,7 @@ import numpy as np
 from DataTypes import Date, TimePeriod, TimeInterval, Integer, Number, Boolean, Duration, \
     SCALAR_TYPES_CLASS_REVERSE
 from DataTypes.TimeHandling import DURATION_MAPPING
-from Exceptions import InputValidationException
+from Exceptions import InputValidationException, SemanticError
 from Model import Component, Role, Dataset
 from files.parser._rfc_dialect import register_rfc
 from files.parser._time_checking import check_date, check_time_period, check_time
@@ -35,8 +35,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
     except UnicodeDecodeError as error:
         # https://coderwall.com/p/stzy9w/raising-unicodeencodeerror-and-unicodedecodeerror-
         # manually-for-testing-purposes
-        error_message = f"The file {csv_path.name} is not utf-8 encoded."
-        raise UnicodeDecodeError("utf-8", b"", error.start, error.end, error_message) from None
+        raise InputValidationException("0-1-2-5", file=csv_path.name) from error
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
     except Exception as e:
@@ -55,7 +54,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
     comps_missing = [id_m for id_m in comp_names if id_m not in reader.fieldnames]
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code='0-1-1-7', ids=comps_missing, file=str(csv_path.name))
+        raise InputValidationException(code='0-1-1-8', ids=comps_missing, file=str(csv_path.name))
 
 
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
@@ -63,9 +62,12 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
 
     register_rfc()
 
-    data = pd.read_csv(csv_path, dialect='rfc', dtype=obj_dtypes, engine='c',
-                       keep_default_na=False,
-                       na_values=[''])
+    try:
+        data = pd.read_csv(csv_path, dialect='rfc', dtype=obj_dtypes, engine='c',
+                           keep_default_na=False,
+                           na_values=[''])
+    except UnicodeDecodeError as error:
+        raise InputValidationException(code="0-1-2-5", file=csv_path.name)
     # Fast loading from SDMX-CSV
     if "DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW":
         if "DATAFLOW" not in components:
@@ -90,7 +92,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                raise Exception(f"Component {comp_name} is missing in the file.")
+                raise InputValidationException(f"Component {comp_name} is missing in the file.")
             data[comp_name] = None
     return data
 
@@ -99,16 +101,16 @@ def _parse_boolean(value: str):
         return True
     return False
 
-def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame):
+def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
     # Identifier checking
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     for id_name in id_names:
         if data[id_name].isnull().any():
-            raise Exception(f"Identifiers cannot have null values, check column {id_name}")
+            raise SemanticError("0-1-1-4", null_identifier=id_name, name=dataset_name)
 
     if len(id_names) == 0 and len(data) > 1:
-        raise Exception("Datasets without identifiers must have 0 or 1 datapoints.")
+        raise SemanticError("0-1-1-5", name=dataset_name)
 
     data = data.fillna(np.nan).replace([np.nan], [None])
     # Checking data types on all data types
@@ -127,27 +129,29 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame):
             elif comp.data_type == Boolean:
                 data[comp_name] = data[comp_name].map(lambda x: _parse_boolean(x), na_action='ignore')
             elif comp.data_type == Duration:
-                values_correct = data[comp_name].map(lambda x: x in DURATION_MAPPING, na_action='ignore').all()
+                values_correct = data[comp_name].map(lambda x: x.replace(" ", "") in DURATION_MAPPING, na_action='ignore').all()
                 if not values_correct:
-                    raise Exception(f"Duration values are not correct in column {comp_name}")
+                    raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
                 data[comp_name] = data[comp_name].map(lambda x: str(x).replace('"', ''),
                                                       na_action='ignore')
             data[comp_name] = data[comp_name].astype(np.object_, errors='raise')
     except ValueError as e:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type]
-        raise Exception(f"Not possible to cast column {comp_name} to {str_comp}") from e
+        raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 
     return data
 
 
-def load_datapoints(components: Dict[str, Component], csv_path: Optional[Path] = None):
+def load_datapoints(components: Dict[str, Component],
+                    dataset_name: str,
+                    csv_path: Optional[Path] = None):
     if csv_path is None or not csv_path.exists():
         return pd.DataFrame(columns=list(components.keys()))
 
     _validate_csv_path(components, csv_path)
     data = _pandas_load_csv(components, csv_path)
-    data = _validate_pandas(components, data)
+    data = _validate_pandas(components, data, dataset_name)
 
     return data
 

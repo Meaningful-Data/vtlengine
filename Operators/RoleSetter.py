@@ -1,6 +1,8 @@
 import os
 from copy import copy
 
+from Exceptions import SemanticError
+
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
 else:
@@ -37,7 +39,7 @@ class RoleSetter(Unary):
     def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
         if isinstance(operand, DataComponent):
             if not operand.nullable and any(operand.data.isnull()):
-                raise Exception(f"Found null values in {operand.name} with nullable=False")
+                raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
             result.data = pd.Series([operand.value] * data_size, dtype=object)
@@ -52,17 +54,15 @@ class Identifier(RoleSetter):
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
         result = super().validate(operand)
-        if result.nullable and any(result.data.isnull()):
-            raise Exception("An Identifier cannot be nullable")
-        elif result.nullable:
-            result.nullable = False
+        if result.nullable:
+            raise SemanticError("1-1-1-16")
         return result
 
     @classmethod
     def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
         if isinstance(operand, Scalar):
             if operand.value is None:
-                raise Exception("An Identifier cannot be nullable")
+                raise SemanticError("1-1-1-16")
         return super().evaluate(operand, data_size)
 
 

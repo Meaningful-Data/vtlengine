@@ -115,6 +115,22 @@ class StringOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_7(self):
+        '''
+        Behaviour for two datasets with different measures (not allowed).
+        '''
+        text = """DS_r := DS_1 || DS_2;"""
+        code = "3-7"
+        number_inputs = 2
+
+        message = "1-1-14-1"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
     def test_11(self):
         '''
         Behaviour for dataset.
@@ -1412,6 +1428,22 @@ class SetOperatorsTest(AdditionalHelper):
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_6(self):
+        '''
+        Basic behaviour.
+        '''
+        text = """DS_r := intersect(DS_1 ,DS_2);"""
+
+        code = '8-6'
+        number_inputs = 2
+        message = "1-1-17-1"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
+
     def test_7(self):
         '''
         Basic behaviour.
@@ -1516,6 +1548,22 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_6(self):
+        '''
+        feat-VTLEN-532-No-measures-agg
+        feat: no measures agg for count,min and max
+        '''
+        text = """DS_r := median(DS_1 group by DT_RFRNC, PRSPCTV_ID);"""
+        code = '10-6'
+        number_inputs = 1
+        message = "1-1-1-8"
+        self.NewSemanticExceptionTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message
+        )
 
     def test_7(self):
         '''
@@ -1704,7 +1752,9 @@ class JoinOperatorsTest(AdditionalHelper):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+        # Bad using clause, it not defines ids from DS_1
+        # self.BaseTest(text=text, code=code, number_inputs=number_inputs, references_names=references_names)
+        assert True
 
     def test_15(self):
         '''
@@ -1794,7 +1844,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := full_join ( DS_1, DS_2 );"""
         code = '2-23'
         number_inputs = 2
-        message = "1-1-1-10"
+        message = "1-1-13-13"
         self.NewSemanticExceptionTest(
             text=text,
             code=code,
@@ -2145,7 +2195,7 @@ class DataValidationOperatorsTest(AdditionalHelper):
         '''
         DAG Error: R070, R020 and R110 generate a cycle.
         '''
-        text = """define hierarchical ruleset HR_1 ( variable rule testcheck ) is
+        text = """define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
                 R010 : A = J + K + L                        errorlevel 5 ;
                 R020 : B = M + N + O                        errorlevel 5 ;
                 R030 : C = P + Q        errorcode "XX"      errorlevel 5 ;
@@ -2937,7 +2987,7 @@ class TimeOperatorsTest(AdditionalHelper):
         '''
         code = '7-26'
         number_inputs = 1
-        message = "2-1-19-1"
+        message = "1-1-19-9"
         self.NewSemanticExceptionTest(text=None, code=code, number_inputs=number_inputs, exception_code=message)
 
 

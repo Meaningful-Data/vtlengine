@@ -159,7 +159,7 @@ class Dataset:
                     print("Additional components in result:", set(result_comps.keys()) - set(reference_comps.keys()))
                 return False
 
-            diff_comps = {k: v for k, v in result_comps.items() if v != reference_comps[k]}
+            diff_comps = {k: v for k, v in result_comps.items() if (k in reference_comps and v != reference_comps[k]) or k not in reference_comps}
             ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
             print(f"Differences in components {self.name}: ")
             print("result:", json.dumps(diff_comps, indent=4))

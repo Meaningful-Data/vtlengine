@@ -91,6 +91,8 @@ class If(Operator):
 
         # Datacomponent
         if isinstance(condition, DataComponent):
+            if not condition.data_type == Boolean:
+                raise SemanticError("1-1-9-11", op=cls.op, type=DataTypes.SCALAR_TYPES_CLASS_REVERSE[condition.data_type])
             if not isinstance(left, Scalar) or not isinstance(right, Scalar):
                 nullable = condition.nullable
             else:
@@ -107,6 +109,8 @@ class If(Operator):
                                  role=Role.MEASURE, nullable=nullable)
 
         # Dataset
+        if isinstance(left, Scalar) and isinstance(right, Scalar):
+            raise SemanticError("1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name)
         if isinstance(left, DataComponent):
             raise SemanticError("1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name)
         if isinstance(left, Scalar):
@@ -163,14 +167,12 @@ class Nvl(Binary):
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
                 raise ValueError("Nvl operation at scalar level must have scalar types on right (applicable) side")
-            if left.data_type != right.data_type:
-                left.data_type = cls.type_validation(left.data_type, right.data_type)
+            cls.type_validation(left.data_type, right.data_type)
             return Scalar(name='result', value=None, data_type=left.data_type)
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise ValueError("Nvl operation at component level cannot have dataset type on right (applicable) side")
-            if left.data_type != right.data_type:
-                left.data_type = cls.type_validation(left.data_type, right.data_type)
+            cls.type_validation(left.data_type, right.data_type)
             return DataComponent(name='result', data=pd.Series(), data_type=left.data_type,
                                  role=Role.MEASURE, nullable=False)
         if isinstance(left, Dataset):
@@ -178,13 +180,10 @@ class Nvl(Binary):
                 raise ValueError("Nvl operation at dataset level cannot have component type on right (applicable) side")
             if isinstance(right, Scalar):
                 for component in left.get_measures():
-                    if component.data_type != right.data_type:
-                        component.data_type = cls.type_validation(component.data_type, right.data_type)
+                    cls.type_validation(component.data_type, right.data_type)
             if isinstance(right, Dataset):
                 for component in left.get_measures():
-                    if component.data_type != right.components[component.name].data_type:
-                        component.data_type = cls.type_validation(component.data_type,
-                                                                  right.components[component.name].data_type)
+                    cls.type_validation(component.data_type, right.components[component.name].data_type)
             result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()
                                  if comp.role != Role.ATTRIBUTE}
             for comp in result_components.values():

@@ -440,7 +440,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         """
         code = 'GL_265_3'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-1-10"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -925,7 +925,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_1'
         number_inputs = 1
-        error_code = "1-1-10-3"
+        error_code = "1-1-10-3" #wrong error code, 1-1-10-8?
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1090,7 +1090,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_7'
         number_inputs = 1
-        error_code = "1-1-10-7"
+        error_code = "1-1-10-9"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1110,10 +1110,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_9'
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-10-9"
 
-        with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
     def test_GL_397_11(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -1130,10 +1129,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_11'
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-10-9"
 
-        with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
     def test_GL_397_13(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
@@ -1150,10 +1148,9 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_13'
         number_inputs = 1
-        references_names = ["1"]
+        error_code = "1-1-10-9"
 
-        with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
     def test_GL_397_15(self):
         """
         HIERARCHICAL RULSET: hierarchy
@@ -1169,7 +1166,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_15'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-10-9"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1250,12 +1247,11 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_24'
         number_inputs = 1
-        references_names = ["1"]
+        message = "1-1-10-2"
 
-        with pytest.raises(Exception, match="Cannot match condition components"):
-            self.BaseTest(code=code,
+        self.NewSemanticExceptionTest(code=code,
                           number_inputs=number_inputs,
-                          references_names=references_names)
+                          exception_code=message)
 
     def test_GL_397_25(self):
         """
@@ -1393,7 +1389,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_36'
         number_inputs = 1
-        error_code = "1-1-1-3"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1659,7 +1655,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = '2-1-1-15'
         number_inputs = 1
-        error_code = "2-1-1-3"
+        error_code = "1-1-10-5"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -1944,7 +1940,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = '2-1-1-25'
         number_inputs = 1
-        error_code = "2-1-1-3"
+        error_code = "1-1-10-5"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2164,7 +2160,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_145_5'
         number_inputs = 1
-        error_code = "1-1-10-3"
+        error_code = "1-1-10-3" #wrong error code 1-1-10-8?
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2352,7 +2348,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_8'
         number_inputs = 1
-        error_code = "1-1-10-7"
+        error_code = "1-1-10-9"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2434,7 +2430,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_16'
         number_inputs = 1
-        error_code = "1-3-16"
+        error_code = "1-1-10-9"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -2635,7 +2631,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         code = 'GL_397_37'
         number_inputs = 1
-        error_code = "1-1-1-3"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code)

@@ -612,9 +612,8 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-13'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
-
     def test_29(self):
         """
         WHITESPACE REMOVAL OPERATOR
@@ -631,8 +630,10 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-14'
         number_inputs = 2
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "1-1-1-3"
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
+                                      exception_code=message)
+
 
     def test_30(self):
         """
@@ -650,7 +651,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-15'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_31(self):
@@ -669,7 +670,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-16'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_32(self):
@@ -688,7 +689,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-17'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_33(self):
@@ -707,7 +708,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-18'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_34(self):
@@ -726,7 +727,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-19'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_35(self):
@@ -745,7 +746,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-20'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_36(self):
@@ -764,7 +765,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-21'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_37(self):
@@ -783,7 +784,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-22'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_38(self):
@@ -802,7 +803,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-23'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_39(self):
@@ -821,7 +822,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-2-24'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_40(self):
@@ -1005,7 +1006,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-9'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_49(self):
@@ -1024,7 +1025,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-10'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_50(self):
@@ -1043,7 +1044,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-11'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_51(self):
@@ -1062,7 +1063,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-12'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_52(self):
@@ -1081,7 +1082,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-13'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_53(self):
@@ -1100,7 +1101,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-14'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_54(self):
@@ -1119,7 +1120,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-15'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_55(self):
@@ -1138,7 +1139,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-3-16'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_56(self):
@@ -1329,7 +1330,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-4-8'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_64(self):
@@ -1351,7 +1352,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-4-9'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_65(self):
@@ -1373,7 +1374,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-4-10'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_66(self):
@@ -1395,7 +1396,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
         """
         code = '3-4-4-11'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_67(self):
@@ -1524,7 +1525,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-5-6'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_73(self):
@@ -1544,7 +1545,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-5-7'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_74(self):
@@ -1564,7 +1565,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-5-8'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_75(self):
@@ -1584,7 +1585,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-5-9'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_76(self):
@@ -1782,7 +1783,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-6-8'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_84(self):
@@ -1805,7 +1806,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-6-9'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_85(self):
@@ -1828,7 +1829,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-6-10'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_86(self):
@@ -1851,7 +1852,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-6-11'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_87(self):
@@ -1971,8 +1972,8 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-7-6'
         number_inputs = 2
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_93(self):
         """
@@ -1990,8 +1991,8 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-7-7'
         number_inputs = 2
-        message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = ""
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_94(self):
         """
@@ -2009,7 +2010,7 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-7-8'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_95(self):
@@ -2028,5 +2029,5 @@ class DatasetDatasetStringTypeChecking(TestStringTypeChecking):
          """
         code = '3-4-7-9'
         number_inputs = 2
-        message = "1-1-1-2"
+        message = "1-1-1-3"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

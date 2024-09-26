@@ -122,12 +122,6 @@ class UdoTest(UDOHelper):
                     end operator;
 
                     DS_r := drop_identifier (suma (DS,Me_1,Me_2), Id_3);
-        Description: It gives an error that says: AttributeError: 'NoneType' object has no attribute 'value'
-
-        Git Branch: #288-test-concatenate-udo.
-        Goal: Check the result of concatenate USER DEFINED OPERATORS.
-
-        Note: provisional exception until further analysis as creation of a new component should not be allowed
         """
         code = '1-1-1-4'
         number_inputs = 1
@@ -379,7 +373,7 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_381'
         number_inputs = 0
-        message = "1-3-34"
+        message = "1-4-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -416,9 +410,9 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_452_1'
         number_inputs = 1
-        references_names = ["1"]
-        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        message = "1-4-1-1"
+
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_452_2(self):
         """
@@ -464,9 +458,9 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_452_5'
         number_inputs = 2
-        references_names = ["1"]
-        with pytest.raises(Exception, match="Expected Integer, got DataComponent on UDO max1, parameter x"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names, scalars={'sc_2': "4"})
+        message = "1-4-1-1"
+
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_442_1(self):
         """
@@ -570,7 +564,7 @@ class UdoTest(UDOHelper):
         """
         code = 'GL_474_2'
         number_inputs = 1
-        message = "1-1-1-2"
+        message = "1-1-1-3"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 

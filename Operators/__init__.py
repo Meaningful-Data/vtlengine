@@ -5,8 +5,9 @@ from typing import Any, Union
 from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
-    unary_implicit_promotion
+    unary_implicit_promotion, SCALAR_TYPES_CLASS_REVERSE
 from DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
+from Exceptions import SemanticError
 
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
@@ -109,10 +110,6 @@ class Operator:
 
     @classmethod
     def evaluate(cls, *args, **kwargs):
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def dataset_validation(cls, *args) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -269,16 +266,11 @@ class Binary(Operator):
         right_measures_names = [measure.name for measure in right_measures]
 
         if left_measures_names != right_measures_names:
-            raise Exception("Measures do not match")
-
+            raise SemanticError("1-1-14-1", op=cls.op, left=left_measures_names, right=right_measures_names)
+        elif len(left_measures) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=left_operand.name)
         for left_measure, right_measure in zip(left_measures, right_measures):
-            if not cls.validate_type_compatibility(left_measure.data_type, right_measure.data_type):
-                raise Exception(
-                    f"{left_measure.name} with type {left_measure.data_type} "
-                    f"and {right_measure.name} with type {right_measure.data_type} "
-                    f"is not compatible with {cls.op} on datasets "
-                    f"{left_operand.name} and {right_operand.name}"
-                )
+            cls.type_validation(left_measure.data_type, right_measure.data_type)
 
         # We do not need anymore these variables
         del left_measures
@@ -287,6 +279,8 @@ class Binary(Operator):
         del right_measures_names
 
         join_keys = list(set(left_identifiers).intersection(right_identifiers))
+        if len(join_keys) == 0:
+            raise SemanticError("1-3-27", op=cls.op)
 
         # Deleting extra identifiers that we do not need anymore
 
@@ -307,6 +301,8 @@ class Binary(Operator):
 
     @classmethod
     def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar):
+        if len(dataset.get_measures()) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
 
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              dataset.components.items() if
@@ -320,10 +316,8 @@ class Binary(Operator):
     @classmethod
     def scalar_validation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            raise Exception(
-                f"{left_operand.name} with type {left_operand.data_type} "
-                f"and {right_operand.name} with type {right_operand.data_type} is not compatible with {cls.op}"
-            )
+
+            raise SemanticError("1-1-1-2", )
 
         return Scalar(name="result",
                       data_type=cls.type_validation(left_operand.data_type,
@@ -339,12 +333,6 @@ class Binary(Operator):
         :param right_operand: The right component
         :return: The result data type of the validation
         """
-        # We can ommite the first validation because we check again in the next line
-        if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            raise Exception(
-                f"{left_operand.name} with type {left_operand.data_type} "
-                f"and {right_operand.name} with type {right_operand.data_type} is not compatible with {cls.op}"
-            )
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
 
         result = DataComponent(name="result",
@@ -357,11 +345,7 @@ class Binary(Operator):
 
     @classmethod
     def component_scalar_validation(cls, component: DataComponent, scalar: Scalar):
-        if not cls.validate_type_compatibility(component.data_type, scalar.data_type):
-            raise Exception(
-                f"{component.name} with type {component.data_type} "
-                f"and {scalar.name} with type {scalar.data_type} is not compatible with {cls.op}"
-            )
+        cls.type_validation(component.data_type, scalar.data_type)
 
         result = DataComponent(name=component.name,
                                data_type=cls.type_validation(component.data_type, scalar.data_type),
@@ -373,12 +357,10 @@ class Binary(Operator):
     @classmethod
     def dataset_set_validation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
 
+        if len(dataset.get_measures()) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
         for measure in dataset.get_measures():
-            if not cls.validate_type_compatibility(measure.data_type, scalar_set.data_type):
-                raise Exception(
-                    f"{measure.name} with type {measure.data_type} "
-                    f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-                )
+            cls.type_validation(measure.data_type, scalar_set.data_type)
 
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              dataset.components.items() if
@@ -392,13 +374,7 @@ class Binary(Operator):
     @classmethod
     def component_set_validation(cls, component: DataComponent,
                                  scalar_set: ScalarSet) -> DataComponent:
-
-        if not cls.validate_type_compatibility(component.data_type, scalar_set.data_type):
-            raise Exception(
-                f"{component.name} with type {component.data_type} "
-                f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-            )
-
+        cls.type_validation(component.data_type, scalar_set.data_type)
         result = DataComponent(name="result", data_type=cls.type_validation(component.data_type,
                                                                             scalar_set.data_type),
                                data=None,
@@ -408,11 +384,7 @@ class Binary(Operator):
 
     @classmethod
     def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
-        if not cls.validate_type_compatibility(scalar.data_type, scalar_set.data_type):
-            raise Exception(
-                f"{scalar.name} with type {scalar.data_type} "
-                f"and scalar_set with type {scalar_set.data_type} is not compatible with {cls.op}"
-            )
+        cls.type_validation(scalar.data_type, scalar_set.data_type)
         return Scalar(name="result",
                       data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
                       value=None)
@@ -480,7 +452,7 @@ class Binary(Operator):
                   is_mono_measure is False and
                   left_type.promotion_changed_type(result_data_type)
             ):
-                raise Exception("Operation not allowed for multimeasure datasets")
+                raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
 
@@ -689,6 +661,8 @@ class Unary(Operator):
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
         cls.validate_dataset_type(operand)
+        if len(operand.get_measures()) == 0:
+            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              operand.components.items() if
                              comp.role in [Role.IDENTIFIER, Role.MEASURE]}
@@ -699,16 +673,12 @@ class Unary(Operator):
 
     @classmethod
     def scalar_validation(cls, operand: Scalar) -> Scalar:
-        if not cls.validate_type_compatibility(operand.data_type):
-            raise Exception(
-                f"{operand.name} with type {operand.data_type} is not compatible with {cls.op}")
         result_type = cls.type_validation(operand.data_type)
         result = Scalar(name="result", data_type=result_type, value=None)
         return result
 
     @classmethod
     def component_validation(cls, operand: DataComponent) -> DataComponent:
-        cls.validate_type_compatibility(operand.data_type)
         result_type = cls.type_validation(operand.data_type)
         result = DataComponent(name="result", data_type=result_type, data=None,
                                role=operand.role, nullable=operand.nullable)
@@ -729,15 +699,16 @@ class Unary(Operator):
         if cls.type_to_check is not None:
             for measure in dataset.get_measures():
                 if not cls.validate_type_compatibility(measure.data_type):
-                    raise Exception(
-                        f"{measure.role.value} {measure.name} can't be promoted to {cls.type_to_check}"
-                    )
+                    raise SemanticError("1-1-1-3",
+                                        op=cls.op, entity=measure.role.value,
+                                        name=measure.name,
+                                        target_type=SCALAR_TYPES_CLASS_REVERSE[cls.type_to_check])
 
     @classmethod
     def validate_scalar_type(cls, scalar: Scalar) -> None:
         if (cls.type_to_check is not None and not cls.validate_type_compatibility(
                 scalar.data_type)):
-            raise Exception(f"{scalar.name} can't be promoted to {cls.type_to_check}")
+            raise SemanticError("1-1-1-5", op=cls.op, name=scalar.name, type=SCALAR_TYPES_CLASS_REVERSE[scalar.data_type])
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
@@ -760,7 +731,7 @@ class Unary(Operator):
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif changed_allowed is False and is_mono_measure is False and operand_type.promotion_changed_type(
                     result_data_type):
-                raise Exception("Operation not allowed for multimeasure datasets")
+                raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
 

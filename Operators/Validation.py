@@ -3,22 +3,25 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
+from AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from DataTypes import Boolean, Integer, Number, String, check_unary_implicit_promotion
+from Exceptions import SemanticError
 from Model import Component, Dataset, Role
 from Operators import Operator
 
 
 # noinspection PyTypeChecker
 class Check(Operator):
+    op = CHECK
 
     @classmethod
     def validate(cls, validation_element: Dataset, imbalance_element: Optional[Dataset],
                  error_code: Optional[str], error_level: Optional[int], invalid: bool) -> Dataset:
         if len(validation_element.get_measures()) != 1:
-            raise Exception("The validation operand must have exactly one measure of type Boolean")
+            raise SemanticError("1-1-10-1", op=cls.op,  op_type="validation", me_type="Boolean")
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
-            raise Exception("The validation operand must have exactly one measure of type Boolean")
+            raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
 
         imbalance_measure = None
         if imbalance_element is not None:
@@ -28,13 +31,11 @@ class Check(Operator):
                 raise Exception(
                     "The validation and imbalance operands must have the same identifiers")
             if len(imbalance_element.get_measures()) != 1:
-                raise Exception(
-                    "The imbalance operand must have exactly one measure of type Numeric")
+                raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
             imbalance_measure = imbalance_element.get_measures()[0]
             if imbalance_measure.data_type != Number:
-                raise Exception(
-                    "The imbalance operand must have exactly one measure of type Numeric")
+                raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
         # Generating the result dataset components
         result_components = {comp.name: comp for comp in validation_element.components.values()
@@ -155,6 +156,8 @@ class Check_Datapoint(Validation):
 
 class Check_Hierarchy(Validation):
 
+    op = CHECK_HIERARCHY
+
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
         df = None
@@ -179,12 +182,15 @@ class Check_Hierarchy(Validation):
     @staticmethod
     def validate_hr_dataset(dataset: Dataset, component_name: str):
         if len(dataset.get_measures()) != 1:
-            raise Exception("The hierarchy operand must have exactly one measure of type Number")
+            raise SemanticError("1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number")
         measure = dataset.get_measures()[0]
         if not check_unary_implicit_promotion(measure.data_type, Number):
-            raise Exception("The hierarchy operand must have exactly one measure of type Number")
+            raise SemanticError("1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number")
         if component_name not in dataset.components:
-            raise ValueError(f"Component {component_name} not found in dataset {dataset.name}")
+            raise SemanticError("1-1-1-10", op=Check_Hierarchy.op, comp_name=component_name,
+                                dataset_name=dataset.name)
+        if dataset.components[component_name].role != Role.IDENTIFIER:
+            raise SemanticError("1-3-20", name=component_name, role=dataset.components[component_name].role.value)
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():

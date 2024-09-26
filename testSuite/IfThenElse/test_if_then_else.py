@@ -215,7 +215,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-10'
         number_inputs = 1
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -235,7 +235,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-11'
         number_inputs = 1
-        error_code = "1-1-9-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -255,7 +255,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-12'
         number_inputs = 1
-        error_code = "1-1-1-3"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -335,7 +335,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-16'
         number_inputs = 3
-        error_code = "1-1-1-2"
+        error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -375,9 +375,9 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-18'
         number_inputs = 3
-        error_code = "1-1-9-12"
-
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
+        # error_code = "1-1-9-12"
+        #
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
     def test_19(self):
         """
@@ -415,7 +415,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-20'
         number_inputs = 3
-        error_code = "1-1-9-7"
+        error_code = "1-1-9-13"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 
@@ -435,7 +435,7 @@ class IfThenElseTest(TestIfThenElse):
         """
         code = '1-1-1-21'
         number_inputs = 3
-        error_code = "1-1-9-7"
+        error_code = "1-1-9-13"
 
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
 

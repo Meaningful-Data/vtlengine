@@ -38,7 +38,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         # 3 For add operator in numeric
         # 1 Number of test
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_2(self):
@@ -54,7 +54,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-2'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_3(self):
@@ -71,8 +71,8 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-3'
         number_inputs = 1
-        message = "1-1-1-3"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
+        message = "0-1-1-12"
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_4(self):
         '''
@@ -88,7 +88,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-4'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
@@ -105,7 +105,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-5'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_6(self):
@@ -123,7 +123,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-6'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_7(self):
@@ -140,7 +140,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-7'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_8(self):
@@ -158,7 +158,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-8'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_9(self):
@@ -176,7 +176,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-9'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_10(self):
@@ -193,7 +193,7 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-10'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_11(self):
@@ -260,5 +260,5 @@ class ScalarComponentTypeChecking(TestScalarComponentTypeChecking):
         '''
         code = '4-1-3-14'
         number_inputs = 1
-        message = "1-1-1-3"
+        message = "1-1-1-2"
         self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
