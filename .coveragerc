@@ -3,3 +3,4 @@ omit =
     testSuite/*
     development/*
     */Grammar/*
+    AST/VtlVisitor.py
