@@ -33,7 +33,8 @@ class Binary(Operator.Binary):
     def apply_operation_two_series(cls,
                                    left_series: Any,
                                    right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.op_func)
+        result = list(map(cls.op_func, left_series.values, right_series.values))
+        return pd.Series(result, index=left_series.index, dtype=object)
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
