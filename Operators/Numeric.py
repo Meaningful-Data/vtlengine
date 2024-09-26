@@ -26,6 +26,8 @@ class Binary(Operator.Binary):
         if pd.isnull(x) or pd.isnull(y):
             return None
         if isinstance(x, int) and isinstance(y, int):
+            if cls.op == DIV and y == 0:
+                raise SemanticError("2-1-15-6", op=cls.op, value=y)
             return cls.py_op(x, y)
         x = float(x)
         y = float(y)
