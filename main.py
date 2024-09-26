@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from time import time
 
 from API import run
 
@@ -12,6 +13,7 @@ vds = base_path / 'valueDomains'
 vtl = base_path / 'vtl' / 'monthVal.vtl'
 
 if __name__ == '__main__':
+    start = time()
     run(
         script=vtl,
         data_structures=input_ds,
@@ -19,3 +21,5 @@ if __name__ == '__main__':
         value_domains=vds,
         output_path=output_dp,
     )
+    end = time()
+    print(f"Execution time: {round(end - start, 2)}s")
