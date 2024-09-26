@@ -56,7 +56,7 @@ def _parser(stream: CommonTokenStream) -> Any:
 
 def create_ast(text: str) -> Start:
     """
-    Generates the AST
+    Function that creates the AST object.
     """
     stream = _lexer(text)
     cst = _parser(stream)
@@ -70,6 +70,38 @@ def semantic_analysis(script: Union[str, Path],
                       data_structures: Union[dict, Path, List[Union[dict, Path]]],
                       value_domains: Union[dict, Path] = None,
                       external_routines: Union[str, Path] = None):
+    """
+    Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script given and also reviews
+    if the data structure given can fit with it. This vtl script can be a string with the actual expression or a filepath to the folder that contains the vtl file.
+    Also, the data structure can be a dictionary or a filepath to the folder that contains it.
+    If there are any value domains or external routines, this data is taken into account. Both can be loaded the
+    same way as data structures or vtl scripts are.
+
+    Finally, the :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>`
+    class takes all of this information and checks it with the ast generated to return the semantic analysis result.
+
+    Concepts you may know:
+    - Vtl script: The expression that shows the operation to be done.
+
+    - Data Structure: Json file that contains the structure and the name for the dataset(s) (and/or scalar)
+    about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
+
+    - Value domains: Collection of unique values of the same datatype.
+
+    - External routines: SQL query used to transform a dataset.
+
+    This function has the following params:
+
+    :param script: String or Path of the vtl expression.
+
+    :param data_structures: Dict or Path(file or folder), or List of Dicts or Paths with the data_structures json files.
+
+    :param value_domains: Dict or Path of the value_domains json files. (default: None)
+
+    :param external_routines: String or Path of the external routines sql files. (default: None)
+
+    :return: The analysis.
+    """
     # AST generation
     vtl = load_vtl(script)
     ast = create_ast(vtl)
@@ -98,6 +130,57 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
         time_period_output_format: str = "vtl",
         return_only_persistent=False, output_path: Optional[Path] = None):
+    """
+    Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready to be performed. When the vtl expression is given,
+    an AST object is created. This vtl script can be given as a string or a path with the folder or file that contains it.
+    At the same time, data structures are loaded with its datapoints.
+    The data structure information is contained in the json file given, and establish the datatype (string, integer or number),
+    and the role that each component is going to have (Identifier or Measure). It can be a dictionary or a path to the json file or folder that contains it.
+    Moreover, a csv file with the data to operate with is going to be loaded. It can be given with a dictionary or a path to the folder or csv file that contains the data.
+    Also, the DAG analysis reviews if this data has direct acyclic graphs.
+
+    This information is taken by the Interpreter class, to analyze if the operation correlates with the AST object.
+    Also, if value domain data or external routines are required, the function loads this information and integrates
+    them into the :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>` class. Moreover,
+    if it is a vtl time operation, the operator given in the time_period param is integrated in this Interpreter class.
+
+    Finally, run function returns the vtl operation ready to be performed.
+
+    Concepts you may know:
+    - Vtl script: The expression that shows the operation to be done.
+
+    - Data Structure: Json file that contains the structure and the name for the dataset(s) (and/or scalar)
+    about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
+
+    - Data point: Csv file with the data. It will be loaded as a `Pandas Dataframe \
+    <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_.
+
+    - Value domains: Collection of unique values that have the same datatype.
+
+    - External routines: SQL query used to transform a dataset.
+
+     This function has the following params:
+
+    :param script: String or Path with the vtl expression.
+
+    :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+
+    :param datapoints: Dict, Path or List of Paths with data.
+
+    :param value_domains: Dict or Path of the value_domains json files. (default:None)
+
+    :param external_routines: String or Path of the external routines sql files. (default: None)
+
+    :param time_period_output_format: String with the possible values ("sdmx_gregorian", "sdmx_reporting", "vtl")
+    for the representation of the Time Period components.
+
+    :param return_only_persistent: If it is True, run function will only return the expression with an only persistent argument. (default: False)
+
+    :param output_path: Path with the output folder. (default: None)
+
+    :return: The operation to be performed.
+
+    """
     # AST generation
     vtl = load_vtl(script)
     ast = create_ast(vtl)

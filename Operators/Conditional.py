@@ -14,7 +14,23 @@ else:
 
 
 class If(Operator):
+    """
+    If class:
+        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
+        inherits from Operator, a superclass that contains general validate and evaluate class methods.
+        It has the following class methods:
+    Class methods:
+        evaluate: Evaluates if the operation is well constructed, checking the actual condition and dropping a boolean
+        result. The result will depend on the data class, such as datacomponent and dataset.
 
+        component_level_evaluation: Returns a pandas dataframe with data to set the condition
+
+        dataset_level_evaluation: Sets the dataset and evaluates its correct schema to be able to perform the condition.
+
+        validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
+        the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
+        identifiers are the same in 'if', 'then' and 'else'.
+    """
     @classmethod
     def evaluate(cls, condition, true_branch, false_branch):
         result = cls.validate(condition, true_branch, false_branch)
@@ -143,6 +159,15 @@ class If(Operator):
 
 
 class Nvl(Binary):
+    """
+    Null class:
+        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class.
+        It has the following class methods:
+
+    Class methods:
+        Validate: Class method that validates if the operation at scalar, datacomponent or dataset level can be performed.
+        Evaluate: Evaluates the actual operation, returning the result.
+    """
 
     @classmethod
     def evaluate(cls, left, right):
