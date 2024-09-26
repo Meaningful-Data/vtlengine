@@ -14,6 +14,7 @@ from AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOI
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
     FILL_TIME_SERIES, CAST, CHECK_HIERARCHY, HIERARCHY, EQ, CURRENT_DATE
 from DataTypes import BASIC_TYPES, check_unary_implicit_promotion, ScalarType
+from Exceptions import SemanticError
 from Model import DataComponent, Dataset, ExternalRoutine, Role, Scalar, ScalarSet, Component, \
     ValueDomain
 from Operators.Aggregation import extract_grouping_identifiers
@@ -271,7 +272,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if right_operand not in left_operand.components and '#' in right_operand:
                 right_operand = right_operand.split('#')[1]
             if self.is_from_component_assignment:
-                return BINARY_MAPPING[node.op].evaluate(left_operand, right_operand, self.is_from_component_assignment)
+                return BINARY_MAPPING[node.op].analyze(left_operand, right_operand, self.is_from_component_assignment)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
@@ -289,6 +290,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Aggregation(self, node: AST.Aggregation) -> None:
         # Having takes precedence as it is lower in the AST
         if self.is_from_having:
+            if node.operand is not None:
+                self.visit(node.operand)
             operand = self.aggregation_dataset
         elif self.is_from_regular_aggregation:
             operand = self.regular_aggregation_dataset
@@ -339,7 +342,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset = None
             if node.having_clause is not None:
                 self.aggregation_dataset = Dataset(name=operand.name,
-                                                   components=operand.components,
+                                                   components=deepcopy(operand.components),
                                                    data=pd.DataFrame(columns=operand.get_components_names()))
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(),
@@ -352,13 +355,35 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_having = False
                 self.aggregation_grouping = None
                 self.aggregation_dataset = None
-                having = getattr(node.having_clause, 'expr', None)
+                having = getattr(node.having_clause, 'expr', "")
+                having = self._format_having_expression_udo(having)
+
         elif self.is_from_having:
             groupings = self.aggregation_grouping
             # Setting here group by as we have already selected the identifiers we need
             grouping_op = 'group by'
 
         return AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
+
+    def _format_having_expression_udo(self, having: str):
+        if self.udo_params is None:
+            return having
+        for k, v in self.udo_params[-1].items():
+            old_param = None
+            if f"{k} " in having:
+                old_param = f"{k} "
+            elif f" {k}" in having:
+                old_param = f" {k}"
+            if old_param is not None:
+                if isinstance(v, str):
+                    new_param = f" {v}"
+                elif isinstance(v, (Dataset, Scalar)):
+                    new_param = f" {v.name}"
+                else:
+                    new_param = f" {v.value}"
+                having = having.replace(old_param, new_param)
+        return having
+
 
     def visit_Analytic(self, node: AST.Analytic) -> None:
         if self.is_from_regular_aggregation:
@@ -515,6 +540,9 @@ class InterpreterAnalyzer(ASTTemplate):
             # If it is only the component or dataset name, we rename the node.value
             node.value = udo_element
         if self.is_from_having or self.is_from_grouping:
+            if node.value not in self.aggregation_dataset.components:
+                raise SemanticError("1-1-1-10", op=None, comp_name=node.value,
+                                    dataset_name=self.aggregation_dataset.name)
             if self.aggregation_dataset.data is None:
                 data = None
             else:

@@ -2,7 +2,7 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE
+from AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion
@@ -22,6 +22,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 # TODO: Check if there are more operators that allow this
 MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
+BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
 

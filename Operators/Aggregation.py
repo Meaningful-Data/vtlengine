@@ -2,8 +2,11 @@ import os
 from copy import copy
 from typing import List, Optional
 
+import duckdb
+
 from DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED, TimePeriodHandler, \
     TimeIntervalHandler
+from Exceptions import SemanticError
 
 if os.getenv('SPARK', False):
     import pyspark.pandas as pd
@@ -79,18 +82,18 @@ class Aggregation(Operator.Unary):
     @classmethod
     def validate(cls, operand: Dataset,
                  group_op: Optional[str],
-                 grouping_components: Optional[List[str]],
+                 grouping_columns: Optional[List[str]],
                  having_data: Optional[List[DataComponent]]) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if group_op is not None:
-            for comp_name in grouping_components:
+            for comp_name in grouping_columns:
                 if comp_name not in operand.components:
                     raise ValueError(f"Component {comp_name} not found in dataset")
                 if operand.components[comp_name].role != Role.IDENTIFIER:
                     raise ValueError(f"Component {comp_name} is not an identifier")
             identifiers_to_keep = extract_grouping_identifiers(operand.get_identifiers_names(),
                                                                group_op,
-                                                               grouping_components)
+                                                               grouping_columns)
             for comp_name, comp in operand.components.items():
                 if comp.role == Role.IDENTIFIER and comp_name not in identifiers_to_keep:
                     del result_components[comp_name]
@@ -117,163 +120,148 @@ class Aggregation(Operator.Unary):
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
+    def _agg_func(cls, df: pd.DataFrame, grouping_keys: Optional[List[str]],
+                  measure_names: Optional[List[str]],
+                  having_expression: Optional[str]) -> pd.DataFrame:
+        grouping_names = [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
+        if grouping_names is not None and len(grouping_names) > 0:
+            grouping = "GROUP BY " + ', '.join(grouping_names)
+        else:
+            grouping = ""
+
+        if having_expression is None:
+            having_expression = ""
+
+        if len(measure_names) == 0 and cls.op == COUNT:
+            if grouping_names is not None:
+                query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping} {having_expression}"
+            else:
+                query = f"SELECT COUNT() AS int_var from df {grouping}"
+            return duckdb.query(query).to_df()
+
+        if len(measure_names) > 0:
+            functions = ""
+            for e in measure_names:
+                e = f'"{e}"'
+                if cls.type_to_check is not None and cls.op != COUNT:
+                    functions += f"{cls.py_op}(CAST({e} AS REAL)) AS {e}, "  # Count can only be one here
+                elif cls.op == COUNT:
+                    functions += f"{cls.py_op}({e}) AS int_var, "
+                    break
+                else:
+                    functions += f"{cls.py_op}({e}) AS {e}, "
+            if grouping_names is not None and len(grouping_names) > 0:
+                query = f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} from df {grouping} {having_expression}"
+            else:
+                query = f"SELECT {functions[:-2]} from df"
+
+        else:
+            query = f"SELECT {', '.join(grouping_names)} from df {grouping} {having_expression}"
+
+        try:
+            return duckdb.query(query).to_df()
+        except RuntimeError as e:
+            if 'Conversion' in e.args[0]:
+                raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
+            else:
+                raise SemanticError("2-1-1-1", op=cls.op)
+
+    @classmethod
     def evaluate(cls,
                  operand: Dataset,
                  group_op: Optional[str],
-                 grouping_columns: Optional[str],
-                 having_data: Optional[pd.DataFrame]) -> Dataset:
-        result = cls.validate(operand, group_op, grouping_columns, having_data)
+                 grouping_columns: Optional[List[str]],
+                 having_expr: Optional[str]) -> Dataset:
+        result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result.data = operand.data.copy()
-        if len(operand.get_measures_names()) == 0:
-            if cls.op == COUNT:
-                result.data = result.data[grouping_keys].groupby(grouping_keys).size().reset_index(name='int_var')
-            else:
-                result.data = result.data[grouping_keys].drop_duplicates(keep='first')
-            return result
-        if len(grouping_keys) == 0 and group_op is not None:
-            grouping_keys = operand.get_identifiers_names()
-        elif group_op is None:
-            grouping_keys = []
+        result_df = operand.data.copy()
         measure_names = operand.get_measures_names()
-        result_df = result.data[grouping_keys + measure_names]
-        if having_data is not None:
-            result_df = result_df.merge(having_data, how='inner', on=grouping_keys)
-        comps_to_keep = grouping_keys + measure_names
+        result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
-            if len(grouping_keys) == 0:
-                result_df = result_df.dropna(subset=measure_names, how='any')
-                result_df = result_df.count().reset_index(name='int_var')
-                result_df = result_df['int_var'].to_frame().drop_duplicates().reset_index(drop=True)
-            else:
-                # As Count does not include null values,
-                # we remove them and merge using the grouping keys,
-                # to ensure we do not lose any group that only has null values
-                aux_df = result_df.dropna(subset=measure_names, how='any')
-                aux_df = aux_df.groupby(grouping_keys).size().reset_index(name='int_var')
-                result_df = result_df.drop_duplicates(subset=grouping_keys)[grouping_keys].reset_index(drop=True)
-                result_df = result_df.merge(aux_df, how="left", on=grouping_keys)
+            result_df = result_df.dropna(subset=measure_names, how="any")
+        cls._handle_data_types(result_df, operand.get_measures(), 'input')
+        result_df = cls._agg_func(result_df, grouping_keys, measure_names,
+                                  having_expr)
+
+        cls._handle_data_types(result_df, operand.get_measures(), 'result')
+        # Handle correct order on result
+        aux_df = operand.data[grouping_keys].drop_duplicates()
+        if len(grouping_keys) == 0:
+            aux_df = result_df
+            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
+            if cls.op == COUNT and len(result_df) == 0:
+                aux_df['int_var'] = 0
+        elif len(aux_df) == 0:
+            aux_df = pd.DataFrame(columns=result.get_components_names())
         else:
-            if os.getenv('SPARK', False) and cls.spark_op is not None:
-                result_df = cls.spark_op(result_df, grouping_keys)
-            else:
-                cls._handle_data_types(result_df, operand.get_measures(), mode='input')
-                if cls.op == SUM:
-                    # Min_count is used to ensure we return null if all elements are null,
-                    # instead of 0
-                    agg_dict = {measure_name: lambda x: x.sum(min_count=1)
-                                for measure_name in measure_names}
-                elif cls.py_op.__name__ != 'py_op':
-                    agg_dict = {measure_name: cls.py_op.__name__ for measure_name in measure_names}
-                else:
-                    agg_dict = {measure_name: cls.py_op for measure_name in measure_names}
-                if len(grouping_keys) > 0:
-                    result_df = result_df.groupby(grouping_keys)[comps_to_keep].agg(agg_dict).reset_index(
-                            drop=False)
-                else:
-                    result_df = result_df[comps_to_keep].agg(agg_dict)
-                    if isinstance(result_df, pd.Series):
-                        result_df = result_df.to_frame().T
-                cls._handle_data_types(result_df, operand.get_measures(), 'result')
-        result.data = result_df
+            aux_df = pd.merge(aux_df, result_df, how='left', on=grouping_keys)
+        if having_expr is not None:
+            aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        result.data = aux_df
         return result
 
 
 class Max(Aggregation):
     op = MAX
-    py_op = pd.DataFrame.max
+    py_op = 'max'
 
 
 class Min(Aggregation):
     op = MIN
-    py_op = pd.DataFrame.min
+    py_op = 'min'
 
 
 class Sum(Aggregation):
     op = SUM
     type_to_check = Number
-    py_op = pd.DataFrame.sum
+    py_op = 'sum'
 
 
 class Count(Aggregation):
     op = COUNT
     type_to_check = None
     return_type = Integer
-    py_op = pd.DataFrame.count
+    py_op = 'count'
 
 
 class Avg(Aggregation):
     op = AVG
     type_to_check = Number
     return_type = Number
-    py_op = pd.DataFrame.mean
+    py_op = 'avg'
 
 
 class Median(Aggregation):
-    # TODO: Median has inconsistent behavior in spark
-    #  test 144 has a median of 3, but the result is 2
     op = MEDIAN
     type_to_check = Number
     return_type = Number
-    py_op = pd.DataFrame.median
-
-    @classmethod
-    def spark_op(cls, df, keys):
-        return df.groupby(keys).median().reset_index(drop=False)
-
-        # percentiles = [0.5]  # Median
-        # return df.groupby(keys).approxQuantile(percentiles)[0].reset_index(drop=False)
+    py_op = 'median'
 
 
 class PopulationStandardDeviation(Aggregation):
     op = STDDEV_POP
     type_to_check = Number
     return_type = Number
-
-    @classmethod
-    def py_op(cls, df):
-        return df.std(ddof=0)
-
-    @classmethod
-    def spark_op(cls, df, keys):
-        return df.groupby(keys).std(ddof=0).reset_index(drop=False)
+    py_op = 'stddev_pop'
 
 
 class SampleStandardDeviation(Aggregation):
     op = STDDEV_SAMP
     type_to_check = Number
     return_type = Number
-
-    @classmethod
-    def py_op(cls, df):
-        return df.std(ddof=1)
-
-    @classmethod
-    def spark_op(cls, df, keys):
-        return df.groupby(keys).std(ddof=1).reset_index(drop=False)
+    py_op = 'stddev_samp'
 
 
 class PopulationVariance(Aggregation):
     op = VAR_POP
     type_to_check = Number
     return_type = Number
-
-    @classmethod
-    def py_op(cls, df):
-        return df.var(ddof=0)
-
-    @classmethod
-    def spark_op(cls, df, keys):
-        return df.groupby(keys).var(ddof=0).reset_index(drop=False)
+    py_op = 'var_pop'
 
 
 class SampleVariance(Aggregation):
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number
-    py_op = pd.DataFrame.var
-
-    @classmethod
-    def spark_op(cls, df, keys):
-        return df.groupby(keys).var().reset_index(drop=False)
+    py_op = 'var_samp'

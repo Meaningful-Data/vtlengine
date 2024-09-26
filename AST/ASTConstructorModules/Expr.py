@@ -1412,6 +1412,16 @@ class Expr(VtlVisitor):
         expr = re.split('having', text)[1]
         expr = 'having ' + expr[:-2].strip()
 
+        if ']' in expr:
+            index = expr.index(']')
+            expr = expr[:index]
+        if 'end' in expr:
+            index = expr.index('end')
+            expr = expr[:index]
+        if expr.count(')') > expr.count('('):
+            index = expr.rindex(')')
+            expr = expr[:index]
+
         if '{' in expr or '}' in expr:
             expr = expr.replace('{', '(')
             expr = expr.replace('}', ')')

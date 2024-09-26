@@ -2064,9 +2064,10 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = 'GL_422_1'
         number_inputs = 2
-        references_names = ["1"]
+        # references_names = ["1"]
+        message = "1-1-1-10"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_422_2(self):
         """
@@ -2085,9 +2086,9 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = 'GL_422_2'
         number_inputs = 2
-        references_names = ["1"]
+        message = "1-1-1-10"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_GL_422_3(self):
         """
