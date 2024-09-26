@@ -16,12 +16,6 @@
           "nullable": false
         },
         {
-          "name": "ENTRPRS_SZ_PRLMNRY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "ENTRPRS_SZ_PRLMNRY_T",
           "role": "Measure",
           "type": "String",
@@ -34,13 +28,19 @@
           "nullable": true
         },
         {
-          "name": "TYP_ENTRPRS",
+          "name": "ENTRPRS_SZ_PRLMNRY",
           "role": "Measure",
           "type": "String",
           "nullable": true
         },
         {
           "name": "CNTRL_PBLC_BDS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "TYP_ENTRPRS",
           "role": "Measure",
           "type": "String",
           "nullable": true

@@ -22,12 +22,6 @@
           "nullable": false
         },
         {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "PRTCTN_ALLCTD_VL",
           "role": "Measure",
           "type": "Number",
@@ -37,6 +31,12 @@
           "name": "PRTCTN_CNSDRD_CPD_MX_AMT",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
           "nullable": false
         },
         {

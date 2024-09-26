@@ -4,36 +4,6 @@
       "name": "P_IMPLCT_CRDT_DRVTV_1.CRDT_DRVTV_E",
       "DataStructure": [
         {
-          "name": "TYP_HDGD_RSK",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TYP_RSK",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PSTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -55,6 +25,12 @@
           "name": "CRRYNG_AMNT",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
           "nullable": false
         },
         {
@@ -118,6 +94,24 @@
           "nullable": true
         },
         {
+          "name": "PEST_ACCMLTD_CHNGS_FV_PRD",
+          "role": "Attribute",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PSTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PSTN_INSTRMNT",
           "role": "Measure",
           "type": "String",
@@ -148,9 +142,15 @@
           "nullable": false
         },
         {
-          "name": "PEST_ACCMLTD_CHNGS_FV_PRD",
-          "role": "Attribute",
-          "type": "Date",
+          "name": "TYP_HDGD_RSK",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_RSK",
+          "role": "Measure",
+          "type": "String",
           "nullable": false
         }
       ]

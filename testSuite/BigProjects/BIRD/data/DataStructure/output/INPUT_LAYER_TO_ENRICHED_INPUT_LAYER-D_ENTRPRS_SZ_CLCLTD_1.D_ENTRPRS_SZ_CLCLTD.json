@@ -4,12 +4,6 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD",
       "DataStructure": [
         {
-          "name": "ENTRPRS_SZ",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -23,6 +17,12 @@
         },
         {
           "name": "IS_DRVD_ENTRPRS_SZ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "ENTRPRS_SZ",
           "role": "Measure",
           "type": "String",
           "nullable": true

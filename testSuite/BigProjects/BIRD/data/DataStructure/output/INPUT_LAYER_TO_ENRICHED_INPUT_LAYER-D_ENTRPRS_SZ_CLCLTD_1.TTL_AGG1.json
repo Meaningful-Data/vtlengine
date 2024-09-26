@@ -4,7 +4,13 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG1",
       "DataStructure": [
         {
-          "name": "NMBR_EMPLYS",
+          "name": "ANNL_TRNVR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "BLNC_SHT_TTL",
           "role": "Measure",
           "type": "Number",
           "nullable": true
@@ -28,13 +34,7 @@
           "nullable": false
         },
         {
-          "name": "BLNC_SHT_TTL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "ANNL_TRNVR",
+          "name": "NMBR_EMPLYS",
           "role": "Measure",
           "type": "Number",
           "nullable": true

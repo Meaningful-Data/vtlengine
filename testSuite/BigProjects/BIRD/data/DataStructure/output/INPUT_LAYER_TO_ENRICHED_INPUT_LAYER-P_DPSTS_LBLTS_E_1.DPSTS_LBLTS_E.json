@@ -4,30 +4,6 @@
       "name": "P_DPSTS_LBLTS_E_1.DPSTS_LBLTS_E",
       "DataStructure": [
         {
-          "name": "TYP_INSTRMNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -91,6 +67,12 @@
           "name": "DT_LGL_FNL_MTRTY",
           "role": "Measure",
           "type": "Date",
+          "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
           "nullable": false
         },
         {
@@ -103,7 +85,7 @@
           "name": "ERLY_RDMPTN_DT",
           "role": "Measure",
           "type": "Date",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "EXCLDD_FRM_BL_IN",
@@ -148,6 +130,12 @@
           "nullable": false
         },
         {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "IS_HFS",
           "role": "Measure",
           "type": "String",
@@ -184,6 +172,12 @@
           "nullable": false
         },
         {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "RDMPTN_NTC_PRD",
           "role": "Measure",
           "type": "Integer",
@@ -191,6 +185,12 @@
         },
         {
           "name": "SBRDNTD_DBT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TYP_INSTRMNT",
           "role": "Measure",
           "type": "String",
           "nullable": false

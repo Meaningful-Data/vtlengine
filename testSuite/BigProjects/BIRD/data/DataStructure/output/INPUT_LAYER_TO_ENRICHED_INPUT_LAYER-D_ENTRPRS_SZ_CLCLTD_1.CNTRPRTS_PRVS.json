@@ -4,18 +4,6 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.CNTRPRTS_PRVS",
       "DataStructure": [
         {
-          "name": "CNTRPRTY_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
           "name": "ACCNTNG_FRMWRK_SL",
           "role": "Measure",
           "type": "String",
@@ -52,6 +40,12 @@
           "nullable": true
         },
         {
+          "name": "CNTRPRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "CNTRY",
           "role": "Measure",
           "type": "String",
@@ -86,6 +80,12 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "DT_STTS",

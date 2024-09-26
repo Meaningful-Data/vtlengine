@@ -4,12 +4,6 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.FNL_STTNG",
       "DataStructure": [
         {
-          "name": "ENTRPRS_SZ_CLCLTD_T",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -20,12 +14,6 @@
           "role": "Identifier",
           "type": "Date",
           "nullable": false
-        },
-        {
-          "name": "ENTRPRS_SZ_PRLMNRY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
         },
         {
           "name": "ENTRPRS_SZ_PRLMNRY_T",
@@ -40,7 +28,7 @@
           "nullable": true
         },
         {
-          "name": "TYP_ENTRPRS",
+          "name": "ENTRPRS_SZ_PRLMNRY",
           "role": "Measure",
           "type": "String",
           "nullable": true
@@ -52,7 +40,19 @@
           "nullable": true
         },
         {
+          "name": "TYP_ENTRPRS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "MRGACQ",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ_CLCLTD_T",
           "role": "Measure",
           "type": "String",
           "nullable": true

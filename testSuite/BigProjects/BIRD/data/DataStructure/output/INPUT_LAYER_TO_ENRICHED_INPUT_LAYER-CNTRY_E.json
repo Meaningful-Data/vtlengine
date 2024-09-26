@@ -10,16 +10,16 @@
           "nullable": false
         },
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
           "name": "CRRNCY",
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "EXTRNL_CRDT_ASSSSMNT",

@@ -4,12 +4,6 @@
       "name": "FCTRNG_AXLRY_E",
       "DataStructure": [
         {
-          "name": "INSTRMNT_UNQ_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "CSH_RSRV_AMNT",
           "role": "Measure",
           "type": "Number",
@@ -32,6 +26,12 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "ORGNL_CSH_RSRV_AMNT",

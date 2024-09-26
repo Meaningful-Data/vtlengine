@@ -10,6 +10,12 @@
           "nullable": false
         },
         {
+          "name": "ENCMBRD_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
           "name": "INSTRMNT_UNQ_ID",
           "role": "Identifier",
           "type": "String",
@@ -25,12 +31,6 @@
           "name": "PRSPCTV_ID",
           "role": "Identifier",
           "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "ENCMBRD_NMNL_AMNT",
-          "role": "Measure",
-          "type": "Number",
           "nullable": false
         }
       ]

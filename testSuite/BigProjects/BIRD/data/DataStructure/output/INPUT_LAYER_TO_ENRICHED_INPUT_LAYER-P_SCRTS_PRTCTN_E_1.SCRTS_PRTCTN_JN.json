@@ -4,30 +4,6 @@
       "name": "P_SCRTS_PRTCTN_E_1.SCRTS_PRTCTN_JN",
       "DataStructure": [
         {
-          "name": "PRTCTN_VLTN_APPRCH_PRTCTN_VL",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "DT_MTRTY_PRTCTN",
           "role": "Measure",
           "type": "Date",
@@ -46,6 +22,12 @@
           "nullable": true
         },
         {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
           "name": "OBSRVD_AGNT_INTRNL_ID",
           "role": "Measure",
           "type": "String",
@@ -56,6 +38,18 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "PRTCTN_VL",
@@ -71,6 +65,12 @@
         },
         {
           "name": "TYP_PRTCTN_VL",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "PRTCTN_VLTN_APPRCH_PRTCTN_VL",
           "role": "Measure",
           "type": "String",
           "nullable": true

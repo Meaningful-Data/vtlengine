@@ -16,6 +16,24 @@
           "nullable": false
         },
         {
+          "name": "ENTRPRS_SZ_PRLMNRY_T",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ_CLCLTD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "ENTRPRS_SZ_PRLMNRY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "ACCNTNG_FRMWRK_SL",
           "role": "Measure",
           "type": "String",
@@ -275,24 +293,6 @@
         },
         {
           "name": "ULTMT_PRNT_UNDRT_ID_STRNG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "ENTRPRS_SZ_PRLMNRY_T",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "ENTRPRS_SZ_CLCLTD",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "ENTRPRS_SZ_PRLMNRY",
           "role": "Measure",
           "type": "String",
           "nullable": true

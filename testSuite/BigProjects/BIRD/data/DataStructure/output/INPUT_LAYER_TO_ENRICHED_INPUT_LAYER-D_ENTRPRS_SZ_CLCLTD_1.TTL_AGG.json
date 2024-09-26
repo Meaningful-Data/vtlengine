@@ -4,12 +4,6 @@
       "name": "D_ENTRPRS_SZ_CLCLTD_1.TTL_AGG",
       "DataStructure": [
         {
-          "name": "AGGRGBL_BLNC_SHT_TTL",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -20,6 +14,12 @@
           "role": "Identifier",
           "type": "Date",
           "nullable": false
+        },
+        {
+          "name": "AGGRGBL_BLNC_SHT_TTL",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         },
         {
           "name": "AGGRGBL_NMBR_EMPLYS",

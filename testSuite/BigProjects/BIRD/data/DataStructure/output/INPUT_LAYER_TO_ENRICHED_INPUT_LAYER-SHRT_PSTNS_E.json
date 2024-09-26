@@ -4,30 +4,6 @@
       "name": "SHRT_PSTNS_E",
       "DataStructure": [
         {
-          "name": "DT_RFRNC",
-          "role": "Identifier",
-          "type": "Date",
-          "nullable": false
-        },
-        {
-          "name": "OWND_SCRTY_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "PRSPCTV_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "CRRYNG_AMNT",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
           "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
           "type": "Number",
@@ -140,6 +116,12 @@
           "role": "Measure",
           "type": "Date",
           "nullable": true
+        },
+        {
+          "name": "DT_RFRNC",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "EXPSR_CLSS",
@@ -292,6 +274,12 @@
           "nullable": true
         },
         {
+          "name": "OWND_SCRTY_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
           "name": "PRCHSD_ORGNTD_CRDT_IMPRD",
           "role": "Measure",
           "type": "String",
@@ -302,6 +290,12 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "QNT",
@@ -499,6 +493,12 @@
           "name": "TYP_PRDCT",
           "role": "Measure",
           "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
           "nullable": true
         }
       ]

@@ -4,16 +4,16 @@
       "name": "MSTR_NTTNG_AGRMNT_E",
       "DataStructure": [
         {
-          "name": "MSTR_NTTNG_AGRMNT_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "MN_PSTN_ID",
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "MSTR_NTTNG_AGRMNT_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         },
         {
           "name": "NTTNG_APPLCBLTY",

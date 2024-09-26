@@ -4,18 +4,6 @@
       "name": "PRTCTNS_PRTCTN_PRVDRS_E",
       "DataStructure": [
         {
-          "name": "IS_PRMRY_PRTCTN_PRVDR",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "PRTCTN_ID",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
           "name": "CNTRPRTY_ID",
           "role": "Identifier",
           "type": "String",
@@ -28,7 +16,19 @@
           "nullable": false
         },
         {
+          "name": "IS_PRMRY_PRTCTN_PRVDR",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
           "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRTCTN_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false

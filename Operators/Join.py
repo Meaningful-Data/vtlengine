@@ -178,14 +178,6 @@ class Join(Operator):
         if using is None:
             return
 
-        # common_identifiers = cls.get_components_intersection(*[op.get_identifiers_names() for op in operands])
-        # for op in operands:
-        #     if not set(using).issubset(op.get_components_names()):
-        #         missing = list(set(using) - set(op.get_components_names()))
-        #         raise SemanticError("1-1-1-10", op=cls.op, comp_name=missing[0], dataset_name=op.name)
-        # if set(using).issubset(common_identifiers):
-        #     return
-
         # (Case B1)
         for op_name, identifiers in info.items():
             if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
@@ -206,9 +198,6 @@ class Join(Operator):
                         for component in using:
                             if component not in op.get_components_names():
                                 raise SemanticError("1-1-1-10", op=cls.op, comp_name=component, dataset_name=op.name)
-                # if component not in op.get_identifiers_names():
-                #     raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
-                #                         reference=cls.reference_dataset.name)
 
 
 class InnerJoin(Join):

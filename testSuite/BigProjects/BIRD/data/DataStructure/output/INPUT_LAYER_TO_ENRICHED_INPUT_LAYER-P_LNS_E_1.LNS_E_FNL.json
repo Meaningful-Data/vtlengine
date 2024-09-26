@@ -13,7 +13,7 @@
           "name": "TYP_INSTRMNT",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "OFF_BLNC_SHT_AMNT",
@@ -121,7 +121,7 @@
           "name": "IS_TRNSFRBL_DPST",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "SBRDNTD_DBT",
@@ -199,7 +199,7 @@
           "name": "CLLTRL_OBTND_TKNG_PSSSSN",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "CLLTRL_OBTND_TKNG_PSSSSN_DT",
@@ -319,19 +319,19 @@
           "name": "FV_HRRCHY",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "FVO_DSGNTN",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "GV_RS_CR_PST",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "IMPRMNT_ASSSSMNT_MTHD",
@@ -385,7 +385,7 @@
           "name": "IS_HFS",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "IS_LW_CRDT_RSK",
@@ -421,7 +421,7 @@
           "name": "PRCHSD_ORGNTD_CRDT_IMPRD",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         },
         {
           "name": "PRCNTG_TRNSFRRD",
