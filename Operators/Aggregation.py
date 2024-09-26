@@ -16,7 +16,7 @@ else:
 import Operators as Operator
 from AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP, SUM, VAR_POP,
                                 VAR_SAMP)
-from DataTypes import Integer, Number, unary_implicit_promotion
+from DataTypes import Integer, Number, unary_implicit_promotion, Boolean
 from Model import Component, DataComponent, Dataset, Role
 
 
@@ -78,6 +78,12 @@ class Aggregation(Operator.Unary):
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: DURATION_MAPPING_REVERSED[x], na_action='ignore')
+            elif measure.data_type.__name__ == 'Boolean':
+                if mode == 'result':
+                    data[measure.name] = data[measure.name].map(lambda x: Boolean().cast(x), na_action='ignore')
+                    data[measure.name] = data[measure.name].astype(object)
+
+
 
     @classmethod
     def validate(cls, operand: Dataset,
