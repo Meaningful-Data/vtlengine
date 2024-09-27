@@ -13,7 +13,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 antlr4-python3-runtime="4.9.3"
 duckdb="^1.1.1"
 networkx="^3.3"
