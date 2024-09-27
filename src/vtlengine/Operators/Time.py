@@ -118,12 +118,9 @@ class Unary(Time):
     @classmethod
     def _period_accumulation(cls, data: pd.DataFrame, measure_names: List[str]) -> pd.DataFrame:
         data = data.copy()
-        data['Period_group_col'] = data[cls.time_id].apply(cls._get_period).apply(
-            lambda x: cls.PERIOD_ORDER[x])
-        data[measure_names] = data.groupby(cls.other_ids + ['Period_group_col'])[
-            measure_names].apply(
-            cls.py_op).reset_index(
-            drop=True)
+        data['Period_group_col'] = data[cls.time_id].apply(cls._get_period).apply(lambda x: cls.PERIOD_ORDER[x])
+        result = data.groupby(cls.other_ids + ['Period_group_col'], group_keys=False)[measure_names].apply(cls.py_op)
+        data[measure_names] = result.reset_index(drop=True)
         return data.drop(columns='Period_group_col')
 
 
@@ -284,7 +281,7 @@ class Fill_time_series(Binary):
         groups = data.groupby(cls.other_ids)
 
         for group, group_df in groups:
-            period_limits = MAX_MIN if not single else MAX_MIN[group[0]]
+            period_limits = MAX_MIN if not single else MAX_MIN[group if len(group) > 1 else group[0]]
             years = range(period_limits['min']['A'], period_limits['max']['A'] + 1)
             for period in cls.periods:
                 if period == 'A':
