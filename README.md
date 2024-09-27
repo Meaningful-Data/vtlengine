@@ -2,9 +2,8 @@
 
 ## Introduction
 
-The VTL Engine is a Python library that allows you to create and run VTL scripts.
-It is a Python based library around the [VTL Language](http://sdmx.org/?page_id=5096)
-that allows you to validate and run VTL scripts.
+The VTL Engine is a Python library that allows you to validate and run VTL scripts.
+It is a Python-based library around the [VTL Language](http://sdmx.org/?page_id=5096).
 
 ## Installation
 
@@ -21,20 +20,18 @@ pip install vtlengine
 
 ## Usage
 
-The VTL Engine can be used to validate and run VTL scripts.
-For more information, please refer to the API documentation.
-
 ### Semantic Analysis
-The VTL Engine can be used to validate VTL scripts. Here is an example:
+The VTL Engine can be used to semantically validate VTL scripts. Here is an example:
 
 ```python
+
 from API import semantic_analysis
 from pathlib import Path
-
-script = Path("path/to/your/script.vtl")
-datastructures = Path("path/to/your/datastructures/folder")
-value_domains = [Path("path/to/your/value_domains/file1.json"), Path("path/to/your/value_domains/file2.json")]
-external_routines = [Path("path/to/your/external_routines/file1.sql"), Path("path/to/your/external_routines/file2.sql")]
+base_path = Path(__file__).parent / "testSuite/API/data/"
+script = base_path / Path("vtl/1.vtl")
+datastructures = base_path / Path("DataStructure/input")
+value_domains = base_path / Path("ValueDomain/VD_1.json")
+external_routines = base_path / Path("sql/1.sql")
 
 semantic_analysis(script=script, data_structures=datastructures, 
                   value_domains=value_domains, external_routines=external_routines)
@@ -49,10 +46,11 @@ The VTL Engine can also be used to execute VTL scripts. Here is an example:
 from API import run
 from pathlib import Path
 
-script = Path("path/to/your/script.vtl")
-datastructures = Path("path/to/your/datastructures/folder")
-datapoints = Path("path/to/your/datapoints/folder")
-output_folder = Path("path/to/your/output/folder")
+base_path = Path(__file__).parent / "testSuite/API/data/"
+script = base_path / Path("vtl/1.vtl")
+datastructures = base_path / Path("DataStructure/input")
+datapoints = base_path / Path("DataSet/input")
+output_folder = base_path / Path("DataSet/output")
 
 value_domains = None
 external_routines = None
@@ -64,3 +62,5 @@ run(script=script, data_structures=datastructures, datapoints=datapoints,
 ```
 
 The VTL engine will efficiently load the data points and data structures into memory and execute the script.
+
+For more information on usage, please refer to the API documentation.
