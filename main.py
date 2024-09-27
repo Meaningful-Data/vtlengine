@@ -1,7 +1,7 @@
 from pathlib import Path
 from time import time
 
-from API import run
+from vtlengine.API import run
 
 base_path = Path(__file__).parent / 'development' / 'data'
 input_dp = base_path / 'dataPoints' / 'input'

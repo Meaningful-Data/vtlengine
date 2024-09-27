@@ -1,6 +1,6 @@
 [run]
 omit =
-    testSuite/*
+    tests/*
     development/*
     */Grammar/*
-    AST/VtlVisitor.py
+    */AST/VtlVisitor.py
