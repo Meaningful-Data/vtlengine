@@ -1,16 +1,15 @@
 [tool.poetry]
 name = "vtlengine"
-version = "0.1.0-rc1"
+version = "0.1.0-rc2"
 description = "Run and Validate VTL Scripts"
 authors = ["MeaningfulData <info@meaningfuldata.eu>"]
 license = "Apache-2.0"
 readme = "README.md"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
-    "Typing :: Typed"
 ]
 
 [tool.poetry.dependencies]
