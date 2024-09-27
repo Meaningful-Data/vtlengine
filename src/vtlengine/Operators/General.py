@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 import pandas as pd
+import sqlite3
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
@@ -90,17 +91,22 @@ class Eval(Unary):
     @staticmethod
     def _execute_query(query: str, dataset_names: List[str],
                        data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-        for ds_name in dataset_names:
-            locals()[ds_name] = data[ds_name]
-
         try:
-            # df_result = duckdb.query(query).to_df()
-            raise NotImplementedError("PandasSQL fails")
-            df_result = sqldf(query=query, env=locals(), db_uri='sqlite:///:memory:')
+            conn = sqlite3.connect(":memory:")
+            try:
+                for ds_name in dataset_names:
+                    data[ds_name].to_sql(ds_name, conn, index=False)
+                conn.commit()
+
+                df_result = pd.read_sql_query(query, conn)
+
+                conn.close()
+
+            except Exception as e:
+                conn.close()
+                raise Exception(f"Error executing SQL query: {e}")
         except Exception as e:
-            raise Exception(f"Error executing SQL query: {e}")
-        for ds_name in dataset_names:
-            del locals()[ds_name]
+            raise Exception(f"Error connecting to In-Memory SQLite: {e}")
 
         return df_result
 
