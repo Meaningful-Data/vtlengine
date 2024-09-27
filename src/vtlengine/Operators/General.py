@@ -1,12 +1,11 @@
 from typing import Dict, List
 
 import pandas as pd
-from vtlengine.DataTypes import COMP_NAME_MAPPING
-from vtlengine.Operators import Binary, Unary
-from pandasql import sqldf
 
+from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, ExternalRoutine, Role, Component, DataComponent
+from vtlengine.Operators import Binary, Unary
 
 
 class Membership(Binary):
@@ -96,6 +95,7 @@ class Eval(Unary):
 
         try:
             # df_result = duckdb.query(query).to_df()
+            raise NotImplementedError("PandasSQL fails")
             df_result = sqldf(query=query, env=locals(), db_uri='sqlite:///:memory:')
         except Exception as e:
             raise Exception(f"Error executing SQL query: {e}")
