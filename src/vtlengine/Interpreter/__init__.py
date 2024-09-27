@@ -1156,7 +1156,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 right_null_indexes = set(
                     list(right_operand.data[right_operand.data[measure_name].isnull()].index))
                 # If no indexes are in common, then one datapoint is not null
-                invalid_indexes = left_null_indexes.intersection(right_null_indexes)
+                invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
                     left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
             if isinstance(left_operand, Dataset):

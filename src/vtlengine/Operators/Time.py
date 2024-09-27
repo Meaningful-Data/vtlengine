@@ -110,7 +110,7 @@ class Unary(Time):
             result.data = cls._period_accumulation(result.data, measure_names)
         elif data_type == Date or data_type == TimeInterval:
             result.data[measure_names] = result.data.groupby(cls.other_ids)[measure_names].apply(
-                cls.py_op)
+                cls.py_op).reset_index(drop=True)
         else:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="dataset", param="date type")
         return result
@@ -284,7 +284,7 @@ class Fill_time_series(Binary):
         groups = data.groupby(cls.other_ids)
 
         for group, group_df in groups:
-            period_limits = MAX_MIN if not single else MAX_MIN[group]
+            period_limits = MAX_MIN if not single else MAX_MIN[group[0]]
             years = range(period_limits['min']['A'], period_limits['max']['A'] + 1)
             for period in cls.periods:
                 if period == 'A':
