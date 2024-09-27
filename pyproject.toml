@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vtlengine"
-version = "0.1.0-rc4"
+version = "0.1.0-rc5"
 description = "Run and Validate VTL Scripts"
 authors = ["MeaningfulData <info@meaningfuldata.eu>"]
 license = "Apache-2.0"
@@ -20,6 +20,7 @@ networkx="^3.3"
 numpy="^2.1"
 pandas="^2.2"
 sqlglot="^25.23.2"
+pyarrow = "^17.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3"
