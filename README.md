@@ -21,7 +21,8 @@ pip install vtlengine
 ## Usage
 
 ### Semantic Analysis
-The VTL Engine can be used to semantically validate VTL scripts. Here is an example:
+To perform the validation of a VTL script, please use the semantic_analysis function. 
+Here is an example:
 
 ```python
 
@@ -37,9 +38,11 @@ semantic_analysis(script=script, data_structures=datastructures,
                   value_domains=value_domains, external_routines=external_routines)
 ```
 
+The semantic analysis function will return a dictionary of the computed datasets and their structure.
+
 ### Run VTL Scripts
 
-The VTL Engine can also be used to execute VTL scripts. Here is an example:
+To execute a VTL script, please use the run function. Here is an example:
 
 ```python
 
@@ -60,7 +63,8 @@ run(script=script, data_structures=datastructures, datapoints=datapoints,
     output_path=output_folder, return_only_persistent=True
     )
 ```
-
-The VTL engine will efficiently load the data points and data structures into memory and execute the script.
+The VTL engine will load each datapoints file as being needed, reducing the memory footprint.
+When the output parameter is set, the engine will write the result of the computation 
+to the output folder, else it will include the data in the dictionary of the computed datasets.
 
 For more information on usage, please refer to the API documentation.
