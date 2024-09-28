@@ -26,7 +26,7 @@ from vtlengine.files.output import TimePeriodRepresentation, format_time_period_
 from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
 
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG import HRDAGAnalyzer
+from vtlengine.AST.DAG import HRDAGAnalyzer, GLOBAL, DELETE, INSERT
 from vtlengine.AST.Grammar.tokens import AGGREGATE, ALL, APPLY, AS, BETWEEN, CHECK_DATAPOINT, DROP, \
     EXISTS_IN, \
     EXTERNAL, FILTER, HAVING, INSTR, KEEP, MEMBERSHIP, REPLACE, ROUND, SUBSTR, TRUNC, WHEN, \
@@ -86,14 +86,17 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Dict[str, Dict[str, Any]] = None
     hrs: Dict[str, Dict[str, Any]] = None
 
-    # Memory efficient handling
-
+    # **********************************
+    # *                                *
+    # *          Memory efficient      *
+    # *                                *
+    # **********************************
     def _load_datapoints_efficient(self, statement_num: int):
         if self.datapoints_paths is None:
             return
-        if statement_num not in self.ds_analysis['insertion']:
+        if statement_num not in self.ds_analysis[INSERT]:
             return
-        for ds_name in self.ds_analysis['insertion'][statement_num]:
+        for ds_name in self.ds_analysis[INSERT][statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
                                                               ds_name,
@@ -102,16 +105,29 @@ class InterpreterAnalyzer(ASTTemplate):
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
     def _save_datapoints_efficient(self, statement_num: int):
-        if self.output_path is not None and statement_num in self.ds_analysis['deletion']:
-            for ds_name in self.ds_analysis['deletion'][statement_num]:
-                if ds_name in self.datasets and self.datasets[ds_name].data is not None:
-                    if self.time_period_representation is not None:
-                        format_time_period_external_representation(self.datasets[ds_name],
-                                                                   self.time_period_representation)
-                    self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv",
-                                                       index=False)
-                    self.datasets[ds_name].data = None
-        # Keeping the data in memory if no output path is provided
+        if self.output_path is None:
+            # Keeping the data in memory if no output path is provided
+            return
+        if statement_num not in self.ds_analysis[DELETE]:
+            return
+        for ds_name in self.ds_analysis[DELETE][statement_num]:
+            if (ds_name not in self.datasets or
+                    not isinstance(self.datasets[ds_name], Dataset) or
+                    self.datasets[ds_name].data is None
+            ):
+                continue
+            if ds_name in self.ds_analysis[GLOBAL]:
+                # We do not save global input datasets, only results of transformations
+                self.datasets[ds_name].data = None
+                continue
+
+            # Saving only datasets, no scalars
+            if self.time_period_representation is not None:
+                format_time_period_external_representation(self.datasets[ds_name],
+                                                           self.time_period_representation)
+            self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv",
+                                               index=False)
+            self.datasets[ds_name].data = None
 
     # **********************************
     # *                                *
@@ -133,16 +149,21 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                     raise SemanticError("1-3-17")
             result = self.visit(child)
-            # TODO: Execute collected operations from Spark and add explain
-            if isinstance(result, Union[Dataset, Scalar]):
-                self.datasets[result.name] = result
-                results[result.name] = result
-                self._save_datapoints_efficient(statement_num)
-                statement_num += 1
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
             self.if_stack = None
+            self.then_condition_dataset = None
+            self.else_condition_dataset = None
+            self.nested_if = False
+
+            if result is None:
+                continue
+            # Save results
+            self.datasets[result.name] = result
+            results[result.name] = result
+            self._save_datapoints_efficient(statement_num)
+            statement_num += 1
 
         return results
 
@@ -1102,8 +1123,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return None
             filtering_indexes = filter_comp.data[
                 filter_comp.data.notnull() & filter_comp.data == True].index
-            non_filtering_indexes = filter_comp.data[
-                filter_comp.data.isnull() | filter_comp.data == False].index
+            non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
             original_data = self.rule_data.copy()
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)

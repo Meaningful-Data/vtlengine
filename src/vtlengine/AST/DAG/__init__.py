@@ -17,7 +17,7 @@ from vtlengine.AST import AST, BinOp, VarID, Aggregation, Analytic, JoinOp, Para
     DefIdentifier, Start, HRuleset, RegularAggregation, PersistentAssignment, Assignment, \
     DPRuleset
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._words import INSERT, DELETE, OUTPUTS, PERSISTENT, INPUTS
+from vtlengine.AST.DAG._words import INSERT, DELETE, OUTPUTS, PERSISTENT, INPUTS, GLOBAL
 from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO
 from vtlengine.Exceptions import SemanticError
 
@@ -111,6 +111,7 @@ class DAGAnalyzer(ASTTemplate):
                     else:
                         statements[INSERT][key] = [element]
 
+        statements[GLOBAL] = global_inputs
         return statements
 
     @classmethod
