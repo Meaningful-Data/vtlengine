@@ -1121,14 +1121,18 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            filtering_indexes = filter_comp.data[
-                filter_comp.data.notnull() & filter_comp.data == True].index
+            filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
+            # If no filtering indexes, then all datapoints are valid on DPR and HR
+            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                self.rule_data['bool_var'] = True
+                return self.rule_data
             non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
+
             original_data = self.rule_data.copy()
             self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
             result_validation = self.visit(node.right)
             if self.is_from_hr_agg or self.is_from_hr_val:
-                # We only need to filter rule_data on HR
+                # We only need to filter rule_data on DPR
                 return result_validation
             self.rule_data['bool_var'] = result_validation.data
             original_data = original_data.merge(self.rule_data, how='left',
