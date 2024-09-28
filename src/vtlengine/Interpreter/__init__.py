@@ -1249,19 +1249,23 @@ class InterpreterAnalyzer(ASTTemplate):
             data = data.fillna(False)
 
             if isinstance(condition, Dataset):
+                filtered_data = data.iloc[indexes]
                 then_data = condition.data[condition.data[name] == True]
-                then_indexes = [i for i in indexes if data[i] == True]
+                then_indexes = list(filtered_data[filtered_data == True].index)
                 if len(then_data) > len(then_indexes):
                     then_data = then_data.iloc[then_indexes]
                 then_data[name] = then_indexes
                 else_data = condition.data[condition.data[name] != True]
-                else_indexes = [i for i in indexes if data[i] != True]
+                else_indexes = list(set(indexes) - set(then_indexes))
                 if len(else_data) > len(else_indexes):
                     else_data = else_data.iloc[else_indexes]
                 else_data[name] = else_indexes
             else:
-                then_data = pd.DataFrame({name: [i for i in indexes if data[i]]})
-                else_data = pd.DataFrame({name: [i for i in indexes if not data[i]]})
+                filtered_data = data.iloc[indexes]
+                then_indexes = list(filtered_data[filtered_data == True].index)
+                else_indexes = list(set(indexes) - set(then_indexes))
+                then_data = pd.DataFrame({name: then_indexes})
+                else_data = pd.DataFrame({name: else_indexes})
         else:
             then_data = pd.DataFrame({name: []})
             else_data = pd.DataFrame({name: []})

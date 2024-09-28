@@ -1,5 +1,8 @@
 import os
 from copy import copy
+from typing import Union
+
+import numpy as np
 
 from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion, \
     SCALAR_TYPES_CLASS_REVERSE, Null
@@ -43,24 +46,20 @@ class If(Operator):
         return result
 
     @classmethod
-    def component_level_evaluation(cls, condition, true_branch, false_branch):
-        data = []
-        for i, row in enumerate(condition.data):
-            if row == True:
-                if isinstance(true_branch, Scalar):
-                    data.append(true_branch.value)
-                elif i in true_branch.data.index:
-                    data.append(true_branch.data[i])
-                else:
-                    data.append(None)
-            else:
-                if isinstance(false_branch, Scalar):
-                    data.append(false_branch.value)
-                elif i in false_branch.data.index:
-                    data.append(false_branch.data[i])
-                else:
-                    data.append(None)
-        return pd.Series(data, dtype=object).dropna()
+    def component_level_evaluation(cls, condition: DataComponent,
+                                   true_branch: Union[DataComponent, Scalar],
+                                   false_branch: Union[DataComponent, Scalar]):
+        if isinstance(true_branch, Scalar):
+            true_data = pd.Series(true_branch.value, index=condition.data.index)
+        else:
+            true_data = true_branch.data.reindex(condition.data.index)
+        if isinstance(false_branch, Scalar):
+            false_data = pd.Series(false_branch.value, index=condition.data.index)
+        else:
+            false_data = false_branch.data.reindex(condition.data.index)
+
+        result = np.where(condition.data, true_data, false_data)
+        return pd.Series(result, index=condition.data.index)
 
     @classmethod
     def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):

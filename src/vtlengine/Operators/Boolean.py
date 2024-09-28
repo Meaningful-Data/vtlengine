@@ -99,9 +99,10 @@ class Xor(Binary):
 class Not(Unary):
     op = NOT
 
-    @classmethod
-    def py_op(cls, x: Optional[bool]) -> Optional[bool]:
-        return None if pd.isnull(x) else not x
+    @staticmethod
+    @numba.njit
+    def py_op(x: Optional[bool]) -> Optional[bool]:
+        return None if x is None else not x
 
     @classmethod
     def spark_op(cls, series: pd.Series) -> pd.Series:
@@ -109,4 +110,4 @@ class Not(Unary):
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
-        return series.map(cls.py_op)
+        return series.map(lambda x: not x, na_action='ignore')
