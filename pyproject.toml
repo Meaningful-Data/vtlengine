@@ -17,14 +17,14 @@ python = "^3.10"
 antlr4-python3-runtime="4.9.3"
 duckdb="^1.1.1"
 networkx="^3.3"
-numpy="^2.1"
-pandas="^2.2"
+pandas={extras = ["performance"], version = "^2.2"}
 sqlglot="^25.23.2"
 pyarrow = "^17.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3"
 pytest-cov = "^5.0.0"
+line-profiler-pycharm = "^1.2.0"
 
 
 [build-system]

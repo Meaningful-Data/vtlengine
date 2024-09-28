@@ -1,5 +1,7 @@
 import os
 
+import numba
+
 if os.environ.get("SPARK", False):
     import pyspark.pandas as pd
 else:
@@ -20,6 +22,7 @@ class Unary(Operator.Unary):
 class Binary(Operator.Binary):
     type_to_check = Boolean
     return_type = Boolean
+    comp_op = None
 
     @classmethod
     def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
@@ -33,8 +36,9 @@ class Binary(Operator.Binary):
     def apply_operation_two_series(cls,
                                    left_series: Any,
                                    right_series: Any) -> Any:
-        result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=left_series.index, dtype=object)
+        result = cls.comp_op(left_series.astype('bool[pyarrow]'),
+                             right_series.astype('bool[pyarrow]'))
+        return result.replace({pd.NA: None}).astype(object)
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
@@ -43,12 +47,14 @@ class Binary(Operator.Binary):
 
 class And(Binary):
     op = AND
+    comp_op = pd.Series.__and__
 
-    @classmethod
-    def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (pd.isnull(x) and y == False) or (x == False and pd.isnull(y)):
+    @staticmethod
+    @numba.njit
+    def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
+        if (x is None and y == False) or (x == False and y is None):
             return False
-        elif pd.isnull(x) or pd.isnull(y):
+        elif x is None or y is None:
             return None
         return x and y
 
@@ -59,12 +65,14 @@ class And(Binary):
 
 class Or(Binary):
     op = OR
+    comp_op = pd.Series.__or__
 
-    @classmethod
-    def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if (pd.isnull(x) and y == True) or (x == True and pd.isnull(y)):
+    @staticmethod
+    @numba.njit
+    def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
+        if (x is None and y == True) or (x == True and y is None):
             return True
-        elif pd.isnull(x) or pd.isnull(y):
+        elif x is None or y is None:
             return None
         return x or y
 
@@ -75,6 +83,7 @@ class Or(Binary):
 
 class Xor(Binary):
     op = XOR
+    comp_op = pd.Series.__xor__
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:

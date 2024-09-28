@@ -9,7 +9,6 @@ from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
-
 # noinspection PyTypeChecker
 class Check(Operator):
     op = CHECK
@@ -84,16 +83,17 @@ class Validation(Operator):
 
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = None
+        rule_list_df = []
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data['output']
             rule_df['ruleid'] = rule_name
             rule_df['errorcode'] = rule_df['bool_var'].map({False: rule_data['errorcode']})
             rule_df['errorlevel'] = rule_df['bool_var'].map({False: rule_data['errorlevel']})
-            if df is None:
-                df = rule_df
-            else:
-                df = pd.concat([df, rule_df], ignore_index=True)
+            rule_list_df.append(rule_df)
+
+        if len(rule_list_df) == 1:
+            return rule_list_df[0]
+        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
         return df
 
     @classmethod
@@ -127,11 +127,11 @@ class Validation(Operator):
         result = cls.validate(dataset_element, rule_info, output)
         result.data = cls._generate_result_data(rule_info)
 
-        result.data = result.data.drop_duplicates(
-            subset=result.get_identifiers_names() + ['ruleid'])
-        validation_measures = ['bool_var', 'errorcode', 'errorlevel']
         result.data = result.data.dropna(subset=result.get_identifiers_names(),
-                                         how="any").reset_index(drop=True)
+                                         how="any")
+        result.data = result.data.drop_duplicates(
+            subset=result.get_identifiers_names() + ['ruleid']).reset_index(drop=True)
+        validation_measures = ['bool_var', 'errorcode', 'errorlevel']
         # Only for check hierarchy
         if 'imbalance' in result.components:
             validation_measures.append('imbalance')

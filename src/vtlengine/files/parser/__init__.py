@@ -60,10 +60,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
-    register_rfc()
-
     try:
-        data = pd.read_csv(csv_path, dialect='rfc', dtype=obj_dtypes, engine='c',
+        data = pd.read_csv(csv_path, dtype=obj_dtypes,
+                           engine='c',
                            keep_default_na=False,
                            na_values=[''])
     except UnicodeDecodeError as error:
@@ -98,7 +97,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
 
 
 def _parse_boolean(value: str):
-    if value.lower() == "true" or value.lower() == "1":
+    if value.lower() == "true" or value == "1":
         return True
     return False
 

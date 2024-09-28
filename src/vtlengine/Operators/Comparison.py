@@ -17,7 +17,6 @@ from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL,
 from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, String, Number, Null
 import vtlengine.Operators as Operator
 
-
 class Unary(Operator.Unary):
     """
     Unary comparison operator. It returns a boolean.
@@ -414,7 +413,7 @@ class ExistIn(Operator.Operator):
         final_result = final_result[reference_identifiers_names + ['bool_var']]
 
         # No null values are returned, only True or False
-        final_result.fillna(False, axis=1, inplace=True)
+        final_result['bool_var'] = final_result['bool_var'].fillna(False)
 
         # Adding to the result dataset
         result_dataset.data = final_result
