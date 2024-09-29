@@ -6,7 +6,7 @@ from antlr4.error.ErrorListener import ErrorListener
 
 from vtlengine.API._InternalApi import load_vtl, load_datasets, load_value_domains, \
     load_external_routines, \
-    load_datasets_with_data, _return_only_persistent_datasets
+    load_datasets_with_data, _return_only_persistent_datasets, _check_output_folder
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
@@ -121,33 +121,50 @@ def semantic_analysis(script: Union[str, Path],
 
 
 def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
-        datapoints: Union[dict, Path, List[Path]],
+        datapoints: Union[dict, str, Path, List[Union[str, Path]]],
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
         time_period_output_format: str = "vtl",
-        return_only_persistent=False, output_path: Optional[Path] = None):
+        return_only_persistent=False,
+        output_folder: Optional[Union[str, Path]] = None):
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready to be performed. When the vtl expression is given,
     an AST object is created. This vtl script can be given as a string or a path with the folder or file that contains it.
     At the same time, data structures are loaded with its datapoints.
+
     The data structure information is contained in the json file given, and establish the datatype (string, integer or number),
-    and the role that each component is going to have (Identifier or Measure). It can be a dictionary or a path to the json file or folder that contains it.
-    Moreover, a csv file with the data to operate with is going to be loaded. It can be given with a dictionary or a path to the folder or csv file that contains the data.
-    Also, the DAG analysis reviews if this data has direct acyclic graphs.
+    and the role that each component is going to have (Identifier or Measure).
+    It can be a dictionary or a path to the json file or folder that contains it.
+
+    Moreover, a csv file with the data to operate with is going to be loaded.
+    It can be given with a dictionary (dataset name : pandas Dataframe),
+    a path or S3 URI to the folder, path or S3 to the csv file that contains the data.
+
+    **Important**: The data structure and the data points must have the same dataset name to be loaded correctly.
+
+    **Important**:
+    If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
+    Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
+
+    **Important**:
+    If using an S3 URI, the path must be in the format 's3://bucket-name/path/to/data.csv'.
+    Environment variables must be set up to access the S3 bucket.
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+
+    Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graphs.
 
     This information is taken by the Interpreter class, to analyze if the operation correlates with the AST object.
-    Also, if value domain data or external routines are required, the function loads this information and integrates
+    Consequently, if value domain data or external routines are required, the function loads this information and integrates
     them into the :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>` class. Moreover,
-    if it is a vtl time operation, the operator given in the time_period param is integrated in this Interpreter class.
+    if any component has a Time_Period component, the external representation is passed to the Interpreter class.
 
-    Finally, run function returns the vtl operation ready to be performed.
-
-    Concepts you may know:
+    Concepts you may need to know:
     - Vtl script: The expression that shows the operation to be done.
 
     - Data Structure: Json file that contains the structure and the name for the dataset(s) (and/or scalar)
     about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
 
-    - Data point: Csv file with the data. It will be loaded as a `Pandas Dataframe \
+    - Data point: Pointer to the data. It will be loaded as a `Pandas Dataframe \
     <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_.
 
     - Value domains: Collection of unique values that have the same datatype.
@@ -160,7 +177,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-    :param datapoints: Dict, Path or List of Paths with data.
+    :param datapoints: Dict, Path, S3 URI or List of S3URIs or Paths with data.
 
     :param value_domains: Dict or Path of the value_domains json files. (default:None)
 
@@ -169,11 +186,12 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     :param time_period_output_format: String with the possible values ("sdmx_gregorian", "sdmx_reporting", "vtl")
     for the representation of the Time Period components.
 
-    :param return_only_persistent: If it is True, run function will only return the expression with an only persistent argument. (default: False)
+    :param return_only_persistent: If True, run function will only return the results of
+    Persistent Assignments. (default: False)
 
-    :param output_path: Path with the output folder. (default: None)
+    :param output_folder: Path or S3 URI to the output folder. (default: None)
 
-    :return: The operation to be performed.
+    :return: The datasets produced, without data if output_folder is defined.
 
     """
     # AST generation
@@ -196,19 +214,23 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-    if output_path and not isinstance(output_path, Path):
-        raise Exception('Output path must be a Path object')
+
+    # Checking output path to be a Path object to a directory
+    if output_folder is not None:
+        _check_output_folder(output_folder)
+
+
     # Running the interpreter
     interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,
                                       external_routines=ext_routines,
                                       ds_analysis=ds_analysis,
                                       datapoints_paths=path_dict,
-                                      output_path=output_path,
+                                      output_path=output_folder,
                                       time_period_representation=time_period_representation)
     result = interpreter.visit(ast)
 
     # Applying time period output format
-    if output_path is None:
+    if output_folder is None:
         for dataset in result.values():
             format_time_period_external_representation(dataset, time_period_representation)
 
