@@ -22,7 +22,7 @@ from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarc
 from vtlengine.Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
     HR_UNARY_MAPPING, HR_COMP_MAPPING, HR_NUM_BINARY_MAPPING
-from vtlengine.files.output import TimePeriodRepresentation, format_time_period_external_representation
+from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
 
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -49,7 +49,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Memory efficient
     ds_analysis: Optional[dict] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
-    output_path: Optional[Path] = None
+    output_path: Optional[Union[str, Path]] = None
     # Time Period Representation
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
@@ -122,11 +122,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 continue
 
             # Saving only datasets, no scalars
-            if self.time_period_representation is not None:
-                format_time_period_external_representation(self.datasets[ds_name],
-                                                           self.time_period_representation)
-            self.datasets[ds_name].data.to_csv(self.output_path / f"{ds_name}.csv",
-                                               index=False)
+            save_datapoints(self.time_period_representation,
+                            self.datasets[ds_name],
+                            self.output_path)
             self.datasets[ds_name].data = None
 
     # **********************************

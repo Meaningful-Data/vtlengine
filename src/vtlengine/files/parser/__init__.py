@@ -1,6 +1,7 @@
 from csv import DictReader
 from pathlib import Path
-from typing import Optional, Dict
+# from time import time
+from typing import Optional, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -57,16 +58,8 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
         raise InputValidationException(code='0-1-1-8', ids=comps_missing, file=str(csv_path.name))
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
-    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
-
-    try:
-        data = pd.read_csv(csv_path, dtype=obj_dtypes,
-                           engine='c',
-                           keep_default_na=False,
-                           na_values=[''])
-    except UnicodeDecodeError as error:
-        raise InputValidationException(code="0-1-2-5", file=csv_path.name)
+def _sanitize_pandas_columns(components: Dict[str, Component],
+                             csv_path: Union[str, Path], data: pd.DataFrame) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
     if "DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW":
         if "DATAFLOW" not in components:
@@ -85,7 +78,8 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
     comps_missing = [id_m for id_m in comp_names if id_m not in data.columns]
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code='0-1-1-7', ids=comps_missing, file=str(csv_path.name))
+        file = csv_path if isinstance(csv_path, str) else csv_path.name
+        raise InputValidationException(code='0-1-1-7', ids=comps_missing, file=file)
 
     # Fill rest of components with null values
     for comp_name, comp in components.items():
@@ -95,6 +89,40 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
             data[comp_name] = None
     return data
 
+
+def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
+    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
+
+    try:
+        data = pd.read_csv(csv_path, dtype=obj_dtypes,
+                           engine='c',
+                           keep_default_na=False,
+                           na_values=[''])
+    except UnicodeDecodeError as error:
+        raise InputValidationException(code="0-1-2-5", file=csv_path.name)
+
+    return _sanitize_pandas_columns(components, csv_path, data)
+
+def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.DataFrame:
+    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
+
+    # start = time()
+    try:
+        data = pd.read_csv(csv_path, dtype=obj_dtypes,
+                           engine='c',
+                           keep_default_na=False,
+                           na_values=[''])
+
+    except UnicodeDecodeError as error:
+        raise InputValidationException(code="0-1-2-5", file=csv_path)
+    except Exception as e:
+        raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
+
+    # print(f"Data loaded from {csv_path}, shape: {data.shape}")
+    # end = time()
+    # print(f"Time to load data from s3 URI: {end - start}")
+
+    return _sanitize_pandas_columns(components, csv_path, data)
 
 def _parse_boolean(value: str):
     if value.lower() == "true" or value == "1":
@@ -150,12 +178,16 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame,
 
 def load_datapoints(components: Dict[str, Component],
                     dataset_name: str,
-                    csv_path: Optional[Path] = None):
-    if csv_path is None or not csv_path.exists():
+                    csv_path: Optional[Union[Path, str]] = None):
+    if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
-
-    _validate_csv_path(components, csv_path)
-    data = _pandas_load_csv(components, csv_path)
+    elif isinstance(csv_path, str):
+        data = _pandas_load_s3_csv(components, csv_path)
+    elif isinstance(csv_path, Path):
+        _validate_csv_path(components, csv_path)
+        data = _pandas_load_csv(components, csv_path)
+    else:
+        raise Exception("Invalid csv_path type")
     data = _validate_pandas(components, data, dataset_name)
 
     return data

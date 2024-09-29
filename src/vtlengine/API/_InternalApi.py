@@ -1,8 +1,10 @@
 import json
+import os
 from pathlib import Path
 from typing import Union, Optional, Dict, List
 
 import pandas as pd
+from s3fs import S3FileSystem
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -48,13 +50,48 @@ def _load_dataset_from_structure(structures: dict):
     return datasets
 
 
-def _load_single_datapoint(datapoint: Path):
+def _load_single_datapoint(datapoint: Union[str, Path]):
     """
     Returns a dict with the data given from one dataset.
     """
+    if not isinstance(datapoint, (Path, str)):
+        raise Exception('Invalid datapoint. Input must be a Path or an S3 URI')
+    if isinstance(datapoint, str):
+        if 's3://' in datapoint:
+            # Handling S3 URI
+            s3fs_obj = S3FileSystem()
+
+            # Check if the S3 URI is valid
+            if not s3fs_obj.exists(datapoint):
+                raise Exception(
+                    f'Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}')
+
+            # Check if the S3 URI is a directory
+            if s3fs_obj.isdir(datapoint):
+                datapoints = {}
+                for f in s3fs_obj.ls(datapoint):
+                    if f.endswith('.csv'):
+                        dataset_name = f.split('/')[-1].removesuffix('.csv')
+                        dict_data = {dataset_name: f"s3://{f}"}
+                        datapoints = {**datapoints, **dict_data}
+                return datapoints
+
+            # Check if the S3 URI is a csv file
+            if s3fs_obj.isfile(datapoint) and not datapoint.endswith('.csv'):
+                raise Exception(f'Invalid datapoint. S3 URI must refer to a csv file: {datapoint}')
+            dataset_name = datapoint.split('/')[-1].removesuffix('.csv')
+            dict_data = {dataset_name: datapoint}
+            return dict_data
+
+        try:
+            datapoint = Path(datapoint)
+        except Exception:
+            raise Exception('Invalid datapoint. Input must refer to a Path or an S3 URI')
     if datapoint.is_dir():
         datapoints = {}
         for f in datapoint.iterdir():
+            if f.suffix != '.csv':
+                continue
             dp = _load_single_datapoint(f)
             datapoints = {**datapoints, **dp}
         dict_data = datapoints
@@ -64,7 +101,7 @@ def _load_single_datapoint(datapoint: Path):
     return dict_data
 
 
-def _load_datapoints_path(datapoints: Union[Path, List[Path]]):
+def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]):
     """
     Returns a dict with the data given from a Path.
     """
@@ -90,6 +127,8 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     if data_structure.is_dir():
         datasets = {}
         for f in data_structure.iterdir():
+            if f.suffix != '.json':
+                continue
             dataset = _load_datastructure_single(f)
             datasets = {**datasets, **dataset}
         return datasets
@@ -170,6 +209,8 @@ def load_vtl(input: Union[str, Path]):
 
 
 def _load_single_value_domain(input: Path):
+    if input.suffix != '.json':
+        raise Exception('Invalid Value Domain file. Must have .json extension')
     with open(input, 'r') as f:
         vd = ValueDomain.from_dict(json.load(f))
     return {vd.name: vd}
@@ -222,6 +263,8 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
         raise Exception('Input invalid. Input does not exist')
     if input.is_dir():
         for f in input.iterdir():
+            if f.suffix != '.sql':
+                continue
             ext_rout = _load_single_external_routine_from_file(f)
             external_routines[ext_rout.name] = ext_rout
         return external_routines
@@ -250,8 +293,33 @@ def _load_single_external_routine_from_file(input: Path):
         raise Exception('Input invalid')
     if not input.exists():
         raise Exception('Input does not exist')
-    if not '.sql' in input.name:
+    if input.suffix != '.sql':
         raise Exception('Input must be a sql file')
     with open(input, 'r') as f:
         ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix('.sql'), f.read())
     return ext_rout
+
+
+def _check_output_folder(output_folder: Union[str, Path]):
+    """
+    Check if the output folder exists. If not, it will create it.
+    """
+    if isinstance(output_folder, str):
+        if 's3://' in output_folder:
+            s3fs_obj = S3FileSystem()
+            # Check if the S3 URI is valid
+            if not s3fs_obj.exists(output_folder):
+                try:
+                    s3fs_obj.mkdir(output_folder)
+                except Exception:
+                    raise Exception(f'Invalid output folder. S3 URI is invalid or it is not accessible: {output_folder}')
+            return
+        try:
+            output_folder = Path(output_folder)
+        except Exception:
+            raise Exception('Output folder must be a Path or S3 URI to a directory')
+
+    if not isinstance(output_folder, Path) or not output_folder.is_dir():
+        raise Exception('Output folder must be a Path or S3 URI to a directory')
+    if not output_folder.exists():
+        os.mkdir(output_folder)
