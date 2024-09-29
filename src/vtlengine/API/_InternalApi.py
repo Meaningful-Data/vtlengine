@@ -1,14 +1,15 @@
 import json
+import os
 from pathlib import Path
 from typing import Union, Optional, Dict, List
 
 import pandas as pd
+from s3fs import S3FileSystem
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Model import ValueDomain, Dataset, Scalar, Component, Role, ExternalRoutine
 from vtlengine.files.parser import _validate_pandas, _fill_dataset_empty_data
-from s3fs import S3FileSystem
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -62,7 +63,8 @@ def _load_single_datapoint(datapoint: Union[str, Path]):
 
             # Check if the S3 URI is valid
             if not s3fs_obj.exists(datapoint):
-                raise Exception(f'Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}')
+                raise Exception(
+                    f'Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}')
 
             # Check if the S3 URI is a directory
             if s3fs_obj.isdir(datapoint):
@@ -296,3 +298,28 @@ def _load_single_external_routine_from_file(input: Path):
     with open(input, 'r') as f:
         ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix('.sql'), f.read())
     return ext_rout
+
+
+def _check_output_folder(output_folder: Union[str, Path]):
+    """
+    Check if the output folder exists. If not, it will create it.
+    """
+    if isinstance(output_folder, str):
+        if 's3://' in output_folder:
+            s3fs_obj = S3FileSystem()
+            # Check if the S3 URI is valid
+            if not s3fs_obj.exists(output_folder):
+                try:
+                    s3fs_obj.mkdir(output_folder)
+                except Exception:
+                    raise Exception(f'Invalid output folder. S3 URI is invalid or it is not accessible: {output_folder}')
+            return
+        try:
+            output_folder = Path(output_folder)
+        except Exception:
+            raise Exception('Output folder must be a Path or S3 URI to a directory')
+
+    if not isinstance(output_folder, Path) or not output_folder.is_dir():
+        raise Exception('Output folder must be a Path or S3 URI to a directory')
+    if not output_folder.exists():
+        os.mkdir(output_folder)

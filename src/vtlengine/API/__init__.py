@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Any, Union, List, Optional
 
@@ -7,7 +6,7 @@ from antlr4.error.ErrorListener import ErrorListener
 
 from vtlengine.API._InternalApi import load_vtl, load_datasets, load_value_domains, \
     load_external_routines, \
-    load_datasets_with_data, _return_only_persistent_datasets
+    load_datasets_with_data, _return_only_persistent_datasets, _check_output_folder
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
@@ -126,7 +125,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
         value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
         time_period_output_format: str = "vtl",
         return_only_persistent=False,
-        output_folder: Optional[Path] = None):
+        output_folder: Optional[Union[str, Path]] = None):
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready to be performed. When the vtl expression is given,
     an AST object is created. This vtl script can be given as a string or a path with the folder or file that contains it.
@@ -145,6 +144,12 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     **Important**:
     If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
     Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
+
+    **Important**:
+    If using an S3 URI, the path must be in the format 's3://bucket-name/path/to/data.csv'.
+    Environment variables must be set up to access the S3 bucket.
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
 
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graphs.
 
@@ -212,12 +217,8 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     # Checking output path to be a Path object to a directory
     if output_folder is not None:
-        if not isinstance(output_folder, Path):
-            raise Exception('Output folder must be a Path object to a directory')
-        if not output_folder.is_dir():
-            raise Exception('Output folder must be a directory')
-        if not os.path.exists(output_folder):
-            os.mkdir(output_folder)
+        _check_output_folder(output_folder)
+
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,

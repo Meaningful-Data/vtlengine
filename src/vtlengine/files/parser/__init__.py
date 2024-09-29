@@ -1,5 +1,6 @@
 from csv import DictReader
 from pathlib import Path
+from time import time
 from typing import Optional, Dict, Union
 
 import numpy as np
@@ -105,6 +106,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
 def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
+    # start = time()
     try:
         data = pd.read_csv(csv_path, dtype=obj_dtypes,
                            engine='c',
@@ -115,6 +117,10 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
         raise InputValidationException(code="0-1-2-5", file=csv_path)
     except Exception as e:
         raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
+
+    # print(f"Data loaded from {csv_path}, shape: {data.shape}")
+    # end = time()
+    # print(f"Time to load data from s3 URI: {end - start}")
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
