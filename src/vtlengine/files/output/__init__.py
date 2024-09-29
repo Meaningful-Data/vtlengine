@@ -1,5 +1,5 @@
 from pathlib import Path
-from time import time
+# from time import time
 
 from vtlengine.Model import Dataset
 from vtlengine.files.output._time_period_representation import \
