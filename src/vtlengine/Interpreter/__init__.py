@@ -77,7 +77,7 @@ class InterpreterAnalyzer(ASTTemplate):
     ruleset_signature: Dict[str, str] = None
     udo_params: List[Dict[str, Any]] = None
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
-    hr_mode: Optional[str] = None
+    ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
     hr_condition: Optional[Dict[str, str]] = None
@@ -961,6 +961,7 @@ class InterpreterAnalyzer(ASTTemplate):
             rule_output_values = {}
             self.ruleset_dataset = dataset_element
             self.ruleset_signature = dpr_info['signature']
+            self.ruleset_mode = output
             # Gather rule data, adding the ruleset dataset to the interpreter
             for rule in dpr_info['rules']:
                 rule_output_values[rule.name] = {
@@ -968,6 +969,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     "errorlevel": rule.erLevel,
                     "output": self.visit(rule)
                 }
+            self.ruleset_mode = None
             self.ruleset_signature = None
             self.ruleset_dataset = None
 
@@ -1043,7 +1045,7 @@ class InterpreterAnalyzer(ASTTemplate):
             # for simplicity
             self.ruleset_dataset = dataset
             self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
-            self.hr_mode = mode
+            self.ruleset_mode = mode
             self.hr_input = input_
             rule_output_values = {}
             if node.op == HIERARCHY:
@@ -1063,7 +1065,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_hr_val = False
             self.ruleset_signature = None
             self.ruleset_dataset = None
-            self.hr_mode = None
+            self.ruleset_mode = None
             self.hr_input = None
 
             # Final evaluation
@@ -1091,6 +1093,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
                 aux['bool_var'] = validation_data.data
                 validation_data = aux
+            else:
+                validation_data = None
+        if self.ruleset_mode == "invalid" and validation_data is not None:
+            validation_data = validation_data[validation_data['bool_var'] == False]
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1141,7 +1147,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return original_data
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
-            if self.hr_mode in ('partial_null', 'partial_zero'):
+            if self.ruleset_mode in ('partial_null', 'partial_zero'):
                 self.hr_partial_is_valid = []
             left_operand = self.visit(node.left)
             self.is_from_assignment = False
@@ -1149,17 +1155,17 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(right_operand, Dataset):
                 right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-            if self.hr_mode in ('partial_null', 'partial_zero'):
+            if self.ruleset_mode in ('partial_null', 'partial_zero'):
                 # Check all values were present in the dataset
                 if self.hr_partial_is_valid and not any(self.hr_partial_is_valid):
                     right_operand.data = right_operand.data.map(lambda x: "REMOVE_VALUE")
                 self.hr_partial_is_valid = []
 
             if self.is_from_hr_agg:
-                return HAAssignment.analyze(left_operand, right_operand, self.hr_mode)
+                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
             else:
                 result = HR_COMP_MAPPING[node.op].analyze(left_operand, right_operand,
-                                                          self.hr_mode)
+                                                          self.ruleset_mode)
                 left_measure = left_operand.get_measures()[0]
                 if left_operand.data is None:
                     result.data = None
@@ -1172,7 +1178,7 @@ class InterpreterAnalyzer(ASTTemplate):
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
             if isinstance(left_operand, Dataset) and isinstance(right_operand,
-                                                                Dataset) and self.hr_mode in (
+                                                                Dataset) and self.ruleset_mode in (
                     'partial_null', 'partial_zero') and not self.only_semantic:
                 measure_name = left_operand.get_measures_names()[0]
                 left_null_indexes = set(
@@ -1399,14 +1405,14 @@ class InterpreterAnalyzer(ASTTemplate):
             # based on the hierarchy mode
             # (Missing data points are considered,
             # lines 6483-6510 of the reference manual)
-            if self.hr_mode in ('partial_null', 'partial_zero'):
+            if self.ruleset_mode in ('partial_null', 'partial_zero'):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
                     pass
                 elif code_data[hr_component].isnull().any():
                     partial_is_valid = False
 
-            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+            if self.ruleset_mode in ('non_zero', 'partial_zero', 'always_zero'):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
                 code_data.loc[fill_indexes, measure_name] = 0
             code_data[hr_component] = node.value
@@ -1416,19 +1422,19 @@ class InterpreterAnalyzer(ASTTemplate):
             # based on the hierarchy mode
             # (Missing data points are considered,
             # lines 6483-6510 of the reference manual)
-            if self.hr_mode in ('partial_null', 'partial_zero'):
+            if self.ruleset_mode in ('partial_null', 'partial_zero'):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
                     pass
-                elif self.hr_mode == 'partial_null':
+                elif self.ruleset_mode == 'partial_null':
                     partial_is_valid = False
             df = df.head(1)
             df[hr_component] = node.value
-            if self.hr_mode in ('non_zero', 'partial_zero', 'always_zero'):
+            if self.ruleset_mode in ('non_zero', 'partial_zero', 'always_zero'):
                 df[measure_name] = 0
             else:  # For non_null, partial_null and always_null
                 df[measure_name] = None
-        if self.hr_mode in ('partial_null', 'partial_zero'):
+        if self.ruleset_mode in ('partial_null', 'partial_zero'):
             self.hr_partial_is_valid.append(partial_is_valid)
         return Dataset(name=name, components=result_components, data=df)
 

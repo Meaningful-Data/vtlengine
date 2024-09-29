@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vtlengine"
-version = "0.1.0-rc6"
+version = "0.1.0-rc7"
 description = "Run and Validate VTL Scripts"
 authors = ["MeaningfulData <info@meaningfuldata.eu>"]
 license = "Apache-2.0"
