@@ -1,33 +1,30 @@
-.. Vtl Engine Docs documentation master file, created by
-   sphinx-quickstart on Fri Aug  9 17:06:10 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+VTL Engine Documentation
+########################
 
-Vtl Engine Docs documentation
-=============================
+The VTL Engine is a Python library that allows you to validate and run VTL scripts.
+It is a Python-based library around the `VTL Language 2.0 <http://sdmx.org/?page_id=5096>`_ VTL Language 2.1 will be adapted soon.
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Installation
+************
 
+Requirements
+============
 
-*****
-Index
-*****
+The VTL Engine requires Python 3.10 or higher.
 
+Install with pip
+================
+
+To install the VTL Engine on any Operating System, you can use pip:
+
+.. code-block:: bash
+
+    pip install vtlengine
 
 .. toctree::
-   :maxdepth: 2
 
-
-   Api
-   Analytic
-   String
-   Numeric
-   General_operation
-   General
-   Conditional
-   Comparison
-   Aggregate Operators
+    index
+    walkthrough
+    api
 
 

@@ -166,4 +166,8 @@ cython_debug/
 Pipfile.lock
 
 # Internal folders
-development/data/
+development/
+
+# Documentation
+_build/
+_site/

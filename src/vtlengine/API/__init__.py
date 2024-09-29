@@ -66,22 +66,29 @@ def semantic_analysis(script: Union[str, Path],
                       value_domains: Union[dict, Path] = None,
                       external_routines: Union[str, Path] = None):
     """
-    Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script given and also reviews
-    if the data structure given can fit with it. This vtl script can be a string with the actual expression or a filepath to the folder that contains the vtl file.
+    Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
+    given and also reviews if the data structure given can fit with it.
+
+    This vtl script can be a string with the actual expression or a filepath to the folder
+    that contains the vtl file.
+
     Also, the data structure can be a dictionary or a filepath to the folder that contains it.
-    If there are any value domains or external routines, this data is taken into account. Both can be loaded the
-    same way as data structures or vtl scripts are.
+
+    If there are any value domains or external routines, this data is taken into account.
+    Both can be loaded the same way as data structures or vtl scripts are.
 
     Finally, the :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>`
-    class takes all of this information and checks it with the ast generated to return the semantic analysis result.
+    class takes all of this information and checks it with the ast generated to
+    return the semantic analysis result.
 
     Concepts you may know:
     - Vtl script: The expression that shows the operation to be done.
 
-    - Data Structure: Json file that contains the structure and the name for the dataset(s) (and/or scalar)
-    about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
+    - Data Structure: Json file that contains the structure and the name for the dataset(s) \
+    (and/or scalar) about the datatype (String, integer or number) and \
+    the role (Measure or Identifier) each data has.
 
-    - Value domains: Collection of unique values of the same datatype.
+    - Value domains: Collection of unique values on the same datatype.
 
     - External routines: SQL query used to transform a dataset.
 
@@ -89,13 +96,14 @@ def semantic_analysis(script: Union[str, Path],
 
     :param script: String or Path of the vtl expression.
 
-    :param data_structures: Dict or Path(file or folder), or List of Dicts or Paths with the data_structures json files.
+    :param data_structures: Dict or Path (file or folder), \
+    or List of Dicts or Paths with the data_structures json files.
 
     :param value_domains: Dict or Path of the value_domains json files. (default: None)
 
     :param external_routines: String or Path of the external routines sql files. (default: None)
 
-    :return: The analysis.
+    :return: The computed datasets.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -139,17 +147,24 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     It can be given with a dictionary (dataset name : pandas Dataframe),
     a path or S3 URI to the folder, path or S3 to the csv file that contains the data.
 
-    **Important**: The data structure and the data points must have the same dataset name to be loaded correctly.
+    .. important:: The data structure and the data points must have the same dataset name to be loaded correctly.
 
-    **Important**:
-    If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
-    Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
+    .. important::
+        If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
+        Example: If the path is 'path/to/data.csv', the dataset name will be 'data'.
 
-    **Important**:
-    If using an S3 URI, the path must be in the format 's3://bucket-name/path/to/data.csv'.
-    Environment variables must be set up to access the S3 bucket.
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
+    .. important::
+        If using an S3 URI, the path must be in the format:
+
+        s3://bucket-name/path/to/data.csv
+
+        The following environment variables must be set (from the AWS account):
+
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+
+        For more details, see
+        `s3fs documentation <https://s3fs.readthedocs.io/en/latest/index.html#credentials>`_.
 
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graphs.
 
@@ -159,9 +174,11 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     if any component has a Time_Period component, the external representation is passed to the Interpreter class.
 
     Concepts you may need to know:
+
     - Vtl script: The expression that shows the operation to be done.
 
-    - Data Structure: Json file that contains the structure and the name for the dataset(s) (and/or scalar)
+    - Data Structure: \
+    Json file that contains the structure and the name for the dataset(s) (and/or scalar) \
     about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
 
     - Data point: Pointer to the data. It will be loaded as a `Pandas Dataframe \
@@ -171,7 +188,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     - External routines: SQL query used to transform a dataset.
 
-     This function has the following params:
+    This function has the following params:
 
     :param script: String or Path with the vtl expression.
 
@@ -183,10 +200,11 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     :param external_routines: String or Path of the external routines sql files. (default: None)
 
-    :param time_period_output_format: String with the possible values ("sdmx_gregorian", "sdmx_reporting", "vtl")
-    for the representation of the Time Period components.
+    :param time_period_output_format: String with the possible values \
+    ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+    Time Period components.
 
-    :param return_only_persistent: If True, run function will only return the results of
+    :param return_only_persistent: If True, run function will only return the results of \
     Persistent Assignments. (default: False)
 
     :param output_folder: Path or S3 URI to the output folder. (default: None)
