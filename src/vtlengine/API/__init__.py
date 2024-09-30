@@ -72,7 +72,7 @@ def semantic_analysis(script: Union[str, Path],
     This vtl script can be a string with the actual expression or a filepath to the folder
     that contains the vtl file.
 
-    Also, the data structure can be a dictionary or a filepath to the folder that contains it.
+    Moreover, the data structure can be a dictionary or a filepath to the folder that contains it.
 
     If there are any value domains or external routines, this data is taken into account.
     Both can be loaded the same way as data structures or vtl scripts are.
@@ -82,6 +82,7 @@ def semantic_analysis(script: Union[str, Path],
     return the semantic analysis result.
 
     Concepts you may know:
+
     - Vtl script: The expression that shows the operation to be done.
 
     - Data Structure: Json file that contains the structure and the name for the dataset(s) \
@@ -97,11 +98,11 @@ def semantic_analysis(script: Union[str, Path],
     :param script: String or Path of the vtl expression.
 
     :param data_structures: Dict or Path (file or folder), \
-    or List of Dicts or Paths with the data_structures json files.
+    or List of Dicts or Paths with the data structures JSON files.
 
-    :param value_domains: Dict or Path of the value_domains json files. (default: None)
+    :param value_domains: Dict or Path of the value domains JSON files. (default: None)
 
-    :param external_routines: String or Path of the external routines sql files. (default: None)
+    :param external_routines: String or Path of the external routines SQL files. (default: None)
 
     :return: The computed datasets.
     """
@@ -135,19 +136,24 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
         return_only_persistent=False,
         output_folder: Optional[Union[str, Path]] = None):
     """
-    Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready to be performed. When the vtl expression is given,
-    an AST object is created. This vtl script can be given as a string or a path with the folder or file that contains it.
+    Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
+    to be performed.
+    When the vtl expression is given, an AST object is created.
+    This vtl script can be given as a string or a path with the folder or file that contains it.
     At the same time, data structures are loaded with its datapoints.
 
-    The data structure information is contained in the json file given, and establish the datatype (string, integer or number),
+    The data structure information is contained in the JSON file given,
+    and establish the datatype (string, integer or number),
     and the role that each component is going to have (Identifier or Measure).
-    It can be a dictionary or a path to the json file or folder that contains it.
+    It can be a dictionary or a path to the JSON file or folder that contains it.
 
     Moreover, a csv file with the data to operate with is going to be loaded.
     It can be given with a dictionary (dataset name : pandas Dataframe),
     a path or S3 URI to the folder, path or S3 to the csv file that contains the data.
 
-    .. important:: The data structure and the data points must have the same dataset name to be loaded correctly.
+    .. important::
+        The data structure and the data points must have the same dataset
+        name to be loaded correctly.
 
     .. important::
         If pointing to a Path or an S3 URI, dataset_name will be taken from the file name.
@@ -168,18 +174,22 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     Before the execution, the DAG analysis reviews if the VTL script is a direct acyclic graphs.
 
-    This information is taken by the Interpreter class, to analyze if the operation correlates with the AST object.
-    Consequently, if value domain data or external routines are required, the function loads this information and integrates
-    them into the :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>` class. Moreover,
-    if any component has a Time_Period component, the external representation is passed to the Interpreter class.
+
+    If value domain data or external routines are required, the function loads this information
+    and integrates them into the
+    :obj:`Interpreter <vtl-engine-spark.Interpreter.InterpreterAnalyzer>` class.
+
+    Moreover, if any component has a Time Period component, the external representation
+    is passed to the Interpreter class.
 
     Concepts you may need to know:
 
     - Vtl script: The expression that shows the operation to be done.
 
     - Data Structure: \
-    Json file that contains the structure and the name for the dataset(s) (and/or scalar) \
-    about the datatype (String, integer or number) and the role (Measure or Identifier) each data has.
+    JSON file that contains the structure and the name for the dataset(s) (and/or scalar) \
+    about the datatype (String, integer or number) and the role (Identifier, Attribute or Measure)
+    each component has.
 
     - Data point: Pointer to the data. It will be loaded as a `Pandas Dataframe \
     <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_.
@@ -194,11 +204,11 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-    :param datapoints: Dict, Path, S3 URI or List of S3URIs or Paths with data.
+    :param datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
 
-    :param value_domains: Dict or Path of the value_domains json files. (default:None)
+    :param value_domains: Dict or Path of the value domains JSON files. (default:None)
 
-    :param external_routines: String or Path of the external routines sql files. (default: None)
+    :param external_routines: String or Path of the external routines SQL files. (default: None)
 
     :param time_period_output_format: String with the possible values \
     ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -209,7 +219,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     :param output_folder: Path or S3 URI to the output folder. (default: None)
 
-    :return: The datasets produced, without data if output_folder is defined.
+    :return: The datasets are produced without data if the output folder is defined.
 
     """
     # AST generation
@@ -233,10 +243,9 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    # Checking output path to be a Path object to a directory
+    # Checking the output path to be a Path object to a directory
     if output_folder is not None:
         _check_output_folder(output_folder)
-
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,

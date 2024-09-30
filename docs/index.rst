@@ -3,7 +3,8 @@ VTL Engine Documentation
 
 The VTL Engine is a Python library that allows you to validate and run VTL scripts.
 It is a Python-based library around the `VTL Language 2.0 <http://sdmx.org/?page_id=5096>`_
-VTL Language 2.1 will be supported soon.
+
+*VTL Language 2.1 will be supported soon.*
 
 Installation
 ************
@@ -29,7 +30,6 @@ To install the VTL Engine on any Operating System, you can use pip:
 .. toctree::
 
     index
-    walkthrough
     api
 
 
