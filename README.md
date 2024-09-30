@@ -67,4 +67,4 @@ The VTL engine will load each datapoints file as being needed, reducing the memo
 When the output parameter is set, the engine will write the result of the computation 
 to the output folder, else it will include the data in the dictionary of the computed datasets.
 
-For more information on usage, please refer to the API documentation.
+For more information on usage, please refer to the [API documentation](https://docs.vtlengine.meaningfuldata.eu/api.html).
