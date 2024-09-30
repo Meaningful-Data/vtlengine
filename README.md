@@ -18,6 +18,9 @@ To install the VTL Engine on any Operating System, you can use pip:
 pip install vtlengine
 ```
 
+*Note: it is recommended to install the VTL Engine in a virtual environment.* 
+
+
 ## Usage
 
 ### Semantic Analysis
@@ -28,6 +31,7 @@ Here is an example:
 
 from API import semantic_analysis
 from pathlib import Path
+
 base_path = Path(__file__).parent / "testSuite/API/data/"
 script = base_path / Path("vtl/1.vtl")
 datastructures = base_path / Path("DataStructure/input")
