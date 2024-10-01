@@ -30,6 +30,7 @@ To install the VTL Engine on any Operating System, you can use pip:
 .. toctree::
 
     index
+    walkthrough
     api
 
 

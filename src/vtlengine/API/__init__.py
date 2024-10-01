@@ -85,9 +85,9 @@ def semantic_analysis(script: Union[str, Path],
 
     - Vtl script: The expression that shows the operation to be done.
 
-    - Data Structure: Json file that contains the structure and the name for the dataset(s) \
-    (and/or scalar) about the datatype (String, integer or number) and \
-    the role (Measure or Identifier) each data has.
+    - Data Structure: JSON file that contains the structure and the name for the dataset(s) \
+    (and/or scalar) about the datatype (String, integer or number), \
+    the role (Identifier, Attribute or Measure) and the nullability each component has.
 
     - Value domains: Collection of unique values on the same datatype.
 
@@ -186,10 +186,9 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     - Vtl script: The expression that shows the operation to be done.
 
-    - Data Structure: \
-    JSON file that contains the structure and the name for the dataset(s) (and/or scalar) \
-    about the datatype (String, integer or number) and the role (Identifier, Attribute or Measure)
-    each component has.
+    - Data Structure: JSON file that contains the structure and the name for the dataset(s) \
+    (and/or scalar) about the datatype (String, integer or number), \
+    the role (Identifier, Attribute or Measure) and the nullability each component has.
 
     - Data point: Pointer to the data. It will be loaded as a `Pandas Dataframe \
     <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html>`_.
