@@ -7,7 +7,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, VTLEngineException
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
 from vtlengine.files.output import TimePeriodRepresentation, \
@@ -249,7 +249,7 @@ class TestHelper(TestCase):
                               exception_message: Optional[str] = None,
                               exception_code: Optional[str] = None):
         if exception_code is not None:
-            with pytest.raises(SemanticError) as context:
+            with pytest.raises(VTLEngineException) as context:
                 cls.LoadInputs(code=code, number_inputs=number_inputs)
         else:
             with pytest.raises(Exception, match=exception_message) as context:

@@ -186,12 +186,12 @@ files = [
 
 [[package]]
 name = "antlr4-python3-runtime"
-version = "4.9.3"
-description = "ANTLR 4.9.3 runtime for Python 3.7"
+version = "4.9.2"
+description = "ANTLR 4.9.2 runtime for Python 3.7"
 optional = false
 python-versions = "*"
 files = [
-    {file = "antlr4-python3-runtime-4.9.3.tar.gz", hash = "sha256:f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b"},
+    {file = "antlr4-python3-runtime-4.9.2.tar.gz", hash = "sha256:31f5abdc7faf16a1a6e9bf2eb31565d004359b821b09944436a34361929ae85a"},
 ]
 
 [[package]]
@@ -1088,21 +1088,21 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "networkx"
-version = "3.3"
+version = "2.8.8"
 description = "Python package for creating and manipulating graphs and networks"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.8"
 files = [
-    {file = "networkx-3.3-py3-none-any.whl", hash = "sha256:28575580c6ebdaf4505b22c6256a2b9de86b316dc63ba9e93abde3d78dfdbcf2"},
-    {file = "networkx-3.3.tar.gz", hash = "sha256:0c127d8b2f4865f59ae9cb8aafcd60b5c70f3241ebd66f7defad7c4ab90126c9"},
+    {file = "networkx-2.8.8-py3-none-any.whl", hash = "sha256:e435dfa75b1d7195c7b8378c3859f0445cd88c6b0375c181ed66823a9ceb7524"},
+    {file = "networkx-2.8.8.tar.gz", hash = "sha256:230d388117af870fce5647a3c52401fcf753e94720e6ea6b4197a5355648885e"},
 ]
 
 [package.extras]
-default = ["matplotlib (>=3.6)", "numpy (>=1.23)", "pandas (>=1.4)", "scipy (>=1.9,!=1.11.0,!=1.11.1)"]
-developer = ["changelist (==0.5)", "mypy (>=1.1)", "pre-commit (>=3.2)", "rtoml"]
-doc = ["myst-nb (>=1.0)", "numpydoc (>=1.7)", "pillow (>=9.4)", "pydata-sphinx-theme (>=0.14)", "sphinx (>=7)", "sphinx-gallery (>=0.14)", "texext (>=0.6.7)"]
-extra = ["lxml (>=4.6)", "pydot (>=2.0)", "pygraphviz (>=1.12)", "sympy (>=1.10)"]
-test = ["pytest (>=7.2)", "pytest-cov (>=4.0)"]
+default = ["matplotlib (>=3.4)", "numpy (>=1.19)", "pandas (>=1.3)", "scipy (>=1.8)"]
+developer = ["mypy (>=0.982)", "pre-commit (>=2.20)"]
+doc = ["nb2plots (>=0.6)", "numpydoc (>=1.5)", "pillow (>=9.2)", "pydata-sphinx-theme (>=0.11)", "sphinx (>=5.2)", "sphinx-gallery (>=0.11)", "texext (>=0.6.6)"]
+extra = ["lxml (>=4.6)", "pydot (>=1.4.2)", "pygraphviz (>=1.9)", "sympy (>=1.10)"]
+test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
 name = "numba"
@@ -1296,9 +1296,6 @@ files = [
 ]
 
 [package.dependencies]
-bottleneck = {version = ">=1.3.6", optional = true, markers = "extra == \"performance\""}
-numba = {version = ">=0.56.4", optional = true, markers = "extra == \"performance\""}
-numexpr = {version = ">=2.8.4", optional = true, markers = "extra == \"performance\""}
 numpy = [
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
@@ -1306,7 +1303,6 @@ numpy = [
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
-s3fs = {version = ">=2022.11.0", optional = true, markers = "extra == \"aws\""}
 tzdata = ">=2022.7"
 
 [package.extras]
@@ -1706,18 +1702,18 @@ test = ["pytest"]
 
 [[package]]
 name = "sqlglot"
-version = "25.24.0"
+version = "22.5.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.24.0-py3-none-any.whl", hash = "sha256:c53101d966e79248b667fa2e00d17db57a5188e595065b164b52c77767cbcb7b"},
-    {file = "sqlglot-25.24.0.tar.gz", hash = "sha256:6a270ef55da3cbf10cf49e886b2e9d37bdf7309700f5a294f20017227d378cea"},
+    {file = "sqlglot-22.5.0-py3-none-any.whl", hash = "sha256:ef11f7e56e93732aca3caab3c74a6c11489e383a43c2ac5b5f86cc85517ef9f3"},
+    {file = "sqlglot-22.5.0.tar.gz", hash = "sha256:27c7850298b62741d78f99f17904014cc6fa9bebb2fd29fb2e9a0a195ec2a523"},
 ]
 
 [package.extras]
-dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "pytz", "ruff (==0.4.3)", "types-python-dateutil", "types-pytz", "typing-extensions"]
-rs = ["sqlglotrs (==0.2.12)"]
+dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff", "types-python-dateutil", "typing-extensions"]
+rs = ["sqlglotrs (==0.1.2)"]
 
 [[package]]
 name = "tomli"
@@ -1956,4 +1952,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "58679754ba6e9966e88ab177e2441f2e629366f1c8638178425c4b440ab58b33"
+content-hash = "bee902f7adafc7cb4f8f02f8354b68e13b35fb2d2df3e8db0328efef7b722761"
