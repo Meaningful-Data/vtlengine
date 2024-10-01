@@ -148,7 +148,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     The data structure information is contained in the JSON file given,
     and establish the datatype (string, integer or number),
-    and the role that each component is going to have (Identifier or Measure).
+    and the role that each component is going to have (Identifier, Attribute or Measure).
     It can be a dictionary or a path to the JSON file or folder that contains it.
 
     Moreover, a csv file with the data to operate with is going to be loaded.
