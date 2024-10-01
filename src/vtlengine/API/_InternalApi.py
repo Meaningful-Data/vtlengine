@@ -197,11 +197,10 @@ def load_vtl(input: Union[str, Path]):
     the file.
     """
     if isinstance(input, str):
-        try:
-            test = Path(input)
-        except Exception:
+        if os.path.exists(input):
+            input = Path(input)
+        else:
             return input
-        input = test
     if not isinstance(input, Path):
         raise Exception('Invalid vtl file. Input is not a Path object')
     if not input.exists():
