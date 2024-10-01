@@ -18,6 +18,9 @@ To install the VTL Engine on any Operating System, you can use pip:
 pip install vtlengine
 ```
 
+*Note: it is recommended to install the VTL Engine in a virtual environment.* 
+
+
 ## Usage
 
 ### Semantic Analysis
@@ -26,9 +29,10 @@ Here is an example:
 
 ```python
 
-from API import semantic_analysis
+from vtlengine import semantic_analysis
 from pathlib import Path
-base_path = Path(__file__).parent / "testSuite/API/data/"
+
+base_path = Path(__file__).parent / "tests/API/data/"
 script = base_path / Path("vtl/1.vtl")
 datastructures = base_path / Path("DataStructure/input")
 value_domains = base_path / Path("ValueDomain/VD_1.json")
@@ -46,10 +50,10 @@ To execute a VTL script, please use the run function. Here is an example:
 
 ```python
 
-from API import run
+from vtlengine import run
 from pathlib import Path
 
-base_path = Path(__file__).parent / "testSuite/API/data/"
+base_path = Path(__file__).parent / "tests/API/data/"
 script = base_path / Path("vtl/1.vtl")
 datastructures = base_path / Path("DataStructure/input")
 datapoints = base_path / Path("DataSet/input")
@@ -60,11 +64,11 @@ external_routines = None
 
 run(script=script, data_structures=datastructures, datapoints=datapoints,
     value_domains=value_domains, external_routines=external_routines,
-    output_path=output_folder, return_only_persistent=True
+    output_folder=output_folder, return_only_persistent=True
     )
 ```
 The VTL engine will load each datapoints file as being needed, reducing the memory footprint.
 When the output parameter is set, the engine will write the result of the computation 
 to the output folder, else it will include the data in the dictionary of the computed datasets.
 
-For more information on usage, please refer to the API documentation.
+For more information on usage, please refer to the [API documentation](https://docs.vtlengine.meaningfuldata.eu/api.html).

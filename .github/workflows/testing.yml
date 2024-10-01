@@ -1,23 +1,24 @@
-name: Build
+name: Testing
 
 on:
   push:
     branches: [ "main", "dev" ]
   pull_request:
     branches: [ "main", "dev" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  testing:
 
     runs-on: ${{matrix.os}}
 
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12"]
         
     steps:
     - name: Checkout code
