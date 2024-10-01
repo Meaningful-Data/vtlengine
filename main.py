@@ -18,7 +18,7 @@ if __name__ == '__main__':
         data_structures=input_ds,
         datapoints=input_dp,
         value_domains=vds,
-        output_path=output_dp,
+        output_folder=output_dp,
     )
     end = time()
     print(f"Execution time: {round(end - start, 2)}s")
