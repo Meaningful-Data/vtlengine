@@ -17,6 +17,8 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.files.output import TimePeriodRepresentation, \
     format_time_period_external_representation
 
+pd.options.mode.chained_assignment = None
+
 
 class __VTLSingleErrorListener(ErrorListener):
     """
