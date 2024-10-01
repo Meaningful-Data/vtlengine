@@ -128,7 +128,8 @@ def semantic_analysis(script: Union[str, Path],
     interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd,
                                       external_routines=ext_routines,
                                       only_semantic=True)
-    result = interpreter.visit(ast)
+    with pd.option_context('future.no_silent_downcasting', True):
+        result = interpreter.visit(ast)
     return result
 
 

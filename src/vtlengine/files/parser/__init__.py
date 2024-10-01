@@ -1,3 +1,4 @@
+import warnings
 from csv import DictReader
 from pathlib import Path
 # from time import time
@@ -132,6 +133,7 @@ def _parse_boolean(value: str):
 
 def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame,
                      dataset_name: str) -> pd.DataFrame:
+    warnings.filterwarnings("ignore", category=FutureWarning)
     # Identifier checking
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
