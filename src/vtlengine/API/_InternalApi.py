@@ -319,7 +319,9 @@ def _check_output_folder(output_folder: Union[str, Path]):
         except Exception:
             raise Exception('Output folder must be a Path or S3 URI to a directory')
 
-    if not isinstance(output_folder, Path) or not output_folder.is_dir():
+    if not isinstance(output_folder, Path):
         raise Exception('Output folder must be a Path or S3 URI to a directory')
     if not output_folder.exists():
+        if output_folder.suffix != '':
+            raise Exception('Output folder must be a Path or S3 URI to a directory')
         os.mkdir(output_folder)
