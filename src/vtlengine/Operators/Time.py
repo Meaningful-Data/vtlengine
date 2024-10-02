@@ -466,22 +466,16 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_dates(cls, dates, shift_value, frequency):
-        # Convert all dates to datetime at once
         dates = pd.to_datetime(dates)
-
         if frequency == 'D':
             return dates + pd.to_timedelta(shift_value, unit='D')
-
         elif frequency == 'W':
             return dates + pd.to_timedelta(shift_value, unit='W')
-
         elif frequency == 'Y':
             return dates + pd.DateOffset(years=shift_value)
-
         elif frequency in ['M', 'Q', 'S']:
             return dates + pd.DateOffset(months=shift_value)
-
-        raise ValueError(f"Unsupported frequency: {frequency}")
+        raise SemanticError("1-1-19-12", period=frequency)
 
     @classmethod
     def shift_period(cls, period_str, shift_value, frequency=None):
