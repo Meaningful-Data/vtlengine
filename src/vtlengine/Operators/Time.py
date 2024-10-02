@@ -19,6 +19,7 @@ class Time(Operators.Operator):
     periods = None
     time_id = None
     other_ids = None
+    measures = None
 
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
 
@@ -60,14 +61,17 @@ class Time(Operators.Operator):
 
     @classmethod
     def get_frequencies(cls, dates):
-        dates = [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
-        dates = abs(pd.Series(dates))
-        return dates
+        dates = pd.to_datetime(dates)
+        dates = dates.sort_values()
+        deltas = dates.diff().dropna()
+        return deltas
 
     @classmethod
     def find_min_frequency(cls, differences):
-        min_months = min((diff.months for diff in differences if diff.months > 0), default=None)
-        min_days = min((diff.days for diff in differences if diff.days > 0), default=None)
+        months_deltas = differences.apply(lambda x: x.days // 30)
+        days_deltas = differences.apply(lambda x: x.days)
+        min_months = min((diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None)
+        min_days = min((diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0), default=None)
         return 'D' if min_days else 'M' if min_months else 'Y'
 
     @classmethod
@@ -437,8 +441,7 @@ class Time_Shift(Binary):
         data_type = result.components[cls.time_id].data_type
 
         if data_type == Date:
-            freq = cls.find_min_frequency(
-                cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
+            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
             result.data[cls.time_id] = result.data[cls.time_id].apply(
                 lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
         elif data_type == Time:
