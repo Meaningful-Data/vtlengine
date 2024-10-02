@@ -187,7 +187,7 @@ centralised_messages = {
     "1-1-19-12": "Invalid period indicator {period}.",
     "1-1-19-13": "Only same period indicator allowed for both parameters ({period1} != {period2}).",
     "1-1-19-14": "Invalid date format, must be YYYY-MM-DD: {str}",
-    "1-1-19-15": "Invalid period format, must be YYYY-\{L\}NNN: {period_format}",
+    "1-1-19-15": "Invalid period format, must be YYYY-(L)NNN: {period_format}",
     "1-1-19-16": "Invalid year {year}, must be between 1900 and 9999.",
     "1-1-19-17": "Period Number must be between 1 and {periods} for period indicator {period_indicator}.",
     "1-1-19-18": "Invalid day {day} for year {year}.",
