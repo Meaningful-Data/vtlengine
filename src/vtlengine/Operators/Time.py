@@ -208,7 +208,7 @@ class Fill_time_series(Binary):
                                     param="single time interval frequency")
             result.data = cls.fill_time_intervals(result.data, fill_type, frequencies[0])
         else:
-            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="date type")
+            raise SemanticError("1-1-19-2", op=cls.op)
         return result
 
     @classmethod
