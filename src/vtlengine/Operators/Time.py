@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, timedelta
 from itertools import combinations
 from typing import Optional, Union, List
 
@@ -442,8 +442,7 @@ class Time_Shift(Binary):
 
         if data_type == Date:
             freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
+            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == Time:
             freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
             result.data[cls.time_id] = result.data[cls.time_id].apply(
@@ -466,8 +465,23 @@ class Time_Shift(Binary):
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
-    def shift_date(cls, date, shift_value, frequency):
-        return pd.to_datetime(date) + relativedelta(**{cls.FREQUENCY_MAP[frequency]: shift_value})
+    def shift_dates(cls, dates, shift_value, frequency):
+        # Convert all dates to datetime at once
+        dates = pd.to_datetime(dates)
+
+        if frequency == 'D':
+            return dates + pd.to_timedelta(shift_value, unit='D')
+
+        elif frequency == 'W':
+            return dates + pd.to_timedelta(shift_value, unit='W')
+
+        elif frequency == 'Y':
+            return dates + pd.DateOffset(years=shift_value)
+
+        elif frequency in ['M', 'Q', 'S']:
+            return dates + pd.DateOffset(months=shift_value)
+
+        raise ValueError(f"Unsupported frequency: {frequency}")
 
     @classmethod
     def shift_period(cls, period_str, shift_value, frequency=None):
@@ -495,8 +509,8 @@ class Time_Shift(Binary):
     @classmethod
     def shift_interval(cls, interval, shift_value, frequency):
         start_date, end_date = interval.split('/')
-        start_date = cls.shift_date(start_date, shift_value, frequency)
-        end_date = cls.shift_date(end_date, shift_value, frequency)
+        start_date = cls.shift_dates(start_date, shift_value, frequency)
+        end_date = cls.shift_dates(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
 
 
