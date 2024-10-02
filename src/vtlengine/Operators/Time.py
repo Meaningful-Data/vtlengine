@@ -1,13 +1,11 @@
 import re
-from datetime import date, timedelta
-from itertools import combinations
+from datetime import date
 from typing import Optional, Union, List
 
 import vtlengine.Operators as Operators
 import pandas as pd
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
-from dateutil.relativedelta import relativedelta
 
 from vtlengine.AST.Grammar.tokens import TIME_AGG, TIMESHIFT, PERIOD_INDICATOR, \
     FILL_TIME_SERIES, FLOW_TO_STOCK
