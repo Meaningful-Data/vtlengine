@@ -21,7 +21,7 @@ class ClauseClauseTests(SemanticHelper):
     Group 1
     """
 
-    classTest = 'Semantictests.ClauseClauseTests'
+    classTest = "Semantictests.ClauseClauseTests"
 
     def test_1(self):
         """
@@ -31,9 +31,9 @@ class ClauseClauseTests(SemanticHelper):
         Description: Calc after drop. Why is a bug?
 
         Git Branch:
-        Goal: 
+        Goal:
         """
-        code = 'CC_1'
+        code = "CC_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -49,12 +49,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_2'
+        code = "CC_2"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_3(self):
         """
@@ -66,7 +67,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_3'
+        code = "CC_3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -82,7 +83,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_4'
+        code = "CC_4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -98,7 +99,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_5'
+        code = "CC_5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -114,7 +115,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_6'
+        code = "CC_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -130,7 +131,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_7'
+        code = "CC_7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -146,7 +147,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_8'
+        code = "CC_8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -162,12 +163,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_9'
+        code = "CC_9"
         number_inputs = 1
         error_code = "1-1-6-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_10(self):
         """
@@ -179,12 +181,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_10'
+        code = "CC_10"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """
@@ -196,7 +199,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_11'
+        code = "CC_11"
         number_inputs = 1
         references_names = ["1"]
 
@@ -212,12 +215,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_12'
+        code = "CC_12"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_13(self):
         """
@@ -229,7 +233,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_13'
+        code = "CC_13"
         number_inputs = 1
         references_names = ["1"]
 
@@ -245,7 +249,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_14'
+        code = "CC_14"
         number_inputs = 1
         references_names = ["1"]
 
@@ -261,12 +265,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_15'
+        code = "CC_15"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_16(self):
         """
@@ -278,7 +283,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_16'
+        code = "CC_16"
         number_inputs = 1
         references_names = ["1"]
 
@@ -294,7 +299,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_17'
+        code = "CC_17"
         number_inputs = 1
         references_names = ["1"]
 
@@ -310,12 +315,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_18'
+        code = "CC_18"
         number_inputs = 1
-        error_code = '1-1-1-1'
+        error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_19(self):
         """
@@ -327,7 +333,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_19'
+        code = "CC_19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -343,7 +349,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_20'
+        code = "CC_20"
         number_inputs = 1
         references_names = ["1"]
 
@@ -359,12 +365,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_21'
+        code = "CC_21"
         number_inputs = 1
-        error_code = '1-1-1-1'
+        error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_22(self):
         """
@@ -376,7 +383,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_22'
+        code = "CC_22"
         number_inputs = 1
         references_names = ["1"]
 
@@ -392,7 +399,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_23'
+        code = "CC_23"
         number_inputs = 1
         references_names = ["1"]
 
@@ -408,7 +415,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_24'
+        code = "CC_24"
         number_inputs = 1
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -423,12 +430,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_25'
+        code = "CC_25"
         number_inputs = 1
-        error_code = '1-1-1-10'
+        error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_26(self):
         """
@@ -440,7 +448,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_26'
+        code = "CC_26"
         number_inputs = 1
         references_names = ["1"]
 
@@ -456,12 +464,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_27'
+        code = "CC_27"
         number_inputs = 1
-        error_code = '1-1-1-10'
+        error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_28(self):
         """
@@ -473,12 +482,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_28'
+        code = "CC_28"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_29(self):
         """
@@ -490,12 +500,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_29'
+        code = "CC_29"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_30(self):
         """
@@ -507,7 +518,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_30'
+        code = "CC_30"
         number_inputs = 1
         references_names = ["1"]
 
@@ -523,12 +534,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_31'
+        code = "CC_31"
         number_inputs = 1
         error_code = "1-1-6-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_32(self):
         """
@@ -540,12 +552,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_32'
+        code = "CC_32"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_33(self):
         """
@@ -557,7 +570,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_33'
+        code = "CC_33"
         number_inputs = 1
         references_names = ["1"]
 
@@ -573,7 +586,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_34'
+        code = "CC_34"
         number_inputs = 2
         references_names = ["1"]
 
@@ -589,7 +602,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_35'
+        code = "CC_35"
         number_inputs = 1
         references_names = ["1"]
 
@@ -606,12 +619,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_36'
+        code = "CC_36"
         number_inputs = 1
         error_code = "1-1-6-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_37(self):
         """
@@ -627,7 +641,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_37'
+        code = "CC_37"
         number_inputs = 1
         references_names = ["1"]
 
@@ -647,7 +661,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_38'
+        code = "CC_38"
         number_inputs = 1
         references_names = ["1"]
 
@@ -663,7 +677,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_39'
+        code = "CC_39"
         number_inputs = 1
         references_names = ["1"]
 
@@ -679,12 +693,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'CC_40'
+        code = "CC_40"
         number_inputs = 2
         error_code = "1-1-14-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_41(self):
         """
@@ -696,7 +711,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_41'
+        code = "CC_41"
         number_inputs = 1
         references_names = ["1"]
 
@@ -712,12 +727,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_42'
+        code = "CC_42"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_43(self):
         """
@@ -729,12 +745,13 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_43'
+        code = "CC_43"
         number_inputs = 1
         error_code = "1-1-6-13"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_44(self):
         """
@@ -746,7 +763,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_44'
+        code = "CC_44"
         number_inputs = 1
         references_names = ["1"]
 
@@ -757,12 +774,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1 [drop Me_2, Me_4][rename Me_1 to Medate_1, Me_3 to Metp_3];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_45'
+        code = "CC_45"
         number_inputs = 1
         references_names = ["1"]
 
@@ -773,12 +790,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1[calc me_3:= Me_1][keep me_3, Me_1][calc Me_4 := me_3][keep me_3, Me_4];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_46'
+        code = "CC_46"
         number_inputs = 1
         references_names = ["1"]
 
@@ -789,12 +806,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1[calc Me_3 := Me_2, Me_4 := Me_1][rename Me_3 to Me_3a, Me_4 to Me_4a];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_47'
+        code = "CC_47"
         number_inputs = 1
         references_names = ["1"]
 
@@ -805,18 +822,19 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1[sub Id_2 = "a"][calc identifier Id_3 := Id_1][calc Me_3 := Me_2=Me_1][keep Me_3];
-        Description: "At op {op}: Invalid data type {type} for Component {name}." 
+        Description: "At op {op}: Invalid data type {type} for Component {name}."
         Note: Me_1 is a Time_Period and Me_2 is a Date
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_48'
+        code = "CC_48"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_49(self):
         """
@@ -828,7 +846,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_49'
+        code = "CC_49"
         number_inputs = 1
         references_names = ["1"]
 
@@ -845,7 +863,7 @@ class ClauseClauseTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_50'
+        code = "CC_50"
         number_inputs = 1
         references_names = ["1"]
 
@@ -857,12 +875,12 @@ class ClauseClauseTests(SemanticHelper):
         Status:
         Expression: DS_r := DS_1 [calc Me_4 := Me_1, Me_5 := Id_2 + Id_3][keep Me_3, Me_6]
                                  [rename Me_3 to Medate_3, Me_6 to Metp_6];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_51'
+        code = "CC_51"
         number_inputs = 1
         references_names = ["1"]
 
@@ -873,12 +891,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1 [filter Id_1 = Id_2] [aggr Me_1:= sum( Me_1 ) group by Id_1, Id_2] [rename Id_1 to Id_1A, Me_1 to Me_1A];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_52'
+        code = "CC_52"
         number_inputs = 1
         references_names = ["1"]
 
@@ -890,12 +908,12 @@ class ClauseClauseTests(SemanticHelper):
         Status:
         Expression: DS_r:= DS_1 [calc Me_1:= Me_1 * 3.0, Me_2:= Me_2 * 2.0][keep Me_1, Me_2, Me_3, Me_4]
                                  [aggr Me_5 := sum(Me_1), Me_6 := min(Me_2) group except Id_1];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_53'
+        code = "CC_53"
         number_inputs = 1
         references_names = ["1"]
 
@@ -906,12 +924,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := (DS_1[sub Id_2 = "A" ] + DS_1 [ sub Id_2 = "XX"])[rename Id_1 to Id_1A, Id_3 to Id_3A];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_54'
+        code = "CC_54"
         number_inputs = 1
         references_names = ["1"]
 
@@ -923,12 +941,12 @@ class ClauseClauseTests(SemanticHelper):
         Status:
         Expression: DS_r := DS_1 [filter Me_1 = true and Me_2 = false][calc Me_3 := Me_1 and Me_2]
                                  [rename Me_1 to MeB_1, Me_2 to MeB_2, Me_3 to MeB_3];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_55'
+        code = "CC_55"
         number_inputs = 1
         references_names = ["1"]
 
@@ -940,12 +958,12 @@ class ClauseClauseTests(SemanticHelper):
         Status:
         Expression: DS_r := DS_1 [filter Me_1 = true and Me_2 = false][calc Me_3 := Me_1 and Me_2]
                     [rename Me_1 to MeB_1, Me_2 to MeB_2, Me_3 to MeB_3][aggr Me_4 := min (MeB_1) group by Id_1];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_56'
+        code = "CC_56"
         number_inputs = 1
         references_names = ["1"]
 
@@ -957,12 +975,12 @@ class ClauseClauseTests(SemanticHelper):
         Status:
         Expression: DS_r := DS_1 [filter Me_1 = true and Me_2 = false][calc Me_3 := Me_1 and Me_2]
                     [rename Me_1 to MeB_1, Me_2 to MeB_2, Me_3 to MeB_3][aggr Me_4 := max (MeB_1) group except Id_1];
-        Description: 
+        Description:
 
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'CC_57'
+        code = "CC_57"
         number_inputs = 1
         references_names = ["1"]
 
@@ -973,12 +991,12 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := DS_1 [drop Me_2, Me_4][calc Me_2 := Me_1*2];
-        Description: 
+        Description:
 
         Git Branch:
-        Goal: 
+        Goal:
         """
-        code = 'CC_58'
+        code = "CC_58"
         number_inputs = 1
         references_names = ["1"]
 
@@ -990,7 +1008,7 @@ class MembershipTests(SemanticHelper):
     Group
     """
 
-    classTest = 'Semantictests.MembershipTests'
+    classTest = "Semantictests.MembershipTests"
 
     def test_1(self):
         """
@@ -1002,7 +1020,7 @@ class MembershipTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Memb_1'
+        code = "Memb_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1018,12 +1036,13 @@ class MembershipTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Memb_2'
+        code = "Memb_2"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_5(self):
         """
@@ -1043,15 +1062,16 @@ class MembershipTests(SemanticHelper):
                     DS_r := drop_identifier (suma (DS_1#Me_1, DS_2#Me_1), Id_3);
         Description: The test with the right expression is in udo tests, but i want to manage the exception here
 
-        Git Branch: 
+        Git Branch:
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = 'Memb_5'
+        code = "Memb_5"
         number_inputs = 2
         error_code = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_7(self):
         """
@@ -1061,9 +1081,9 @@ class MembershipTests(SemanticHelper):
         Description: Membership#Identifier(Time).
 
         Git Branch: 388-clause-clause-tests
-        Goal: 
+        Goal:
         """
-        code = 'Memb_7'
+        code = "Memb_7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1080,7 +1100,7 @@ class MembershipTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'Memb_8'
+        code = "Memb_8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1097,7 +1117,7 @@ class MembershipTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'Memb_9'
+        code = "Memb_9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1114,7 +1134,7 @@ class MembershipTests(SemanticHelper):
         Git Branch: 388-clause-clause-tests
         Goal:
         """
-        code = 'Memb_10'
+        code = "Memb_10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1127,7 +1147,7 @@ class AliasTests(SemanticHelper):
     Group
     """
 
-    classTest = 'Semantictests.AliasTests'
+    classTest = "Semantictests.AliasTests"
 
     def test_1(self):
         """
@@ -1139,7 +1159,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_1'
+        code = "Al_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1156,7 +1176,7 @@ class AliasTests(SemanticHelper):
         Goal: .
         """
         # error_code = "1-3-1"
-        code = 'Al_2'
+        code = "Al_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1172,7 +1192,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_3'
+        code = "Al_3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1188,7 +1208,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_4'
+        code = "Al_4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1214,7 +1234,7 @@ class AliasTests(SemanticHelper):
             keep d1#Me_1
             rename Me_1 to Me_1a);
         """
-        code = 'Al_5'
+        code = "Al_5"
         number_inputs = 2
         # joins
         references_names = ["1"]
@@ -1233,7 +1253,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_6'
+        code = "Al_6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1249,7 +1269,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_9'
+        code = "Al_9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1265,12 +1285,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_10'
+        code = "Al_10"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """
@@ -1282,12 +1303,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_11'
+        code = "Al_11"
         number_inputs = 1
-        error_code = '1-1-6-8'
+        error_code = "1-1-6-8"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_12(self):
         """
@@ -1299,12 +1321,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_12'
+        code = "Al_12"
         number_inputs = 1
-        error_code = '1-1-6-8'
+        error_code = "1-1-6-8"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_13(self):
         """
@@ -1316,7 +1339,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_13'
+        code = "Al_13"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1332,12 +1355,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_14'
+        code = "Al_14"
         number_inputs = 1
-        error_code = '1-1-1-10'
+        error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_15(self):
         """
@@ -1349,12 +1373,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_15'
+        code = "Al_15"
         number_inputs = 1
-        error_code = '1-1-6-2'
+        error_code = "1-1-6-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_16(self):
         """
@@ -1366,7 +1391,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_16'
+        code = "Al_16"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1382,7 +1407,7 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_17'
+        code = "Al_17"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1398,12 +1423,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_18'
+        code = "Al_18"
         number_inputs = 1
-        error_code = '1-1-1-10'
+        error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_19(self):
         """
@@ -1415,12 +1441,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_19'
+        code = "Al_19"
         number_inputs = 1
-        error_code = '1-1-6-13'
+        error_code = "1-1-6-13"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_21(self):
         """
@@ -1432,12 +1459,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_21'
+        code = "Al_21"
         number_inputs = 1
         error_code = "1-1-6-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_22(self):
         """
@@ -1449,12 +1477,13 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_22'
+        code = "Al_22"
         number_inputs = 1
         error_code = "1-3-1"  # "1-1-6-8"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_23(self):
         """
@@ -1469,18 +1498,18 @@ class AliasTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Al_23'
-        number_inputs = 2
-        error_code = "1-1-1-10"
+        # code = "Al_23"
+        # number_inputs = 2
+        # error_code = "1-1-1-10"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
 
 
 class JoinTests(SemanticHelper):
-    """
-    """
-    classTest = 'Semantictests.JoinTests'
+    """ """
+
+    classTest = "Semantictests.JoinTests"
 
     def test_1(self):
         """
@@ -1492,7 +1521,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_1'
+        code = "J_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1508,7 +1537,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_2'
+        code = "J_2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1524,7 +1553,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_3'
+        code = "J_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1540,7 +1569,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_4'
+        code = "J_4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1556,12 +1585,13 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_5'
+        code = "J_5"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_6(self):
         """
@@ -1573,12 +1603,13 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_6'
+        code = "J_6"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_7(self):
         """
@@ -1590,7 +1621,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_7'
+        code = "J_7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1606,12 +1637,13 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_8'
+        code = "J_8"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_9(self):
         """
@@ -1623,7 +1655,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_9'
+        code = "J_9"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1639,12 +1671,13 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_10'
+        code = "J_10"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """
@@ -1656,7 +1689,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_11'
+        code = "J_11"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1672,7 +1705,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_12'
+        code = "J_12"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1688,9 +1721,9 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_13'
-        number_inputs = 2
-        error_code = "1-1-1-10"
+        # code = "J_13"
+        # number_inputs = 2
+        # error_code = "1-1-1-10"
         # TODO: partial component found allow to found the operator
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -1705,7 +1738,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_14'
+        code = "J_14"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1721,7 +1754,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_15'
+        code = "J_15"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1737,7 +1770,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_16'
+        code = "J_16"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1753,7 +1786,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_17'
+        code = "J_17"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1769,7 +1802,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_18'
+        code = "J_18"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1785,12 +1818,13 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_19'
+        code = "J_19"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_20(self):
         """
@@ -1802,7 +1836,7 @@ class JoinTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_20'
+        code = "J_20"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1810,9 +1844,9 @@ class JoinTests(SemanticHelper):
 
 
 class AggregateTests(SemanticHelper):
-    """
-    """
-    classTest = 'Semantictests.AggregateTests'
+    """ """
+
+    classTest = "Semantictests.AggregateTests"
 
     def test_1(self):
         """
@@ -1824,7 +1858,7 @@ class AggregateTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'J_1'
+        code = "J_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1840,35 +1874,37 @@ class AggregateTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Ag_2'
+        code = "Ag_2"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
 
 class ScalarTests(SemanticHelper):
-    """
-    """
-    classTest = 'Semantictests.ScalarTests'
+    """ """
+
+    classTest = "Semantictests.ScalarTests"
 
     def test_1(self):
         """
         Dataset --> Dataset
         Status:
-        Expression: 
+        Expression:
         Description: Error when redefine datasets
 
         Git Branch:
         Goal: .
         """
-        code = 'Sc_1'
+        code = "Sc_1"
         number_inputs = 1
         error_code = "1-3-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_2(self):
         """
@@ -1880,7 +1916,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_2'
+        code = "Sc_2"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -1896,7 +1932,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_3'
+        code = "Sc_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1912,7 +1948,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_4'
+        code = "Sc_4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1930,7 +1966,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_5'
+        code = "Sc_5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1948,11 +1984,12 @@ class ScalarTests(SemanticHelper):
         Goal: .
         VtlEngine.Exceptions.exceptions.VTLEngineException: Trying to redefine input datasets. ['DS_1'].
         """
-        code = 'Sc_6'
+        code = "Sc_6"
         number_inputs = 2
         message = "Trying to redefine input datasets"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_7(self):
         """
@@ -1964,12 +2001,13 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_7'
+        code = "Sc_7"
         number_inputs = 1  # number of files
         error_code = "1-1-1-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_8(self):
         """
@@ -1981,12 +2019,13 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_8'
+        code = "Sc_8"
         number_inputs = 1  # number of files
         error_code = "1-1-13-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_9(self):
         """
@@ -1998,12 +2037,13 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_9'
+        code = "Sc_9"
         number_inputs = 1  # number of files
         error_code = "1-1-13-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_10(self):
         """
@@ -2015,7 +2055,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_10'
+        code = "Sc_10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2031,7 +2071,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_11'
+        code = "Sc_11"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2047,7 +2087,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_12'
+        code = "Sc_12"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2063,12 +2103,13 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_13'
+        code = "Sc_13"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_14(self):
         """
@@ -2080,7 +2121,7 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_14'
+        code = "Sc_14"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2096,12 +2137,13 @@ class ScalarTests(SemanticHelper):
         Git Branch:
         Goal: .
         """
-        code = 'Sc_15'
+        code = "Sc_15"
         number_inputs = 2
         error_code = "1-1-6-11"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_16(self):
         """
@@ -2112,9 +2154,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_16'
+        code = "Sc_16"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2130,9 +2172,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_17'
+        code = "Sc_17"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -2148,9 +2190,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_18'
+        code = "Sc_18"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -2161,12 +2203,12 @@ class ScalarTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r:= DS_1[calc sc_2:= sc_1 or true];
-        Description: 
+        Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_19'
+        code = "Sc_19"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2180,14 +2222,18 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_20'
+        code = "Sc_20"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={"sc_1": True})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": True},
+        )
 
     def test_21(self):
         """
@@ -2197,14 +2243,18 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_21'
+        code = "Sc_21"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={"sc_1": True})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": True},
+        )
 
     def test_22(self):
         """
@@ -2216,14 +2266,15 @@ class ScalarTests(SemanticHelper):
         related to the aggregate operators
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_22'
+        code = "Sc_22"
         number_inputs = 1
         error_code = "2-3-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_23(self):
         """
@@ -2235,14 +2286,15 @@ class ScalarTests(SemanticHelper):
         related to the aggregate operators
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_23'
+        code = "Sc_23"
         number_inputs = 1
         error_code = "2-3-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_24(self):
         """
@@ -2254,14 +2306,15 @@ class ScalarTests(SemanticHelper):
         related to the aggregate operators
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_24'
+        code = "Sc_24"
         number_inputs = 1
         error_code = "2-3-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_25(self):
         """
@@ -2274,14 +2327,15 @@ class ScalarTests(SemanticHelper):
         related to the analytic operators
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_25'
+        code = "Sc_25"
         number_inputs = 1
         error_code = "2-3-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_26(self):
         """
@@ -2292,14 +2346,15 @@ class ScalarTests(SemanticHelper):
                       check transformation with output dataset DS_r'
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_26'
+        code = "Sc_26"
         number_inputs = 2
         error_code = "1-1-9-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_27(self):
         """
@@ -2310,30 +2365,35 @@ class ScalarTests(SemanticHelper):
         or at least one of them a Scalar. Please check transformation with output dataset DS_r'
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_27'
+        code = "Sc_27"
         number_inputs = 2
         error_code = "1-1-9-12"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_28(self):
         """
         Dataset --> Dataset
         Status:
         Expression: DS_r := if DS_1 = 0 then DS_1 else sc_1;
-        Description: 
+        Description:
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_28'
+        code = "Sc_28"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      only_semantic=True)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
 
     def test_29(self):
         """
@@ -2343,9 +2403,9 @@ class ScalarTests(SemanticHelper):
         Description: AttributeError: 'NoneType' object has no attribute 'scalarType'
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_29'
+        code = "Sc_29"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2364,14 +2424,15 @@ class ScalarTests(SemanticHelper):
         Description: Component ACCOUNTING_ENTRY not found. Please check transformation with output dataset DS_r'
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_30'
+        code = "Sc_30"
         number_inputs = 1
         error_code = "1-1-1-20"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_31(self):
         """
@@ -2387,9 +2448,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_31'
+        code = "Sc_31"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2415,14 +2476,15 @@ class ScalarTests(SemanticHelper):
                       found Scalar. Please check transformation with output dataset DS_r'
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_32'
+        code = "Sc_32"
         number_inputs = 1
         error_code = "1-1-1-20"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_33(self):
         """
@@ -2438,48 +2500,57 @@ class ScalarTests(SemanticHelper):
         found Scalar. Please check transformation with output dataset DS_r
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_33'
+        code = "Sc_33"
         number_inputs = 1
         error_code = "1-1-1-20"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_34(self):
         """
         Dataset --> Dataset
         Status:
         Expression: DS_r := check (DS_1 >= sc_1 imbalance DS_1 - DS_2);
-        Description: 
+        Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_34'
+        code = "Sc_34"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={"sc_1": 0})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": 0},
+        )
 
     def test_35(self):
         """
         Dataset --> Dataset
         Status:
         Expression: DS_r := check (DS_1 >= sc_2 imbalance DS_2 - sc_1);
-        Description: 
+        Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_35'
+        code = "Sc_35"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={"sc_1": 0})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": 0},
+        )
 
     def test_36(self):
         """
@@ -2489,9 +2560,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_36'
+        code = "Sc_36"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2505,9 +2576,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_37'
+        code = "Sc_37"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2521,9 +2592,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_38'
+        code = "Sc_38"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2542,9 +2613,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_39'
+        code = "Sc_39"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2563,9 +2634,9 @@ class ScalarTests(SemanticHelper):
         Description: Both scalar_datasets belongs to one input
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_40'
+        code = "Sc_40"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2584,9 +2655,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_41'
+        code = "Sc_41"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2610,9 +2681,9 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_42'
+        code = "Sc_42"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2637,14 +2708,15 @@ class ScalarTests(SemanticHelper):
         Description: Invalid input parameter dataset -> scalar
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_43'
+        code = "Sc_43"
         number_inputs = 1
         error_code = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_44(self):
         """
@@ -2664,14 +2736,15 @@ class ScalarTests(SemanticHelper):
         Description: Invalid input parameter component -> scalar
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_44'
+        code = "Sc_44"
         number_inputs = 1
         error_code = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_45(self):
         """
@@ -2691,11 +2764,15 @@ class ScalarTests(SemanticHelper):
         Description:
 
         Git Branch: 398-scalar-tests
-        Goal: 
+        Goal:
         """
-        code = 'Sc_45'
+        code = "Sc_45"
         number_inputs = 2
         references_names = ["1", "2"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={"sc_1": 3})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": 3},
+        )

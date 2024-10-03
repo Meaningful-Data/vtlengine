@@ -19,7 +19,7 @@ class ValidationOperatorsTests(ValidationHelper):
     Group 1
     """
 
-    classTest = 'validation.ValidationOperatorsTests'
+    classTest = "validation.ValidationOperatorsTests"
 
     def test_1(self):
         """
@@ -43,7 +43,7 @@ class ValidationOperatorsTests(ValidationHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -71,7 +71,7 @@ class ValidationOperatorsTests(ValidationHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -99,7 +99,7 @@ class ValidationOperatorsTests(ValidationHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -128,7 +128,7 @@ class ValidationOperatorsTests(ValidationHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -157,7 +157,7 @@ class ValidationOperatorsTests(ValidationHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -186,7 +186,7 @@ class ValidationOperatorsTests(ValidationHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -217,7 +217,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -248,7 +248,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -279,7 +279,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of datapoint rulesets.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -296,7 +296,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of check.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -314,7 +314,7 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of check.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
@@ -332,42 +332,38 @@ class ValidationOperatorsTests(ValidationHelper):
         Git Branch: 309-validation-operators-tests.
         Goal: Check the result of check.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_446_2(self):
-        '''
+        """
         Description: Left_join review.
         Jira issue: VTLEN 540.
         Git Branch: feat-VTLEN-540-left_join-review.
         Goal: Check Semantic Exception.
-        '''
-        code = 'GL_446_2'
+        """
+        code = "GL_446_2"
         number_inputs = 1
         error_code = "1-1-10-1"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=error_code
+            code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
     def test_GL_446_3(self):
-        '''
+        """
         Description: Left_join review.
         Jira issue: VTLEN 540.
         Git Branch: feat-VTLEN-540-left_join-review.
         Goal: Check Semantic Exception.
-        '''
-        code = 'GL_446_3'
+        """
+        code = "GL_446_3"
         number_inputs = 1
         error_code = "1-1-10-1"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=error_code
+            code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
     def test_GL_cs_22(self):
@@ -377,7 +373,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
         Uses SDMX-CSV 1.0
         """
-        code = 'GL_cs_22'
+        code = "GL_cs_22"
         number_inputs = 1
         references_names = ["1", "2", "3", "4", "5", "6", "7"]
 

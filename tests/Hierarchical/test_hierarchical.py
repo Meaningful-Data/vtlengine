@@ -21,7 +21,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
     Group 1
     """
 
-    classTest = 'test_hierarchical.HierarchicalRulsetOperatorsTest'
+    classTest = "test_hierarchical.HierarchicalRulsetOperatorsTest"
 
     def test_1(self):
         """
@@ -44,7 +44,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -73,7 +73,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -102,7 +102,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -131,7 +131,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -160,7 +160,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -189,7 +189,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -216,7 +216,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -245,7 +245,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -274,7 +274,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -302,7 +302,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -331,7 +331,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
@@ -360,7 +360,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
@@ -374,7 +374,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is
                         A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
                         A >= U errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -389,7 +389,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = 'GL_265_1'
+        code = "GL_265_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -399,7 +399,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is
                         A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
                         A >= U errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -414,7 +414,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = 'GL_265_2'
+        code = "GL_265_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -424,7 +424,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR_a) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR_a) is
                         A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
                         A >= U errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -438,18 +438,19 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = 'GL_265_3'
+        code = "GL_265_3"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_265_4(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR_a) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR_a) is
                         A = B + N + U errorcode "totalComparedToBanks" errorlevel 4;
                         A > U errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -464,7 +465,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = 'GL_265_4'
+        code = "GL_265_4"
         number_inputs = 3
         references_names = ["1", "2", "3"]
 
@@ -474,15 +475,15 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is 
-                        A = B + N + U errorcode "totalComparedToBanks" errorlevel 4 ; 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule COUNT_SECTOR) is
+                        A = B + N + U errorcode "totalComparedToBanks" errorlevel 4 ;
                         A >= U errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
                     define hierarchical ruleset accountingEntryQ (variable rule BS_POSITION) is
                         L < C errorcode "Net (assets-liabilities) [Accounting_Entry rule 'N = A - L']" errorlevel 4
                     end hierarchical ruleset;
 
-                    sectors_hier_val_unf := check_hierarchy(BIS_LOC_STATS, sectorsHierarchy) ;   
+                    sectors_hier_val_unf := check_hierarchy(BIS_LOC_STATS, sectorsHierarchy) ;
                     sectors := check_hierarchy(BIS_LOC_STATS_2, accountingEntryQ) ;
                     sectors_hier_val_unf_1 := check_hierarchy(BIS_LOC_STATS_3, sectorsHierarchy always_zero) ;
 
@@ -494,7 +495,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = 'GL_265_5'
+        code = "GL_265_5"
         number_inputs = 3
         references_names = ["1", "2", "3"]
 
@@ -523,7 +524,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-19'
+        code = "1-1-1-19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -552,7 +553,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-20'
+        code = "1-1-1-20"
         number_inputs = 1
         references_names = ["1"]
 
@@ -581,7 +582,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-21'
+        code = "1-1-1-21"
         number_inputs = 1
         references_names = ["1"]
 
@@ -610,7 +611,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-22'
+        code = "1-1-1-22"
         number_inputs = 1
         references_names = ["1"]
 
@@ -639,7 +640,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-23'
+        code = "1-1-1-23"
         number_inputs = 1
         references_names = ["1"]
 
@@ -668,7 +669,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-24'
+        code = "1-1-1-24"
         number_inputs = 1
         references_names = ["1"]
 
@@ -696,7 +697,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '1-1-1-25'
+        code = "1-1-1-25"
         number_inputs = 1
         references_names = ["1"]
 
@@ -725,7 +726,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-26'
+        code = "1-1-1-26"
         number_inputs = 1
         references_names = ["1"]
 
@@ -754,7 +755,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-27'
+        code = "1-1-1-27"
         number_inputs = 1
         references_names = ["1"]
 
@@ -783,7 +784,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-28'
+        code = "1-1-1-28"
         number_inputs = 1
         references_names = ["1"]
 
@@ -812,7 +813,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-29'
+        code = "1-1-1-29"
         number_inputs = 1
         references_names = ["1"]
 
@@ -841,7 +842,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '1-1-1-30'
+        code = "1-1-1-30"
         number_inputs = 1
         references_names = ["1"]
 
@@ -860,7 +861,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
         """
-        code = '1-1-1-31'
+        code = "1-1-1-31"
         number_inputs = 1
         references_names = ["1"]
 
@@ -889,7 +890,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = 'GL_275_1'
+        code = "GL_275_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -909,7 +910,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule Id_1) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule Id_1) is
                         B = C - D errorcode "totalComparedToBanks" errorlevel 4;
                         N >  A + L errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -924,19 +925,20 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check exception because If rule, then name has to be equal to variable rule is siganture
         """
 
-        code = 'GL_145_1'
+        code = "GL_145_1"
         number_inputs = 1
         error_code = "1-1-10-3"  # wrong error code, 1-1-10-8?
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_145_2(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is
                         B = C - D errorcode "totalComparedToBanks" errorlevel 4;
                         N >  A + L errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -951,7 +953,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check Result
         """
 
-        code = 'GL_145_2'
+        code = "GL_145_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -962,7 +964,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is
                         B = C - D errorcode "totalComparedToBanks" errorlevel 4;
                         N >  A + L errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -976,12 +978,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check exception, name in the call is mandatory for vd
         """
 
-        code = 'GL_145_3'
+        code = "GL_145_3"
         number_inputs = 1
         error_code = "1-1-10-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_145_4(self):
         """
@@ -1003,7 +1006,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check Result, value domain and component have the same name.
         """
 
-        code = 'GL_145_4'
+        code = "GL_145_4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1028,7 +1031,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:.
         """
 
-        code = 'GL_397_1'
+        code = "GL_397_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1039,7 +1042,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
@@ -1047,12 +1050,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check Exception, condition signature and condition call are differents.
         """
 
-        code = 'GL_397_3'
+        code = "GL_397_3"
         number_inputs = 1
         error_code = "1-1-10-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_5(self):
         """
@@ -1073,7 +1077,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:.
         """
 
-        code = 'GL_397_5'
+        code = "GL_397_5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1085,7 +1089,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
@@ -1093,12 +1097,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Check Exception, condition signature and condition call are differents.
         """
 
-        code = 'GL_397_7'
+        code = "GL_397_7"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_9(self):
         """
@@ -1114,12 +1119,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:.
         """
 
-        code = 'GL_397_9'
+        code = "GL_397_9"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_11(self):
         """
@@ -1135,12 +1141,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Condition is provided but rule is not.
         """
 
-        code = 'GL_397_11'
+        code = "GL_397_11"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_13(self):
         """
@@ -1156,32 +1163,34 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_13'
+        code = "GL_397_13"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_15(self):
         """
         HIERARCHICAL RULSET: hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: 
+        Goal:
         """
 
-        code = 'GL_397_15'
+        code = "GL_397_15"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_17(self):
         """
@@ -1197,7 +1206,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_17'
+        code = "GL_397_17"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1217,7 +1226,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_18'
+        code = "GL_397_18"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1237,7 +1246,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_23'
+        code = "GL_397_23"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1257,13 +1266,13 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_24'
+        code = "GL_397_24"
         number_inputs = 1
         message = "1-1-10-2"
 
-        self.NewSemanticExceptionTest(code=code,
-                                      number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_397_25(self):
         """
@@ -1279,7 +1288,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: value domain with alias.
         """
 
-        code = 'GL_397_25'
+        code = "GL_397_25"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1299,7 +1308,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: several value domain with alias.
         """
 
-        code = 'GL_397_27'
+        code = "GL_397_27"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1319,7 +1328,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal: check the warning because different types in the rule.
         """
 
-        code = 'GL_397_29'
+        code = "GL_397_29"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1339,7 +1348,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_397_30'
+        code = "GL_397_30"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1359,7 +1368,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_397_32'
+        code = "GL_397_32"
         number_inputs = 1
         references_names = ["1"]
         # with pytest.raises(Exception, match="cast .+? without providing a mask"):
@@ -1379,7 +1388,7 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_397_34'
+        code = "GL_397_34"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1391,20 +1400,21 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: 
+        Goal:
         """
 
-        code = 'GL_397_36'
+        code = "GL_397_36"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
 
 class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
@@ -1412,7 +1422,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
     Group 2
     """
 
-    classTest = 'test_hierarchical.HierarchicalRollUpOperatorsTest'
+    classTest = "test_hierarchical.HierarchicalRollUpOperatorsTest"
 
     def test_1(self):
         """
@@ -1435,7 +1445,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-1'
+        code = "2-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1464,7 +1474,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-2'
+        code = "2-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1493,7 +1503,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-3'
+        code = "2-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1522,7 +1532,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-4'
+        code = "2-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1551,7 +1561,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-5'
+        code = "2-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1580,7 +1590,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-6'
+        code = "2-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1608,7 +1618,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-13'
+        code = "2-1-1-13"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1637,7 +1647,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-14'
+        code = "2-1-1-14"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1666,12 +1676,13 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-15'
+        code = "2-1-1-15"
         number_inputs = 1
         error_code = "1-1-10-5"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_16(self):
         """
@@ -1697,7 +1708,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-16'
+        code = "2-1-1-16"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1726,7 +1737,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-17'
+        code = "2-1-1-17"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1755,7 +1766,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-18'
+        code = "2-1-1-18"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1783,7 +1794,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-19'
+        code = "2-1-1-19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1811,7 +1822,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-20'
+        code = "2-1-1-20"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1839,7 +1850,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-21'
+        code = "2-1-1-21"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1867,7 +1878,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-22'
+        code = "2-1-1-22"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1895,7 +1906,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-23'
+        code = "2-1-1-23"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1923,7 +1934,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-24'
+        code = "2-1-1-24"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1952,12 +1963,13 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-25'
+        code = "2-1-1-25"
         number_inputs = 1
         error_code = "1-1-10-5"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_26(self):
         """
@@ -1982,7 +1994,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         of multiple rows of data.
         """
 
-        code = '2-1-1-26'
+        code = "2-1-1-26"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2010,7 +2022,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-27'
+        code = "2-1-1-27"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2038,7 +2050,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-28'
+        code = "2-1-1-28"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2065,7 +2077,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-29'
+        code = "2-1-1-29"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2092,7 +2104,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-30'
+        code = "2-1-1-30"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2119,7 +2131,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-31'
+        code = "2-1-1-31"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2147,7 +2159,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         one component between different data points. In other words, the consistency
         of multiple rows of data.
         """
-        code = '2-1-1-32'
+        code = "2-1-1-32"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2158,7 +2170,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: define hierarchical ruleset sectorsHierarchy (variable rule Id_1) is 
+        Expression: define hierarchical ruleset sectorsHierarchy (variable rule Id_1) is
                         B = C - D errorcode "totalComparedToBanks" errorlevel 4;
                         N >  A + L errorcode "totalGeUnal" errorlevel 3
                     end hierarchical ruleset;
@@ -2173,12 +2185,13 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check exception because If rule, then name has to be equal to variable rule is siganture
         """
 
-        code = 'GL_145_5'
+        code = "GL_145_5"
         number_inputs = 1
         error_code = "1-1-10-3"  # wrong error code 1-1-10-8?
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_145_6(self):
         """
@@ -2199,7 +2212,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Result when we use value domain
         """
 
-        code = 'GL_145_6'
+        code = "GL_145_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2224,12 +2237,13 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check exception, name in the call is mandatory for vd
         """
 
-        code = 'GL_145_7'
+        code = "GL_145_7"
         number_inputs = 1
         error_code = "1-1-10-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_145_8(self):
         """
@@ -2250,7 +2264,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Result
         """
 
-        code = 'GL_145_8'
+        code = "GL_145_8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2275,7 +2289,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Result when we use value domain( id_1 type: Date)
         """
 
-        code = 'GL_145_9'
+        code = "GL_145_9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2300,7 +2314,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Result, value domain and component have the same name.
         """
 
-        code = 'GL_397_2'
+        code = "GL_397_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2311,7 +2325,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
@@ -2319,12 +2333,13 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Exception, condition signature and condition call are differents.
         """
 
-        code = 'GL_397_4'
+        code = "GL_397_4"
         number_inputs = 1
         error_code = "1-1-10-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_6(self):
         """
@@ -2345,7 +2360,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal:.
         """
 
-        code = 'GL_397_6'
+        code = "GL_397_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2357,7 +2372,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
@@ -2365,19 +2380,20 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Check Exception, condition signature and condition call are differents.
         """
 
-        code = 'GL_397_8'
+        code = "GL_397_8"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_10(self):
         """
         HIERARCHICAL RULSET: check_hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
 
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
@@ -2386,7 +2402,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal:.
         """
 
-        code = 'GL_397_10'
+        code = "GL_397_10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2407,7 +2423,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Condition is provided but rule is not.
         """
 
-        code = 'GL_397_12'
+        code = "GL_397_12"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2428,7 +2444,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_14'
+        code = "GL_397_14"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2440,20 +2456,21 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: 
+        Goal:
         """
 
-        code = 'GL_397_16'
+        code = "GL_397_16"
         number_inputs = 1
         error_code = "1-1-10-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_397_19(self):
         """
@@ -2469,7 +2486,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_19'
+        code = "GL_397_19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2489,7 +2506,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_20'
+        code = "GL_397_20"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2509,7 +2526,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.
         """
 
-        code = 'GL_397_21'
+        code = "GL_397_21"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2529,7 +2546,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: Rule is provided but condition is not.  # TODO: Consider a warning for the second rule
         """
 
-        code = 'GL_397_22'
+        code = "GL_397_22"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2549,7 +2566,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: value domain with alias.
         """
 
-        code = 'GL_397_26'
+        code = "GL_397_26"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2569,7 +2586,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: several value domain with alias.
         """
 
-        code = 'GL_397_28'
+        code = "GL_397_28"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2589,7 +2606,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal: check the warning because different types in the rule.
         """
 
-        code = 'GL_397_31'
+        code = "GL_397_31"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2609,7 +2626,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_397_33'
+        code = "GL_397_33"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2630,7 +2647,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_397_35'
+        code = "GL_397_35"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2642,20 +2659,21 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         HIERARCHICAL RULSET: hierarchy
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
         Description: Hierarchical Rulsets are Vertical validations apply to a
         component over a set of data point.
 
         Git Branch: #397.
-        Goal: 
+        Goal:
         """
 
-        code = 'GL_397_37'
+        code = "GL_397_37"
         number_inputs = 1
         error_code = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=error_code)
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_463_1(self):
         """
@@ -2673,7 +2691,7 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         Goal:
         """
 
-        code = 'GL_463_1'
+        code = "GL_463_1"
         number_inputs = 1
         references_names = ["1", "2"]
 

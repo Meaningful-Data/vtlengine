@@ -6,9 +6,10 @@ class RFCDialect(csv.Dialect):
     https://docs.python.org/3/library/csv.html#csv.Dialect
     https://tools.ietf.org/html/rfc4180
     """
-    delimiter = ','
+
+    delimiter = ","
     doublequote = True
-    lineterminator = '\r\n'
+    lineterminator = "\r\n"
     quotechar = '"'
     quoting = csv.QUOTE_MINIMAL
     strict = True
@@ -17,5 +18,5 @@ class RFCDialect(csv.Dialect):
 
 
 def register_rfc():
-    """ Register the RFC dialect. """
-    csv.register_dialect('rfc', RFCDialect)
+    """Register the RFC dialect."""
+    csv.register_dialect("rfc", RFCDialect)

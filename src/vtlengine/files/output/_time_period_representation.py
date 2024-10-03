@@ -8,9 +8,9 @@ from vtlengine.Model import Dataset, Scalar
 
 class TimePeriodRepresentation(Enum):
     # Time Period output format
-    SDMX_GREGORIAN = 'sdmx_gregorian'
-    SDMX_REPORTING = 'sdmx_reporting'
-    VTL = 'vtl'
+    SDMX_GREGORIAN = "sdmx_gregorian"
+    SDMX_REPORTING = "sdmx_reporting"
+    VTL = "vtl"
 
     @classmethod
     def check_value(cls, value: str):
@@ -23,8 +23,9 @@ def _format_vtl_representation(value: str):
     return TimePeriodHandler(value).vtl_representation()
 
 
-def format_time_period_external_representation(dataset: Dataset | Scalar,
-                                               mode: TimePeriodRepresentation):
+def format_time_period_external_representation(
+    dataset: Dataset | Scalar, mode: TimePeriodRepresentation
+):
     """
     From SDMX time period representation to standard VTL representation (no hyphen).
     'A': 'nothing to do',
@@ -48,7 +49,7 @@ def format_time_period_external_representation(dataset: Dataset | Scalar,
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
             dataset.data[comp.name] = dataset.data[comp.name].map(
-                _format_vtl_representation,
-                na_action='ignore')
+                _format_vtl_representation, na_action="ignore"
+            )
 
     return

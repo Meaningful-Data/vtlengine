@@ -25,19 +25,19 @@ class Binary(Operator.Binary):
     comp_op = None
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
-                                      series_left: bool) -> Any:
+    def apply_operation_series_scalar(
+        cls, series: pd.Series, scalar: Any, series_left: bool
+    ) -> Any:
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar))
         else:
             return series.map(lambda x: cls.py_op(scalar, x))
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: Any) -> Any:
-        result = cls.comp_op(left_series.astype('bool[pyarrow]'),
-                             right_series.astype('bool[pyarrow]'))
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
+        result = cls.comp_op(
+            left_series.astype("bool[pyarrow]"), right_series.astype("bool[pyarrow]")
+        )
         return result.replace({pd.NA: None}).astype(object)
 
     @classmethod
@@ -110,4 +110,4 @@ class Not(Unary):
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
-        return series.map(lambda x: not x, na_action='ignore')
+        return series.map(lambda x: not x, na_action="ignore")

@@ -6,16 +6,31 @@ Description
 -----------
 Direct Acyclic Graph.
 """
+
 import copy
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import networkx as nx
 
-from vtlengine.AST import AST, BinOp, VarID, Aggregation, Analytic, JoinOp, ParamOp, Operator, \
-    Identifier, \
-    DefIdentifier, Start, HRuleset, RegularAggregation, PersistentAssignment, Assignment, \
-    DPRuleset
+from vtlengine.AST import (
+    AST,
+    BinOp,
+    VarID,
+    Aggregation,
+    Analytic,
+    JoinOp,
+    ParamOp,
+    Operator,
+    Identifier,
+    DefIdentifier,
+    Start,
+    HRuleset,
+    RegularAggregation,
+    PersistentAssignment,
+    Assignment,
+    DPRuleset,
+)
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import INSERT, DELETE, OUTPUTS, PERSISTENT, INPUTS, GLOBAL
 from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO
@@ -116,9 +131,7 @@ class DAGAnalyzer(ASTTemplate):
 
     @classmethod
     def createDAG(cls, ast: AST):
-        """
-
-        """
+        """ """
         # Visit AST.
         dag = cls()
         dag.visit(ast)
@@ -142,17 +155,16 @@ class DAGAnalyzer(ASTTemplate):
                         error_keys[aux_v1] = dag.dependencies[aux_v1]
                         break
             raise Exception(
-                'Vtl Script contains Cycles, no DAG established.\nSuggestion {}, more_info:{}'.format(
-                    error, error_keys)) from None
+                "Vtl Script contains Cycles, no DAG established.\nSuggestion {}, "
+                "more_info:{}".format(error, error_keys)
+            ) from None
         except SemanticError as error:
             raise error
         except Exception as error:
-            raise Exception('Error creating DAG.') from error
+            raise Exception("Error creating DAG.") from error
 
     def loadVertex(self):
-        """
-
-        """
+        """ """
         # For each vertex
         for key, statement in self.dependencies.items():
             output = statement[OUTPUTS] + statement[PERSISTENT]
@@ -164,9 +176,7 @@ class DAGAnalyzer(ASTTemplate):
         self.nov = len(self.vertex)
 
     def loadEdges(self):
-        """
-
-        """
+        """ """
         if len(self.vertex) != 0:
             countEdges = 0
             # For each vertex
@@ -182,9 +192,7 @@ class DAGAnalyzer(ASTTemplate):
                         countEdges += 1
 
     def nx_topologicalSort(self):
-        """
-
-        """
+        """ """
         edges = list(self.edges.values())
         DAG = nx.DiGraph()
         DAG.add_nodes_from(self.vertex)
@@ -208,26 +216,23 @@ class DAGAnalyzer(ASTTemplate):
                 non_repeated_outputs.append(statement.left.value)
 
     def sortAST(self, ast: AST):
-        """
-
-        """
+        """ """
         statements_nodes = ast.children
-        HRuleStatements: list = [HRule for HRule in statements_nodes if
-                                 isinstance(HRule, HRuleset)]
-        DPRuleStatement: list = [DPRule for DPRule in statements_nodes if
-                                 isinstance(DPRule, DPRuleset)]
+        HRuleStatements: list = [HRule for HRule in statements_nodes if isinstance(HRule, HRuleset)]
+        DPRuleStatement: list = [
+            DPRule for DPRule in statements_nodes if isinstance(DPRule, DPRuleset)
+        ]
         DOStatement: list = [DO for DO in statements_nodes if isinstance(DO, Operator)]
-        MLStatements: list = [ML for ML in statements_nodes if
-                              not isinstance(ML, (HRuleset, DPRuleset, Operator))]
+        MLStatements: list = [
+            ML for ML in statements_nodes if not isinstance(ML, (HRuleset, DPRuleset, Operator))
+        ]
 
         intermediate = self.sort_elements(MLStatements)
         self.check_overwriting(intermediate)
         ast.children = HRuleStatements + DPRuleStatement + DOStatement + intermediate
 
     def statementStructure(self) -> dict:
-        """
-
-        """
+        """ """
         inputs = list(set(self.inputs))
         outputs = list(set(self.outputs))
         persistent = list(set(self.persistent))
@@ -267,9 +272,11 @@ class DAGAnalyzer(ASTTemplate):
 
                 # Analyze inputs and outputs per each statement.
                 self.dependencies[self.numberOfStatements] = copy.deepcopy(
-                    self.statementStructure())
+                    self.statementStructure()
+                )
 
-                # Count the number of statements in order to name the scope symbol table for each one.
+                # Count the number of statements in order to name the scope symbol table for
+                # each one.
                 self.numberOfStatements += 1
 
                 self.alias = []
@@ -376,8 +383,9 @@ class HRDAGAnalyzer(DAGAnalyzer):
                         error_keys[aux_v1] = dag.dependencies[aux_v1]
                         break
             raise Exception(
-                f'Vtl Script contains Cycles, no DAG established.'
-                f'\nSuggestion {error}, more_info:{error_keys}')
+                f"Vtl Script contains Cycles, no DAG established."
+                f"\nSuggestion {error}, more_info:{error_keys}"
+            )
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """

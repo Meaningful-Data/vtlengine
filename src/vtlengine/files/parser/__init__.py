@@ -1,13 +1,22 @@
 import warnings
 from csv import DictReader
 from pathlib import Path
+
 # from time import time
 from typing import Optional, Dict, Union
 
 import numpy as np
 import pandas as pd
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Integer, Number, Boolean, Duration, \
-    SCALAR_TYPES_CLASS_REVERSE
+from vtlengine.DataTypes import (
+    Date,
+    TimePeriod,
+    TimeInterval,
+    Integer,
+    Number,
+    Boolean,
+    Duration,
+    SCALAR_TYPES_CLASS_REVERSE,
+)
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import check_date, check_time_period, check_time
@@ -15,11 +24,7 @@ from vtlengine.files.parser._time_checking import check_date, check_time_period,
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Role, Dataset
 
-TIME_CHECKS_MAPPING = {
-    Date: check_date,
-    TimePeriod: check_time_period,
-    TimeInterval: check_time
-}
+TIME_CHECKS_MAPPING = {Date: check_date, TimePeriod: check_time_period, TimeInterval: check_time}
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
@@ -30,8 +35,8 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
         raise Exception(f"Path {csv_path} is not a file.")
     register_rfc()
     try:
-        with open(csv_path, 'r') as f:
-            reader = DictReader(f, dialect='rfc')
+        with open(csv_path, "r") as f:
+            reader = DictReader(f, dialect="rfc")
             csv_columns = reader.fieldnames
 
     except UnicodeDecodeError as error:
@@ -46,7 +51,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
         ) from None
 
     if not csv_columns:
-        raise InputValidationException(code='0-1-1-6', file=csv_path)
+        raise InputValidationException(code="0-1-1-6", file=csv_path)
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
@@ -56,11 +61,12 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
     comps_missing = [id_m for id_m in comp_names if id_m not in reader.fieldnames]
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code='0-1-1-8', ids=comps_missing, file=str(csv_path.name))
+        raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
 
 
-def _sanitize_pandas_columns(components: Dict[str, Component],
-                             csv_path: Union[str, Path], data: pd.DataFrame) -> pd.DataFrame:
+def _sanitize_pandas_columns(
+    components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
+) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
     if "DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW":
         if "DATAFLOW" not in components:
@@ -80,7 +86,7 @@ def _sanitize_pandas_columns(components: Dict[str, Component],
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         file = csv_path if isinstance(csv_path, str) else csv_path.name
-        raise InputValidationException(code='0-1-1-7', ids=comps_missing, file=file)
+        raise InputValidationException(code="0-1-1-7", ids=comps_missing, file=file)
 
     # Fill rest of components with null values
     for comp_name, comp in components.items():
@@ -95,26 +101,25 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
     try:
-        data = pd.read_csv(csv_path, dtype=obj_dtypes,
-                           engine='c',
-                           keep_default_na=False,
-                           na_values=[''])
-    except UnicodeDecodeError as error:
+        data = pd.read_csv(
+            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+        )
+    except UnicodeDecodeError:
         raise InputValidationException(code="0-1-2-5", file=csv_path.name)
 
     return _sanitize_pandas_columns(components, csv_path, data)
+
 
 def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
     # start = time()
     try:
-        data = pd.read_csv(csv_path, dtype=obj_dtypes,
-                           engine='c',
-                           keep_default_na=False,
-                           na_values=[''])
+        data = pd.read_csv(
+            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+        )
 
-    except UnicodeDecodeError as error:
+    except UnicodeDecodeError:
         raise InputValidationException(code="0-1-2-5", file=csv_path)
     except Exception as e:
         raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
@@ -125,14 +130,16 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
+
 def _parse_boolean(value: str):
     if value.lower() == "true" or value == "1":
         return True
     return False
 
 
-def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame,
-                     dataset_name: str) -> pd.DataFrame:
+def _validate_pandas(
+    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
+) -> pd.DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
     # Identifier checking
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
@@ -152,35 +159,42 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame,
 
         for comp_name, comp in components.items():
             if comp.data_type in (Date, TimePeriod, TimeInterval):
-                data[comp_name] = data[comp_name].map(TIME_CHECKS_MAPPING[comp.data_type],
-                                                      na_action='ignore')
+                data[comp_name] = data[comp_name].map(
+                    TIME_CHECKS_MAPPING[comp.data_type], na_action="ignore"
+                )
             elif comp.data_type == Integer:
-                data[comp_name] = data[comp_name].map(lambda x: Integer.cast(float(x)),
-                                                      na_action='ignore')
+                data[comp_name] = data[comp_name].map(
+                    lambda x: Integer.cast(float(x)), na_action="ignore"
+                )
             elif comp.data_type == Number:
-                data[comp_name] = data[comp_name].map(lambda x: float(x), na_action='ignore')
+                data[comp_name] = data[comp_name].map(lambda x: float(x), na_action="ignore")
             elif comp.data_type == Boolean:
-                data[comp_name] = data[comp_name].map(lambda x: _parse_boolean(x),
-                                                      na_action='ignore')
+                data[comp_name] = data[comp_name].map(
+                    lambda x: _parse_boolean(x), na_action="ignore"
+                )
             elif comp.data_type == Duration:
-                values_correct = data[comp_name].map(
-                    lambda x: x.replace(" ", "") in DURATION_MAPPING, na_action='ignore').all()
+                values_correct = (
+                    data[comp_name]
+                    .map(lambda x: x.replace(" ", "") in DURATION_MAPPING, na_action="ignore")
+                    .all()
+                )
                 if not values_correct:
                     raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
-                data[comp_name] = data[comp_name].map(lambda x: str(x).replace('"', ''),
-                                                      na_action='ignore')
-            data[comp_name] = data[comp_name].astype(np.object_, errors='raise')
-    except ValueError as e:
+                data[comp_name] = data[comp_name].map(
+                    lambda x: str(x).replace('"', ""), na_action="ignore"
+                )
+            data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+    except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type]
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 
     return data
 
 
-def load_datapoints(components: Dict[str, Component],
-                    dataset_name: str,
-                    csv_path: Optional[Union[Path, str]] = None):
+def load_datapoints(
+    components: Dict[str, Component], dataset_name: str, csv_path: Optional[Union[Path, str]] = None
+):
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, str):

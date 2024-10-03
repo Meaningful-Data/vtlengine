@@ -5,31 +5,39 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from vtlengine.API._InternalApi import load_vtl, load_datasets, load_value_domains, \
-    load_external_routines, \
-    load_datasets_with_data, _return_only_persistent_datasets, _check_output_folder
+from vtlengine.API._InternalApi import (
+    load_vtl,
+    load_datasets,
+    load_value_domains,
+    load_external_routines,
+    load_datasets_with_data,
+    _return_only_persistent_datasets,
+    _check_output_folder,
+)
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.files.output import TimePeriodRepresentation, \
-    format_time_period_external_representation
+from vtlengine.files.output import (
+    TimePeriodRepresentation,
+    format_time_period_external_representation,
+)
 
 pd.options.mode.chained_assignment = None
 
 
 class __VTLSingleErrorListener(ErrorListener):
-    """
-
-    """
+    """ """
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise Exception(f"Not valid VTL Syntax \n "
-                        f"offendingSymbol: {offendingSymbol} \n "
-                        f"msg: {msg} \n "
-                        f"line: {line}")
+        raise Exception(
+            f"Not valid VTL Syntax \n "
+            f"offendingSymbol: {offendingSymbol} \n "
+            f"msg: {msg} \n "
+            f"line: {line}"
+        )
 
 
 def _lexer(text: str) -> CommonTokenStream:
@@ -73,10 +81,12 @@ def create_ast(text: str) -> Start:
     return ast
 
 
-def semantic_analysis(script: Union[str, Path],
-                      data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                      value_domains: Union[dict, Path] = None,
-                      external_routines: Union[str, Path] = None):
+def semantic_analysis(
+    script: Union[str, Path],
+    data_structures: Union[dict, Path, List[Union[dict, Path]]],
+    value_domains: Union[dict, Path] = None,
+    external_routines: Union[str, Path] = None,
+):
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.
@@ -136,20 +146,24 @@ def semantic_analysis(script: Union[str, Path],
         ext_routines = load_external_routines(external_routines)
 
     # Running the interpreter
-    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd,
-                                      external_routines=ext_routines,
-                                      only_semantic=True)
-    with pd.option_context('future.no_silent_downcasting', True):
+    interpreter = InterpreterAnalyzer(
+        datasets=structures, value_domains=vd, external_routines=ext_routines, only_semantic=True
+    )
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
     return result
 
 
-def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
-        datapoints: Union[dict, str, Path, List[Union[str, Path]]],
-        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
-        time_period_output_format: str = "vtl",
-        return_only_persistent=False,
-        output_folder: Optional[Union[str, Path]] = None):
+def run(
+    script: Union[str, Path],
+    data_structures: Union[dict, Path, List[Union[dict, Path]]],
+    datapoints: Union[dict, str, Path, List[Union[str, Path]]],
+    value_domains: Union[dict, Path] = None,
+    external_routines: Union[str, Path] = None,
+    time_period_output_format: str = "vtl",
+    return_only_persistent=False,
+    output_folder: Optional[Union[str, Path]] = None,
+):
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.
@@ -268,13 +282,16 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
         _check_output_folder(output_folder)
 
     # Running the interpreter
-    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,
-                                      external_routines=ext_routines,
-                                      ds_analysis=ds_analysis,
-                                      datapoints_paths=path_dict,
-                                      output_path=output_folder,
-                                      time_period_representation=time_period_representation)
-    with pd.option_context('future.no_silent_downcasting', True):
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets,
+        value_domains=vd,
+        external_routines=ext_routines,
+        ds_analysis=ds_analysis,
+        datapoints_paths=path_dict,
+        output_path=output_folder,
+        time_period_representation=time_period_representation,
+    )
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
 
     # Applying time period output format

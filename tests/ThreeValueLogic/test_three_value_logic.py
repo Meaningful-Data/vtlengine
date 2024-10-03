@@ -43,90 +43,97 @@ class ThreeValueTests(ThreeValueHelper):
     Group 1
     """
 
-    classTest = '3VL.AndTest'
+    classTest = "3VL.AndTest"
 
     maxDiff = None
 
     def test_1(self):
-        '''
+        """
         And logic Test
-        '''
+        """
         text = """DS_r := DS_1[calc Me_3 := Me_1 and Me_2];"""
-        code = '1'
+        code = "1"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_2(self):
-        '''
+        """
         Component-Scalar Test true
-        '''
+        """
         text = """DS_r := DS_1[calc Me_3 := Me_1 and true];"""
-        code = '2'
+        code = "2"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_3(self):
-        '''
+        """
         Component-Scalar Test false
-        '''
+        """
         text = """DS_r := DS_1[calc Me_3 := Me_1 and false];"""
-        code = '3'
+        code = "3"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_4(self):
-        '''
+        """
         Dataset-scalar Test true
-        '''
+        """
         text = """DS_r := DS_1 and true;"""
-        code = '4'
+        code = "4"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_5(self):
-        '''
+        """
         Dataset-scalar Test true
-        '''
+        """
         text = """DS_r := DS_1 and false;"""
-        code = '5'
+        code = "5"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_6(self):
-        '''
+        """
         Or logic test
-        '''
+        """
         text = """DS_r := DS_1[calc Me_3 := Me_1 or Me_2];"""
-        code = '6'
+        code = "6"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_7(self):
-        '''
+        """
         Xor logic test
-        '''
+        """
         text = """DS_r := DS_1[calc Me_3 := Me_1 xor Me_2];"""
-        code = '7'
+        code = "7"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.BaseTest(text=text, code=code, number_inputs=number_inputs,
-                      references_names=references_names)
+        self.BaseTest(
+            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+        )
