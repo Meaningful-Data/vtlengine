@@ -147,9 +147,7 @@ class Terminals(VtlVisitor):
         # AST_ASTCONSTRUCTOR.48
         raise NotImplementedError(
             "Value Domain '{}' not available for cast operator or scalar type "
-            "representation or rulesets.".format(
-                ctx_list[0].getSymbol().text
-            )
+            "representation or rulesets.".format(ctx_list[0].getSymbol().text)
         )
 
     def visitValueDomainValue(self, ctx: Parser.ValueDomainValueContext):

@@ -213,17 +213,15 @@ class Between(Operator.Operator):
     return_type = Boolean
     """
     This comparison operator has the following class methods.
-    
+
     Class methods:
         op_function: Sets the data to be manipulated.
-        
-        apply_operation_component: Returns a pandas dataframe with the operation, 
-        considering each component with the schema of op_function. 
-        
-        apply_return_type_dataset: Because the result must be a boolean, 
+        apply_operation_component: Returns a pandas dataframe with the operation,
+
+        considering each component with the schema of op_function.
+
+        apply_return_type_dataset: Because the result must be a boolean,
         this function evaluates if the measure is actually a boolean one.
-        
-        
     """
 
     @classmethod

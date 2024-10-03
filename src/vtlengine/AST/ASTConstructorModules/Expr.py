@@ -275,7 +275,7 @@ class Expr(VtlVisitor):
 
     """
                         -----------------------------------
-                                Join Functions             
+                                Join Functions
                         -----------------------------------
     """
 
@@ -400,7 +400,7 @@ class Expr(VtlVisitor):
 
     """
                         -----------------------------------
-                                Generic Functions             
+                                Generic Functions
                         -----------------------------------
     """
 
@@ -535,7 +535,7 @@ class Expr(VtlVisitor):
 
     """
                         -----------------------------------
-                                String Functions             
+                                String Functions
                         -----------------------------------
     """
 
@@ -625,7 +625,7 @@ class Expr(VtlVisitor):
 
     """
                         -----------------------------------
-                                Numeric Functions             
+                                Numeric Functions
                         -----------------------------------
     """
 
@@ -682,7 +682,7 @@ class Expr(VtlVisitor):
 
     """
                         -----------------------------------
-                                Comparison Functions             
+                                Comparison Functions
                         -----------------------------------
     """
 
@@ -749,7 +749,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Time Functions             
+                                    Time Functions
                             -----------------------------------
         """
 
@@ -874,7 +874,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Conditional Functions             
+                                    Conditional Functions
                             -----------------------------------
     """
 
@@ -897,7 +897,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Set Functions             
+                                    Set Functions
                             -----------------------------------
     """
 
@@ -942,7 +942,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Hierarchy Functions             
+                                    Hierarchy Functions
                             -----------------------------------
     """
 
@@ -1005,7 +1005,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Validation Functions             
+                                    Validation Functions
                             -----------------------------------
     """
 
@@ -1157,7 +1157,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Aggregate Functions             
+                                    Aggregate Functions
                             -----------------------------------
     """
 
@@ -1212,7 +1212,7 @@ class Expr(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Analytic Functions             
+                                    Analytic Functions
                             -----------------------------------
     """
 
@@ -1363,7 +1363,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Rename Clause              
+                            Rename Clause
                     -----------------------------------
     """
 
@@ -1403,7 +1403,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Aggregate Clause              
+                            Aggregate Clause
                     -----------------------------------
     """
 
@@ -1569,7 +1569,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Filter Clause              
+                            Filter Clause
                     -----------------------------------
     """
 
@@ -1589,7 +1589,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Calc Clause              
+                            Calc Clause
                     -----------------------------------
     """
 
@@ -1658,7 +1658,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Pivot/Unpivot Clause              
+                            Pivot/Unpivot Clause
                     -----------------------------------
     """
 
@@ -1679,7 +1679,7 @@ class Expr(VtlVisitor):
 
     """
                     -----------------------------------
-                            Subspace Clause              
+                            Subspace Clause
                     -----------------------------------
     """
 

@@ -76,8 +76,10 @@ def check_time(value: str):
 day_period_pattern = r"^\d{4}[-][0-1]?\d[-][0-3]?\d$"
 month_period_pattern = r"^\d{4}[-][0-1]?\d$"
 year_period_pattern = r"^\d{4}$"
-period_pattern = (r"^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M]"
-                  r"[0-1]?\d$|^\d{4}[W][0-5]?\d$|^\d{4}[D][0-3]?[0-9]?\d$")
+period_pattern = (
+    r"^\d{4}[A]$|^\d{4}[S][1-2]$|^\d{4}[Q][1-4]$|^\d{4}[M]"
+    r"[0-1]?\d$|^\d{4}[W][0-5]?\d$|^\d{4}[D][0-3]?[0-9]?\d$"
+)
 
 # Related with gitlab issue #440, we can say that period pattern
 # matches with our internal representation (or vtl user manual)

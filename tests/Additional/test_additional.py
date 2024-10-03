@@ -1768,7 +1768,7 @@ class AggregateOperatorsTest(AdditionalHelper):
         Goal: Interpreter results.
         """
         text = """BNFCRS_TRNSFRS_CMMN_INSTRMNTS_3 :=
-                    max(BNFCRS_TRNSFRS_CMMN_INSTRMNTS_2 
+                    max(BNFCRS_TRNSFRS_CMMN_INSTRMNTS_2
                     group by BNFCRS_CNTRPRTY_ID,
                             TRNSFR_CNTRPRTY_ID,
                             BNFCRS_DT_RFRNC,

@@ -516,7 +516,6 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler):
     return period_range
 
 
-
 def check_max_date(str_: str):
     if pd.isnull(str_) or str_ == "nan" or str_ == "NaT":
         return None

@@ -237,7 +237,7 @@ class ExprComp(VtlVisitor):
 
     """
                                 -----------------------------------
-                                    Generic Functions Components        
+                                    Generic Functions Components
                                 -----------------------------------
     """
 
@@ -378,7 +378,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                    String Functions             
+                                    String Functions
                             -----------------------------------
         """
 
@@ -474,7 +474,7 @@ class ExprComp(VtlVisitor):
 
     """
                         -----------------------------------
-                                Numeric Component Functions             
+                                Numeric Component Functions
                         -----------------------------------
     """
 
@@ -535,7 +535,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Time Functions             
+                                    Time Functions
                             -----------------------------------
         """
 
@@ -655,7 +655,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Conditional Functions             
+                                    Conditional Functions
                             -----------------------------------
     """
 
@@ -680,7 +680,7 @@ class ExprComp(VtlVisitor):
 
     """
                         -----------------------------------
-                            Comparison Components Functions             
+                            Comparison Components Functions
                         -----------------------------------
     """
 
@@ -729,7 +729,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                Aggregate Components Functions             
+                                Aggregate Components Functions
                             -----------------------------------
         """
 
@@ -754,7 +754,7 @@ class ExprComp(VtlVisitor):
 
     """
                                 -----------------------------------
-                                        Analytic Components Functions             
+                                    Analytic Components Functions
                                 -----------------------------------
     """
 

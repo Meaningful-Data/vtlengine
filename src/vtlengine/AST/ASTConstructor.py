@@ -174,7 +174,7 @@ class ASTVisitor(VtlVisitor):
 
     """
                         -----------------------------------
-                                Define Datapoint             
+                                Define Datapoint
                         -----------------------------------
     """
 
@@ -329,7 +329,7 @@ class ASTVisitor(VtlVisitor):
 
     """
                         -----------------------------------
-                                Define Hierarchical             
+                                Define Hierarchical
                         -----------------------------------
     """
 
