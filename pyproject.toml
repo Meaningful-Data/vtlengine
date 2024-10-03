@@ -34,7 +34,25 @@ pytest-cov = "^5.0.0"
 line-profiler-pycharm = "^1.2.0"
 sphinx = "^7.4"
 sphinx-rtd-theme = "^2.0.0"
+mypy = "^1.11.2"
 
+[tool.mypy]
+files = "src"
+exclude = "src/vtlengine/AST/.*"
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+ignore_errors = false
+no_implicit_optional = true
+show_column_numbers = true
+strict_equality = true
+strict_optional = true
+strict = true
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+]
+warn_return_any = false
 
 [build-system]
 requires = ["poetry-core"]
