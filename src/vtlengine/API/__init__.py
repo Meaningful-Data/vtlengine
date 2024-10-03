@@ -138,7 +138,7 @@ def semantic_analysis(
     interpreter = InterpreterAnalyzer(
         datasets=structures, value_domains=vd, external_routines=ext_routines, only_semantic=True
     )
-    with pd.option_context('future.no_silent_downcasting', True):
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
     return result
 
@@ -274,7 +274,7 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
     )
-    with pd.option_context('future.no_silent_downcasting', True):
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
 
     # Applying time period output format

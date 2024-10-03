@@ -9,6 +9,7 @@ from vtlengine.DataTypes import String, Integer, Number
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
+
 class AdditionalScalarsTests(TestHelper):
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
