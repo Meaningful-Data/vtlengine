@@ -128,7 +128,8 @@ def semantic_analysis(
         The computed datasets.
 
     Raises:
-        Exception: If the files have the wrong format, or they do not exist, or their Paths are invalid.
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -253,7 +254,8 @@ def run(
        The datasets are produced without data if the output folder is defined.
 
     Raises:
-        Exception: If the files have the wrong format, or they do not exist, or their Paths are invalid.
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
 
     """
     # AST generation

@@ -150,7 +150,8 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
         data_structure: Dict, Path or a List of dicts or Paths.
 
     Returns:
-        The datastructure as a dict or a list of datastructures as dicts. These dicts will have as keys the name, role,
+        The datastructure as a dict or a list of datastructures as dicts. \
+        These dicts will have as keys the name, role, \
         type and nullable of the data contained in the dataset.
 
     Raises:
@@ -219,8 +220,8 @@ def load_vtl(input: Union[str, Path]):
         input: String or Path of the vtl expression.
 
     Returns:
-        If it is a string, it will return the input as a string. If it is a Path, it will return the expression contained
-        in the file as a string.
+        If it is a string, it will return the input as a string. \
+        If it is a Path, it will return the expression contained in the file as a string.
 
     Raises:
         Exception: If the vtl does not exist, if the Path is wrong, or if it is not a vtl file.
@@ -259,7 +260,8 @@ def load_value_domains(input: Union[dict, Path]):
         A dictionary with the value domains data, or a list of dictionaries with them.
 
     Raises:
-        Exception: If the value domains file is wrong, the Path is invalid, or the value domains file does not exist.
+        Exception: If the value domains file is wrong, the Path is invalid, \
+        or the value domains file does not exist.
     """
     if isinstance(input, dict):
         vd = ValueDomain.from_dict(input)
@@ -287,7 +289,8 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[Dict[str, Exter
         input: Dict or Path of the sql file that contains the external routine data.
 
     Returns:
-        A dictionary with the external routine data, or a list with the dictionaries from the Path given.
+        A dictionary with the external routine data, or a list with \
+        the dictionaries from the Path given.
 
     Raises:
         Exception: If the sql file does not exist, the Path is wrong, or the file is not a sql one.
