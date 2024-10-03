@@ -14,6 +14,8 @@ from vtlengine.files.output import TimePeriodRepresentation, \
     format_time_period_external_representation
 from vtlengine.files.parser import load_datapoints
 
+import warnings
+
 
 class TestHelper(TestCase):
     """
@@ -120,6 +122,7 @@ class TestHelper(TestCase):
         '''
 
         '''
+        warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -183,6 +186,7 @@ class TestHelper(TestCase):
                                  vd_names: List[str] = None, sql_names: List[str] = None,
                                  text: Optional[str] = None, scalars: Dict[str, Any] = None):
         # Data Loading.--------------------------------------------------------
+        warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
         input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
