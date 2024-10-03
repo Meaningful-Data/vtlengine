@@ -181,7 +181,17 @@ centralised_messages = {
     # flow_to_stock, stock_to_flow
     "1-1-19-8": "At op {op}: {op} can only be applied to a {comp_type}",
     "1-1-19-9": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
+    #Other time operators
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, periodIndTo parameter must be a larger duration value than the values to aggregate.",
+    "2-1-19-2": "Invalid period indicator {period}.",
+    "2-1-19-3": "Only same period indicator allowed for both parameters ({period1} != {period2}).",
+    "2-1-19-4": "Date setter, ({value} > {date}). Cannot set date1 with a value higher than date2.",
+    "2-1-19-5": "Date setter, ({value} < {date}). Cannot set date2 with a value lower than date1.",
+    "2-1-19-6": "Invalid period format, must be YYYY-(L)NNN: {period_format}",
+    "2-1-19-7": "Period Number must be between 1 and {periods} for period indicator {period_indicator}.",
+    "2-1-19-8": "Invalid date format, must be YYYY-MM-DD: {str}",
+    "2-1-19-9": "Invalid day {day} for year {year}.",
+    "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
