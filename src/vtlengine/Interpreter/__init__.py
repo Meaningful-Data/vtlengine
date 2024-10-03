@@ -158,7 +158,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
             # Save results
-            self.datasets[result.name] = result
+            self.datasets[result.name] = copy(result)
             results[result.name] = result
             self._save_datapoints_efficient(statement_num)
             statement_num += 1

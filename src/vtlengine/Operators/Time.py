@@ -1,13 +1,11 @@
 import re
 from datetime import date
-from itertools import combinations
 from typing import Optional, Union, List
 
 import vtlengine.Operators as Operators
 import pandas as pd
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
-from dateutil.relativedelta import relativedelta
 
 from vtlengine.AST.Grammar.tokens import TIME_AGG, TIMESHIFT, PERIOD_INDICATOR, \
     FILL_TIME_SERIES, FLOW_TO_STOCK
@@ -19,6 +17,7 @@ class Time(Operators.Operator):
     periods = None
     time_id = None
     other_ids = None
+    measures = None
 
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
 
@@ -60,14 +59,17 @@ class Time(Operators.Operator):
 
     @classmethod
     def get_frequencies(cls, dates):
-        dates = [relativedelta(d2, d1) for d1, d2 in combinations(dates, 2)]
-        dates = abs(pd.Series(dates))
-        return dates
+        dates = pd.to_datetime(dates)
+        dates = dates.sort_values()
+        deltas = dates.diff().dropna()
+        return deltas
 
     @classmethod
     def find_min_frequency(cls, differences):
-        min_months = min((diff.months for diff in differences if diff.months > 0), default=None)
-        min_days = min((diff.days for diff in differences if diff.days > 0), default=None)
+        months_deltas = differences.apply(lambda x: x.days // 30)
+        days_deltas = differences.apply(lambda x: x.days)
+        min_months = min((diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None)
+        min_days = min((diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0), default=None)
         return 'D' if min_days else 'M' if min_months else 'Y'
 
     @classmethod
@@ -204,7 +206,7 @@ class Fill_time_series(Binary):
                                     param="single time interval frequency")
             result.data = cls.fill_time_intervals(result.data, fill_type, frequencies[0])
         else:
-            raise SemanticError("1-1-19-9", op=cls.op, comp_type="dataset", param="date type")
+            raise SemanticError("1-1-19-2", op=cls.op)
         return result
 
     @classmethod
@@ -437,10 +439,8 @@ class Time_Shift(Binary):
         data_type = result.components[cls.time_id].data_type
 
         if data_type == Date:
-            freq = cls.find_min_frequency(
-                cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_date(x, shift_value, freq)).astype(str)
+            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].map(cls.parse_date, na_action='ignore')))
+            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == Time:
             freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
             result.data[cls.time_id] = result.data[cls.time_id].apply(
@@ -463,8 +463,17 @@ class Time_Shift(Binary):
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
-    def shift_date(cls, date, shift_value, frequency):
-        return pd.to_datetime(date) + relativedelta(**{cls.FREQUENCY_MAP[frequency]: shift_value})
+    def shift_dates(cls, dates, shift_value, frequency):
+        dates = pd.to_datetime(dates)
+        if frequency == 'D':
+            return dates + pd.to_timedelta(shift_value, unit='D')
+        elif frequency == 'W':
+            return dates + pd.to_timedelta(shift_value, unit='W')
+        elif frequency == 'Y':
+            return dates + pd.DateOffset(years=shift_value)
+        elif frequency in ['M', 'Q', 'S']:
+            return dates + pd.DateOffset(months=shift_value)
+        raise SemanticError("2-1-19-2", period=frequency)
 
     @classmethod
     def shift_period(cls, period_str, shift_value, frequency=None):
@@ -492,8 +501,8 @@ class Time_Shift(Binary):
     @classmethod
     def shift_interval(cls, interval, shift_value, frequency):
         start_date, end_date = interval.split('/')
-        start_date = cls.shift_date(start_date, shift_value, frequency)
-        end_date = cls.shift_date(end_date, shift_value, frequency)
+        start_date = cls.shift_dates(start_date, shift_value, frequency)
+        end_date = cls.shift_dates(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'
 
 

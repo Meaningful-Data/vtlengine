@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Union
 
@@ -20,6 +21,8 @@ class AdditionalHelper(TestHelper):
 
     ds_input_prefix = "DS_"
 
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
     @classmethod
     def BaseScalarTest(cls, text: str, code: str, reference_value: Union[int, float, str]):
         '''
@@ -41,6 +44,8 @@ class StringOperatorsTest(AdditionalHelper):
     classTest = 'Additional.StringOperatorsTest'
 
     maxDiff = None
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
 
     def test_1(self):
         '''
