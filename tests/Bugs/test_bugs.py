@@ -15,11 +15,9 @@ class BugHelper(TestHelper):
 
 
 class GeneralBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.GeneralBugs'
+    classTest = "Bugs.GeneralBugs"
 
     def test_GL_22(self):
         """
@@ -27,17 +25,15 @@ class GeneralBugs(BugHelper):
         Git Branch: bug-22-improve-cast-zero-to-number-integer.
         Goal: Interpreter results.
         """
-        code = 'GL_22'
+        code = "GL_22"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_408(self):
-        """
-
-        """
-        code = 'GL_408'
+        """ """
+        code = "GL_408"
         number_inputs = 2
         references_names = ["1", "2", "3", "4", "5"]
 
@@ -45,22 +41,19 @@ class GeneralBugs(BugHelper):
 
 
 class JoinBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.JoinBugs'
+    classTest = "Bugs.JoinBugs"
 
     def test_VTLEN_569(self):
-        """
-
-        """
-        code = 'VTLEN_569'
+        """ """
+        code = "VTLEN_569"
         number_inputs = 2
 
         error_code = "1-1-13-6"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_VTLEN_572(self):
         """
@@ -69,31 +62,28 @@ class JoinBugs(BugHelper):
         Git Branch: bug-VTLEN-572-Inner-join-with-using-clause.
         Goal: Check semantic result.
         """
-        code = 'VTLEN_572'
+        code = "VTLEN_572"
         number_inputs = 2
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_40(self):
-        """
-
-        """
-        code = 'GL_40'
+        """ """
+        code = "GL_40"
         number_inputs = 2
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_24(self):
-        """
-
-        """
-        code = 'GL_24'
+        """ """
+        code = "GL_24"
         number_inputs = 2
         message = "1-1-13-11"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_32(self):
         """
@@ -104,7 +94,7 @@ class JoinBugs(BugHelper):
         Git Branch: fix-32-names-joins
         Goal: Check Result.
         """
-        code = 'GL_32'
+        code = "GL_32"
         number_inputs = 1
         references_names = ["1"]
 
@@ -116,9 +106,9 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_63'
+        code = "GL_63"
         number_inputs = 2
-        references_names = ['1', '2', '3', '4', '5']
+        references_names = ["1", "2", "3", "4", "5"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -128,9 +118,9 @@ class JoinBugs(BugHelper):
         Git Branch: bug-14-left_join-interpreter-error.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_14'
-        number_inputs = 6
-        message = "1-1-13-3"
+        # code = "GL_14"
+        # number_inputs = 6
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         assert True
@@ -142,15 +132,16 @@ class JoinBugs(BugHelper):
         Git Branch: fix-197-inner-using.
         Goal: Check exception.
         """
-        code = 'GL_133_1'
+        code = "GL_133_1"
         number_inputs = 1
         vd_names = ["GL_133_1-1"]
 
         message = "1-1-13-4"
 
         # HUH!!!!!!!!!
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message, vd_names=vd_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names
+        )
 
     def test_GL_133_2(self):
         """
@@ -159,12 +150,13 @@ class JoinBugs(BugHelper):
         Git Branch: fix-197-inner-using.
         Goal: Check exception.
         """
-        code = 'GL_133_2'
+        code = "GL_133_2"
         number_inputs = 2
 
         message = "1-1-13-4"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_133_3(self):
         """
@@ -173,11 +165,12 @@ class JoinBugs(BugHelper):
         Git Branch: fix-197-inner-using.
         Goal: Check exception.
         """
-        code = 'GL_133_3'
+        code = "GL_133_3"
         number_inputs = 2
         message = "1-1-13-4"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_161_1(self):
         """
@@ -185,10 +178,9 @@ class JoinBugs(BugHelper):
         Git Branch: bug-161-inner-join-not-working-properly-attributes-duplicated.
         Goal: Check Exception.
         """
-        code = 'GL_161_1'
-        number_inputs = 2
-
-        message = "1-1-13-3"
+        # code = "GL_161_1"
+        # number_inputs = 2
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         assert True
@@ -199,15 +191,13 @@ class JoinBugs(BugHelper):
         Git Branch: bug-161-inner-join-not-working-properly-attributes-duplicated.
         Goal: Check Result.
         """
-        code = 'GL_161_2'
+        code = "GL_161_2"
         number_inputs = 2
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(text=None,
-                      code=code,
-                      number_inputs=number_inputs,
-                      references_names=references_names
-                      )
+        self.BaseTest(
+            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+        )
 
     def test_GL_47_4(self):
         """
@@ -215,11 +205,12 @@ class JoinBugs(BugHelper):
         Git Branch: #47.
         Goal: Check Result.
         """
-        code = 'GL_47_4'
+        code = "GL_47_4"
         number_inputs = 2
         message = "1-3-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_47_5(self):
         """
@@ -227,10 +218,10 @@ class JoinBugs(BugHelper):
         Git Branch: #47.
         Goal: Check Result.
         """
-        code = 'GL_47_5'
-        number_inputs = 2
+        # code = "GL_47_5"
+        # number_inputs = 2
         # message = "Join conflict with duplicated names for column reference_date from original datasets."
-        message = "1-1-13-3"
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # "1-3-4"
         # self.NewSemanticExceptionTest(
@@ -246,9 +237,9 @@ class JoinBugs(BugHelper):
         Git Branch: #47.
         Goal: Check Result.
         """
-        code = 'GL_47_6'
-        number_inputs = 2
-        message = "1-1-13-3"
+        # code = "GL_47_6"
+        # number_inputs = 2
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         assert True
@@ -259,11 +250,12 @@ class JoinBugs(BugHelper):
         Git Branch: #47.
         Goal: Check Result.
         """
-        code = 'GL_47_8'
+        code = "GL_47_8"
         number_inputs = 2
         message = "1-1-6-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_64_1(self):
         """
@@ -271,7 +263,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_1'
+        code = "GL_64_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -283,7 +275,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_2'
+        code = "GL_64_2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -295,7 +287,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_3'
+        code = "GL_64_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -307,7 +299,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_4'
+        code = "GL_64_4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -319,7 +311,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_5'
+        code = "GL_64_5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -331,7 +323,7 @@ class JoinBugs(BugHelper):
         Git Branch: bug-63-max-after-cross-join-not-working-properly.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_64_7'
+        code = "GL_64_7"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -343,7 +335,7 @@ class JoinBugs(BugHelper):
         Git feat-234-new-grammar-parser.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_239_1'
+        code = "GL_239_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -355,7 +347,7 @@ class JoinBugs(BugHelper):
         Git fix-250-rename-sameDS.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_250'
+        code = "GL_250"
         number_inputs = 2
         references_names = ["1"]
 
@@ -367,7 +359,7 @@ class JoinBugs(BugHelper):
         Git fix-255-drop-join.
         Goal: Check semantic result and interpreter results.
         """
-        code = 'GL_255'
+        code = "GL_255"
         number_inputs = 2
         references_names = ["1"]
 
@@ -379,9 +371,9 @@ class JoinBugs(BugHelper):
         Git fix-253-duplicated-inner.
         Goal: Check semantic result (BKAR is duplicated).
         """
-        code = 'GL_253'
-        number_inputs = 2
-        message = "1-1-13-3"
+        # code = "GL_253"
+        # number_inputs = 2
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         assert True
@@ -392,7 +384,7 @@ class JoinBugs(BugHelper):
         Git fix-279-aggr-join.
         Goal: Check result.
         """
-        code = 'GL_279'
+        code = "GL_279"
         number_inputs = 2
         references_names = ["1"]
 
@@ -400,11 +392,9 @@ class JoinBugs(BugHelper):
 
 
 class NumericBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.NumericBugs'
+    classTest = "Bugs.NumericBugs"
 
     def test_GL_27_2(self):
         """
@@ -413,13 +403,11 @@ class NumericBugs(BugHelper):
         Git Issue: GL_27-Pandas merge over dates reference columns.
         Goal: Check Result.
         """
-        code = 'GL_27_2'
+        code = "GL_27_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_27_3(self):
         """
@@ -428,13 +416,11 @@ class NumericBugs(BugHelper):
         Git Issue: GL_27-Pandas merge over dates reference columns.
         Goal: Check Result.
         """
-        code = 'GL_27_3'
+        code = "GL_27_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_413(self):
         """
@@ -443,27 +429,24 @@ class NumericBugs(BugHelper):
         Git Issue: GL_413-cast-with-integer
         Goal: Check Exception.
         """
-        code = 'GL_413'
+        code = "GL_413"
         number_inputs = 1
         message = "2-1-5-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class ComparisonBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.ComparisonBugs'
+    classTest = "Bugs.ComparisonBugs"
 
     def test_VTLEN_346(self):
-        """
-
-        """
-        code = 'VTLEN_346'
+        """ """
+        code = "VTLEN_346"
         number_inputs = 2
-        references_names = ['RI0110']
+        references_names = ["RI0110"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -476,7 +459,7 @@ class ComparisonBugs(BugHelper):
         Git Issue: GL_56-Comparison operators mix measures and attributes.
         Goal: Check Result.
         """
-        code = 'GL_56_1'
+        code = "GL_56_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -494,7 +477,7 @@ class ComparisonBugs(BugHelper):
         Git Issue: GL_56-Comparison operators mix measures and attributes.
         Goal: Check Result.
         """
-        code = 'GL_56_2'
+        code = "GL_56_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -508,7 +491,7 @@ class ComparisonBugs(BugHelper):
         Git Issue: GL_56-Comparison operators mix measures and attributes.
         Goal: Check Result.
         """
-        code = 'GL_56_3'
+        code = "GL_56_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -529,7 +512,7 @@ class ComparisonBugs(BugHelper):
         Git Issue: GL_56-Comparison operators mix measures and attributes.
         Goal: Check Result.
         """
-        code = 'GL_56_4'
+        code = "GL_56_4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -541,7 +524,7 @@ class ComparisonBugs(BugHelper):
         Git Branch: fix-86-comp-scalar
         Goal: Check Result.
         """
-        code = 'GL_86'
+        code = "GL_86"
         number_inputs = 1
         references_names = ["1"]
 
@@ -558,7 +541,7 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
         Goal: Check Result.
         """
-        code = 'GL_88_1'
+        code = "GL_88_1"
         number_inputs = 1
         vd_names = ["GL_88-1"]
         references_names = ["1"]
@@ -567,13 +550,13 @@ class ComparisonBugs(BugHelper):
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
-            vd_names=vd_names
+            vd_names=vd_names,
         )
         self.BaseTest(
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
-            vd_names=vd_names
+            vd_names=vd_names,
         )
 
     def test_GL_88_2(self):
@@ -584,15 +567,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
         Goal: Check Result.
         """
-        code = 'GL_88_2'
+        code = "GL_88_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_88_3(self):
         """
@@ -602,15 +581,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
         Goal: Check Result.
         """
-        code = 'GL_88_3'
+        code = "GL_88_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_88_4(self):
         """
@@ -620,12 +595,13 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-88-treatment-of-null-with-in-operation-not-correct.
         Goal: Check Exception.
         """
-        code = 'GL_88_4'
+        code = "GL_88_4"
         number_inputs = 1
 
         message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_169_1(self):
         """
@@ -635,15 +611,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_1'
+        code = "GL_169_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_2(self):
         """
@@ -653,15 +625,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_2'
+        code = "GL_169_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_3(self):
         """
@@ -671,15 +639,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_3'
+        code = "GL_169_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_4(self):
         """
@@ -689,15 +653,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_4'
+        code = "GL_169_4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_5(self):
         """
@@ -707,11 +667,12 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Exception.
         """
-        code = 'GL_169_5'
+        code = "GL_169_5"
         number_inputs = 1
         message = "1-1-1-4"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_169_6(self):
         """
@@ -721,14 +682,10 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Exception.
         """
-        code = 'GL_169_6'
+        code = "GL_169_6"
         number_inputs = 1
         references_names = ["1"]
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_7(self):
         """
@@ -738,15 +695,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_7'
+        code = "GL_169_7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_8(self):
         """
@@ -756,15 +709,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_8'
+        code = "GL_169_8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_9(self):
         """
@@ -774,11 +723,12 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_9'
+        code = "GL_169_9"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_169_10(self):
         """
@@ -788,15 +738,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_10'
+        code = "GL_169_10"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_11(self):
         """
@@ -806,15 +752,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: feat-169-implement-match.
         Goal: Check Result.
         """
-        code = 'GL_169_11'
+        code = "GL_169_11"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_12(self):
         """
@@ -824,15 +766,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-185-match-unicode.
         Goal: Check Result.
         """
-        code = 'GL_169_12'
+        code = "GL_169_12"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_193_1(self):
         """
@@ -842,15 +780,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: bug-193-evaluate-for-if-then-inside-a-calc.
         Goal: Check Result.
         """
-        code = 'GL_193_1'
+        code = "GL_193_1"
         number_inputs = 3
         references_names = ["1", "2"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # comparission type checking
     def test_GL_165_1(self):
@@ -861,11 +795,12 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Exception.
         """
-        code = 'GL_165_1'
+        code = "GL_165_1"
         number_inputs = 1
         message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_165_2(self):
         """
@@ -875,20 +810,12 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_2'
+        code = "GL_165_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_3(self):
         """
@@ -898,15 +825,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_3'
+        code = "GL_165_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_4(self):
         """
@@ -916,15 +839,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_4'
+        code = "GL_165_4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_5(self):
         """
@@ -934,15 +853,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_5'
+        code = "GL_165_5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_6(self):
         """
@@ -952,15 +867,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_6'
+        code = "GL_165_6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_7(self):
         """
@@ -970,15 +881,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_7'
+        code = "GL_165_7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_8(self):
         """
@@ -988,15 +895,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_8'
+        code = "GL_165_8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_9(self):
         """
@@ -1006,15 +909,11 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Result.
         """
-        code = 'GL_165_9'
+        code = "GL_165_9"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_165_10(self):
         """
@@ -1024,28 +923,25 @@ class ComparisonBugs(BugHelper):
         Git Issue: fix-gl-165-force-df-string-type-cast.
         Goal: Check Exception.
         """
-        code = 'GL_165_10'
+        code = "GL_165_10"
         number_inputs = 1
         message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class TimeBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.TimeBugs'
+    classTest = "Bugs.TimeBugs"
     pass
 
 
 class SetBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.SetBugs'
+    classTest = "Bugs.SetBugs"
 
     def test_GL_20_1(self):
         """
@@ -1055,7 +951,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_1'
+        code = "GL_20_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1070,7 +966,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_2'
+        code = "GL_20_2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1085,7 +981,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_3'
+        code = "GL_20_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1099,7 +995,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Result.
         """
-        code = 'GL_20_4'
+        code = "GL_20_4"
         number_inputs = 2
         references_names = ["DS_r"]
 
@@ -1113,7 +1009,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Result.
         """
-        code = 'GL_20_5'
+        code = "GL_20_5"
         number_inputs = 2
         references_names = ["DS_r"]
 
@@ -1127,7 +1023,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_6'
+        code = "GL_20_6"
         number_inputs = 3
         references_names = ["1"]
 
@@ -1141,7 +1037,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Result.
         """
-        code = 'GL_20_7'
+        code = "GL_20_7"
         number_inputs = 3
         references_names = ["DS_r"]
 
@@ -1155,7 +1051,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_8'
+        code = "GL_20_8"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1169,7 +1065,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_9'
+        code = "GL_20_9"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1183,7 +1079,7 @@ class SetBugs(BugHelper):
         Git Branch: GL_20-improve-at-nullable-calculations.
         Goal: Check Semantic Result.
         """
-        code = 'GL_20_10'
+        code = "GL_20_10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1191,23 +1087,17 @@ class SetBugs(BugHelper):
 
 
 class AggregationBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.AggregationBugs'
+    classTest = "Bugs.AggregationBugs"
 
     def test_GL_11(self):
-        """
-
-        """
-        code = 'GL_11'
+        """ """
+        code = "GL_11"
         number_inputs = 33
         message = "1-1-1-1"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_85(self):
@@ -1217,7 +1107,7 @@ class AggregationBugs(BugHelper):
         Git Branch: bug-85-error-in-count-without-datapoints.
         Goal: Check interpreter result.
         """
-        code = 'GL_85'
+        code = "GL_85"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -1230,7 +1120,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-243-Anamart-count.
         Goal: Check result.
         """
-        code = 'GL_243_1'
+        code = "GL_243_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1243,7 +1133,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-243-Anamart-count.
         Goal: Check result.
         """
-        code = 'GL_243_2'
+        code = "GL_243_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1256,7 +1146,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-243-Anamart-count.
         Goal: Check result.
         """
-        code = 'GL_243_3'
+        code = "GL_243_3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1269,7 +1159,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-254-aggr-after filter.
         Goal: Check result.
         """
-        code = 'GL_254_1'
+        code = "GL_254_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1282,7 +1172,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_1'
+        code = "GL_259_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1295,7 +1185,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_2'
+        code = "GL_259_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1308,7 +1198,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_3'
+        code = "GL_259_3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1321,7 +1211,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_4'
+        code = "GL_259_4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1334,7 +1224,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_5'
+        code = "GL_259_5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1347,7 +1237,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_6'
+        code = "GL_259_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1360,7 +1250,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_7'
+        code = "GL_259_7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1373,7 +1263,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-259-aggr-after-aggr.
         Goal: Check result.
         """
-        code = 'GL_259_8'
+        code = "GL_259_8"
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
@@ -1386,7 +1276,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-270-min-with-if-then-else.
         Goal: Check result.
         """
-        code = 'GL_270_1'
+        code = "GL_270_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1399,7 +1289,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-270-min-with-if-then-else.
         Goal: Check result.
         """
-        code = 'GL_270_2'
+        code = "GL_270_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1412,7 +1302,7 @@ class AggregationBugs(BugHelper):
         Git Branch: test-270-empty-dataset
         Goal: Check result.
         """
-        code = 'GL_270_3'
+        code = "GL_270_3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1425,7 +1315,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-313-aggr-order
         Goal: Check result.
         """
-        code = 'GL_312'
+        code = "GL_312"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1438,7 +1328,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-313-aggr-order
         Goal: Check result.
         """
-        code = 'GL_313'
+        code = "GL_313"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1451,7 +1341,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-337-AST-aggr
         Goal: Check result.
         """
-        code = 'GL_329'
+        code = "GL_329"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1464,7 +1354,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-337-AST-aggr
         Goal: Check result.
         """
-        code = 'GL_330'
+        code = "GL_330"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1477,7 +1367,7 @@ class AggregationBugs(BugHelper):
         Git Branch: fix-327-aggr-null
         Goal: Check result.
         """
-        code = 'GL_327'
+        code = "GL_327"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -1491,34 +1381,26 @@ class AggregationBugs(BugHelper):
         Goal: Check result.
         """
 
-        code = 'GL_410'
+        code = "GL_410"
         number_inputs = 1
         message = "1-3-35"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
 
 class DataValidationBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.DataValidationBugs'
+    classTest = "Bugs.DataValidationBugs"
 
     def test_VTLEN_503(self):
-        """
-
-        """
-        code = 'VTLEN_503'
+        """ """
+        code = "VTLEN_503"
         number_inputs = 1
         message = "1-3-19"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_19(self):
@@ -1528,9 +1410,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-19-and-or-unexpected-resultshen-then.
         Goal: Interpreter SUCCESS.
         """
-        code = 'GL_19'
+        code = "GL_19"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1541,9 +1423,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-53-nulls-behavior-at-when-then-rule.
         Goal: Interpreter SUCCESS.
         """
-        code = 'GL_53'
+        code = "GL_53"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1554,9 +1436,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-13-nullable-field-with-null-value.
         Goal: Interpreter SUCCESS.
         """
-        code = 'GL_13'
+        code = "GL_13"
         number_inputs = 2
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1567,9 +1449,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-117-null-value-for-then-condition-in-datapoint-ruleset
         Goal: Check result.
         """
-        code = 'GL_117_1'
+        code = "GL_117_1"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1580,9 +1462,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-117-null-value-for-then-condition-in-datapoint-ruleset
         Goal: Check result.
         """
-        code = 'GL_117_2'
+        code = "GL_117_2"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1593,9 +1475,9 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-117-null-value-for-then-condition-in-datapoint-ruleset
         Goal: Check result.
         """
-        code = 'GL_117_3'
+        code = "GL_117_3"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1606,71 +1488,98 @@ class DataValidationBugs(BugHelper):
         Git Branch: bug-117-null-value-for-then-condition-in-datapoint-ruleset
         Goal: Check result.
         """
-        code = 'GL_117_4'
+        code = "GL_117_4"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_443_1(self):
-        """
-        """
-        code = 'GL_443_1'
+        """ """
+        code = "GL_443_1"
         number_inputs = 1
         vd_names = ["GL_443_1"]
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_GL_443_2(self):
-        """
-        """
-        code = 'GL_443_2'
+        """ """
+        code = "GL_443_2"
         number_inputs = 1
         vd_names = ["GL_443_2"]
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_GL_443_3(self):
-        """
-        """
-        code = 'GL_443_3'
+        """ """
+        code = "GL_443_3"
         number_inputs = 1
         vd_names = ["GL_443_3"]
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
 
 class ConditionalBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.ConditionalOperatorsTest'
+    classTest = "Bugs.ConditionalOperatorsTest"
 
     def test_VTLEN_476(self):
-        """
-
-        """
-        code = 'VTLEN_476'
+        """ """
+        code = "VTLEN_476"
         number_inputs = 3
         vd_names = []
-        references_names = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
-                            '14',
-                            '15', '16', '17', '18', '19', '20', '21']
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        references_names = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+        ]
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_VTLEN_573(self):
-        """
-
-        """
-        code = 'VTLEN_573'
+        """ """
+        code = "VTLEN_573"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -1683,12 +1592,13 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-44-nvl.
         Goal: Check Result.
         """
-        code = 'GL_44'
+        code = "GL_44"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_59_1(self):
         """
@@ -1698,13 +1608,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-59-if-then-not-working-properly-inside-a-udo.
         Goal: Check Result.
         """
-        code = 'GL_59_1'
+        code = "GL_59_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_59_2(self):
         """
@@ -1714,13 +1622,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-59-if-then-not-working-properly-inside-a-udo.
         Goal: Check Result.
         """
-        code = 'GL_59_2'
+        code = "GL_59_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_59_3(self):
         """
@@ -1730,13 +1636,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-59-if-then-not-working-properly-inside-a-udo.
         Goal: Check Result.
         """
-        code = 'GL_59_3'
+        code = "GL_59_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_191_1(self):
         """
@@ -1745,13 +1649,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-191-evaluate-review-on-nvl-operator.
         Goal: Check Result.
         """
-        code = 'GL_191_1'
+        code = "GL_191_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_191_2(self):
         """
@@ -1760,13 +1662,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-191-evaluate-review-on-nvl-operator.
         Goal: Check Result.
         """
-        code = 'GL_191_2'
+        code = "GL_191_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_195_1(self):
         """
@@ -1775,7 +1675,7 @@ class ConditionalBugs(BugHelper):
         Git Branch: bug-191-evaluate-review-on-nvl-operator.
         Goal: Check Result.
         """
-        code = 'GL_195_1'
+        code = "GL_195_1"
         number_inputs = 1
         references_names = ["1"]
         # message = "2-1-15-6"
@@ -1789,7 +1689,7 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Result.
         """
-        code = 'GL_196_1'
+        code = "GL_196_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1802,7 +1702,7 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Result.
         """
-        code = 'GL_196_2'
+        code = "GL_196_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1815,13 +1715,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Result.
         """
-        code = 'GL_196_3'
+        code = "GL_196_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_196_4(self):
         """
@@ -1830,12 +1728,13 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Exception.
         """
-        code = 'GL_196_4'
+        code = "GL_196_4"
         number_inputs = 1
 
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_196_5(self):
         """
@@ -1844,13 +1743,11 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Result.
         """
-        code = 'GL_196_5'
+        code = "GL_196_5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_196_6(self):
         """
@@ -1859,57 +1756,48 @@ class ConditionalBugs(BugHelper):
         Git Branch: fix-196-isnull-for-evaluate-on-if-then-else.
         Goal: Check Result.
         """
-        code = 'GL_196_6'
+        code = "GL_196_6"
         number_inputs = 1
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class ClauseBugs(BugHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Bugs.ClauseOperatorsTest'
+    classTest = "Bugs.ClauseOperatorsTest"
 
     def test_VTLEN_466(self):
-        """
-
-        """
-        code = 'VTLEN_466'
+        """ """
+        code = "VTLEN_466"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_VTLEN_467(self):
-        """
-
-        """
-        code = 'VTLEN_467'
+        """ """
+        code = "VTLEN_467"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_VTLEN_469(self):
-        """
-
-        """
-        code = 'VTLEN_469'
+        """ """
+        code = "VTLEN_469"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_VTLEN_523(self):
-        """
-
-        """
-        code = 'VTLEN_523'
+        """ """
+        code = "VTLEN_523"
         number_inputs = 3
-        references_names = ['1', '2', '3']
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1920,7 +1808,7 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-VTLEN-587-Filter-with-null-values.
         Goal: Check interpreter result.
         """
-        code = 'VTLEN_587'
+        code = "VTLEN_587"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1933,11 +1821,12 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-gl-25-calc-identifier-from-non-existent-component.
         Goal: Check Exception.
         """
-        code = 'GL_25_1'
+        code = "GL_25_1"
         number_inputs = 2
         message = "1-1-1-10"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_25_2(self):
         """
@@ -1946,12 +1835,13 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-gl-25-calc-identifier-from-non-existent-component.
         Goal: Check interpreter result.
         """
-        code = 'GL_25_2'
+        code = "GL_25_2"
         number_inputs = 1
 
         message = "1-1-6-13"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     # unpivot
     def test_GL_124_1(self):
@@ -1964,15 +1854,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_1'
+        code = "GL_124_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_124_2(self):
         """
@@ -1984,15 +1870,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_2'
+        code = "GL_124_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
     def test_GL_124_3(self):
@@ -2006,15 +1888,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_3'
+        code = "GL_124_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
     def test_GL_124_4(self):
@@ -2030,15 +1908,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_4'
+        code = "GL_124_4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
     def test_GL_124_5(self):
@@ -2052,15 +1926,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_5'
+        code = "GL_124_5"
         number_inputs = 1
         reference_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=reference_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=reference_names)
 
     # BUG
     def test_GL_124_6(self):
@@ -2076,15 +1946,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_6'
+        code = "GL_124_6"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
     def test_GL_124_7(self):
@@ -2098,15 +1964,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_7'
+        code = "GL_124_7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # BUG
     def test_GL_124_8(self):
@@ -2120,15 +1982,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Result.
         """
-        code = 'GL_124_8'
+        code = "GL_124_8"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_124_9(self):
         """
@@ -2138,12 +1996,13 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-124-fix-unpivot-for null-records.
         Goal: Check Exception.
         """
-        code = 'GL_124_9'
+        code = "GL_124_9"
         number_inputs = 1
 
         message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     # Drop
     def test_GL_161_3(self):
@@ -2152,15 +2011,11 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-161-inner-join-not-working-properly-attributes-duplicated.
         Goal: Check Result.
         """
-        code = 'GL_161_3'
+        code = "GL_161_3"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_161_4(self):
         """
@@ -2168,33 +2023,25 @@ class ClauseBugs(BugHelper):
         Git Branch: bug-161-inner-join-not-working-properly-attributes-duplicated.
         Goal: Check Result.
         """
-        code = 'GL_161_4'
+        code = "GL_161_4"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_125_1(self):
         """
         Status:
         Expression: A:= BOP[calc Me_1 := OBS_VALUE > OBS_VALUE];
         Description: check is null semantic interpreter
-        Git Branch: 
+        Git Branch:
         Goal: Check Result.
         """
-        code = 'GL_125_1'
+        code = "GL_125_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_30_1(self):
         """
@@ -2204,15 +2051,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #30
         Goal: Check Result.
         """
-        code = 'GL_30_1'
+        code = "GL_30_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_30_3(self):
         """
@@ -2222,15 +2065,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #30
         Goal: Check Result.
         """
-        code = 'GL_30_3'
+        code = "GL_30_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_30_4(self):
         """
@@ -2240,12 +2079,13 @@ class ClauseBugs(BugHelper):
         Git Issue: #30
         Goal: Check Exception.
         """
-        code = 'GL_30_4'
+        code = "GL_30_4"
         number_inputs = 1
 
         message = "1-1-6-8"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_31_1(self):
         """
@@ -2255,15 +2095,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #31
         Goal: Check Result.
         """
-        code = 'GL_31_1'
+        code = "GL_31_1"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_31_2(self):
         """
@@ -2273,15 +2109,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #31
         Goal: Check Result.
         """
-        code = 'GL_31_2'
+        code = "GL_31_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_31_3(self):
         """
@@ -2291,15 +2123,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #31
         Goal: Check Result.
         """
-        code = 'GL_31_3'
+        code = "GL_31_3"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_31_4(self):
         """
@@ -2309,45 +2137,43 @@ class ClauseBugs(BugHelper):
         Git Issue: #31
         Goal: Check Exception.
         """
-        code = 'GL_31_4'
+        code = "GL_31_4"
         number_inputs = 1
 
         message = "1-3-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_31_5(self):
         """
         Status: OK
-        Expression: CN0869 <- check ( dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT ] [ keep COMP_DT ] >= dsPrep.ENTTS_USD_BRTH [ rename DT_BRTH to COMP_DT ] [ keep COMP_DT ] errorcode "CN0869" errorlevel 2 invalid ) ; 
+        Expression: CN0869 <- check ( dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT ] [ keep COMP_DT ] >= dsPrep.ENTTS_USD_BRTH [ rename DT_BRTH to COMP_DT ] [ keep COMP_DT ] errorcode "CN0869" errorlevel 2 invalid ) ;
         Description:
         Git Issue: #31
         Goal: Check Result.
         """
-        code = 'GL_31_5'
+        code = "GL_31_5"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_31_6(self):
         """
         Status: OK
-        Expression: CN0869 <- check ( dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT ] [ keep COMP_DT ] >= dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT, ENTTY_RIAD_CD to COMP_DT] [ keep COMP_DT ] errorcode "CN0869" errorlevel 2 invalid ) ; 
+        Expression: CN0869 <- check ( dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT ] [ keep COMP_DT ] >= dsPrep.ENTTS_USD_BRTH [ rename DT_RFRNC_USD to COMP_DT, ENTTY_RIAD_CD to COMP_DT] [ keep COMP_DT ] errorcode "CN0869" errorlevel 2 invalid ) ;
         Description: check for duplicates, The error is raised in the keep should be raised in the rename
         Git Issue: #31
         Goal: Check Exception.
         """
-        code = 'GL_31_6'
+        code = "GL_31_6"
         number_inputs = 1
 
         message = "1-3-1"  # 1-1-6-2 the error code was wrong this is better
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_35_1(self):
         """
@@ -2357,15 +2183,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #35
         Goal: Check Result.
         """
-        code = 'GL_35_1'
+        code = "GL_35_1"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_35_2(self):
         """
@@ -2375,15 +2197,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #35
         Goal: Check Result.
         """
-        code = 'GL_35_2'
+        code = "GL_35_2"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_35_3(self):
         """
@@ -2393,15 +2211,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #35
         Goal: Check Result.
         """
-        code = 'GL_35_3'
+        code = "GL_35_3"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_35_4(self):
         """
@@ -2411,15 +2225,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #35
         Goal: Check Result.
         """
-        code = 'GL_35_4'
+        code = "GL_35_4"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_35_5(self):
         """
@@ -2429,15 +2239,11 @@ class ClauseBugs(BugHelper):
         Git Issue: #35
         Goal: Check Result.
         """
-        code = 'GL_35_5'
+        code = "GL_35_5"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_292(self):
         """
@@ -2446,12 +2252,13 @@ class ClauseBugs(BugHelper):
         Git Issue: #292
         Goal: Check Result.
         """
-        code = 'GL_292'
+        code = "GL_292"
         number_inputs = 1
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_444_1(self):
         """
@@ -2459,7 +2266,7 @@ class ClauseBugs(BugHelper):
         Git Branch: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/444
         Goal: Check interpreter result.
         """
-        code = 'GL_444_1'
+        code = "GL_444_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2471,30 +2278,29 @@ class ClauseBugs(BugHelper):
         Git Branch: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/444
         Goal: Check Exception.
         """
-        code = 'GL_444_2'
+        code = "GL_444_2"
         number_inputs = 1
         error_code = "1-1-1-20"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
 
 class DefinedBugs(BugHelper):
-    """
+    """ """
 
-    """
-    classTest = 'Bugs.DefinedOperatorsTest'
+    classTest = "Bugs.DefinedOperatorsTest"
 
     def test_VTLEN_410(self):
-        """
-
-        """
-        code = 'VTLEN_410'
+        """ """
+        code = "VTLEN_410"
         number_inputs = 3
 
         message = "1-4-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_252(self):
         """
@@ -2504,15 +2310,11 @@ class DefinedBugs(BugHelper):
         Git Issue: #252
         Goal: Check Result.
         """
-        code = 'GL_252'
+        code = "GL_252"
         number_inputs = 2
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_274(self):
         """
@@ -2522,7 +2324,7 @@ class DefinedBugs(BugHelper):
         Git Issue: #252
         Goal: Check Result.
         """
-        code = 'GL_274'
+        code = "GL_274"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2539,7 +2341,7 @@ class DefinedBugs(BugHelper):
         Git Issue: #252
         Goal: Check Result.
         """
-        code = 'GL_278'
+        code = "GL_278"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2553,15 +2355,11 @@ class DefinedBugs(BugHelper):
         Git Issue: #269
         Goal: Check Result.
         """
-        code = 'GL_269'
+        code = "GL_269"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_282(self):
         """
@@ -2574,15 +2372,11 @@ class DefinedBugs(BugHelper):
         Git Issue: #282
         Goal: Check Result.
         """
-        code = 'GL_282'
+        code = "GL_282"
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_317(self):
         """
@@ -2606,7 +2400,7 @@ class DefinedBugs(BugHelper):
         Git Issue: #316
         Goal: Check Result.
         """
-        code = 'GL_316'
+        code = "GL_316"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2619,7 +2413,7 @@ class DefinedBugs(BugHelper):
         Git Issue: #399
         Goal: Check Result.
         """
-        code = 'GL_399'
+        code = "GL_399"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2627,81 +2421,68 @@ class DefinedBugs(BugHelper):
 
 
 class OtherBugs(BugHelper):
-    """
+    """ """
 
-    """
-    classTest = 'Bugs.OtherTest'
+    classTest = "Bugs.OtherTest"
 
     def test_VTLEN_495(self):
-        """
-
-        """
-        code = 'VTLEN_495'
+        """ """
+        code = "VTLEN_495"
         number_inputs = 1
 
         message = "1-3-19"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_VTLEN_456(self):
-        """
-
-        """
-        code = 'VTLEN_456'
-        number_inputs = 18
-        vd_names = ["VTLEN_456-1", "VTLEN_456-2"]
-        message = "1-1-10-7"
+        """ """
+        # code = "VTLEN_456"
+        # number_inputs = 18
+        # vd_names = ["VTLEN_456-1", "VTLEN_456-2"]
+        # message = "1-1-10-7"
         # TODO: Check if the error code is correct
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names)
         assert True
 
     def test_VTLEN_563(self):
-        """
-
-        """
-        code = 'VTLEN_563'
+        """ """
+        code = "VTLEN_563"
         number_inputs = 1
         references_names = ["DS_r"]
         vd_names = []
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_Fail_GL_67(self):
-        """
-
-        """
-        code = 'GL_67_Fail'
+        """ """
+        code = "GL_67_Fail"
         number_inputs = 39
         message = "1-1-1-10"
         # TODO: test error code has been changed until revision
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_Ok_GL_67(self):
-        """
-
-        """
-        code = 'GL_67_Ok'
+        """ """
+        code = "GL_67_Ok"
         number_inputs = 39
-        vd_names = [
-            "GL_67_Ok-1",
-            "GL_67_Ok-6",
-            "GL_67_Ok-7",
-            "GL_67_Ok-8"]
+        # vd_names = ["GL_67_Ok-1", "GL_67_Ok-6", "GL_67_Ok-7", "GL_67_Ok-8"]
 
         message = "1-1-6-10"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_39(self):
-        """
-
-        """
-        code = 'GL_39'
+        """ """
+        code = "GL_39"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -2715,7 +2496,7 @@ class OtherBugs(BugHelper):
         Git Branch: test-52-count-multiple
         Goal: Check Result.
         """
-        code = 'GL_52'
+        code = "GL_52"
         number_inputs = 1
         references_names = ["1"]
 
@@ -2731,15 +2512,11 @@ class OtherBugs(BugHelper):
                     -membership-operator.
         Goal: Check Result.
         """
-        code = 'GL_60'
+        code = "GL_60"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_61(self):
         """
@@ -2749,15 +2526,11 @@ class OtherBugs(BugHelper):
         Git Branch: bug-61-if-nan.
         Goal: Check Result.
         """
-        code = 'GL_61'
+        code = "GL_61"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names
-        )
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     # TODO Move to HR tests
     def test_GL_120(self):
@@ -2773,9 +2546,7 @@ class OtherBugs(BugHelper):
 
         message = "1-3-20"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_157_1(self):
@@ -2787,9 +2558,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-157-operator-fails-over-dates-references-columns.
         Goal: Check result.
         """
-        code = 'GL_157_1'
+        code = "GL_157_1"
         number_inputs = 2
-        references_names = ['1', '2']
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2802,9 +2573,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-157-operator-fails-over-dates-references-columns.
         Goal: Check result.
         """
-        code = 'GL_157_2'
+        code = "GL_157_2"
         number_inputs = 2
-        references_names = ['1', '2']
+        references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2815,9 +2586,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_1'
+        code = "GL_171_1"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2828,9 +2599,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_2'
+        code = "GL_171_2"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2841,9 +2612,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_3'
+        code = "GL_171_3"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2854,9 +2625,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_4'
+        code = "GL_171_4"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2867,9 +2638,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_5'
+        code = "GL_171_5"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2880,9 +2651,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_6'
+        code = "GL_171_6"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2893,9 +2664,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_7'
+        code = "GL_171_7"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2906,9 +2677,9 @@ class OtherBugs(BugHelper):
         Git Branch: bug-171-in-and-not-inside-a-calc.
         Goal: Check result.
         """
-        code = 'GL_171_8'
+        code = "GL_171_8"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -2962,12 +2733,13 @@ class OtherBugs(BugHelper):
         Goal: Check exception code
         """
 
-        code = 'GL_364'
+        code = "GL_364"
         number_inputs = 1
 
         error_code = "1-1-1-10"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_366(self):
         """
@@ -2999,10 +2771,9 @@ class OtherBugs(BugHelper):
 
 
 class ExternalRoutineBugs(BugHelper):
-    """
+    """ """
 
-    """
-    classTest = 'Bugs.ExternalRoutineTest'
+    classTest = "Bugs.ExternalRoutineTest"
 
     def test_GL_156_1(self):
         """
@@ -3012,13 +2783,17 @@ class ExternalRoutineBugs(BugHelper):
         Git Branch: GL_156-quick fix for allow module dot name on eval operator.
         Goal: Check Result.
         """
-        code = 'GL_156_1'
+        code = "GL_156_1"
         number_inputs = 2
         references_names = ["1"]
         sql_names = ["prtctnDts"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      sql_names=sql_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            sql_names=sql_names,
+        )
 
     def test_GL_159_1(self):
         """
@@ -3029,18 +2804,21 @@ class ExternalRoutineBugs(BugHelper):
         Git Branch: GL_159- fix wrong result type for eval.
         Goal: Check Result.
         """
-        code = 'GL_159_1'
+        code = "GL_159_1"
         number_inputs = 6
         references_names = ["1", "2"]
-        sql_names = [
-            "instrFctJn"]
+        sql_names = ["instrFctJn"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      sql_names=sql_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            sql_names=sql_names,
+        )
 
 
 class CastBugs(BugHelper):
-    classTest = 'Bugs.CastTest'
+    classTest = "Bugs.CastTest"
 
     def test_GL_449_1(self):
         """
@@ -3048,11 +2826,12 @@ class CastBugs(BugHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_449_1'
+        code = "GL_449_1"
         number_inputs = 1
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_449_2(self):
         """
@@ -3060,13 +2839,11 @@ class CastBugs(BugHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_449_2'
+        code = "GL_449_2"
         number_inputs = 1
         message = "1-1-5-3"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_449_3(self):
@@ -3075,13 +2852,11 @@ class CastBugs(BugHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_449_3'
+        code = "GL_449_3"
         number_inputs = 1
         message = "1-1-5-4"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_449_4(self):
@@ -3090,11 +2865,12 @@ class CastBugs(BugHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_449_4'
+        code = "GL_449_4"
         number_inputs = 1
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_449_5(self):
         """
@@ -3102,11 +2878,12 @@ class CastBugs(BugHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_449_5'
+        code = "GL_449_5"
         number_inputs = 1
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_449_6(self):
         """
@@ -3114,7 +2891,7 @@ class CastBugs(BugHelper):
         Description: Over dataset
         Goal: Check Result.
         """
-        code = 'GL_449_6'
+        code = "GL_449_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -3126,12 +2903,16 @@ class CastBugs(BugHelper):
         Description: Over scalardataset
         Goal: Check Result.
         """
-        code = 'GL_449_7'
+        code = "GL_449_7"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={'sc_1': "2000Q2"})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": "2000Q2"},
+        )
 
     def test_GL_448_1(self):
         """
@@ -3139,13 +2920,11 @@ class CastBugs(BugHelper):
         Description: stock to flow
         Goal: Check Result.
         """
-        code = 'GL_448_1'
+        code = "GL_448_1"
         number_inputs = 1
         message = "1-1-19-7"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_448_2(self):
@@ -3154,13 +2933,11 @@ class CastBugs(BugHelper):
         Description: flow to stock
         Goal: Check Result.
         """
-        code = 'GL_448_2'
+        code = "GL_448_2"
         number_inputs = 1
         message = "1-1-19-7"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
     def test_GL_447_1(self):
@@ -3169,11 +2946,9 @@ class CastBugs(BugHelper):
         Description: Time_period not usable for order by clause
         Goal: Check Result.
         """
-        code = 'GL_447_1'
+        code = "GL_447_1"
         number_inputs = 1
         message = "1-1-1-16"
         self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message
         )

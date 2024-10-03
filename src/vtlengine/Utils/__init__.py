@@ -1,32 +1,112 @@
-from vtlengine.Operators.Aggregation import (Avg, Count, Max, Median, Min,
-                                   PopulationStandardDeviation,
-                                   PopulationVariance, SampleStandardDeviation, SampleVariance, Sum)
-from vtlengine.Operators.Analytic import (Avg as AvgAnalytic, Count as CountAnalytic, FirstValue, Lag,
-                                LastValue, Lead, Max as MaxAnalytic, Median as MedianAnalytic,
-                                Min as MinAnalytic,
-                                PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
-                                PopulationVariance as PopulationVarianceAnalytic, Rank,
-                                RatioToReport,
-                                SampleStandardDeviation as SampleStandardDeviationAnalytic,
-                                SampleVariance as SampleVarianceAnalytic, Sum as SumAnalytic)
+from vtlengine.Operators.Aggregation import (
+    Avg,
+    Count,
+    Max,
+    Median,
+    Min,
+    PopulationStandardDeviation,
+    PopulationVariance,
+    SampleStandardDeviation,
+    SampleVariance,
+    Sum,
+)
+from vtlengine.Operators.Analytic import (
+    Avg as AvgAnalytic,
+    Count as CountAnalytic,
+    FirstValue,
+    Lag,
+    LastValue,
+    Lead,
+    Max as MaxAnalytic,
+    Median as MedianAnalytic,
+    Min as MinAnalytic,
+    PopulationStandardDeviation as PopulationStandardDeviationAnalytic,
+    PopulationVariance as PopulationVarianceAnalytic,
+    Rank,
+    RatioToReport,
+    SampleStandardDeviation as SampleStandardDeviationAnalytic,
+    SampleVariance as SampleVarianceAnalytic,
+    Sum as SumAnalytic,
+)
 from vtlengine.Operators.Boolean import And, Not, Or, Xor
-from vtlengine.Operators.Clause import Aggregate, Calc, Drop, Filter, Keep, Pivot, Rename, Sub, Unpivot
-from vtlengine.Operators.Comparison import Equal, Greater, GreaterEqual, In, IsNull, Less, LessEqual, \
-    NotEqual, NotIn, Match
+from vtlengine.Operators.Clause import (
+    Aggregate,
+    Calc,
+    Drop,
+    Filter,
+    Keep,
+    Pivot,
+    Rename,
+    Sub,
+    Unpivot,
+)
+from vtlengine.Operators.Comparison import (
+    Equal,
+    Greater,
+    GreaterEqual,
+    In,
+    IsNull,
+    Less,
+    LessEqual,
+    NotEqual,
+    NotIn,
+    Match,
+)
 from vtlengine.Operators.Conditional import Nvl
 from vtlengine.Operators.General import Alias, Membership
-from vtlengine.Operators.HROperators import HREqual, HRGreater, HRGreaterEqual, HRLess, HRLessEqual, \
-    HRBinPlus, HRBinMinus, HRUnPlus, HRUnMinus
+from vtlengine.Operators.HROperators import (
+    HREqual,
+    HRGreater,
+    HRGreaterEqual,
+    HRLess,
+    HRLessEqual,
+    HRBinPlus,
+    HRBinMinus,
+    HRUnPlus,
+    HRUnMinus,
+)
 from vtlengine.Operators.Join import Apply, CrossJoin, FullJoin, InnerJoin, LeftJoin
-from vtlengine.Operators.Numeric import AbsoluteValue, BinMinus, BinPlus, Ceil, Div, Exponential, Floor, \
-    Logarithm, Modulo, Mult, NaturalLogarithm, Power, Round, SquareRoot, Trunc, UnMinus, UnPlus
+from vtlengine.Operators.Numeric import (
+    AbsoluteValue,
+    BinMinus,
+    BinPlus,
+    Ceil,
+    Div,
+    Exponential,
+    Floor,
+    Logarithm,
+    Modulo,
+    Mult,
+    NaturalLogarithm,
+    Power,
+    Round,
+    SquareRoot,
+    Trunc,
+    UnMinus,
+    UnPlus,
+)
 from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure
 from vtlengine.Operators.Set import Intersection, Setdiff, Symdiff, Union
-from vtlengine.Operators.String import Concatenate, Length, Lower, Ltrim, Replace, Rtrim, Substr, Trim, Upper
-from vtlengine.Operators.Time import Flow_to_stock, Period_indicator, Stock_to_flow, Fill_time_series, \
-    Time_Shift
+from vtlengine.Operators.String import (
+    Concatenate,
+    Length,
+    Lower,
+    Ltrim,
+    Replace,
+    Rtrim,
+    Substr,
+    Trim,
+    Upper,
+)
+from vtlengine.Operators.Time import (
+    Flow_to_stock,
+    Period_indicator,
+    Stock_to_flow,
+    Fill_time_series,
+    Time_Shift,
+)
 
-from vtlengine.AST.Grammar.tokens import *
+from vtlengine.AST.Grammar.tokens import *  # noqa: F405
 
 BINARY_MAPPING = {
     # General
@@ -60,7 +140,7 @@ BINARY_MAPPING = {
     CONCAT: Concatenate,
     # Time
     TIMESHIFT: Time_Shift,
-    CHARSET_MATCH: Match
+    CHARSET_MATCH: Match,
 }
 
 UNARY_MAPPING = {
@@ -88,7 +168,7 @@ UNARY_MAPPING = {
     # Time
     PERIOD_INDICATOR: Period_indicator,
     FLOW_TO_STOCK: Flow_to_stock,
-    STOCK_TO_FLOW: Stock_to_flow
+    STOCK_TO_FLOW: Stock_to_flow,
 }
 
 PARAMETRIC_MAPPING = {
@@ -118,15 +198,10 @@ REGULAR_AGGREGATION_MAPPING = {
     UNPIVOT: Unpivot,
     SUBSPACE: Sub,
     AGGREGATE: Aggregate,
-    APPLY: Apply
+    APPLY: Apply,
 }
 
-SET_MAPPING = {
-    UNION: Union,
-    INTERSECT: Intersection,
-    SYMDIFF: Symdiff,
-    SETDIFF: Setdiff
-}
+SET_MAPPING = {UNION: Union, INTERSECT: Intersection, SYMDIFF: Symdiff, SETDIFF: Setdiff}
 
 AGGREGATION_MAPPING = {
     MAX: Max,
@@ -139,7 +214,6 @@ AGGREGATION_MAPPING = {
     STDDEV_SAMP: SampleStandardDeviation,
     VAR_POP: PopulationVariance,
     VAR_SAMP: SampleVariance,
-
 }
 
 ANALYTIC_MAPPING = {
@@ -158,18 +232,15 @@ ANALYTIC_MAPPING = {
     FIRST_VALUE: FirstValue,
     LAST_VALUE: LastValue,
     RATIO_TO_REPORT: RatioToReport,
-    RANK: Rank
+    RANK: Rank,
 }
 
-THEN_ELSE = {
-    'then': 'T',
-    'else': 'E'
-}
+THEN_ELSE = {"then": "T", "else": "E"}
 JOIN_MAPPING = {
     INNER_JOIN: InnerJoin,
     LEFT_JOIN: LeftJoin,
     FULL_JOIN: FullJoin,
-    CROSS_JOIN: CrossJoin
+    CROSS_JOIN: CrossJoin,
 }
 
 HR_COMP_MAPPING = {
@@ -190,7 +261,7 @@ HR_NUM_BINARY_MAPPING = {
 HR_UNARY_MAPPING = {
     # Numeric
     PLUS: HRUnPlus,
-    MINUS: HRUnMinus
+    MINUS: HRUnMinus,
 }
 
 HA_COMP_MAPPING = {
@@ -211,5 +282,5 @@ HA_NUM_BINARY_MAPPING = {
 HA_UNARY_MAPPING = {
     # Numeric
     PLUS: HRUnPlus,
-    MINUS: HRUnMinus
+    MINUS: HRUnMinus,
 }

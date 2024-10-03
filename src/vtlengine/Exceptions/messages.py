@@ -6,6 +6,7 @@ Description
 -----------
 All exceptions exposed by the Vtl engine.
 """
+
 centralised_messages = {
     # Input Validation errors
     "0-1-2-1": "Invalid json structure because additional properties have been supplied on file {filename}.",
@@ -64,7 +65,6 @@ centralised_messages = {
     # "1-1-2-1": "At op {op}: No measures found to aggregate.",
     "1-1-2-2": "At op {op}: Only Identifiers are allowed for grouping, found {id_name} - {id_type}.",
     "1-1-2-3": "Having component output type must be boolean, found {type}.",
-
     # "1-1-2-4": "At op {op}: Component {id_name} not found in dataset",
     # Analytic errors
     # TODO: Use error message 1-1-1-8
@@ -150,7 +150,6 @@ centralised_messages = {
     "1-1-14-6": "At op {op}: {comp_name} with type {comp_type} and scalar_set with type {scalar_type} is not compatible with {op}",
     # "1-1-14-8": "At op {op}: Operation not allowed for multimeasure datasets.",
     "1-1-14-9": "At op {op}: {names} with type/s {types} is not compatible with {op} on datasets {datasets}.",
-
     # Numeric Operators
     "1-1-15-8": "At op {op}: {op} operator cannot have a {comp_type} as parameter.",
     "2-1-15-1": "At op {op}: Component {comp_name} from dataset {dataset_name} contains negative values.",

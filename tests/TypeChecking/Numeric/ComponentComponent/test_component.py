@@ -19,10 +19,10 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
     Group 4
     """
 
-    classTest = 'ComponentComponent.ComponentComponentTypeChecking'
+    classTest = "ComponentComponent.ComponentComponentTypeChecking"
 
     def test_1(self):
-        '''
+        """
         ADD OPERATOR
         boolean --> number
         Status: OK
@@ -33,19 +33,20 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-1'
+        """
+        code = "4-2-3-1"
         # 4 For group numeric
         # 2 For group scalar component
         # 3 For add operator in numeric
         # 1 Number of test
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_2(self):
-        '''
+        """
         ADD OPERATOR
         boolean --> number
         Status: OK
@@ -56,15 +57,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-2'
+        """
+        code = "4-2-3-2"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_3(self):
-        '''
+        """
         ADD OPERATOR
         boolean --> number
         Status: OK
@@ -75,15 +77,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-3'
+        """
+        code = "4-2-3-3"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_4(self):
-        '''
+        """
         ADD OPERATOR
         time --> number
         ValueError
@@ -95,14 +98,14 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-4'
+        """
+        code = "4-2-3-4"
         number_inputs = 1
         message = "0-1-1-12"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
-        '''
+        """
         ADD OPERATOR
         time --> number
         Status: OK
@@ -113,14 +116,14 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-5'
+        """
+        code = "4-2-3-5"
         number_inputs = 1
         message = "0-1-1-12"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_6(self):
-        '''
+        """
         ADD OPERATOR
         date --> number
         Status: OK
@@ -132,15 +135,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-6'
+        """
+        code = "4-2-3-6"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_7(self):
-        '''
+        """
         ADD OPERATOR
         time_period --> number
         Status: OK
@@ -151,15 +155,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-7'
+        """
+        code = "4-2-3-7"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_8(self):
-        '''
+        """
         ADD OPERATOR
         string --> number
         Error Type: TypeError
@@ -171,15 +176,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-8'
+        """
+        code = "4-2-3-8"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_9(self):
-        '''
+        """
         ADD OPERATOR
         string --> number
         Error Type: TypeError
@@ -193,15 +199,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-9'
+        """
+        code = "4-2-3-9"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_10(self):
-        '''
+        """
         ADD OPERATOR
         string --> number
         Status: OK
@@ -212,15 +219,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-10'
+        """
+        code = "4-2-3-10"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_11(self):
-        '''
+        """
         ADD OPERATOR
         duration --> number
         Status: OK
@@ -231,15 +239,16 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Exception.
-        '''
-        code = '4-2-3-11'
+        """
+        code = "4-2-3-11"
         number_inputs = 1
         message = "1-1-1-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_12(self):
-        '''
+        """
         ADD OPERATOR
         number + integer --> number
         Status: ok
@@ -250,15 +259,15 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Result.
-        '''
-        code = '4-2-3-12'
+        """
+        code = "4-2-3-12"
         number_inputs = 1
         references_names = ["DS_r"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_13(self):
-        '''
+        """
         ADD OPERATOR
         integer + integer --> integer
         Status: ok
@@ -269,8 +278,8 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Result.
-        '''
-        code = '4-2-3-13'
+        """
+        code = "4-2-3-13"
         number_inputs = 1
         references_names = ["DS_r"]
 

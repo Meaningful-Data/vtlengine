@@ -19,7 +19,7 @@ class UdoTest(UDOHelper):
     Group 1
     """
 
-    classTest = 'udo.UdoTest'
+    classTest = "udo.UdoTest"
 
     def test_1(self):
         """
@@ -42,7 +42,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -69,7 +69,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -98,7 +98,7 @@ class UdoTest(UDOHelper):
 
         Note: provisional exception until further analysis as creation of a new component should not be allowed
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -121,15 +121,16 @@ class UdoTest(UDOHelper):
 
                     DS_r := drop_identifier (suma (DS,Me_1,Me_2), Id_3);
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         message = "1-3-28"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
         # references_names = ["1"]
 
-        # 
+        #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
@@ -154,7 +155,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -182,7 +183,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -210,7 +211,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -238,7 +239,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -265,7 +266,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1", "2", "3", "4"]
 
@@ -293,7 +294,7 @@ class UdoTest(UDOHelper):
         Git Branch: #288-test-concatenate-udo.
         Goal: Check the result of concatenate USER DEFINED OPERATORS.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -306,7 +307,7 @@ class UdoTest(UDOHelper):
         Description: This had the discrepance
         Git Branch: #286
         """
-        code = 'GL_286_1'
+        code = "GL_286_1"
         number_inputs = 12
         references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
@@ -319,7 +320,7 @@ class UdoTest(UDOHelper):
         Description:
         Git Branch: #286
         """
-        code = 'GL_286_2'
+        code = "GL_286_2"
         number_inputs = 12
         references_names = ["1", "2", "3", "4"]
 
@@ -332,10 +333,31 @@ class UdoTest(UDOHelper):
         Description:
         Git Branch: #286
         """
-        code = 'GL_286_3'
+        code = "GL_286_3"
         number_inputs = 12
-        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                            "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
+        references_names = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+        ]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -346,21 +368,42 @@ class UdoTest(UDOHelper):
         Description:
         Git Branch: #286
         """
-        code = 'GL_286_4'
+        code = "GL_286_4"
         number_inputs = 12
-        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                            "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"]
+        references_names = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+        ]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_65(self):
         """
-                UDO inside DPR
-                Status: OK
-                Description: Testing implementation UDO inside DPR
-                Git Issue: #65
-                """
-        code = 'GL_65'
+        UDO inside DPR
+        Status: OK
+        Description: Testing implementation UDO inside DPR
+        Git Issue: #65
+        """
+        code = "GL_65"
         number_inputs = 1
         references_names = ["1"]
 
@@ -368,14 +411,15 @@ class UdoTest(UDOHelper):
 
     def test_GL_381(self):
         """
-            Constant as Dataset input parameter
+        Constant as Dataset input parameter
         """
-        code = 'GL_381'
+        code = "GL_381"
         number_inputs = 0
         message = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_11(self):
@@ -395,13 +439,17 @@ class UdoTest(UDOHelper):
         Git Branch: #142-value-domain-udo-test
         Goal: Check the result of using value domains in user defined operators
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
         vd_names = ["myGeoValueDomain"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
     def test_GL_452_1(self):
         """
@@ -409,12 +457,13 @@ class UdoTest(UDOHelper):
         Description: UDO with scalar as input parameter
         Goal: Check Result.
         """
-        code = 'GL_452_1'
+        code = "GL_452_1"
         number_inputs = 1
         message = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_452_2(self):
         """
@@ -422,12 +471,13 @@ class UdoTest(UDOHelper):
         Description: UDO without return type defined
         Goal: Check Result.
         """
-        code = 'GL_452_2'
+        code = "GL_452_2"
         number_inputs = 1
         message = "1-4-2-5"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_452_3(self):
         """
@@ -435,7 +485,7 @@ class UdoTest(UDOHelper):
         Description: UDO with scalar as input parameter
         Goal: Check Result.
         """
-        code = 'GL_452_3'
+        code = "GL_452_3"
         number_inputs = 0
         references_names = ["1"]
 
@@ -447,12 +497,16 @@ class UdoTest(UDOHelper):
         Description: UDO with scalarDataset as input argument
         Goal: Check Result.
         """
-        code = 'GL_452_4'
+        code = "GL_452_4"
         number_inputs = 1
         references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      scalars={'sc_2': "4"})
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_2": "4"},
+        )
 
     def test_GL_452_5(self):
         """
@@ -460,12 +514,13 @@ class UdoTest(UDOHelper):
         Description: UDO with scalarDataset as input argument
         Goal: Check Result.
         """
-        code = 'GL_452_5'
+        code = "GL_452_5"
         number_inputs = 2
         message = "1-4-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_442_1(self):
         """
@@ -473,7 +528,7 @@ class UdoTest(UDOHelper):
         Description: UDO with grouping by a component with a name that is a reserved word and a dot in the name
         Goal: Check Result.
         """
-        code = 'GL_442_1'
+        code = "GL_442_1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -481,14 +536,15 @@ class UdoTest(UDOHelper):
 
     def test_GL_442_2(self):
         """
-            Constant as Dataset input parameter
+        Constant as Dataset input parameter
         """
-        code = 'GL_442_2'
+        code = "GL_442_2"
         number_inputs = 1
         message = "1-1-2-2"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_442_3(self):
         """
@@ -496,7 +552,7 @@ class UdoTest(UDOHelper):
         Description: complete example of issue 442
         Goal: Check Result.
         """
-        code = 'GL_442_3'
+        code = "GL_442_3"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -508,7 +564,7 @@ class UdoTest(UDOHelper):
         Description: complete example of issue 441
         Goal: Check Result.
         """
-        code = 'GL_442_4'
+        code = "GL_442_4"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 
@@ -520,7 +576,7 @@ class UdoTest(UDOHelper):
         Description: there is no difference between component and 'component' (or "component"), the only diference is if component is a reserved word or not
         Goal: Check Result.
         """
-        code = 'GL_442_5'
+        code = "GL_442_5"
         number_inputs = 2
         references_names = ["1", "2", "3", "4"]
 
@@ -532,7 +588,7 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = 'GL_473_1'
+        code = "GL_473_1"
         number_inputs = 1
         references_names = ["1", "2", "3", "4"]
 
@@ -544,7 +600,7 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = 'GL_473_2'
+        code = "GL_473_2"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -556,7 +612,7 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = 'GL_474_1'
+        code = "GL_474_1"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -568,12 +624,13 @@ class UdoTest(UDOHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_474_2'
+        code = "GL_474_2"
         number_inputs = 1
         message = "1-1-1-3"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_474_3(self):
         """
@@ -581,12 +638,13 @@ class UdoTest(UDOHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_474_3'
+        code = "GL_474_3"
         number_inputs = 1
         message = "1-3-5"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_475_1(self):
         """
@@ -594,7 +652,7 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = 'GL_475_1'
+        code = "GL_475_1"
         number_inputs = 1
         references_names = ["1", "2", "3", "4"]
 
@@ -606,7 +664,7 @@ class UdoTest(UDOHelper):
         Description:
         Goal: Check Result.
         """
-        code = 'GL_476_1'
+        code = "GL_476_1"
         number_inputs = 2
         references_names = ["1"]
 

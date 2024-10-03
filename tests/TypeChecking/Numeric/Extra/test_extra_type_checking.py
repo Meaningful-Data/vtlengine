@@ -19,10 +19,10 @@ class ExtraTypeChecking(TestExtraTypeChecking):
     Group 4
     """
 
-    classTest = 'Extra.ExtraTypeChecking'
+    classTest = "Extra.ExtraTypeChecking"
 
     def test_1(self):
-        '''
+        """
         ADD OPERATOR
         Status: Me_1, Me_2 and Me_3 should be numbers, i changed this in the datastructure
         Alternative Expression: DS_r := DS_2 + DS_1[calc Me_3 := DS_1#Me_2 + 1.0 ] + 1.0 ; (good result)
@@ -31,8 +31,8 @@ class ExtraTypeChecking(TestExtraTypeChecking):
         Jira issue: VTLEN 551.
         Git Branch: feat-VTLEN-551-Numeric-operators-type-checking-tests.
         Goal: Check Result.
-        '''
-        code = '4-5-3-1'
+        """
+        code = "4-5-3-1"
         # 4 For group numeric
         # 5 For group extra
         # 3 For add operator in numeric
@@ -40,5 +40,6 @@ class ExtraTypeChecking(TestExtraTypeChecking):
         number_inputs = 2
         references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs,
-                      references_names=references_names)  # TODO : Review this
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names
+        )  # TODO : Review this

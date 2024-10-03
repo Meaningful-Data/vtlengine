@@ -17,10 +17,13 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
         data = None
     else:
         data = dataset.data[measure_name]
-    return DataComponent(name=code_item, data=data,
-                         data_type=dataset.components[measure_name].data_type,
-                         role=dataset.components[measure_name].role,
-                         nullable=dataset.components[measure_name].nullable)
+    return DataComponent(
+        name=code_item,
+        data=data,
+        data_type=dataset.components[measure_name].data_type,
+        role=dataset.components[measure_name].role,
+        nullable=dataset.components[measure_name].nullable,
+    )
 
 
 class HRComparison(Operators.Binary):
@@ -36,19 +39,17 @@ class HRComparison(Operators.Binary):
         # In comments, it is specified the condition for evaluating the rule,
         # so we delete the cases that does not satisfy the condition
         # (line 6509 of the reference manual)
-        if (hr_mode in ('partial_null', 'partial_zero') and
-                not pd.isnull(y) and
-                y == "REMOVE_VALUE"):
-            if hr_mode == 'partial_null' and pd.isnull(x):
+        if hr_mode in ("partial_null", "partial_zero") and not pd.isnull(y) and y == "REMOVE_VALUE":
+            if hr_mode == "partial_null" and pd.isnull(x):
                 return "REMOVE_VALUE"
-            elif hr_mode == 'partial_zero' and not pd.isnull(x) and x == 0:
+            elif hr_mode == "partial_zero" and not pd.isnull(x) and x == 0:
                 return "REMOVE_VALUE"
             return None
-        if hr_mode == 'non_null':
+        if hr_mode == "non_null":
             # If all the involved Data Points are not NULL
             if pd.isnull(x) or pd.isnull(y):
                 return "REMOVE_VALUE"
-        elif hr_mode == 'non_zero':
+        elif hr_mode == "non_zero":
             # If at least one of the involved Data Points is <> zero
             if not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
                 return "REMOVE_VALUE"
@@ -61,59 +62,64 @@ class HRComparison(Operators.Binary):
 
     @classmethod
     def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             left_operand.components.items() if comp.role == Role.IDENTIFIER}
-        result_components['bool_var'] = Component(name='bool_var',
-                                                  data_type=Boolean,
-                                                  role=Role.MEASURE,
-                                                  nullable=True)
-        result_components['imbalance'] = Component(name='imbalance',
-                                                   data_type=Number,
-                                                   role=Role.MEASURE,
-                                                   nullable=True)
-        return Dataset(name=f"{left_operand.name}{cls.op}{right_operand.name}",
-                       components=result_components,
-                       data=None)
+        result_components = {
+            comp_name: copy(comp)
+            for comp_name, comp in left_operand.components.items()
+            if comp.role == Role.IDENTIFIER
+        }
+        result_components["bool_var"] = Component(
+            name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=True
+        )
+        result_components["imbalance"] = Component(
+            name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
+        )
+        return Dataset(
+            name=f"{left_operand.name}{cls.op}{right_operand.name}",
+            components=result_components,
+            data=None,
+        )
 
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy()
         measure_name = left.get_measures_names()[0]
-        result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
-                                                    hr_mode, cls.op_func)
-        result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data,
-                                                     hr_mode, cls.imbalance_func)
+        result.data["bool_var"] = cls.apply_hr_func(
+            left.data[measure_name], right.data, hr_mode, cls.op_func
+        )
+        result.data["imbalance"] = cls.apply_hr_func(
+            left.data[measure_name], right.data, hr_mode, cls.imbalance_func
+        )
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = result.data[result.data['bool_var'] != "REMOVE_VALUE"]
+        result.data = result.data[result.data["bool_var"] != "REMOVE_VALUE"]
         result.data.drop(measure_name, axis=1, inplace=True)
         return result
 
 
 class HREqual(HRComparison):
-    op = '='
+    op = "="
     py_op = operator.eq
 
 
 class HRGreater(HRComparison):
-    op = '>'
+    op = ">"
     py_op = operator.gt
 
 
 class HRGreaterEqual(HRComparison):
-    op = '>='
+    op = ">="
     py_op = operator.ge
 
 
 class HRLess(HRComparison):
-    op = '<'
+    op = "<"
     py_op = operator.lt
 
 
 class HRLessEqual(HRComparison):
-    op = '<='
+    op = "<="
     py_op = operator.le
 
 
@@ -128,18 +134,22 @@ class HRBinNumeric(Operators.Binary):
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
         result_data = cls.apply_operation_two_series(left.data, right.data)
-        return DataComponent(name=f"{left.name}{cls.op}{right.name}", data=result_data,
-                             data_type=left.data_type,
-                             role=left.role, nullable=left.nullable)
+        return DataComponent(
+            name=f"{left.name}{cls.op}{right.name}",
+            data=result_data,
+            data_type=left.data_type,
+            role=left.role,
+            nullable=left.nullable,
+        )
 
 
 class HRBinPlus(HRBinNumeric):
-    op = '+'
+    op = "+"
     py_op = operator.add
 
 
 class HRBinMinus(HRBinNumeric):
-    op = '-'
+    op = "-"
     py_op = operator.sub
 
 
@@ -148,18 +158,22 @@ class HRUnNumeric(Operators.Unary):
     @classmethod
     def evaluate(cls, operand: DataComponent):
         result_data = cls.apply_operation_component(operand.data)
-        return DataComponent(name=f"{cls.op}({operand.name})", data=result_data,
-                             data_type=operand.data_type,
-                             role=operand.role, nullable=operand.nullable)
+        return DataComponent(
+            name=f"{cls.op}({operand.name})",
+            data=result_data,
+            data_type=operand.data_type,
+            role=operand.role,
+            nullable=operand.nullable,
+        )
 
 
 class HRUnPlus(HRUnNumeric):
-    op = '+'
+    op = "+"
     py_op = operator.pos
 
 
 class HRUnMinus(HRUnNumeric):
-    op = '-'
+    op = "-"
     py_op = operator.neg
 
 
@@ -167,11 +181,8 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def validate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             left.components.items()}
-        return Dataset(name=f"{left.name}",
-                       components=result_components,
-                       data=None)
+        result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
+        return Dataset(name=f"{left.name}", components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
@@ -186,9 +197,9 @@ class HAAssignment(Operators.Binary):
     def handle_mode(cls, x, hr_mode):
         if not pd.isnull(x) and x == "REMOVE_VALUE":
             return "REMOVE_VALUE"
-        if hr_mode == 'non_null' and pd.isnull(x):
+        if hr_mode == "non_null" and pd.isnull(x):
             return "REMOVE_VALUE"
-        elif hr_mode == 'non_zero' and x == 0:
+        elif hr_mode == "non_zero" and x == 0:
             return "REMOVE_VALUE"
         return x
 
@@ -204,17 +215,18 @@ class Hierarchy(Operators.Operator):
         return df
 
     @classmethod
-    def validate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame],
-                 output: str) -> Dataset:
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             dataset.components.items()}
-        return Dataset(name=dataset.name,
-                       components=result_components,
-                       data=None)
+    def validate(
+        cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
+    ) -> Dataset:
+        result_components = {
+            comp_name: copy(comp) for comp_name, comp in dataset.components.items()
+        }
+        return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, dataset: Dataset, computed_dict: Dict[str, DataFrame],
-                 output: str) -> Dataset:
+    def evaluate(
+        cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
+    ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         if len(computed_dict) == 0:
             computed_data = pd.DataFrame(columns=dataset.get_components_names())
@@ -227,7 +239,8 @@ class Hierarchy(Operators.Operator):
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
         result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(subset=dataset.get_identifiers_names(), keep='last',
-                                    inplace=True)
+        result.data.drop_duplicates(
+            subset=dataset.get_identifiers_names(), keep="last", inplace=True
+        )
         result.data.reset_index(drop=True, inplace=True)
         return result

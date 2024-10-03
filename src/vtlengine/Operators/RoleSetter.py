@@ -30,7 +30,7 @@ class RoleSetter(Unary):
                 data_type=operand.data_type,
                 role=cls.role,
                 nullable=nullable,
-                data=None
+                data=None,
             )
         operand.role = cls.role
         return copy(operand)

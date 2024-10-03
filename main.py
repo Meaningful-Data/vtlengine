@@ -3,15 +3,15 @@ from time import time
 
 from vtlengine.API import run
 
-base_path = Path(__file__).parent / 'development' / 'data'
-input_dp = base_path / 'dataPoints' / 'input'
-output_dp = base_path / 'dataPoints' / 'output'
-input_ds = base_path / 'dataStructures' / 'input'
-ext_routines = base_path / 'externalRoutines'
-vds = base_path / 'valueDomains'
-vtl = base_path / 'vtl' / 'monthVal.vtl'
+base_path = Path(__file__).parent / "development" / "data"
+input_dp = base_path / "dataPoints" / "input"
+output_dp = base_path / "dataPoints" / "output"
+input_ds = base_path / "dataStructures" / "input"
+ext_routines = base_path / "externalRoutines"
+vds = base_path / "valueDomains"
+vtl = base_path / "vtl" / "monthVal.vtl"
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start = time()
     run(
         script=vtl,

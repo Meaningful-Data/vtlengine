@@ -15,11 +15,9 @@ class ExternalProjectsHelper(TestHelper):
 
 
 class BOP(ExternalProjectsHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'ExternalProjects.BOP'
+    classTest = "ExternalProjects.BOP"
 
     def test_BOP_Q_Review_1(self):
         """
@@ -27,22 +25,24 @@ class BOP(ExternalProjectsHelper):
         Git Branch: feat-test-projects
         Goal: Check semantic result and interpreter results.
         """
-        code = 'BOP_Q_Review_1'
+        code = "BOP_Q_Review_1"
         number_inputs = 1
         rn = [str(i) for i in range(1, 30)]
         references_names = rn
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      only_semantic=True)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class AnaVal(ExternalProjectsHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'ExternalProjects.AnaVal'
+    classTest = "ExternalProjects.AnaVal"
 
     def test_GL_283_1(self):
         """
@@ -51,22 +51,24 @@ class AnaVal(ExternalProjectsHelper):
         Description:
         Git Branch: #283
         """
-        code = 'GL_283_1'
+        code = "GL_283_1"
         number_inputs = 36
         vd_names = ["EU_countries", "AnaCreditCountries_1"]
         rn = [str(i) for i in range(1, 129)]
         references_names = rn
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names,
-                      vd_names=vd_names)
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=vd_names,
+        )
 
 
 class AnaMart(ExternalProjectsHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'ExternalProjects.AnaMart'
+    classTest = "ExternalProjects.AnaMart"
 
     def test_AnaMart_AnaMart_1(self):
         """
@@ -74,20 +76,14 @@ class AnaMart(ExternalProjectsHelper):
         Git Branch: feat-test-projects
         Goal: Check semantic result and interpreter results.
         """
-        code = 'AnaMart_AnaMart_1'
+        code = "AnaMart_AnaMart_1"
         number_inputs = 30
         vd_names = ["anaCreditCountries_2"]
         # rn = [str(i) for i in range(1, 303)]
         rn = [str(i) for i in range(1, 30)]
         rn += [str(i) for i in range(72, 303)]
-        references_names = rn
-        sql_names = [
-            "instDates",
-            "instrFctJn",
-            "instrFctJn2",
-            "prtctnDts",
-            "prtctnFctJn"
-        ]
+        # references_names = rn
+        sql_names = ["instDates", "instrFctJn", "instrFctJn2", "prtctnDts", "prtctnFctJn"]
 
         # self.BaseTest(
         #     code=code,
@@ -98,7 +94,9 @@ class AnaMart(ExternalProjectsHelper):
         # )
         exception_code = "1-1-13-4"
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=exception_code,
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=exception_code,
             vd_names=vd_names,
-            sql_names=sql_names
+            sql_names=sql_names,
         )

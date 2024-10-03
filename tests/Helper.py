@@ -10,15 +10,16 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import SemanticError, VTLEngineException
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
-from vtlengine.files.output import TimePeriodRepresentation, \
-    format_time_period_external_representation
+from vtlengine.files.output import (
+    TimePeriodRepresentation,
+    format_time_period_external_representation,
+)
 from vtlengine.files.parser import load_datapoints
 
 
 class TestHelper(TestCase):
-    """
+    """ """
 
-    """
     # Path Selection.----------------------------------------------------------
     base_path = Path(__file__).parent
     filepath_VTL = base_path / "data" / "vtl"
@@ -29,56 +30,62 @@ class TestHelper(TestCase):
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
     filepath_sql = base_path / "data" / "sql"
 
-    JSON = '.json'
-    CSV = '.csv'
-    VTL = '.vtl'
+    JSON = ".json"
+    CSV = ".csv"
+    VTL = ".vtl"
 
     # Prefix for the input files (DS_).
     ds_input_prefix = ""
 
     @classmethod
-    def LoadDataset(cls, ds_path, dp_path, only_semantic=False) -> Dict[
-        str, Union[Dataset, Scalar]]:
-        with open(ds_path, 'r') as file:
+    def LoadDataset(
+        cls, ds_path, dp_path, only_semantic=False
+    ) -> Dict[str, Union[Dataset, Scalar]]:
+        with open(ds_path, "r") as file:
             structures = json.load(file)
 
         datasets = {}
 
-        if 'datasets' in structures:
-            for dataset_json in structures['datasets']:
-                dataset_name = dataset_json['name']
-                components = {component['name']: Component(name=component['name'],
-                                                           data_type=SCALAR_TYPES[
-                                                               component['type']],
-                                                           role=Role(component['role']),
-                                                           nullable=component['nullable']) for
-                              component in dataset_json['DataStructure']}
+        if "datasets" in structures:
+            for dataset_json in structures["datasets"]:
+                dataset_name = dataset_json["name"]
+                components = {
+                    component["name"]: Component(
+                        name=component["name"],
+                        data_type=SCALAR_TYPES[component["type"]],
+                        role=Role(component["role"]),
+                        nullable=component["nullable"],
+                    )
+                    for component in dataset_json["DataStructure"]
+                }
                 if only_semantic:
                     data = None
                 else:
                     data = load_datapoints(components, dataset_name, Path(dp_path))
 
-                datasets[dataset_name] = Dataset(name=dataset_name, components=components,
-                                                 data=data)
-        if 'scalars' in structures:
-            for scalar_json in structures['scalars']:
-                scalar_name = scalar_json['name']
-                scalar = Scalar(name=scalar_name, data_type=SCALAR_TYPES[scalar_json['type']],
-                                value=None)
+                datasets[dataset_name] = Dataset(
+                    name=dataset_name, components=components, data=data
+                )
+        if "scalars" in structures:
+            for scalar_json in structures["scalars"]:
+                scalar_name = scalar_json["name"]
+                scalar = Scalar(
+                    name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+                )
                 datasets[scalar_name] = scalar
         return datasets
 
     @classmethod
     def LoadInputs(cls, code: str, number_inputs: int, only_semantic=False) -> Dict[str, Dataset]:
-        '''
-
-        '''
+        """ """
         datasets = {}
         for i in range(number_inputs):
             json_file_name = str(
-                cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}")
+                cls.filepath_json / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.JSON}"
+            )
             csv_file_name = str(
-                cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}")
+                cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
+            )
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             for x in new_datasets:
                 if x in datasets:
@@ -88,38 +95,41 @@ class TestHelper(TestCase):
         return datasets
 
     @classmethod
-    def LoadOutputs(cls, code: str, references_names: List[str], only_semantic=False) -> Dict[
-        str, Dataset]:
-        """
-
-        """
+    def LoadOutputs(
+        cls, code: str, references_names: List[str], only_semantic=False
+    ) -> Dict[str, Dataset]:
+        """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             for dataset in new_datasets.values():
-                setattr(dataset, 'ref_name', name)
+                setattr(dataset, "ref_name", name)
             datasets.update(new_datasets)
 
         return datasets
 
     @classmethod
     def LoadVTL(cls, code: str) -> str:
-        """
-
-        """
+        """ """
         vtl_file_name = str(cls.filepath_VTL / f"{code}{cls.VTL}")
-        with open(vtl_file_name, 'r') as file:
+        with open(vtl_file_name, "r") as file:
             return file.read()
 
     @classmethod
-    def BaseTest(cls, code: str, number_inputs: int, references_names: List[str],
-                 vd_names: List[str] = None, sql_names: List[str] = None,
-                 text: Optional[str] = None, scalars: Dict[str, Any] = None, only_semantic=False):
-        '''
-
-        '''
+    def BaseTest(
+        cls,
+        code: str,
+        number_inputs: int,
+        references_names: List[str],
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        text: Optional[str] = None,
+        scalars: Dict[str, Any] = None,
+        only_semantic=False,
+    ):
+        """ """
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -140,18 +150,23 @@ class TestHelper(TestCase):
                 if not isinstance(input_datasets[scalar_name], Scalar):
                     raise Exception(f"{scalar_name} is a dataset")
                 input_datasets[scalar_name].value = scalar_value
-        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains,
-                                          external_routines=external_routines,
-                                          only_semantic=only_semantic)
+        interpreter = InterpreterAnalyzer(
+            input_datasets,
+            value_domains=value_domains,
+            external_routines=external_routines,
+            only_semantic=only_semantic,
+        )
         result = interpreter.visit(ast)
         for dataset in result.values():
-            _ = format_time_period_external_representation(dataset,
-                                                           TimePeriodRepresentation.SDMX_REPORTING)
+            _ = format_time_period_external_representation(
+                dataset, TimePeriodRepresentation.SDMX_REPORTING
+            )
 
         if len(result) != len(reference_datasets):
             diff_datasets = set(result.keys()) ^ set(reference_datasets.keys())
             raise Exception(
-                f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}")
+                f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}"
+            )
 
         # cls._override_structures(code, result, reference_datasets)
         # cls._override_data(code, result, reference_datasets)
@@ -165,7 +180,7 @@ class TestHelper(TestCase):
             ref_dataset = reference_datasets[dataset.name]
             param_name = ref_dataset.ref_name
             json_file_name = str(cls.filepath_out_json / f"{code}-{param_name}{cls.JSON}")
-            with open(json_file_name, 'w') as file:
+            with open(json_file_name, "w") as file:
                 file.write(dataset.to_json_datastructure())
 
     @classmethod
@@ -179,9 +194,16 @@ class TestHelper(TestCase):
             dataset.data.to_csv(csv_file_name, index=False, header=True)
 
     @classmethod
-    def NewSemanticExceptionTest(cls, code: str, number_inputs: int, exception_code: str,
-                                 vd_names: List[str] = None, sql_names: List[str] = None,
-                                 text: Optional[str] = None, scalars: Dict[str, Any] = None):
+    def NewSemanticExceptionTest(
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_code: str,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        text: Optional[str] = None,
+        scalars: Dict[str, Any] = None,
+    ):
         # Data Loading.--------------------------------------------------------
         if text is None:
             text = cls.LoadVTL(code)
@@ -203,8 +225,9 @@ class TestHelper(TestCase):
                     raise Exception(f"{scalar_name} is a dataset")
                 input_datasets[scalar_name].value = scalar_value
 
-        interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains,
-                                          external_routines=external_routines)
+        interpreter = InterpreterAnalyzer(
+            input_datasets, value_domains=value_domains, external_routines=external_routines
+        )
         with pytest.raises(SemanticError) as context:
             ast = create_ast(text)
             interpreter.visit(ast)
@@ -219,7 +242,7 @@ class TestHelper(TestCase):
         value_domains = {}
         for name in vd_names:
             vd_file_name = str(cls.filepath_valueDomain / f"{name}.json")
-            with open(vd_file_name, 'r') as file:
+            with open(vd_file_name, "r") as file:
                 vd = ValueDomain.from_json(file.read())
                 value_domains[vd.name] = vd
         return value_domains
@@ -229,7 +252,7 @@ class TestHelper(TestCase):
         external_routines = {}
         for name in sql_names:
             sql_file_name = str(cls.filepath_sql / f"{name}.sql")
-            with open(sql_file_name, 'r') as file:
+            with open(sql_file_name, "r") as file:
                 external_routines[name] = ExternalRoutine.from_sql_query(name, file.read())
         return external_routines
 
@@ -245,9 +268,13 @@ class TestHelper(TestCase):
         assert True
 
     @classmethod
-    def DataLoadExceptionTest(cls, code: str, number_inputs: int,
-                              exception_message: Optional[str] = None,
-                              exception_code: Optional[str] = None):
+    def DataLoadExceptionTest(
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_message: Optional[str] = None,
+        exception_code: Optional[str] = None,
+    ):
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
                 cls.LoadInputs(code=code, number_inputs=number_inputs)

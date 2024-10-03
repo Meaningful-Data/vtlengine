@@ -27,25 +27,26 @@ def _load_dataset_from_structure(structures: dict):
     """
     datasets = {}
 
-    if 'datasets' in structures:
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+    if "datasets" in structures:
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
 
-            datasets[dataset_name] = Dataset(name=dataset_name,
-                                             components=components,
-                                             data=None)
-    if 'scalars' in structures:
-        for scalar_json in structures['scalars']:
-            scalar_name = scalar_json['name']
-            scalar = Scalar(name=scalar_name,
-                            data_type=SCALAR_TYPES[scalar_json['type']],
-                            value=None)
+            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
+    if "scalars" in structures:
+        for scalar_json in structures["scalars"]:
+            scalar_name = scalar_json["name"]
+            scalar = Scalar(
+                name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+            )
             datasets[scalar_name] = scalar
     return datasets
 
@@ -55,48 +56,49 @@ def _load_single_datapoint(datapoint: Union[str, Path]):
     Returns a dict with the data given from one dataset.
     """
     if not isinstance(datapoint, (Path, str)):
-        raise Exception('Invalid datapoint. Input must be a Path or an S3 URI')
+        raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
     if isinstance(datapoint, str):
-        if 's3://' in datapoint:
+        if "s3://" in datapoint:
             # Handling S3 URI
             s3fs_obj = S3FileSystem()
 
             # Check if the S3 URI is valid
             if not s3fs_obj.exists(datapoint):
                 raise Exception(
-                    f'Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}')
+                    f"Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}"
+                )
 
             # Check if the S3 URI is a directory
             if s3fs_obj.isdir(datapoint):
                 datapoints = {}
                 for f in s3fs_obj.ls(datapoint):
-                    if f.endswith('.csv'):
-                        dataset_name = f.split('/')[-1].removesuffix('.csv')
+                    if f.endswith(".csv"):
+                        dataset_name = f.split("/")[-1].removesuffix(".csv")
                         dict_data = {dataset_name: f"s3://{f}"}
                         datapoints = {**datapoints, **dict_data}
                 return datapoints
 
             # Check if the S3 URI is a csv file
-            if s3fs_obj.isfile(datapoint) and not datapoint.endswith('.csv'):
-                raise Exception(f'Invalid datapoint. S3 URI must refer to a csv file: {datapoint}')
-            dataset_name = datapoint.split('/')[-1].removesuffix('.csv')
+            if s3fs_obj.isfile(datapoint) and not datapoint.endswith(".csv"):
+                raise Exception(f"Invalid datapoint. S3 URI must refer to a csv file: {datapoint}")
+            dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
 
         try:
             datapoint = Path(datapoint)
         except Exception:
-            raise Exception('Invalid datapoint. Input must refer to a Path or an S3 URI')
+            raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
     if datapoint.is_dir():
         datapoints = {}
         for f in datapoint.iterdir():
-            if f.suffix != '.csv':
+            if f.suffix != ".csv":
                 continue
             dp = _load_single_datapoint(f)
             datapoints = {**datapoints, **dp}
         dict_data = datapoints
     else:
-        dataset_name = datapoint.name.removesuffix('.csv')
+        dataset_name = datapoint.name.removesuffix(".csv")
         dict_data = {dataset_name: datapoint}
     return dict_data
 
@@ -121,21 +123,21 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
-        raise Exception('Invalid datastructure. Input must be a dict or Path object')
+        raise Exception("Invalid datastructure. Input must be a dict or Path object")
     if not data_structure.exists():
-        raise Exception('Invalid datastructure. Input does not exist')
+        raise Exception("Invalid datastructure. Input does not exist")
     if data_structure.is_dir():
         datasets = {}
         for f in data_structure.iterdir():
-            if f.suffix != '.json':
+            if f.suffix != ".json":
                 continue
             dataset = _load_datastructure_single(f)
             datasets = {**datasets, **dataset}
         return datasets
     else:
-        if data_structure.suffix != '.json':
-            raise Exception('Invalid datastructure. Must have .json extension')
-        with open(data_structure, 'r') as file:
+        if data_structure.suffix != ".json":
+            raise Exception("Invalid datastructure. Must have .json extension")
+        with open(data_structure, "r") as file:
             structures = json.load(file)
     return _load_dataset_from_structure(structures)
 
@@ -155,8 +157,10 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     return _load_datastructure_single(data_structure)
 
 
-def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                            datapoints: Optional[Union[dict, Path, List[Path]]] = None):
+def load_datasets_with_data(
+    data_structures: Union[dict, Path, List[Union[dict, Path]]],
+    datapoints: Optional[Union[dict, Path, List[Path]]] = None,
+):
     """
     Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
     structure and a pandas dataframe.
@@ -176,7 +180,8 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:
                 datasets[dataset_name].data = pd.DataFrame(
-                    columns=list(datasets[dataset_name].components.keys()))
+                    columns=list(datasets[dataset_name].components.keys())
+                )
         return datasets, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
@@ -202,19 +207,19 @@ def load_vtl(input: Union[str, Path]):
         else:
             return input
     if not isinstance(input, Path):
-        raise Exception('Invalid vtl file. Input is not a Path object')
+        raise Exception("Invalid vtl file. Input is not a Path object")
     if not input.exists():
-        raise Exception('Invalid vtl file. Input does not exist')
-    if input.suffix != '.vtl':
-        raise Exception('Invalid vtl file. Must have .vtl extension')
-    with open(input, 'r') as f:
+        raise Exception("Invalid vtl file. Input does not exist")
+    if input.suffix != ".vtl":
+        raise Exception("Invalid vtl file. Must have .vtl extension")
+    with open(input, "r") as f:
         return f.read()
 
 
 def _load_single_value_domain(input: Path):
-    if input.suffix != '.json':
-        raise Exception('Invalid Value Domain file. Must have .json extension')
-    with open(input, 'r') as f:
+    if input.suffix != ".json":
+        raise Exception("Invalid Value Domain file. Must have .json extension")
+    with open(input, "r") as f:
         vd = ValueDomain.from_dict(json.load(f))
     return {vd.name: vd}
 
@@ -231,22 +236,21 @@ def load_value_domains(input: Union[dict, Path]):
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if not isinstance(input, Path):
-        raise Exception('Invalid vd file. Input is not a Path object')
+        raise Exception("Invalid vd file. Input is not a Path object")
     if not input.exists():
-        raise Exception('Invalid vd file. Input does not exist')
+        raise Exception("Invalid vd file. Input does not exist")
     if input.is_dir():
         value_domains = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}
         return value_domains
-    if input.suffix != '.json':
-        raise Exception('Invalid vd file. Must have .json extension')
+    if input.suffix != ".json":
+        raise Exception("Invalid vd file. Must have .json extension")
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[dict, Path]) -> Optional[
-    Dict[str, ExternalRoutine]]:
+def load_external_routines(input: Union[dict, Path]) -> Optional[Dict[str, ExternalRoutine]]:
     """
     Load the external routines.
 
@@ -261,12 +265,12 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
             external_routines[ext_routine.name] = ext_routine
         return external_routines
     if not isinstance(input, Path):
-        raise Exception('Input invalid. Input must be a sql file.')
+        raise Exception("Input invalid. Input must be a sql file.")
     if not input.exists():
-        raise Exception('Input invalid. Input does not exist')
+        raise Exception("Input invalid. Input does not exist")
     if input.is_dir():
         for f in input.iterdir():
-            if f.suffix != '.sql':
+            if f.suffix != ".sql":
                 continue
             ext_rout = _load_single_external_routine_from_file(f)
             external_routines[ext_rout.name] = ext_rout
@@ -284,8 +288,11 @@ def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
     for child in ast.children:
         if isinstance(child, PersistentAssignment):
             persistent.append(child.left.value)
-    return {dataset.name: dataset for dataset in datasets.values() if
-            isinstance(dataset, Dataset) and dataset.name in persistent}
+    return {
+        dataset.name: dataset
+        for dataset in datasets.values()
+        if isinstance(dataset, Dataset) and dataset.name in persistent
+    }
 
 
 def _load_single_external_routine_from_file(input: Path):
@@ -293,13 +300,13 @@ def _load_single_external_routine_from_file(input: Path):
     Returns a single external routine.
     """
     if not isinstance(input, Path):
-        raise Exception('Input invalid')
+        raise Exception("Input invalid")
     if not input.exists():
-        raise Exception('Input does not exist')
-    if input.suffix != '.sql':
-        raise Exception('Input must be a sql file')
-    with open(input, 'r') as f:
-        ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix('.sql'), f.read())
+        raise Exception("Input does not exist")
+    if input.suffix != ".sql":
+        raise Exception("Input must be a sql file")
+    with open(input, "r") as f:
+        ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix(".sql"), f.read())
     return ext_rout
 
 
@@ -308,23 +315,25 @@ def _check_output_folder(output_folder: Union[str, Path]):
     Check if the output folder exists. If not, it will create it.
     """
     if isinstance(output_folder, str):
-        if 's3://' in output_folder:
+        if "s3://" in output_folder:
             s3fs_obj = S3FileSystem()
             # Check if the S3 URI is valid
             if not s3fs_obj.exists(output_folder):
                 try:
                     s3fs_obj.mkdir(output_folder)
                 except Exception:
-                    raise Exception(f'Invalid output folder. S3 URI is invalid or it is not accessible: {output_folder}')
+                    raise Exception(
+                        f"Invalid output folder. S3 URI is invalid or it is not accessible: {output_folder}"
+                    )
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise Exception('Output folder must be a Path or S3 URI to a directory')
+            raise Exception("Output folder must be a Path or S3 URI to a directory")
 
     if not isinstance(output_folder, Path):
-        raise Exception('Output folder must be a Path or S3 URI to a directory')
+        raise Exception("Output folder must be a Path or S3 URI to a directory")
     if not output_folder.exists():
-        if output_folder.suffix != '':
-            raise Exception('Output folder must be a Path or S3 URI to a directory')
+        if output_folder.suffix != "":
+            raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)

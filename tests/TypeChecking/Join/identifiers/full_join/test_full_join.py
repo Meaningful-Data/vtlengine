@@ -19,10 +19,10 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
     Group 2
     """
 
-    classTest = 'full_join.FullJoinIdentifiersTypeChecking'
+    classTest = "full_join.FullJoinIdentifiersTypeChecking"
 
     def test_1(self):
-        '''
+        """
         FULL JOIN OPERATOR
         Status: OK
         Expression: DS_r := full_join ( DS_1, DS_2 );
@@ -30,8 +30,8 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-3-1'
+        """
+        code = "2-2-3-1"
         # 2 For group join
         # 2 For group identifiers
         # 3 For clause- for the moment only op full_join
@@ -42,7 +42,7 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
-        '''
+        """
         FULL JOIN OPERATOR
         Status: BUG
         Expression: DS_r := full_join ( DS_1, DS_2 );
@@ -50,14 +50,14 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-3-2'
+        """
+        code = "2-2-3-2"
         number_inputs = 2
         references_names = ["DS_r"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
-        '''
+        """
         FULL JOIN OPERATOR
         Status: OK
         Expression: DS_r := full_join ( DS_1, DS_2 );
@@ -65,14 +65,14 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-3-3'
+        """
+        code = "2-2-3-3"
         number_inputs = 2
         references_names = ["DS_r"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
-        '''
+        """
         FULL JOIN OPERATOR
         Status: OK
         Expression: DS_r := full_join ( DS_1, DS_2 );
@@ -80,8 +80,8 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-3-4'
+        """
+        code = "2-2-3-4"
         number_inputs = 2
         message = "0-1-1-12"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

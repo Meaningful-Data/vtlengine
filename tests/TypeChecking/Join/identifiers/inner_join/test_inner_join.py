@@ -19,10 +19,10 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
     Group 2
     """
 
-    classTest = 'inner_join.InnerJoinIdentifiersTypeChecking'
+    classTest = "inner_join.InnerJoinIdentifiersTypeChecking"
 
     def test_1(self):
-        '''
+        """
         INNER JOIN OPERATOR
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 );
@@ -30,8 +30,8 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-1-1'
+        """
+        code = "2-2-1-1"
         # 2 For group join
         # 2 For group identifiers
         # 1 For clause- for the moment only op inner_join
@@ -62,7 +62,7 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
     #     self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_3(self):
-        '''
+        """
         INNER JOIN OPERATOR
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 );
@@ -70,14 +70,14 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-1-3'
+        """
+        code = "2-2-1-3"
         number_inputs = 2
         references_names = ["DS_r"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
-        '''
+        """
         INNER JOIN OPERATOR
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 );
@@ -85,8 +85,8 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-1-4'
+        """
+        code = "2-2-1-4"
         number_inputs = 2
         message = "0-1-1-12"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

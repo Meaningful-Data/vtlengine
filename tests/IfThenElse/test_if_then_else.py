@@ -19,7 +19,7 @@ class IfThenElseTest(TestIfThenElse):
     Group 1
     """
 
-    classTest = 'if_then_else.IfThenElseTest'
+    classTest = "if_then_else.IfThenElseTest"
 
     def test_1(self):
         """
@@ -34,7 +34,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -53,7 +53,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -74,7 +74,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -94,7 +94,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -114,7 +114,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -134,7 +134,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -153,7 +153,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -173,7 +173,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -193,7 +193,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -213,12 +213,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_11(self):
         """
@@ -234,12 +235,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_12(self):
         """
@@ -255,12 +257,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_13(self):
         """
@@ -276,7 +279,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-13'
+        code = "1-1-1-13"
         number_inputs = 3
         references_names = ["1"]
 
@@ -296,7 +299,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-14'
+        code = "1-1-1-14"
         number_inputs = 3
         references_names = ["1"]
 
@@ -316,7 +319,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-15'
+        code = "1-1-1-15"
         number_inputs = 3
         references_names = ["1"]
 
@@ -336,12 +339,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-16'
+        code = "1-1-1-16"
         number_inputs = 3
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_17(self):
         """
@@ -357,7 +361,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-17'
+        code = "1-1-1-17"
         number_inputs = 3
         references_names = ["1"]
 
@@ -377,10 +381,10 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-18'
-        number_inputs = 3
+        # code = "1-1-1-18"
+        # number_inputs = 3
         # error_code = "1-1-9-12"
-        #
+
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
     def test_19(self):
@@ -397,7 +401,7 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-19'
+        code = "1-1-1-19"
         number_inputs = 3
         references_names = ["1"]
 
@@ -417,12 +421,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-20'
+        code = "1-1-1-20"
         number_inputs = 3
         error_code = "1-1-9-13"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_21(self):
         """
@@ -438,12 +443,13 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else at Data Set level.
         """
-        code = '1-1-1-21'
+        code = "1-1-1-21"
         number_inputs = 3
         error_code = "1-1-9-13"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_22(self):
         """
@@ -460,9 +466,9 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #404-if-then-else-refactor
         Goal: Check the result of if-then-else for component-component.
         """
-        code = '1-1-1-22'
+        code = "1-1-1-22"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -472,11 +478,11 @@ class IfThenElseTest(TestIfThenElse):
         Dataset --> Dataset
         Status: OK
         Expression: INPUT_CHECK_REGEX :=
-            if 
-                (match_characters(BIS_LOC_STATS # OBS_VALUE,"[0-9]*[.,]?[0-9]*\Z")) 
-            then 
-                length(BIS_LOC_STATS # OBS_VALUE) > 0 and length(BIS_LOC_STATS # OBS_VALUE) < 20 
-            else 
+            if
+                (match_characters(BIS_LOC_STATS # OBS_VALUE,"[0-9]*[.,]?[0-9]*\Z"))
+            then
+                length(BIS_LOC_STATS # OBS_VALUE) > 0 and length(BIS_LOC_STATS # OBS_VALUE) < 20
+            else
                 if(match_characters(BIS_LOC_STATS # OBS_VALUE,"/[^A-Za-z ]/g"))
                 then
                     BIS_LOC_STATS # REP_COUNTRY in { "TR" }
@@ -489,9 +495,9 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/424
         Goal: Check the result of if-then-else for dataset-dataset.
         """
-        code = 'GL_424_1'
+        code = "GL_424_1"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -512,9 +518,9 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/424
         Goal: Check the result of if-then-else for dataset-dataset.
         """
-        code = 'GL_424_2'
+        code = "GL_424_2"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -528,9 +534,9 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/436
         Goal: Check the result of if-then-else.
         """
-        code = 'GL_436_1'
+        code = "GL_436_1"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -544,9 +550,9 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/436
         Goal: Check the result of if-then-else.
         """
-        code = 'GL_436_2'
+        code = "GL_436_2"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -560,8 +566,8 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/436
         Goal: Check the result of if-then-else.
         """
-        code = 'GL_436_3'
+        code = "GL_436_3"
         number_inputs = 1
-        references_names = ['1']
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
