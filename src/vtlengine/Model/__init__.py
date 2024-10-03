@@ -22,6 +22,7 @@ class Scalar:
     """
     Class representing a scalar value
     """
+
     name: str
     data_type: ScalarType
     value: Optional[Union[int, float, str, bool]]
@@ -29,7 +30,7 @@ class Scalar:
     @classmethod
     def from_json(cls, json_str):
         data = json.loads(json_str)
-        return cls(data['name'], data['value'])
+        return cls(data["name"], data["value"])
 
     def __eq__(self, other):
         same_name = self.name == other.name
@@ -44,6 +45,7 @@ class Role(Enum):
     """
     Enum class for the role of a component  (Identifier, Attribute, Measure)
     """
+
     IDENTIFIER = "Identifier"
     ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
@@ -52,6 +54,7 @@ class Role(Enum):
 @dataclass
 class DataComponent:
     """A component of a dataset with data"""
+
     name: str
     # data: Optional[Union[PandasSeries, SparkSeries]]
     data: Optional[PandasSeries]
@@ -66,15 +69,20 @@ class DataComponent:
 
     @classmethod
     def from_json(cls, json_str):
-        return cls(json_str['name'], None, SCALAR_TYPES[json_str['data_type']],
-                   Role(json_str['role']), json_str['nullable'])
+        return cls(
+            json_str["name"],
+            None,
+            SCALAR_TYPES[json_str["data_type"]],
+            Role(json_str["role"]),
+            json_str["nullable"],
+        )
 
     def to_dict(self):
         return {
-            'name': self.name,
-            'data': self.data,
-            'data_type': self.data_type,
-            'role': self.role,
+            "name": self.name,
+            "data": self.data,
+            "data_type": self.data_type,
+            "role": self.role,
         }
 
     def to_json(self):
@@ -86,6 +94,7 @@ class Component:
     """
     Class representing a component of a dataset
     """
+
     name: str
     data_type: ScalarType
     role: Role
@@ -103,15 +112,19 @@ class Component:
 
     @classmethod
     def from_json(cls, json_str):
-        return cls(json_str['name'], SCALAR_TYPES[json_str['data_type']], Role(json_str['role']),
-                   json_str['nullable'])
+        return cls(
+            json_str["name"],
+            SCALAR_TYPES[json_str["data_type"]],
+            Role(json_str["role"]),
+            json_str["nullable"],
+        )
 
     def to_dict(self):
         return {
-            'name': self.name,
-            'data_type': DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
-            'role': self.role.value,
-            'nullable': self.nullable
+            "name": self.name,
+            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
+            "role": self.role.value,
+            "nullable": self.nullable,
         }
 
     def to_json(self):
@@ -132,7 +145,8 @@ class Dataset:
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
-                    "The number of components must match the number of columns in the data")
+                    "The number of components must match the number of columns in the data"
+                )
             for name, component in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
@@ -149,22 +163,30 @@ class Dataset:
         same_components = self.components == other.components
         if not same_components:
             print("\nComponents mismatch")
-            result_comps = self.to_dict()['components']
-            reference_comps = other.to_dict()['components']
+            result_comps = self.to_dict()["components"]
+            reference_comps = other.to_dict()["components"]
             if len(result_comps) != len(reference_comps):
                 print(
-                    f"Shape mismatch: result:{len(result_comps)} != reference:{len(reference_comps)}")
+                    f"Shape mismatch: result:{len(result_comps)} != "
+                    f"reference:{len(reference_comps)}"
+                )
                 if len(result_comps) < len(reference_comps):
-                    print("Missing components in result:",
-                          set(reference_comps.keys()) - set(result_comps.keys()))
+                    print(
+                        "Missing components in result:",
+                        set(reference_comps.keys()) - set(result_comps.keys()),
+                    )
                 else:
-                    print("Additional components in result:",
-                          set(result_comps.keys()) - set(reference_comps.keys()))
+                    print(
+                        "Additional components in result:",
+                        set(result_comps.keys()) - set(reference_comps.keys()),
+                    )
                 return False
 
-            diff_comps = {k: v for k, v in result_comps.items() if (
-                        k in reference_comps and v != reference_comps[
-                    k]) or k not in reference_comps}
+            diff_comps = {
+                k: v
+                for k, v in result_comps.items()
+                if (k in reference_comps and v != reference_comps[k]) or k not in reference_comps
+            }
             ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
             print(f"Differences in components {self.name}: ")
             print("result:", json.dumps(diff_comps, indent=4))
@@ -173,35 +195,31 @@ class Dataset:
 
         if self.data is None and other.data is None:
             return True
-        # if isinstance(self.data, SparkDataFrame):
-        #     self.data = self.data.to_pandas()
-        # if isinstance(other.data, SparkDataFrame):
-        #     other.data = other.data.to_pandas()
         if len(self.data) == len(other.data) == 0:
             assert self.data.shape == other.data.shape
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
-        # self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
-        # other.data = other.data.sort_values(by=other.get_identifiers_names().sort()).reset_index(drop=True)
         sorted_identifiers = sorted(self.get_identifiers_names())
         self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
         other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
-            if comp.data_type.__name__ in ['String', 'Date']:
+            if comp.data_type.__name__ in ["String", "Date"]:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
-            elif comp.data_type.__name__ == 'TimePeriod':
+            elif comp.data_type.__name__ == "TimePeriod":
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
+                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
+                )
                 other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
-            elif comp.data_type.__name__ in ['Integer', 'Number']:
-                if comp.data_type.__name__ == 'Integer':
+                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
+                )
+            elif comp.data_type.__name__ in ["Integer", "Number"]:
+                if comp.data_type.__name__ == "Integer":
                     type_ = "int64"
                 else:
                     type_ = "float32"
@@ -209,9 +227,16 @@ class Dataset:
                 self.data[comp.name] = self.data[comp.name].replace("", -1234997).astype(type_)
                 other.data[comp.name] = other.data[comp.name].replace("", -1234997).astype(type_)
         try:
-            assert_frame_equal(self.data, other.data, check_dtype=False, check_index_type=False,
-                               check_datetimelike_compat=True,
-                               check_exact=False, rtol=0.01, atol=0.01)
+            assert_frame_equal(
+                self.data,
+                other.data,
+                check_dtype=False,
+                check_index_type=False,
+                check_datetimelike_compat=True,
+                check_exact=False,
+                rtol=0.01,
+                atol=0.01,
+            )
         except AssertionError as e:
             if "DataFrame shape" in str(e):
                 print(f"\nDataFrame shape mismatch {self.name}:")
@@ -223,7 +248,7 @@ class Dataset:
                 return True
             # To display actual null values instead of -1234997
             for comp in self.components.values():
-                if comp.data_type.__name__ in ['Integer', 'Number']:
+                if comp.data_type.__name__ in ["Integer", "Number"]:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
             print("\n Differences between the dataframes in", self.name)
             print(diff)
@@ -247,63 +272,67 @@ class Dataset:
         return list(self.components.values())
 
     def get_identifiers(self) -> List[Component]:
-        return [component for component in self.components.values() if
-                component.role == Role.IDENTIFIER]
+        return [
+            component for component in self.components.values() if component.role == Role.IDENTIFIER
+        ]
 
     def get_attributes(self) -> List[Component]:
-        return [component for component in self.components.values() if
-                component.role == Role.ATTRIBUTE]
+        return [
+            component for component in self.components.values() if component.role == Role.ATTRIBUTE
+        ]
 
     def get_measures(self) -> List[Component]:
-        return [component for component in self.components.values() if
-                component.role == Role.MEASURE]
+        return [
+            component for component in self.components.values() if component.role == Role.MEASURE
+        ]
 
     def get_identifiers_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if
-                component.role == Role.IDENTIFIER]
+        return [
+            name for name, component in self.components.items() if component.role == Role.IDENTIFIER
+        ]
 
     def get_attributes_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if
-                component.role == Role.ATTRIBUTE]
+        return [
+            name for name, component in self.components.items() if component.role == Role.ATTRIBUTE
+        ]
 
     def get_measures_names(self) -> List[str]:
-        return [name for name, component in self.components.items() if
-                component.role == Role.MEASURE]
+        return [
+            name for name, component in self.components.items() if component.role == Role.MEASURE
+        ]
 
     def get_components_names(self) -> List[str]:
         return list(self.components.keys())
 
     @classmethod
     def from_json(cls, json_str):
-        components = {k: Component.from_json(v) for k, v in json_str['components'].items()}
-        return cls(json_str['name'], components, pd.DataFrame(json_str['data']))
+        components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
+        return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
 
     def to_dict(self):
         return {
-            'name': self.name,
-            'components': {k: v.to_dict() for k, v in self.components.items()},
-            'data': self.data.to_dict(orient='records') if self.data is not None else None
+            "name": self.name,
+            "components": {k: v.to_dict() for k, v in self.components.items()},
+            "data": self.data.to_dict(orient="records") if self.data is not None else None,
         }
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=4)
 
     def to_json_datastructure(self):
-        dict_dataset = self.to_dict()['components']
-        order_keys = ['name', 'role', 'type', 'nullable']
+        dict_dataset = self.to_dict()["components"]
+        order_keys = ["name", "role", "type", "nullable"]
         # Rename data_type to type
         for k in dict_dataset:
-            dict_dataset[k] = {ik if ik != 'data_type' else 'type': v for ik, v in
-                               dict_dataset[k].items()}
+            dict_dataset[k] = {
+                ik if ik != "data_type" else "type": v for ik, v in dict_dataset[k].items()
+            }
 
         # Order keys
         for k in dict_dataset:
             dict_dataset[k] = {ik: dict_dataset[k][ik] for ik in order_keys}
         comp_values = list(dict_dataset.values())
-        ds_info = {
-            'name': self.name,
-            'DataStructure': comp_values
-        }
+        ds_info = {"name": self.name, "DataStructure": comp_values}
         result = {"datasets": [ds_info]}
         return json.dumps(result, indent=2)
 
@@ -313,6 +342,7 @@ class ScalarSet:
     """
     Class representing a set of scalar values
     """
+
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
 
@@ -330,6 +360,7 @@ class ValueDomain:
     """
     Class representing a value domain
     """
+
     name: str
     type: ScalarType
     setlist: List[Union[int, float, str, bool]]
@@ -338,7 +369,8 @@ class ValueDomain:
         if len(set(self.setlist)) != len(self.setlist):
             duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
             raise ValueError(
-                f"The setlist must have unique values. Duplicated values: {duplicated}")
+                f"The setlist must have unique values. Duplicated values: {duplicated}"
+            )
 
         # Cast values to the correct type
         self.setlist = [self.type.cast(value) for value in self.setlist]
@@ -353,21 +385,16 @@ class ValueDomain:
 
     @classmethod
     def from_dict(cls, value: dict):
-        for x in ('name', 'type', 'setlist'):
+        for x in ("name", "type", "setlist"):
             if x not in value:
-                raise Exception('Invalid format for ValueDomain. Requires name, type and setlist.')
-        if value['type'] not in SCALAR_TYPES:
-            raise ValueError(
-                f"Invalid data type {value['type']} for ValueDomain {value['name']}")
+                raise Exception("Invalid format for ValueDomain. Requires name, type and setlist.")
+        if value["type"] not in SCALAR_TYPES:
+            raise ValueError(f"Invalid data type {value['type']} for ValueDomain {value['name']}")
 
-        return cls(value['name'], SCALAR_TYPES[value['type']], value['setlist'])
+        return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
     def to_dict(self):
-        return {
-            'name': self.name,
-            'type': self.type.__name__,
-            'setlist': self.setlist
-        }
+        return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
@@ -381,6 +408,7 @@ class ExternalRoutine:
     """
     Class representing an external routine, used in Eval operator
     """
+
     dataset_names: List[str]
     query: str
     name: str

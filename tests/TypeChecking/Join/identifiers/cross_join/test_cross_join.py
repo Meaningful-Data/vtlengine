@@ -19,10 +19,10 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
     Group 2
     """
 
-    classTest = 'cross_join.CrossJoinIdentifiersTypeChecking'
+    classTest = "cross_join.CrossJoinIdentifiersTypeChecking"
 
     def test_1(self):
-        '''
+        """
         CROSS JOIN OPERATOR
         Status: OK
         Expression: DS_r := cross_join ( DS_1, DS_2 );
@@ -30,8 +30,8 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-4-1'
+        """
+        code = "2-2-4-1"
         # 2 For group join
         # 2 For group identifiers
         # 4 For clause- for the moment only op cross_join
@@ -41,7 +41,7 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_2(self):
-        '''
+        """
         CROSS JOIN OPERATOR
         Status: BUG
         Expression: DS_r := cross_join ( DS_1, DS_2 );
@@ -49,14 +49,14 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-4-2'
+        """
+        code = "2-2-4-2"
         number_inputs = 2
         references_names = ["DS_r"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_3(self):
-        '''
+        """
         CROSS JOIN OPERATOR
         Status: duda orden de las datastructures
         Expression: DS_r := cross_join ( DS_1 as ds1, DS_2 as ds2
@@ -65,15 +65,15 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-4-3'
+        """
+        code = "2-2-4-3"
         number_inputs = 2
         references_names = ["DS_r"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
-        '''
+        """
         CROSS JOIN OPERATOR
         Status: OK
         Expression: DS_r := cross_join ( DS_1 as ds1, DS_2 as ds2
@@ -82,8 +82,8 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-4-4'
+        """
+        code = "2-2-4-4"
         # 2 For group join
         # 2 For group identifiers
         # 4 For clause- for the moment only op cross_join
@@ -94,7 +94,7 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_5(self):
-        '''
+        """
         CROSS JOIN OPERATOR
         Status: OK
         Expression: DS_r := cross_join ( DS_1 as ds1, DS_2 as ds2
@@ -103,8 +103,8 @@ class CrossJoinIdentifiersTypeChecking(TestCrossJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-4-5'
+        """
+        code = "2-2-4-5"
         # 2 For group join
         # 2 For group identifiers
         # 4 For clause- for the moment only op cross_join

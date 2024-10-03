@@ -16,10 +16,10 @@ class DWIHelper(TestHelper):
 
 class Membership(DWIHelper):
     """
-        Membership tests for datasets without identifiers
+    Membership tests for datasets without identifiers
     """
 
-    classTest = 'DWIHelper.Membership'
+    classTest = "DWIHelper.Membership"
 
     def test_1(self):
         """
@@ -29,11 +29,12 @@ class Membership(DWIHelper):
         Git Branch: feat-200-DWI-membership.
         Goal: Check Result.
         """
-        code = 'GL_200-1'
+        code = "GL_200-1"
         number_inputs = 1
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_1(self):
         """
@@ -43,12 +44,13 @@ class Membership(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_1'
+        code = "GL_218_1"
         number_inputs = 2
 
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_2(self):
         """
@@ -58,7 +60,7 @@ class Membership(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_2'
+        code = "GL_218_2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -72,12 +74,13 @@ class Membership(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_3'
+        code = "GL_218_3"
         number_inputs = 2
 
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_4(self):
         """
@@ -87,7 +90,7 @@ class Membership(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_4'
+        code = "GL_218_4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -96,10 +99,10 @@ class Membership(DWIHelper):
 
 class Aggregate(DWIHelper):
     """
-        Aggregate tests for datasets without identifiers as result
+    Aggregate tests for datasets without identifiers as result
     """
 
-    classTest = 'DWIHelper.Aggregate'
+    classTest = "DWIHelper.Aggregate"
 
     def test_1(self):
         """
@@ -109,7 +112,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_1'
+        code = "GL_62_1"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -123,7 +126,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_2'
+        code = "GL_62_2"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -137,7 +140,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_3'
+        code = "GL_62_3"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -151,7 +154,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_4'
+        code = "GL_62_4"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -165,7 +168,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_5'
+        code = "GL_62_5"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -179,7 +182,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_6'
+        code = "GL_62_6"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -193,7 +196,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_7'
+        code = "GL_62_7"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -207,7 +210,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_8'
+        code = "GL_62_8"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -221,7 +224,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_9'
+        code = "GL_62_9"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -235,7 +238,7 @@ class Aggregate(DWIHelper):
         Git Branch: feat-62-DWI-aggregate.
         Goal: Check Result.
         """
-        code = 'GL_62_10'
+        code = "GL_62_10"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -251,7 +254,7 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_5'
+        code = "GL_218_5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -265,7 +268,7 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_6'
+        code = "GL_218_6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -279,7 +282,7 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_7'
+        code = "GL_218_7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -293,7 +296,7 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_8'
+        code = "GL_218_8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -307,7 +310,7 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_9'
+        code = "GL_218_9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -321,11 +324,12 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_10'
+        code = "GL_218_10"
         number_inputs = 1
         message = "1-1-1-1"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_12(self):
         """
@@ -335,11 +339,12 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_12'
+        code = "GL_218_12"
         number_inputs = 1
         message = "1-1-1-10"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_13(self):
         """
@@ -349,19 +354,20 @@ class Aggregate(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_13'
+        code = "GL_218_13"
         number_inputs = 1
         message = "1-1-1-10"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class Clause(DWIHelper):
     """
-        Clause operator tests for datasets without identifiers as result
+    Clause operator tests for datasets without identifiers as result
     """
 
-    classTest = 'DWIHelper.Clause'
+    classTest = "DWIHelper.Clause"
 
     def test_1(self):
         """
@@ -371,7 +377,7 @@ class Clause(DWIHelper):
         Git Branch: feat-201-DWI-sub.
         Goal: Check Result.
         """
-        code = 'GL_201_1'
+        code = "GL_201_1"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -385,7 +391,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result.
         """
-        code = 'GL_202_1'
+        code = "GL_202_1"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -399,7 +405,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result.
         """
-        code = 'GL_202_2'
+        code = "GL_202_2"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -413,7 +419,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result.
         """
-        code = 'GL_202_3'
+        code = "GL_202_3"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -427,7 +433,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result.
         """
-        code = 'GL_202_4'
+        code = "GL_202_4"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -441,7 +447,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result (empty).
         """
-        code = 'GL_202_5'
+        code = "GL_202_5"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -455,7 +461,7 @@ class Clause(DWIHelper):
         Git Branch: feat-202-DWI-clause.
         Goal: Check Result (with one row).
         """
-        code = 'GL_202_6'
+        code = "GL_202_6"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -469,10 +475,9 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_14'
-        number_inputs = 1
-
-        message = "pivot not implemented"
+        # code = "GL_218_14"
+        # number_inputs = 1
+        # message = "pivot not implemented"
         # self.SemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_GL_218_15(self):
@@ -484,9 +489,9 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_15'
-        number_inputs = 1
-        message = "pivot not implemented"
+        # code = "GL_218_15"
+        # number_inputs = 1
+        # message = "pivot not implemented"
         # self.SemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_GL_218_16(self):
@@ -497,11 +502,12 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_16'
+        code = "GL_218_16"
         number_inputs = 1
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_17(self):
         """
@@ -512,11 +518,12 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_17'
+        code = "GL_218_17"
         number_inputs = 1
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_18(self):
         """
@@ -526,11 +533,12 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_18'
+        code = "GL_218_18"
         number_inputs = 1
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_19(self):
         """
@@ -540,7 +548,7 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Result.
         """
-        code = 'GL_218_19'
+        code = "GL_218_19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -550,15 +558,16 @@ class Clause(DWIHelper):
         """
         Status: OK
         Expression: DS_r := DS_1[ drop Id_1 ];
-        Description: 
+        Description:
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_20'
+        code = "GL_218_20"
         number_inputs = 1
         message = "1-1-6-2"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_21(self):
         """
@@ -568,11 +577,12 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_21'
+        code = "GL_218_21"
         number_inputs = 1
         message = "1-1-6-12"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_22(self):
         """
@@ -582,19 +592,20 @@ class Clause(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_22'
+        code = "GL_218_22"
         number_inputs = 1
         message = "1-1-1-16"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class Join(DWIHelper):
     """
-        Clause operator tests for datasets without identifiers as result
+    Clause operator tests for datasets without identifiers as result
     """
 
-    classTest = 'DWIHelper.Join'
+    classTest = "DWIHelper.Join"
 
     # DS join DWI
     def test_GL_218_23(self):
@@ -605,11 +616,12 @@ class Join(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_23'
+        code = "GL_218_23"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_25(self):
         """
@@ -619,11 +631,12 @@ class Join(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_25'
+        code = "GL_218_25"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_26(self):
         """
@@ -633,39 +646,42 @@ class Join(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_26'
+        code = "GL_218_26"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_27(self):
         """
         Status: OK
         Expression: DS_r := cross_join (DS_1, DWI_1 as dw rename dw#BLNC_SHT_TTL_CRRNCY to col1, dw#ANNL_TRNVR_CRRNCY to col2, dw#NMBR_EMPLYS to col3);
-        Description: 
+        Description:
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_27'
+        code = "GL_218_27"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_218_28(self):
         """
         Status: OK
         Expression: DS_r := cross_join (DS_1, DWI_1);
-        Description: 
+        Description:
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_28'
+        code = "GL_218_28"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     # DWI join DWI
 
@@ -677,8 +693,9 @@ class Join(DWIHelper):
         Git Issue: #218.
         Goal: Check Exception.
         """
-        code = 'GL_218_29'
+        code = "GL_218_29"
         number_inputs = 2
         message = "1-3-27"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )

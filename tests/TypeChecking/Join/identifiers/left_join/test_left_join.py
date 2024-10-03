@@ -19,10 +19,10 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
     Group 2
     """
 
-    classTest = 'left_join.LeftJoinIdentifiersTypeChecking'
+    classTest = "left_join.LeftJoinIdentifiersTypeChecking"
 
     def test_1(self):
-        '''
+        """
         LEFT JOIN OPERATOR
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 );
@@ -30,8 +30,8 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Result.
-        '''
-        code = '2-2-2-1'
+        """
+        code = "2-2-2-1"
         # 2 For group join
         # 2 For group identifiers
         # 2 For clause- for the moment only op left_join
@@ -62,7 +62,7 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
     #     self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_message=message)
 
     def test_3(self):
-        '''
+        """
         LEFT JOIN OPERATOR
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 );
@@ -70,8 +70,8 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-2-3'
+        """
+        code = "2-2-2-3"
         # 2 For group join
         # 2 For group identifiers
         # 2 For clause- for the moment only op left_join
@@ -81,7 +81,7 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_4(self):
-        '''
+        """
         LEFT JOIN OPERATOR
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 );
@@ -89,8 +89,8 @@ class LeftJoinIdentifiersTypeChecking(TestLeftJoinTypeChecking):
         Jira issue: VTLEN 564.
         Git Branch: feat-VTLEN-564-Join-operators-type-checking.
         Goal: Check Exception.
-        '''
-        code = '2-2-2-4'
+        """
+        code = "2-2-2-4"
         number_inputs = 2
         message = "0-1-1-12"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

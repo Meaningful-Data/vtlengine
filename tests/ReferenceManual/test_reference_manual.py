@@ -45,13 +45,13 @@ from vtlengine.files.parser import load_datapoints
 import warnings
 
 base_path = Path(__file__).parent
-input_dp_dir = base_path / 'data/DataSet/input'
-reference_dp_dir = base_path / 'data/DataSet/output'
-input_ds_dir = base_path / 'data/DataStructure/input'
-reference_ds_dir = base_path / 'data/DataStructure/output'
-vtl_dir = base_path / 'data/vtl'
-vtl_def_operators_dir = base_path / 'data/vtl_defined_operators'
-value_domain_dir = base_path / 'data/ValueDomain'
+input_dp_dir = base_path / "data/DataSet/input"
+reference_dp_dir = base_path / "data/DataSet/output"
+input_ds_dir = base_path / "data/DataStructure/input"
+reference_ds_dir = base_path / "data/DataStructure/output"
+vtl_dir = base_path / "data/vtl"
+vtl_def_operators_dir = base_path / "data/vtl_defined_operators"
+value_domain_dir = base_path / "data/ValueDomain"
 
 general_operators = list(range(1, 6))
 join_operators = list(range(6, 13))
@@ -109,7 +109,7 @@ params = itertools.chain(
     analytic_operators,
     validation_operators,
     conditional_operators,
-    clause_operators
+    clause_operators,
 )
 
 params = [x for x in list(params) if x not in exceptions_tests]
@@ -117,14 +117,14 @@ params = [x for x in list(params) if x not in exceptions_tests]
 
 @pytest.fixture
 def ast(input_datasets, param):
-    with open(os.path.join(vtl_dir, f'RM{param:03d}.vtl'), 'r') as f:
+    with open(os.path.join(vtl_dir, f"RM{param:03d}.vtl"), "r") as f:
         vtl = f.read()
     return create_ast(vtl)
 
 
 @pytest.fixture
 def ast_defined_operators(input_datasets, param):
-    with open(os.path.join(vtl_def_operators_dir, f'RM{param:03d}.vtl'), 'r') as f:
+    with open(os.path.join(vtl_def_operators_dir, f"RM{param:03d}.vtl"), "r") as f:
         vtl = f.read()
     return create_ast(vtl)
 
@@ -133,7 +133,7 @@ def ast_defined_operators(input_datasets, param):
 def value_domains():
     vds = {}
     for f in os.listdir(value_domain_dir):
-        with open(os.path.join(value_domain_dir, f), 'r') as file:
+        with open(os.path.join(value_domain_dir, f), "r") as file:
             value_domain = ValueDomain.from_json(file.read())
             vds[value_domain.name] = value_domain
     return vds
@@ -141,47 +141,61 @@ def value_domains():
 
 @pytest.fixture
 def input_datasets(param):
-    prefix = f'{param}-'
-    suffix_csv = '.csv'
-    datapoints = [f.removeprefix(prefix).removesuffix(suffix_csv) for f in os.listdir(input_dp_dir)
-                  if f.lower().startswith(prefix)]
-    datastructures = [f'{input_ds_dir}/{f}' for f in os.listdir(input_ds_dir)
-                      if f.lower().startswith(prefix)]
+    prefix = f"{param}-"
+    suffix_csv = ".csv"
+    datapoints = [
+        f.removeprefix(prefix).removesuffix(suffix_csv)
+        for f in os.listdir(input_dp_dir)
+        if f.lower().startswith(prefix)
+    ]
+    datastructures = [
+        f"{input_ds_dir}/{f}" for f in os.listdir(input_ds_dir) if f.lower().startswith(prefix)
+    ]
     return datapoints, datastructures
 
 
 @pytest.fixture
 def reference_datasets(param):
-    prefix = f'{param}-'
-    suffix_csv = '.csv'
-    datapoints = [f.removeprefix(prefix).removesuffix(suffix_csv) for f in
-                  os.listdir(reference_dp_dir)
-                  if f.lower().startswith(prefix)]
-    datastructures = [f'{reference_ds_dir}/{f}' for f in os.listdir(reference_ds_dir)
-                      if f.lower().startswith(prefix)]
+    prefix = f"{param}-"
+    suffix_csv = ".csv"
+    datapoints = [
+        f.removeprefix(prefix).removesuffix(suffix_csv)
+        for f in os.listdir(reference_dp_dir)
+        if f.lower().startswith(prefix)
+    ]
+    datastructures = [
+        f"{reference_ds_dir}/{f}"
+        for f in os.listdir(reference_ds_dir)
+        if f.lower().startswith(prefix)
+    ]
     return datapoints, datastructures
 
 
 def load_dataset(dataPoints, dataStructures, dp_dir, param):
     datasets = {}
     for f in dataStructures:
-        with open(f, 'r') as file:
+        with open(f, "r") as file:
             structures = json.load(file)
 
-        for dataset_json in structures['datasets']:
-            dataset_name = dataset_json['name']
+        for dataset_json in structures["datasets"]:
+            dataset_name = dataset_json["name"]
             components = {
-                component['name']: Component(name=component['name'],
-                                             data_type=SCALAR_TYPES[component['type']],
-                                             role=Role(component['role']),
-                                             nullable=component['nullable'])
-                for component in dataset_json['DataStructure']}
+                component["name"]: Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
+                for component in dataset_json["DataStructure"]
+            }
             if dataset_name not in dataPoints:
                 data = pd.DataFrame(columns=components.keys())
             else:
-                data = load_datapoints(components=components,
-                                       dataset_name=dataset_name,
-                                       csv_path=Path(f'{dp_dir}/{param}-{dataset_name}.csv'))
+                data = load_datapoints(
+                    components=components,
+                    dataset_name=dataset_name,
+                    csv_path=Path(f"{dp_dir}/{param}-{dataset_name}.csv"),
+                )
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
     if len(datasets) == 0:
@@ -189,7 +203,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
-@pytest.mark.parametrize('param', params)
+@pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -202,9 +216,10 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     #     pass
 
 
-@pytest.mark.parametrize('param', params)
-def test_reference_defined_operators(input_datasets, reference_datasets,
-                                     ast_defined_operators, param, value_domains):
+@pytest.mark.parametrize("param", params)
+def test_reference_defined_operators(
+    input_datasets, reference_datasets, ast_defined_operators, param, value_domains
+):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
@@ -213,11 +228,12 @@ def test_reference_defined_operators(input_datasets, reference_datasets,
     assert result == reference_datasets
 
 
-@pytest.mark.parametrize('param', exceptions_tests)
+@pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
     with pytest.raises(Exception, match="Operation not allowed for multimeasure datasets"):
-        result = interpreter.visit(ast)
+        # result = interpreter.visit(ast) # to match with F841
+        interpreter.visit(ast)

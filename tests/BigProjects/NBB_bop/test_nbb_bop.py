@@ -15,20 +15,36 @@ class BOPHelper(TestHelper):
 
 
 class BOP(BOPHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'NBB_bop.BOP'
+    classTest = "NBB_bop.BOP"
 
     def test_VALIDATIONS(self):
-        '''
-
-        '''
-        code = 'VALIDATIONS'
+        """ """
+        code = "VALIDATIONS"
         number_inputs = 1
-        references_names = ['1', '2', '3', '4', '5', '6',
-                            '7', '8', '9', '10', '11', '12', '13',
-                            '14', '15', '16', '17', '18', '19', '20', '21']
+        references_names = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+        ]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
