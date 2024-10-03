@@ -82,9 +82,9 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_partial_is_valid: Optional[List[bool]] = None
     hr_condition: Optional[Dict[str, str]] = None
     # DL
-    dprs: Dict[str, Dict[str, Any]] = None
-    udos: Dict[str, Dict[str, Any]] = None
-    hrs: Dict[str, Dict[str, Any]] = None
+    dprs: Dict[str, Optional[Dict[str, Any]]] = None
+    udos: Dict[str, Optional[Dict[str, Any]]] = None
+    hrs: Dict[str, Optional[Dict[str, Any]]] = None
 
     # **********************************
     # *                                *
@@ -1101,10 +1101,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
-        if self.ruleset_dataset.data is None:
-            self.rule_data = None
-        else:
-            self.rule_data = self.ruleset_dataset.data.copy()
+        if self.ruleset_dataset is not None:
+            if self.ruleset_dataset.data is None:
+                self.rule_data = None
+            else:
+                self.rule_data = self.ruleset_dataset.data.copy()
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
@@ -1305,10 +1306,9 @@ class InterpreterAnalyzer(ASTTemplate):
         self.then_condition_dataset.append(then_dataset)
         self.else_condition_dataset.append(else_dataset)
 
-    def merge_then_else_datasets(self, left_operand: Dataset | DataComponent, right_operand):
+    def merge_then_else_datasets(self, left_operand: Any, right_operand: Any) -> Any:
         merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE[
-            'then'] else (
-            self.else_condition_dataset.pop())
+            'then'] else (self.else_condition_dataset.pop())
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, Dataset | DataComponent):
@@ -1338,7 +1338,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
 
-    def visit_Identifier(self, node: AST.Identifier) -> AST.AST:
+    def visit_Identifier(self, node: AST.Identifier) -> Union[AST.AST, Dataset]:
         """
         Identifier: (value)
 
@@ -1356,7 +1356,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.datasets[node.value]
         return node.value
 
-    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> AST.AST:
+    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> Union[AST.AST, Dataset]:
         """
         DefIdentifier: (value, kind)
 

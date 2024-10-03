@@ -135,10 +135,10 @@ def semantic_analysis(script: Union[str, Path],
 
 def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
         datapoints: Union[dict, str, Path, List[Union[str, Path]]],
-        value_domains: Union[dict, Path] = None, external_routines: Union[str, Path] = None,
+        value_domains: Optional[Union[dict, Path]] = None, external_routines: Optional[Union[str, Path]] = None,
         time_period_output_format: str = "vtl",
         return_only_persistent=False,
-        output_folder: Optional[Union[str, Path]] = None):
+        output_folder: Optional[Union[str, Path]] = None) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.

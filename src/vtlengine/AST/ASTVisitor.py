@@ -6,6 +6,7 @@ Description
 -----------
 Node Dispatcher.
 """
+from typing import Any
 
 
 class NodeVisitor(object):
@@ -13,7 +14,7 @@ class NodeVisitor(object):
 
     """
 
-    def visit(self, node):
+    def visit(self, node: Any):
         """
 
         """

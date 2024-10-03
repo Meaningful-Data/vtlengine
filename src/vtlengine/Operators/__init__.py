@@ -18,6 +18,7 @@ else:
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
+ALL_DATA_TYPES = Union[ScalarType, Dataset, DataComponent, Scalar, ScalarSet]
 
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
@@ -31,14 +32,14 @@ only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
-    op = None
-    py_op = None
-    spark_op = None
-    type_to_check = None
-    return_type = None
+    op: str = None
+    py_op: str = None
+    spark_op: str = None
+    type_to_check: ScalarType = None
+    return_type: ScalarType = None
 
     @classmethod
-    def analyze(cls, *args, **kwargs):
+    def analyze(cls, *args: Any, **kwargs: Any):
         if only_semantic:
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
