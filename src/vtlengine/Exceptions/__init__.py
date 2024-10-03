@@ -60,7 +60,7 @@ class SemanticError(VTLEngineException):
     output_message = " Please check transformation with output dataset "
     comp_code = None
 
-    def __init__(self, code, comp_code=None, **kwargs):
+    def __init__(self, code: str, comp_code=None, **kwargs):
         if dataset_output:
             message = centralised_messages[code].format(**kwargs) + self.output_message + str(
                 dataset_output)
