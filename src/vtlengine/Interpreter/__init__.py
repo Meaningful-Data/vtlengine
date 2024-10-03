@@ -770,7 +770,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(duplicates) > 0:
                 raise SemanticError("1-3-9", duplicates=duplicates)
             for element in elements:
-                if type(element) != type(elements[0]):
+                if type(element) is not type(elements[0]):
                     raise Exception("All elements in a set must be of the same type")
             if len(elements) == 0:
                 raise Exception("A set must contain at least one element")
