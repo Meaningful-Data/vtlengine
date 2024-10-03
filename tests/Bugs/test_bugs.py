@@ -761,7 +761,7 @@ class ComparisonBugs(BugHelper):
     def test_GL_169_12(self):
         """
         Status: BUG
-        Expression: DS_r := DS_1 [ calc m1 := match_characters(DS_1#Me_1, "^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])") ];
+        Expression: DS_r := DS_1 [ calc m1 := match_characters(DS_1#Me_1, r"^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])") ];
         Description: Check unicode regex.
         Git Issue: bug-185-match-unicode.
         Goal: Check Result.

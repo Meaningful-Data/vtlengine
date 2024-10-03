@@ -979,8 +979,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
 
-    # noqa: C901
-    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
+    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
             if len(node.params) != 0:
