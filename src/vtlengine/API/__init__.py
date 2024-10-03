@@ -52,6 +52,15 @@ def _parser(stream: CommonTokenStream) -> Any:
 def create_ast(text: str) -> Start:
     """
     Function that creates the AST object.
+
+    Args:
+        text: Vtl string expression that will be used to create the AST object.
+
+    Returns:
+        The ast object.
+
+    Raises:
+        Exception: When the vtl syntax expression is wrong.
     """
     stream = _lexer(text)
     cst = _parser(stream)
@@ -104,7 +113,7 @@ def semantic_analysis(script: Union[str, Path],
         The computed datasets.
 
     Raises:
-        Exception: If the files have the wrong format, or they do not exist, or the Paths are invalid.
+        Exception: If the files have the wrong format, or they do not exist, or their Paths are invalid.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -216,7 +225,7 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
        The datasets produced, without data if output_folder is defined.
 
     Raises:
-        Exception: Invalid
+        Exception: If the files have the wrong format, or they do not exist, or their Paths are invalid.
 
 
     """

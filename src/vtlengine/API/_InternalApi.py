@@ -148,7 +148,8 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
         data_structure: Dict, Path or a List of dicts or Paths.
 
     Returns:
-        The datastructure.
+        The datastructure as a dict or a list of datastructures as dicts. These dicts will have as keys the name, role,
+        type and nullable of the data contained in the dataset.
 
     Raises:
         Exception: If the Path is invalid or datastructure has a wrong format.
@@ -174,7 +175,7 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
         datapoints: Dict, Path or a List of Paths.
 
     Returns:
-        A dict with the structure and a pandas dataframe.
+        A dict with the structure and a pandas dataframe with the data.
 
     Raises:
         Exception: If the Path is wrong or the file is invalid.
@@ -213,7 +214,8 @@ def load_vtl(input: Union[str, Path]):
         input: String or Path of the vtl expression.
 
     Returns:
-        If it is a string, it will return the input. If it is a Path, it will return the expression contained in the file.
+        If it is a string, it will return the input as a string. If it is a Path, it will return the expression contained
+        in the file as a string.
 
     Raises:
         Exception: If the vtl does not exist, if the Path is wrong, or if it is not a vtl file.
@@ -246,7 +248,7 @@ def load_value_domains(input: Union[dict, Path]):
         input: Dict or Path of the json file that contains the value domains data.
 
     Returns:
-        A dictionary with the value domains data.
+        A dictionary with the value domains data, or a list of dictionaries with them.
 
     Raises:
         Exception: If the value domains file is wrong, the Path is invalid, or the value domains file does not exist.
@@ -278,10 +280,10 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
         input: Dict or Path of the sql file that contains the external routine data.
 
     Returns:
-        A dictionary with the external routine data.
+        A dictionary with the external routine data, or a list with the dictionaries from the Path given.
 
     Raises:
-        Exception: If the sql file does not exist, the Path is wrong, or the file is not an sql one.
+        Exception: If the sql file does not exist, the Path is wrong, or the file is not a sql one.
     """
     external_routines = {}
     if isinstance(input, dict):
