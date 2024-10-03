@@ -655,7 +655,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             raise SemanticError("1-3-5", op_type="MulOp", node_op=node.op)
 
-    def visit_VarID(self, node: AST.VarID) -> Any:
+    def visit_VarID(self, node: AST.VarID) -> Any: # noqa C901
         if self.is_from_assignment:
             return node.value
         # Having takes precedence as it is lower in the AST
@@ -979,7 +979,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> None:
+    def visit_ParamOp(self, node: AST.ParamOp) -> None: # noqa C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
             if len(node.params) != 0:
@@ -1591,7 +1591,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.hr_partial_is_valid.append(partial_is_valid)
         return Dataset(name=name, components=result_components, data=df)
 
-    def visit_UDOCall(self, node: AST.UDOCall) -> None:
+    def visit_UDOCall(self, node: AST.UDOCall) -> None: # noqa C901
         if self.udos is None:
             raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
