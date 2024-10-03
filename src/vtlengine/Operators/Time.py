@@ -439,7 +439,7 @@ class Time_Shift(Binary):
         data_type = result.components[cls.time_id].data_type
 
         if data_type == Date:
-            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].apply(cls.parse_date)))
+            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].map(cls.parse_date, na_action='ignore')))
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == Time:
             freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
