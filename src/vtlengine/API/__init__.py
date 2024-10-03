@@ -94,16 +94,17 @@ def semantic_analysis(script: Union[str, Path],
 
     This function has the following params:
 
-    :param script: String or Path of the vtl expression.
+    Args:
+        script: String or Path of the vtl expression.
+        data_structures: Dict or Path (file or folder), or List of Dicts or Paths with the data_structures json files.
+        value_domains: Dict or Path of the value_domains json files. (default: None)
+        external_routines: String or Path of the external routines sql files. (default: None)
 
-    :param data_structures: Dict or Path (file or folder), \
-    or List of Dicts or Paths with the data_structures json files.
+    Returns:
+        The computed datasets.
 
-    :param value_domains: Dict or Path of the value_domains json files. (default: None)
-
-    :param external_routines: String or Path of the external routines sql files. (default: None)
-
-    :return: The computed datasets.
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, or the Paths are invalid.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -190,26 +191,33 @@ def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[
 
     This function has the following params:
 
-    :param script: String or Path with the vtl expression.
+    Args:
+        script: String or Path with the vtl expression.
 
-    :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-    :param datapoints: Dict, Path, S3 URI or List of S3URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3URIs or Paths with data.
 
-    :param value_domains: Dict or Path of the value_domains json files. (default:None)
+        value_domains: Dict or Path of the value_domains json files. (default:None)
 
-    :param external_routines: String or Path of the external routines sql files. (default: None)
+        external_routines: String or Path of the external routines sql files. (default: None)
 
-    :param time_period_output_format: String with the possible values \
-    ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
-    Time Period components.
+        time_period_output_format: String with the possible values \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        Time Period components.
 
-    :param return_only_persistent: If True, run function will only return the results of \
-    Persistent Assignments. (default: False)
+        return_only_persistent: If True, run function will only return the results of \
+        Persistent Assignments. (default: False)
 
-    :param output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path or S3 URI to the output folder. (default: None)
 
-    :return: The datasets produced, without data if output_folder is defined.
+
+    Returns:
+       The datasets produced, without data if output_folder is defined.
+
+    Raises:
+        Exception: Invalid
+
 
     """
     # AST generation

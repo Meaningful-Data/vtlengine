@@ -143,6 +143,15 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
 def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     """
     Loads multiple datasets.
+
+    Args:
+        data_structure: Dict, Path or a List of dicts or Paths.
+
+    Returns:
+        The datastructure.
+
+    Raises:
+        Exception: If the Path is invalid or datastructure has a wrong format.
     """
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure)
@@ -158,8 +167,17 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
 def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
                             datapoints: Optional[Union[dict, Path, List[Path]]] = None):
     """
-    Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
-    structure and a pandas dataframe.
+    Loads the dataset structures and fills them with the data contained in the datapoints.
+
+    Args:
+        data_structures: Dict, Path or a List of dicts or Paths.
+        datapoints: Dict, Path or a List of Paths.
+
+    Returns:
+        A dict with the structure and a pandas dataframe.
+
+    Raises:
+        Exception: If the Path is wrong or the file is invalid.
     """
     datasets = load_datasets(data_structures)
     if datapoints is None:
@@ -191,10 +209,14 @@ def load_vtl(input: Union[str, Path]):
     """
     Reads the vtl expression.
 
-    :param input: String or Path of the vtl expression.
+    Args:
+        input: String or Path of the vtl expression.
 
-    :return: If it is a string, it will return the input. If it is a Path, it will return the expression contained in
-    the file.
+    Returns:
+        If it is a string, it will return the input. If it is a Path, it will return the expression contained in the file.
+
+    Raises:
+        Exception: If the vtl does not exist, if the Path is wrong, or if it is not a vtl file.
     """
     if isinstance(input, str):
         return input
@@ -220,9 +242,14 @@ def load_value_domains(input: Union[dict, Path]):
     """
     Loads the value domains.
 
-    :param input: Dict or Path of the json file that contains the value domains data.
+    Args:
+        input: Dict or Path of the json file that contains the value domains data.
 
-    :return: A dictionary with the value domains data.
+    Returns:
+        A dictionary with the value domains data.
+
+    Raises:
+        Exception: If the value domains file is wrong, the Path is invalid, or the value domains file does not exist.
     """
     if isinstance(input, dict):
         vd = ValueDomain.from_dict(input)
@@ -247,9 +274,14 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[
     """
     Load the external routines.
 
-    :param input: Dict or Path of the sql file that contains the external routine data.
+    Args:
+        input: Dict or Path of the sql file that contains the external routine data.
 
-    :return: A dictionary with the external routine data.
+    Returns:
+        A dictionary with the external routine data.
+
+    Raises:
+        Exception: If the sql file does not exist, the Path is wrong, or the file is not an sql one.
     """
     external_routines = {}
     if isinstance(input, dict):
