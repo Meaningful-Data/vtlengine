@@ -63,6 +63,15 @@ def _parser(stream: CommonTokenStream) -> Any:
 def create_ast(text: str) -> Start:
     """
     Function that creates the AST object.
+
+    Args:
+        text: Vtl string expression that will be used to create the AST object.
+
+    Returns:
+        The ast object.
+
+    Raises:
+        Exception: When the vtl syntax expression is wrong.
     """
     stream = _lexer(text)
     cst = _parser(stream)
@@ -108,16 +117,19 @@ def semantic_analysis(
 
     This function has the following params:
 
-    :param script: String or Path of the vtl expression.
+    Args:
+        script: String or Path of the vtl expression.
+        data_structures: Dict or Path (file or folder), \
+        or List of Dicts or Paths with the data structures JSON files.
+        value_domains: Dict or Path of the value domains JSON files. (default: None)
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
-    :param data_structures: Dict or Path (file or folder), \
-    or List of Dicts or Paths with the data structures JSON files.
+    Returns:
+        The computed datasets.
 
-    :param value_domains: Dict or Path of the value domains JSON files. (default: None)
-
-    :param external_routines: String or Path of the external routines SQL files. (default: None)
-
-    :return: The computed datasets.
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -217,26 +229,33 @@ def run(
 
     This function has the following params:
 
-    :param script: String or Path with the vtl expression.
+    Args:
+        script: String or Path with the vtl expression.
 
-    :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-    :param datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
 
-    :param value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path of the value domains JSON files. (default:None)
 
-    :param external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
-    :param time_period_output_format: String with the possible values \
-    ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
-    Time Period components.
+        time_period_output_format: String with the possible values \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        Time Period components.
 
-    :param return_only_persistent: If True, run function will only return the results of \
-    Persistent Assignments. (default: False)
+        return_only_persistent: If True, run function will only return the results of \
+        Persistent Assignments. (default: False)
 
-    :param output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path or S3 URI to the output folder. (default: None)
 
-    :return: The datasets are produced without data if the output folder is defined.
+
+    Returns:
+       The datasets are produced without data if the output folder is defined.
+
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
 
     """
     # AST generation
