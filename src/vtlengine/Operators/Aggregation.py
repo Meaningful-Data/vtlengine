@@ -176,7 +176,8 @@ class Aggregation(Operator.Unary):
 
         if len(measure_names) == 0 and cls.op == COUNT:
             if grouping_names is not None:
-                query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping} {having_expression}"
+                query = (f"SELECT {', '.join(grouping_names)}, COUNT() AS "
+                         f"int_var from df {grouping} {having_expression}")
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
             return duckdb.query(query).to_df()
@@ -195,7 +196,8 @@ class Aggregation(Operator.Unary):
                 else:
                     functions += f"{cls.py_op}({e}) AS {e}, "
             if grouping_names is not None and len(grouping_names) > 0:
-                query = f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} from df {grouping} {having_expression}"
+                query = (f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
+                         f"from df {grouping} {having_expression}")
             else:
                 query = f"SELECT {functions[:-2]} from df"
 

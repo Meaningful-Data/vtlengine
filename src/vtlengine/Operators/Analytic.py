@@ -118,8 +118,8 @@ class Analytic(Operator.Unary):
     ):
         """Annotation class
 
-        It is used to analyze the attributes specified bellow ensuring that the type of data is the correct one to perform
-        the operation.
+        It is used to analyze the attributes specified bellow ensuring that the
+        type of data is the correct one to perform the operation.
 
         Attributes:
             identifier_names: List with the id names.

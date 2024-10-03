@@ -85,13 +85,16 @@ class Operator:
     @classmethod
     def modify_measure_column(cls, result: Dataset) -> None:
         """
-        If an Operator change the data type of the Variable it is applied to (e.g., from string to number),
-        the result Data Set cannot maintain this Variable as it happens in the previous cases,
-        because a Variable cannot have different data types in different Data Sets.
-        As a consequence, the converted variable cannot follow the same rules described in the sections above and must be replaced,
-        in the result Data Set, by another Variable of the proper data type.
-        For sake of simplicity, the operators changing the data type are allowed only on mono-measure operand Data Sets, so that the conversion happens on just one Measure.
-        A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result (the default Measure Variables are reported in the table below).
+        If an Operator change the data type of the Variable it is applied to (e.g., from string to
+        number), the result Data Set cannot maintain this Variable as it happens in the previous
+        cases, because a Variable cannot have different data types in different Data Sets.
+        As a consequence, the converted variable cannot follow the same rules described in the
+        sections above and must be replaced, in the result Data Set, by another Variable of the
+        proper data type.
+        For sake of simplicity, the operators changing the data type are allowed only on
+        mono-measure operand Data Sets, so that the conversion happens on just one Measure.
+        A default generic Measure is assigned by default to the result Data Set, depending on the
+        data type of the result (the default Measure Variables are reported in the table below).
 
         Function used by the evaluate function when a dataset is involved
         """
@@ -462,7 +465,8 @@ class Binary(Operator):
     ) -> None:
         """
         Used in dataset's validation.
-        Changes the result dataset and give us his final form (#TODO: write this explanation in a better way)
+        Changes the result dataset and give us his final form
+        (#TODO: write this explanation in a better way)
         """
         changed_allowed = cls.op in MONOMEASURE_CHANGED_ALLOWED
         is_mono_measure = len(result_dataset.get_measures()) == 1

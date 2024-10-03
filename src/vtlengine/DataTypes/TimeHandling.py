@@ -231,7 +231,8 @@ class TimePeriodHandler:
     def period_indicator(self, value: str):
         if value not in PeriodDuration():
             raise ValueError(
-                f"Cannot set period indicator as {value}. Possible values: {PeriodDuration().member_names}"
+                f"Cannot set period indicator as {value}. Possible values: "
+                f"{PeriodDuration().member_names}"
             )
         self._period_indicator = value
 
@@ -437,7 +438,8 @@ class TimeIntervalHandler:
 
 def sort_dataframe_by_period_column(data, name, identifiers_names):
     """
-    Sorts dataframe by TimePeriod period_indicator and period_number. Assuming all values are present (only for identifiers)
+    Sorts dataframe by TimePeriod period_indicator and period_number.
+    Assuming all values are present (only for identifiers)
     """
     new_component_name = "@period_number"
 
@@ -513,60 +515,6 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler):
 
     return period_range
 
-
-def period_to_date(year, period_indicator, period_number, start=False):
-    if period_indicator == "A":
-        if start:
-            return date(year, 1, 1)
-        else:
-            return date(year, 12, 31)
-    if period_indicator == "S":
-        if period_number == 1:
-            if start:
-                return date(year, 1, 1)
-            else:
-                return date(year, 6, 30)
-        else:
-            if start:
-                return date(year, 7, 1)
-            else:
-                return date(year, 12, 31)
-    if period_indicator == "Q":
-        if period_number == 1:
-            if start:
-                return date(year, 1, 1)
-            else:
-                return date(year, 3, 31)
-        elif period_number == 2:
-            if start:
-                return date(year, 4, 1)
-            else:
-                return date(year, 6, 30)
-        elif period_number == 3:
-            if start:
-                return date(year, 7, 1)
-            else:
-                return date(year, 9, 30)
-        else:
-            if start:
-                return date(year, 10, 1)
-            else:
-                return date(year, 12, 31)
-    if period_indicator == "M":
-        if start:
-            return date(year, period_number, 1)
-        else:
-            day = int(calendar.monthrange(year, period_number)[1])
-            return date(year, period_number, day)
-    if period_indicator == "W":  # 0 for Sunday, 1 for Monday in %w
-        if start:
-            return dt.strptime(f"{year}-W{period_number}-1", "%G-W%V-%w").date()
-        else:
-            return dt.strptime(f"{year}-W{period_number}-0", "%G-W%V-%w").date()
-    if period_indicator == "D":
-        return dt.strptime(f"{year}-D{period_number}", "%Y-D%j").date()
-
-    raise ValueError(f"Invalid Period Indicator {period_indicator}")
 
 
 def check_max_date(str_: str):

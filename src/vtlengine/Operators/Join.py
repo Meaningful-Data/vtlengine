@@ -360,7 +360,8 @@ class Apply(Operator):
         ]
         if len(set(left_components) & set(right_components)) == 0:
             raise Exception(
-                f"{child.left.value} and {child.right.value} has not any match on dataset components"
+                f"{child.left.value} and {child.right.value} "
+                f"has not any match on dataset components"
             )
 
     @classmethod

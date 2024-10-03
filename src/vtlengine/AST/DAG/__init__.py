@@ -155,7 +155,8 @@ class DAGAnalyzer(ASTTemplate):
                         error_keys[aux_v1] = dag.dependencies[aux_v1]
                         break
             raise Exception(
-                "Vtl Script contains Cycles, no DAG established.\nSuggestion {}, more_info:{}".format(
+                "Vtl Script contains Cycles, no DAG established.\nSuggestion {}, "
+                "more_info:{}".format(
                     error, error_keys
                 )
             ) from None
@@ -276,7 +277,8 @@ class DAGAnalyzer(ASTTemplate):
                     self.statementStructure()
                 )
 
-                # Count the number of statements in order to name the scope symbol table for each one.
+                # Count the number of statements in order to name the scope symbol table for
+                # each one.
                 self.numberOfStatements += 1
 
                 self.alias = []

@@ -47,20 +47,20 @@ class Expr(VtlVisitor):
     def visitExpr(self, ctx: Parser.ExprContext):
         """
         expr:
-            LPAREN expr RPAREN											            # parenthesisExpr
-               | functions                                                             # functionsExpression
-               | dataset=expr  QLPAREN  clause=datasetClause  QRPAREN                  # clauseExpr
-               | expr MEMBERSHIP simpleComponentId                                     # membershipExpr
-               | op=(PLUS|MINUS|NOT) right=expr                                        # unaryExpr
-               | left=expr op=(MUL|DIV) right=expr                                     # arithmeticExpr
-               | left=expr op=(PLUS|MINUS|CONCAT) right=expr                           # arithmeticExprOrConcat
-               | left=expr op=comparisonOperand  right=expr                            # comparisonExpr
-               | left=expr op=(IN|NOT_IN)(lists|valueDomainID)                         # inNotInExpr
-               | left=expr op=AND right=expr                                           # booleanExpr
-               | left=expr op=(OR|XOR) right=expr							            # booleanExpr
-               | IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
-               | constant														        # constantExpr
-               | varID															        # varIdExpr
+            LPAREN expr RPAREN											            # parenthesisExpr # noqa E501
+               | functions                                                             # functionsExpression # noqa E501
+               | dataset=expr  QLPAREN  clause=datasetClause  QRPAREN                  # clauseExpr # noqa E501
+               | expr MEMBERSHIP simpleComponentId                                     # membershipExpr # noqa E501
+               | op=(PLUS|MINUS|NOT) right=expr                                        # unaryExpr # noqa E501
+               | left=expr op=(MUL|DIV) right=expr                                     # arithmeticExpr # noqa E501
+               | left=expr op=(PLUS|MINUS|CONCAT) right=expr                           # arithmeticExprOrConcat # noqa E501
+               | left=expr op=comparisonOperand  right=expr                            # comparisonExpr # noqa E501
+               | left=expr op=(IN|NOT_IN)(lists|valueDomainID)                         # inNotInExpr # noqa E501
+               | left=expr op=AND right=expr                                           # booleanExpr # noqa E501
+               | left=expr op=(OR|XOR) right=expr							            # booleanExpr # noqa E501
+               | IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr # noqa E501
+               | constant														        # constantExpr # noqa E501
+               | varID															        # varIdExpr # noqa E501
         ;
         """
         ctx_list = list(ctx.getChildren())
@@ -348,7 +348,7 @@ class Expr(VtlVisitor):
 
     def visitJoinClauseWithoutUsing(self, ctx: Parser.JoinClauseWithoutUsingContext):
         """
-        joinClause: joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)? ;
+        joinClause: joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)? ; # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 
@@ -363,7 +363,7 @@ class Expr(VtlVisitor):
 
     def visitJoinBody(self, ctx: Parser.JoinBodyContext):
         """
-        joinBody: filterClause? (calcClause|joinApplyClause|aggrClause)? (keepOrDropClause)? renameClause?
+        joinBody: filterClause? (calcClause|joinApplyClause|aggrClause)? (keepOrDropClause)? renameClause? # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 
@@ -432,7 +432,7 @@ class Expr(VtlVisitor):
 
     def visitEvalAtom(self, ctx: Parser.EvalAtomContext):
         """
-        | EVAL LPAREN routineName LPAREN (varID|scalarItem)? (COMMA (varID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS evalDatasetType)? RPAREN                       # evalAtom
+        | EVAL LPAREN routineName LPAREN (varID|scalarItem)? (COMMA (varID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS evalDatasetType)? RPAREN # noqa E501                       # evalAtom
         """
         ctx_list = list(ctx.getChildren())
 
@@ -480,7 +480,7 @@ class Expr(VtlVisitor):
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
         """
-        | CAST LPAREN expr COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN                                                                                  # castExprDataset
+        | CAST LPAREN expr COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN # noqa E501                                                                          # castExprDataset
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -821,7 +821,7 @@ class Expr(VtlVisitor):
 
     def visitTimeAggAtom(self, ctx: Parser.TimeAggAtomContext):
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom
+        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExpr)? (COMMA (FIRST|LAST))? RPAREN     # timeAggAtom # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -903,9 +903,9 @@ class Expr(VtlVisitor):
 
     def visitSetFunctions(self, ctx: Parser.SetFunctionsContext):
         """
-        setExpr:     UNION LPAREN left=expr (COMMA expr)+ RPAREN                             # unionAtom
-                    | INTERSECT LPAREN left=expr (COMMA expr)+ RPAREN                       # intersectAtom
-                    | op=(SETDIFF|SYMDIFF) LPAREN left=expr COMMA right=expr RPAREN         # setOrSYmDiffAtom
+        setExpr:     UNION LPAREN left=expr (COMMA expr)+ RPAREN                             # unionAtom # noqa E501
+                    | INTERSECT LPAREN left=expr (COMMA expr)+ RPAREN                       # intersectAtom # noqa E501
+                    | op=(SETDIFF|SYMDIFF) LPAREN left=expr COMMA right=expr RPAREN         # setOrSYmDiffAtom # noqa E501
         """
         if isinstance(ctx, Parser.UnionAtomContext):
             return self.visitUnionAtom(ctx)
@@ -948,7 +948,7 @@ class Expr(VtlVisitor):
 
     def visitHierarchyFunctions(self, ctx: Parser.HierarchyFunctionsContext):
         """
-        HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER (conditionClause)? (RULE ruleComponent=componentID)? (validationMode)? (inputModeHierarchy)? outputModeHierarchy? RPAREN
+        HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER (conditionClause)? (RULE ruleComponent=componentID)? (validationMode)? (inputModeHierarchy)? outputModeHierarchy? RPAREN # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -1019,7 +1019,7 @@ class Expr(VtlVisitor):
 
     def visitValidateDPruleset(self, ctx: Parser.ValidateDPrulesetContext):
         """
-        validationDatapoint: CHECK_DATAPOINT '(' expr ',' IDENTIFIER (COMPONENTS componentID (',' componentID)*)? (INVALID|ALL_MEASURES|ALL)? ')' ;
+        validationDatapoint: CHECK_DATAPOINT '(' expr ',' IDENTIFIER (COMPONENTS componentID (',' componentID)*)? (INVALID|ALL_MEASURES|ALL)? ')' ; # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -1054,7 +1054,7 @@ class Expr(VtlVisitor):
     # TODO Not fully implemented only basic usage available.
     def visitValidateHRruleset(self, ctx: Parser.ValidateHRrulesetContext):
         """
-        CHECK_HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER conditionClause? (RULE componentID)? validationMode? inputMode? validationOutput? RPAREN 	                # validateHRruleset
+        CHECK_HIERARCHY LPAREN op=expr COMMA hrName=IDENTIFIER conditionClause? (RULE componentID)? validationMode? inputMode? validationOutput? RPAREN # noqa E501 	                # validateHRruleset
         """
 
         ctx_list = list(ctx.getChildren())
@@ -1116,7 +1116,7 @@ class Expr(VtlVisitor):
 
     def visitValidationSimple(self, ctx: Parser.ValidationSimpleContext):
         """
-        | CHECK LPAREN op=expr (codeErr=erCode)? (levelCode=erLevel)? imbalanceExpr?  output=(INVALID|ALL)? RPAREN													        # validationSimple
+        | CHECK LPAREN op=expr (codeErr=erCode)? (levelCode=erLevel)? imbalanceExpr?  output=(INVALID|ALL)? RPAREN # noqa E501													        # validationSimple
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]

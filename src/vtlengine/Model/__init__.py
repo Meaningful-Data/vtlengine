@@ -167,7 +167,8 @@ class Dataset:
             reference_comps = other.to_dict()["components"]
             if len(result_comps) != len(reference_comps):
                 print(
-                    f"Shape mismatch: result:{len(result_comps)} != reference:{len(reference_comps)}"
+                    f"Shape mismatch: result:{len(result_comps)} != "
+                    f"reference:{len(reference_comps)}"
                 )
                 if len(result_comps) < len(reference_comps):
                     print(
@@ -194,17 +195,11 @@ class Dataset:
 
         if self.data is None and other.data is None:
             return True
-        # if isinstance(self.data, SparkDataFrame):
-        #     self.data = self.data.to_pandas()
-        # if isinstance(other.data, SparkDataFrame):
-        #     other.data = other.data.to_pandas()
         if len(self.data) == len(other.data) == 0:
             assert self.data.shape == other.data.shape
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
-        # self.data = self.data.sort_values(by=self.get_identifiers_names()).reset_index(drop=True)
-        # other.data = other.data.sort_values(by=other.get_identifiers_names().sort()).reset_index(drop=True)
         sorted_identifiers = sorted(self.get_identifiers_names())
         self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
         other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)

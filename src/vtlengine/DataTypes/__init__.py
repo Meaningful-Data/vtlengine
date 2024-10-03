@@ -605,7 +605,8 @@ def binary_implicit_promotion(
             type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
             type_check=SCALAR_TYPES_CLASS_REVERSE[type_to_check],
         )
-        # raise Exception(f"Implicit cast not allowed from {left_type} and {right_type} to {type_to_check}")
+        # raise Exception(f"Implicit cast not allowed from {left_type} and
+        # {right_type} to {type_to_check}")
 
     if return_type and (
         left_type.is_included(right_implicities) or right_type.is_included(left_implicities)

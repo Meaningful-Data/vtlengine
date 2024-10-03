@@ -162,8 +162,8 @@ def load_datasets_with_data(
     datapoints: Optional[Union[dict, Path, List[Path]]] = None,
 ):
     """
-    Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
-    structure and a pandas dataframe.
+    Loads the dataset structures and fills them with the data contained in the datapoints.
+    Returns a dict with the structure and a pandas dataframe.
     """
     datasets = load_datasets(data_structures)
     if datapoints is None:
@@ -198,8 +198,8 @@ def load_vtl(input: Union[str, Path]):
 
     :param input: String or Path of the vtl expression.
 
-    :return: If it is a string, it will return the input. If it is a Path, it will return the expression contained in
-    the file.
+    :return: If it is a string, it will return the input. If it is a Path, it will
+    return the expression contained in the file.
     """
     if isinstance(input, str):
         if os.path.exists(input):
@@ -323,7 +323,8 @@ def _check_output_folder(output_folder: Union[str, Path]):
                     s3fs_obj.mkdir(output_folder)
                 except Exception:
                     raise Exception(
-                        f"Invalid output folder. S3 URI is invalid or it is not accessible: {output_folder}"
+                        f"Invalid output folder. S3 URI is invalid or it is not accessible: "
+                        f"{output_folder}"
                     )
             return
         try:

@@ -34,18 +34,18 @@ class ExprComp(VtlVisitor):
     def visitExprComponent(self, ctx: Parser.ExprComponentContext):
         """
         exprComponent:
-            LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp
-            | functionsComponents                                                                                   # functionsExpressionComp
-            | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp
-            | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp
-            | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp
-            | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp
-            | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp
-            | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp
-            | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp
-            | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp
-            | constant                                                                                              # constantExprComp
-            | componentID                                                                                           # compId
+            LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp # noqa E501
+            | functionsComponents                                                                                   # functionsExpressionComp # noqa E501
+            | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp # noqa E501
+            | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp # noqa E501
+            | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp # noqa E501
+            | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp # noqa E501
+            | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp # noqa E501
+            | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp # noqa E501
+            | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp # noqa E501
+            | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp # noqa E501
+            | constant                                                                                              # constantExprComp # noqa E501
+            | componentID                                                                                           # compId # noqa E501
         ;
         """
         ctx_list = list(ctx.getChildren())
@@ -185,12 +185,12 @@ class ExprComp(VtlVisitor):
             opt = token.text
             return ID("OPTIONAL", opt)
 
-    """______________________________________________________________________________________
+    """____________________________________________________________________________________
 
 
-                                        FunctionsComponents Definition.
+                                    FunctionsComponents Definition.
 
-            _______________________________________________________________________________________"""
+      _____________________________________________________________________________________"""
 
     def visitFunctionsComponents(self, ctx: Parser.FunctionsComponentsContext):
         """
@@ -253,7 +253,7 @@ class ExprComp(VtlVisitor):
 
     def visitCallComponent(self, ctx: Parser.CallComponentContext):
         """
-        callFunction: operatorID LPAREN (parameterComponent (COMMA parameterComponent)*)? RPAREN    # callComponent
+        callFunction: operatorID LPAREN (parameterComponent (COMMA parameterComponent)*)? RPAREN    # callComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -269,7 +269,7 @@ class ExprComp(VtlVisitor):
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
-        | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
+        | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 
@@ -320,7 +320,7 @@ class ExprComp(VtlVisitor):
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
         """
-        | CAST LPAREN exprComponent COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN         # castExprComponent
+        | CAST LPAREN exprComponent COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN         # castExprComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -607,8 +607,8 @@ class ExprComp(VtlVisitor):
 
     def visitTimeAggAtomComponent(self, ctx: Parser.TimeAggAtomComponentContext):
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))?
-        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
+        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? # noqa E501
+        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent; # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]

@@ -69,8 +69,8 @@ class Alias(Binary):
     It inherits from Binary class, and has the following class methods:
 
     Class methods:
-        Validate: Ensures the name given in the right operand is different from the name of the Dataset.
-        Evaluate: Checks if the data between both operators are the same.
+        Validate: Ensures the name given in the right operand is different from the
+        name of the Dataset. Evaluate: Checks if the data between both operators are the same.
     """
 
     @classmethod
@@ -92,7 +92,8 @@ class Eval(Unary):
     It inherits from Unary class and has the following class methods
 
     Class methods:
-        Validate: checks if the external routine name is the same as the operand name, which must be a Dataset.
+        Validate: checks if the external routine name is the same as the operand name,
+        which must be a Dataset.
         Evaluate: Checks if the operand and the output is actually a Dataset.
 
     """

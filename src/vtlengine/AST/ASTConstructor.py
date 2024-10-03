@@ -408,7 +408,7 @@ class ASTVisitor(VtlVisitor):
     # TODO Support for valueDomainSignature.
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):
         """
-        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ;
+        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ; # noqa E501
         """
         # AST_ASTCONSTRUCTOR.7
         ctx_list = list(ctx.getChildren())
@@ -476,8 +476,8 @@ class ASTVisitor(VtlVisitor):
 
     def visitCodeItemRelation(self, ctx: Parser.CodeItemRelationContext):
         """
-        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ;
-                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
+        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ; # noqa E501
+                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)* # noqa E501
 
         """
 
@@ -531,7 +531,7 @@ class ASTVisitor(VtlVisitor):
 
     def visitCodeItemRelationClause(self, ctx: Parser.CodeItemRelationClauseContext):
         """
-        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )?
+        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )? # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 

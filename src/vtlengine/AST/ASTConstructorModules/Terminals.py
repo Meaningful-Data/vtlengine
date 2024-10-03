@@ -146,7 +146,8 @@ class Terminals(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         # AST_ASTCONSTRUCTOR.48
         raise NotImplementedError(
-            "Value Domain '{}' not available for cast operator or scalar type representation or rulesets.".format(
+            "Value Domain '{}' not available for cast operator or scalar type "
+            "representation or rulesets.".format(
                 ctx_list[0].getSymbol().text
             )
         )
@@ -227,7 +228,7 @@ class Terminals(VtlVisitor):
         """
         viralAttribute: VIRAL ATTRIBUTE;
         """
-        ctx_list = list(ctx.getChildren())
+        # ctx_list = list(ctx.getChildren())
         # c = ctx_list[0]
         # token = c.getSymbol()
 
@@ -378,9 +379,9 @@ class Terminals(VtlVisitor):
 
     def visitDpRuleset(self, ctx: Parser.DpRulesetContext):
         """
-        DATAPOINT                                                                               # dataPoint
-            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
-            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
+        DATAPOINT                                                                               # dataPoint  # noqa E501
+            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd  # noqa E501
+            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar  # noqa E501
         ;
         """
         # AST_ASTCONSTRUCTOR.54
@@ -388,9 +389,9 @@ class Terminals(VtlVisitor):
 
     def visitHrRuleset(self, ctx: Parser.HrRulesetContext):
         """
-        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
-            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
-            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
+        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType  # noqa E501
+            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType  # noqa E501
+            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType  # noqa E501
         ;
         """
         # AST_ASTCONSTRUCTOR.55
@@ -503,7 +504,7 @@ class Terminals(VtlVisitor):
 
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         """
-        |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast
+        |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -687,14 +688,16 @@ class Terminals(VtlVisitor):
                 mode_1 == "preceding" and num_rows_1 == -1 and num_rows_2 == -1
             ):  # preceding and preceding (error)
                 raise Exception(
-                    f"Cannot have 2 preceding clauses with unbounded in analytic clause, line {ctx_list[3].start.line}"
+                    f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
+                    f"line {ctx_list[3].start.line}"
                 )
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
         ):  # following and following (error)
             raise Exception(
-                f"Cannot have 2 following clauses with unbounded in analytic clause, line {ctx_list[3].start.line}"
+                f"Cannot have 2 following clauses with unbounded in analytic clause, "
+                f"line {ctx_list[3].start.line}"
             )
 
         if mode_1 == mode_2:

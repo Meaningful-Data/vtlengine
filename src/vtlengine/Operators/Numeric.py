@@ -68,7 +68,7 @@ class Binary(Operator.Binary):
 
 class UnPlus(Unary):
     """
-    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator
+    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator # noqa E501
     """
 
     op = PLUS
@@ -81,7 +81,7 @@ class UnPlus(Unary):
 
 class UnMinus(Unary):
     """
-    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator
+    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator # noqa E501
     """
 
     op = MINUS
@@ -90,7 +90,7 @@ class UnMinus(Unary):
 
 class AbsoluteValue(Unary):
     """
-    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator
+    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator # noqa E501
     """
 
     op = ABS
@@ -99,7 +99,7 @@ class AbsoluteValue(Unary):
 
 class Exponential(Unary):
     """
-    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator
+    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator # noqa E501
     """
 
     op = EXP
@@ -109,7 +109,7 @@ class Exponential(Unary):
 
 class NaturalLogarithm(Unary):
     """
-    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_
+    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_ # noqa E501
     unary operator
     """
 
@@ -120,7 +120,7 @@ class NaturalLogarithm(Unary):
 
 class SquareRoot(Unary):
     """
-    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_
+    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_ # noqa E501
     unary operator
     """
 
@@ -131,7 +131,7 @@ class SquareRoot(Unary):
 
 class Ceil(Unary):
     """
-    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
+    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator # noqa E501
     """
 
     op = CEIL
@@ -141,7 +141,7 @@ class Ceil(Unary):
 
 class Floor(Unary):
     """
-    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
+    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator # noqa E501
     """
 
     op = FLOOR
@@ -151,7 +151,7 @@ class Floor(Unary):
 
 class BinPlus(Binary):
     """
-    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator
+    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator # noqa E501
     """
 
     op = PLUS
@@ -161,7 +161,7 @@ class BinPlus(Binary):
 
 class BinMinus(Binary):
     """
-    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator
+    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator # noqa E501
     """
 
     op = MINUS
@@ -171,7 +171,7 @@ class BinMinus(Binary):
 
 class Mult(Binary):
     """
-    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_
+    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_ # noqa E501
     binary operator
     """
 
@@ -181,7 +181,7 @@ class Mult(Binary):
 
 class Div(Binary):
     """
-    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_
+    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_ # noqa E501
     binary operator
     """
 
@@ -192,7 +192,7 @@ class Div(Binary):
 
 class Logarithm(Binary):
     """
-    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator
+    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator # noqa E501
     """
 
     op = LOG
@@ -210,7 +210,7 @@ class Logarithm(Binary):
 
 class Modulo(Binary):
     """
-    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator
+    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator # noqa E501
     """
 
     op = MOD
@@ -219,7 +219,7 @@ class Modulo(Binary):
 
 class Power(Binary):
     """
-    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator
+    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator # noqa E501
     """
 
     op = POWER
@@ -329,7 +329,7 @@ class Parameterized(Unary):
 
 class Round(Parameterized):
     """
-    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator
+    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator # noqa E501
     """
 
     op = ROUND
@@ -354,7 +354,7 @@ class Round(Parameterized):
 
 class Trunc(Parameterized):
     """
-    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator.
+    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator. # noqa E501
     """
 
     op = TRUNC

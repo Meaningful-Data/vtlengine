@@ -106,7 +106,8 @@ class UnaryOp(AST):
 class BinOp(AST):
     """
     BinOp: (left, op, right)
-    op types: "+", "-", "*", "/",MOD, MEMBERSHIP, PIVOT, UNPIVOT, LOG, POWER, CHARSET_MATCH, NVL, MOD
+    op types: "+", "-", "*", "/",MOD, MEMBERSHIP, PIVOT, UNPIVOT, LOG,
+    POWER, CHARSET_MATCH, NVL, MOD
     """
 
     left: AST
@@ -255,8 +256,8 @@ class Analytic(AST):
     """
     Analytic: (op, operand, partition_by, order_by, params)
 
-    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, FIRST_VALUE, LAST_VALUE, LAG,
-        LEAD, RATIO_TO_REPORT
+    op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
+        FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
     partition_by: List of components.
     order_by: List of components + mode (ASC, DESC).
