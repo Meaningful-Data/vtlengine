@@ -190,11 +190,15 @@ class Period_indicator(Unary):
 
 
 class Flow_to_stock(Unary):
-    py_op = lambda x: x.cumsum().fillna(x)
+    @staticmethod
+    def py_op(x):
+        return x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
-    py_op = lambda x: x.diff().fillna(x)
+    @staticmethod
+    def py_op(x):
+        return x.diff().fillna(x)
 
 
 class Fill_time_series(Binary):
