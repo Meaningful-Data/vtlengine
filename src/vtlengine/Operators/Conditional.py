@@ -119,7 +119,7 @@ class If(Operator):
         return result
 
     @classmethod
-    def validate(  # noqa C901
+    def validate(  # noqa: C901
         cls, condition, true_branch, false_branch
     ) -> Scalar | DataComponent | Dataset:
         nullable = False
