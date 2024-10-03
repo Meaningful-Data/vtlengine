@@ -106,7 +106,7 @@ from vtlengine.Operators.Time import (
     Time_Shift,
 )
 
-from vtlengine.AST.Grammar.tokens import *  # noqa: F405
+from vtlengine.AST.Grammar.tokens import *  # noqa: F405, F403
 
 BINARY_MAPPING = {
     # General

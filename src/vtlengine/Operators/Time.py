@@ -73,9 +73,14 @@ class Time(Operators.Operator):
     def find_min_frequency(cls, differences):
         months_deltas = differences.apply(lambda x: x.days // 30)
         days_deltas = differences.apply(lambda x: x.days)
-        min_months = min((diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None)
-        min_days = min((diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0), default=None)
-        return 'D' if min_days else 'M' if min_months else 'Y'
+        min_months = min(
+            (diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None
+        )
+        min_days = min(
+            (diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0),
+            default=None,
+        )
+        return "D" if min_days else "M" if min_months else "Y"
 
     @classmethod
     def get_frequency_from_time(cls, interval):
@@ -479,7 +484,11 @@ class Time_Shift(Binary):
         data_type = result.components[cls.time_id].data_type
 
         if data_type == Date:
-            freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].map(cls.parse_date, na_action='ignore')))
+            freq = cls.find_min_frequency(
+                cls.get_frequencies(
+                    result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
+                )
+            )
             result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
         elif data_type == Time:
             freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
@@ -507,13 +516,13 @@ class Time_Shift(Binary):
     @classmethod
     def shift_dates(cls, dates, shift_value, frequency):
         dates = pd.to_datetime(dates)
-        if frequency == 'D':
-            return dates + pd.to_timedelta(shift_value, unit='D')
-        elif frequency == 'W':
-            return dates + pd.to_timedelta(shift_value, unit='W')
-        elif frequency == 'Y':
+        if frequency == "D":
+            return dates + pd.to_timedelta(shift_value, unit="D")
+        elif frequency == "W":
+            return dates + pd.to_timedelta(shift_value, unit="W")
+        elif frequency == "Y":
             return dates + pd.DateOffset(years=shift_value)
-        elif frequency in ['M', 'Q', 'S']:
+        elif frequency in ["M", "Q", "S"]:
             return dates + pd.DateOffset(months=shift_value)
         raise SemanticError("2-1-19-2", period=frequency)
 
@@ -546,10 +555,10 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_interval(cls, interval, shift_value, frequency):
-        start_date, end_date = interval.split('/')
+        start_date, end_date = interval.split("/")
         start_date = cls.shift_dates(start_date, shift_value, frequency)
         end_date = cls.shift_dates(end_date, shift_value, frequency)
-        return f'{start_date}/{end_date}'
+        return f"{start_date}/{end_date}"
 
 
 class Time_Aggregation(Time):

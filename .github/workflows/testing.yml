@@ -31,6 +31,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: poetry install
+    - name: Run lint checks
+      run: poetry run flake8 src tests
     - name: Run tests
       run: poetry run pytest --cov
     - name: Check coverage
