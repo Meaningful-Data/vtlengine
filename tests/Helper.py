@@ -16,6 +16,8 @@ from vtlengine.files.output import (
 )
 from vtlengine.files.parser import load_datapoints
 
+import warnings
+
 
 class TestHelper(TestCase):
     """ """
@@ -129,7 +131,7 @@ class TestHelper(TestCase):
         scalars: Dict[str, Any] = None,
         only_semantic=False,
     ):
-        """ """
+        warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
         ast = create_ast(text)
@@ -205,6 +207,7 @@ class TestHelper(TestCase):
         scalars: Dict[str, Any] = None,
     ):
         # Data Loading.--------------------------------------------------------
+        warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
         input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)

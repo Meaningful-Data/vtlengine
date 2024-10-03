@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Union, List, Optional
 
+import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
@@ -23,6 +24,8 @@ from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
+
+pd.options.mode.chained_assignment = None
 
 
 class __VTLSingleErrorListener(ErrorListener):
@@ -135,7 +138,8 @@ def semantic_analysis(
     interpreter = InterpreterAnalyzer(
         datasets=structures, value_domains=vd, external_routines=ext_routines, only_semantic=True
     )
-    result = interpreter.visit(ast)
+    with pd.option_context('future.no_silent_downcasting', True):
+        result = interpreter.visit(ast)
     return result
 
 
@@ -270,7 +274,8 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
     )
-    result = interpreter.visit(ast)
+    with pd.option_context('future.no_silent_downcasting', True):
+        result = interpreter.visit(ast)
 
     # Applying time period output format
     if output_folder is None:

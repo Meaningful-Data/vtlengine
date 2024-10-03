@@ -42,6 +42,8 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Role, Dataset, ValueDomain
 from vtlengine.files.parser import load_datapoints
 
+import warnings
+
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
 reference_dp_dir = base_path / "data/DataSet/output"
@@ -204,6 +206,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
+    warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
@@ -217,6 +220,7 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
 def test_reference_defined_operators(
     input_datasets, reference_datasets, ast_defined_operators, param, value_domains
 ):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
@@ -227,6 +231,7 @@ def test_reference_defined_operators(
 @pytest.mark.parametrize("param", exceptions_tests)
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     # try:
+    warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets)
     with pytest.raises(Exception, match="Operation not allowed for multimeasure datasets"):

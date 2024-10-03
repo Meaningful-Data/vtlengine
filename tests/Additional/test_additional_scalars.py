@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,6 @@ from vtlengine.DataTypes import String, Integer, Number
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
-
 class AdditionalScalarsTests(TestHelper):
     base_path = Path(__file__).parent
     filepath_json = base_path / "data" / "DataStructure" / "input"
@@ -17,6 +17,8 @@ class AdditionalScalarsTests(TestHelper):
     filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
     ds_input_prefix = "DS_"
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 string_params = [
@@ -227,6 +229,7 @@ ds_param = [
 
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -237,6 +240,7 @@ def test_string_operators(text, reference):
 
 @pytest.mark.parametrize("text, reference", instr_op_params)
 def test_instr_op_test(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -247,6 +251,7 @@ def test_instr_op_test(text, reference):
 
 @pytest.mark.parametrize("text, exception_message", string_exception_param)
 def test_exception_string_op(text, exception_message):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -256,6 +261,7 @@ def test_exception_string_op(text, exception_message):
 
 @pytest.mark.parametrize("text, reference", numeric_params)
 def test_numeric_operators(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -269,6 +275,7 @@ def test_numeric_operators(text, reference):
 
 @pytest.mark.parametrize("text, exception_message", numeric_exception_param)
 def test_exception_numeric_op(text, exception_message):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -278,6 +285,7 @@ def test_exception_numeric_op(text, exception_message):
 
 @pytest.mark.parametrize("code, text", ds_param)
 def test_datasets_params(code, text):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     datasets = AdditionalScalarsTests.LoadInputs(code, 1)
     reference = AdditionalScalarsTests.LoadOutputs(code, ["DS_r"])
     expression = f"DS_r := {text};"
@@ -289,6 +297,7 @@ def test_datasets_params(code, text):
 
 @pytest.mark.parametrize("text, reference", boolean_params)
 def test_bool_op_test(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
@@ -298,6 +307,7 @@ def test_bool_op_test(text, reference):
 
 @pytest.mark.parametrize("text, reference", comparison_params)
 def test_comp_op_test(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
