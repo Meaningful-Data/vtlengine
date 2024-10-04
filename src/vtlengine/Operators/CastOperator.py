@@ -31,7 +31,7 @@ class Cast(Operator.Unary):
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
-    def cast_string_to_number(cls, value, mask_value) -> float:
+    def cast_string_to_number(cls, value: Any, mask_value: Any) -> float:
         """
         This method casts a string to a number, according to the mask.
 
@@ -40,7 +40,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_date(cls, value, mask_value) -> float:
+    def cast_string_to_date(cls, value: Any, mask_value: str) -> float:
         """
         This method casts a string to a number, according to the mask.
 
@@ -49,7 +49,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_duration(cls, value, mask_value) -> str:
+    def cast_string_to_duration(cls, value: Any, mask_value: str) -> str:
         """
         This method casts a string to a duration, according to the mask.
 
@@ -58,7 +58,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time_period(cls, value, mask_value) -> str:
+    def cast_string_to_time_period(cls, value: Any, mask_value: str) -> str:
         """
         This method casts a string to a time period, according to the mask.
 
@@ -67,7 +67,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, value, mask_value) -> str:
+    def cast_string_to_time(cls, value: Any, mask_value: str) -> str:
         """
         This method casts a string to a time, according to the mask.
 
@@ -76,25 +76,25 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_date_to_string(cls, value, mask_value) -> str:
+    def cast_date_to_string(cls, value: Any, mask_value: str) -> str:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_duration_to_string(cls, value, mask_value) -> str:
+    def cast_duration_to_string(cls, value: Any, mask_value: str) -> str:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_to_string(cls, value, mask_value):
+    def cast_time_to_string(cls, value: Any, mask_value: str):
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_period_to_date(cls, value, mask_value):
+    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Date:
         """
         """
         start = mask_value == "START"
@@ -103,7 +103,7 @@ class Cast(Operator.Unary):
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
     @classmethod
-    def check_mask_value(cls, from_type, to_type, mask_value) -> None:
+    def check_mask_value(cls, from_type, to_type, mask_value: str) -> None:
         """
         This method checks if the mask value is valid for the cast operation.
         """
@@ -134,51 +134,51 @@ class Cast(Operator.Unary):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
 
     @classmethod
-    def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
+    def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
         if mask_value not in ["START", "END"]:
             raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
 
     @classmethod
-    def check_mask_value_from_time_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_time_to_string(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_date_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_date_to_string(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_number(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_number(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_time(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_time(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_date(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_date(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_time_period(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_time_period(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_duration(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_duration(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_duration_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_duration_to_string(cls, mask_value: str) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_cast(cls, from_type, to_type, mask_value=None):
+    def check_cast(cls, from_type, to_type, mask_value: Optional[str] = None) -> None:
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         else:
             cls.check_without_mask(from_type, to_type)
 
     @classmethod
-    def check_with_mask(cls, from_type: ScalarType, to_type: ScalarType, mask_value: str):
+    def check_with_mask(cls, from_type: ScalarType, to_type: ScalarType, mask_value: str) -> None:
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
@@ -188,7 +188,7 @@ class Cast(Operator.Unary):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
 
     @classmethod
-    def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType):
+    def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType) -> None:
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):

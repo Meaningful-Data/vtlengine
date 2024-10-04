@@ -21,7 +21,7 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
-def _load_dataset_from_structure(structures: dict):
+def _load_dataset_from_structure(structures: dict) -> Dict[str, Dataset]:
     """
     Loads a dataset with the structure given.
     """
@@ -101,7 +101,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, str]:
     return dict_data
 
 
-def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]):
+def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
     """
@@ -140,7 +140,7 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     return _load_dataset_from_structure(structures)
 
 
-def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
     """
