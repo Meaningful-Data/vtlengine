@@ -312,7 +312,7 @@ aggrOperatorsGrouping:
         | FIRST_VALUE
         | LAST_VALUE)
         LPAREN expr OVER LPAREN (partition=partitionByClause? orderBy=orderByClause? windowing=windowingClause?)RPAREN RPAREN       #anSimpleFunction
-    | op=(LAG |LEAD)  LPAREN expr (COMMA offet=signedInteger(defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
+    | op=(LAG |LEAD)  LPAREN expr (COMMA offset=signedInteger(COMMA defaultValue=scalarItem)?)?  OVER  LPAREN (partition=partitionByClause? orderBy=orderByClause)   RPAREN RPAREN    # lagOrLeadAn
     | op=RATIO_TO_REPORT LPAREN expr OVER  LPAREN (partition=partitionByClause) RPAREN RPAREN                                                                           # ratioToReportAn
 ;
 
