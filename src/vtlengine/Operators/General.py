@@ -65,7 +65,7 @@ class Alias(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: str):
+    def validate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
             raise SemanticError("1-3-1", alias=new_name)

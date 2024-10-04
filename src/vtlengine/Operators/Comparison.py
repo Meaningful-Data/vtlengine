@@ -161,7 +161,7 @@ class In(Binary):
         return left_series.map(lambda x: x in right_series, na_action='ignore')
 
     @classmethod
-    def py_op(cls, x, y):
+    def py_op(cls, x, y) -> Any:
         if y.data_type == Null:
             return None
         return operator.contains(y, x)
@@ -216,8 +216,8 @@ class Between(Operator.Operator):
     def op_func(cls,
                 x: Optional[Union[int, float, bool, str]],
                 y: Optional[Union[int, float, bool, str]],
-                z: Optional[Union[int, float, bool, str]]):
-        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z
+                z: Optional[Union[int, float, bool, str]]) -> Optional[bool]:
+        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z # type: ignore
 
     @classmethod
     def apply_operation_component(cls, series: pd.Series,

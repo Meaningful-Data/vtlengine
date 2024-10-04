@@ -294,12 +294,13 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_if = False
 
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                comp_name = f'{node.left.value}#{self.udo_params[-1][node.right.value]}'
-            else:
-                comp_name = f'{node.left.value}#{node.right.value}'
-            ast_var_id = AST.VarID(value=comp_name)
-            return self.visit(ast_var_id)
+            if isinstance(node.left, AST.VarID) and isinstance(node.right, AST.VarID):
+                if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                    comp_name = f'{node.left.value}#{self.udo_params[-1][node.right.value]}'
+                else:
+                    comp_name = f'{node.left.value}#{node.right.value}'
+                ast_var_id = AST.VarID(value=comp_name)
+                return self.visit(ast_var_id)
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
@@ -440,26 +441,27 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Analytic(self, node: AST.Analytic) -> None:
         if self.is_from_regular_aggregation:
+            if self.regular_aggregation_dataset is None:
+                raise SemanticError("1-1-6-10")
             if node.operand is None:
                 operand = self.regular_aggregation_dataset
             else:
-                if self.regular_aggregation_dataset is not None:
-                    operand_comp = self.visit(node.operand)
-                    measure_names = self.regular_aggregation_dataset.get_measures_names()
-                    dataset_components = self.regular_aggregation_dataset.components.copy()
-                    for name in measure_names:
-                        if name != operand_comp.name:
-                            dataset_components.pop(name)
+                operand_comp = self.visit(node.operand)
+                measure_names = self.regular_aggregation_dataset.get_measures_names()
+                dataset_components = self.regular_aggregation_dataset.components.copy()
+                for name in measure_names:
+                    if name != operand_comp.name:
+                        dataset_components.pop(name)
 
-                    if self.only_semantic:
-                        data = None
-                    else:
-                        data = self.regular_aggregation_dataset.data[
-                            dataset_components.keys()]
+                if self.only_semantic:
+                    data = None
+                else:
+                    data = self.regular_aggregation_dataset.data[
+                        dataset_components.keys()]
 
-                    operand = Dataset(name=self.regular_aggregation_dataset.name,
-                                      components=dataset_components,
-                                      data=data)
+                operand = Dataset(name=self.regular_aggregation_dataset.name,
+                                  components=dataset_components,
+                                  data=data)
 
         else:
             operand: Dataset = self.visit(node.operand)
@@ -1453,10 +1455,11 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op not in self.udos:
             raise SemanticError("1-3-5", node_op=node.op, op_type='User Defined Operator')
 
+        operator = self.udos[node.op]
         signature_values = {}
 
-        operator = self.udos[node.op]
-
+        if operator is None:
+            raise SemanticError("1-3-5", node_op=node.op, op_type='User Defined Operator')
         if operator['output'] == 'Component' and not (
                 self.is_from_regular_aggregation or self.is_from_rule):
             raise SemanticError("1-3-29", op=node.op)

@@ -11,10 +11,11 @@ from vtlengine.Operators import Operator, Binary
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Scalar, DataComponent, Dataset, Role
 
-if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK", False):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 
 class If(Operator):

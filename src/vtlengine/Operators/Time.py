@@ -58,14 +58,14 @@ class Time(Operators.Operator):
         return date.fromisoformat(date_str)
 
     @classmethod
-    def get_frequencies(cls, dates):
+    def get_frequencies(cls, dates: pd.Series):
         dates = pd.to_datetime(dates)
         dates = dates.sort_values()
         deltas = dates.diff().dropna()
         return deltas
 
     @classmethod
-    def find_min_frequency(cls, differences):
+    def find_min_frequency(cls, differences: pd.Series):
         months_deltas = differences.apply(lambda x: x.days // 30)
         days_deltas = differences.apply(lambda x: x.days)
         min_months = min((diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None)
@@ -73,12 +73,12 @@ class Time(Operators.Operator):
         return 'D' if min_days else 'M' if min_months else 'Y'
 
     @classmethod
-    def get_frequency_from_time(cls, interval):
+    def get_frequency_from_time(cls, interval: str):
         start_date, end_date = interval.split('/')
         return date.fromisoformat(end_date) - date.fromisoformat(start_date)
 
     @classmethod
-    def get_date_format(cls, date_str):
+    def get_date_format(cls, date_str: Union[str, date]):
         date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
         return '%Y-%m-%d' if date.day >= 1 else '%Y-%m' if date.month >= 1 else '%Y'
 

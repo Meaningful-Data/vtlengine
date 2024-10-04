@@ -42,7 +42,7 @@ class Operator:
     return_type: ALL_SCALAR_TYPES = None
 
     @classmethod
-    def analyze(cls, *args: Any, **kwargs: Any):
+    def analyze(cls, *args: Any, **kwargs: Any) -> Any:
         if only_semantic:
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
@@ -63,7 +63,7 @@ class Operator:
         return series
 
     @classmethod
-    def cast_time_types_scalar(cls, data_type: ScalarType, value: str):
+    def cast_time_types_scalar(cls, data_type: ScalarType, value: str) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return value
         if data_type.__name__ == "TimeInterval":
@@ -111,11 +111,11 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate(cls, *args: Any, **kwargs: Any):
+    def validate(cls, *args: Any, **kwargs: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def evaluate(cls, *args: Any, **kwargs: Any):
+    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -151,7 +151,7 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def apply_return_type(cls, *args: Any):
+    def apply_return_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
 

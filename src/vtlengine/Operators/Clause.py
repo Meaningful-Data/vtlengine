@@ -126,7 +126,7 @@ class Keep(Operator):
     op = KEEP
 
     @classmethod
-    def validate(cls, operands: List[str], dataset: Dataset):
+    def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         for operand in operands:
             if operand not in dataset.get_components_names():
                 raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand,
@@ -154,7 +154,7 @@ class Drop(Operator):
     op = DROP
 
     @classmethod
-    def validate(cls, operands: List[str], dataset: Dataset):
+    def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         for operand in operands:
             if operand not in dataset.components:
                 raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset.name)
@@ -178,7 +178,7 @@ class Rename(Operator):
     op = RENAME
 
     @classmethod
-    def validate(cls, operands: List[RenameNode], dataset: Dataset):
+    def validate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         from_names = [operand.old_name for operand in operands]
         if len(from_names) != len(set(from_names)):
             duplicates = set(
@@ -212,7 +212,7 @@ class Rename(Operator):
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[RenameNode], dataset: Dataset):
+    def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.rename(columns={operand.old_name: operand.new_name
                                                            for operand in operands})
@@ -222,18 +222,18 @@ class Rename(Operator):
 class Pivot(Operator):
 
     @classmethod
-    def validate(cls, operands: List[str], dataset: Dataset):
+    def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         raise NotImplementedError
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
+    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         raise NotImplementedError
 
 
 class Unpivot(Operator):
 
     @classmethod
-    def validate(cls, operands: List[str], dataset: Dataset):
+    def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
