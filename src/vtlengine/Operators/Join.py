@@ -193,26 +193,27 @@ class Join(Operator):
             return
 
         # (Case B1)
-        for op_name, identifiers in info.items():
-            if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
-                raise SemanticError("1-1-13-4", op=cls.op, using_names=using, dataset=op_name)
-        reference_components = cls.reference_dataset.get_components_names()
-        if not set(using).issubset(reference_components):
-            raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
-                                reference=cls.reference_dataset.name)
+        if cls.reference_dataset is not None:
+            for op_name, identifiers in info.items():
+                if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
+                    raise SemanticError("1-1-13-4", op=cls.op, using_names=using, dataset=op_name)
+            reference_components = cls.reference_dataset.get_components_names()
+            if not set(using).issubset(reference_components):
+                raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
+                                    reference=cls.reference_dataset.name)
 
-        for op_name, identifiers in info.items():
-            if not set(using).issubset(identifiers):
-                # (Case B2)
-                if not set(using).issubset(reference_components):
-                    raise SemanticError("1-1-13-5", op=cls.op, using_names=using)
-            else:
-                for op in operands:
-                    if op is not cls.reference_dataset:
-                        for component in using:
-                            if component not in op.get_components_names():
-                                raise SemanticError("1-1-1-10", op=cls.op, comp_name=component,
-                                                    dataset_name=op.name)
+            for op_name, identifiers in info.items():
+                if not set(using).issubset(identifiers):
+                    # (Case B2)
+                    if not set(using).issubset(reference_components):
+                        raise SemanticError("1-1-13-5", op=cls.op, using_names=using)
+                else:
+                    for op in operands:
+                        if op is not cls.reference_dataset:
+                            for component in using:
+                                if component not in op.get_components_names():
+                                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=component,
+                                                        dataset_name=op.name)
 
 
 class InnerJoin(Join):

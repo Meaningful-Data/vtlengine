@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Union, List, Optional
+from typing import Any, Union, List, Optional, Dict
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
@@ -65,8 +65,8 @@ def create_ast(text: str) -> Start:
 
 
 def semantic_analysis(script: Union[str, Path],
-                      data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                      value_domains: Union[dict, Path] = None,
+                      data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+                      value_domains: Union[Dict[str, Any], Path] = None,
                       external_routines: Union[str, Path] = None):
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
@@ -133,9 +133,9 @@ def semantic_analysis(script: Union[str, Path],
     return result
 
 
-def run(script: Union[str, Path], data_structures: Union[dict, Path, List[Union[dict, Path]]],
-        datapoints: Union[dict, str, Path, List[Union[str, Path]]],
-        value_domains: Optional[Union[dict, Path]] = None, external_routines: Optional[Union[str, Path]] = None,
+def run(script: Union[str, Path], data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+        datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
+        value_domains: Optional[Union[Dict[str, Any], Path]] = None, external_routines: Optional[Union[str, Path]] = None,
         time_period_output_format: str = "vtl",
         return_only_persistent=False,
         output_folder: Optional[Union[str, Path]] = None) -> Any:

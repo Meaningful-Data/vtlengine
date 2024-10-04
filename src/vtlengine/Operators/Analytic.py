@@ -36,7 +36,7 @@ class Analytic(Operator.Unary):
         analyticfunc: Specify class method that returns a dataframe using the duckdb library.
         Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
     """
-    sql_op = None
+    sql_op: Optional[str] = None
 
     @classmethod
     def validate(cls, operand: Dataset,

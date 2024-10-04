@@ -6,6 +6,8 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion, SCALAR_TYPES_CLASS_REVERSE
 from vtlengine.DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
+from vtlengine.DataTypes import Integer, Number, String, Boolean, Date, \
+    Duration, TimePeriod, TimeInterval, Null
 
 from vtlengine.AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from vtlengine.Exceptions import SemanticError
@@ -18,7 +20,8 @@ else:
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
-ALL_DATA_TYPES = Union[ScalarType, Dataset, DataComponent, Scalar, ScalarSet]
+ALL_SCALAR_TYPES = Union[type[Integer], type[Number], type[String], type[Boolean], type[Date],
+                    type[Duration], type[TimePeriod], type[TimeInterval], type[Null]]
 
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
@@ -35,8 +38,8 @@ class Operator:
     op: str = None
     py_op: str = None
     spark_op: str = None
-    type_to_check: ScalarType = None
-    return_type: ScalarType = None
+    type_to_check: ALL_SCALAR_TYPES = None
+    return_type: ALL_SCALAR_TYPES = None
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any):

@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Union, Optional, Dict, List
+from typing import Union, Optional, Dict, List, Any
 
 import pandas as pd
 from s3fs import S3FileSystem
@@ -155,8 +155,8 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     return _load_datastructure_single(data_structure)
 
 
-def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, Path]]],
-                            datapoints: Optional[Union[dict, Path, List[Path]]] = None):
+def load_datasets_with_data(data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+                            datapoints: Optional[Union[Dict[str, Any], Path, List[Path]]] = None):
     """
     Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
     structure and a pandas dataframe.
@@ -187,7 +187,7 @@ def load_datasets_with_data(data_structures: Union[dict, Path, List[Union[dict, 
     return datasets, dict_datapoints
 
 
-def load_vtl(input: Union[str, Path]):
+def load_vtl(input: Union[str, Path]) -> str:
     """
     Reads the vtl expression.
 
@@ -219,7 +219,7 @@ def _load_single_value_domain(input: Path):
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[dict, Path]):
+def load_value_domains(input: Union[Dict[str, Any], Path]):
     """
     Loads the value domains.
 
@@ -245,8 +245,8 @@ def load_value_domains(input: Union[dict, Path]):
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[dict, Path]) -> Optional[
-    Dict[str, ExternalRoutine]]:
+def load_external_routines(input: Union[Dict[str, Any], Path]) -> Optional[
+    Union[Dict[str, ExternalRoutine], ExternalRoutine, str]]:
     """
     Load the external routines.
 
