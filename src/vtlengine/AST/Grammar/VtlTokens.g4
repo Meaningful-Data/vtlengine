@@ -1,38 +1,24 @@
 lexer grammar VtlTokens;
-
-
-    LPAREN:'(';
-    RPAREN:')';
-
-    QLPAREN: '[';
-    QRPAREN: ']';
-
-    GLPAREN:'{';
-    GRPAREN:'}';
-
-    EQ : '=';
-    LT : '<';
-    MT : '>';
-    ME : '>=';
-    NEQ : '<>';
-    LE : '<=';
-    PLUS : '+';
-    MINUS: '-';
-    MUL: '*';
-    DIV: '/';
-    COMMA     : ',';
-    POINTER : '->';
-    COLON             : ':';
-
   ASSIGN            : ':=';
   MEMBERSHIP		: '#';
   EVAL              : 'eval';
   IF                : 'if';
+  CASE              : 'case';
   THEN              : 'then';
   ELSE              : 'else';
   USING             : 'using';
   WITH              : 'with';
   CURRENT_DATE      : 'current_date';
+  DATEDIFF          : 'datediff';
+  DATEADD           : 'dateadd';
+  YEAR_OP           : 'year';
+  MONTH_OP          : 'month';
+  DAYOFMONTH        : 'dayofmonth';
+  DAYOFYEAR         : 'dayofyear';
+  DAYTOYEAR         : 'daytoyear';
+  DAYTOMONTH        : 'daytomonth';
+  YEARTODAY         : 'yeartoday';
+  MONTHTODAY        : 'monthtoday';
   ON                : 'on';
   DROP              : 'drop';
   KEEP              : 'keep';
@@ -47,14 +33,15 @@ lexer grammar VtlTokens;
   BETWEEN           : 'between';
   IN                : 'in';
   NOT_IN			: 'not_in';
-  NULL_CONSTANT     :'null';
   ISNULL            : 'isnull';
   EX                : 'ex';
   UNION             : 'union';
   DIFF              : 'diff';
   SYMDIFF           : 'symdiff';
   INTERSECT         : 'intersect';
+  RANDOM            : 'random';
   KEYS              : 'keys';
+  CARTESIAN_PER     : ',';
   INTYEAR           : 'intyear';
   INTMONTH          : 'intmonth';
   INTDAY            : 'intday';
@@ -101,7 +88,7 @@ lexer grammar VtlTokens;
   FILTER            : 'filter';
   MERGE             : 'merge';
   EXP               : 'exp';
-  ROLE              : 'componentRole';
+  ROLE              : 'role';
   VIRAL             : 'viral';
   CHARSET_MATCH     : 'match_characters';
   TYPE              : 'type';
@@ -109,7 +96,7 @@ lexer grammar VtlTokens;
   HIERARCHY         : 'hierarchy';
   OPTIONAL			: '_';
   INVALID			: 'invalid';
-
+  
   VALUE_DOMAIN			          : 'valuedomain';
   VARIABLE				            : 'variable';
   DATA			                  : 'data';
@@ -132,7 +119,7 @@ lexer grammar VtlTokens;
   FLOOR							          : 'floor';
   SQRT							          : 'sqrt';
   ANY							            : 'any';
-  SETDIFF						          : 'setdiff';
+  SETDIFF						          : 'setdiff';					
   STDDEV_POP					        : 'stddev_pop';
   STDDEV_SAMP							: 'stddev_samp';
   VAR_POP						          : 'var_pop';
@@ -166,7 +153,6 @@ lexer grammar VtlTokens;
   TIME_PERIOD						 :'time_period';
   NUMBER                      : 'number';
   STRING						          : 'string';
-  TIME                                    : 'time';
   INTEGER						          : 'integer';
   FLOAT                       : 'float';
   LIST							          : 'list';
@@ -196,7 +182,6 @@ lexer grammar VtlTokens;
   MAP_FROM						        : 'map_from';
   RETURNS						          : 'returns';
   PIVOT                       : 'pivot';
-  CUSTOMPIVOT                       : 'customPivot';
   UNPIVOT                     : 'unpivot';
   SUBSPACE                    : 'sub';
   APPLY                       : 'apply';
@@ -234,33 +219,54 @@ lexer grammar VtlTokens;
   HIERARCHICAL_ON_VAR		  : 'hierarchical_on_variables';
   SET						  : 'set';
   LANGUAGE					  : 'language';
-
-
-fragment
-LETTER:
-    [a-zA-Z]
-;
-
-fragment
-DIGITS0_9:
-    '0'..'9'
-;
+  
 
 INTEGER_CONSTANT
   :
-  MINUS?DIGITS0_9+
+  POSITIVE_CONSTANT
+  |NEGATIVE_CONSTANT
   ;
 
-NUMBER_CONSTANT
+POSITIVE_CONSTANT
+ :
+ ('0'..'9')+
+ ;
+
+NEGATIVE_CONSTANT
+ :
+  '-' ('0'..'9')+
+  ;
+  
+FLOAT_CONSTANT
   :
-  INTEGER_CONSTANT '.' INTEGER_CONSTANT* /*FLOATEXP?
-  | INTEGER_CONSTANT+ FLOATEXP*/
+  ('0'..'9')+ '.' ('0'..'9')* FLOATEXP?
+  | ('0'..'9')+ FLOATEXP
+  ;
+
+
+fragment
+FLOATEXP
+  :
+  (
+    'e'
+    | 'E'
+  )
+  (
+    '+'
+    | '-'
+  )?
+  ('0'..'9')+
   ;
 
 BOOLEAN_CONSTANT
   :
   'true'
   | 'false'
+  ;
+
+NULL_CONSTANT
+  :
+  'null'
   ;
 
 STRING_CONSTANT
@@ -270,81 +276,89 @@ STRING_CONSTANT
 
 IDENTIFIER
   :
-  LETTER ([A-Za-z0-9_.])*
-  | DIGITS0_9 ([A-Za-z0-9_.])+
-  | '\'' (.)*? '\''
+  LETTER
+  (
+    LETTER
+    | '_'
+    | '.'
+    | '0'..'9'
+  )*
   ;
 
-/*
+  DIGITS0_9
+    : 
+    '0'..'9'
+    ;
+  
   MONTH
-    :
+    : 
     '0' DIGITS0_9
     | '1' '0'|'1'|'2'
     ;
-
+    
   DAY
-    :
+    : 
     ('0'|'1'|'2' DIGITS0_9)
     | '3' ('0'|'1')
     ;
 
   YEAR
-    :
+    : 
     DIGITS0_9 DIGITS0_9 DIGITS0_9 DIGITS0_9
     ;
-
+    
    WEEK
     :
     ('0'|'1'|'2'|'3'|'4' DIGITS0_9)
     | '5' ('0'|'1'|'2'|'3')
     ;
-
+    
   HOURS
     :
     ('0'|'1' DIGITS0_9)
     | '2' ('0'|'1'|'2'|'3'|'4')
     ;
-
+  
   MINUTES
     :
     ('0'|'1'|'2'|'3'|'4'|'5' DIGITS0_9)
     | '6' '0'
     ;
-
+    
   SECONDS
     :
     ('0'|'1'|'2'|'3'|'4'|'5' DIGITS0_9)
     | ('6' '0')
-    ;
-*/
-/*  DATE_FORMAT
+    ; 
+    
+  DATE_FORMAT
     :
-    YEAR
+    YEAR 
     | (YEAR 'S' '1'|'2')
     | (YEAR 'Q' '1'|'2'|'3'|'4')
     | (YEAR 'M' MONTH)
     | (YEAR 'D' MONTH DAY)
     | (YEAR 'A')
-    | (YEAR MINUS 'Q' '1'|'2'|'3'|'4')
-    | (YEAR MINUS MONTH)
-    | (YEAR MINUS MONTH MINUS DAY)
+    | (YEAR '-' 'Q' '1'|'2'|'3'|'4')
+    | (YEAR '-' MONTH)
+    | (YEAR '-' MONTH '-' DAY)
     | (YEAR)
-    ;*/
-/*
+    ;
+ 
    TIME_FORMAT
     :
     YEAR ('A')?
-    | (YEAR (MINUS)? 'S' '1'|'2')
-    | (YEAR (MINUS)? 'Q' '1'|'2'|'3'|'4')
-    | (YEAR 'M'|MINUS MONTH)
+    | (YEAR ('-')? 'S' '1'|'2')
+    | (YEAR ('-')? 'Q' '1'|'2'|'3'|'4')
+    | (YEAR 'M'|'-' MONTH)
     | (YEAR 'W' WEEK)
     | (YEAR 'M' MONTH 'D' DAY)
-    | (YEAR MINUS MONTH MINUS DAY)
-    | (DAY MINUS MONTH MINUS YEAR)
-    | (MONTH MINUS DAY MINUS YEAR)
-    ;*/
+    | (YEAR '-' MONTH '-' DAY)
+    | (DAY '-' MONTH '-' YEAR)
+    | (MONTH '-' DAY '-' YEAR)
+    ; 
 
-/*TIME_UNIT
+TIME_UNIT
     :
     'A'
     |'S'
@@ -353,39 +367,67 @@ IDENTIFIER
     |'W'
     |'D'
     |'T'
-    ;*/
-
-
+    ;
+  
+    
  /* old
     TIME
     :
-    YEAR MINUS MONTH MINUS DAY ('T' HOURS ':' MINUTES ':' SECONDS 'Z')?
+    YEAR '-' MONTH '-' DAY ('T' HOURS ':' MINUTES ':' SECONDS 'Z')?
     ; */
-/*
+    
  TIME
   :
-  (YEAR MINUS MONTH MINUS DAY)'/'(YEAR MINUS MONTH MINUS DAY)
-  ;
-*/
+  (YEAR '-' MONTH '-' DAY)'/'(YEAR '-' MONTH '-' DAY)
+  ;   
 
-WS:
-    [ \t\r\n\u000C]+ ->channel(1)
+fragment
+LETTER
+  :
+  'A'..'Z'
+  | 'a'..'z'
   ;
 
+WS
+  :
+  (
+    ' '
+    | '\r'
+    | '\t'
+    | '\u000C'
+    | '\n'
+  )->skip
+  ;
+
+/* old EOL
+  :
+    '\r'
+    | '\n'
+  ; */
+  
 EOL
  : ';'
  ;
 
 ML_COMMENT
   :
-  ('/*' (.)*? '*/')-> channel(2);
-
+  ('/*' (.)*? '*/')->skip;
+  
 SL_COMMENT
   :
-  ('//' (.)*? '\n') ->channel(2);
-
-/*
-
+  ('//' (.)*? '\n') ->skip;
+  
+  
+COMPARISON_OP
+  :
+  '='
+  | ('<')
+  | ('>')
+  | ('>=')
+  | ('<=')
+  | ('<>')
+  ;
+  
 FREQUENCY
   :
   'A'
@@ -394,4 +436,4 @@ FREQUENCY
   | 'M'
   | 'W'
   | 'D'
-  ;*/
+  ;
