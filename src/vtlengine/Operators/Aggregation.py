@@ -3,7 +3,8 @@ from typing import List, Optional
 
 import duckdb
 import pandas as pd
-from vtlengine.DataTypes import Integer, Number, unary_implicit_promotion, Boolean
+from vtlengine.DataTypes import Integer, Number, unary_implicit_promotion, Boolean, String, Duration, TimeInterval, \
+    TimePeriod, Date
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP,
@@ -41,7 +42,7 @@ class Aggregation(Operator.Unary):
             new_value = [None]
 
         for measure in measures:
-            if measure.data_type.__name__ == 'Date':
+            if measure.data_type == Date:
                 if cls.op == MIN:
                     if mode == 'input':
                         # Invalid date only for null values
@@ -49,7 +50,7 @@ class Aggregation(Operator.Unary):
                     else:
                         to_replace = ['9999-99-99']
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type.__name__ == 'TimePeriod':
+            elif measure.data_type == TimePeriod:
                 if mode == 'input':
                     data[measure.name] = data[measure.name].astype(object).map(
                         lambda x: TimePeriodHandler(x),
@@ -57,7 +58,7 @@ class Aggregation(Operator.Unary):
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action='ignore')
-            elif measure.data_type.__name__ == 'TimeInterval':
+            elif measure.data_type == TimeInterval:
                 if mode == 'input':
                     data[measure.name] = data[measure.name].astype(object).map(
                         lambda x: TimeIntervalHandler.from_iso_format(x),
@@ -65,16 +66,16 @@ class Aggregation(Operator.Unary):
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action='ignore')
-            elif measure.data_type.__name__ == 'String':
+            elif measure.data_type == String:
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type.__name__ == 'Duration':
+            elif measure.data_type == Duration:
                 if mode == 'input':
                     data[measure.name] = data[measure.name].map(lambda x: DURATION_MAPPING[x],
                                                                 na_action='ignore')
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: DURATION_MAPPING_REVERSED[x], na_action='ignore')
-            elif measure.data_type.__name__ == 'Boolean':
+            elif measure.data_type == Boolean:
                 if mode == 'result':
                     data[measure.name] = data[measure.name].map(lambda x: Boolean().cast(x),
                                                                 na_action='ignore')
@@ -140,14 +141,14 @@ class Aggregation(Operator.Unary):
         if having_expression is None:
             having_expression = ""
 
-        if len(measure_names) == 0 and cls.op == COUNT:
+        if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
             if grouping_names is not None:
                 query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping} {having_expression}"
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
             return duckdb.query(query).to_df()
 
-        if len(measure_names) > 0:
+        if measure_names is not None and len(measure_names) > 0:
             functions = ""
             for e in measure_names:
                 e = f'"{e}"'

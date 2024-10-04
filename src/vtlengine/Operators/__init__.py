@@ -1,6 +1,6 @@
 import os
 from copy import copy
-from typing import Any, Union
+from typing import Any, Union, Type
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING, ScalarType, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
@@ -19,7 +19,7 @@ else:
 
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
-ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
+ALL_MODEL_DATA_TYPES = Union[str, Dataset, Scalar, DataComponent]
 ALL_SCALAR_TYPES = Union[type[Integer], type[Number], type[String], type[Boolean], type[Date],
                     type[Duration], type[TimePeriod], type[TimeInterval], type[Null]]
 
@@ -111,23 +111,23 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate(cls, *args, **kwargs):
+    def validate(cls, *args: Any, **kwargs: Any):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def evaluate(cls, *args, **kwargs):
+    def evaluate(cls, *args: Any, **kwargs: Any):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def scalar_validation(cls, *args) -> None:
+    def scalar_validation(cls, *args: Scalar) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def component_validation(cls, *args) -> None:
+    def component_validation(cls, *args: Union[Component, DataComponent]) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate_type_compatibility(cls, *args) -> bool:
+    def validate_type_compatibility(cls, *args: Union[ScalarType, Type['ScalarType']]) -> bool:
         if len(args) == 1:
             operand = args[0]
             return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
@@ -137,7 +137,7 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def type_validation(cls, *args) -> ScalarType:
+    def type_validation(cls, *args: Any) -> ScalarType:
         if len(args) == 1:
             operand = args[0]
             return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
@@ -147,11 +147,11 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def apply_return_type_dataset(cls, *args) -> None:
+    def apply_return_type_dataset(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def apply_return_type(cls, *args):
+    def apply_return_type(cls, *args: Any):
         raise Exception("Method should be implemented by inheritors")
 
 

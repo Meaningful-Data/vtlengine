@@ -50,7 +50,7 @@ def _load_dataset_from_structure(structures: dict):
     return datasets
 
 
-def _load_single_datapoint(datapoint: Union[str, Path]):
+def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, str]:
     """
     Returns a dict with the data given from one dataset.
     """
@@ -245,7 +245,7 @@ def load_value_domains(input: Union[Dict[str, Any], Path]):
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[Dict[str, Any], Path]) -> Optional[
+def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Optional[
     Union[Dict[str, ExternalRoutine], ExternalRoutine, str]]:
     """
     Load the external routines.

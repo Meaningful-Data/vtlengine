@@ -1,6 +1,7 @@
-from typing import Any, Type
+from typing import Any, Type, Union
 
 import pandas as pd
+from numpy import ScalarType
 
 from vtlengine.DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
 from vtlengine.Exceptions import SemanticError
@@ -40,15 +41,15 @@ class ScalarType:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def strictly_same_class(self, obj) -> bool:
+    def strictly_same_class(self, obj: ScalarType) -> bool:
         if not isinstance(obj, ScalarType):
             raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         return self.__class__.__name__ == other.__class__.__name__
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any):
         return not self.__eq__(other)
 
     def instance_is_included(self, set_: set) -> bool:
@@ -71,7 +72,7 @@ class ScalarType:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def is_subtype(cls, obj: Type["ScalarType"]) -> bool:
+    def is_subtype(cls, obj: Type['ScalarType']) -> bool:
         return issubclass(cls, obj)
 
     def is_null_type(self) -> bool:

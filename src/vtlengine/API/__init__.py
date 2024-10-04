@@ -66,8 +66,8 @@ def create_ast(text: str) -> Start:
 
 def semantic_analysis(script: Union[str, Path],
                       data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-                      value_domains: Union[Dict[str, Any], Path] = None,
-                      external_routines: Union[str, Path] = None):
+                      value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+                      external_routines: Optional[Union[Dict[str, Any], Path]] = None):
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.

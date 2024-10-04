@@ -1,4 +1,6 @@
 from pathlib import Path
+from typing import Optional, Union
+
 # from time import time
 
 from vtlengine.Model import Dataset
@@ -6,8 +8,8 @@ from vtlengine.files.output._time_period_representation import \
     format_time_period_external_representation, TimePeriodRepresentation
 
 
-def save_datapoints(time_period_representation: TimePeriodRepresentation,
-                    dataset: Dataset, output_path: str | Path):
+def save_datapoints(time_period_representation: Optional[TimePeriodRepresentation],
+                    dataset: Dataset, output_path: Union[str, Path]):
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
 

@@ -82,9 +82,9 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_partial_is_valid: Optional[List[bool]] = None
     hr_condition: Optional[Dict[str, str]] = None
     # DL
-    dprs: Dict[str, Optional[Dict[str, Any]]] = None
-    udos: Dict[str, Optional[Dict[str, Any]]] = None
-    hrs: Dict[str, Optional[Dict[str, Any]]] = None
+    dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
 
     # **********************************
     # *                                *
@@ -952,7 +952,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     if comp_name not in dataset_element.components:
                         raise SemanticError("1-1-1-10", comp_name=comp_name,
                                             dataset_name=dataset_element.name)
-                if dpr_info['signature_type'] == 'variable':
+                if dpr_info is not None and dpr_info['signature_type'] == 'variable':
                     for i, comp_name in enumerate(node.children[2:]):
                         if comp_name != dpr_info['params'][i]:
                             raise SemanticError("1-1-10-3", op=node.op,
@@ -998,89 +998,90 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if self.hrs is None:
                 raise SemanticError("1-3-19", node_type="Hierarchical Rulesets", node_value="")
-            if hr_name not in self.hrs:
-                raise SemanticError("1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name)
+            else:
+                if hr_name not in self.hrs:
+                    raise SemanticError("1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name)
 
-            if not isinstance(dataset, Dataset):
-                raise SemanticError("1-1-1-20", op=node.op)
+                if not isinstance(dataset, Dataset):
+                    raise SemanticError("1-1-1-20", op=node.op)
 
-            hr_info = self.hrs[hr_name]
+                hr_info = self.hrs[hr_name]
+            if hr_info is not None:
+                if len(cond_components) != len(hr_info['condition']):
+                    raise SemanticError("1-1-10-2", op=node.op)
 
-            if len(cond_components) != len(hr_info['condition']):
-                raise SemanticError("1-1-10-2", op=node.op)
+                if hr_info['node'].signature_type == 'variable' and hr_info['signature'] != component:
+                    raise SemanticError("1-1-10-3", op=node.op,
+                                        found=component,
+                                        expected=hr_info['signature'])
+                elif hr_info['node'].signature_type == 'valuedomain' and component is None:
+                    raise SemanticError("1-1-10-4", op=node.op)
 
-            if hr_info['node'].signature_type == 'variable' and hr_info['signature'] != component:
-                raise SemanticError("1-1-10-3", op=node.op,
-                                    found=component,
-                                    expected=hr_info['signature'])
-            elif hr_info['node'].signature_type == 'valuedomain' and component is None:
-                raise SemanticError("1-1-10-4", op=node.op)
+                cond_info = {}
+                for i, cond_comp in enumerate(hr_info['condition']):
+                    if hr_info['node'].signature_type == 'variable' and cond_components[i] != cond_comp:
+                        raise SemanticError("1-1-10-6", op=node.op,
+                                            expected=cond_comp, found=cond_components[i])
+                    cond_info[cond_comp] = cond_components[i]
 
-            cond_info = {}
-            for i, cond_comp in enumerate(hr_info['condition']):
-                if hr_info['node'].signature_type == 'variable' and cond_components[i] != cond_comp:
-                    raise SemanticError("1-1-10-6", op=node.op,
-                                        expected=cond_comp, found=cond_components[i])
-                cond_info[cond_comp] = cond_components[i]
-
-            if node.op == HIERARCHY:
-                aux = []
-                for rule in hr_info['rules']:
-                    if rule.rule.op == EQ:
-                        aux.append(rule)
-                    elif rule.rule.op == WHEN:
-                        if rule.rule.right.op == EQ:
+                if node.op == HIERARCHY:
+                    aux = []
+                    for rule in hr_info['rules']:
+                        if rule.rule.op == EQ:
                             aux.append(rule)
-                # Filter only the rules with HRBinOP as =,
-                # as they are the ones that will be computed
-                if len(aux) == 0:
-                    raise SemanticError("1-1-10-5")
-                hr_info['rules'] = aux
+                        elif rule.rule.op == WHEN:
+                            if rule.rule.right.op == EQ:
+                                aux.append(rule)
+                    # Filter only the rules with HRBinOP as =,
+                    # as they are the ones that will be computed
+                    if len(aux) == 0:
+                        raise SemanticError("1-1-10-5")
+                    hr_info['rules'] = aux
 
-                hierarchy_ast = AST.HRuleset(name=hr_name,
-                                             signature_type=hr_info['node'].signature_type,
-                                             element=hr_info['node'].element, rules=aux)
-                HRDAGAnalyzer().visit(hierarchy_ast)
+                    hierarchy_ast = AST.HRuleset(name=hr_name,
+                                                 signature_type=hr_info['node'].signature_type,
+                                                 element=hr_info['node'].element, rules=aux)
+                    HRDAGAnalyzer().visit(hierarchy_ast)
 
-            Check_Hierarchy.validate_hr_dataset(dataset, component)
+                Check_Hierarchy.validate_hr_dataset(dataset, component)
 
-            # Gather rule data, adding the necessary elements to the interpreter
-            # for simplicity
-            self.ruleset_dataset = dataset
-            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
-            self.ruleset_mode = mode
-            self.hr_input = input_
-            rule_output_values = {}
-            if node.op == HIERARCHY:
-                self.is_from_hr_agg = True
-                self.hr_agg_rules_computed = {}
-                for rule in hr_info['rules']:
-                    self.visit(rule)
-                self.is_from_hr_agg = False
-            else:
-                self.is_from_hr_val = True
-                for rule in hr_info['rules']:
-                    rule_output_values[rule.name] = {
-                        "errorcode": rule.erCode,
-                        "errorlevel": rule.erLevel,
-                        "output": self.visit(rule)
-                    }
-                self.is_from_hr_val = False
-            self.ruleset_signature = None
-            self.ruleset_dataset = None
-            self.ruleset_mode = None
-            self.hr_input = None
+                # Gather rule data, adding the necessary elements to the interpreter
+                # for simplicity
+                self.ruleset_dataset = dataset
+                self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
+                self.ruleset_mode = mode
+                self.hr_input = input_
+                rule_output_values = {}
+                if node.op == HIERARCHY:
+                    self.is_from_hr_agg = True
+                    self.hr_agg_rules_computed = {}
+                    for rule in hr_info['rules']:
+                        self.visit(rule)
+                    self.is_from_hr_agg = False
+                else:
+                    self.is_from_hr_val = True
+                    for rule in hr_info['rules']:
+                        rule_output_values[rule.name] = {
+                            "errorcode": rule.erCode,
+                            "errorlevel": rule.erLevel,
+                            "output": self.visit(rule)
+                        }
+                    self.is_from_hr_val = False
+                self.ruleset_signature = None
+                self.ruleset_dataset = None
+                self.ruleset_mode = None
+                self.hr_input = None
 
-            # Final evaluation
-            if node.op == CHECK_HIERARCHY:
-                result = Check_Hierarchy.analyze(dataset_element=dataset,
-                                                 rule_info=rule_output_values,
-                                                 output=output)
-                del rule_output_values
-            else:
-                result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
-                self.hr_agg_rules_computed = None
-            return result
+                # Final evaluation
+                if node.op == CHECK_HIERARCHY:
+                    result = Check_Hierarchy.analyze(dataset_element=dataset,
+                                                     rule_info=rule_output_values,
+                                                     output=output)
+                    del rule_output_values
+                else:
+                    result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
+                    self.hr_agg_rules_computed = None
+                return result
 
         raise SemanticError("1-3-5", op_type='ParamOp', node_op=node.op)
 
@@ -1254,6 +1255,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def generate_then_else_datasets(self, condition):
         components = {}
+        if self.then_condition_dataset is None:
+            self.then_condition_dataset = []
+        if self.else_condition_dataset is None:
+            self.else_condition_dataset = []
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1 or condition.get_measures()[0].data_type != \
                     BASIC_TYPES[bool]:
@@ -1275,7 +1280,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = condition.data
 
         if data is not None:
-            if self.nested_if:
+            if self.nested_if and self.if_stack is not None:
                 merge_df = self.then_condition_dataset[-1] if self.if_stack[-1] == THEN_ELSE[
                     'then'] else self.else_condition_dataset[-1]
                 indexes = merge_df.data[merge_df.data.columns[-1]]
@@ -1517,7 +1522,8 @@ class InterpreterAnalyzer(ASTTemplate):
         self.udo_params.append(signature_values)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
-        result = self.visit(deepcopy(operator['expression']))
+        if operator is not None:
+            result = self.visit(deepcopy(operator['expression']))
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = 'Component' if isinstance(result, DataComponent) else 'Scalar'
