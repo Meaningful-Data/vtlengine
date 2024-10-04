@@ -89,6 +89,9 @@ STOCK_TO_FLOW = "stock_to_flow"
 TIMESHIFT = "timeshift"
 TIME_AGG = "time_agg"
 CURRENT_DATE = "current_date"
+YEAR = "year"
+MONTH = "month"
+
 # Join Operators.
 INNER_JOIN = "inner_join"
 LEFT_JOIN = "left_join"

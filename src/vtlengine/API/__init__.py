@@ -76,7 +76,7 @@ def create_ast(text: str) -> Start:
     stream = _lexer(text)
     cst = _parser(stream)
     visitor = ASTVisitor()
-    ast = visitor.visit(cst)
+    ast = visitor.visitStart(cst)
     DAGAnalyzer.createDAG(ast)
     return ast
 
