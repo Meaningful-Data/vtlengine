@@ -114,7 +114,7 @@ def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]) 
     return _load_single_datapoint(datapoints)
 
 
-def _load_datastructure_single(data_structure: Union[dict, Path]):
+def _load_datastructure_single(data_structure: Union[dict, Path]) -> Dict[str, Dataset]:
     """
     Loads a single data structure.
     """
@@ -156,7 +156,7 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]) ->
 
 
 def load_datasets_with_data(data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-                            datapoints: Optional[Union[Dict[str, Any], Path, List[Path]]] = None):
+                            datapoints: Optional[Union[Dict[str, Any], Path, List[Path]]] = None) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
     structure and a pandas dataframe.
@@ -211,7 +211,7 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
-def _load_single_value_domain(input: Path):
+def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != '.json':
         raise Exception('Invalid Value Domain file. Must have .json extension')
     with open(input, 'r') as f:
@@ -219,7 +219,7 @@ def _load_single_value_domain(input: Path):
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[Dict[str, Any], Path]):
+def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
@@ -276,7 +276,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Optional[
     return external_routines
 
 
-def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
+def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
     """
@@ -288,7 +288,7 @@ def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
             isinstance(dataset, Dataset) and dataset.name in persistent}
 
 
-def _load_single_external_routine_from_file(input: Path):
+def _load_single_external_routine_from_file(input: Path) -> ExternalRoutine:
     """
     Returns a single external routine.
     """
@@ -303,7 +303,7 @@ def _load_single_external_routine_from_file(input: Path):
     return ext_rout
 
 
-def _check_output_folder(output_folder: Union[str, Path]):
+def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     Check if the output folder exists. If not, it will create it.
     """

@@ -25,7 +25,7 @@ class __VTLSingleErrorListener(ErrorListener):
 
     """
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(self, recognizer: Any, offendingSymbol: str, line: str, column: str, msg: str, e: Any) -> None:
         raise Exception(f"Not valid VTL Syntax \n "
                         f"offendingSymbol: {offendingSymbol} \n "
                         f"msg: {msg} \n "
@@ -67,7 +67,7 @@ def create_ast(text: str) -> Start:
 def semantic_analysis(script: Union[str, Path],
                       data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
                       value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-                      external_routines: Optional[Union[Dict[str, Any], Path]] = None):
+                      external_routines: Optional[Union[Dict[str, Any], Path]] = None) -> Any:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.
@@ -137,7 +137,7 @@ def run(script: Union[str, Path], data_structures: Union[Dict[str, Any], Path, L
         datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
         value_domains: Optional[Union[Dict[str, Any], Path]] = None, external_routines: Optional[Union[str, Path]] = None,
         time_period_output_format: str = "vtl",
-        return_only_persistent=False,
+        return_only_persistent: bool = False,
         output_folder: Optional[Union[str, Path]] = None) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready

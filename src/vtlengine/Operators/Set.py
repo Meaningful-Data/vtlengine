@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Any
 
 from vtlengine.Exceptions import SemanticError
 
@@ -124,7 +124,7 @@ class Symdiff(Set):
 class Setdiff(Set):
 
     @staticmethod
-    def has_null(row):
+    def has_null(row: Any) -> bool:
         return row.isnull().any()
 
     @classmethod

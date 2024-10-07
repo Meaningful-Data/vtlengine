@@ -93,7 +93,7 @@ class Analytic(Operator.Unary):
                      measure_names: List[str],
                      ordering: List[OrderBy],
                      window: Optional[Windowing],
-                     params: Optional[List[int]] = None):
+                     params: Optional[List[int]] = None) -> pd.DataFrame:
         """Annotation class
 
         It is used to analyze the attributes specified bellow ensuring that the type of data is the correct one to perform

@@ -41,14 +41,14 @@ class IsNull(Unary):
         return pd.isnull(x)
 
     @classmethod
-    def dataset_validation(cls, operand: Dataset):
+    def dataset_validation(cls, operand: Dataset) -> Dataset:
         result = super().dataset_validation(operand)
         for measure in result.get_measures():
             measure.nullable = False
         return result
 
     @classmethod
-    def component_validation(cls, operand: DataComponent):
+    def component_validation(cls, operand: DataComponent) -> DataComponent:
         result = super().component_validation(operand)
         result.nullable = False
         return result
@@ -161,7 +161,7 @@ class In(Binary):
         return left_series.map(lambda x: x in right_series, na_action='ignore')
 
     @classmethod
-    def py_op(cls, x, y) -> Any:
+    def py_op(cls, x: Any, y: Any) -> Any:
         if y.data_type == Null:
             return None
         return operator.contains(y, x)
@@ -178,7 +178,7 @@ class NotIn(Binary):
         return series_result.map(lambda x: not x, na_action='ignore')
 
     @classmethod
-    def py_op(cls, x, y):
+    def py_op(cls, x: Any, y: Any) -> Any:
         return not operator.contains(y, x)
 
 
@@ -187,7 +187,7 @@ class Match(Binary):
     type_to_check = String
 
     @classmethod
-    def op_func(cls, x, y):
+    def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
         if pd.isnull(x) or pd.isnull(y):
             return None
         if isinstance(x, pd.Series):
@@ -427,5 +427,5 @@ class ExistIn(Operator.Operator):
         return result_dataset
 
     @staticmethod
-    def _check_all_columns(row):
+    def _check_all_columns(row: Any) -> bool:
         return all(col_value == True for col_value in row)

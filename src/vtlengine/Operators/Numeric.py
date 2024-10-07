@@ -209,7 +209,7 @@ class Parameterized(Unary):
 
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None):
+                 param: Optional[Union[DataComponent, Scalar]] = None) -> Any:
 
         if param is not None:
             if isinstance(param, Dataset):
@@ -241,7 +241,7 @@ class Parameterized(Unary):
         return series.map(lambda x: cls.op_func(x, param))
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset, param: Union[DataComponent, Scalar]):
+    def dataset_evaluation(cls, operand: Dataset, param: Union[DataComponent, Scalar]) -> Dataset:
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
         for measure_name in result.get_measures_names():
@@ -262,7 +262,7 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]):
+    def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]) -> DataComponent:
         result = cls.validate(operand, param)
         result.data = operand.data.copy()
         if isinstance(param, DataComponent):
@@ -273,7 +273,7 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar, param: Scalar):
+    def scalar_evaluation(cls, operand: Scalar, param: Scalar) -> Scalar:
         result = cls.validate(operand, param)
         param_value = None if param is None else param.value
         result.value = cls.op_func(operand.value, param_value)

@@ -396,3 +396,7 @@ class ExternalRoutine:
         tables_info = list(expression.find_all(exp.Table))
         dataset_names = [t.name for t in tables_info]
         return dataset_names
+
+class NullDataset:
+    def __getattr__(self, item):
+        return None

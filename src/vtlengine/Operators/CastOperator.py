@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 import vtlengine.Operators as Operator
 import pandas as pd
@@ -88,7 +88,7 @@ class Cast(Operator.Unary):
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_to_string(cls, value: Any, mask_value: str):
+    def cast_time_to_string(cls, value: Any, mask_value: str) -> str:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
@@ -103,7 +103,7 @@ class Cast(Operator.Unary):
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
     @classmethod
-    def check_mask_value(cls, from_type, to_type, mask_value: str) -> None:
+    def check_mask_value(cls, from_type: Any, to_type: Any, mask_value: str) -> None:
         """
         This method checks if the mask value is valid for the cast operation.
         """
@@ -171,14 +171,14 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_cast(cls, from_type, to_type, mask_value: Optional[str] = None) -> None:
+    def check_cast(cls, from_type: Any, to_type: Any, mask_value: Optional[str] = None) -> None:
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         else:
             cls.check_without_mask(from_type, to_type)
 
     @classmethod
-    def check_with_mask(cls, from_type: ScalarType, to_type: ScalarType, mask_value: str) -> None:
+    def check_with_mask(cls, from_type: Any, to_type: Any, mask_value: str) -> None:
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
@@ -224,7 +224,7 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_value(cls, value: Any, provided_type: ScalarType, to_type: ScalarType,
-                   mask_value: str):
+                   mask_value: str) -> Any:
         """
 
         """

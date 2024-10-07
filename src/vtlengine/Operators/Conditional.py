@@ -1,6 +1,6 @@
 import os
 from copy import copy
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
 
@@ -38,7 +38,7 @@ class If(Operator):
     """
 
     @classmethod
-    def evaluate(cls, condition, true_branch, false_branch):
+    def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
         result = cls.validate(condition, true_branch, false_branch)
         if isinstance(condition, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
@@ -49,7 +49,7 @@ class If(Operator):
     @classmethod
     def component_level_evaluation(cls, condition: DataComponent,
                                    true_branch: Union[DataComponent, Scalar],
-                                   false_branch: Union[DataComponent, Scalar]):
+                                   false_branch: Union[DataComponent, Scalar]) -> pd.Series:
         if isinstance(true_branch, Scalar):
             true_data = pd.Series(true_branch.value, index=condition.data.index)
         else:
@@ -63,7 +63,7 @@ class If(Operator):
         return pd.Series(result, index=condition.data.index)
 
     @classmethod
-    def dataset_level_evaluation(cls, result, condition, true_branch, false_branch):
+    def dataset_level_evaluation(cls, result: Any, condition: Any, true_branch: Any, false_branch: Any) -> Dataset:
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
         true_data = condition.data[condition.data[condition_measure] == True]
@@ -102,7 +102,7 @@ class If(Operator):
         return result
 
     @classmethod
-    def validate(cls, condition, true_branch, false_branch) -> Scalar | DataComponent | Dataset:
+    def validate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Union[Scalar, DataComponent, Dataset]:
         nullable = False
         left = true_branch
         right = false_branch
@@ -188,7 +188,7 @@ class Nvl(Binary):
     """
 
     @classmethod
-    def evaluate(cls, left, right):
+    def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
 
         if isinstance(left, Scalar):
@@ -206,7 +206,7 @@ class Nvl(Binary):
         return result
 
     @classmethod
-    def validate(cls, left, right) -> Scalar | DataComponent | Dataset:
+    def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
                 raise ValueError(

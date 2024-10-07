@@ -91,7 +91,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # *          Memory efficient      *
     # *                                *
     # **********************************
-    def _load_datapoints_efficient(self, statement_num: int):
+    def _load_datapoints_efficient(self, statement_num: int) -> None:
         if self.datapoints_paths is None:
             return
         if statement_num not in self.ds_analysis[INSERT]:
@@ -104,7 +104,7 @@ class InterpreterAnalyzer(ASTTemplate):
             elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
-    def _save_datapoints_efficient(self, statement_num: int):
+    def _save_datapoints_efficient(self, statement_num: int) -> None:
         if self.output_path is None:
             # Keeping the data in memory if no output path is provided
             return
@@ -285,7 +285,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
 
-    def visit_BinOp(self, node: AST.BinOp) -> None:
+    def visit_BinOp(self, node: AST.BinOp) -> Any:
 
         is_from_if = False
         if not self.is_from_condition and node.op != MEMBERSHIP and self.if_stack is not None and len(
@@ -294,16 +294,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_if = False
 
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            if isinstance(node.left, AST.VarID) and isinstance(node.right, AST.VarID):
+            if hasattr(node.left, 'value') and hasattr(node.right, 'value'):
                 if self.udo_params is not None and node.right.value in self.udo_params[-1]:
                     comp_name = f'{node.left.value}#{self.udo_params[-1][node.right.value]}'
                 else:
                     comp_name = f'{node.left.value}#{node.right.value}'
                 ast_var_id = AST.VarID(value=comp_name)
                 return self.visit(ast_var_id)
-        else:
-            left_operand = self.visit(node.left)
-            right_operand = self.visit(node.right)
+        left_operand = self.visit(node.left)
+        right_operand = self.visit(node.right)
         if is_from_if:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op == MEMBERSHIP:
@@ -420,7 +419,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         return AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
 
-    def _format_having_expression_udo(self, having: str):
+    def _format_having_expression_udo(self, having: str) -> str:
         if self.udo_params is None:
             return having
         for k, v in self.udo_params[-1].items():
@@ -510,7 +509,8 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
 
         # Extracting the components we need (only identifiers)
-        id_columns = self.regular_aggregation_dataset.get_identifiers_names()
+        id_columns = self.regular_aggregation_dataset.get_identifiers_names() if (
+                self.regular_aggregation_dataset is not None) else None
 
         # # Extracting the component we need (only measure)
         measure_name = result.get_measures_names()[0]
@@ -519,7 +519,8 @@ class InterpreterAnalyzer(ASTTemplate):
             data = None
         else:
             joined_result = pd.merge(
-                self.regular_aggregation_dataset.data[id_columns],
+                self.regular_aggregation_dataset.data[id_columns] if
+                self.regular_aggregation_dataset is not None else None,
                 result.data,
                 on=id_columns,
                 how='inner')
@@ -532,7 +533,7 @@ class InterpreterAnalyzer(ASTTemplate):
                              role=result.components[measure_name].role,
                              nullable=result.components[measure_name].nullable)
 
-    def visit_MulOp(self, node: AST.MulOp):
+    def visit_MulOp(self, node: AST.MulOp) -> None:
         """
         MulOp: (op, children)
 
@@ -1255,7 +1256,7 @@ class InterpreterAnalyzer(ASTTemplate):
         output_to_check = node.output
         return Eval.analyze(operands, external_routine, output_to_check)
 
-    def generate_then_else_datasets(self, condition):
+    def generate_then_else_datasets(self, condition: Union[Dataset, DataComponent]) -> None:
         components = {}
         if self.then_condition_dataset is None:
             self.then_condition_dataset = []
@@ -1292,12 +1293,14 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if isinstance(condition, Dataset):
                 filtered_data = data.iloc[indexes]
-                then_data = condition.data[condition.data[name] == True]
+                then_data = condition.data[condition.data[name] == True] if (
+                        condition.data is not None) else []
                 then_indexes = list(filtered_data[filtered_data == True].index)
                 if len(then_data) > len(then_indexes):
                     then_data = then_data.iloc[then_indexes]
                 then_data[name] = then_indexes
-                else_data = condition.data[condition.data[name] != True]
+                else_data = condition.data[condition.data[name] != True] if (
+                        condition.data is not None) else []
                 else_indexes = list(set(indexes) - set(then_indexes))
                 if len(else_data) > len(else_indexes):
                     else_data = else_data.iloc[else_indexes]

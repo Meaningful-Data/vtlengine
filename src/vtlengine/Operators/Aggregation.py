@@ -31,7 +31,9 @@ def extract_grouping_identifiers(identifier_names: List[str],
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
     @classmethod
-    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str):
+    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
+        to_replace: List[Optional[str]]
+        new_value: List[Optional[str]]
         if cls.op == COUNT:
             return
         if mode == 'input':

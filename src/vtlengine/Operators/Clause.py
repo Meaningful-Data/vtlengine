@@ -14,7 +14,7 @@ class Calc(Operator):
     op = CALC
 
     @classmethod
-    def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
+    def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
 
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
@@ -46,7 +46,7 @@ class Calc(Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
+    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
         for operand in operands:
@@ -61,7 +61,7 @@ class Aggregate(Operator):
     op = AGGREGATE
 
     @classmethod
-    def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset):
+    def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
 
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
@@ -90,7 +90,7 @@ class Aggregate(Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
+    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
         for operand in operands:
@@ -107,13 +107,13 @@ class Aggregate(Operator):
 class Filter(Operator):
 
     @classmethod
-    def validate(cls, condition: DataComponent, dataset: Dataset):
+    def validate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         if condition.data_type != Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
         return Dataset(name=dataset.name, components=dataset.components, data=None)
 
     @classmethod
-    def evaluate(cls, condition: DataComponent, dataset: Dataset):
+    def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data.copy()
         if len(condition.data) > 0:
@@ -168,7 +168,7 @@ class Drop(Operator):
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
+    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.drop(columns=operands, axis=1)
         return result_dataset
@@ -263,13 +263,14 @@ class Unpivot(Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, operands: List[str], dataset: Dataset):
+    def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
-                                                value_vars=dataset.get_measures_names(),
-                                                var_name=operands[0], value_name="NEW_COLUMN")
-        result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-        result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
+        if dataset.data is not  None:
+            result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
+                                                    value_vars=dataset.get_measures_names(),
+                                                    var_name=operands[0], value_name="NEW_COLUMN")
+            result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
+            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
         return result_dataset
 
 
@@ -277,7 +278,7 @@ class Sub(Operator):
     op = SUBSPACE
 
     @classmethod
-    def validate(cls, operands: List[DataComponent], dataset: Dataset):
+    def validate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
@@ -295,7 +296,7 @@ class Sub(Operator):
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset):
+    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy()
         operand_names = [operand.name for operand in operands]

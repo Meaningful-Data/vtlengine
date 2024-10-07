@@ -1,7 +1,7 @@
 import os
 from copy import copy
 from functools import reduce
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 
 from vtlengine.DataTypes import binary_implicit_promotion
 
@@ -29,7 +29,7 @@ class Join(Operator):
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: List[Component]):
+    def get_components_intersection(cls, *operands: List[Component]) -> List[str]:
         element_count = {}
         for operand in operands:
             operand_set = set(operand)
@@ -42,7 +42,7 @@ class Join(Operator):
         return result
 
     @classmethod
-    def merge_components(cls, operands, using=None):
+    def merge_components(cls, operands: Any, using: Optional[List[str]] = None) -> Dict[str, Component]:
         nullability = {}
         merged_components = {}
         using = using or []
@@ -97,7 +97,7 @@ class Join(Operator):
         return merged_components
 
     @classmethod
-    def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[
+    def generate_result_components(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dict[
         str, Component]:
         components = {}
         inter_identifiers = cls.get_components_intersection(
@@ -220,7 +220,7 @@ class InnerJoin(Join):
     how = 'inner'
 
     @classmethod
-    def generate_result_components(cls, operands: List[Dataset], using=None) -> Dict[
+    def generate_result_components(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dict[
         str, Component]:
 
         if using is None:
@@ -243,7 +243,7 @@ class FullJoin(Join):
     how = 'outer'
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using=None) -> None:
+    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> None:
         if using is not None:
             raise SemanticError("1-1-13-8", op=cls.op)
         for op in operands:
@@ -260,7 +260,7 @@ class CrossJoin(Join):
     how = 'cross'
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using=None) -> Dataset:
+    def execute(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dataset:
         result = cls.validate(operands, using)
         if len(operands) == 1:
             result.data = operands[0].data
@@ -279,7 +279,7 @@ class CrossJoin(Join):
         return result
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using=None) -> None:
+    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> None:
         if using is not None:
             raise SemanticError("1-1-13-8", op=cls.op)
 
@@ -287,34 +287,35 @@ class CrossJoin(Join):
 class Apply(Operator):
 
     @classmethod
-    def evaluate(cls, dataset: Dataset, expression, op_map: dict):
+    def evaluate(cls, dataset: Dataset, expression: Any, op_map: dict) -> Dataset:
         for child in expression:
             dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
         return dataset
 
     @classmethod
-    def execute(cls, dataset: Dataset, op, left: str, right: str) -> Dataset:
+    def execute(cls, dataset: Dataset, op: Any, left: str, right: str) -> Dataset:
         left_dataset = cls.create_dataset("left", left, dataset)
         right_dataset = cls.create_dataset("right", right, dataset)
         left_dataset, right_dataset = cls.get_common_components(left_dataset, right_dataset)
         return op.evaluate(left_dataset, right_dataset)
 
     @classmethod
-    def validate(cls, dataset: Dataset, child, op_map: dict) -> None:
+    def validate(cls, dataset: Dataset, child: Any, op_map: dict) -> None:
         if not isinstance(child, BinOp):
             raise Exception(
                 f"Invalid expression {child} on apply operator. Only BinOp are accepted")
         if child.op not in op_map:
             raise Exception(f"Operator {child.op} not implemented")
-        left_components = [comp.name[len(child.left.value) + 1] for comp in
-                           dataset.components.values() if
-                           comp.name.startswith(child.left.value)]
-        right_components = [comp.name[len(child.right.value) + 1] for comp in
-                            dataset.components.values() if
-                            comp.name.startswith(child.right.value)]
-        if len(set(left_components) & set(right_components)) == 0:
-            raise Exception(
-                f"{child.left.value} and {child.right.value} has not any match on dataset components")
+        if hasattr(child.left, 'value') and hasattr(child.right, 'value'):
+            left_components = [comp.name[len(child.left.value) + 1] for comp in
+                               dataset.components.values() if
+                               comp.name.startswith(child.left.value)]
+            right_components = [comp.name[len(child.right.value) + 1] for comp in
+                                dataset.components.values() if
+                                comp.name.startswith(child.right.value)]
+            if len(set(left_components) & set(right_components)) == 0:
+                raise Exception(
+                    f"{child.left.value} and {child.right.value} has not any match on dataset components")
 
     @classmethod
     def create_dataset(cls, name: str, prefix: str, dataset: Dataset) -> Dataset:

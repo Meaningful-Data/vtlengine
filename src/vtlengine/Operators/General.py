@@ -20,7 +20,7 @@ class Membership(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: str):
+    def validate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
         if right_operand not in left_operand.components:
             raise SemanticError("1-1-1-10", op=cls.op, comp_name=right_operand,
                                 dataset_name=left_operand.name)
@@ -43,7 +43,7 @@ class Membership(Binary):
 
     @classmethod
     def evaluate(cls, left_operand: Dataset, right_operand: str,
-                 is_from_component_assignment=False) -> Dataset:
+                 is_from_component_assignment: bool = False) -> Dataset:
         result_dataset = cls.validate(left_operand, right_operand)
         if is_from_component_assignment:
             return DataComponent(name=right_operand,

@@ -26,13 +26,13 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 class HRComparison(Operators.Binary):
 
     @classmethod
-    def imbalance_func(cls, x, y):
+    def imbalance_func(cls, x: Any, y: Any) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
         return x - y
 
     @staticmethod
-    def hr_func(x, y, hr_mode, func):
+    def hr_func(x: Any, y: Any, hr_mode: str, func: Any) -> Any:
         # In comments, it is specified the condition for evaluating the rule,
         # so we delete the cases that does not satisfy the condition
         # (line 6509 of the reference manual)
@@ -56,7 +56,7 @@ class HRComparison(Operators.Binary):
         return func(x, y)
 
     @classmethod
-    def apply_hr_func(cls, left_series, right_series, hr_mode, func):
+    def apply_hr_func(cls, left_series: pd.Series, right_series: pd.Series, hr_mode: str, func: Any) -> pd.Series:
         return left_series.combine(right_series, lambda x, y: cls.hr_func(x, y, hr_mode, func))
 
     @classmethod
@@ -146,7 +146,7 @@ class HRBinMinus(HRBinNumeric):
 class HRUnNumeric(Operators.Unary):
 
     @classmethod
-    def evaluate(cls, operand: DataComponent):
+    def evaluate(cls, operand: DataComponent) -> DataComponent:
         result_data = cls.apply_operation_component(operand.data)
         return DataComponent(name=f"{cls.op}({operand.name})", data=result_data,
                              data_type=operand.data_type,
@@ -183,7 +183,7 @@ class HAAssignment(Operators.Binary):
         return result
 
     @classmethod
-    def handle_mode(cls, x, hr_mode):
+    def handle_mode(cls, x: Any, hr_mode: str) -> Any:
         if not pd.isnull(x) and x == "REMOVE_VALUE":
             return "REMOVE_VALUE"
         if hr_mode == 'non_null' and pd.isnull(x):
