@@ -438,7 +438,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 having = having.replace(old_param, new_param)
         return having
 
-    def visit_Analytic(self, node: AST.Analytic) -> None:
+    def visit_Analytic(self, node: AST.Analytic) -> Any:
         if self.is_from_regular_aggregation:
             if self.regular_aggregation_dataset is None:
                 raise SemanticError("1-1-6-10")
@@ -1354,7 +1354,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
 
-    def visit_Identifier(self, node: AST.Identifier) -> Union[AST.AST, Dataset]:
+    def visit_Identifier(self, node: AST.Identifier) -> Union[AST.AST, Dataset, str]:
         """
         Identifier: (value)
 

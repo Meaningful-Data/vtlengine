@@ -16,6 +16,6 @@ class RFCDialect(csv.Dialect):
     skipinitialspace = False
 
 
-def register_rfc():
+def register_rfc() -> None:
     """ Register the RFC dialect. """
     csv.register_dialect('rfc', RFCDialect)

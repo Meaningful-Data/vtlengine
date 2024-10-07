@@ -2,7 +2,7 @@ import calendar
 import copy
 import operator
 from datetime import date, datetime as dt
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
 import pandas as pd
 
@@ -29,7 +29,7 @@ DURATION_MAPPING_REVERSED = {
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
 
 
-def date_to_period(date_value: date, period_indicator):
+def date_to_period(date_value: date, period_indicator: str) -> 'TimePeriodHandler':
     if period_indicator == "A":
         return TimePeriodHandler(f"{date_value.year}A")
     elif period_indicator == "S":
@@ -45,7 +45,7 @@ def date_to_period(date_value: date, period_indicator):
         return TimePeriodHandler(f"{date_value.year}D{date_value.timetuple().tm_yday}")
 
 
-def period_to_date(year, period_indicator, period_number, start=False):
+def period_to_date(year: int, period_indicator: str, period_number: int, start: bool = False) -> date:
     if period_indicator == 'A':
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
@@ -71,7 +71,7 @@ def period_to_date(year, period_indicator, period_number, start=False):
     raise SemanticError("2-1-19-2", period=period_indicator)
 
 
-def day_of_year(date: str):
+def day_of_year(date: str) -> int:
     """
     Returns the day of the year for a given date string
     2020-01-01 -> 1
@@ -83,7 +83,7 @@ def day_of_year(date: str):
     return day_number
 
 
-def from_input_customer_support_to_internal(period: str):
+def from_input_customer_support_to_internal(period: str) -> tuple[int, str, int]:
     """
     Converts a period string from the input customer support format to the internal format
     2020-01-01 -> (2020, 'D', 1)
@@ -119,7 +119,7 @@ class SingletonMeta(type):
 
     _instances = {}
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         """
         Possible changes to the value of the `__init__` argument do not affect
         the returned instance.
@@ -140,15 +140,15 @@ class PeriodDuration(metaclass=SingletonMeta):
         'A': 1
     }
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item in self.periods
 
     @property
-    def member_names(self):
+    def member_names(self) -> list[str]:
         return list(self.periods.keys())
 
     @classmethod
-    def check_period_range(cls, letter, value):
+    def check_period_range(cls, letter: str, value: Any) -> bool:
         if letter == 'A':
             return True
         return value in range(1, cls.periods[letter] + 1)
@@ -159,7 +159,7 @@ class TimePeriodHandler:
     _period_indicator: str
     _period_number: int
 
-    def __init__(self, period: str):
+    def __init__(self, period: str) -> None:
         if "-" in period:
             self.year, self.period_indicator, self.period_number = from_input_customer_support_to_internal(
                 period)
@@ -174,7 +174,7 @@ class TimePeriodHandler:
             else:
                 self.period_number = 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.period_indicator == 'A':
             # return f"{self.year}{self.period_indicator}"
             return f"{self.year}"  # Drop A from exit time period year
@@ -187,7 +187,7 @@ class TimePeriodHandler:
         return f"{self.year}-{self.period_indicator}{period_number_str}"
 
     @staticmethod
-    def _check_year(year: int):
+    def _check_year(year: int) -> None:
         if year < 1900 or year > 9999:
             raise SemanticError("2-1-19-10", year=year)
             # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
@@ -197,7 +197,7 @@ class TimePeriodHandler:
         return self._year
 
     @year.setter
-    def year(self, value: int):
+    def year(self, value: int) -> None:
         self._check_year(value)
         self._year = value
 
@@ -206,7 +206,7 @@ class TimePeriodHandler:
         return self._period_indicator
 
     @period_indicator.setter
-    def period_indicator(self, value: str):
+    def period_indicator(self, value: str) -> None:
         if value not in PeriodDuration():
             raise SemanticError("2-1-19-2", period=value)
             # raise ValueError(
@@ -218,7 +218,7 @@ class TimePeriodHandler:
         return self._period_number
 
     @period_number.setter
-    def period_number(self, value: int):
+    def period_number(self, value: int) -> None:
         if not PeriodDuration.check_period_range(self.period_indicator, value):
             raise SemanticError("2-1-19-7", periods=PeriodDuration.periods[self.period_indicator], period_inidcator=self.period_indicator)
             # raise ValueError(f'Period Number must be between 1 and '
@@ -236,7 +236,7 @@ class TimePeriodHandler:
                     # raise ValueError(f'Invalid day {value} for year {self.year}.')
         self._period_number = value
 
-    def _meta_comparison(self, other, py_op) -> Optional[bool]:
+    def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
         if pd.isnull(other):
             return None
         if isinstance(other, str):
@@ -245,7 +245,7 @@ class TimePeriodHandler:
             other = TimePeriodHandler(other)
         return py_op(DURATION_MAPPING[self.period_indicator], DURATION_MAPPING[other.period_indicator])
 
-    def start_date(self, as_date=False) -> Union[date, str]:
+    def start_date(self, as_date: bool = False) -> Union[date, str]:
         """
         Gets the starting date of the Period
         """
@@ -256,7 +256,7 @@ class TimePeriodHandler:
         return date_value if as_date else date_value.isoformat()
 
 
-    def end_date(self, as_date=False) -> Union[date, str]:
+    def end_date(self, as_date: bool = False) -> Union[date, str]:
         """
         Gets the ending date of the Period
         """
@@ -266,25 +266,25 @@ class TimePeriodHandler:
                                     start=False)
         return date_value if as_date else date_value.isoformat()
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self._meta_comparison(other, operator.eq)
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.lt)
 
-    def __le__(self, other) -> bool:
+    def __le__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.le)
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.gt)
 
-    def __ge__(self, other) -> bool:
+    def __ge__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.ge)
 
-    def change_indicator(self, new_indicator):
+    def change_indicator(self, new_indicator: str) -> None:
         if self.period_indicator == new_indicator:
             return
         date_value = period_to_date(self.year, self.period_indicator, self.period_number)
@@ -292,7 +292,7 @@ class TimePeriodHandler:
         self.period_number = date_to_period(date_value,
                                             period_indicator=new_indicator).period_number
 
-    def vtl_representation(self):
+    def vtl_representation(self) -> str:
         if self.period_indicator == 'A':
             return f"{self.year}"  # Drop A from exit time period year
         if self.period_indicator in ["W", "M"]:
@@ -303,7 +303,7 @@ class TimePeriodHandler:
             period_number_str = str(self.period_number)
         return f"{self.year}{self.period_indicator}{period_number_str}"
 
-    def sdmx_gregorian_representation(self):
+    def sdmx_gregorian_representation(self) -> None:
         raise NotImplementedError
 
 
@@ -311,30 +311,30 @@ class TimeIntervalHandler:
     _date1: str = '0'
     _date2: str = 'Z'
 
-    def __init__(self, date1: str, date2: str):
+    def __init__(self, date1: str, date2: str) -> None:
         self.date1 = date1
         self.date2 = date2
         # if date1 > date2:
         #     raise ValueError(f'Invalid Time with duration less than 0 ({self.length} days)')
 
     @classmethod
-    def from_dates(cls, date1: date, date2: date):
+    def from_dates(cls, date1: date, date2: date) -> 'TimeIntervalHandler':
         return cls(date1.isoformat(), date2.isoformat())
 
     @classmethod
-    def from_iso_format(cls, dates: str):
+    def from_iso_format(cls, dates: str) -> 'TimeIntervalHandler':
         return cls(*dates.split('/', maxsplit=1))
 
     @property
-    def date1(self, as_date=False) -> Union[date, str]:
+    def date1(self, as_date: bool = False) -> Union[date, str]:
         return date.fromisoformat(self._date1) if as_date else self._date1
 
     @property
-    def date2(self, as_date=False) -> Union[date, str]:
+    def date2(self, as_date: bool = False) -> Union[date, str]:
         return date.fromisoformat(self._date2) if as_date else self._date2
 
     @date1.setter
-    def date1(self, value: str):
+    def date1(self, value: str) -> None:
         date.fromisoformat(value)
         if value > self.date2:
             raise SemanticError("2-1-19-4", date=self.date2, value=value)
@@ -342,7 +342,7 @@ class TimeIntervalHandler:
         self._date1 = value
 
     @date2.setter
-    def date2(self, value: str):
+    def date2(self, value: str) -> None:
         date.fromisoformat(value)
         if value < self.date1:
             raise SemanticError("2-1-19-5", date=self.date1, value=value)
@@ -357,12 +357,12 @@ class TimeIntervalHandler:
 
     __len__ = length
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.date1}/{self.date2}"
 
     __repr__ = __str__
 
-    def _meta_comparison(self, other, py_op) -> Optional[bool]:
+    def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
         if pd.isnull(other):
             return None
         if isinstance(other, str):
@@ -371,32 +371,32 @@ class TimeIntervalHandler:
             other = TimeIntervalHandler(*other.split('/', maxsplit=1))
         return py_op(self.length, other.length)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.ne)
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.lt)
 
-    def __le__(self, other) -> bool:
+    def __le__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.le)
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.gt)
 
-    def __ge__(self, other) -> bool:
+    def __ge__(self, other: Any) -> bool:
         return self._meta_comparison(other, operator.ge)
 
     @classmethod
-    def from_time_period(cls, value: TimePeriodHandler):
+    def from_time_period(cls, value: TimePeriodHandler) -> 'TimeIntervalHandler':
         date1 = period_to_date(value.year, value.period_indicator, value.period_number, start=True)
         date2 = period_to_date(value.year, value.period_indicator, value.period_number, start=False)
         return cls.from_dates(date1, date2)
 
 
-def sort_dataframe_by_period_column(data, name, identifiers_names):
+def sort_dataframe_by_period_column(data: pd.DataFrame, name: str, identifiers_names: list[str]) -> pd.DataFrame:
     """
     Sorts dataframe by TimePeriod period_indicator and period_number. Assuming all values are present (only for identifiers)
     """
@@ -418,7 +418,7 @@ def sort_dataframe_by_period_column(data, name, identifiers_names):
     return data
 
 
-def next_period(x: TimePeriodHandler):
+def next_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
     if y.period_number == PeriodDuration.periods[x.period_indicator]:
         y.year += 1
@@ -428,7 +428,7 @@ def next_period(x: TimePeriodHandler):
     return y
 
 
-def previous_period(x: TimePeriodHandler):
+def previous_period(x: TimePeriodHandler) -> TimePeriodHandler:
     y = copy.copy(x)
     if x.period_number == 1:
         y.year -= 1
@@ -438,7 +438,7 @@ def previous_period(x: TimePeriodHandler):
     return y
 
 
-def shift_period(x: TimePeriodHandler, shift_param: int):
+def shift_period(x: TimePeriodHandler, shift_param: int) -> TimePeriodHandler:
     if x.period_indicator == "A":
         x.year += shift_param
         return x
@@ -447,13 +447,13 @@ def shift_period(x: TimePeriodHandler, shift_param: int):
     return x
 
 
-def sort_time_period(series: pd.Series):
+def sort_time_period(series: pd.Series) -> pd.Series:
     values_sorted = sorted(series.to_list(),
                            key=lambda s: (s.year, DURATION_MAPPING[s.period_indicator], s.period_number))
     return pd.Series(values_sorted, name=series.name)
 
 
-def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler):
+def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler) -> list[TimePeriodHandler]:
     period_range = [start]
     if start.period_indicator != end.period_indicator:
         raise SemanticError("2-1-19-3", period1=start.period_indicator, period2=end.period_indicator)
@@ -468,7 +468,7 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler):
     return period_range
 
 
-def check_max_date(str_: str):
+def check_max_date(str_: str) -> str:
     if pd.isnull(str_) or str_ == 'nan' or str_ == 'NaT':
         return None
 
@@ -484,13 +484,13 @@ def check_max_date(str_: str):
     return result.isoformat()
 
 
-def str_period_to_date(value: str, start=False) -> date:
+def str_period_to_date(value: str, start: bool = False) -> date:
     if len(value) < 6:
         return date(int(value[:4]), 1, 1) if start else date(int(value[:4]), 12, 31)
     return TimePeriodHandler(value).start_date(as_date=False) if start else TimePeriodHandler(value).end_date(as_date=False)
 
 
-def date_to_period_str(date_value: date, period_indicator):
+def date_to_period_str(date_value: date, period_indicator: str) -> str:
     if isinstance(date_value, str):
         date_value = check_max_date(date_value)
         date_value = date.fromisoformat(date_value)

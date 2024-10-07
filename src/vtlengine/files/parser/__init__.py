@@ -22,7 +22,7 @@ TIME_CHECKS_MAPPING = {
 }
 
 
-def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
+def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
     # GE1 check if the file is empty
     if not csv_path.exists():
         raise Exception(f"Path {csv_path} does not exist.")
@@ -125,7 +125,7 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
-def _parse_boolean(value: str):
+def _parse_boolean(value: str) -> bool:
     if value.lower() == "true" or value == "1":
         return True
     return False
@@ -180,7 +180,7 @@ def _validate_pandas(components: Dict[str, Component], data: pd.DataFrame,
 
 def load_datapoints(components: Dict[str, Component],
                     dataset_name: str,
-                    csv_path: Optional[Union[Path, str]] = None):
+                    csv_path: Optional[Union[Path, str]] = None) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, str):
@@ -195,5 +195,5 @@ def load_datapoints(components: Dict[str, Component],
     return data
 
 
-def _fill_dataset_empty_data(dataset: Dataset):
+def _fill_dataset_empty_data(dataset: Dataset) -> None:
     dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))

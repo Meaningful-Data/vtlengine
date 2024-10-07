@@ -13,18 +13,18 @@ class TimePeriodRepresentation(Enum):
     VTL = 'vtl'
 
     @classmethod
-    def check_value(cls, value: str):
+    def check_value(cls, value: str) -> 'TimePeriodRepresentation':
         if value not in cls._value2member_map_:
             raise Exception("Invalid Time Period Representation")
         return cls(value)
 
 
-def _format_vtl_representation(value: str):
+def _format_vtl_representation(value: str) -> str:
     return TimePeriodHandler(value).vtl_representation()
 
 
 def format_time_period_external_representation(dataset: Dataset | Scalar,
-                                               mode: TimePeriodRepresentation):
+                                               mode: TimePeriodRepresentation) -> None:
     """
     From SDMX time period representation to standard VTL representation (no hyphen).
     'A': 'nothing to do',

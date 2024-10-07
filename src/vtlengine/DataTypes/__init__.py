@@ -46,10 +46,10 @@ class ScalarType:
             raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
         return self.__class__.__name__ == other.__class__.__name__
 
-    def __ne__(self, other: Any):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def instance_is_included(self, set_: set) -> bool:
@@ -64,11 +64,11 @@ class ScalarType:
         return not issubclass(cls, promoted)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -79,14 +79,14 @@ class ScalarType:
         return False
 
     @classmethod
-    def check_type(cls, value):
+    def check_type(cls, value: Any) -> bool:
         if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
 
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> Any:
         if pd.isnull(value):
             return None
         return CAST_MAPPING[cls.__name__](value)
@@ -105,7 +105,7 @@ class String(ScalarType):
     default = ""
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> str:
         # if pd.isna(value):
         #     return cls.default
         if from_type in {Number, Integer, Boolean, String, Date, TimePeriod, TimeInterval,
@@ -117,7 +117,7 @@ class String(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> str:
         if from_type in {TimePeriod, Date, String}:
             return str(value)
 
@@ -130,15 +130,15 @@ class Number(ScalarType):
     """
     """
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (self.__class__.__name__ == other.__class__.__name__ or
                 other.__class__.__name__ == Integer.__name__)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> float:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> float:
         # if pd.isna(value):
         #     return cls.default
         if from_type in {Integer, Number}:
@@ -149,7 +149,7 @@ class Number(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> float:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> float:
         if from_type in {Boolean}:
             if value:
                 return 1.0
@@ -166,7 +166,7 @@ class Number(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> float:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -181,15 +181,15 @@ class Integer(Number):
     """
     """
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (self.__class__.__name__ == other.__class__.__name__ or
                 other.__class__.__name__ == Number.__name__)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> int:
         if from_type.__name__ == "Integer":
             return value
 
@@ -206,7 +206,7 @@ class Integer(Number):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> int:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> int:
         if from_type in {Boolean}:
             if value:
                 return 1
@@ -229,7 +229,7 @@ class Integer(Number):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> int:
         if pd.isnull(value):
             return None
         if isinstance(value, float):
@@ -253,7 +253,7 @@ class TimeInterval(ScalarType):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {TimeInterval, String}:
             return value
@@ -272,7 +272,7 @@ class TimeInterval(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
 
         raise SemanticError("2-1-5-1", value=value,
                             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -286,7 +286,7 @@ class Date(TimeInterval):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {Date, String}:
             return value
@@ -296,7 +296,7 @@ class Date(TimeInterval):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
             return value
@@ -313,7 +313,7 @@ class TimePeriod(TimeInterval):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {TimePeriod, String}:
             return value
@@ -323,7 +323,7 @@ class TimePeriod(TimeInterval):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         if from_type in {Date}:
             try:
                 period_str = date_to_period_str(value, "D")
@@ -344,7 +344,7 @@ class TimePeriod(TimeInterval):
 class Duration(ScalarType):
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> str:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> str:
         if from_type in {Duration, String}:
             return value
 
@@ -353,7 +353,7 @@ class Duration(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> Any:
         if from_type == String:
             return value
 
@@ -367,7 +367,7 @@ class Boolean(ScalarType):
     """
     default = None
 
-    def cast(self, value):
+    def cast(self, value: Any) -> bool:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -396,7 +396,7 @@ class Boolean(ScalarType):
         return value
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
+    def implicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> bool:
         if from_type in {Boolean}:
             return value
 
@@ -405,7 +405,7 @@ class Boolean(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type['ScalarType']) -> bool:
+    def explicit_cast(cls, value: Any, from_type: Type['ScalarType']) -> bool:
         if from_type in {Number, Integer}:
             if value in {0, 0.0}:
                 return False
@@ -423,13 +423,13 @@ class Null(ScalarType):
     def is_null_type(self) -> bool:
         return True
 
-    def check_type(self, value):
+    def check_type(self, value: Any) -> bool:
         return True
 
-    def cast(self, value):
+    def cast(self, value: Any) -> None:
         return None
 
-    def dtype(self):
+    def dtype(self) -> str:
         return 'string'
 
 

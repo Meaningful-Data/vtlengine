@@ -9,7 +9,7 @@ from vtlengine.files.output._time_period_representation import \
 
 
 def save_datapoints(time_period_representation: Optional[TimePeriodRepresentation],
-                    dataset: Dataset, output_path: Union[str, Path]):
+                    dataset: Dataset, output_path: Union[str, Path]) -> None:
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
 

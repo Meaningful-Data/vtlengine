@@ -224,7 +224,8 @@ class Binary(Operator):
             return series.map(lambda x: cls.py_op(scalar, x), na_action='ignore')
 
     @classmethod
-    def validate(cls, left_operand: ALL_MODEL_DATA_TYPES, right_operand: ALL_MODEL_DATA_TYPES):
+    def validate(cls, left_operand: ALL_MODEL_DATA_TYPES,
+                 right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
@@ -307,7 +308,7 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar):
+    def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar) -> Dataset:
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
 
@@ -350,7 +351,7 @@ class Binary(Operator):
         return result
 
     @classmethod
-    def component_scalar_validation(cls, component: DataComponent, scalar: Scalar):
+    def component_scalar_validation(cls, component: DataComponent, scalar: Scalar) -> DataComponent:
         cls.type_validation(component.data_type, scalar.data_type)
 
         result = DataComponent(name=component.name,
@@ -389,7 +390,7 @@ class Binary(Operator):
         return result
 
     @classmethod
-    def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet):
+    def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
         cls.type_validation(scalar.data_type, scalar_set.data_type)
         return Scalar(name="result",
                       data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
@@ -463,7 +464,7 @@ class Binary(Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset):
+    def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
 
         use_right_as_base = False
@@ -532,7 +533,7 @@ class Binary(Operator):
 
     @classmethod
     def dataset_scalar_evaluation(cls, dataset: Dataset, scalar: Scalar,
-                                  dataset_left=True) -> Dataset:
+                                  dataset_left: bool = True) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
         result_data = dataset.data.copy()
         result_dataset.data = result_data
@@ -652,7 +653,7 @@ class Unary(Operator):
         return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
-    def validate(cls, operand: ALL_MODEL_DATA_TYPES):
+    def validate(cls, operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.

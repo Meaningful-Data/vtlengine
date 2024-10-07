@@ -110,7 +110,7 @@ class Parameterized(Unary):
 
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES, param1: Optional[Scalar] = None,
-                 param2: Optional[Scalar] = None):
+                 param2: Optional[Scalar] = None) -> Any:
 
         if param1 is not None:
             cls.check_param(param1, 1)

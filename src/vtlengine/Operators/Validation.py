@@ -180,7 +180,7 @@ class Check_Hierarchy(Validation):
         return result
 
     @staticmethod
-    def validate_hr_dataset(dataset: Dataset, component_name: str):
+    def validate_hr_dataset(dataset: Dataset, component_name: str) -> None:
         if len(dataset.get_measures()) != 1:
             raise SemanticError("1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy",
                                 me_type="Number")
