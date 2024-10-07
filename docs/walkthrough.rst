@@ -13,16 +13,32 @@ Here is an example:
 .. code-block:: python
 
     from vtlengine import semantic_analysis
-    from pathlib import Path
 
-    base_path = Path(__file__).parent / "tests/API/data/"
-    script = base_path / Path("vtl/1.vtl")
-    datastructures = base_path / Path("DataStructure/input")
-    value_domains = base_path / Path("ValueDomain/VD_1.json")
-    external_routines = base_path / Path("sql/1.sql")
+    script = """
+        DS_A := DS_1 * 10;
+    """
 
-    semantic_analysis(script=script, data_structures=datastructures,
-                      value_domains=value_domains, external_routines=external_routines)
+    data_structures = {
+        'datasets': [
+            {'name': 'DS_1',
+             'DataStructure': [
+                 {'name': 'Id_1',
+                  'type':
+                  'Integer',
+                  'role': 'Identifier',
+                  'nullable': False},
+                  {'name': 'Me_1',
+                   'type': 'Number',
+                   'role': 'Measure',
+                   'nullable': True}
+                   ]
+            }
+        ]
+    }
+
+    sa_result = semantic_analysis(script=script, data_structures=data_structures)
+
+    print(sa_result)
 
 
 The semantic analysis function will return a dictionary of the computed datasets and their structure.
@@ -36,21 +52,40 @@ To execute a VTL script, please use the run function. Here is an example:
 .. code-block:: python
 
     from vtlengine import run
-    from pathlib import Path
+    import pandas as pd
 
-    base_path = Path(__file__).parent / "tests/API/data/"
-    script = base_path / Path("vtl/1.vtl")
-    datastructures = base_path / Path("DataStructure/input")
-    datapoints = base_path / Path("DataSet/input")
-    output_folder = base_path / Path("DataSet/output")
+    script = """
+        DS_A := DS_1 * 10;
+    """
 
-    value_domains = None
-    external_routines = None
+    data_structures = {
+        'datasets': [
+            {'name': 'DS_1',
+             'DataStructure': [
+                 {'name': 'Id_1',
+                  'type':
+                  'Integer',
+                  'role': 'Identifier',
+                  'nullable': False},
+                  {'name': 'Me_1',
+                   'type': 'Number',
+                   'role': 'Measure',
+                   'nullable': True}
+                   ]
+            }
+        ]
+    }
 
-    run(script=script, data_structures=datastructures, datapoints=datapoints,
-        value_domains=value_domains, external_routines=external_routines,
-        output_folder=output_folder, return_only_persistent=True
-        )
+    data_df = pd.DataFrame(
+        {"Id_1": [1,2,3],
+         "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+
+    run_result = run(script=script, data_structures=data_structures,
+                    datapoints=datapoints)
+
+    print(run_result)
 
 The VTL engine will load each datapoints file as being needed, reducing the memory footprint.
 When the output parameter is set, the engine will write the result of the computation
