@@ -196,7 +196,8 @@ def load_datasets_with_data(
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name}")
-            datasets[dataset_name].data = _validate_pandas(datasets[dataset_name].components, data)
+            datasets[dataset_name].data = _validate_pandas(datasets[dataset_name].components,
+                                                           data, dataset_name)
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:
                 datasets[dataset_name].data = pd.DataFrame(
