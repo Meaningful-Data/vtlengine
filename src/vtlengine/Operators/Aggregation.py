@@ -1,5 +1,5 @@
 from copy import copy
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import duckdb
 import pandas as pd
@@ -19,7 +19,7 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 
 def extract_grouping_identifiers(identifier_names: List[str],
                                  group_op: str,
-                                 grouping_components: List[str]) -> List[str]:
+                                 grouping_components: Any) -> List[str]:
     if group_op == 'group by':
         return grouping_components
     elif group_op == 'group except':
@@ -87,7 +87,7 @@ class Aggregation(Operator.Unary):
     def validate(cls, operand: Dataset,
                  group_op: Optional[str],
                  grouping_columns: Optional[List[str]],
-                 having_data: Optional[List[DataComponent]]) -> Dataset:
+                 having_data: Any) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)

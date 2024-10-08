@@ -62,7 +62,7 @@ class Binary(Operator.Binary):
 
     @classmethod
     def _cast_values(cls, x: Union[int, float, str, bool],
-                     y: Union[int, float, str, bool]) -> tuple:
+                     y: Union[int, float, str, bool]) -> Any:
         # Cast both values to the same data type
         # An integer can be considered a bool, we must check first boolean, then numbers
         try:

@@ -1,5 +1,5 @@
 import os
-from typing import List, Any
+from typing import List, Any, Dict
 
 from vtlengine.Exceptions import SemanticError
 
@@ -38,7 +38,7 @@ class Set(Operator):
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
 
-        result_components = {}
+        result_components: Dict[str, Any] = {}
         for operand in operands:
             if len(result_components) == 0:
                 result_components = operand.components

@@ -23,14 +23,14 @@ class Join(Operator):
 
     @classmethod
     def get_components_union(cls, datasets: List[Dataset]) -> List[Component]:
-        common = []
+        common: List[Any] = []
         common.extend(copy(comp) for dataset in datasets for comp in dataset.components.values() if
                       comp not in common)
         return common
 
     @classmethod
     def get_components_intersection(cls, *operands: List[Component]) -> Any:
-        element_count = {}
+        element_count: Dict[str, Any] = {}
         for operand in operands:
             operand_set = set(operand)
             for element in operand_set:

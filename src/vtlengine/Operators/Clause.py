@@ -92,7 +92,7 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy()
+        result_dataset.data = copy(dataset.data)
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -298,7 +298,7 @@ class Sub(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy()
+        result_dataset.data = copy(dataset.data)
         operand_names = [operand.name for operand in operands]
         if len(dataset.data) > 0:
             # Filter the Dataframe

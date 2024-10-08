@@ -20,8 +20,6 @@ else:
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
 ALL_MODEL_DATA_TYPES = Union[str, Dataset, Scalar, DataComponent]
-ALL_SCALAR_TYPES = Union[type[Integer], type[Number], type[String], type[Boolean], type[Date],
-                    type[Duration], type[TimePeriod], type[TimeInterval], type[Null]]
 
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
@@ -38,8 +36,8 @@ class Operator:
     op: str = None
     py_op: str = None
     spark_op: str = None
-    type_to_check: ALL_SCALAR_TYPES = None
-    return_type: ALL_SCALAR_TYPES = None
+    type_to_check: Any = None
+    return_type: Any = None
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:

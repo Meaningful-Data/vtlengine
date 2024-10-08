@@ -68,7 +68,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
             # Check if the S3 URI is a directory
             if s3fs_obj.isdir(datapoint):
-                datapoints = {}
+                datapoints: Dict[str, Any] = {}
                 for f in s3fs_obj.ls(datapoint):
                     if f.endswith('.csv'):
                         dataset_name = f.split('/')[-1].removesuffix('.csv')
@@ -106,7 +106,7 @@ def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]) 
     Returns a dict with the data given from a Path.
     """
     if isinstance(datapoints, list):
-        dict_datapoints = {}
+        dict_datapoints: Dict[str, Any] = {}
         for x in datapoints:
             result = _load_single_datapoint(x)
             dict_datapoints = {**dict_datapoints, **result}
@@ -125,7 +125,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
     if not data_structure.exists():
         raise Exception('Invalid datastructure. Input does not exist')
     if data_structure.is_dir():
-        datasets = {}
+        datasets: Dict[str, Any] = {}
         for f in data_structure.iterdir():
             if f.suffix != '.json':
                 continue
@@ -147,7 +147,7 @@ def load_datasets(data_structure: Union[Dict[str, Any], Path, List[Union[Dict[st
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure)
     if isinstance(data_structure, list):
-        ds_structures = {}
+        ds_structures: Dict[str, Any] = {}
         for x in data_structure:
             result = _load_datastructure_single(x)
             ds_structures = {**ds_structures, **result}  # Overwrite ds_structures dict.
@@ -234,7 +234,7 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
     if not input.exists():
         raise Exception('Invalid vd file. Input does not exist')
     if input.is_dir():
-        value_domains = {}
+        value_domains: Dict[str, Any] = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}

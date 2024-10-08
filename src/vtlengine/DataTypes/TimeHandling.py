@@ -2,7 +2,7 @@ import calendar
 import copy
 import operator
 from datetime import date, datetime as dt
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Dict
 
 import pandas as pd
 
@@ -117,7 +117,7 @@ class SingletonMeta(type):
     metaclass because it is best suited for this purpose.
     """
 
-    _instances = {}
+    _instances: Dict[str, Any] = {}
 
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         """

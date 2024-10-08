@@ -323,7 +323,8 @@ class InterpreterAnalyzer(ASTTemplate):
         operand = self.visit(node.operand)
         if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
             raise NotImplementedError
-        if self.is_from_regular_aggregation and node.op in ROLE_SETTER_MAPPING:
+        if (self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None
+                and node.op in ROLE_SETTER_MAPPING):
             if self.regular_aggregation_dataset.data is None:
                 data_size = 0
             else:
@@ -380,7 +381,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic:
                     data = None
                 else:
-                    data = operand.data.copy()
+                    data = copy(operand.data)
                 self.aggregation_dataset = Dataset(name=operand.name,
                                                    components=operand.components,
                                                    data=data)

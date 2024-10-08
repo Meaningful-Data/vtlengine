@@ -362,7 +362,7 @@ class Cast(Operator.Unary):
         return result_dataset
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar, to_type: ScalarType,
+    def scalar_evaluation(cls, operand: Any, to_type: Any,
                           mask: Optional[str] = None) -> Scalar:
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
