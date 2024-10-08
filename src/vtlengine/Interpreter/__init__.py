@@ -47,7 +47,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
-    ds_analysis: Optional[dict] = None
+    ds_analysis: Optional[Dict[str, Any]] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
     output_path: Optional[Union[str, Path]] = None
     # Time Period Representation
@@ -107,6 +107,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def _save_datapoints_efficient(self, statement_num: int) -> None:
         if self.output_path is None:
             # Keeping the data in memory if no output path is provided
+            return
+        if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis[DELETE]:
             return
@@ -725,7 +727,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
-            role_info = {child.left.value: child.left.role for child in node.children}
+            role_info = {child.left.value: child.left.role for child in node.children if hasattr(child, 'left')}
             dataset = copy(operands[0])
             dataset.name = self.regular_aggregation_dataset.name
             dataset.components = {comp_name: comp for comp_name, comp in dataset.components.items()
@@ -755,7 +757,7 @@ class InterpreterAnalyzer(ASTTemplate):
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
-            if not isinstance(operands[0], DataComponent):
+            if not isinstance(operands[0], DataComponent) and hasattr(child, 'left'):
                 measure = child.left.value
                 operands[0] = DataComponent(name=measure,
                                             data=operands[0].data[measure],
@@ -1323,6 +1325,9 @@ class InterpreterAnalyzer(ASTTemplate):
         self.else_condition_dataset.append(else_dataset)
 
     def merge_then_else_datasets(self, left_operand: Any, right_operand: Any) -> Any:
+        if (self.then_condition_dataset is None or self.else_condition_dataset is None or
+                self.if_stack is None):
+            return left_operand, right_operand
         merge_dataset = self.then_condition_dataset.pop() if self.if_stack.pop() == THEN_ELSE[
             'then'] else (self.else_condition_dataset.pop())
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()

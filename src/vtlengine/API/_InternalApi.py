@@ -21,7 +21,7 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
-def _load_dataset_from_structure(structures: dict) -> Dict[str, Dataset]:
+def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Dataset]:
     """
     Loads a dataset with the structure given.
     """
@@ -50,7 +50,7 @@ def _load_dataset_from_structure(structures: dict) -> Dict[str, Dataset]:
     return datasets
 
 
-def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, str]:
+def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     """
     Returns a dict with the data given from one dataset.
     """
@@ -114,7 +114,7 @@ def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]) 
     return _load_single_datapoint(datapoints)
 
 
-def _load_datastructure_single(data_structure: Union[dict, Path]) -> Dict[str, Dataset]:
+def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> Dict[str, Dataset]:
     """
     Loads a single data structure.
     """
@@ -140,7 +140,7 @@ def _load_datastructure_single(data_structure: Union[dict, Path]) -> Dict[str, D
     return _load_dataset_from_structure(structures)
 
 
-def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]) -> Dict[str, Dataset]:
+def load_datasets(data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
     """
@@ -155,8 +155,7 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]) ->
     return _load_datastructure_single(data_structure)
 
 
-def load_datasets_with_data(data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-                            datapoints: Optional[Union[Dict[str, Any], Path, List[Path]]] = None) -> Any:
+def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints. Returns a dict with the
     structure and a pandas dataframe.
