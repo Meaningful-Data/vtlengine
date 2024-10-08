@@ -1,4 +1,4 @@
-from typing import Any, Type, Union
+from typing import Any, Type, Union, Optional
 
 import pandas as pd
 from numpy import ScalarType
@@ -35,7 +35,7 @@ class ScalarType:
 
     default = None
 
-    def __name__(self) -> str:
+    def __name__(self) -> Any:
         return self.__class__.__name__
 
     def __repr__(self) -> str:
@@ -166,7 +166,7 @@ class Number(ScalarType):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def cast(cls, value: Any) -> float:
+    def cast(cls, value: Any) -> Optional[float]:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -229,7 +229,7 @@ class Integer(Number):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[cls])
 
     @classmethod
-    def cast(cls, value: Any) -> int:
+    def cast(cls, value: Any) -> Optional[int]:
         if pd.isnull(value):
             return None
         if isinstance(value, float):
@@ -367,7 +367,7 @@ class Boolean(ScalarType):
     """
     default = None
 
-    def cast(self, value: Any) -> bool:
+    def cast(self, value: Any) -> Optional[bool]:
         if pd.isnull(value):
             return None
         if isinstance(value, str):

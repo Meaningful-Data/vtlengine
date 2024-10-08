@@ -244,8 +244,7 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Optional[
-    Dict[str, ExternalRoutine]]:
+def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
     """
     Load the external routines.
 
@@ -287,7 +286,7 @@ def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start) -
             isinstance(dataset, Dataset) and dataset.name in persistent}
 
 
-def _load_single_external_routine_from_file(input: Path) -> ExternalRoutine:
+def _load_single_external_routine_from_file(input: Path) -> Any:
     """
     Returns a single external routine.
     """

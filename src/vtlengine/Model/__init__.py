@@ -316,7 +316,7 @@ class ScalarSet:
     data_type: ScalarType
     values: List[Union[int, float, str, bool]]
 
-    def __contains__(self, item: str) -> bool:
+    def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
             item = int(item)
         if self.data_type == DataTypes.Null:
@@ -386,7 +386,7 @@ class ExternalRoutine:
     name: str
 
     @classmethod
-    def from_sql_query(cls, name: str, query: str) -> str:
+    def from_sql_query(cls, name: str, query: str) -> 'ExternalRoutine':
         dataset_names = cls._extract_dataset_names(query)
         return cls(dataset_names, query, name)
 

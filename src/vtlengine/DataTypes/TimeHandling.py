@@ -29,7 +29,7 @@ DURATION_MAPPING_REVERSED = {
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
 
 
-def date_to_period(date_value: date, period_indicator: str) -> 'TimePeriodHandler':
+def date_to_period(date_value: date, period_indicator: str) -> Any:
     if period_indicator == "A":
         return TimePeriodHandler(f"{date_value.year}A")
     elif period_indicator == "S":
@@ -266,22 +266,22 @@ class TimePeriodHandler:
                                     start=False)
         return date_value if as_date else date_value.isoformat()
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: Any) -> Optional[bool]:
         return not self._meta_comparison(other, operator.eq)
 
-    def __lt__(self, other: Any) -> bool:
+    def __lt__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.lt)
 
-    def __le__(self, other: Any) -> bool:
+    def __le__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.le)
 
-    def __gt__(self, other: Any) -> bool:
+    def __gt__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.gt)
 
-    def __ge__(self, other: Any) -> bool:
+    def __ge__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.ge)
 
     def change_indicator(self, new_indicator: str) -> None:
@@ -371,22 +371,22 @@ class TimeIntervalHandler:
             other = TimeIntervalHandler(*other.split('/', maxsplit=1))
         return py_op(self.length, other.length)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.ne)
 
-    def __lt__(self, other: Any) -> bool:
+    def __lt__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.lt)
 
-    def __le__(self, other: Any) -> bool:
+    def __le__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.le)
 
-    def __gt__(self, other: Any) -> bool:
+    def __gt__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.gt)
 
-    def __ge__(self, other: Any) -> bool:
+    def __ge__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.ge)
 
     @classmethod
@@ -468,7 +468,7 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler) -> l
     return period_range
 
 
-def check_max_date(str_: str) -> str:
+def check_max_date(str_: str) -> Optional[str]:
     if pd.isnull(str_) or str_ == 'nan' or str_ == 'NaT':
         return None
 
@@ -484,13 +484,14 @@ def check_max_date(str_: str) -> str:
     return result.isoformat()
 
 
-def str_period_to_date(value: str, start: bool = False) -> date:
+def str_period_to_date(value: str, start: bool = False) -> Any:
     if len(value) < 6:
         return date(int(value[:4]), 1, 1) if start else date(int(value[:4]), 12, 31)
-    return TimePeriodHandler(value).start_date(as_date=False) if start else TimePeriodHandler(value).end_date(as_date=False)
+    return TimePeriodHandler(value).start_date(as_date=False) if start else (
+        TimePeriodHandler(value).end_date(as_date=False))
 
 
-def date_to_period_str(date_value: date, period_indicator: str) -> str:
+def date_to_period_str(date_value: date, period_indicator: str) -> Any:
     if isinstance(date_value, str):
         date_value = check_max_date(date_value)
         date_value = date.fromisoformat(date_value)

@@ -1,7 +1,7 @@
 import os
 from copy import copy
 from functools import reduce
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 from vtlengine.DataTypes import binary_implicit_promotion
 
@@ -29,7 +29,7 @@ class Join(Operator):
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: List[Component]) -> List[str]:
+    def get_components_intersection(cls, *operands: List[Component]) -> Any:
         element_count = {}
         for operand in operands:
             operand_set = set(operand)

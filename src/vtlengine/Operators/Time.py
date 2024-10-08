@@ -41,7 +41,7 @@ class Time(Operators.Operator):
     def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
         time_id = cls._get_time_id(operand)
         if time_id is None:
-            return
+            return None
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
         ids.append(time_id)
         if operand.data is None:
@@ -73,7 +73,7 @@ class Time(Operators.Operator):
         return 'D' if min_days else 'M' if min_months else 'Y'
 
     @classmethod
-    def get_frequency_from_time(cls, interval: str) -> str:
+    def get_frequency_from_time(cls, interval: str) -> Any:
         start_date, end_date = interval.split('/')
         return date.fromisoformat(end_date) - date.fromisoformat(start_date)
 
@@ -650,7 +650,7 @@ class Time_Aggregation(Time):
             return cls.scalar_evaluation(operand, period_from, period_to, conf)
 
 
-def _time_period_access(v: str, to_param: str) -> str:
+def _time_period_access(v: str, to_param: str) -> Any:
     v = TimePeriodHandler(v)
     if v.period_indicator == to_param:
         return str(v)
@@ -658,7 +658,7 @@ def _time_period_access(v: str, to_param: str) -> str:
     return str(v)
 
 
-def _date_access(v: str, to_param: str, start: bool) -> str:
+def _date_access(v: str, to_param: str, start: bool) -> Any:
     period_value = date_to_period(date.fromisoformat(v), to_param)
     if start:
         return period_value.start_date()

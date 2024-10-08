@@ -177,7 +177,7 @@ def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key
     right_data[join_key] = right_data[join_key].astype(object)
 
 
-def _handle_str_number(x: Union[str, int, float]) -> Union[int, float]:
+def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
     if isinstance(x, int):
         return x
     try:
@@ -225,7 +225,7 @@ class Binary(Operator):
 
     @classmethod
     def validate(cls, left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+                 right_operand: ALL_MODEL_DATA_TYPES) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
@@ -605,7 +605,7 @@ class Binary(Operator):
 
     @classmethod
     def evaluate(cls, left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+                 right_operand: ALL_MODEL_DATA_TYPES) -> Any:
         """
         Evaluate the operation (based on validation output)
         :param left_operand: The left operand
@@ -653,7 +653,7 @@ class Unary(Operator):
         return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
-    def validate(cls, operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+    def validate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
@@ -745,7 +745,7 @@ class Unary(Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> ALL_MODEL_DATA_TYPES:
+    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand)

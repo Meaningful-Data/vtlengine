@@ -31,7 +31,7 @@ class Cast(Operator.Unary):
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
-    def cast_string_to_number(cls, value: Any, mask_value: Any) -> float:
+    def cast_string_to_number(cls, value: Any, mask_value: Any) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
@@ -40,7 +40,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_date(cls, value: Any, mask_value: str) -> float:
+    def cast_string_to_date(cls, value: Any, mask_value: str) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
@@ -49,7 +49,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_duration(cls, value: Any, mask_value: str) -> str:
+    def cast_string_to_duration(cls, value: Any, mask_value: str) -> Any:
         """
         This method casts a string to a duration, according to the mask.
 
@@ -58,7 +58,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time_period(cls, value: Any, mask_value: str) -> str:
+    def cast_string_to_time_period(cls, value: Any, mask_value: str) -> Any:
         """
         This method casts a string to a time period, according to the mask.
 
@@ -67,7 +67,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, value: Any, mask_value: str) -> str:
+    def cast_string_to_time(cls, value: Any, mask_value: str) -> Any:
         """
         This method casts a string to a time, according to the mask.
 
@@ -76,25 +76,25 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_date_to_string(cls, value: Any, mask_value: str) -> str:
+    def cast_date_to_string(cls, value: Any, mask_value: str) -> Any:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_duration_to_string(cls, value: Any, mask_value: str) -> str:
+    def cast_duration_to_string(cls, value: Any, mask_value: str) -> Any:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_to_string(cls, value: Any, mask_value: str) -> str:
+    def cast_time_to_string(cls, value: Any, mask_value: str) -> Any:
         """
         """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Date:
+    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
         """
         """
         start = mask_value == "START"
@@ -260,10 +260,8 @@ class Cast(Operator.Unary):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
-    def validate(
-            cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-            scalarType: ScalarType, mask: Optional[str] = None
-    ) -> Operator.ALL_MODEL_DATA_TYPES:
+    def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
+            scalarType: ScalarType, mask: Optional[str] = None) -> Any:
         if mask is not None:
             if not isinstance(mask, str):
                 raise Exception(f"{cls.op} mask must be a string")
@@ -330,9 +328,8 @@ class Cast(Operator.Unary):
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod
-    def evaluate(
-            cls, operand: Operator.ALL_MODEL_DATA_TYPES, scalarType: ScalarType,
-            mask: Optional[str] = None) -> Operator.ALL_MODEL_DATA_TYPES:
+    def evaluate(cls, operand: Operator.ALL_MODEL_DATA_TYPES, scalarType: ScalarType,
+            mask: Optional[str] = None) -> Any:
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, scalarType, mask)

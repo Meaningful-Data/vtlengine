@@ -281,13 +281,12 @@ class Parameterized(Unary):
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None) -> ALL_MODEL_DATA_TYPES:
+                 param: Optional[Union[DataComponent, Scalar]] = None) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)
         if isinstance(operand, DataComponent):
             return cls.component_evaluation(operand, param)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand, param)
+        return cls.scalar_evaluation(operand, param)
 
 
 class Round(Parameterized):

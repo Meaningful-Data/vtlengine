@@ -207,6 +207,7 @@ class Nvl(Binary):
 
     @classmethod
     def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
+        result_components = {}
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
                 raise ValueError(
@@ -237,4 +238,4 @@ class Nvl(Binary):
                                  if comp.role != Role.ATTRIBUTE}
             for comp in result_components.values():
                 comp.nullable = False
-            return Dataset(name='result', components=result_components, data=None)
+        return Dataset(name='result', components=result_components, data=None)

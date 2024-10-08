@@ -455,7 +455,7 @@ class Instr(Parameterized):
                  param1: Optional[Union[DataComponent, Scalar]] = None,
                  param2: Optional[Union[DataComponent, Scalar]] = None,
                  param3: Optional[
-                     Union[DataComponent, Scalar]] = None) -> Operator.ALL_MODEL_DATA_TYPES:
+                     Union[DataComponent, Scalar]] = None) -> Any:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):

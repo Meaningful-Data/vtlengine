@@ -1377,7 +1377,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.datasets[node.value]
         return node.value
 
-    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> Union[AST.AST, Dataset]:
+    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> Any:
         """
         DefIdentifier: (value, kind)
 
@@ -1453,7 +1453,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 df[measure_name] = 0
             else:  # For non_null, partial_null and always_null
                 df[measure_name] = None
-        if self.ruleset_mode in ('partial_null', 'partial_zero'):
+        if self.hr_partial_is_valid is not None and self.ruleset_mode in ('partial_null', 'partial_zero'):
             self.hr_partial_is_valid.append(partial_is_valid)
         return Dataset(name=name, components=result_components, data=df)
 
