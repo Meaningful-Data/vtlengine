@@ -1,4 +1,6 @@
 import re
+import pandas as pd
+
 from datetime import date
 from typing import Optional, Union, List, Any, Dict
 
@@ -97,7 +99,7 @@ class Unary(Time):
     @classmethod
     def evaluate(cls, operand: Dataset) -> Dataset:
         result = cls.validate(operand)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         if len(operand.data) < 2:
             return result
 
@@ -167,7 +169,7 @@ class Period_indicator(Unary):
             return result
         cls.time_id = cls._get_time_id(operand)
 
-        result.data = operand.data.copy()[result.get_identifiers_names()]
+        result.data = operand.data.copy()[result.get_identifiers_names()] if operand.data is not None else pd.Series()
         period_series = result.data[cls.time_id].map(cls._get_period)
         result.data['duration_var'] = period_series
 
@@ -188,7 +190,7 @@ class Fill_time_series(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
             return result
@@ -434,7 +436,7 @@ class Time_Shift(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
         result = cls.validate(operand, shift_value)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
         data_type = result.components[cls.time_id].data_type
@@ -598,7 +600,7 @@ class Time_Aggregation(Time):
     def dataset_evaluation(cls, operand: Dataset, period_from: Optional[str], period_to: str,
                            conf: str) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame
         time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(x, time_measure.data_type,

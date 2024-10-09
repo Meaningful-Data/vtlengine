@@ -1,3 +1,5 @@
+import pandas as pd
+
 from copy import copy
 from typing import List, Union
 
@@ -48,7 +50,7 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy()
+        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -115,7 +117,7 @@ class Filter(Operator):
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data.copy()
+        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         if len(condition.data) > 0:
             true_indexes = condition.data[condition.data == True].index
             result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)

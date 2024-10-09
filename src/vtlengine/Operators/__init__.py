@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from copy import copy
 from typing import Any, Union, Type
 
@@ -533,7 +534,7 @@ class Binary(Operator):
     def dataset_scalar_evaluation(cls, dataset: Dataset, scalar: Scalar,
                                   dataset_left: bool = True) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
-        result_data = dataset.data.copy()
+        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         result_dataset.data = result_data
 
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
@@ -555,8 +556,10 @@ class Binary(Operator):
     def component_evaluation(cls, left_operand: DataComponent,
                              right_operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
-        left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy())
-        right_data = cls.cast_time_types(right_operand.data_type, right_operand.data.copy())
+        left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy() if
+                                                left_operand.data is not None else pd.Series())
+        right_data = cls.cast_time_types(right_operand.data_type, right_operand.data.copy() if
+                                                right_operand.data is not None else pd.Series())
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
 
@@ -564,7 +567,8 @@ class Binary(Operator):
     def component_scalar_evaluation(cls, component: DataComponent, scalar: Scalar,
                                     component_left: bool) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(component.data_type, component.data.copy())
+        comp_data = cls.cast_time_types(component.data_type, component.data.copy() if
+                                        component.data is not None else pd.Series())
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
             scalar_value = DURATION_MAPPING[scalar_value]
@@ -575,7 +579,7 @@ class Binary(Operator):
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data.copy()
+        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
 
         for measure_name in dataset.get_measures_names():
             result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
@@ -591,8 +595,8 @@ class Binary(Operator):
     def component_set_evaluation(cls, component: DataComponent,
                                  scalar_set: ScalarSet) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_component.data = cls.apply_operation_two_series(component.data.copy(),
-                                                               scalar_set)
+        result_component.data = cls.apply_operation_two_series(component.data.copy() if
+                                    component.data is not None else pd.Series(), scalar_set)
         return result_component
 
     @classmethod
@@ -755,7 +759,7 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data.copy()
+        result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
@@ -775,5 +779,5 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_component.data = cls.apply_operation_component(operand.data.copy())
+        result_component.data = cls.apply_operation_component(operand.data.copy() if operand.data is not None else pd.Series())
         return result_component

@@ -172,8 +172,8 @@ class NotIn(Binary):
 
     @classmethod
     def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: list) -> Any:
+                                   left_series: pd.Series,
+                                   right_series: pd.Series) -> pd.Series:
         series_result = In.apply_operation_two_series(left_series, right_series)
         return series_result.map(lambda x: not x, na_action='ignore')
 

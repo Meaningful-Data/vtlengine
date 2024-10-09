@@ -53,7 +53,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Time Period Representation
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
-    nested_if = False
+    nested_if: Union[str, bool] = False
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -211,7 +211,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-4-1-7", type="Datapoint Ruleset", name=node.name)
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
-                rule.name = i + 1
+                rule.name = (i + 1).__str__()
 
         if len(rule_names) != len(set(rule_names)):
             not_unique = [name for name in rule_names if rule_names.count(name) > 1]
@@ -254,7 +254,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise ValueError("All rules must have a name, or none of them")
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
-                rule.name = i + 1
+                rule.name = (i + 1).__str__()
 
         cond_comp = []
         if isinstance(node.element, list):

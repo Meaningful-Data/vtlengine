@@ -78,7 +78,7 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data.copy()
+        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
         result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
                                                     hr_mode, cls.op_func)
@@ -177,7 +177,7 @@ class HAAssignment(Operators.Binary):
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data.copy()
+        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
         result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
         return result

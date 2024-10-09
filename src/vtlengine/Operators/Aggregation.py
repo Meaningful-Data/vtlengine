@@ -18,7 +18,7 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 
 
 def extract_grouping_identifiers(identifier_names: List[str],
-                                 group_op: str,
+                                 group_op: Optional[str],
                                  grouping_components: Any) -> List[str]:
     if group_op == 'group by':
         return grouping_components
@@ -186,7 +186,7 @@ class Aggregation(Operator.Unary):
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy()
+        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:

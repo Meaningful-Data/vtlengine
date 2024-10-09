@@ -346,7 +346,7 @@ class Cast(Operator.Unary):
         result_dataset = cls.dataset_validation(operand, to_type, mask)
         new_measure = result_dataset.get_measures()[0]
 
-        result_dataset.data = operand.data.copy()
+        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
 
         if original_measure.name != new_measure.name:
             result_dataset.data.rename(columns={original_measure.name: new_measure.name},

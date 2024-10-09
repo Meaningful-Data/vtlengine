@@ -243,7 +243,7 @@ class Parameterized(Unary):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset, param: Union[DataComponent, Scalar]) -> Dataset:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in result.get_measures_names():
             try:
                 if isinstance(param, DataComponent):
@@ -264,7 +264,7 @@ class Parameterized(Unary):
     @classmethod
     def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]) -> DataComponent:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if isinstance(param, DataComponent):
             result.data = cls.apply_operation_two_series(operand.data, param.data)
         else:

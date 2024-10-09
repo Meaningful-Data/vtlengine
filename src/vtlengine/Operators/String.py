@@ -138,7 +138,7 @@ class Parameterized(Unary):
                            param1: Optional[Union[DataComponent, Scalar]],
                            param2: Optional[Union[DataComponent, Scalar]]) -> Dataset:
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
                 result.data[measure_name] = cls.apply_operation_series(result.data[measure_name],
@@ -161,7 +161,7 @@ class Parameterized(Unary):
                              param1: Optional[Union[DataComponent, Scalar]],
                              param2: Optional[Union[DataComponent, Scalar]]) -> DataComponent:
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
             result.data = cls.apply_operation_series(result.data, param1, param2)
         else:
@@ -401,7 +401,7 @@ class Instr(Parameterized):
                            param2: Optional[Union[DataComponent, Scalar]],
                            param3: Optional[Union[DataComponent, Scalar]]) -> Dataset:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(
                     param3,
@@ -426,7 +426,7 @@ class Instr(Parameterized):
                              param2: Optional[Union[DataComponent, Scalar]],
                              param3: Optional[Union[DataComponent, Scalar]]) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(
                 param3, DataComponent):
             result.data = cls.apply_operation_series(operand.data, param1, param2, param3)

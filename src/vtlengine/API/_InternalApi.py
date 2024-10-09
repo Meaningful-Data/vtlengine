@@ -21,7 +21,7 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
-def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Dataset]:
+def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
     """
     Loads a dataset with the structure given.
     """
