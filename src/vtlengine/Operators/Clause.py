@@ -1,7 +1,7 @@
 import pandas as pd
 
 from copy import copy
-from typing import List, Union
+from typing import List, Union, Any
 
 from vtlengine.DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from vtlengine.Operators import Operator
@@ -92,7 +92,7 @@ class Aggregate(Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
+    def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = copy(dataset.data)
         for operand in operands:

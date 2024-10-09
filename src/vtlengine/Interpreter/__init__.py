@@ -753,7 +753,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 aux_operands.append(DataComponent(name=operand.name,
                                                   data=data,
                                                   data_type=measure.data_type,
-                                                  role=role,
+                                                  role=role if role is not None else measure.role,
                                                   nullable=measure.nullable))
             operands = aux_operands
         self.regular_aggregation_dataset = None

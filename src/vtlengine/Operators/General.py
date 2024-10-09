@@ -72,7 +72,7 @@ class Alias(Binary):
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Dataset:
         result = cls.validate(left_operand, right_operand)
         result.data = left_operand.data
         return result

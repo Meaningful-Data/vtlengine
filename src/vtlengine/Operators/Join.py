@@ -18,8 +18,8 @@ from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 
 
 class Join(Operator):
-    how = None
-    reference_dataset = None
+    how: str
+    reference_dataset: Dataset
 
     @classmethod
     def get_components_union(cls, datasets: List[Dataset]) -> List[Component]:

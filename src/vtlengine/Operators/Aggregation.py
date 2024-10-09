@@ -167,7 +167,7 @@ class Aggregation(Operator.Unary):
                 query = f"SELECT {functions[:-2]} from df"
 
         else:
-            query = f"SELECT {', '.join(grouping_names)} from df {grouping} {having_expression}"
+            query = f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
 
         try:
             return duckdb.query(query).to_df()

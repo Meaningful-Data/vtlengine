@@ -48,8 +48,8 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(cls, condition: DataComponent,
-                                   true_branch: Union[DataComponent, Scalar],
-                                   false_branch: Union[DataComponent, Scalar]) -> pd.Series:
+                                   true_branch: Any,
+                                   false_branch: Any) -> pd.Series:
         if isinstance(true_branch, Scalar):
             true_data = pd.Series(true_branch.value, index=condition.data.index)
         else:

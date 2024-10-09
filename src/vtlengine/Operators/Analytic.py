@@ -144,7 +144,7 @@ class Analytic(Operator.Unary):
             elif cls.op == RATIO_TO_REPORT:
                 measure_query = f"CAST({measure} AS REAL) / SUM(CAST({measure} AS REAL))"
             elif cls.op in [LAG, LEAD]:
-                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params))})"
+                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params or []))})"
             else:
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
@@ -180,7 +180,7 @@ class Analytic(Operator.Unary):
         result.data = cls.analyticfunc(df=df, partitioning=partitioning,
                                        identifier_names=identifier_names,
                                        measure_names=measure_names,
-                                       ordering=ordering, window=window, params=params)
+                                       ordering=ordering or [], window=window, params=params)
         return result
 
 
