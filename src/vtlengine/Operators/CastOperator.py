@@ -261,7 +261,7 @@ class Cast(Operator.Unary):
 
     @classmethod
     def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-            scalarType: ScalarType, mask: Optional[str] = None) -> Any:
+            scalarType: Any, mask: Optional[str] = None) -> Any:
         if mask is not None:
             if not isinstance(mask, str):
                 raise Exception(f"{cls.op} mask must be a string")

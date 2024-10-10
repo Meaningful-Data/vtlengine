@@ -34,11 +34,11 @@ only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
-    op: str = None
-    py_op: str = None
-    spark_op: str = None
-    type_to_check: Any = None
-    return_type: Any = None
+    op: Any
+    py_op: Any
+    spark_op: Any
+    type_to_check: Any
+    return_type: Any
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:
@@ -223,8 +223,7 @@ class Binary(Operator):
             return series.map(lambda x: cls.py_op(scalar, x), na_action='ignore')
 
     @classmethod
-    def validate(cls, left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> Any:
+    def validate(cls, left_operand: Any, right_operand: Any) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
@@ -606,8 +605,7 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
-    def evaluate(cls, left_operand: ALL_MODEL_DATA_TYPES,
-                 right_operand: ALL_MODEL_DATA_TYPES) -> Any:
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
         """
         Evaluate the operation (based on validation output)
         :param left_operand: The left operand

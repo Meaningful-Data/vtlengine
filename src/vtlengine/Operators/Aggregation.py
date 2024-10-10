@@ -86,7 +86,7 @@ class Aggregation(Operator.Unary):
     @classmethod
     def validate(cls, operand: Dataset,
                  group_op: Optional[str],
-                 grouping_columns: Optional[List[str]],
+                 grouping_columns: Any,
                  having_data: Any) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
