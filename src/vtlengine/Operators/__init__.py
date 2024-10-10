@@ -34,11 +34,11 @@ only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
-    op: Any
-    py_op: Any
-    spark_op: Any
-    type_to_check: Any
-    return_type: Any
+    op: Any = None
+    py_op: Any = None
+    spark_op: Any = None
+    type_to_check: Any = None
+    return_type: Any = None
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:
@@ -653,7 +653,7 @@ class Unary(Operator):
         return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
-    def validate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
+    def validate(cls, operand: Any) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
@@ -745,7 +745,7 @@ class Unary(Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
+    def evaluate(cls, operand: Any) -> Any:
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand)
