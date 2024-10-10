@@ -242,7 +242,6 @@ class Between(Operator.Operator):
         is_mono_measure = len(operand.get_measures()) == 1
         for measure in result_dataset.get_measures():
             operand_type = operand.get_component(measure.name).data_type
-
             result_data_type = cls.type_validation(operand_type)
             if is_mono_measure and operand_type.promotion_changed_type(result_data_type):
                 component = Component(

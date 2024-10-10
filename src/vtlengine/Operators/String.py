@@ -14,7 +14,7 @@ from typing import Optional, Any, Union
 
 from vtlengine.AST.Grammar.tokens import LEN, CONCAT, UCASE, LCASE, RTRIM, SUBSTR, LTRIM, TRIM, \
     REPLACE, INSTR
-from vtlengine.DataTypes import Integer, String, ScalarType, check_unary_implicit_promotion
+from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 import vtlengine.Operators as Operator
 
 
@@ -258,7 +258,7 @@ class Substr(Parameterized):
             return
         if position not in (1, 2):
             raise SemanticError("1-1-18-3", op=cls.op, pos=position)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if not check_unary_implicit_promotion(data_type, Integer):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
@@ -296,7 +296,7 @@ class Replace(Parameterized):
             return
         if position not in (1, 2):
             raise SemanticError("1-1-18-3", op=cls.op, pos=position)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
@@ -340,7 +340,7 @@ class Instr(Parameterized):
             return
         if position not in (1, 2, 3):
             raise SemanticError("1-1-18-9", op=cls.op)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if position == 1:
             if not check_unary_implicit_promotion(data_type, String):

@@ -197,12 +197,13 @@ class Nvl(Binary):
             else:
                 result.value = left.value
             return result
-        if isinstance(right, Scalar):
-            result.data = left.data.fillna(right.value)
-        if isinstance(right, Dataset) or isinstance(right, DataComponent):
-            result.data = left.data.fillna(right.data)
-        if isinstance(result, Dataset):
-            result.data = result.data[result.get_components_names()]
+        else:
+            if isinstance(right, Scalar):
+                result.data = left.data.fillna(right.value)
+            else:
+                result.data = left.data.fillna(right.data)
+            if isinstance(result, Dataset):
+                result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod

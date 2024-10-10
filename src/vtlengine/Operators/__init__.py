@@ -699,7 +699,7 @@ class Unary(Operator):
 
     # The following class method checks the type promotion
     @classmethod
-    def validate_type_compatibility(cls, operand: ScalarType) -> bool:
+    def validate_type_compatibility(cls, operand: Any) -> bool:
         return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
 
     @classmethod

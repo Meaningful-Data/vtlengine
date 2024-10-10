@@ -3,7 +3,7 @@ from typing import Optional, Any, Union
 
 import vtlengine.Operators as Operator
 import pandas as pd
-from vtlengine.DataTypes import (COMP_NAME_MAPPING, ScalarType,
+from vtlengine.DataTypes import (COMP_NAME_MAPPING,
                        EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
                        EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
                        IMPLICIT_TYPE_PROMOTION_MAPPING,
@@ -188,7 +188,7 @@ class Cast(Operator.Unary):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
 
     @classmethod
-    def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType) -> None:
+    def check_without_mask(cls, from_type: Any, to_type: Any) -> None:
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
@@ -201,8 +201,7 @@ class Cast(Operator.Unary):
                                 type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
-    def cast_component(cls, data: pd.Series, from_type: ScalarType,
-                       to_type: ScalarType) -> pd.Series:
+    def cast_component(cls, data: pd.Series, from_type: Any, to_type: Any) -> pd.Series:
         """
         cast the component to the type to_type without mask
 
@@ -215,7 +214,7 @@ class Cast(Operator.Unary):
         return result
 
     @classmethod
-    def cast_mask_component(cls, data: pd.Series, from_type: ScalarType, to_type: ScalarType,
+    def cast_mask_component(cls, data: pd.Series, from_type: Any, to_type: Any,
                             mask: str) -> pd.Series:
 
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action='ignore')
@@ -223,7 +222,7 @@ class Cast(Operator.Unary):
         return result
 
     @classmethod
-    def cast_value(cls, value: Any, provided_type: ScalarType, to_type: ScalarType,
+    def cast_value(cls, value: Any, provided_type: Any, to_type: Any,
                    mask_value: str) -> Any:
         """
 
@@ -260,8 +259,7 @@ class Cast(Operator.Unary):
                             type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
-    def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-            scalarType: Any, mask: Optional[str] = None) -> Any:
+    def validate(cls, operand: Any, scalarType: Any, mask: Optional[str] = None) -> Any:
         if mask is not None:
             if not isinstance(mask, str):
                 raise Exception(f"{cls.op} mask must be a string")
@@ -274,8 +272,7 @@ class Cast(Operator.Unary):
             return cls.scalar_validation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_validation(cls, operand: Dataset, to_type: ScalarType,
-                           mask: Optional[str] = None) -> Dataset:
+    def dataset_validation(cls, operand: Dataset, to_type: Any, mask: Optional[str] = None) -> Dataset:
         """
         This method validates the operation when the operand is a Dataset.
         """
@@ -303,8 +300,7 @@ class Cast(Operator.Unary):
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def component_validation(cls, operand: DataComponent, to_type: ScalarType,
-                             mask: Optional[str] = None) -> DataComponent:
+    def component_validation(cls, operand: DataComponent, to_type: Any, mask: Optional[str] = None) -> DataComponent:
         """
         This method validates the operation when the operand is a DataComponent.
         """
@@ -317,8 +313,7 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def scalar_validation(cls, operand: Scalar, to_type: ScalarType,
-                          mask: Optional[str] = None) -> Scalar:
+    def scalar_validation(cls, operand: Scalar, to_type: Any, mask: Optional[str] = None) -> Scalar:
         """
         This method validates the operation when the operand is a DataComponent.
         """
@@ -328,7 +323,7 @@ class Cast(Operator.Unary):
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod
-    def evaluate(cls, operand: Operator.ALL_MODEL_DATA_TYPES, scalarType: ScalarType,
+    def evaluate(cls, operand: Any, scalarType: Any,
             mask: Optional[str] = None) -> Any:
 
         if isinstance(operand, Dataset):
@@ -339,7 +334,7 @@ class Cast(Operator.Unary):
             return cls.component_evaluation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset, to_type: ScalarType,
+    def dataset_evaluation(cls, operand: Dataset, to_type: Any,
                            mask: Optional[str] = None) -> Dataset:
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
@@ -379,7 +374,7 @@ class Cast(Operator.Unary):
         return Scalar(name=result_scalar.name, data_type=to_type, value=casted_data)
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, to_type: ScalarType,
+    def component_evaluation(cls, operand: DataComponent, to_type: Any,
                              mask: Optional[str] = None) -> DataComponent:
         from_type = operand.data_type
         result_component = cls.component_validation(operand, to_type, mask)

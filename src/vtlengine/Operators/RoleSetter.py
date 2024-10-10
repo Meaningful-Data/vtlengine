@@ -1,5 +1,6 @@
 import os
 from copy import copy
+from typing import Any
 
 from vtlengine.Exceptions import SemanticError
 
@@ -36,7 +37,7 @@ class RoleSetter(Unary):
         return copy(operand)
 
     @classmethod
-    def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def evaluate(cls, operand: Any, data_size: int = 0) -> DataComponent:
         if isinstance(operand, DataComponent):
             if not operand.nullable and any(operand.data.isnull()):
                 raise SemanticError("1-1-1-16")
