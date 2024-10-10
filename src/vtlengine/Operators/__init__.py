@@ -1,14 +1,12 @@
 import os
 import pandas as pd
 from copy import copy
-from typing import Any, Union, Type
+from typing import Any, Union
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING, ScalarType, \
+from vtlengine.DataTypes import COMP_NAME_MAPPING, \
     binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
     unary_implicit_promotion, SCALAR_TYPES_CLASS_REVERSE
 from vtlengine.DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
-from vtlengine.DataTypes import Integer, Number, String, Boolean, Date, \
-    Duration, TimePeriod, TimeInterval, Null
 
 from vtlengine.AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from vtlengine.Exceptions import SemanticError
@@ -20,7 +18,7 @@ else:
 
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
-ALL_MODEL_DATA_TYPES = Union[str, Dataset, Scalar, DataComponent]
+ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
 # This allows changing the data type of the Measure in the result Data Set
 # when the operator is applied to mono-measure Data Sets.
@@ -47,7 +45,11 @@ class Operator:
         return cls.evaluate(*args, **kwargs)
 
     @classmethod
-    def cast_time_types(cls, data_type: ScalarType, series: pd.Series) -> pd.Series:
+    def cast_time_types(cls, *args: Any) -> pd.Series:
+        data_type: Any
+        series: pd.Series
+        data_type, series = args
+
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return series
         if data_type.__name__ == "TimeInterval":
@@ -62,7 +64,7 @@ class Operator:
         return series
 
     @classmethod
-    def cast_time_types_scalar(cls, data_type: ScalarType, value: str) -> Any:
+    def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return value
         if data_type.__name__ == "TimeInterval":
@@ -76,7 +78,7 @@ class Operator:
         return value
 
     @classmethod
-    def modify_measure_column(cls, result: Dataset) -> None:
+    def modify_measure_column(cls, *args: Any) -> None:
         """
         If an Operator change the data type of the Variable it is applied to (e.g., from string to number),
         the result Data Set cannot maintain this Variable as it happens in the previous cases,
@@ -88,6 +90,9 @@ class Operator:
 
         Function used by the evaluate function when a dataset is involved
         """
+        result: Dataset
+        result = args[0]
+
         if len(result.get_measures()) == 1 and cls.return_type is not None:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
@@ -98,15 +103,15 @@ class Operator:
                     del result.data[column]
 
     @classmethod
-    def validate_dataset_type(cls, dataset: Dataset) -> None:
+    def validate_dataset_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate_component_type(cls, component: DataComponent) -> None:
+    def validate_component_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate_scalar_type(cls, scalar: Scalar) -> None:
+    def validate_scalar_type(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
@@ -118,15 +123,15 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def scalar_validation(cls, *args: Scalar) -> None:
+    def scalar_validation(cls, *args: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def component_validation(cls, *args: Union[Component, DataComponent]) -> None:
+    def component_validation(cls, *args: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def validate_type_compatibility(cls, *args: Union[ScalarType, Type['ScalarType']]) -> bool:
+    def validate_type_compatibility(cls, *args: Any) -> bool:
         if len(args) == 1:
             operand = args[0]
             return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
@@ -136,7 +141,7 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def type_validation(cls, *args: Any) -> ScalarType:
+    def type_validation(cls, *args: Any) -> Any:
         if len(args) == 1:
             operand = args[0]
             return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
@@ -154,9 +159,15 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
 
-def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key: str,
-                                 left_data: pd.DataFrame,
-                                 right_data: pd.DataFrame) -> None:
+def _id_type_promotion_join_keys(*args: Any) -> None:
+    c_left: Component
+    c_right: Component
+    join_key: str
+    left_data: pd.DataFrame
+    right_data: pd.DataFrame
+    c_left, c_right, join_key, left_data, right_data = args
+
+
     left_type_name = c_left.data_type.__name__
     right_type_name = c_right.data_type.__name__
 
@@ -176,7 +187,10 @@ def _id_type_promotion_join_keys(c_left: Component, c_right: Component, join_key
     right_data[join_key] = right_data[join_key].astype(object)
 
 
-def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
+def _handle_str_number(*args: Any) -> Union[str, int, float]:
+    x: Union[str, int, float]
+    x = args[0]
+
     if isinstance(x, int):
         return x
     try:
@@ -191,15 +205,19 @@ def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
 class Binary(Operator):
 
     @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
+    def op_func(cls, *args: Any) -> Any:
+        x, y = args
+
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: Any) -> Any:
+    def apply_operation_two_series(cls, *args: Any) -> Any:
+        left_series: pd.Series
+        right_series: pd.Series
+        left_series, right_series = args
+
         if os.getenv("SPARK", False):
             if cls.spark_op is None:
                 cls.spark_op = cls.py_op
@@ -209,12 +227,15 @@ class Binary(Operator):
             result.loc[nulls] = None
             return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))),
-                         dtype=object)
+        return pd.Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
-                                      series_left: bool) -> Any:
+    def apply_operation_series_scalar(cls, *args: Any) -> Any:
+        series: pd.Series
+        scalar: Scalar
+        series_left: bool
+        series, scalar, series_left = args
+
         if scalar is None:
             return pd.Series(None, index=series.index)
         if series_left:
@@ -223,12 +244,14 @@ class Binary(Operator):
             return series.map(lambda x: cls.py_op(scalar, x), na_action='ignore')
 
     @classmethod
-    def validate(cls, left_operand: Any, right_operand: Any) -> Any:
+    def validate(cls, *args: Any) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
         Returns an operand.
         """
+        left_operand, right_operand = args
+
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
             return cls.dataset_validation(left_operand, right_operand)
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Scalar):
@@ -237,29 +260,26 @@ class Binary(Operator):
             return cls.dataset_scalar_validation(right_operand, left_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, Scalar):
             return cls.scalar_validation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, DataComponent):
             return cls.component_validation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
             return cls.component_scalar_validation(left_operand, right_operand)
-
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
             return cls.component_scalar_validation(right_operand, left_operand)
-
         # In operator
-
         if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
             return cls.dataset_set_validation(left_operand, right_operand)
-
         if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
             return cls.scalar_set_validation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
             return cls.component_set_validation(left_operand, right_operand)
 
     @classmethod
-    def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
+    def dataset_validation(cls, *args: Any) -> Dataset:
+        left_operand: Dataset
+        right_operand: Dataset
+        left_operand, right_operand = args
+
         left_identifiers = left_operand.get_identifiers_names()
         right_identifiers = right_operand.get_identifiers_names()
 
@@ -306,69 +326,74 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar) -> Dataset:
+    def dataset_scalar_validation(cls, *args: Any) -> Dataset:
+        dataset: Dataset
+        scalar: Scalar
+        dataset, scalar = args
+
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
 
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              dataset.components.items() if
                              comp.role in [Role.IDENTIFIER, Role.MEASURE]}
-
-        result_dataset = Dataset(name="result", components=result_components,
-                                 data=None)
+        result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
 
     @classmethod
-    def scalar_validation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
+    def scalar_validation(cls, *args: Any) -> Scalar:
+        left_operand: Scalar
+        right_operand: Scalar
+        left_operand, right_operand = args
+
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
             raise SemanticError("1-1-1-2", )
-
         return Scalar(name="result",
-                      data_type=cls.type_validation(left_operand.data_type,
-                                                    right_operand.data_type),
+                      data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
                       value=None)
 
     @classmethod
-    def component_validation(cls, left_operand: DataComponent,
-                             right_operand: DataComponent) -> DataComponent:
+    def component_validation(cls, *args: Any) -> DataComponent:
         """
         Validates the compatibility between the types of the components and the operator
         :param left_operand: The left component
         :param right_operand: The right component
         :return: The result data type of the validation
         """
-        result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
+        left_operand: DataComponent
+        right_operand: DataComponent
+        left_operand, right_operand = args
 
-        result = DataComponent(name="result",
-                               data_type=result_data_type,
-                               data=None,
-                               role=left_operand.role,
+        result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
+        result = DataComponent(name="result", data_type=result_data_type, data=None, role=left_operand.role,
                                nullable=(left_operand.nullable or right_operand.nullable))
 
         return result
 
     @classmethod
-    def component_scalar_validation(cls, component: DataComponent, scalar: Scalar) -> DataComponent:
-        cls.type_validation(component.data_type, scalar.data_type)
+    def component_scalar_validation(cls, *args: Any) -> DataComponent:
+        component: DataComponent
+        scalar: Scalar
+        component, scalar = args
 
+        cls.type_validation(component.data_type, scalar.data_type)
         result = DataComponent(name=component.name,
                                data_type=cls.type_validation(component.data_type, scalar.data_type),
-                               data=None, role=component.role,
-                               nullable=component.nullable or scalar is None)
-
+                               data=None, role=component.role, nullable=component.nullable or scalar is None)
         return result
 
     @classmethod
-    def dataset_set_validation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
+    def dataset_set_validation(cls, *args: Any) -> Dataset:
+        dataset: Dataset
+        scalar_set: ScalarSet
+        dataset, scalar_set = args
 
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
         for measure in dataset.get_measures():
             cls.type_validation(measure.data_type, scalar_set.data_type)
-
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             dataset.components.items() if
+        result_components = {comp_name: copy(comp) for comp_name, comp in dataset.components.items() if
                              comp.role in [Role.IDENTIFIER, Role.MEASURE]}
 
         result_dataset = Dataset(name="result", components=result_components,
@@ -377,26 +402,30 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_set_validation(cls, component: DataComponent,
-                                 scalar_set: ScalarSet) -> DataComponent:
-        cls.type_validation(component.data_type, scalar_set.data_type)
-        result = DataComponent(name="result", data_type=cls.type_validation(component.data_type,
-                                                                            scalar_set.data_type),
-                               data=None,
-                               role=Role.MEASURE, nullable=component.nullable)
+    def component_set_validation(cls, *args: Any) -> DataComponent:
+        component: DataComponent
+        scalar_set: ScalarSet
+        component, scalar_set = args
 
+        cls.type_validation(component.data_type, scalar_set.data_type)
+        result = DataComponent(name="result",
+                               data_type=cls.type_validation(component.data_type, scalar_set.data_type),
+                               data=None, role=Role.MEASURE, nullable=component.nullable)
         return result
 
     @classmethod
-    def scalar_set_validation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
+    def scalar_set_validation(cls, *args: Any) -> Scalar:
+        scalar: Scalar
+        scalar_set: ScalarSet
+        scalar, scalar_set = args
+
         cls.type_validation(scalar.data_type, scalar_set.data_type)
         return Scalar(name="result",
-                      data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
-                      value=None)
+                      data_type=cls.type_validation(scalar.data_type, scalar_set.data_type), value=None)
 
     # The following class method implements the type promotion
     @classmethod
-    def type_validation(cls, left_type: ScalarType, right_type: ScalarType) -> ScalarType:
+    def type_validation(cls, *args: Any) -> Any:
         """
         Validates the compatibility between the types of the operands and the operator
         and give us the result ScalarType of the promotion
@@ -407,11 +436,13 @@ class Binary(Operator):
 
         :return: result ScalarType or exception
         """
+        left_type, right_type = args
+
         return binary_implicit_promotion(left_type, right_type, cls.type_to_check, cls.return_type)
 
     # The following class method checks the type promotion
     @classmethod
-    def validate_type_compatibility(cls, left: ScalarType, right: ScalarType) -> bool:
+    def validate_type_compatibility(cls, *args: Any) -> bool:
         """
         Validates the compatibility between the types of the operands and the operator
         (implicit type promotion : check_binary_implicit_type_promotion)
@@ -421,17 +452,19 @@ class Binary(Operator):
 
         :return: True if the types are compatible, False otherwise
         """
+        left, right = args
+
         return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
     @classmethod
-    def apply_return_type_dataset(
-            cls, result_dataset: Dataset, left_operand: Dataset,
-            right_operand: Union[Dataset, Scalar, ScalarSet]
-    ) -> None:
+    def apply_return_type_dataset(cls, *args: Any) -> None:
         """
         Used in dataset's validation.
         Changes the result dataset and give us his final form (#TODO: write this explanation in a better way)
         """
+        result_dataset: Dataset
+        result_dataset, left_operand, right_operand = args
+
         changed_allowed = cls.op in MONOMEASURE_CHANGED_ALLOWED
         is_mono_measure = len(result_dataset.get_measures()) == 1
         for measure in result_dataset.get_measures():
@@ -462,7 +495,11 @@ class Binary(Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        left_operand: Dataset
+        right_operand: Dataset
+        left_operand, right_operand = args
+
         result_dataset = cls.dataset_validation(left_operand, right_operand)
 
         use_right_as_base = False
@@ -524,14 +561,21 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
+    def scalar_evaluation(cls, *args: Any) -> Scalar:
+        left_operand: Scalar
+        right_operand: Scalar
+        left_operand, right_operand = args
+
         result_scalar = cls.scalar_validation(left_operand, right_operand)
         result_scalar.value = cls.op_func(left_operand.value, right_operand.value)
         return result_scalar
 
     @classmethod
-    def dataset_scalar_evaluation(cls, dataset: Dataset, scalar: Scalar,
-                                  dataset_left: bool = True) -> Dataset:
+    def dataset_scalar_evaluation(cls, *args: Any, dataset_left: bool = True) -> Dataset:
+        dataset: Dataset
+        scalar: Scalar
+        dataset, scalar = args
+
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         result_dataset.data = result_data
@@ -552,8 +596,11 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_evaluation(cls, left_operand: DataComponent,
-                             right_operand: DataComponent) -> DataComponent:
+    def component_evaluation(cls, *args: Any) -> DataComponent:
+        left_operand: DataComponent
+        right_operand: DataComponent
+        left_operand, right_operand = args
+
         result_component = cls.component_validation(left_operand, right_operand)
         left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy() if
                                                 left_operand.data is not None else pd.Series())
@@ -563,20 +610,26 @@ class Binary(Operator):
         return result_component
 
     @classmethod
-    def component_scalar_evaluation(cls, component: DataComponent, scalar: Scalar,
-                                    component_left: bool) -> DataComponent:
+    def component_scalar_evaluation(cls, *args: Any, component_left: bool = True) -> DataComponent:
+        component: DataComponent
+        scalar: Scalar
+        component, scalar = args
+
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = cls.cast_time_types(component.data_type, component.data.copy() if
                                         component.data is not None else pd.Series())
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
             scalar_value = DURATION_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(comp_data,
-                                                                  scalar_value, component_left)
+        result_component.data = cls.apply_operation_series_scalar(comp_data, scalar_value, component_left)
         return result_component
 
     @classmethod
-    def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
+    def dataset_set_evaluation(cls, *args: Any) -> Dataset:
+        dataset: Dataset
+        scalar_set: ScalarSet
+        dataset, scalar_set = args
+
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
 
@@ -591,27 +644,36 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_set_evaluation(cls, component: DataComponent,
-                                 scalar_set: ScalarSet) -> DataComponent:
+    def component_set_evaluation(cls, *args: Any) -> DataComponent:
+        component: DataComponent
+        scalar_set: ScalarSet
+        component, scalar_set = args
+
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(component.data.copy() if
-                                    component.data is not None else pd.Series(), scalar_set)
+                                component.data is not None else pd.Series(), scalar_set)
         return result_component
 
     @classmethod
-    def scalar_set_evaluation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
+    def scalar_set_evaluation(cls, *args: Any) -> Scalar:
+        scalar: Scalar
+        scalar_set: ScalarSet
+        scalar, scalar_set = args
+
         result_scalar = cls.scalar_set_validation(scalar, scalar_set)
         result_scalar.value = cls.op_func(scalar.value, scalar_set)
         return result_scalar
 
     @classmethod
-    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
+    def evaluate(cls, *args: Any) -> Any:
         """
         Evaluate the operation (based on validation output)
         :param left_operand: The left operand
         :param right_operand: The right operand
         :return: The result of the operation
         """
+        left_operand, right_operand = args
+
         if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
             return cls.dataset_evaluation(left_operand, right_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, Scalar):
@@ -620,23 +682,16 @@ class Binary(Operator):
             return cls.dataset_scalar_evaluation(left_operand, right_operand, dataset_left=True)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, Dataset):
             return cls.dataset_scalar_evaluation(right_operand, left_operand, dataset_left=False)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, DataComponent):
             return cls.component_evaluation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
             return cls.component_scalar_evaluation(left_operand, right_operand, component_left=True)
-
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
-            return cls.component_scalar_evaluation(right_operand, left_operand,
-                                                   component_left=False)
-
+            return cls.component_scalar_evaluation(right_operand, left_operand, component_left=False)
         if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
             return cls.dataset_set_evaluation(left_operand, right_operand)
-
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
             return cls.component_set_evaluation(left_operand, right_operand)
-
         if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
             return cls.scalar_set_evaluation(left_operand, right_operand)
 
@@ -644,21 +699,26 @@ class Binary(Operator):
 class Unary(Operator):
 
     @classmethod
-    def op_func(cls, x: Any) -> Any:
+    def op_func(cls, *args: Any) -> Any:
+        x = args[0]
+
         return None if pd.isnull(x) else cls.py_op(x)
 
     @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
+    def apply_operation_component(cls, *args: Any) -> Any:
         """Applies the operation to a component"""
+        series: pd.Series = args[0]
+
         return series.map(cls.py_op, na_action='ignore')
 
     @classmethod
-    def validate(cls, operand: Any) -> Any:
+    def validate(cls, *args: Any) -> Any:
         """
         The main function for validate, applies the implicit promotion (or check it), and
         can do a semantic check too.
         Returns an operand.
         """
+        operand = args[0]
         if isinstance(operand, Dataset):
             return cls.dataset_validation(operand)
         elif isinstance(operand, DataComponent):
@@ -667,7 +727,9 @@ class Unary(Operator):
             return cls.scalar_validation(operand)
 
     @classmethod
-    def dataset_validation(cls, operand: Dataset) -> Dataset:
+    def dataset_validation(cls, *args: Any) -> Dataset:
+        operand: Dataset = args[0]
+
         cls.validate_dataset_type(operand)
         if len(operand.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -680,13 +742,17 @@ class Unary(Operator):
         return result_dataset
 
     @classmethod
-    def scalar_validation(cls, operand: Scalar) -> Scalar:
+    def scalar_validation(cls, *args: Any) -> Scalar:
+        operand: Scalar = args[0]
+
         result_type = cls.type_validation(operand.data_type)
         result = Scalar(name="result", data_type=result_type, value=None)
         return result
 
     @classmethod
-    def component_validation(cls, operand: DataComponent) -> DataComponent:
+    def component_validation(cls, *args: Any) -> DataComponent:
+        operand: DataComponent = args[0]
+
         result_type = cls.type_validation(operand.data_type)
         result = DataComponent(name="result", data_type=result_type, data=None,
                                role=operand.role, nullable=operand.nullable)
@@ -694,33 +760,42 @@ class Unary(Operator):
 
     # The following class method implements the type promotion
     @classmethod
-    def type_validation(cls, operand: ScalarType) -> ScalarType:
+    def type_validation(cls, *args: Any) -> Any:
+        operand = args[0]
+
         return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
 
     # The following class method checks the type promotion
     @classmethod
-    def validate_type_compatibility(cls, operand: Any) -> bool:
+    def validate_type_compatibility(cls, *args: Any) -> bool:
+        operand = args[0]
+
         return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
 
     @classmethod
-    def validate_dataset_type(cls, dataset: Dataset) -> None:
+    def validate_dataset_type(cls, *args: Any) -> None:
+        dataset: Dataset = args[0]
+
         if cls.type_to_check is not None:
             for measure in dataset.get_measures():
                 if not cls.validate_type_compatibility(measure.data_type):
-                    raise SemanticError("1-1-1-3",
-                                        op=cls.op, entity=measure.role.value,
-                                        name=measure.name,
+                    raise SemanticError("1-1-1-3", op=cls.op, entity=measure.role.value, name=measure.name,
                                         target_type=SCALAR_TYPES_CLASS_REVERSE[cls.type_to_check])
 
     @classmethod
-    def validate_scalar_type(cls, scalar: Scalar) -> None:
-        if (cls.type_to_check is not None and not cls.validate_type_compatibility(
-                scalar.data_type)):
+    def validate_scalar_type(cls, *args: Any) -> None:
+        scalar: Scalar = args[0]
+
+        if cls.type_to_check is not None and not cls.validate_type_compatibility(scalar.data_type):
             raise SemanticError("1-1-1-5", op=cls.op, name=scalar.name,
                                 type=SCALAR_TYPES_CLASS_REVERSE[scalar.data_type])
 
     @classmethod
-    def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
+    def apply_return_type_dataset(cls, *args: Any) -> None:
+        result_dataset: Dataset
+        operand: Dataset
+        result_dataset, operand = args
+
         changed_allowed = cls.op in MONOMEASURE_CHANGED_ALLOWED
         is_mono_measure = len(operand.get_measures()) == 1
         for measure in result_dataset.get_measures():
@@ -728,11 +803,9 @@ class Unary(Operator):
 
             result_data_type = cls.type_validation(operand_type)
             if is_mono_measure and operand_type.promotion_changed_type(result_data_type):
-                component = Component(
-                    name=COMP_NAME_MAPPING[result_data_type],
-                    data_type=result_data_type,
-                    role=Role.MEASURE,
-                    nullable=measure.nullable
+                component = Component(name=COMP_NAME_MAPPING[result_data_type],
+                                      data_type=result_data_type, role=Role.MEASURE,
+                                      nullable=measure.nullable
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
@@ -745,7 +818,8 @@ class Unary(Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def evaluate(cls, operand: Any) -> Any:
+    def evaluate(cls, *args: Any) -> Any:
+        operand: ALL_MODEL_DATA_TYPES = args[0]
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand)
@@ -755,7 +829,9 @@ class Unary(Operator):
             return cls.component_evaluation(operand)
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset) -> Dataset:
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand: Dataset = args[0]
+
         result_dataset = cls.dataset_validation(operand)
         result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
@@ -769,13 +845,17 @@ class Unary(Operator):
         return result_dataset
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar) -> Scalar:
+    def scalar_evaluation(cls, *args: Any) -> Scalar:
+        operand: Scalar = args[0]
+
         result_scalar = cls.scalar_validation(operand)
         result_scalar.value = cls.op_func(operand.value)
         return result_scalar
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent) -> DataComponent:
+    def component_evaluation(cls, *args: Any) -> DataComponent:
+        operand: DataComponent = args[0]
+
         result_component = cls.component_validation(operand)
         result_component.data = cls.apply_operation_component(operand.data.copy() if operand.data is not None else pd.Series())
         return result_component

@@ -1,4 +1,4 @@
-from typing import Any, Type, Union, Optional
+from typing import Any, Optional
 
 import pandas as pd
 from numpy import ScalarType
