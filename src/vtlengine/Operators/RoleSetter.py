@@ -4,10 +4,11 @@ from typing import Any
 
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK", False):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary

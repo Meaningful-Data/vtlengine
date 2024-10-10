@@ -3,10 +3,11 @@ from typing import List, Any, Dict
 
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK"):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK"):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator

@@ -1,17 +1,17 @@
-import os
 from copy import copy
 from functools import reduce
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 
 from vtlengine.DataTypes import binary_implicit_promotion
 
 from vtlengine.AST import BinOp
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK"):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK"):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import Dataset, Component, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys

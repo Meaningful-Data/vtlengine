@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from copy import copy
 from typing import Any, Union
 
@@ -11,10 +10,11 @@ from vtlengine.DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHand
 from vtlengine.AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK", False):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
 
