@@ -517,10 +517,8 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
 }
 
 
-def binary_implicit_promotion(left_type: ScalarType,
-                              right_type: ScalarType,
-                              type_to_check: ScalarType = None,
-                              return_type: ScalarType = None) -> ScalarType:
+def binary_implicit_promotion(left_type: Any, right_type: Any,
+                              type_to_check: Any = None, return_type: Any = None) -> Any:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -562,10 +560,8 @@ def binary_implicit_promotion(left_type: ScalarType,
                         type_2=SCALAR_TYPES_CLASS_REVERSE[right_type])
 
 
-def check_binary_implicit_promotion(
-        left: ScalarType, right: ScalarType,
-        type_to_check: ScalarType = None, return_type: ScalarType = None
-) -> bool:
+def check_binary_implicit_promotion(left: ScalarType, right: Any,
+        type_to_check: Any = None, return_type: Any = None) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -583,9 +579,8 @@ def check_binary_implicit_promotion(
     return left.is_included(right_implicities) or right.is_included(left_implicities)
 
 
-def unary_implicit_promotion(
-        operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
-) -> ScalarType:
+def unary_implicit_promotion(operand_type: Any, type_to_check: Any = None,
+                             return_type: Any = None) -> Any:
     """
     Validates the compatibility between the type of the operand and the operator
     param operand: The operand
@@ -608,9 +603,8 @@ def unary_implicit_promotion(
     return operand_type
 
 
-def check_unary_implicit_promotion(
-        operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
-) -> bool:
+def check_unary_implicit_promotion(operand_type: ScalarType, type_to_check: Any = None,
+                                   return_type: Any = None) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator
     :param operand: The operand

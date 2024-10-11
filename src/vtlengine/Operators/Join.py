@@ -48,7 +48,7 @@ class Join(Operator):
         using = using or []
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
         totally_common = list(reduce(lambda x, y: x & set(y.get_components_names()), operands[1:],
-                                     set(operands[0].get_components_names())))
+                                     set(operands[0].get_components_names())))  # type: ignore[operator]
 
         for op in operands:
             for comp in op.components.values():
@@ -130,9 +130,10 @@ class Join(Operator):
         common_measures = cls.get_components_intersection(
             *[op.get_measures_names() + op.get_attributes_names() for op in operands])
         for op in operands:
-            for column in op.data.columns.tolist():
-                if column in common_measures and column not in using:
-                    op.data = op.data.rename(columns={column: op.name + '#' + column})
+            if op.data is not None:
+                for column in op.data.columns.tolist():
+                    if column in common_measures and column not in using:
+                        op.data = op.data.rename(columns={column: op.name + '#' + column})
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
@@ -272,9 +273,10 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 result.data = pd.merge(result.data, op.data, how=cls.how)
-            result.data = result.data.rename(
-                columns={column: op.name + '#' + column for column in result.data.columns.tolist()
-                         if column in common})
+            if result.data is not None:
+                result.data = result.data.rename(
+                    columns={column: op.name + '#' + column for column in result.data.columns.tolist()
+                             if column in common})
         result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -300,7 +302,7 @@ class Apply(Operator):
         return op.evaluate(left_dataset, right_dataset)
 
     @classmethod
-    def validate(cls, dataset: Dataset, child: Any, op_map: dict) -> None:
+    def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
         if not isinstance(child, BinOp):
             raise Exception(
                 f"Invalid expression {child} on apply operator. Only BinOp are accepted")

@@ -40,26 +40,27 @@ class If(Operator):
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
         result = cls.validate(condition, true_branch, false_branch)
-        if isinstance(condition, DataComponent):
-            result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
-        if isinstance(condition, Dataset):
-            result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
+        if not isinstance(result, Scalar):
+            if isinstance(condition, DataComponent):
+                result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+            if isinstance(condition, Dataset):
+                result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
 
     @classmethod
-    def component_level_evaluation(cls, condition: DataComponent,
-                                   true_branch: Any,
+    def component_level_evaluation(cls, condition: DataComponent, true_branch: Any,
                                    false_branch: Any) -> pd.Series:
-        if isinstance(true_branch, Scalar):
-            true_data = pd.Series(true_branch.value, index=condition.data.index)
-        else:
-            true_data = true_branch.data.reindex(condition.data.index)
-        if isinstance(false_branch, Scalar):
-            false_data = pd.Series(false_branch.value, index=condition.data.index)
-        else:
-            false_data = false_branch.data.reindex(condition.data.index)
-
-        result = np.where(condition.data, true_data, false_data)
+        result = None
+        if condition.data is not None:
+            if isinstance(true_branch, Scalar):
+                true_data = pd.Series(true_branch.value, index=condition.data.index)
+            else:
+                true_data = true_branch.data.reindex(condition.data.index)
+            if isinstance(false_branch, Scalar):
+                false_data = pd.Series(false_branch.value, index=condition.data.index)
+            else:
+                false_data = false_branch.data.reindex(condition.data.index)
+            result = np.where(condition.data, true_data, false_data)
         return pd.Series(result, index=condition.data.index)
 
     @classmethod
@@ -195,12 +196,13 @@ class Nvl(Binary):
             else:
                 result.value = left.value
         else:
-            if isinstance(right, Scalar):
-                result.data = left.data.fillna(right.value)
-            else:
-                result.data = left.data.fillna(right.data)
-            if isinstance(result, Dataset):
-                result.data = result.data[result.get_components_names()]
+            if not isinstance(result, Scalar):
+                if isinstance(right, Scalar):
+                    result.data = left.data.fillna(right.value)
+                else:
+                    result.data = left.data.fillna(right.data)
+                if isinstance(result, Dataset):
+                    result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod

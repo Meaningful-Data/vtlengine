@@ -88,7 +88,7 @@ class Time(Operators.Operator):
 class Unary(Time):
 
     @classmethod
-    def validate(cls, operand: Dataset) -> Dataset:
+    def validate(cls, operand: Any) -> Any:
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
@@ -97,7 +97,7 @@ class Unary(Time):
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod
-    def evaluate(cls, operand: Dataset) -> Dataset:
+    def evaluate(cls, operand: Any) -> Any:
         result = cls.validate(operand)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         if len(operand.data) < 2:
@@ -137,7 +137,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def validate(cls, operand: Union[Dataset, DataComponent, Scalar, str]
-                 ) -> Union[Dataset, DataComponent, Scalar, str]:
+                 ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if time_id is None or operand.components[time_id].data_type != TimePeriod:

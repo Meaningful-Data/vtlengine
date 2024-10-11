@@ -723,7 +723,8 @@ class InterpreterAnalyzer(ASTTemplate):
             # Extracting the role encoded inside the children assignments
             role_info = {child.left.value: child.left.role for child in node.children if hasattr(child, 'left')}
             dataset = copy(operands[0])
-            dataset.name = self.regular_aggregation_dataset.name
+            if self.regular_aggregation_dataset is not None:
+                dataset.name = self.regular_aggregation_dataset.name
             dataset.components = {comp_name: comp for comp_name, comp in dataset.components.items()
                                   if comp.role != Role.MEASURE}
             if dataset.data is not None:
@@ -1093,7 +1094,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
-            if self.rule_data is not None:
+            if self.rule_data is not None and self.ruleset_dataset is not None:
                 aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
                 aux['bool_var'] = validation_data.data
                 validation_data = aux
@@ -1182,9 +1183,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             left_operand = self.visit(node.left)
             right_operand = self.visit(node.right)
-            if isinstance(left_operand, Dataset) and isinstance(right_operand,
-                                                                Dataset) and self.ruleset_mode in (
-                    'partial_null', 'partial_zero') and not self.only_semantic:
+            if (isinstance(left_operand, Dataset) and isinstance(right_operand,Dataset) and
+                    self.ruleset_mode in ('partial_null', 'partial_zero') and not self.only_semantic):
                 measure_name = left_operand.get_measures_names()[0]
                 left_null_indexes = set(
                     list(left_operand.data[left_operand.data[measure_name].isnull()].index))
@@ -1396,7 +1396,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         condition = None
         if hasattr(node, '_right_condition'):
-            condition: DataComponent = self.visit(node._right_condition)
+            condition: DataComponent = self.visit(node._right_condition)  # type: ignore[no-redef]
             if condition is not None:
                 condition = condition.data[condition.data == True].index
 
@@ -1483,7 +1483,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param['name']] = self.visit(node.params[i])
                     elif param['type'] in ['Dataset', 'Component']:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param['name']] = node.params[i].value
+                            signature_values[param['name']] = node.params[i].value # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):

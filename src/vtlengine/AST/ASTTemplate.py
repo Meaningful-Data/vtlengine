@@ -168,7 +168,7 @@ class ASTTemplate(NodeVisitor):
         """
         return node.value
 
-    def visit_ParamConstant(self, node: AST.ParamConstant) -> AST.AST:
+    def visit_ParamConstant(self, node: AST.ParamConstant) -> Any:
         """
         Constant: (type, value)
 
@@ -178,7 +178,7 @@ class ASTTemplate(NodeVisitor):
         """
         return node.value
 
-    def visit_Identifier(self, node: AST.Identifier) -> AST.AST:
+    def visit_Identifier(self, node: AST.Identifier) -> Any:
         """
         Identifier: (value)
 
@@ -301,7 +301,7 @@ class ASTTemplate(NodeVisitor):
         if node.operand is not None:
             self.visit(node.operand)
 
-    def visit_If(self, node: AST.If) -> None:
+    def visit_If(self, node: AST.If) -> Any:
         """
         If: (condition, thenOp, elseOp)
 
@@ -315,7 +315,7 @@ class ASTTemplate(NodeVisitor):
         self.visit(node.thenOp)
         self.visit(node.elseOp)
 
-    def visit_Validation(self, node: AST.Validation) -> None:
+    def visit_Validation(self, node: AST.Validation) -> Any:
         """
         Validation: (op, validation, params, inbalance, invalid)
 
@@ -476,7 +476,7 @@ class ASTTemplate(NodeVisitor):
         """
         return node.value
 
-    def visit_EvalOp(self, node: AST.EvalOp) -> None:
+    def visit_EvalOp(self, node: AST.EvalOp) -> Any:
         """
         EvalOp: (name, children, output, language)
 

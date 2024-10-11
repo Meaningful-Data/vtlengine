@@ -1,6 +1,6 @@
 import os
 from copy import copy
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from vtlengine.Exceptions import SemanticError
 
@@ -13,7 +13,7 @@ import pandas as pd
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
 
-ALLOWED_MODEL_TYPES = [DataComponent, Scalar]
+ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]
 
 
 class RoleSetter(Unary):

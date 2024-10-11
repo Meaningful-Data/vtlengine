@@ -284,9 +284,10 @@ class Parameterized(Unary):
                  param: Optional[Union[DataComponent, Scalar]] = None) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)
-        if isinstance(operand, DataComponent):
+        elif isinstance(operand, DataComponent):
             return cls.component_evaluation(operand, param)
-        return cls.scalar_evaluation(operand, param)
+        else:
+            return cls.scalar_evaluation(operand, param)
 
 
 class Round(Parameterized):
@@ -323,7 +324,7 @@ class Trunc(Parameterized):
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
         if not pd.isnull(param):
-            multiplier = 10 ** param
+            multiplier = 10 ** param  # type: ignore[operator]
 
         truncated_value = int(x * multiplier) / multiplier
 

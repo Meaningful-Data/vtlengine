@@ -20,7 +20,7 @@ from vtlengine.files.output._time_period_representation import \
 pd.options.mode.chained_assignment = None
 
 
-class __VTLSingleErrorListener(ErrorListener):
+class __VTLSingleErrorListener(ErrorListener): # type: ignore[misc]
     """
 
     """

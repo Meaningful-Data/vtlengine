@@ -262,8 +262,8 @@ class Between(Operator.Operator):
 
     @classmethod
     def validate(cls, operand: Union[Dataset, DataComponent, Scalar],
-                 from_: Union[DataComponent, Scalar],
-                 to: Union[DataComponent, Scalar]) -> Any:
+                 from_: Union[DataComponent, Scalar], to: Union[DataComponent, Scalar]) -> Any:
+        result: Union[Dataset, DataComponent, Scalar]
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -292,57 +292,41 @@ class Between(Operator.Operator):
         return result
 
     @classmethod
-    def evaluate(cls, operand: Union[DataComponent, Scalar],
-                 from_: Union[DataComponent, Scalar],
+    def evaluate(cls, operand: Union[DataComponent, Scalar], from_: Union[DataComponent, Scalar],
                  to: Union[DataComponent, Scalar]) -> Any:
         result = cls.validate(operand, from_, to)
-
         from_data = from_.data if isinstance(from_, DataComponent) else from_.value
         to_data = to.data if isinstance(to, DataComponent) else to.value
 
-        if (
-                isinstance(from_data, pd.Series) and
-                isinstance(to_data, pd.Series) and
-                len(from_data) != len(to_data)
-        ):
+        if (isinstance(from_data, pd.Series) and isinstance(to_data, pd.Series) and
+                len(from_data) != len(to_data)):
             raise ValueError("From and To must have the same length")
 
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()
             for measure_name in operand.get_measures_names():
                 result.data[measure_name] = cls.apply_operation_component(
-                    operand.data[measure_name],
-                    from_data, to_data
-                )
+                    operand.data[measure_name], from_data, to_data)
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
                     result.data = result.data.drop(columns=[measure_name])
             result.data = result.data[result.get_components_names()]
         if isinstance(operand, DataComponent):
-            result.data = cls.apply_operation_component(
-                operand.data,
-                from_data, to_data
-            )
+            result.data = cls.apply_operation_component(operand.data, from_data, to_data)
         if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
             if operand.value is None or from_data is None or to_data is None:
                 result.value = None
             else:
-                result.value = from_data <= operand.value <= to_data
-        elif (
-                isinstance(operand, Scalar) and
-                (
-                        isinstance(from_data, pd.Series) or
-                        isinstance(to_data, pd.Series)
-                )
-        ):  # From or To is a DataComponent, or both
+                result.value = from_data <= operand.value <= to_data  # type: ignore[operator]
+        elif (isinstance(operand, Scalar) and (isinstance(from_data, pd.Series) or
+                    isinstance(to_data, pd.Series))):  # From or To is a DataComponent, or both
             if isinstance(from_data, pd.Series):
                 series = pd.Series(operand.value, index=from_data.index, dtype=object)
             else:
                 series = pd.Series(operand.value, index=to_data.index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
-            result = DataComponent(name=operand.name, data=result_series, data_type=cls.return_type,
-                                   role=Role.MEASURE)
-
+            result = DataComponent(name=operand.name, data=result_series,
+                                   data_type=cls.return_type,role=Role.MEASURE)
         return result
 
 
@@ -368,12 +352,8 @@ class ExistIn(Operator.Operator):
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name="result", components=result_components, data=None)
-        result_dataset.add_component(Component(
-            name='bool_var',
-            data_type=Boolean,
-            role=Role.MEASURE,
-            nullable=False
-        ))
+        result_dataset.add_component(Component(name='bool_var', data_type=Boolean,
+            role=Role.MEASURE, nullable=False))
         return result_dataset
 
     @classmethod
