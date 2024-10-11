@@ -1,13 +1,13 @@
-from typing import Any, Optional
+from typing import Any, Optional, Type, Dict
 
 import numpy
 import pandas as pd
-from numpy import ScalarType
+from numpy import ScalarType as npScalarType
 
 from vtlengine.DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
 from vtlengine.Exceptions import SemanticError
 
-DTYPE_MAPPING = {
+DTYPE_MAPPING: Dict[str, str] = {
     'String': 'string',
     'Number': 'float64',
     'Integer': 'int64',
@@ -18,7 +18,7 @@ DTYPE_MAPPING = {
     'Boolean': 'object',
 }
 
-CAST_MAPPING = {
+CAST_MAPPING: Dict[str, type] = {
     'String': str,
     'Number': float,
     'Integer': int,
@@ -38,10 +38,13 @@ class ScalarType:
     def __name__(self) -> Any:
         return self.__class__.__name__
 
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}"
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def strictly_same_class(self, obj: numpy.ScalarType) -> bool:
+    def strictly_same_class(self, obj: 'ScalarType') -> bool:
         if not isinstance(obj, ScalarType):
             raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__
@@ -79,10 +82,9 @@ class ScalarType:
         return False
 
     @classmethod
-    def check_type(cls, value: Any) -> bool:
+    def check_type(cls, value: str) -> bool:
         if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
-
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
     @classmethod
@@ -94,7 +96,6 @@ class ScalarType:
     @classmethod
     def dtype(cls) -> str:
         return DTYPE_MAPPING[cls.__name__]
-
     __str__ = __repr__
 
 
@@ -433,7 +434,7 @@ class Null(ScalarType):
         return 'string'
 
 
-SCALAR_TYPES = {
+SCALAR_TYPES: Dict[str, Type[ScalarType]] = {
     'String': String,
     'Number': Number,
     'Integer': Integer,
@@ -444,7 +445,7 @@ SCALAR_TYPES = {
     'Boolean': Boolean,
 }
 
-SCALAR_TYPES_CLASS_REVERSE = {
+SCALAR_TYPES_CLASS_REVERSE: Dict[Type[ScalarType], str] = {
     String: 'String',
     Number: 'Number',
     Integer: 'Integer',
@@ -455,7 +456,7 @@ SCALAR_TYPES_CLASS_REVERSE = {
     Boolean: 'Boolean',
 }
 
-BASIC_TYPES = {
+BASIC_TYPES: Dict[type, Type[ScalarType]] = {
     str: String,
     int: Integer,
     float: Number,
@@ -463,7 +464,7 @@ BASIC_TYPES = {
     type(None): Null
 }
 
-COMP_NAME_MAPPING = {
+COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     String: 'str_var',
     Number: 'num_var',
     Integer: 'int_var',
@@ -475,7 +476,7 @@ COMP_NAME_MAPPING = {
     Null: 'null_var'
 }
 
-IMPLICIT_TYPE_PROMOTION_MAPPING = {
+IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove Time types, only for compatibility with previous engine
     String: {String, Boolean, TimePeriod},
     Number: {String, Number, Integer},
@@ -490,7 +491,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
 }
 
 # TODO: Implicit are valid as cast without mask
-EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
+EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove time types, only for compatibility with previous engine
     String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
     Number: {Integer, Boolean, String, Number},
@@ -504,7 +505,7 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null}
 }
 
-EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
+EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {Number, TimeInterval, Date, TimePeriod, Duration},
     Number: {},
     Integer: {},
@@ -517,8 +518,9 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
 }
 
 
-def binary_implicit_promotion(left_type: Any, right_type: Any,
-                              type_to_check: Any = None, return_type: Any = None) -> Any:
+def binary_implicit_promotion(left_type: Type[ScalarType], right_type: Type[ScalarType],
+                              type_to_check: Optional[Type[ScalarType]] = None,
+                              return_type: Optional[Type[ScalarType]] = None) -> Type[ScalarType]:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -579,8 +581,8 @@ def check_binary_implicit_promotion(left: ScalarType, right: Any,
     return left.is_included(right_implicities) or right.is_included(left_implicities)
 
 
-def unary_implicit_promotion(operand_type: Any, type_to_check: Any = None,
-                             return_type: Any = None) -> Any:
+def unary_implicit_promotion(operand_type: Type[ScalarType], type_to_check: Optional[Type[ScalarType]] = None,
+                             return_type: Optional[Type[ScalarType]] = None) -> Type[ScalarType]:
     """
     Validates the compatibility between the type of the operand and the operator
     param operand: The operand
@@ -594,7 +596,6 @@ def unary_implicit_promotion(operand_type: Any, type_to_check: Any = None,
             raise SemanticError(code="1-1-1-1",
                                 type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
                                 type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check])
-
     if return_type:
         return return_type
     if (type_to_check and not issubclass(operand_type, type_to_check)
@@ -603,7 +604,7 @@ def unary_implicit_promotion(operand_type: Any, type_to_check: Any = None,
     return operand_type
 
 
-def check_unary_implicit_promotion(operand_type: ScalarType, type_to_check: Any = None,
+def check_unary_implicit_promotion(operand_type: Type[ScalarType], type_to_check: Any = None,
                                    return_type: Any = None) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator

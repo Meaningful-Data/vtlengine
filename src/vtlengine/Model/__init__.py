@@ -2,7 +2,7 @@ import json
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Union, Any, Type
 
 import vtlengine.DataTypes as DataTypes
 import pandas as pd
@@ -23,7 +23,7 @@ class Scalar:
     Class representing a scalar value
     """
     name: str
-    data_type: ScalarType
+    data_type: Type[ScalarType]
     value: Optional[Union[int, float, str, bool]]
 
     @classmethod
@@ -55,7 +55,7 @@ class DataComponent:
     name: str
     # data: Optional[Union[PandasSeries, SparkSeries]]
     data: Optional[PandasSeries]
-    data_type: ScalarType
+    data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
 
@@ -87,7 +87,7 @@ class Component:
     Class representing a component of a dataset
     """
     name: str
-    data_type: ScalarType
+    data_type: Type[ScalarType]
     role: Role
     nullable: bool
 
@@ -313,7 +313,7 @@ class ScalarSet:
     """
     Class representing a set of scalar values
     """
-    data_type: ScalarType
+    data_type: Type[ScalarType]
     values: List[Union[int, float, str, bool]]
 
     def __contains__(self, item: str) -> Optional[bool]:
@@ -331,7 +331,7 @@ class ValueDomain:
     Class representing a value domain
     """
     name: str
-    type: ScalarType
+    type: Type[ScalarType]
     setlist: List[Union[int, float, str, bool]]
 
     def __post_init__(self) -> None:

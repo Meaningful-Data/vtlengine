@@ -320,9 +320,10 @@ class Between(Operator.Operator):
                 result.value = from_data <= operand.value <= to_data  # type: ignore[operator]
         elif (isinstance(operand, Scalar) and (isinstance(from_data, pd.Series) or
                     isinstance(to_data, pd.Series))):  # From or To is a DataComponent, or both
+
             if isinstance(from_data, pd.Series):
                 series = pd.Series(operand.value, index=from_data.index, dtype=object)
-            else:
+            elif isinstance(to_data, pd.Series):
                 series = pd.Series(operand.value, index=to_data.index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(name=operand.name, data=result_series,

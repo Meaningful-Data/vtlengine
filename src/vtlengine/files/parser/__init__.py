@@ -2,12 +2,12 @@ import warnings
 from csv import DictReader
 from pathlib import Path
 # from time import time
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Any, Type
 
 import numpy as np
 import pandas as pd
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Integer, Number, Boolean, Duration, \
-    SCALAR_TYPES_CLASS_REVERSE
+    SCALAR_TYPES_CLASS_REVERSE, ScalarType
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import check_date, check_time_period, check_time
@@ -15,7 +15,7 @@ from vtlengine.files.parser._time_checking import check_date, check_time_period,
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Role, Dataset
 
-TIME_CHECKS_MAPPING = {
+TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
     TimePeriod: check_time_period,
     TimeInterval: check_time

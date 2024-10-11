@@ -1,7 +1,7 @@
 import pandas as pd
 
 from copy import copy
-from typing import List, Union, Any
+from typing import List, Union
 
 from vtlengine.DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
 from vtlengine.Operators import Operator
@@ -118,7 +118,7 @@ class Filter(Operator):
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        if len(condition.data) > 0:  # type: ignore[arg-type]
+        if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             true_indexes = condition.data[condition.data == True].index
             result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
         return result_dataset
@@ -137,7 +137,6 @@ class Keep(Operator):
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         result_components = {name: comp for name, comp in dataset.components.items()
                              if comp.name in operands or comp.role == Role.IDENTIFIER}
-
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
@@ -189,7 +188,7 @@ class Rename(Operator):
             raise SemanticError("1-1-6-9", op=cls.op, from_components=duplicates)
 
         to_names = [operand.new_name for operand in operands]
-        if len(to_names) != len(set(to_names)):  # Si hay duplicados
+        if len(to_names) != len(set(to_names)):  # If duplicates
             duplicates = set(
                 [name for name in to_names if to_names.count(name) > 1])
             raise SemanticError("1-3-1", alias=duplicates)
@@ -310,11 +309,12 @@ class Sub(Operator):
             true_indexes = set()
             is_first = True
             for operand in operands:
-                if is_first:
-                    true_indexes = set(operand.data[operand.data == True].index)
-                    is_first = False
-                else:
-                    true_indexes.intersection_update(set(operand.data[operand.data == True].index))
+                if operand.data is not None:
+                    if is_first:
+                        true_indexes = set(operand.data[operand.data == True].index)
+                        is_first = False
+                    else:
+                        true_indexes.intersection_update(set(operand.data[operand.data == True].index))
             result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
         result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
         result_dataset.data = result_dataset.data.reset_index(drop=True)

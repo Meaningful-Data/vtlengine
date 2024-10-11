@@ -2,11 +2,11 @@ import re
 import pandas as pd
 
 from datetime import date
-from typing import Optional, Union, List, Any, Dict
+from typing import Optional, Union, List, Any, Dict, Type
 
 import vtlengine.Operators as Operators
 import pandas as pd
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration
+from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 
 from vtlengine.AST.Grammar.tokens import TIME_AGG, TIMESHIFT, PERIOD_INDICATOR, \
@@ -369,11 +369,11 @@ class Fill_time_series(Binary):
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
         combined_data = pd.concat([filled_data, data], ignore_index=True)
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
-        return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
+        return combined_data.sort_values(by=cls.other_ids + [cls.time_id])  # type: ignore[operator]
 
     @classmethod
     def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = 'all') -> Dict[str, Any]:
-        data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id])
+        data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id])  # type: ignore[operator]
 
         def extract_max_min(group: pd.Series) -> Dict[str, Any]:
             start_dates = group.apply(lambda x: x.split('/')[0])
@@ -392,7 +392,8 @@ class Fill_time_series(Binary):
                             frequency: str) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
-        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
+        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]),
+                                            keep=False)  # type: ignore[operator]
         return result_data[~duplicated | not_na]
 
     @classmethod
@@ -427,7 +428,7 @@ class Fill_time_series(Binary):
 
         filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
         return pd.concat(filled_data, ignore_index=True).sort_values(
-            by=cls.other_ids + [cls.time_id]).drop_duplicates()
+            by=cls.other_ids + [cls.time_id]).drop_duplicates()  # type: ignore[arg-type]
 
 
 class Time_Shift(Binary):
@@ -579,7 +580,7 @@ class Time_Aggregation(Time):
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
     @classmethod
-    def _execute_time_aggregation(cls, value: str, data_type: Union[Date, TimePeriod, TimeInterval],
+    def _execute_time_aggregation(cls, value: str, data_type: Type[ScalarType],
                                   period_from: Optional[str], period_to: str, conf: str) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)

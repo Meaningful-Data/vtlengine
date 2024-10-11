@@ -1,14 +1,14 @@
 from copy import copy
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Type
 
 import vtlengine.Operators as Operator
 import pandas as pd
 from vtlengine.DataTypes import (COMP_NAME_MAPPING,
-                       EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
-                       EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
-                       IMPLICIT_TYPE_PROMOTION_MAPPING,
-                       String, Number, TimeInterval, Date, TimePeriod, Duration,
-                       SCALAR_TYPES_CLASS_REVERSE)
+                                 EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
+                                 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
+                                 IMPLICIT_TYPE_PROMOTION_MAPPING,
+                                 String, Number, TimeInterval, Date, TimePeriod, Duration,
+                                 SCALAR_TYPES_CLASS_REVERSE, ScalarType)
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 
 from vtlengine.AST.Grammar.tokens import CAST
@@ -242,8 +242,8 @@ class Cast(Operator.Unary):
     @classmethod
     def cast_value(cls, *args: Any) -> Any:
         mask_value: str
-        provided_type: Union[Date, Duration, TimeInterval, TimePeriod, String]
-        to_type: Union[Date, Duration, TimeInterval, TimePeriod, String]
+        provided_type: Type[ScalarType]
+        to_type: Type[ScalarType]
         value, provided_type, to_type, mask_value = args
 
         if provided_type == String and to_type == Number:

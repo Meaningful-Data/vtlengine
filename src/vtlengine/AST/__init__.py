@@ -401,7 +401,7 @@ class Argument(AST):
     Argument: (name, type_, default)
     """
     name: str
-    type_: ScalarType
+    type_: Type[ScalarType]
     default: Optional[AST]
 
 
