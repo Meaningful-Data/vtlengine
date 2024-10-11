@@ -484,7 +484,7 @@ class Instr(Parameterized):
             return cls.scalar_evaluation(operand, param1, param2, param3)
 
     @classmethod
-    def op_func(cls, x: str, param1: Optional[Any], param2: Optional[Any], param3: Optional[Any]) -> Any:
+    def op_func(cls, x: Any, param1: Optional[Any], param2: Optional[Any], param3: Optional[Any]) -> Any:
         if pd.isnull(x):
             return None
         return cls.py_op(x, param1, param2, param3)

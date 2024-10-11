@@ -95,13 +95,14 @@ class InterpreterAnalyzer(ASTTemplate):
     def _load_datapoints_efficient(self, statement_num: int) -> None:
         if self.datapoints_paths is None:
             return
+        if self.ds_analysis is None:
+            return
         if statement_num not in self.ds_analysis[INSERT]:
             return
         for ds_name in self.ds_analysis[INSERT][statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(self.datasets[ds_name].components,
-                                                              ds_name,
-                                                              self.datapoints_paths[ds_name])
+                                                          ds_name, self.datapoints_paths[ds_name])
             elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
@@ -966,12 +967,13 @@ class InterpreterAnalyzer(ASTTemplate):
             self.ruleset_signature = dpr_info['signature']
             self.ruleset_mode = output
             # Gather rule data, adding the ruleset dataset to the interpreter
-            for rule in dpr_info['rules']:
-                rule_output_values[rule.name] = {
-                    "errorcode": rule.erCode,
-                    "errorlevel": rule.erLevel,
-                    "output": self.visit(rule)
-                }
+            if dpr_info is not None:
+                for rule in dpr_info['rules']:
+                    rule_output_values[rule.name] = {
+                        "errorcode": rule.erCode,
+                        "errorlevel": rule.erLevel,
+                        "output": self.visit(rule)
+                    }
             self.ruleset_mode = None
             self.ruleset_signature = None
             self.ruleset_dataset = None
@@ -1186,6 +1188,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if (isinstance(left_operand, Dataset) and isinstance(right_operand,Dataset) and
                     self.ruleset_mode in ('partial_null', 'partial_zero') and not self.only_semantic):
                 measure_name = left_operand.get_measures_names()[0]
+                if left_operand.data is None:
+                    left_operand.data = pd.DataFrame({measure_name: []})
+                if right_operand.data is None:
+                    right_operand.data = pd.DataFrame({measure_name: []})
                 left_null_indexes = set(
                     list(left_operand.data[left_operand.data[measure_name].isnull()].index))
                 right_null_indexes = set(
@@ -1388,7 +1394,6 @@ class InterpreterAnalyzer(ASTTemplate):
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              self.ruleset_dataset.components.items()} # type: ignore[union-attr]
         hr_component = self.ruleset_signature["RULE_COMPONENT"]
-
         name = node.value
 
         if self.rule_data is None:

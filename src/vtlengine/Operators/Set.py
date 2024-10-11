@@ -86,7 +86,8 @@ class Intersection(Set):
                 for col in not_identifiers:
                     result.data[col] = result.data[col + "_x"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result
 
 
@@ -118,7 +119,8 @@ class Symdiff(Set):
                         lambda x, c=col: x[c + '_x'] if x['_merge'] == 'left_only' else (
                             x[c + '_y'] if x['_merge'] == 'right_only' else None), axis=1)
                 result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
-        result.data = result.data.reset_index(drop=True)
+        if result.data is not None:
+            result.data = result.data.reset_index(drop=True)
         return result
 
 

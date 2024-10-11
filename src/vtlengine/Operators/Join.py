@@ -29,7 +29,7 @@ class Join(Operator):
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: List[Component]) -> Any:
+    def get_components_intersection(cls, *operands: *List[List[Component]]) -> Any:
         element_count: Dict[str, Any] = {}
         for operand in operands:
             operand_set = set(operand)

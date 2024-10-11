@@ -35,7 +35,6 @@ class Membership(Binary):
             if left_operand.data is not None:
                 left_operand.data[right_operand] = left_operand.data[component.name]
             left_operand.data[right_operand] = left_operand.data[component.name]
-
         result_components = {name: comp for name, comp in left_operand.components.items()
                              if comp.role == Role.IDENTIFIER or comp.name == right_operand}
         result_dataset = Dataset(name="result", components=result_components, data=None)
@@ -45,13 +44,14 @@ class Membership(Binary):
     def evaluate(cls, left_operand: Dataset, right_operand: str,
                  is_from_component_assignment: bool = False) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
-        if is_from_component_assignment:
-            return DataComponent(name=right_operand,
-                                 data_type=left_operand.components[right_operand].data_type,
-                                 role=Role.MEASURE,
-                                 nullable=left_operand.components[right_operand].nullable,
-                                 data=left_operand.data[right_operand])
-        result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+        if left_operand is not None and left_operand.data is not None:
+            if is_from_component_assignment:
+                return DataComponent(name=right_operand,
+                                     data_type=left_operand.components[right_operand].data_type,
+                                     role=Role.MEASURE,
+                                     nullable=left_operand.components[right_operand].nullable,
+                                     data=left_operand.data[right_operand])
+            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
 
 
