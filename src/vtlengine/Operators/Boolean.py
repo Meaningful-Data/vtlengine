@@ -34,9 +34,7 @@ class Binary(Operator.Binary):
             return series.map(lambda x: cls.py_op(scalar, x))
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: Any) -> Any:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = cls.comp_op(left_series.astype('bool[pyarrow]'),
                              right_series.astype('bool[pyarrow]'))
         return result.replace({pd.NA: None}).astype(object)
@@ -51,7 +49,7 @@ class And(Binary):
     comp_op = pd.Series.__and__
 
     @staticmethod
-    @numba.njit
+    # @numba.njit
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
         if (x is None and y == False) or (x == False and y is None):
             return False
@@ -69,7 +67,7 @@ class Or(Binary):
     comp_op = pd.Series.__or__
 
     @staticmethod
-    @numba.njit
+    # @numba.njit
     def py_op(x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
         if (x is None and y == True) or (x == True and y is None):
             return True
@@ -101,7 +99,7 @@ class Not(Unary):
     op = NOT
 
     @staticmethod
-    @numba.njit
+    # @numba.njit
     def py_op(x: Optional[bool]) -> Optional[bool]:
         return None if x is None else not x
 

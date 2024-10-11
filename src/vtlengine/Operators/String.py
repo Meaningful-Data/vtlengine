@@ -461,10 +461,8 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar,
-                          param1: Optional[Union[DataComponent, Scalar]],
-                          param2: Optional[Union[DataComponent, Scalar]],
-                          param3: Optional[Union[DataComponent, Scalar]]) -> Scalar:
+    def scalar_evaluation(cls, operand: Scalar, param1: Optional[Scalar],
+                          param2: Optional[Scalar], param3: Optional[Scalar]) -> Scalar:
         result = cls.validate(operand, param1, param2, param3)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value

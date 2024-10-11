@@ -241,7 +241,7 @@ class Parameterized(Unary):
         return series.map(lambda x: cls.op_func(x, param))
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset, param: Union[DataComponent, Scalar]) -> Dataset:
+    def dataset_evaluation(cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None) -> Dataset:
         result = cls.validate(operand, param)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in result.get_measures_names():
@@ -251,7 +251,7 @@ class Parameterized(Unary):
                         result.data[measure_name], param.data
                     )
                 else:
-                    param_value = None if param is None else param.value
+                    param_value = param.value if param is not None else None
                     result.data[measure_name] = cls.apply_operation_series_scalar(
                         result.data[measure_name], param_value
                     )
@@ -262,20 +262,20 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, param: Union[DataComponent, Scalar]) -> DataComponent:
+    def component_evaluation(cls, operand: DataComponent, param: Optional[Union[DataComponent, Scalar]] = None) -> DataComponent:
         result = cls.validate(operand, param)
         result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if isinstance(param, DataComponent):
             result.data = cls.apply_operation_two_series(operand.data, param.data)
         else:
-            param_value = None if param is None else param.value
+            param_value = param.value if param is not None else None
             result.data = cls.apply_operation_series_scalar(operand.data, param_value)
         return result
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar, param: Scalar) -> Scalar:
+    def scalar_evaluation(cls, operand: Scalar, param: Optional[Scalar] = None) -> Scalar:
         result = cls.validate(operand, param)
-        param_value = None if param is None else param.value
+        param_value = param.value if param is not None else None
         result.value = cls.op_func(operand.value, param_value)
         return result
 

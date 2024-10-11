@@ -14,8 +14,8 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.files.output import TimePeriodRepresentation, \
-    format_time_period_external_representation
+from vtlengine.files.output._time_period_representation import \
+    format_time_period_external_representation, TimePeriodRepresentation
 
 pd.options.mode.chained_assignment = None
 

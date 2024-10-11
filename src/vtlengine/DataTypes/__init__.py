@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+import numpy
 import pandas as pd
 from numpy import ScalarType
 
@@ -28,7 +29,6 @@ CAST_MAPPING = {
     'Boolean': bool,
 }
 
-
 class ScalarType:
     """
     """
@@ -41,7 +41,7 @@ class ScalarType:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def strictly_same_class(self, obj: ScalarType) -> bool:
+    def strictly_same_class(self, obj: numpy.ScalarType) -> bool:
         if not isinstance(obj, ScalarType):
             raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__

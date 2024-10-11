@@ -65,14 +65,14 @@ class Alias(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+    def validate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
             raise SemanticError("1-3-1", alias=new_name)
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
-    def evaluate(cls, left_operand: Any, right_operand: Any) -> Dataset:
+    def evaluate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         result = cls.validate(left_operand, right_operand)
         result.data = left_operand.data
         return result

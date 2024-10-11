@@ -62,8 +62,8 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(cls, x: Union[int, float, str, bool],
-                     y: Union[int, float, str, bool]) -> Any:
+    def _cast_values(cls, x: Optional[Union[int, float, str, bool]],
+                     y: Optional[Union[int, float, str, bool]]) -> Any:
         # Cast both values to the same data type
         # An integer can be considered a bool, we must check first boolean, then numbers
         try:
@@ -218,7 +218,7 @@ class Between(Operator.Operator):
                 x: Optional[Union[int, float, bool, str]],
                 y: Optional[Union[int, float, bool, str]],
                 z: Optional[Union[int, float, bool, str]]) -> Optional[bool]:
-        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z # type: ignore
+        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z # type: ignore[operator]
 
     @classmethod
     def apply_operation_component(cls, series: pd.Series,
@@ -274,7 +274,7 @@ class Between(Operator.Operator):
         elif isinstance(operand, DataComponent):
             result = DataComponent(name=operand.name, data=None,
                                    data_type=cls.return_type, role=operand.role)
-        elif isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
+        elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
         else:  # From or To is a DataComponent, or both
             result = DataComponent(name=operand.name, data=None,

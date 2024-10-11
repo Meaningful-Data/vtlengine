@@ -37,15 +37,11 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                                              nullable=component['nullable'])
                 for component in dataset_json['DataStructure']}
 
-            datasets[dataset_name] = Dataset(name=dataset_name,
-                                             components=components,
-                                             data=None)
+            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if 'scalars' in structures:
         for scalar_json in structures['scalars']:
             scalar_name = scalar_json['name']
-            scalar = Scalar(name=scalar_name,
-                            data_type=SCALAR_TYPES[scalar_json['type']],
-                            value=None)
+            scalar = Scalar(name=scalar_name, data_type=SCALAR_TYPES[scalar_json['type']], value=None)
             datasets[scalar_name] = scalar
     return datasets
 

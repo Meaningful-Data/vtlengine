@@ -94,7 +94,7 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data)
+        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value

@@ -1,6 +1,6 @@
 import os
 from copy import copy
-from typing import Any
+from typing import Any, Optional
 
 from vtlengine.Exceptions import SemanticError
 
@@ -17,23 +17,16 @@ ALLOWED_MODEL_TYPES = [DataComponent, Scalar]
 
 
 class RoleSetter(Unary):
-    role = None
+    role: Optional[Role] = None
 
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         if isinstance(operand, Scalar):
-
             nullable = True
             if cls.role == Role.IDENTIFIER or operand.value is not None:
                 nullable = False
-
-            return DataComponent(
-                name=operand.name,
-                data_type=operand.data_type,
-                role=cls.role,
-                nullable=nullable,
-                data=None
-            )
+            return DataComponent(name=operand.name, data_type=operand.data_type,
+                role=cls.role, nullable=nullable, data=None)
         operand.role = cls.role
         return copy(operand)
 

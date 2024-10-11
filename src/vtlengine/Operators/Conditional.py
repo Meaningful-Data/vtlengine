@@ -123,9 +123,7 @@ class If(Operator):
             if not isinstance(left, Scalar) or not isinstance(right, Scalar):
                 nullable = condition.nullable
             else:
-                if isinstance(left, Scalar) and left.data_type == Null:
-                    nullable = True
-                if isinstance(right, Scalar) and right.data_type == Null:
+                if left.data_type == Null or right.data_type == Null:
                     nullable = True
             if isinstance(left, DataComponent):
                 nullable |= left.nullable
@@ -191,12 +189,11 @@ class Nvl(Binary):
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
 
-        if isinstance(left, Scalar):
+        if isinstance(left, Scalar) and isinstance(result, Scalar):
             if pd.isnull(left):
                 result.value = right.value
             else:
                 result.value = left.value
-            return result
         else:
             if isinstance(right, Scalar):
                 result.data = left.data.fillna(right.value)
