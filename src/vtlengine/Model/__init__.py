@@ -190,18 +190,19 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
-            if comp.data_type.__name__ in ['String', 'Date']:
+            type_name: str = comp.data_type.__name__
+            if type_name in ['String', 'Date']:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
-            elif comp.data_type.__name__ == 'TimePeriod':
+            elif type_name == 'TimePeriod':
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
                     lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
                 other.data[comp.name] = other.data[comp.name].map(
                     lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
-            elif comp.data_type.__name__ in ['Integer', 'Number']:
-                if comp.data_type.__name__ == 'Integer':
+            elif type_name in ['Integer', 'Number']:
+                if type_name == 'Integer':
                     type_ = "int64"
                 else:
                     type_ = "float32"

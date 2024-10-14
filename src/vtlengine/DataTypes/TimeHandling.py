@@ -117,7 +117,7 @@ class SingletonMeta(type):
     metaclass because it is best suited for this purpose.
     """
 
-    _instances: Dict[str, Any] = {}
+    _instances: Dict[Any, Any] = {}
 
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         """
@@ -312,8 +312,8 @@ class TimeIntervalHandler:
     _date2: str = 'Z'
 
     def __init__(self, date1: str, date2: str) -> None:
-        self.date1 = date1
-        self.date2 = date2
+        self.set_date1(date1)
+        self.set_date2(date2)
         # if date1 > date2:
         #     raise ValueError(f'Invalid Time with duration less than 0 ({self.length} days)')
 
@@ -333,16 +333,15 @@ class TimeIntervalHandler:
     def date2(self, as_date: bool = False) -> Union[date, str]:
         return date.fromisoformat(self._date2) if as_date else self._date2
 
-    @date1.setter
-    def date1(self, value: str) -> None:
+    # @date1.setter
+    def set_date1(self, value: str) -> None:
         date.fromisoformat(value)
         if value > self.date2:
             raise SemanticError("2-1-19-4", date=self.date2, value=value)
             # raise ValueError(f"({value} > {self.date2}). Cannot set date1 with a value greater than date2.")
         self._date1 = value
 
-    @date2.setter
-    def date2(self, value: str) -> None:
+    def set_date2(self, value: str) -> None:
         date.fromisoformat(value)
         if value < self.date1:
             raise SemanticError("2-1-19-5", date=self.date1, value=value)

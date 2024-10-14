@@ -22,7 +22,8 @@ from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarc
 from vtlengine.Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING, JOIN_MAPPING, \
     REGULAR_AGGREGATION_MAPPING, ROLE_SETTER_MAPPING, SET_MAPPING, UNARY_MAPPING, THEN_ELSE, \
     HR_UNARY_MAPPING, HR_COMP_MAPPING, HR_NUM_BINARY_MAPPING
-from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
+from vtlengine.files.output import save_datapoints
+from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
 
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -1114,19 +1115,15 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            if self.ruleset_dataset.data is None:
-                self.rule_data = None
-            else:
-                self.rule_data = self.ruleset_dataset.data.copy()
+            self.rule_data = None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
             return None
         if self.is_from_hr_agg:
             measure_name = rule_result.get_measures_names()[0]
-            if rule_result.data is not None:
-                if len(rule_result.data[measure_name]) > 0:
-                    self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+            if rule_result.data is not None and len(rule_result.data[measure_name]) > 0:
+                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
         else:
             rule_result = rule_result.data
         self.rule_data = None

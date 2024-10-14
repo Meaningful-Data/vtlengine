@@ -92,11 +92,14 @@ class ScalarType:
     def cast(cls, value: Any) -> Any:
         if pd.isnull(value):
             return None
-        return CAST_MAPPING[cls.__name__](value)
+        class_name: str = cls.__name__
+        return CAST_MAPPING[class_name](value)
 
     @classmethod
     def dtype(cls) -> str:
-        return DTYPE_MAPPING[cls.__name__]
+        class_name: str = cls.__name__
+        return DTYPE_MAPPING[class_name]
+
     __str__ = __repr__
 
 

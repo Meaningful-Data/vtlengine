@@ -2,7 +2,7 @@ import warnings
 from csv import DictReader
 from pathlib import Path
 # from time import time
-from typing import Optional, Dict, Union, Any, Type
+from typing import Optional, Dict, Union, Any, Type, List
 
 import numpy as np
 import pandas as pd
@@ -53,7 +53,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing = [id_m for id_m in comp_names if id_m not in reader.fieldnames]
+    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in reader.fieldnames]
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         raise InputValidationException(code='0-1-1-8', ids=comps_missing, file=str(csv_path.name))

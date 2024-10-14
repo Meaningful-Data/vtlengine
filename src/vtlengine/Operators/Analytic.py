@@ -113,7 +113,7 @@ class Analytic(Operator.Unary):
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = window.start_mode if window.start_mode != 'current' and window.start != 'CURRENT ROW' else ''
             stop_mode = window.stop_mode if window.stop_mode != 'current' and window.stop != 'CURRENT ROW' else ''
-            if window.start == -1:
+            if isinstance(window.start, int) and window.start == -1:
                 window.start = 'UNBOUNDED'
 
             if stop_mode == '' and window.stop == 0:
