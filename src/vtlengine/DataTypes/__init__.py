@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, Dict
+from typing import Any, Optional, Type, Dict, Set, Union
 
 import numpy
 import pandas as pd
@@ -33,7 +33,7 @@ class ScalarType:
     """
     """
 
-    default = None
+    default: Optional[Union[str, 'ScalarType']] = None
 
     def __name__(self) -> Any:
         return self.__class__.__name__
@@ -55,11 +55,11 @@ class ScalarType:
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def instance_is_included(self, set_: set) -> bool:
+    def instance_is_included(self, set_: Set[Any]) -> bool:
         return self.__class__ in set_
 
     @classmethod
-    def is_included(cls, set_: set) -> bool:
+    def is_included(cls, set_: Set[Any]) -> bool:
         return cls in set_
 
     @classmethod
@@ -571,7 +571,7 @@ def binary_implicit_promotion(left_type: Type[ScalarType], right_type: Type[Scal
                         type_2=SCALAR_TYPES_CLASS_REVERSE[right_type])
 
 
-def check_binary_implicit_promotion(left: ScalarType, right: Any,
+def check_binary_implicit_promotion(left: Type[ScalarType], right: Any,
         type_to_check: Any = None, return_type: Any = None) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator

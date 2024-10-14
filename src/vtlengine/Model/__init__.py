@@ -190,7 +190,7 @@ class Dataset:
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
-            type_name: str = comp.data_type.__name__
+            type_name: str = comp.data_type.__name__.__str__()
             if type_name in ['String', 'Date']:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
@@ -353,7 +353,7 @@ class ValueDomain:
         return cls.from_dict(json_info)
 
     @classmethod
-    def from_dict(cls, value: dict) -> Any:
+    def from_dict(cls, value: Dict[str, Any]) -> Any:
         for x in ('name', 'type', 'setlist'):
             if x not in value:
                 raise Exception('Invalid format for ValueDomain. Requires name, type and setlist.')

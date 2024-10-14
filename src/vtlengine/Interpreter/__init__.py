@@ -195,7 +195,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(param_info) > 1:
                 previous_default = param_info[0]
                 for i in [1, len(param_info) - 1]:
-                    if previous_default is True and param_info[i] is False:
+                    if previous_default and not param_info[i]:
                         raise SemanticError("1-3-12")
                     previous_default = param_info[i]
 
@@ -234,7 +234,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset_data = {
             'rules': node.rules,
             'signature': signature_actual_names,
-            'params': [x.value for x in node.params],
+            'params': [x.value for x in node.params] if not isinstance(node.params, AST.DefIdentifier) else [],
             'signature_type': node.signature_type,
         }
 
@@ -471,7 +471,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             operand = self.visit(node.operand)
-        partitioning = []
+        partitioning: Any = []
         ordering = []
         if self.udo_params is not None:
             if node.partition_by is not None:
@@ -953,7 +953,7 @@ class InterpreterAnalyzer(ASTTemplate):
             # Checking if list of components supplied is valid
             if len(node.children) > 2:
                 for comp_name in node.children[2:]:
-                    if comp_name not in dataset_element.components:
+                    if comp_name.__str__() not in dataset_element.components:
                         raise SemanticError("1-1-1-10", comp_name=comp_name,
                                             dataset_name=dataset_element.name)
                 if dpr_info is not None and dpr_info['signature_type'] == 'variable':

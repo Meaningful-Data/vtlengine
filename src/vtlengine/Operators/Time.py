@@ -438,7 +438,8 @@ class Time_Shift(Binary):
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
-        data_type: Any = result.components[cls.time_id].data_type
+
+        data_type: Any = result.components[cls.time_id].data_type if isinstance(cls.time_id, str) else None
 
         if data_type == Date:
             freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].map(cls.parse_date, na_action='ignore')))

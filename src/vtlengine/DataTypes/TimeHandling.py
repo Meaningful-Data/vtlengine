@@ -266,10 +266,10 @@ class TimePeriodHandler:
                                     start=False)
         return date_value if as_date else date_value.isoformat()
 
-    def __eq__(self, other: Any) -> Optional[bool]:
+    def __eq__(self, other: Any) -> Optional[bool]: # type: ignore[override]
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other: Any) -> Optional[bool]:
+    def __ne__(self, other: Any) -> Optional[bool]: # type: ignore[override]
         return not self._meta_comparison(other, operator.eq)
 
     def __lt__(self, other: Any) -> Optional[bool]:
@@ -336,14 +336,14 @@ class TimeIntervalHandler:
     # @date1.setter
     def set_date1(self, value: str) -> None:
         date.fromisoformat(value)
-        if value > self.date2:
+        if value > self.date2.__str__():
             raise SemanticError("2-1-19-4", date=self.date2, value=value)
             # raise ValueError(f"({value} > {self.date2}). Cannot set date1 with a value greater than date2.")
         self._date1 = value
 
     def set_date2(self, value: str) -> None:
         date.fromisoformat(value)
-        if value < self.date1:
+        if value < self.date1.__str__():
             raise SemanticError("2-1-19-5", date=self.date1, value=value)
             # raise ValueError(f"({value} < {self.date1}). Cannot set date2 with a value lower than date1.")
         self._date2 = value

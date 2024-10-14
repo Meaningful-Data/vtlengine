@@ -29,7 +29,7 @@ class Join(Operator):
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: *List[List[Component]]) -> Any:
+    def get_components_intersection(cls, *operands: *List[Any]) -> Any: #type: ignore[valid-type]
         element_count: Dict[str, Any] = {}
         for operand in operands:
             operand_set = set(operand)
@@ -47,8 +47,9 @@ class Join(Operator):
         merged_components = {}
         using = using or []
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
-        totally_common = list(reduce(lambda x, y: x & set(y.get_components_names()), operands[1:],
-                                     set(operands[0].get_components_names())))
+        totally_common = list(reduce(lambda x, y: x &
+                                     set(y.get_components_names()), # type: ignore[operator]
+                                     operands[1:], set(operands[0].get_components_names())))
 
         for op in operands:
             for comp in op.components.values():
