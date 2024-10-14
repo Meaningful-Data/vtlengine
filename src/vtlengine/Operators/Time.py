@@ -438,7 +438,7 @@ class Time_Shift(Binary):
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
-        data_type: Type[ScalarType] = result.components[cls.time_id].data_type
+        data_type: Any = result.components[cls.time_id].data_type
 
         if data_type == Date:
             freq = cls.find_min_frequency(cls.get_frequencies(result.data[cls.time_id].map(cls.parse_date, na_action='ignore')))
@@ -459,9 +459,8 @@ class Time_Shift(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
-        if not isinstance(operand, Dataset) or cls._get_time_id(operand) is None:
+        if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-
         return Dataset(name='result', components=operand.components.copy(), data=None)
 
     @classmethod

@@ -44,7 +44,7 @@ class Membership(Binary):
     def evaluate(cls, left_operand: Dataset, right_operand: str,
                  is_from_component_assignment: bool = False) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
-        if left_operand is not None and left_operand.data is not None:
+        if left_operand.data is not None:
             if is_from_component_assignment:
                 return DataComponent(name=right_operand,
                                      data_type=left_operand.components[right_operand].data_type,

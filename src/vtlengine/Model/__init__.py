@@ -29,7 +29,7 @@ class Scalar:
     @classmethod
     def from_json(cls, json_str: str) -> 'Scalar':
         data = json.loads(json_str)
-        return cls(data['name'], data['value'])
+        return cls(data['name'], SCALAR_TYPES[data['data_type']] , data['value'])
 
     def __eq__(self, other: Any) -> bool:
         same_name = self.name == other.name
@@ -224,7 +224,7 @@ class Dataset:
                 return True
             # To display actual null values instead of -1234997
             for comp in self.components.values():
-                if comp.data_type.__name__ in ['Integer', 'Number']:
+                if comp.data_type.__name__.__str__() in ['Integer', 'Number']:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
             print("\n Differences between the dataframes in", self.name)
             print(diff)

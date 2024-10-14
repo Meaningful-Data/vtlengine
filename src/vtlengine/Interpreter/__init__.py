@@ -224,12 +224,12 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Signature has the actual parameters names or aliases if provided
         signature_actual_names = {}
-
-        for param in node.params:
-            if param.alias is not None:
-                signature_actual_names[param.alias] = param.value
-            else:
-                signature_actual_names[param.value] = param.value
+        if not isinstance(node.params, AST.DefIdentifier):
+            for param in node.params:
+                if param.alias is not None:
+                    signature_actual_names[param.alias] = param.value
+                else:
+                    signature_actual_names[param.value] = param.value
 
         ruleset_data = {
             'rules': node.rules,
@@ -496,7 +496,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if not isinstance(operand, Dataset):
             raise SemanticError("2-3-4", op=node.op, comp="dataset")
         if node.partition_by is None:
-            order_components = [x.component for x in node.order_by]
+            order_components = [x.component for x in node.order_by] if node.order_by is not None else []
             partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
 
         params = []
@@ -655,7 +655,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                  data_type=self.regular_aggregation_dataset.components[node.value].data_type,
                                  role=self.regular_aggregation_dataset.components[ node.value].role,
                                  nullable=self.regular_aggregation_dataset.components[node.value].nullable)
-        if self.is_from_rule and self.ruleset_dataset is not None:
+        if (self.is_from_rule and self.ruleset_dataset is not None and
+                self.ruleset_signature is not None):
             if node.value not in self.ruleset_signature:
                 raise SemanticError("1-1-10-7", comp_name=node.value)
             comp_name = self.ruleset_signature[node.value]
@@ -905,7 +906,7 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 raise NotImplementedError
         elif node.op == HAVING:
-            if self.aggregation_dataset is not None:
+            if self.aggregation_dataset is not None and self.aggregation_grouping is not None:
                 for id_name in self.aggregation_grouping:
                     if id_name not in self.aggregation_dataset.components:
                         raise SemanticError("1-1-2-4", op=node.op, id_name=id_name)
@@ -940,7 +941,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.dprs is None:
                 raise SemanticError("1-3-19", node_type="Datapoint Rulesets", node_value="")
             # Checking if ruleset exists
-            dpr_name = node.children[1]
+            dpr_name: Any = node.children[1]
             if dpr_name not in self.dprs:
                 raise SemanticError("1-3-19", node_type="Datapoint Ruleset", node_value=dpr_name)
             dpr_info = self.dprs[dpr_name]
@@ -1122,7 +1123,8 @@ class InterpreterAnalyzer(ASTTemplate):
             return None
         if self.is_from_hr_agg:
             measure_name = rule_result.get_measures_names()[0]
-            if rule_result.data is not None and len(rule_result.data[measure_name]) > 0:
+            if (self.hr_agg_rules_computed is not None and rule_result.data is not None and
+                    len(rule_result.data[measure_name]) > 0):
                 self.hr_agg_rules_computed[rule_result.name] = rule_result.data
         else:
             rule_result = rule_result.data

@@ -1,9 +1,9 @@
 import pandas as pd
 
 from copy import copy
-from typing import List, Union
+from typing import List, Union, Type
 
-from vtlengine.DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion
+from vtlengine.DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion, ScalarType
 from vtlengine.Operators import Operator
 
 from vtlengine.AST import RenameNode
@@ -253,7 +253,7 @@ class Unpivot(Operator):
         result_dataset.add_component(Component(name=identifier, data_type=String,
                                                role=Role.IDENTIFIER, nullable=False))
         base_type = None
-        final_type = String
+        final_type: Type[ScalarType] = String
         for comp in dataset.get_measures():
             if base_type is None:
                 base_type = comp.data_type

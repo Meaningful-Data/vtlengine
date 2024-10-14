@@ -168,8 +168,8 @@ def _id_type_promotion_join_keys(*args: Any) -> None:
     c_left, c_right, join_key, left_data, right_data = args
 
 
-    left_type_name:str = c_left.data_type.__name__
-    right_type_name:str = c_right.data_type.__name__
+    left_type_name: str = str(c_left.data_type.__name__)
+    right_type_name: str = str(c_right.data_type.__name__)
 
     if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
         left_data[join_key] = left_data[join_key].astype(object)
@@ -584,7 +584,7 @@ class Binary(Operator):
 
         for measure in dataset.get_measures():
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if measure.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
                 scalar_value = DURATION_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left)
@@ -619,7 +619,7 @@ class Binary(Operator):
         comp_data = cls.cast_time_types(component.data_type, component.data.copy() if
                                         component.data is not None else pd.Series())
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if component.data_type.__name__ == "Duration" and not isinstance(scalar_value, int):
+        if component.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
             scalar_value = DURATION_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(comp_data, scalar_value, component_left)
         return result_component

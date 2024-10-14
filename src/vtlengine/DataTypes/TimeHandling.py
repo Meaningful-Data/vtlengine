@@ -370,10 +370,10 @@ class TimeIntervalHandler:
             other = TimeIntervalHandler(*other.split('/', maxsplit=1))
         return py_op(self.length, other.length)
 
-    def __eq__(self, other: Any) -> Optional[bool]:
+    def __eq__(self, other: Any) -> Optional[bool]: # type: ignore[override]
         return self._meta_comparison(other, operator.eq)
 
-    def __ne__(self, other: Any) -> Optional[bool]:
+    def __ne__(self, other: Any) -> Optional[bool]: # type: ignore[override]
         return self._meta_comparison(other, operator.ne)
 
     def __lt__(self, other: Any) -> Optional[bool]:

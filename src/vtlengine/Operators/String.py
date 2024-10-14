@@ -38,7 +38,7 @@ class Unary(Operator.Unary):
         """
         measures = dataset.get_measures()
 
-        if measures is None or len(measures) != 1:
+        if len(measures) != 1:
             raise SemanticError("1-1-18-1", op=cls.op, name=dataset.name)
 
 
@@ -123,7 +123,7 @@ class Parameterized(Unary):
 
     @classmethod
     def op_func(cls, *args: Any) -> Any:
-        x: Union[Dataset, String]
+        x: Union[Dataset, String, str]
         param1: Optional[Any]
         param2: Optional[Any]
         x, param1, param2 = operand, param1, param2 = (args + (None, None))[:3]
