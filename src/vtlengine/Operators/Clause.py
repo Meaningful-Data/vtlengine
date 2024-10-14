@@ -48,7 +48,7 @@ class Calc(Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
+    def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         for operand in operands:

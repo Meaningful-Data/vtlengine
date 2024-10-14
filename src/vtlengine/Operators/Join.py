@@ -337,7 +337,7 @@ class Apply(Operator):
         return Dataset(name=name, components=components, data=data)
 
     @classmethod
-    def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset):
+    def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset): # type: ignore[syntax]
         common = set(left.get_components_names()) & set(right.get_components_names())
         left.components = {comp.name: comp for comp in left.components.values() if
                            comp.name in common}

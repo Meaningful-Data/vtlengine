@@ -16,10 +16,10 @@ from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
 
 
 class Time(Operators.Operator):
-    periods = None
-    time_id = None
-    other_ids = None
-    measures = None
+    periods: Any = None
+    time_id: Any = None
+    other_ids: Any = None
+    measures: Any = None
 
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
 
@@ -503,8 +503,10 @@ class Time_Shift(Binary):
         return f"{year}-{period}{value}"
 
     @classmethod
-    def shift_interval(cls, interval: str, shift_value: int, frequency: str) -> str:
+    def shift_interval(cls, interval: str, shift_value: Union[int, Scalar], frequency: str) -> str:
         start_date, end_date = interval.split('/')
+        if isinstance(shift_value, Scalar):
+            shift_value = int(shift_value.value)
         start_date = cls.shift_dates(start_date, shift_value, frequency)
         end_date = cls.shift_dates(end_date, shift_value, frequency)
         return f'{start_date}/{end_date}'

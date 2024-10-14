@@ -427,7 +427,8 @@ class Null(ScalarType):
     def check_type(self, value: Any) -> bool:
         return True
 
-    def cast(self, value: Any) -> None:
+    @classmethod
+    def cast(cls, value: Any) -> None:
         return None
 
     def dtype(self) -> str:

@@ -253,12 +253,12 @@ class Substr(Parameterized):
     return_type = String
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]) -> None:
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
     @classmethod
-    def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
+    def py_op(cls, x: str, param1: Any, param2: Any) -> Any:
         x = str(x)
         param1 = None if pd.isnull(param1) else int(param1)
         param2 = None if pd.isnull(param2) else int(param2)
@@ -295,10 +295,11 @@ class Substr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Optional[Union[int, str]], position: int) -> None:
-        if not pd.isnull(param) and not param >= 1 and position == 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif not pd.isnull(param) and not param >= 0 and position == 2:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
+        if param is not None:
+            if not pd.isnull(param) and not param >= 1 and position == 1:
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
+            elif not pd.isnull(param) and not param >= 0 and position == 2:
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 
 class Replace(Parameterized):
@@ -312,7 +313,9 @@ class Replace(Parameterized):
         elif pd.isnull(param2):
             param2 = ''
         x = str(x)
-        return x.replace(param1, param2)
+        if param1 is not None and param2 is not None:
+            return x.replace(param1, param2)
+        return x
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -326,7 +329,7 @@ class Replace(Parameterized):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]) -> None:
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
@@ -354,7 +357,7 @@ class Instr(Parameterized):
         return super().validate(operand)
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]) -> None:
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
@@ -472,10 +475,9 @@ class Instr(Parameterized):
 
     @classmethod
     def evaluate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-                 param1: Optional[Union[DataComponent, Scalar]] = None,
-                 param2: Optional[Union[DataComponent, Scalar]] = None,
-                 param3: Optional[
-                     Union[DataComponent, Scalar]] = None) -> Any:
+                 param1: Optional[Any] = None,
+                 param2: Optional[Any] = None,
+                 param3: Optional[Any] = None) -> Any:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):
@@ -494,17 +496,16 @@ class Instr(Parameterized):
               occurrence: Optional[int]) -> Any:
         str_value = str(str_value)
         if not pd.isnull(start):
-            if isinstance(start, int) or start.is_integer():
+            if isinstance(start, int) or isinstance(start, float):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start",
-                                    correct_type="Integer")
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer")
         else:
             start = 0
 
         if not pd.isnull(occurrence):
-            if isinstance(occurrence, int) or occurrence.is_integer():
+            if isinstance(occurrence, int) or isinstance(occurrence, float):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
