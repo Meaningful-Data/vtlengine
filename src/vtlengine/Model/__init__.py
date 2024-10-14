@@ -24,7 +24,7 @@ class Scalar:
     """
     name: str
     data_type: Type[ScalarType]
-    value: Optional[Union[int, float, str, bool]]
+    value: Any
 
     @classmethod
     def from_json(cls, json_str: str) -> 'Scalar':
@@ -54,7 +54,7 @@ class DataComponent:
     """A component of a dataset with data"""
     name: str
     # data: Optional[Union[PandasSeries, SparkSeries]]
-    data: Optional[PandasSeries]
+    data: PandasSeries
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True

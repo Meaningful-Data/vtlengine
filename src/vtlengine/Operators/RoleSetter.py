@@ -17,7 +17,7 @@ ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]
 
 
 class RoleSetter(Unary):
-    role: Optional[Role] = None
+    role: Role = None
 
     @classmethod
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:

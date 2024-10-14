@@ -100,7 +100,7 @@ class Aggregate(Operator):
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
-                if len(operand.data) > 0:  # type: ignore[arg-type]
+                if len(operand.data) > 0:
                     result_dataset.data[operand.name] = operand.data
                 else:
                     result_dataset.data[operand.name] = None

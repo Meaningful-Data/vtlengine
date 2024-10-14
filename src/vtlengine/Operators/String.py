@@ -189,8 +189,8 @@ class Parameterized(Unary):
     @classmethod
     def scalar_evaluation(cls, *args: Any) -> Scalar:
         operand: Scalar
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
+        param1: Optional[Scalar]
+        param2: Optional[Scalar]
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
@@ -294,7 +294,7 @@ class Substr(Parameterized):
             cls.check_param_value(param.value, position)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Union[int, str]], position: int) -> None:
+    def check_param_value(cls, param: Optional[Any], position: int) -> None:
         if param is not None:
             if not pd.isnull(param) and not param >= 1 and position == 1:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
@@ -388,7 +388,7 @@ class Instr(Parameterized):
             cls.check_param_value(param.value, position)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Union[int, str]], position: int) -> None:
+    def check_param_value(cls, param: Any, position: int) -> None:
         if position == 2:
             if not pd.isnull(param) and param < 1:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")

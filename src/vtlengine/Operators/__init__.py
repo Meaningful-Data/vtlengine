@@ -168,8 +168,8 @@ def _id_type_promotion_join_keys(*args: Any) -> None:
     c_left, c_right, join_key, left_data, right_data = args
 
 
-    left_type_name = c_left.data_type.__name__
-    right_type_name = c_right.data_type.__name__
+    left_type_name:str = c_left.data_type.__name__
+    right_type_name:str = c_right.data_type.__name__
 
     if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
         left_data[join_key] = left_data[join_key].astype(object)

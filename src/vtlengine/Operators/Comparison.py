@@ -318,7 +318,7 @@ class Between(Operator.Operator):
             if operand.value is None or from_data is None or to_data is None:
                 result.value = None
             else:
-                result.value = from_data <= operand.value <= to_data  # type: ignore[operator]
+                result.value = from_data <= operand.value <= to_data
         elif (isinstance(operand, Scalar) and (isinstance(from_data, pd.Series) or
                     isinstance(to_data, pd.Series))):  # From or To is a DataComponent, or both
 

@@ -289,7 +289,7 @@ class CrossJoin(Join):
 class Apply(Operator):
 
     @classmethod
-    def evaluate(cls, dataset: Dataset, expression: Any, op_map: dict) -> Dataset:
+    def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
         for child in expression:
             dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
         return dataset

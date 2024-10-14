@@ -78,12 +78,13 @@ class ScalarType:
     def is_subtype(cls, obj: Any) -> bool:
         return issubclass(cls, obj)
 
-    def is_null_type(self) -> bool:
+    @classmethod
+    def is_null_type(cls) -> bool:
         return False
 
     @classmethod
-    def check_type(cls, value: str) -> bool:
-        if isinstance(value, CAST_MAPPING[cls.__name__]):
+    def check_type(cls, value: Any) -> bool:
+        if isinstance(value, CAST_MAPPING[cls.__name__]): # type: ignore[index]
             return True
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
@@ -368,7 +369,8 @@ class Boolean(ScalarType):
     """
     default = None
 
-    def cast(self, value: Any) -> Optional[bool]:
+    @classmethod
+    def cast(cls, value: Any) -> Optional[bool]:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -421,17 +423,20 @@ class Null(ScalarType):
     """
     """
 
-    def is_null_type(self) -> bool:
+    @classmethod
+    def is_null_type(cls) -> bool:
         return True
 
-    def check_type(self, value: Any) -> bool:
+    @classmethod
+    def check_type(cls, value: Any) -> bool:
         return True
 
     @classmethod
     def cast(cls, value: Any) -> None:
         return None
 
-    def dtype(self) -> str:
+    @classmethod
+    def dtype(cls) -> str:
         return 'string'
 
 

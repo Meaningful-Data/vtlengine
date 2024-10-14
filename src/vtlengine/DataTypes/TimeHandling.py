@@ -351,8 +351,8 @@ class TimeIntervalHandler:
 
     @property
     def length(self) -> int:
-        date_left = date.fromisoformat(self.date1)
-        date_right = date.fromisoformat(self.date2)
+        date_left = date.fromisoformat(self.date1.__str__())
+        date_right = date.fromisoformat(self.date2.__str__())
         return (date_right - date_left).days
 
     __len__ = length

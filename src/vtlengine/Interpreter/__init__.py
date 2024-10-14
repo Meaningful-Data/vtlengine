@@ -223,6 +223,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Signature has the actual parameters names or aliases if provided
         signature_actual_names = {}
+
         for param in node.params:
             if param.alias is not None:
                 signature_actual_names[param.alias] = param.value
@@ -375,7 +376,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.having_clause is not None and node.grouping is None:
             raise SemanticError("1-3-33")
 
-        groupings = []
+        groupings: Any = []
         having = None
         grouping_op = node.grouping_op
         if node.grouping is not None:
@@ -960,7 +961,7 @@ class InterpreterAnalyzer(ASTTemplate):
                                                 expected=dpr_info['params'][i],
                                                 found=comp_name)
 
-            output = node.params[0]  # invalid, all_measures, all
+            output: Any = node.params[0]  # invalid, all_measures, all
             if dpr_info is None:
                 dpr_info = {}
 
