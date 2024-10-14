@@ -761,6 +761,32 @@ class Current_Date(Time):
         return result
 
 
+class Unary_Time(Operators.Unary):
+    @classmethod
+    def validate(cls, operand: Operators.ALL_MODEL_DATA_TYPES):
+        """
+        The main function for validate, applies the implicit promotion (or check it), and
+        can do a semantic check too.
+        Returns an operand.
+        """
+        if isinstance(operand, Dataset):
+            raise Exception('Operator does not admit a Dataset')
+        elif isinstance(operand, DataComponent):
+            return cls.component_validation(operand)
+        elif isinstance(operand, Scalar):
+            return cls.scalar_validation(operand)
+
+    @classmethod
+    def evaluate(cls, operand: Operators.ALL_MODEL_DATA_TYPES) -> Operators.ALL_MODEL_DATA_TYPES:
+
+        if isinstance(operand, Dataset):
+            raise Exception('Operator does not admit a Dataset')
+        if isinstance(operand, Scalar):
+            return cls.scalar_evaluation(operand)
+        if isinstance(operand, DataComponent):
+            return cls.component_evaluation(operand)
+
+
 class Year(Operators.Unary):
     op = 'year'
 
@@ -772,4 +798,3 @@ class Year(Operators.Unary):
 
     type_to_check = TimeInterval
     return_type = Integer
-
