@@ -233,7 +233,7 @@ class Windowing(AST):
     """
 
     type_: str
-    start: int
+    start: str
     start_mode: str
     stop: Union[int, str]
     stop_mode: str

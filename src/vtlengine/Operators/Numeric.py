@@ -273,7 +273,7 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def scalar_evaluation(cls, operand: Scalar, param: Optional[Scalar] = None) -> Scalar:
+    def scalar_evaluation(cls, operand: Scalar, param: Optional[Any] = None) -> Scalar:
         result = cls.validate(operand, param)
         param_value = param.value if param is not None else None
         result.value = cls.op_func(operand.value, param_value)

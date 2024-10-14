@@ -284,7 +284,8 @@ class Between(Operator.Operator):
             for measure in operand.get_measures():
                 cls.validate_type_compatibility(measure.data_type, from_.data_type)
                 cls.validate_type_compatibility(measure.data_type, to.data_type)
-                cls.apply_return_type_dataset(result, operand)
+                if isinstance(result, Dataset):
+                    cls.apply_return_type_dataset(result, operand)
         else:
             cls.validate_type_compatibility(operand.data_type, from_.data_type)
             cls.validate_type_compatibility(operand.data_type, to.data_type)

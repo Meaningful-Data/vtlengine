@@ -48,7 +48,7 @@ class Join(Operator):
         using = using or []
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
         totally_common = list(reduce(lambda x, y: x & set(y.get_components_names()), operands[1:],
-                                     set(operands[0].get_components_names())))  # type: ignore[operator]
+                                     set(operands[0].get_components_names())))
 
         for op in operands:
             for comp in op.components.values():
@@ -112,7 +112,7 @@ class Join(Operator):
     @classmethod
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
-        if sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
+        if result.data is not None and sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
             missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
             if len(missing) == 0:
                 missing.append("None")
@@ -153,7 +153,7 @@ class Join(Operator):
         return result
 
     @classmethod
-    def validate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
+    def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
         if not all([isinstance(op, Dataset) for op in operands]):
@@ -173,7 +173,7 @@ class Join(Operator):
         return Dataset(name="result", components=components, data=None)
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using: List[str]) -> None:
+    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]]) -> None:
 
         # (Case A)
         info = {op.name: op.get_identifiers_names() for op in operands}

@@ -126,7 +126,7 @@ class Dataset:
     name: str
     components: Dict[str, Component]
     # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
-    data: Optional[PandasDataFrame]
+    data: PandasDataFrame = None
 
     def __post_init__(self) -> None:
         if self.data is not None:

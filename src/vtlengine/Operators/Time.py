@@ -311,7 +311,7 @@ class Fill_time_series(Binary):
         for year in years:
             if period == 'A':
                 rows.append(cls.create_period_row(group_df, period, year))
-            else:
+            elif vals is not None:
                 for val in vals:
                     rows.append(cls.create_period_row(group_df, period, year, val=val))
         return rows
@@ -393,7 +393,7 @@ class Fill_time_series(Binary):
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]),
-                                            keep=False)  # type: ignore[operator]
+                                            keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
@@ -428,7 +428,7 @@ class Fill_time_series(Binary):
 
         filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
         return pd.concat(filled_data, ignore_index=True).sort_values(
-            by=cls.other_ids + [cls.time_id]).drop_duplicates()  # type: ignore[arg-type]
+            by=cls.other_ids + [cls.time_id]).drop_duplicates()
 
 
 class Time_Shift(Binary):

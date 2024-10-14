@@ -340,7 +340,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.operand is not None:
                 self.visit(node.operand)
             operand = self.aggregation_dataset
-        elif self.is_from_regular_aggregation:
+        elif self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
@@ -468,7 +468,7 @@ class InterpreterAnalyzer(ASTTemplate):
                                   data=data)
 
         else:
-            operand: Dataset = self.visit(node.operand)
+            operand = self.visit(node.operand)
         partitioning = []
         ordering = []
         if self.udo_params is not None:
@@ -961,6 +961,8 @@ class InterpreterAnalyzer(ASTTemplate):
                                                 found=comp_name)
 
             output = node.params[0]  # invalid, all_measures, all
+            if dpr_info is None:
+                dpr_info = {}
 
             rule_output_values = {}
             self.ruleset_dataset = dataset_element
@@ -1393,7 +1395,8 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {comp_name: copy(comp) for comp_name, comp in
                              self.ruleset_dataset.components.items()} # type: ignore[union-attr]
-        hr_component = self.ruleset_signature["RULE_COMPONENT"]
+        if self.ruleset_signature is not None:
+            hr_component = self.ruleset_signature["RULE_COMPONENT"]
         name = node.value
 
         if self.rule_data is None:
@@ -1405,7 +1408,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if condition is not None:
                 condition = condition.data[condition.data == True].index
 
-        if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed: # type: ignore[operator]
+        if (self.hr_agg_rules_computed is not None and self.hr_input == "rule" and
+                node.value in self.hr_agg_rules_computed):
             df = self.hr_agg_rules_computed[node.value].copy()
             return Dataset(name=name, components=result_components, data=df)
 

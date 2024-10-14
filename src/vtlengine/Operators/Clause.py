@@ -68,7 +68,8 @@ class Aggregate(Operator):
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name in dataset.get_identifiers_names() or operand.role == Role.IDENTIFIER:
+            if operand.name in dataset.get_identifiers_names() or (isinstance(operand, DataComponent) and
+                                                                   operand.role == Role.IDENTIFIER):
                 raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
 
             elif operand.name in dataset.components:
@@ -303,7 +304,7 @@ class Sub(Operator):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = copy(dataset.data)
         operand_names = [operand.name for operand in operands]
-        if len(dataset.data) > 0:  # type: ignore[arg-type]
+        if len(dataset.data) > 0:
             # Filter the Dataframe
             # by intersecting the indexes of the Data Component with True values
             true_indexes = set()
