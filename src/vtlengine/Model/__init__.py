@@ -10,7 +10,7 @@ import sqlglot
 import sqlglot.expressions as exp
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from pandas import DataFrame as PandasDataFrame, Series as PandasSeries
+from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
 
 
@@ -28,9 +28,9 @@ class Scalar:
     value: Any
 
     @classmethod
-    def from_json(cls, json_str: str) -> 'Scalar':
+    def from_json(cls, json_str: str) -> "Scalar":
         data = json.loads(json_str)
-        return cls(data['name'], SCALAR_TYPES[data['data_type']] , data['value'])
+        return cls(data["name"], SCALAR_TYPES[data["data_type"]], data["value"])
 
     def __eq__(self, other: Any) -> bool:
         same_name = self.name == other.name
@@ -68,7 +68,7 @@ class DataComponent:
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def from_json(cls, json_str: Any) -> 'DataComponent':
+    def from_json(cls, json_str: Any) -> "DataComponent":
         return cls(
             json_str["name"],
             None,
@@ -79,10 +79,10 @@ class DataComponent:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'name': self.name,
-            'data': self.data,
-            'data_type': self.data_type,
-            'role': self.role,
+            "name": self.name,
+            "data": self.data,
+            "data_type": self.data_type,
+            "role": self.role,
         }
 
     def to_json(self) -> str:
@@ -107,11 +107,11 @@ class Component:
     def __eq__(self, other: Any) -> bool:
         return self.to_dict() == other.to_dict()
 
-    def copy(self) -> 'Component':
+    def copy(self) -> "Component":
         return Component(self.name, self.data_type, self.role, self.nullable)
 
     @classmethod
-    def from_json(cls, json_str: Any) -> 'Component':
+    def from_json(cls, json_str: Any) -> "Component":
         return cls(
             json_str["name"],
             SCALAR_TYPES[json_str["data_type"]],
@@ -121,10 +121,10 @@ class Component:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'name': self.name,
-            'data_type': DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
-            'role': self.role.value,
-            'nullable': self.nullable
+            "name": self.name,
+            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
+            "role": self.role.value,
+            "nullable": self.nullable,
         }
 
     def to_json(self) -> str:
@@ -163,12 +163,12 @@ class Dataset:
         same_components = self.components == other.components
         if not same_components:
             print("\nComponents mismatch")
-            result_comps = self.to_dict()['components']
-            reference_comps = other.to_dict()['components']
+            result_comps = self.to_dict()["components"]
+            reference_comps = other.to_dict()["components"]
             if len(result_comps) != len(reference_comps):
                 print(
-                    f"Shape mismatch: result:{len(result_comps)} != "
-                    f"reference:{len(reference_comps)}"
+                    f"Shape mismatch: result:{len(result_comps)} "
+                    f"!= reference:{len(reference_comps)}"
                 )
                 if len(result_comps) < len(reference_comps):
                     print(
@@ -209,27 +209,32 @@ class Dataset:
         other.data = other.data.reindex(sorted(other.data.columns), axis=1)
         for comp in self.components.values():
             type_name: str = comp.data_type.__name__.__str__()
-            if type_name in ['String', 'Date']:
+            if type_name in ["String", "Date"]:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
-            elif type_name == 'TimePeriod':
+            elif type_name == "TimePeriod":
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
                     lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
                 )
                 other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action='ignore')
-            elif type_name in ['Integer', 'Number']:
-                if type_name == 'Integer':
+                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
+                )
+            elif type_name in ["Integer", "Number"]:
+                if type_name == "Integer":
                     type_ = "int64"
                 else:
                     type_ = "float32"
                     # We use here a number to avoid errors on equality on empty strings
-                self.data[comp.name] = self.data[comp.name].replace("",
-                            -1234997).astype(type_) # type: ignore[call-overload]
-                other.data[comp.name] = other.data[comp.name].replace("",
-                            -1234997).astype(type_) # type: ignore[call-overload]
+                self.data[comp.name] = (
+                    self.data[comp.name].replace("", -1234997).
+                    astype(type_)  # type: ignore[call-overload]
+                )
+                other.data[comp.name] = (
+                    other.data[comp.name].replace("", -1234997).
+                    astype(type_)  # type: ignore[call-overload]
+                )
         try:
             assert_frame_equal(
                 self.data,
@@ -252,7 +257,7 @@ class Dataset:
                 return True
             # To display actual null values instead of -1234997
             for comp in self.components.values():
-                if comp.data_type.__name__.__str__() in ['Integer', 'Number']:
+                if comp.data_type.__name__.__str__() in ["Integer", "Number"]:
                     diff[comp.name] = diff[comp.name].replace(-1234997, "")
             print("\n Differences between the dataframes in", self.name)
             print(diff)
@@ -309,23 +314,23 @@ class Dataset:
         return list(self.components.keys())
 
     @classmethod
-    def from_json(cls, json_str: Any) -> 'Dataset':
-        components = {k: Component.from_json(v) for k, v in json_str['components'].items()}
-        return cls(json_str['name'], components, pd.DataFrame(json_str['data']))
+    def from_json(cls, json_str: Any) -> "Dataset":
+        components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
+        return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'name': self.name,
-            'components': {k: v.to_dict() for k, v in self.components.items()},
-            'data': self.data.to_dict(orient='records') if self.data is not None else None
+            "name": self.name,
+            "components": {k: v.to_dict() for k, v in self.components.items()},
+            "data": self.data.to_dict(orient="records") if self.data is not None else None,
         }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
     def to_json_datastructure(self) -> str:
-        dict_dataset = self.to_dict()['components']
-        order_keys = ['name', 'role', 'type', 'nullable']
+        dict_dataset = self.to_dict()["components"]
+        order_keys = ["name", "role", "type", "nullable"]
         # Rename data_type to type
         for k in dict_dataset:
             dict_dataset[k] = {
@@ -336,10 +341,7 @@ class Dataset:
         for k in dict_dataset:
             dict_dataset[k] = {ik: dict_dataset[k][ik] for ik in order_keys}
         comp_values = list(dict_dataset.values())
-        ds_info = {
-            'name': self.name,
-            'DataStructure': comp_values
-        }
+        ds_info = {"name": self.name, "DataStructure": comp_values}
         result = {"datasets": [ds_info]}
         return json.dumps(result, indent=2)
 
@@ -392,20 +394,16 @@ class ValueDomain:
 
     @classmethod
     def from_dict(cls, value: Dict[str, Any]) -> Any:
-        for x in ('name', 'type', 'setlist'):
+        for x in ("name", "type", "setlist"):
             if x not in value:
                 raise Exception("Invalid format for ValueDomain. Requires name, type and setlist.")
         if value["type"] not in SCALAR_TYPES:
             raise ValueError(f"Invalid data type {value['type']} for ValueDomain {value['name']}")
 
-        return cls(value['name'], SCALAR_TYPES[value['type']], value['setlist'])
+        return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            'name': self.name,
-            'type': self.type.__name__,
-            'setlist': self.setlist
-        }
+        return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
@@ -425,7 +423,7 @@ class ExternalRoutine:
     name: str
 
     @classmethod
-    def from_sql_query(cls, name: str, query: str) -> 'ExternalRoutine':
+    def from_sql_query(cls, name: str, query: str) -> "ExternalRoutine":
         dataset_names = cls._extract_dataset_names(query)
         return cls(dataset_names, query, name)
 

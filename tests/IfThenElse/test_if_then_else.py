@@ -384,7 +384,7 @@ class IfThenElseTest(TestIfThenElse):
         # code = "1-1-1-18"
         # number_inputs = 3
         # error_code = "1-1-9-12"
-
+        #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=["DS_r"])
 
     def test_19(self):
@@ -479,7 +479,7 @@ class IfThenElseTest(TestIfThenElse):
         Status: OK
         Expression: INPUT_CHECK_REGEX :=
             if
-                (match_characters(BIS_LOC_STATS # OBS_VALUE,r"[0-9]*[.,]?[0-9]*\\Z"))
+                (match_characters(BIS_LOC_STATS # OBS_VALUE,r'[0-9]*[.,]?[0-9]*\\Z'))
             then
                 length(BIS_LOC_STATS # OBS_VALUE) > 0 and length(BIS_LOC_STATS # OBS_VALUE) < 20
             else

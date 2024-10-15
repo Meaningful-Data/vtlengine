@@ -68,13 +68,22 @@ class Check(Operator):
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def evaluate(cls, validation_element: Dataset, imbalance_element: Optional[Dataset],
-                 error_code: Optional[str], error_level: Optional[int], invalid: bool) -> Dataset:
-        result = cls.validate(validation_element, imbalance_element, error_code, error_level, invalid)
+    def evaluate(
+        cls,
+        validation_element: Dataset,
+        imbalance_element: Optional[Dataset],
+        error_code: Optional[str],
+        error_level: Optional[int],
+        invalid: bool,
+    ) -> Dataset:
+        result = cls.validate(
+            validation_element, imbalance_element, error_code, error_level, invalid
+        )
         if validation_element.data is None:
             validation_element.data = pd.DataFrame()
-        columns_to_keep = (validation_element.get_identifiers_names() +
-                           validation_element.get_measures_names())
+        columns_to_keep = (
+            validation_element.get_identifiers_names() + validation_element.get_measures_names()
+        )
         result.data = validation_element.data.loc[:, columns_to_keep]
         if imbalance_element is not None and imbalance_element.data is not None:
             imbalance_measure_name = imbalance_element.get_measures_names()[0]

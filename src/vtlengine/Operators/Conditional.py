@@ -1,11 +1,15 @@
-import os
 from copy import copy
 from typing import Union, Any
 
 import numpy as np
 
-from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, binary_implicit_promotion, \
-    SCALAR_TYPES_CLASS_REVERSE, Null
+from vtlengine.DataTypes import (
+    Boolean,
+    COMP_NAME_MAPPING,
+    binary_implicit_promotion,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Null,
+)
 from vtlengine.Operators import Operator, Binary
 
 from vtlengine.Exceptions import SemanticError
@@ -49,8 +53,9 @@ class If(Operator):
         return result
 
     @classmethod
-    def component_level_evaluation(cls, condition: DataComponent, true_branch: Any,
-                                   false_branch: Any) -> Any:
+    def component_level_evaluation(
+        cls, condition: DataComponent, true_branch: Any, false_branch: Any
+    ) -> Any:
         result = None
         if condition.data is not None:
             if isinstance(true_branch, Scalar):
@@ -65,8 +70,9 @@ class If(Operator):
         return pd.Series(result, index=condition.data.index)
 
     @classmethod
-    def dataset_level_evaluation(cls, result: Any, condition: Any, true_branch: Any,
-                                 false_branch: Any) -> Dataset:
+    def dataset_level_evaluation(
+        cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
+    ) -> Dataset:
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
         true_data = condition.data[condition.data[condition_measure] == True]
@@ -74,8 +80,9 @@ class If(Operator):
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(true_data, true_branch.data, on=ids, how='right',
-                                     suffixes=('_condition', ''))
+                true_data = pd.merge(
+                    true_data, true_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                )
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
         else:
@@ -84,8 +91,9 @@ class If(Operator):
             )
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(false_data, false_branch.data, on=ids, how='right',
-                                      suffixes=('_condition', ''))
+                false_data = pd.merge(
+                    false_data, false_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                )
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
         else:
@@ -107,11 +115,15 @@ class If(Operator):
             result.get_measures()[0].data_type = true_branch.data_type
             result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
             if result.data is not None:
-                result.data = result.data.rename(columns={condition_measure: result.get_measures()[0].name})
+                result.data = result.data.rename(
+                    columns={condition_measure: result.get_measures()[0].name}
+                )
         return result
 
     @classmethod
-    def validate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Union[Scalar, DataComponent, Dataset]: # noqa: C901
+    def validate(  # noqa: C901
+        cls, condition: Any, true_branch: Any, false_branch: Any
+    ) -> Union[Scalar, DataComponent, Dataset]:
         nullable = False
         left = true_branch
         right = false_branch
@@ -215,7 +227,7 @@ class Nvl(Binary):
         result = cls.validate(left, right)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
-            if pd.isnull(left): # type: ignore[call-overload]
+            if pd.isnull(left):  # type: ignore[call-overload]
                 result.value = right.value
             else:
                 result.value = left.value
@@ -235,8 +247,8 @@ class Nvl(Binary):
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
                 raise ValueError(
-                    "Nvl operation at scalar level must have "
-                    "scalar types on right (applicable) side"
+                    "Nvl operation at scalar level must have scalar "
+                    "types on right (applicable) side"
                 )
             cls.type_validation(left.data_type, right.data_type)
             return Scalar(name="result", value=None, data_type=left.data_type)
@@ -257,8 +269,8 @@ class Nvl(Binary):
         if isinstance(left, Dataset):
             if isinstance(right, DataComponent):
                 raise ValueError(
-                    "Nvl operation at dataset level cannot have "
-                    "component type on right (applicable) side"
+                    "Nvl operation at dataset level cannot have component "
+                    "type on right (applicable) side"
                 )
             if isinstance(right, Scalar):
                 for component in left.get_measures():
@@ -275,4 +287,4 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name='result', components=result_components, data=None)
+        return Dataset(name="result", components=result_components, data=None)

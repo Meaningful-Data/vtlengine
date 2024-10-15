@@ -38,22 +38,28 @@ class Membership(Binary):
             if left_operand.data is not None:
                 left_operand.data[right_operand] = left_operand.data[component.name]
             left_operand.data[right_operand] = left_operand.data[component.name]
-        result_components = {name: comp for name, comp in left_operand.components.items()
-                             if comp.role == Role.IDENTIFIER or comp.name == right_operand}
+        result_components = {
+            name: comp
+            for name, comp in left_operand.components.items()
+            if comp.role == Role.IDENTIFIER or comp.name == right_operand
+        }
         result_dataset = Dataset(name="result", components=result_components, data=None)
         return result_dataset
 
     @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: str,
-                 is_from_component_assignment: bool = False) -> Union[DataComponent, Dataset]:
+    def evaluate(
+        cls, left_operand: Dataset, right_operand: str, is_from_component_assignment: bool = False
+    ) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
         if left_operand.data is not None:
             if is_from_component_assignment:
-                return DataComponent(name=right_operand,
-                                     data_type=left_operand.components[right_operand].data_type,
-                                     role=Role.MEASURE,
-                                     nullable=left_operand.components[right_operand].nullable,
-                                     data=left_operand.data[right_operand])
+                return DataComponent(
+                    name=right_operand,
+                    data_type=left_operand.components[right_operand].data_type,
+                    role=Role.MEASURE,
+                    nullable=left_operand.components[right_operand].nullable,
+                    data=left_operand.data[right_operand],
+                )
             result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
 
@@ -150,11 +156,14 @@ class Eval(Unary):
         return output
 
     @classmethod
-    def evaluate(cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine,
-                 output: Dataset) -> Dataset:
+    def evaluate(
+        cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine, output: Dataset
+    ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
         operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
-        result.data = cls._execute_query(external_routine.query,
-                                         external_routine.dataset_names,
-                                         operands_data_dict) # type: ignore[arg-type]
+        result.data = cls._execute_query(
+            external_routine.query,
+            external_routine.dataset_names,
+            operands_data_dict  # type: ignore[arg-type]
+        )
         return result

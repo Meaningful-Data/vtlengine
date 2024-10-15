@@ -22,8 +22,7 @@ class Binary(Operator.Binary):
     comp_op: Any = None
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: Any, scalar: Any,
-                                      series_left: bool) -> Any:
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar))
         else:
@@ -31,8 +30,9 @@ class Binary(Operator.Binary):
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        result = cls.comp_op(left_series.astype('bool[pyarrow]'),
-                             right_series.astype('bool[pyarrow]'))
+        result = cls.comp_op(
+            left_series.astype("bool[pyarrow]"), right_series.astype("bool[pyarrow]")
+        )
         return result.replace({pd.NA: None}).astype(object)
 
     @classmethod

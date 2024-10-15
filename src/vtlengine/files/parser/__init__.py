@@ -2,13 +2,11 @@ import warnings
 from csv import DictReader
 from pathlib import Path
 
-# from time import time
 from typing import Optional, Dict, Union, Any, Type, List
 
 import numpy as np
 import pandas as pd
 from vtlengine.DataTypes import (
-    ScalarType,
     Date,
     TimePeriod,
     TimeInterval,
@@ -17,6 +15,7 @@ from vtlengine.DataTypes import (
     Boolean,
     Duration,
     SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
 )
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.files.parser._rfc_dialect import register_rfc
@@ -28,7 +27,7 @@ from vtlengine.Model import Component, Role, Dataset
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
     TimePeriod: check_time_period,
-    TimeInterval: check_time
+    TimeInterval: check_time,
 }
 
 
@@ -40,8 +39,8 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise Exception(f"Path {csv_path} is not a file.")
     register_rfc()
     try:
-        with open(csv_path, 'r') as f:
-            reader = DictReader(f, dialect='rfc')
+        with open(csv_path, "r") as f:
+            reader = DictReader(f, dialect="rfc")
             csv_columns = reader.fieldnames
 
     except UnicodeDecodeError as error:
@@ -56,18 +55,19 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         ) from None
 
     if not csv_columns:
-        raise InputValidationException(code='0-1-1-6', file=csv_path)
+        raise InputValidationException(code="0-1-1-6", file=csv_path)
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
         raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in
-                                            reader.fieldnames] if reader.fieldnames else []
+    comps_missing: Union[str, List[str]] = (
+        [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
+    )
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code='0-1-1-8', ids=comps_missing, file=str(csv_path.name))
+        raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
 
 
 def _sanitize_pandas_columns(
@@ -92,7 +92,7 @@ def _sanitize_pandas_columns(
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         file = csv_path if isinstance(csv_path, str) else csv_path.name
-        raise InputValidationException(code='0-1-1-7', ids=comps_missing, file=file)
+        raise InputValidationException(code="0-1-1-7", ids=comps_missing, file=file)
 
     # Fill rest of components with null values
     for comp_name, comp in components.items():
@@ -121,10 +121,9 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
 
     # start = time()
     try:
-        data = pd.read_csv(csv_path, dtype=obj_dtypes,
-                           engine='c',
-                           keep_default_na=False,
-                           na_values=[''])
+        data = pd.read_csv(
+            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+        )
 
     except UnicodeDecodeError:
         raise InputValidationException(code="0-1-2-5", file=csv_path)
@@ -184,19 +183,19 @@ def _validate_pandas(
                     raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
                 data[comp_name] = data[comp_name].map(
-                    lambda x: str(x).replace('"', ''), na_action='ignore'
+                    lambda x: str(x).replace('"', ""), na_action="ignore"
                 )
-            data[comp_name] = data[comp_name].astype(np.object_, errors='raise')
-    except ValueError as e:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else 'Null'
+            data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+    except ValueError:
+        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 
     return data
 
 
-def load_datapoints(components: Dict[str, Component],
-                    dataset_name: str,
-                    csv_path: Optional[Union[Path, str]] = None) -> pd.DataFrame:
+def load_datapoints(
+    components: Dict[str, Component], dataset_name: str, csv_path: Optional[Union[Path, str]] = None
+) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, str):

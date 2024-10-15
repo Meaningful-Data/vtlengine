@@ -4,7 +4,6 @@ from typing import Any, Union
 
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
-    ScalarType,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -42,6 +41,7 @@ only_semantic = False
 
 class Operator:
     """Superclass for all operators"""
+
     op: Any = None
     py_op: Any = None
     spark_op: Any = None
@@ -345,9 +345,11 @@ class Binary(Operator):
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
 
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             dataset.components.items() if
-                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+        result_components = {
+            comp_name: copy(comp)
+            for comp_name, comp in dataset.components.items()
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+        }
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
@@ -362,7 +364,6 @@ class Binary(Operator):
             raise SemanticError(
                 "1-1-1-2",
             )
-
         return Scalar(
             name="result",
             data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
@@ -382,7 +383,6 @@ class Binary(Operator):
         left_operand, right_operand = args
 
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
-
         result = DataComponent(
             name="result",
             data_type=result_data_type,
@@ -400,7 +400,6 @@ class Binary(Operator):
         component, scalar = args
 
         cls.type_validation(component.data_type, scalar.data_type)
-
         result = DataComponent(
             name=component.name,
             data_type=cls.type_validation(component.data_type, scalar.data_type),
@@ -408,7 +407,6 @@ class Binary(Operator):
             role=component.role,
             nullable=component.nullable or scalar is None,
         )
-
         return result
 
     @classmethod
@@ -421,8 +419,11 @@ class Binary(Operator):
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
         for measure in dataset.get_measures():
             cls.type_validation(measure.data_type, scalar_set.data_type)
-        result_components = {comp_name: copy(comp) for comp_name, comp in dataset.components.items() if
-                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+        result_components = {
+            comp_name: copy(comp)
+            for comp_name, comp in dataset.components.items()
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+        }
 
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar_set)
@@ -442,7 +443,6 @@ class Binary(Operator):
             role=Role.MEASURE,
             nullable=component.nullable,
         )
-
         return result
 
     @classmethod
@@ -568,8 +568,13 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: pd.DataFrame = pd.DataFrame()
             else:
-                result_data = pd.merge(base_operand_data, other_operand_data,
-                    how='inner', on=join_keys, suffixes=('_x', '_y'))
+                result_data = pd.merge(
+                    base_operand_data,
+                    other_operand_data,
+                    how="inner",
+                    on=join_keys,
+                    suffixes=("_x", "_y"),
+                )
         except ValueError as e:
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
@@ -632,7 +637,9 @@ class Binary(Operator):
 
         for measure in dataset.get_measures():
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
+            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
+                scalar_value, int
+            ):
                 scalar_value = DURATION_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
@@ -651,10 +658,14 @@ class Binary(Operator):
         left_operand, right_operand = args
 
         result_component = cls.component_validation(left_operand, right_operand)
-        left_data = cls.cast_time_types(left_operand.data_type, left_operand.data.copy() if
-                                                left_operand.data is not None else pd.Series())
-        right_data = cls.cast_time_types(right_operand.data_type, right_operand.data.copy() if
-                                                right_operand.data is not None else pd.Series())
+        left_data = cls.cast_time_types(
+            left_operand.data_type,
+            left_operand.data.copy() if left_operand.data is not None else pd.Series(),
+        )
+        right_data = cls.cast_time_types(
+            right_operand.data_type,
+            right_operand.data.copy() if right_operand.data is not None else pd.Series(),
+        )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
 
@@ -665,10 +676,14 @@ class Binary(Operator):
         component, scalar = args
 
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(component.data_type, component.data.copy() if
-                                        component.data is not None else pd.Series())
+        comp_data = cls.cast_time_types(
+            component.data_type,
+            component.data.copy() if component.data is not None else pd.Series(),
+        )
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if component.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
+        if component.data_type.__name__.__str__() == "Duration" and not isinstance(
+            scalar_value, int
+        ):
             scalar_value = DURATION_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
@@ -687,7 +702,8 @@ class Binary(Operator):
         for measure_name in dataset.get_measures_names():
             if dataset.data is not None:
                 result_data[measure_name] = cls.apply_operation_two_series(
-                    dataset.data[measure_name], scalar_set)
+                    dataset.data[measure_name], scalar_set
+                )
 
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
         result_dataset.data = result_data[cols_to_keep]
@@ -702,8 +718,9 @@ class Binary(Operator):
         component, scalar_set = args
 
         result_component = cls.component_set_validation(component, scalar_set)
-        result_component.data = cls.apply_operation_two_series(component.data.copy() if
-                                component.data is not None else pd.Series(), scalar_set)
+        result_component.data = cls.apply_operation_two_series(
+            component.data.copy() if component.data is not None else pd.Series(), scalar_set
+        )
         return result_component
 
     @classmethod
@@ -739,7 +756,9 @@ class Binary(Operator):
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
             return cls.component_scalar_evaluation(left_operand, right_operand, component_left=True)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
-            return cls.component_scalar_evaluation(right_operand, left_operand, component_left=False)
+            return cls.component_scalar_evaluation(
+                right_operand, left_operand, component_left=False
+            )
         if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
             return cls.dataset_set_evaluation(left_operand, right_operand)
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
@@ -764,7 +783,7 @@ class Unary(Operator):
 
         series = args[0]
 
-        return series.map(cls.py_op, na_action='ignore')
+        return series.map(cls.py_op, na_action="ignore")
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
@@ -857,8 +876,12 @@ class Unary(Operator):
         scalar: Scalar = args[0]
 
         if cls.type_to_check is not None and not cls.validate_type_compatibility(scalar.data_type):
-            raise SemanticError("1-1-1-5", op=cls.op, name=scalar.name,
-                                type=SCALAR_TYPES_CLASS_REVERSE[scalar.data_type])
+            raise SemanticError(
+                "1-1-1-5",
+                op=cls.op,
+                name=scalar.name,
+                type=SCALAR_TYPES_CLASS_REVERSE[scalar.data_type],
+            )
 
     @classmethod
     def apply_return_type_dataset(cls, *args: Any) -> None:
@@ -932,5 +955,7 @@ class Unary(Operator):
         operand: DataComponent = args[0]
 
         result_component = cls.component_validation(operand)
-        result_component.data = cls.apply_operation_component(operand.data.copy() if operand.data is not None else pd.Series())
+        result_component.data = cls.apply_operation_component(
+            operand.data.copy() if operand.data is not None else pd.Series()
+        )
         return result_component

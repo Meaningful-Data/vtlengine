@@ -85,10 +85,12 @@ class HRComparison(Operators.Binary):
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
         if left.data is not None and right.data is not None:
-            result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
-                                                        hr_mode, cls.op_func)
-            result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data,
-                                                         hr_mode, cls.imbalance_func)
+            result.data["bool_var"] = cls.apply_hr_func(
+                left.data[measure_name], right.data, hr_mode, cls.op_func
+            )
+            result.data["imbalance"] = cls.apply_hr_func(
+                left.data[measure_name], right.data, hr_mode, cls.imbalance_func
+            )
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)

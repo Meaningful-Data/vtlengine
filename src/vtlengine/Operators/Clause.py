@@ -3,7 +3,13 @@ import pandas as pd
 from copy import copy
 from typing import List, Union, Type
 
-from vtlengine.DataTypes import Boolean, String, check_unary_implicit_promotion, unary_implicit_promotion, ScalarType
+from vtlengine.DataTypes import (
+    Boolean,
+    String,
+    check_unary_implicit_promotion,
+    unary_implicit_promotion,
+    ScalarType,
+)
 from vtlengine.Operators import Operator
 
 from vtlengine.AST import RenameNode
@@ -71,8 +77,9 @@ class Aggregate(Operator):
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name in dataset.get_identifiers_names() or (isinstance(operand, DataComponent) and
-                                                                   operand.role == Role.IDENTIFIER):
+            if operand.name in dataset.get_identifiers_names() or (
+                isinstance(operand, DataComponent) and operand.role == Role.IDENTIFIER
+            ):
                 raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
 
             elif operand.name in dataset.components:
@@ -144,8 +151,11 @@ class Keep(Operator):
                 )
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
-        result_components = {name: comp for name, comp in dataset.components.items()
-                             if comp.name in operands or comp.role == Role.IDENTIFIER}
+        result_components = {
+            name: comp
+            for name, comp in dataset.components.items()
+            if comp.name in operands or comp.role == Role.IDENTIFIER
+        }
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
@@ -173,8 +183,9 @@ class Drop(Operator):
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         if len(dataset.components) == len(operands):
             raise SemanticError("1-1-6-12", op=cls.op)
-        result_components = {name: comp for name, comp in dataset.components.items()
-                             if comp.name not in operands}
+        result_components = {
+            name: comp for name, comp in dataset.components.items() if comp.name not in operands
+        }
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod
@@ -197,8 +208,7 @@ class Rename(Operator):
 
         to_names = [operand.new_name for operand in operands]
         if len(to_names) != len(set(to_names)):  # If duplicates
-            duplicates = set(
-                [name for name in to_names if to_names.count(name) > 1])
+            duplicates = set([name for name in to_names if to_names.count(name) > 1])
             raise SemanticError("1-3-1", alias=duplicates)
 
         for operand in operands:
@@ -227,8 +237,9 @@ class Rename(Operator):
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.rename(columns={operand.old_name: operand.new_name
-                                                               for operand in operands})
+            result_dataset.data = dataset.data.rename(
+                columns={operand.old_name: operand.new_name for operand in operands}
+            )
         return result_dataset
 
 
@@ -280,10 +291,13 @@ class Unpivot(Operator):
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        if dataset.data is not  None:
-            result_dataset.data = dataset.data.melt(id_vars=dataset.get_identifiers_names(),
-                                                    value_vars=dataset.get_measures_names(),
-                                                    var_name=operands[0], value_name="NEW_COLUMN")
+        if dataset.data is not None:
+            result_dataset.data = dataset.data.melt(
+                id_vars=dataset.get_identifiers_names(),
+                value_vars=dataset.get_measures_names(),
+                var_name=operands[0],
+                value_name="NEW_COLUMN",
+            )
             result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
             result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
         return result_dataset
@@ -331,7 +345,9 @@ class Sub(Operator):
                         true_indexes = set(operand.data[operand.data == True].index)
                         is_first = False
                     else:
-                        true_indexes.intersection_update(set(operand.data[operand.data == True].index))
+                        true_indexes.intersection_update(
+                            set(operand.data[operand.data == True].index)
+                        )
             result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
         result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
         result_dataset.data = result_dataset.data.reset_index(drop=True)

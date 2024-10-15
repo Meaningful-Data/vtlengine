@@ -1,4 +1,3 @@
-import os
 from typing import List, Any, Dict
 
 from vtlengine.Exceptions import SemanticError
@@ -84,8 +83,9 @@ class Intersection(Set):
                 if data is None:
                     result.data = pd.DataFrame(columns=result.get_identifiers_names())
                     break
-                result.data = result.data.merge(data, how='inner',
-                                                on=result.get_identifiers_names())
+                result.data = result.data.merge(
+                    data, how="inner", on=result.get_identifiers_names()
+                )
 
                 not_identifiers = [
                     col for col in result.get_measures_names() + result.get_attributes_names()

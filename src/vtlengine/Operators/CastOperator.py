@@ -3,12 +3,20 @@ from typing import Optional, Any, Union, Type
 
 import vtlengine.Operators as Operator
 import pandas as pd
-from vtlengine.DataTypes import (COMP_NAME_MAPPING,
-                                 EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
-                                 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
-                                 IMPLICIT_TYPE_PROMOTION_MAPPING,
-                                 String, Number, TimeInterval, Date, TimePeriod, Duration,
-                                 SCALAR_TYPES_CLASS_REVERSE, ScalarType)
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
+    EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
+    IMPLICIT_TYPE_PROMOTION_MAPPING,
+    String,
+    Number,
+    TimeInterval,
+    Date,
+    TimePeriod,
+    Duration,
+    SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
+)
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 
 from vtlengine.AST.Grammar.tokens import CAST
@@ -18,6 +26,7 @@ from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
+
 
 class Cast(Operator.Unary):
     op = CAST
@@ -71,26 +80,22 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_date_to_string(cls, *args: Any) -> Any:
-        """
-        """
+        """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_duration_to_string(cls, *args: Any) -> Any:
-        """
-        """
+        """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_time_to_string(cls, *args: Any) -> Any:
-        """
-        """
+        """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_time_period_to_date(cls, *args: Any) -> Any:
-        """
-        """
+        """ """
         mask_value: str
         value, mask_value = args
 
@@ -129,8 +134,13 @@ class Cast(Operator.Unary):
         # from = Duration
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
-        raise SemanticError("1-1-5-5", op=cls.op, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
+        raise SemanticError(
+            "1-1-5-5",
+            op=cls.op,
+            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
+            mask_value=mask_value,
+        )
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, *args: Any) -> None:
@@ -231,7 +241,7 @@ class Cast(Operator.Unary):
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
-            result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action='ignore')
+            result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action="ignore")
         return result
 
     @classmethod
@@ -239,7 +249,7 @@ class Cast(Operator.Unary):
         mask: str
         data, from_type, to_type, mask = args
 
-        result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action='ignore')
+        result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
         return result
 
     @classmethod
@@ -268,9 +278,13 @@ class Cast(Operator.Unary):
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
 
-        raise SemanticError("2-1-5-1", op=cls.op, value=value,
-                            type_1=SCALAR_TYPES_CLASS_REVERSE[provided_type],
-                            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
+        raise SemanticError(
+            "2-1-5-1",
+            op=cls.op,
+            value=value,
+            type_1=SCALAR_TYPES_CLASS_REVERSE[provided_type],
+            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
+        )
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
@@ -311,16 +325,19 @@ class Cast(Operator.Unary):
         from_type = measure.data_type
 
         cls.check_cast(from_type, to_type, mask)
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             operand.components.items()
-                             if comp.role != Role.MEASURE}
+        result_components = {
+            comp_name: copy(comp)
+            for comp_name, comp in operand.components.items()
+            if comp.role != Role.MEASURE
+        }
 
         if not to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             measure_name = COMP_NAME_MAPPING[to_type]
         else:
             measure_name = measure.name
-        result_components[measure_name] = Component(name=measure_name, data_type=to_type,
-                                                    role=Role.MEASURE, nullable=measure.nullable)
+        result_components[measure_name] = Component(
+            name=measure_name, data_type=to_type, role=Role.MEASURE, nullable=measure.nullable
+        )
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
@@ -396,8 +413,9 @@ class Cast(Operator.Unary):
                 measure_data, from_type, to_type, mask
             )
         else:
-            result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type,
-                                                                       to_type)
+            result_dataset.data[new_measure.name] = cls.cast_component(
+                measure_data, from_type, to_type
+            )
         return result_dataset
 
     @classmethod

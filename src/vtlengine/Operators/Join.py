@@ -24,12 +24,16 @@ class Join(Operator):
     @classmethod
     def get_components_union(cls, datasets: List[Dataset]) -> List[Component]:
         common: List[Any] = []
-        common.extend(copy(comp) for dataset in datasets for comp in dataset.components.values() if
-                      comp not in common)
+        common.extend(
+            copy(comp)
+            for dataset in datasets
+            for comp in dataset.components.values()
+            if comp not in common
+        )
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: *List[Any]) -> Any: #type: ignore[valid-type]
+    def get_components_intersection(cls, *operands: * List[Any]) -> Any:  # type: ignore[valid-type]
         element_count: Dict[str, Any] = {}
         for operand in operands:
             operand_set = set(operand)
@@ -42,14 +46,20 @@ class Join(Operator):
         return result
 
     @classmethod
-    def merge_components(cls, operands: Any, using: Optional[List[str]] = None) -> Dict[str, Component]:
+    def merge_components(
+        cls, operands: Any, using: Optional[List[str]] = None
+    ) -> Dict[str, Component]:
         nullability = {}
         merged_components = {}
         using = using or []
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
-        totally_common = list(reduce(lambda x, y: x &
-                                     set(y.get_components_names()), # type: ignore[operator]
-                                     operands[1:], set(operands[0].get_components_names())))
+        totally_common = list(
+            reduce(
+                lambda x, y: x & set(y.get_components_names()),  # type: ignore[operator]
+                operands[1:],
+                set(operands[0].get_components_names()),
+            )
+        )
 
         for op in operands:
             for comp in op.components.values():
@@ -107,8 +117,9 @@ class Join(Operator):
         return merged_components
 
     @classmethod
-    def generate_result_components(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dict[
-        str, Component]:
+    def generate_result_components(
+        cls, operands: List[Dataset], using: Optional[List[str]] = None
+    ) -> Dict[str, Component]:
         components = {}
         inter_identifiers = cls.get_components_intersection(
             *[op.get_identifiers_names() for op in operands]
@@ -123,7 +134,9 @@ class Join(Operator):
     @classmethod
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
-        if result.data is not None and sorted(result.get_components_names()) != sorted(result.data.columns.tolist()):
+        if result.data is not None and sorted(result.get_components_names()) != sorted(
+            result.data.columns.tolist()
+        ):
             missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
             if len(missing) == 0:
                 missing.append("None")
@@ -145,25 +158,35 @@ class Join(Operator):
             if op.data is not None:
                 for column in op.data.columns.tolist():
                     if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + '#' + column})
+                        op.data = op.data.rename(columns={column: op.name + "#" + column})
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
 
         for op in operands:
             if op is not cls.reference_dataset:
-                merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()] if (
-                        op.data is not None) else []
+                merge_join_keys = (
+                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    if (op.data is not None)
+                    else []
+                )
                 if len(merge_join_keys) == 0:
                     raise SemanticError("1-1-13-14", name=op.name)
                 for join_key in merge_join_keys:
-                    _id_type_promotion_join_keys(result.get_component(join_key),
-                                                 op.get_component(join_key),
-                                                 join_key, result.data, op.data)
+                    _id_type_promotion_join_keys(
+                        result.get_component(join_key),
+                        op.get_component(join_key),
+                        join_key,
+                        result.data,
+                        op.data,
+                    )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(result.data, op.data,
-                                           how=cls.how, # type: ignore[arg-type]
-                                           on=merge_join_keys)
+                    result.data = pd.merge(
+                        result.data,
+                        op.data,
+                        how=cls.how,  # type: ignore[arg-type]
+                        on=merge_join_keys,
+                    )
                 else:
                     result.data = pd.DataFrame()
         if result.data is not None:
@@ -226,8 +249,12 @@ class Join(Operator):
                     raise SemanticError("1-1-13-4", op=cls.op, using_names=using, dataset=op_name)
             reference_components = cls.reference_dataset.get_components_names()
             if not set(using).issubset(reference_components):
-                raise SemanticError("1-1-13-6", op=cls.op, using_components=using,
-                                    reference=cls.reference_dataset.name)
+                raise SemanticError(
+                    "1-1-13-6",
+                    op=cls.op,
+                    using_components=using,
+                    reference=cls.reference_dataset.name,
+                )
 
             for op_name, identifiers in info.items():
                 if not set(using).issubset(identifiers):
@@ -239,16 +266,21 @@ class Join(Operator):
                         if op is not cls.reference_dataset:
                             for component in using:
                                 if component not in op.get_components_names():
-                                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=component,
-                                                        dataset_name=op.name)
+                                    raise SemanticError(
+                                        "1-1-1-10",
+                                        op=cls.op,
+                                        comp_name=component,
+                                        dataset_name=op.name,
+                                    )
 
 
 class InnerJoin(Join):
     how = "inner"
 
     @classmethod
-    def generate_result_components(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dict[
-        str, Component]:
+    def generate_result_components(
+        cls, operands: List[Dataset], using: Optional[List[str]] = None
+    ) -> Dict[str, Component]:
 
         if using is None:
             return super().generate_result_components(operands, using)
@@ -271,7 +303,9 @@ class FullJoin(Join):
     how = "outer"
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> None:
+    def identifiers_validation(
+        cls, operands: List[Dataset], using: Optional[List[str]] = None
+    ) -> None:
         if using is not None:
             raise SemanticError("1-1-13-8", op=cls.op)
         for op in operands:
@@ -303,18 +337,25 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 if result.data is not None:
-                    result.data = pd.merge(result.data, op.data,
-                                           how=cls.how) # type: ignore[arg-type]
+                    result.data = pd.merge(
+                        result.data, op.data, how=cls.how  # type: ignore[arg-type]
+                    )
             if result.data is not None:
                 result.data = result.data.rename(
-                    columns={column: op.name + '#' + column for column in result.data.columns.tolist()
-                             if column in common})
+                    columns={
+                        column: op.name + "#" + column
+                        for column in result.data.columns.tolist()
+                        if column in common
+                    }
+                )
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> None:
+    def identifiers_validation(
+        cls, operands: List[Dataset], using: Optional[List[str]] = None
+    ) -> None:
         if using is not None:
             raise SemanticError("1-1-13-8", op=cls.op)
 
@@ -342,22 +383,31 @@ class Apply(Operator):
             )
         if child.op not in op_map:
             raise Exception(f"Operator {child.op} not implemented")
-        if hasattr(child.left, 'value') and hasattr(child.right, 'value'):
-            left_components = [comp.name[len(child.left.value) + 1] for comp in
-                               dataset.components.values() if
-                               comp.name.startswith(child.left.value)]
-            right_components = [comp.name[len(child.right.value) + 1] for comp in
-                                dataset.components.values() if
-                                comp.name.startswith(child.right.value)]
+        if hasattr(child.left, "value") and hasattr(child.right, "value"):
+            left_components = [
+                comp.name[len(child.left.value) + 1]
+                for comp in dataset.components.values()
+                if comp.name.startswith(child.left.value)
+            ]
+            right_components = [
+                comp.name[len(child.right.value) + 1]
+                for comp in dataset.components.values()
+                if comp.name.startswith(child.right.value)
+            ]
             if len(set(left_components) & set(right_components)) == 0:
                 raise Exception(
-                    f"{child.left.value} and {child.right.value} has not any match on dataset components")
+                    f"{child.left.value} and {child.right.value} "
+                    f"has not any match on dataset components"
+                )
 
     @classmethod
     def create_dataset(cls, name: str, prefix: str, dataset: Dataset) -> Dataset:
-        prefix += '#'
-        components = {component.name: component for component in dataset.components.values() if
-                      component.name.startswith(prefix) or component.role is Role.IDENTIFIER}
+        prefix += "#"
+        components = {
+            component.name: component
+            for component in dataset.components.values()
+            if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
+        }
         data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
 
         for component in components.values():
@@ -378,12 +428,17 @@ class Apply(Operator):
         return Dataset(name=name, components=components, data=data)
 
     @classmethod
-    def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset): # type: ignore[syntax]
+    def get_common_components(cls,
+                              left: Dataset,
+                              right: Dataset
+                              ) -> (Dataset, Dataset):  # type: ignore[syntax]
         common = set(left.get_components_names()) & set(right.get_components_names())
-        left.components = {comp.name: comp for comp in left.components.values() if
-                           comp.name in common}
-        right.components = {comp.name: comp for comp in right.components.values() if
-                            comp.name in common}
+        left.components = {
+            comp.name: comp for comp in left.components.values() if comp.name in common
+        }
+        right.components = {
+            comp.name: comp for comp in right.components.values() if comp.name in common
+        }
         left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
         right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
         return left, right

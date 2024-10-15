@@ -239,8 +239,11 @@ class Parameterized(Unary):
     """
 
     @classmethod
-    def validate(cls, operand: Operator.ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None) -> Any:
+    def validate(
+        cls,
+        operand: Operator.ALL_MODEL_DATA_TYPES,
+        param: Optional[Union[DataComponent, Scalar]] = None,
+    ) -> Any:
 
         if param is not None:
             if isinstance(param, Dataset):
@@ -273,7 +276,9 @@ class Parameterized(Unary):
         return series.map(lambda x: cls.op_func(x, param))
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None) -> Dataset:
+    def dataset_evaluation(
+        cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
+    ) -> Dataset:
         result = cls.validate(operand, param)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in result.get_measures_names():
@@ -295,8 +300,9 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent,
-                             param: Optional[Union[DataComponent, Scalar]] = None) -> DataComponent:
+    def component_evaluation(
+        cls, operand: DataComponent, param: Optional[Union[DataComponent, Scalar]] = None
+    ) -> DataComponent:
         result = cls.validate(operand, param)
         if operand.data is None:
             operand.data = pd.Series()
@@ -316,8 +322,9 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def evaluate(cls, operand: ALL_MODEL_DATA_TYPES,
-                 param: Optional[Union[DataComponent, Scalar]] = None) -> Union[DataComponent, Dataset, Scalar]:
+    def evaluate(
+        cls, operand: ALL_MODEL_DATA_TYPES, param: Optional[Union[DataComponent, Scalar]] = None
+    ) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)
         elif isinstance(operand, DataComponent):

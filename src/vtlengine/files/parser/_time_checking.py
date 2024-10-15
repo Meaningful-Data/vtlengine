@@ -38,8 +38,8 @@ def check_date(value: str) -> str:
 
 
 def dates_to_string(date1: date, date2: date) -> str:
-    date1_str = date1.strftime('%Y-%m-%d')
-    date2_str = date2.strftime('%Y-%m-%d')
+    date1_str = date1.strftime("%Y-%m-%d")
+    date2_str = date2.strftime("%Y-%m-%d")
     return f"{date1_str}/{date2_str}"
 
 

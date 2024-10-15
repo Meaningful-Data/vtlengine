@@ -1,5 +1,4 @@
 import operator
-import os
 import re
 from copy import copy
 from typing import Any, Optional, Union
@@ -13,8 +12,18 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, Sca
 #     import pandas as pd
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL, LT, LTE, NEQ, \
-    NOT_IN
+from vtlengine.AST.Grammar.tokens import (
+    CHARSET_MATCH,
+    EQ,
+    GT,
+    GTE,
+    IN,
+    ISNULL,
+    LT,
+    LTE,
+    NEQ,
+    NOT_IN,
+)
 from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, String, Number, Null
 import vtlengine.Operators as Operator
 
@@ -66,8 +75,9 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(cls, x: Optional[Union[int, float, str, bool]],
-                     y: Optional[Union[int, float, str, bool]]) -> Any:
+    def _cast_values(
+        cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
+    ) -> Any:
         # Cast both values to the same data type
         # An integer can be considered a bool, we must check first boolean, then numbers
         try:
@@ -93,8 +103,7 @@ class Binary(Operator.Binary):
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: Any, scalar: Any,
-                                      series_left: bool) -> Any:
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
         if scalar is None:
             return pd.Series(None, index=series.index)
         if series_left:
@@ -214,18 +223,20 @@ class Between(Operator.Operator):
     """
 
     @classmethod
-    def op_func(cls,
-                x: Optional[Union[int, float, bool, str]],
-                y: Optional[Union[int, float, bool, str]],
-                z: Optional[Union[int, float, bool, str]]) -> Optional[bool]:
-        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z # type: ignore[operator]
+    def op_func(
+        cls,
+        x: Optional[Union[int, float, bool, str]],
+        y: Optional[Union[int, float, bool, str]],
+        z: Optional[Union[int, float, bool, str]],
+    ) -> Optional[bool]:
+        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) \
+            else y <= x <= z  # type: ignore[operator]
 
     @classmethod
-    def apply_operation_component(cls, series: Any,
-                                  from_data: Any,
-                                  to_data: Any) -> Any:
-        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(to_data,
-                                                                                    pd.Series)
+    def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
+        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(
+            to_data, pd.Series
+        )
         if control_any_series_from_to:
             if not isinstance(from_data, pd.Series):
                 from_data = pd.Series(from_data, index=series.index, dtype=object)
@@ -261,8 +272,12 @@ class Between(Operator.Operator):
                 measure.data_type = result_data_type
 
     @classmethod
-    def validate(cls, operand: Union[Dataset, DataComponent, Scalar],
-                 from_: Union[DataComponent, Scalar], to: Union[DataComponent, Scalar]) -> Any:
+    def validate(
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        from_: Union[DataComponent, Scalar],
+        to: Union[DataComponent, Scalar],
+    ) -> Any:
         result: Union[Dataset, DataComponent, Scalar]
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
@@ -274,8 +289,9 @@ class Between(Operator.Operator):
             }
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
-            result = DataComponent(name=operand.name, data=None,
-                                   data_type=cls.return_type, role=operand.role)
+            result = DataComponent(
+                name=operand.name, data=None, data_type=cls.return_type, role=operand.role
+            )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
         else:  # From or To is a DataComponent, or both
@@ -296,21 +312,29 @@ class Between(Operator.Operator):
         return result
 
     @classmethod
-    def evaluate(cls, operand: Union[DataComponent, Scalar], from_: Union[DataComponent, Scalar],
-                 to: Union[DataComponent, Scalar]) -> Any:
+    def evaluate(
+        cls,
+        operand: Union[DataComponent, Scalar],
+        from_: Union[DataComponent, Scalar],
+        to: Union[DataComponent, Scalar],
+    ) -> Any:
         result = cls.validate(operand, from_, to)
         from_data = from_.data if isinstance(from_, DataComponent) else from_.value
         to_data = to.data if isinstance(to, DataComponent) else to.value
 
-        if (isinstance(from_data, pd.Series) and isinstance(to_data, pd.Series) and
-                len(from_data) != len(to_data)):
+        if (
+            isinstance(from_data, pd.Series)
+            and isinstance(to_data, pd.Series)
+            and len(from_data) != len(to_data)
+        ):
             raise ValueError("From and To must have the same length")
 
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()
             for measure_name in operand.get_measures_names():
                 result.data[measure_name] = cls.apply_operation_component(
-                    operand.data[measure_name], from_data, to_data)
+                    operand.data[measure_name], from_data, to_data
+                )
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
                     result.data = result.data.drop(columns=[measure_name])
@@ -322,16 +346,18 @@ class Between(Operator.Operator):
                 result.value = None
             else:
                 result.value = from_data <= operand.value <= to_data
-        elif (isinstance(operand, Scalar) and (isinstance(from_data, pd.Series) or
-                    isinstance(to_data, pd.Series))):  # From or To is a DataComponent, or both
+        elif isinstance(operand, Scalar) and (
+            isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
+        ):  # From or To is a DataComponent, or both
 
             if isinstance(from_data, pd.Series):
                 series = pd.Series(operand.value, index=from_data.index, dtype=object)
             elif isinstance(to_data, pd.Series):
                 series = pd.Series(operand.value, index=to_data.index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
-            result = DataComponent(name=operand.name, data=result_series,
-                                   data_type=cls.return_type,role=Role.MEASURE)
+            result = DataComponent(
+                name=operand.name, data=result_series, data_type=cls.return_type, role=Role.MEASURE
+            )
         return result
 
 
@@ -359,8 +385,9 @@ class ExistIn(Operator.Operator):
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name="result", components=result_components, data=None)
-        result_dataset.add_component(Component(name='bool_var', data_type=Boolean,
-            role=Role.MEASURE, nullable=False))
+        result_dataset.add_component(
+            Component(name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=False)
+        )
         return result_dataset
 
     @classmethod
@@ -385,9 +412,13 @@ class ExistIn(Operator.Operator):
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:
-            true_results = pd.merge(dataset_1.data, dataset_2.data, how='inner',
-                                    left_on=common_columns,
-                                    right_on=common_columns)
+            true_results = pd.merge(
+                dataset_1.data,
+                dataset_2.data,
+                how="inner",
+                left_on=common_columns,
+                right_on=common_columns,
+            )
             true_results = true_results[reference_identifiers_names]
         else:
             true_results = pd.DataFrame(columns=reference_identifiers_names)
@@ -396,13 +427,17 @@ class ExistIn(Operator.Operator):
         if true_results.empty:
             true_results["bool_var"] = None
         else:
-            true_results['bool_var'] = True
+            true_results["bool_var"] = True
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
-        final_result = pd.merge(dataset_1.data, true_results, how='left',
-                                left_on=reference_identifiers_names,
-                                right_on=reference_identifiers_names)
-        final_result = final_result[reference_identifiers_names + ['bool_var']]
+        final_result = pd.merge(
+            dataset_1.data,
+            true_results,
+            how="left",
+            left_on=reference_identifiers_names,
+            right_on=reference_identifiers_names,
+        )
+        final_result = final_result[reference_identifiers_names + ["bool_var"]]
 
         # No null values are returned, only True or False
         final_result["bool_var"] = final_result["bool_var"].fillna(False)

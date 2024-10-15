@@ -1,6 +1,5 @@
-import os
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from vtlengine.Exceptions import SemanticError
 
@@ -25,8 +24,13 @@ class RoleSetter(Unary):
             nullable = True
             if cls.role == Role.IDENTIFIER or operand.value is not None:
                 nullable = False
-            return DataComponent(name=operand.name, data_type=operand.data_type,
-                role=cls.role, nullable=nullable, data=None)
+            return DataComponent(
+                name=operand.name,
+                data_type=operand.data_type,
+                role=cls.role,
+                nullable=nullable,
+                data=None,
+            )
         operand.role = cls.role
         return copy(operand)
 

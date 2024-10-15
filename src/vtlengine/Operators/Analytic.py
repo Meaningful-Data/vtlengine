@@ -1,4 +1,3 @@
-import os
 from copy import copy
 from typing import List, Optional
 
@@ -107,16 +106,21 @@ class Analytic(Operator.Unary):
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def analyticfunc(cls, df: pd.DataFrame, partitioning: List[str],
-                     identifier_names: List[str],
-                     measure_names: List[str],
-                     ordering: List[OrderBy],
-                     window: Optional[Windowing],
-                     params: Optional[List[int]] = None) -> pd.DataFrame:
+    def analyticfunc(
+        cls,
+        df: pd.DataFrame,
+        partitioning: List[str],
+        identifier_names: List[str],
+        measure_names: List[str],
+        ordering: List[OrderBy],
+        window: Optional[Windowing],
+        params: Optional[List[int]] = None,
+    ) -> pd.DataFrame:
         """Annotation class
 
-        It is used to analyze the attributes specified bellow ensuring that the
-        type of data is the correct one to perform the operation.
+        It is used to analyze the attributes specified bellow
+        ensuring that the type of data is the correct one to perform
+        the operation.
 
         Attributes:
             identifier_names: List with the id names.
@@ -129,10 +133,18 @@ class Analytic(Operator.Unary):
         window_str = ""
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
-            start_mode = window.start_mode if window.start_mode != 'current' and window.start != 'CURRENT ROW' else ''
-            stop_mode = window.stop_mode if window.stop_mode != 'current' and window.stop != 'CURRENT ROW' else ''
+            start_mode = (
+                window.start_mode
+                if window.start_mode != "current" and window.start != "CURRENT ROW"
+                else ""
+            )
+            stop_mode = (
+                window.stop_mode
+                if window.stop_mode != "current" and window.stop != "CURRENT ROW"
+                else ""
+            )
             if isinstance(window.start, int) and window.start == -1:
-                window.start = 'UNBOUNDED'
+                window.start = "UNBOUNDED"
 
             if stop_mode == "" and window.stop == 0:
                 window.stop = "CURRENT ROW"
@@ -199,10 +211,15 @@ class Analytic(Operator.Unary):
         measure_names = operand.get_measures_names()
         identifier_names = operand.get_identifiers_names()
 
-        result.data = cls.analyticfunc(df=df, partitioning=partitioning,
-                                       identifier_names=identifier_names,
-                                       measure_names=measure_names,
-                                       ordering=ordering or [], window=window, params=params)
+        result.data = cls.analyticfunc(
+            df=df,
+            partitioning=partitioning,
+            identifier_names=identifier_names,
+            measure_names=measure_names,
+            ordering=ordering or [],
+            window=window,
+            params=params,
+        )
         return result
 
 
