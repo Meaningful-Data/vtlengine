@@ -57,8 +57,9 @@ class Check(Operator):
     @classmethod
     def evaluate(cls, validation_element: Dataset, imbalance_element: Optional[Dataset],
                  error_code: Optional[str], error_level: Optional[int], invalid: bool) -> Dataset:
-        result = cls.validate(validation_element, imbalance_element, error_code, error_level,
-                              invalid)
+        result = cls.validate(validation_element, imbalance_element, error_code, error_level, invalid)
+        if validation_element.data is None:
+            validation_element.data = pd.DataFrame()
         columns_to_keep = (validation_element.get_identifiers_names() +
                            validation_element.get_measures_names())
         result.data = validation_element.data.loc[:, columns_to_keep]

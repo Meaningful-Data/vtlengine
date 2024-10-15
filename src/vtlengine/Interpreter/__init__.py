@@ -72,8 +72,8 @@ class InterpreterAnalyzer(ASTTemplate):
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
-    then_condition_dataset: Optional[List[pd.DataFrame]] = None
-    else_condition_dataset: Optional[List[pd.DataFrame]] = None
+    then_condition_dataset: Optional[List[Any]] = None
+    else_condition_dataset: Optional[List[Any]] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
     ruleset_signature: Optional[Dict[str, str]] = None
@@ -459,11 +459,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     if name != operand_comp.name:
                         dataset_components.pop(name)
 
-                if self.only_semantic:
+                if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[
-                        dataset_components.keys()]
+                    data = self.regular_aggregation_dataset.data[dataset_components.keys()]
 
                 operand = Dataset(name=self.regular_aggregation_dataset.name,
                                   components=dataset_components,
@@ -525,13 +524,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.only_semantic:
             data = None
         else:
-            joined_result = pd.merge(
-                self.regular_aggregation_dataset.data[id_columns] if
-                self.regular_aggregation_dataset is not None else None,
-                result.data,
-                on=id_columns,
-                how='inner')
-            data = joined_result[measure_name]
+            if (self.regular_aggregation_dataset is not None and
+                    self.regular_aggregation_dataset.data is not None):
+                joined_result = pd.merge(self.regular_aggregation_dataset.data[id_columns],
+                                         result.data, on=id_columns, how='inner')
+                data = joined_result[measure_name]
+            else:
+                data = None
 
         return DataComponent(name=measure_name,
                              data=data,
@@ -920,7 +919,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
                 self.aggregation_dataset.data = self.aggregation_dataset.data[
                     self.aggregation_dataset.get_identifiers_names() +
-                    self.aggregation_dataset.get_measures_names()]
+                    self.aggregation_dataset.get_measures_names()] if (self.aggregation_dataset.data
+                                                                       is not None) else None
             result = self.visit(node.params)
             measure = result.get_measures()[0]
             if measure.data_type != Boolean:
@@ -1132,7 +1132,7 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_rule = False
         return rule_result
 
-    def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
+    def visit_HRBinOp(self, node: AST.HRBinOp) -> Optional[pd.DataFrame]:
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
@@ -1297,15 +1297,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if isinstance(condition, Dataset):
                 filtered_data = data.iloc[indexes]
-                then_data = condition.data[condition.data[name] == True] if (
+                then_data: Any = condition.data[condition.data[name] == True] if (
                         condition.data is not None) else []
-                then_indexes = list(filtered_data[filtered_data == True].index)
+                then_indexes: Any = list(filtered_data[filtered_data == True].index)
                 if len(then_data) > len(then_indexes):
                     then_data = then_data.iloc[then_indexes]
                 then_data[name] = then_indexes
-                else_data = condition.data[condition.data[name] != True] if (
+                else_data: Any = condition.data[condition.data[name] != True] if (
                         condition.data is not None) else []
-                else_indexes = list(set(indexes) - set(then_indexes))
+                else_indexes: Any = list(set(indexes) - set(then_indexes))
                 if len(else_data) > len(else_indexes):
                     else_data = else_data.iloc[else_indexes]
                 else_data[name] = else_indexes

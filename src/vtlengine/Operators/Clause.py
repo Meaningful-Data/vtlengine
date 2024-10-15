@@ -95,12 +95,12 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame
+        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
             else:
-                if len(operand.data) > 0:
+                if operand.data is not None and len(operand.data) > 0:
                     result_dataset.data[operand.name] = operand.data
                 else:
                     result_dataset.data[operand.name] = None
@@ -302,9 +302,9 @@ class Sub(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data)
+        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
         operand_names = [operand.name for operand in operands]
-        if len(dataset.data) > 0:
+        if dataset.data is not None and len(dataset.data) > 0:
             # Filter the Dataframe
             # by intersecting the indexes of the Data Component with True values
             true_indexes = set()

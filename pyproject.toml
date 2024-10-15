@@ -35,6 +35,8 @@ line-profiler-pycharm = "^1.2.0"
 sphinx = "^7.4"
 sphinx-rtd-theme = "^2.0.0"
 mypy = "^1.11.2"
+pandas-stubs = "^2.2.3.241009"
+stubs = "^1.0.0"
 
 [tool.mypy]
 files = "src"

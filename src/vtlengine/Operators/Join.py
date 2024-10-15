@@ -141,15 +141,18 @@ class Join(Operator):
 
         for op in operands:
             if op is not cls.reference_dataset:
-                merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()]
+                merge_join_keys = [key for key in join_keys if key in op.data.columns.tolist()] if (
+                        op.data is not None) else []
                 if len(merge_join_keys) == 0:
                     raise SemanticError("1-1-13-14", name=op.name)
                 for join_key in merge_join_keys:
                     _id_type_promotion_join_keys(result.get_component(join_key),
                                                  op.get_component(join_key),
                                                  join_key, result.data, op.data)
-                result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
-
+                if op.data is not None and result.data is not None:
+                    result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
+                else:
+                    result.data = pd.DataFrame()
         result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -270,10 +273,13 @@ class CrossJoin(Join):
         common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
 
         for op in operands:
+            if op.data is None:
+                op.data = pd.DataFrame(columns=op.get_components_names())
             if op is operands[0]:
                 result.data = op.data
             else:
-                result.data = pd.merge(result.data, op.data, how=cls.how)
+                if result.data is not None:
+                    result.data = pd.merge(result.data, op.data, how=cls.how)
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={column: op.name + '#' + column for column in result.data.columns.tolist()
@@ -325,7 +331,7 @@ class Apply(Operator):
         prefix += '#'
         components = {component.name: component for component in dataset.components.values() if
                       component.name.startswith(prefix) or component.role is Role.IDENTIFIER}
-        data = dataset.data[list(components.keys())]
+        data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
 
         for component in components.values():
             component.name = component.name[len(prefix):] if (
@@ -344,6 +350,6 @@ class Apply(Operator):
                            comp.name in common}
         right.components = {comp.name: comp for comp in right.components.values() if
                             comp.name in common}
-        left.data = left.data[list(common)]
-        right.data = right.data[list(common)]
+        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
+        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
         return left, right

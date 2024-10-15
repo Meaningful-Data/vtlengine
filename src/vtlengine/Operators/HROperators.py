@@ -56,7 +56,7 @@ class HRComparison(Operators.Binary):
         return func(x, y)
 
     @classmethod
-    def apply_hr_func(cls, left_series: pd.Series, right_series: pd.Series, hr_mode: str, func: Any) -> pd.Series:
+    def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
         return left_series.combine(right_series, lambda x, y: cls.hr_func(x, y, hr_mode, func))
 
     @classmethod
@@ -80,7 +80,7 @@ class HRComparison(Operators.Binary):
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
-        if result.data is not None:
+        if result.data is not None and left.data is not None and right.data is not None:
             result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
                                                         hr_mode, cls.op_func)
             result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data,

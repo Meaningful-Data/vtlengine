@@ -60,14 +60,14 @@ class Time(Operators.Operator):
         return date.fromisoformat(date_str)
 
     @classmethod
-    def get_frequencies(cls, dates: pd.Series) -> pd.Series:
+    def get_frequencies(cls, dates: Any) -> Any:
         dates = pd.to_datetime(dates)
         dates = dates.sort_values()
         deltas = dates.diff().dropna()
         return deltas
 
     @classmethod
-    def find_min_frequency(cls, differences: pd.Series) -> str:
+    def find_min_frequency(cls, differences: Any) -> str:
         months_deltas = differences.apply(lambda x: x.days // 30)
         days_deltas = differences.apply(lambda x: x.days)
         min_months = min((diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None)
@@ -303,8 +303,8 @@ class Fill_time_series(Binary):
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
-    def fill_periods_rows(cls, group_df: pd.Series, period: str, years: List[int],
-                          vals: Optional[List[int]] = None) -> List[pd.Series]:
+    def fill_periods_rows(cls, group_df: Any, period: str, years: List[int],
+                          vals: Optional[List[int]] = None) -> List[Any]:
         rows = []
         for year in years:
             if period == 'A':
@@ -315,7 +315,7 @@ class Fill_time_series(Binary):
         return rows
 
     @classmethod
-    def create_period_row(cls, group_df: pd.Series, period: str, year: int, val: Optional[int] = None) -> pd.Series:
+    def create_period_row(cls, group_df: Any, period: str, year: int, val: Optional[int] = None) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == 'A' else f"{year}-{period}{val:d}"
         row[cls.measures] = None
@@ -323,7 +323,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = 'all') -> Dict[str, Any]:
-        def compute_min_max(group: pd.Series) -> Dict[str, Any]:
+        def compute_min_max(group: Any) -> Dict[str, Any]:
             min_date = cls.parse_date(group.min())
             max_date = cls.parse_date(group.max())
             date_format = cls.get_date_format(max_date)
@@ -351,7 +351,8 @@ class Fill_time_series(Binary):
         date_format = None
         filled_data = []
 
-        def create_filled_dates(group: pd.Series, min_max: Dict[str, Any]) -> pd.DataFrame:
+        def create_filled_dates(group: Any, min_max: Dict[str, Any]) \
+                -> (pd.DataFrame, str): # type: ignore[syntax]
             date_range = pd.date_range(start=min_max['min'], end=min_max['max'], freq=min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
             date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
@@ -373,7 +374,7 @@ class Fill_time_series(Binary):
     def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = 'all') -> Dict[str, Any]:
         data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id])
 
-        def extract_max_min(group: pd.Series) -> Dict[str, Any]:
+        def extract_max_min(group: Any) -> Dict[str, Any]:
             start_dates = group.apply(lambda x: x.split('/')[0])
             end_dates = group.apply(lambda x: x.split('/')[1])
             return {'start': {'min': start_dates.min(), 'max': start_dates.max()},
@@ -599,7 +600,7 @@ class Time_Aggregation(Time):
     def dataset_evaluation(cls, operand: Dataset, period_from: Optional[str], period_to: str,
                            conf: str) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(x, time_measure.data_type,

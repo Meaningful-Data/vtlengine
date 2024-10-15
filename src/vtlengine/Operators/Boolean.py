@@ -1,7 +1,3 @@
-import os
-
-import numba
-
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
 # else:
@@ -23,10 +19,10 @@ class Unary(Operator.Unary):
 class Binary(Operator.Binary):
     type_to_check = Boolean
     return_type = Boolean
-    comp_op = None
+    comp_op: Any = None
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any,
                                       series_left: bool) -> Any:
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar))
@@ -36,7 +32,7 @@ class Binary(Operator.Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = cls.comp_op(left_series.astype('bool[pyarrow]'),
-                             right_series.astype('bool[pyarrow]'))  # type: ignore[misc]
+                             right_series.astype('bool[pyarrow]'))
         return result.replace({pd.NA: None}).astype(object)
 
     @classmethod
@@ -57,9 +53,9 @@ class And(Binary):
             return None
         return x and y
 
-    @classmethod
-    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-        return x & y
+    # @classmethod
+    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    #     return x & y
 
 
 class Or(Binary):
@@ -75,9 +71,9 @@ class Or(Binary):
             return None
         return x or y
 
-    @classmethod
-    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-        return x | y
+    # @classmethod
+    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    #     return x | y
 
 
 class Xor(Binary):
@@ -90,9 +86,9 @@ class Xor(Binary):
             return None
         return (x and not y) or (not x and y)
 
-    @classmethod
-    def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
-        return x ^ y
+    # @classmethod
+    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    #     return x ^ y
 
 
 class Not(Unary):
@@ -103,9 +99,9 @@ class Not(Unary):
     def py_op(x: Optional[bool]) -> Optional[bool]:
         return None if x is None else not x
 
-    @classmethod
-    def spark_op(cls, series: pd.Series) -> pd.Series:
-        return ~series
+    # @classmethod
+    # def spark_op(cls, series: pd.Series) -> pd.Series:
+    #     return ~series
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:

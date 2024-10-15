@@ -54,7 +54,7 @@ class DataComponent:
     """A component of a dataset with data"""
     name: str
     # data: Optional[Union[PandasSeries, SparkSeries]]
-    data: PandasSeries
+    data: Optional[Any]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
@@ -126,7 +126,7 @@ class Dataset:
     name: str
     components: Dict[str, Component]
     # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
-    data: PandasDataFrame = None
+    data: Optional[PandasDataFrame] = None
 
     def __post_init__(self) -> None:
         if self.data is not None:
@@ -173,6 +173,9 @@ class Dataset:
 
         if self.data is None and other.data is None:
             return True
+        elif self.data is None or other.data is None:
+            return False
+
         # if isinstance(self.data, SparkDataFrame):
         #     self.data = self.data.to_pandas()
         # if isinstance(other.data, SparkDataFrame):

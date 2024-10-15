@@ -49,7 +49,7 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(cls, condition: DataComponent, true_branch: Any,
-                                   false_branch: Any) -> pd.Series:
+                                   false_branch: Any) -> Any:
         result = None
         if condition.data is not None:
             if isinstance(true_branch, Scalar):
@@ -64,14 +64,15 @@ class If(Operator):
         return pd.Series(result, index=condition.data.index)
 
     @classmethod
-    def dataset_level_evaluation(cls, result: Any, condition: Any, true_branch: Any, false_branch: Any) -> Dataset:
+    def dataset_level_evaluation(cls, result: Any, condition: Any, true_branch: Any,
+                                 false_branch: Any) -> Dataset:
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
         true_data = condition.data[condition.data[condition_measure] == True]
         false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
 
         if isinstance(true_branch, Dataset):
-            if len(true_data) > 0:
+            if len(true_data) > 0 and true_branch.data is not None:
                 true_data = pd.merge(true_data, true_branch.data, on=ids, how='right',
                                      suffixes=('_condition', ''))
             else:
@@ -80,7 +81,7 @@ class If(Operator):
             true_data[condition_measure] = true_data[condition_measure].apply(
                 lambda x: true_branch.value)
         if isinstance(false_branch, Dataset):
-            if len(false_data) > 0:
+            if len(false_data) > 0 and false_branch.data is not None:
                 false_data = pd.merge(false_data, false_branch.data, on=ids, how='right',
                                       suffixes=('_condition', ''))
             else:

@@ -218,11 +218,10 @@ class Cast(Operator.Unary):
                                 type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
 
     @classmethod
-    def cast_component(cls, *args: Any) -> pd.Series:
+    def cast_component(cls, *args: Any) -> Any:
         """
         cast the component to the type to_type without mask
         """
-        data: pd.Series
         data, from_type, to_type = args
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
@@ -232,7 +231,7 @@ class Cast(Operator.Unary):
         return result
 
     @classmethod
-    def cast_mask_component(cls, *args: Any) -> pd.Series:
+    def cast_mask_component(cls, *args: Any) -> Any:
         mask: str
         data, from_type, to_type, mask = args
 

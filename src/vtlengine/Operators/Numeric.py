@@ -233,11 +233,11 @@ class Parameterized(Unary):
         return None if pd.isnull(x) else cls.py_op(x, param)
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> Any:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, param: Any) -> Any:
+    def apply_operation_series_scalar(cls, series: Any, param: Any) -> Any:
         return series.map(lambda x: cls.op_func(x, param))
 
     @classmethod
@@ -262,9 +262,12 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def component_evaluation(cls, operand: DataComponent, param: Optional[Union[DataComponent, Scalar]] = None) -> DataComponent:
+    def component_evaluation(cls, operand: DataComponent,
+                             param: Optional[Union[DataComponent, Scalar]] = None) -> DataComponent:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        if operand.data is None:
+            operand.data = pd.Series()
+        result.data = operand.data.copy()
         if isinstance(param, DataComponent):
             result.data = cls.apply_operation_two_series(operand.data, param.data)
         else:

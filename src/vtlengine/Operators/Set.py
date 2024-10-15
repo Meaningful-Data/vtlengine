@@ -77,6 +77,9 @@ class Intersection(Set):
             if result.data is None:
                 result.data = data
             else:
+                if data is None:
+                    result.data = pd.DataFrame(columns=result.get_identifiers_names())
+                    break
                 result.data = result.data.merge(data, how='inner',
                                                 on=result.get_identifiers_names())
 

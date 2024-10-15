@@ -34,7 +34,7 @@ class IsNull(Unary):
     py_op = pd.isnull
 
     @classmethod
-    def apply_operation_component(cls, series: pd.Series) -> Any:
+    def apply_operation_component(cls, series: Any) -> Any:
         return series.isnull()
 
     @classmethod
@@ -89,7 +89,7 @@ class Binary(Operator.Binary):
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any,
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any,
                                       series_left: bool) -> Any:
         if scalar is None:
             return pd.Series(None, index=series.index)
@@ -172,9 +172,7 @@ class NotIn(Binary):
     op = NOT_IN
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: pd.Series,
-                                   right_series: pd.Series) -> pd.Series:
+    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         series_result = In.apply_operation_two_series(left_series, right_series)
         return series_result.map(lambda x: not x, na_action='ignore')
 
@@ -221,10 +219,9 @@ class Between(Operator.Operator):
         return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) else y <= x <= z # type: ignore[operator]
 
     @classmethod
-    def apply_operation_component(cls, series: pd.Series,
-                                  from_data: Optional[Union[pd.Series, int, float, bool, str]],
-                                  to_data: Optional[
-                                      Union[pd.Series, int, float, bool, str]]) -> Any:
+    def apply_operation_component(cls, series: Any,
+                                  from_data: Any,
+                                  to_data: Any) -> Any:
         control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(to_data,
                                                                                     pd.Series)
         if control_any_series_from_to:
@@ -378,10 +375,13 @@ class ExistIn(Operator.Operator):
             common_columns = right_id_names
 
         # Check if the common identifiers are equal between the two datasets
-        true_results = pd.merge(dataset_1.data, dataset_2.data, how='inner',
-                                left_on=common_columns,
-                                right_on=common_columns, copy=False)
-        true_results = true_results[reference_identifiers_names]
+        if dataset_1.data is not None and dataset_2.data is not None:
+            true_results = pd.merge(dataset_1.data, dataset_2.data, how='inner',
+                                    left_on=common_columns,
+                                    right_on=common_columns)
+            true_results = true_results[reference_identifiers_names]
+        else:
+            true_results = pd.DataFrame(columns=reference_identifiers_names)
 
         # Check for empty values
         if true_results.empty:
@@ -391,7 +391,7 @@ class ExistIn(Operator.Operator):
 
         final_result = pd.merge(dataset_1.data, true_results, how='left',
                                 left_on=reference_identifiers_names,
-                                right_on=reference_identifiers_names, copy=False)
+                                right_on=reference_identifiers_names)
         final_result = final_result[reference_identifiers_names + ['bool_var']]
 
         # No null values are returned, only True or False

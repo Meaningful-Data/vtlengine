@@ -123,25 +123,22 @@ class Parameterized(Unary):
 
     @classmethod
     def op_func(cls, *args: Any) -> Any:
-        x: Union[Dataset, String, str]
+        x: Optional[Union[Dataset, String, str]]
         param1: Optional[Any]
         param2: Optional[Any]
-        x, param1, param2 = operand, param1, param2 = (args + (None, None))[:3]
+        x, param1, param2 = (args + (None, None))[:3]
 
         x = "" if pd.isnull(x) else x
         return cls.py_op(x, param1, param2)
 
     @classmethod
     def apply_operation_two_series(cls, *args: Any) -> Any:
-        left_series: pd.Series
-        right_series: pd.Series
         left_series, right_series = args
 
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
     def apply_operation_series_scalar(cls, *args: Any) -> Any:
-        series: pd.Series
         series, param1, param2 = args
 
         return series.map(lambda x: cls.op_func(x, param1, param2))
@@ -220,7 +217,7 @@ class Parameterized(Unary):
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def generate_series_from_param(cls, *args: Any) -> pd.Series:
+    def generate_series_from_param(cls, *args: Any) -> Any:
         param: Optional[Union[DataComponent, Scalar]] = None
         length: int
         if len(args) == 2:
@@ -236,7 +233,6 @@ class Parameterized(Unary):
 
     @classmethod
     def apply_operation_series(cls, *args: Any) -> Any:
-        data: pd.Series
         param1: Optional[Union[DataComponent, Scalar]]
         param2: Optional[Union[DataComponent, Scalar]]
         data, param1, param2 = (args + (None, None))[:3]
@@ -398,15 +394,14 @@ class Instr(Parameterized):
                                     correct_type=">= 1")
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any, param3: Any) -> Any:
+    def apply_operation_series_scalar(cls, series: Any, param1: Any, param2: Any, param3: Any) -> Any:
         return series.map(lambda x: cls.op_func(x, param1, param2, param3))
 
     @classmethod
-    def apply_operation_series(cls, data: pd.Series,
+    def apply_operation_series(cls, data: Any,
                                param1: Optional[Union[DataComponent, Scalar]],
                                param2: Optional[Union[DataComponent, Scalar]],
-                               param3: Optional[Union[DataComponent, Scalar]],
-                               ) -> Any:
+                               param3: Optional[Union[DataComponent, Scalar]]) -> Any:
         param1_data = cls.generate_series_from_param(param1, len(data))
         param2_data = cls.generate_series_from_param(param2, len(data))
         param3_data = cls.generate_series_from_param(param3, len(data))

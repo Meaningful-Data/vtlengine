@@ -446,7 +446,7 @@ def shift_period(x: TimePeriodHandler, shift_param: int) -> TimePeriodHandler:
     return x
 
 
-def sort_time_period(series: pd.Series) -> pd.Series:
+def sort_time_period(series: Any) -> Any:
     values_sorted = sorted(series.to_list(),
                            key=lambda s: (s.year, DURATION_MAPPING[s.period_indicator], s.period_number))
     return pd.Series(values_sorted, name=series.name)
@@ -467,7 +467,7 @@ def generate_period_range(start: TimePeriodHandler, end: TimePeriodHandler) -> l
     return period_range
 
 
-def check_max_date(str_: str) -> Optional[str]:
+def check_max_date(str_: Optional[str]) -> Optional[str]:
     if pd.isnull(str_) or str_ == 'nan' or str_ == 'NaT':
         return None
 

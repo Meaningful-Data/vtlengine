@@ -45,9 +45,8 @@ class Operator:
         return cls.evaluate(*args, **kwargs)
 
     @classmethod
-    def cast_time_types(cls, *args: Any) -> pd.Series:
+    def cast_time_types(cls, *args: Any) -> Any:
         data_type: Any
-        series: pd.Series
         data_type, series = args
 
         if cls.op not in BINARY_COMPARISON_OPERATORS:
@@ -98,7 +97,7 @@ class Operator:
             components = list(result.components.keys())
             columns = list(result.data.columns)
             for column in columns:
-                if column not in set(components):
+                if column not in set(components) and result.data is not None:
                     result.data[measure_name] = result.data[column]
                     del result.data[column]
 
@@ -214,8 +213,6 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_two_series(cls, *args: Any) -> Any:
-        left_series: pd.Series
-        right_series: pd.Series
         left_series, right_series = args
 
         if os.getenv("SPARK", False):
@@ -231,7 +228,6 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_series_scalar(cls, *args: Any) -> Any:
-        series: pd.Series
         scalar: Scalar
         series_left: bool
         series, scalar, series_left = args
@@ -521,10 +517,11 @@ class Binary(Operator):
 
         try:
             # Merge the data
-            result_data: pd.DataFrame = pd.merge(
-                base_operand_data, other_operand_data,
-                how='inner', on=join_keys,
-                suffixes=('_x', '_y'))
+            if base_operand_data is None or other_operand_data is None:
+                result_data: pd.DataFrame = pd.DataFrame()
+            else:
+                result_data: pd.DataFrame = pd.merge(base_operand_data, other_operand_data,
+                    how='inner', on=join_keys, suffixes=('_x', '_y'))
         except ValueError as e:
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
@@ -707,7 +704,7 @@ class Unary(Operator):
     @classmethod
     def apply_operation_component(cls, *args: Any) -> Any:
         """Applies the operation to a component"""
-        series: pd.Series = args[0]
+        series = args[0]
 
         return series.map(cls.py_op, na_action='ignore')
 
