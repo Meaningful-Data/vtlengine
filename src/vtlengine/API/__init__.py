@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Any, Union, List, Optional, Dict
 
 import pandas as pd
-from antlr4 import CommonTokenStream, InputStream
-from antlr4.error.ErrorListener import ErrorListener
+from antlr4 import CommonTokenStream, InputStream # type: ignore[import-untyped]
+from antlr4.error.ErrorListener import ErrorListener # type: ignore[import-untyped]
 
 from vtlengine.API._InternalApi import load_vtl, load_datasets, load_value_domains, \
     load_external_routines, \

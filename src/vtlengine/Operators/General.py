@@ -142,13 +142,9 @@ class Eval(Unary):
     @classmethod
     def evaluate(cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine,
                  output: Dataset) -> Dataset:
-        result = cls.validate(operands, external_routine, output)
-
-        operands_data_dict = {ds_name: operands[ds_name].data
-                              for ds_name in operands}
-
+        result: Dataset = cls.validate(operands, external_routine, output)
+        operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
         result.data = cls._execute_query(external_routine.query,
                                          external_routine.dataset_names,
-                                         operands_data_dict)
-
+                                         operands_data_dict) # type: ignore[arg-type]
         return result

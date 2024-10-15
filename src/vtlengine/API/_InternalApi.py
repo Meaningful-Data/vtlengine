@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union, Optional, Dict, List, Any
 
 import pandas as pd
-from s3fs import S3FileSystem
+from s3fs import S3FileSystem # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES

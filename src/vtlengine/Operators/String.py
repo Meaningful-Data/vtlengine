@@ -123,7 +123,7 @@ class Parameterized(Unary):
 
     @classmethod
     def op_func(cls, *args: Any) -> Any:
-        x: Optional[Union[Dataset, String, str]]
+        x: Optional[Any]
         param1: Optional[Any]
         param2: Optional[Any]
         x, param1, param2 = (args + (None, None))[:3]
@@ -423,10 +423,10 @@ class Instr(Parameterized):
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
-            if isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or isinstance(
-                    param3,
-                    DataComponent):
-                result.data[measure_name] = cls.apply_operation_series(operand.data[measure_name],
+            if (isinstance(param1, DataComponent) or isinstance(param2, DataComponent) or
+                    isinstance(param3, DataComponent)):
+                if operand.data is not None:
+                    result.data[measure_name] = cls.apply_operation_series(operand.data[measure_name],
                                                                        param1, param2, param3)
             else:
                 param_value1 = None if param1 is None else param1.value

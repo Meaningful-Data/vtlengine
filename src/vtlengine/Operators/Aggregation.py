@@ -197,7 +197,7 @@ class Aggregation(Operator.Unary):
 
         cls._handle_data_types(result_df, operand.get_measures(), 'result')
         # Handle correct order on result
-        aux_df = operand.data[grouping_keys].drop_duplicates()
+        aux_df = operand.data[grouping_keys].drop_duplicates() if operand.data is not None else pd.DataFrame()
         if len(grouping_keys) == 0:
             aux_df = result_df
             aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)

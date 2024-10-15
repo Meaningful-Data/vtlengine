@@ -150,10 +150,13 @@ class Join(Operator):
                                                  op.get_component(join_key),
                                                  join_key, result.data, op.data)
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(result.data, op.data, how=cls.how, on=merge_join_keys)
+                    result.data = pd.merge(result.data, op.data,
+                                           how=cls.how, # type: ignore[arg-type]
+                                           on=merge_join_keys)
                 else:
                     result.data = pd.DataFrame()
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result
 
     @classmethod
@@ -279,12 +282,14 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 if result.data is not None:
-                    result.data = pd.merge(result.data, op.data, how=cls.how)
+                    result.data = pd.merge(result.data, op.data,
+                                           how=cls.how) # type: ignore[arg-type]
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={column: op.name + '#' + column for column in result.data.columns.tolist()
                              if column in common})
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result
 
     @classmethod

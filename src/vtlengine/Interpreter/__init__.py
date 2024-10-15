@@ -396,7 +396,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_grouping = False
             if grouping_op == 'group all':
                 comp_grouped = groupings[0]
-                if comp_grouped.data is not None and len(comp_grouped.data) > 0:
+                if (operand.data is not None and comp_grouped.data is not None and
+                        len(comp_grouped.data) > 0):
                     operand.data[comp_grouped.name] = comp_grouped.data
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
@@ -1132,7 +1133,7 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_rule = False
         return rule_result
 
-    def visit_HRBinOp(self, node: AST.HRBinOp) -> Optional[pd.DataFrame]:
+    def visit_HRBinOp(self, node: AST.HRBinOp) -> Any:
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
             if self.rule_data is None:

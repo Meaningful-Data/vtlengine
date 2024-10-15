@@ -92,10 +92,10 @@ class Operator:
         result: Dataset
         result = args[0]
 
-        if len(result.get_measures()) == 1 and cls.return_type is not None:
+        if len(result.get_measures()) == 1 and cls.return_type is not None and result is not None:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
-            columns = list(result.data.columns)
+            columns = list(result.data.columns) if result.data is not None else []
             for column in columns:
                 if column not in set(components) and result.data is not None:
                     result.data[measure_name] = result.data[column]
@@ -520,7 +520,7 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: pd.DataFrame = pd.DataFrame()
             else:
-                result_data: pd.DataFrame = pd.merge(base_operand_data, other_operand_data,
+                result_data = pd.merge(base_operand_data, other_operand_data,
                     how='inner', on=join_keys, suffixes=('_x', '_y'))
         except ValueError as e:
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
@@ -631,8 +631,9 @@ class Binary(Operator):
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
 
         for measure_name in dataset.get_measures_names():
-            result_data[measure_name] = cls.apply_operation_two_series(dataset.data[measure_name],
-                                                                       scalar_set)
+            if dataset.data is not None:
+                result_data[measure_name] = cls.apply_operation_two_series(
+                    dataset.data[measure_name], scalar_set)
 
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
         result_dataset.data = result_data[cols_to_keep]

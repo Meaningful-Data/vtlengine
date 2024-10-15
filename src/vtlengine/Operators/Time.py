@@ -163,14 +163,14 @@ class Period_indicator(Unary):
             result.value = cls._get_period(str(operand.value))
             return result
         if isinstance(operand, DataComponent):
-            result.data = operand.data.map(cls._get_period, na_action='ignore')
+            if operand.data is not None:
+                result.data = operand.data.map(cls._get_period, na_action='ignore')
             return result
         cls.time_id = cls._get_time_id(operand)
-
-        result.data = operand.data.copy()[result.get_identifiers_names()] if operand.data is not None else pd.Series()
-        period_series = result.data[cls.time_id].map(cls._get_period)
+        result.data = operand.data.copy()[result.get_identifiers_names()] if (operand.data
+                                                            is not None) else pd.Series()
+        period_series: Any = result.data[cls.time_id].map(cls._get_period) # type: ignore[index]
         result.data['duration_var'] = period_series
-
         return result
 
 
@@ -188,7 +188,9 @@ class Fill_time_series(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        if operand.data is None:
+            operand.data = pd.DataFrame()
+        result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
             return result
@@ -225,6 +227,7 @@ class Fill_time_series(Binary):
     @classmethod
     def max_min_from_period(cls, data: pd.DataFrame, mode: str = 'all') -> Dict[str, Any]:
 
+        result_dict: Dict[Any, Any] = {}
         data = data.assign(
             Periods_col=data[cls.time_id].apply(cls._get_period),
             Periods_values_col=data[cls.time_id].apply(
@@ -245,7 +248,6 @@ class Fill_time_series(Binary):
                     result_dict['max'][period] = group['Periods_values_col'].max()
 
         elif mode == 'single':
-            result_dict = {}
             for name, group in data.groupby(cls.other_ids + ['Periods_col']):
                 key = name[:-1] if len(name[:-1]) > 1 else name[0]
                 period = name[-1]
@@ -295,7 +297,7 @@ class Fill_time_series(Binary):
                             cls.fill_periods_rows(group_df, period, years, vals=vals))
 
         filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat([filled_data, data], ignore_index=True) # type: ignore[list-item]
         if len(cls.periods) == 1 and cls.periods[0] == 'A':
             combined_data[cls.time_id] = combined_data[cls.time_id].astype(int)
         else:
@@ -366,13 +368,13 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat([filled_data, data], ignore_index=True) # type: ignore[list-item]
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
     def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = 'all') -> Dict[str, Any]:
-        data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id])
+        data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id]) # type: ignore[operator]
 
         def extract_max_min(group: Any) -> Dict[str, Any]:
             start_dates = group.apply(lambda x: x.split('/')[0])
@@ -413,7 +415,7 @@ class Fill_time_series(Binary):
                     empty_row = group_df.iloc[0].copy()
                     empty_row[cls.time_id] = interval
                     empty_row[cls.measures] = None
-                    group_df = group_df.append(empty_row, ignore_index=True)
+                    group_df = group_df.append(empty_row, ignore_index=True) # type: ignore[operator]
             start_group_df = group_df.copy()
             start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
                 lambda x: x.split('/')[0])
@@ -614,10 +616,9 @@ class Time_Aggregation(Time):
                              period_to: str,
                              conf: str) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.map(
-            lambda x: cls._execute_time_aggregation(x, operand.data_type, period_from, period_to,
-                                                    conf),
-            na_action='ignore')
+        if operand.data is not None:
+            result.data = operand.data.map(lambda x: cls._execute_time_aggregation(x, operand.data_type,
+                                                    period_from, period_to, conf), na_action='ignore')
         return result
 
     @classmethod

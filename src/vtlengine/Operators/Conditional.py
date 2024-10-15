@@ -99,8 +99,8 @@ class If(Operator):
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
             result.get_measures()[0].data_type = true_branch.data_type
             result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
-            result.data = result.data.rename(
-                columns={condition_measure: result.get_measures()[0].name})
+            if result.data is not None:
+                result.data = result.data.rename(columns={condition_measure: result.get_measures()[0].name})
         return result
 
     @classmethod
@@ -192,7 +192,7 @@ class Nvl(Binary):
         result = cls.validate(left, right)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
-            if pd.isnull(left):
+            if pd.isnull(left): # type: ignore[call-overload]
                 result.value = right.value
             else:
                 result.value = left.value

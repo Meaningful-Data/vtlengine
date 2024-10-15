@@ -101,6 +101,8 @@ class Symdiff(Set):
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
+            if data is None:
+                data = pd.DataFrame(columns=result.get_identifiers_names())
             if result.data is None:
                 result.data = data
             else:
@@ -141,6 +143,8 @@ class Setdiff(Set):
             if result.data is None:
                 result.data = data
             else:
+                if data is None:
+                    data = pd.DataFrame(columns=result.get_identifiers_names())
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
                 if len(result.data) > 0:
                     result.data = result.data[result.data.apply(cls.has_null, axis=1)]
@@ -154,5 +158,6 @@ class Setdiff(Set):
                     if col + "_y" in result.data:
                         del result.data[col + "_y"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result

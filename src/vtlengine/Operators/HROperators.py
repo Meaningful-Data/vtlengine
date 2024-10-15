@@ -80,7 +80,7 @@ class HRComparison(Operators.Binary):
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
-        if result.data is not None and left.data is not None and right.data is not None:
+        if left.data is not None and right.data is not None:
             result.data['bool_var'] = cls.apply_hr_func(left.data[measure_name], right.data,
                                                         hr_mode, cls.op_func)
             result.data['imbalance'] = cls.apply_hr_func(left.data[measure_name], right.data,
@@ -179,7 +179,8 @@ class HAAssignment(Operators.Binary):
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
-        result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
+        if right.data is not None:
+            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
         result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
         return result
 

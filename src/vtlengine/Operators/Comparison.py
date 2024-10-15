@@ -388,7 +388,8 @@ class ExistIn(Operator.Operator):
             true_results['bool_var'] = None
         else:
             true_results['bool_var'] = True
-
+        if dataset_1.data is None:
+            dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
         final_result = pd.merge(dataset_1.data, true_results, how='left',
                                 left_on=reference_identifiers_names,
                                 right_on=reference_identifiers_names)

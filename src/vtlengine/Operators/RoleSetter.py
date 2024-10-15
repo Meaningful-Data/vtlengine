@@ -32,7 +32,7 @@ class RoleSetter(Unary):
 
     @classmethod
     def evaluate(cls, operand: Any, data_size: int = 0) -> DataComponent:
-        if isinstance(operand, DataComponent):
+        if isinstance(operand, DataComponent) and operand.data is not None:
             if not operand.nullable and any(operand.data.isnull()):
                 raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
