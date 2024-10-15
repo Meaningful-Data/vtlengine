@@ -15,14 +15,7 @@ from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent
 
-duration_mapping = {
-    "A": 6,
-    "S": 5,
-    "Q": 4,
-    "M": 3,
-    "W": 2,
-    "D": 1
-}
+duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -198,9 +191,13 @@ class Cast(Operator.Unary):
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
 
-        raise SemanticError("1-1-5-5", op=cls.op,
-                            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type], mask_value=mask_value)
+        raise SemanticError(
+            "1-1-5-5",
+            op=cls.op,
+            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+            type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
+            mask_value=mask_value,
+        )
 
     @classmethod
     def check_without_mask(cls, *args: Any) -> None:
@@ -211,11 +208,18 @@ class Cast(Operator.Unary):
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
             explicit_with_mask = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
             if to_type.is_included(explicit_with_mask):
-                raise SemanticError("1-1-5-3", op=cls.op,
-                                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                                    type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
-            raise SemanticError("1-1-5-4", op=cls.op, type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                                type_2=SCALAR_TYPES_CLASS_REVERSE[to_type])
+                raise SemanticError(
+                    "1-1-5-3",
+                    op=cls.op,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
+                )
+            raise SemanticError(
+                "1-1-5-4",
+                op=cls.op,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[to_type],
+            )
 
     @classmethod
     def cast_component(cls, *args: Any) -> Any:
@@ -225,7 +229,7 @@ class Cast(Operator.Unary):
         data, from_type, to_type = args
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
-            result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action='ignore')
+            result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
             result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action='ignore')
         return result
@@ -383,12 +387,14 @@ class Cast(Operator.Unary):
         result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
 
         if original_measure.name != new_measure.name:
-            result_dataset.data.rename(columns={original_measure.name: new_measure.name},
-                                       inplace=True)
+            result_dataset.data.rename(
+                columns={original_measure.name: new_measure.name}, inplace=True
+            )
         measure_data = result_dataset.data[new_measure.name]
         if mask:
-            result_dataset.data[new_measure.name] = cls.cast_mask_component(measure_data, from_type,
-                                                                            to_type, mask)
+            result_dataset.data[new_measure.name] = cls.cast_mask_component(
+                measure_data, from_type, to_type, mask
+            )
         else:
             result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type,
                                                                        to_type)

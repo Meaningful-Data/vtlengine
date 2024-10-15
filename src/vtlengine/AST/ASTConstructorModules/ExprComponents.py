@@ -1,9 +1,22 @@
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from vtlengine.AST import Aggregation, If, BinOp, UnaryOp, ID, ParamOp, MulOp, Constant, \
-    ParamConstant, \
-    TimeAggregation, \
-    Identifier, EvalOp, VarID, Analytic, UDOCall
+from vtlengine.AST import (
+    Aggregation,
+    If,
+    BinOp,
+    UnaryOp,
+    ID,
+    ParamOp,
+    MulOp,
+    Constant,
+    ParamConstant,
+    TimeAggregation,
+    Identifier,
+    EvalOp,
+    VarID,
+    Analytic,
+    UDOCall,
+)
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
@@ -14,26 +27,26 @@ class ExprComp(VtlVisitor):
     """______________________________________________________________________________________
 
 
-                                    ExprComponent Definition.
+                                ExprComponent Definition.
 
-        _______________________________________________________________________________________"""
+    _______________________________________________________________________________________"""
 
     def visitExprComponent(self, ctx: Parser.ExprComponentContext):
         """
-            exprComponent:
-                LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp
-                | functionsComponents                                                                                   # functionsExpressionComp
-                | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp
-                | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp
-                | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp
-                | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp
-                | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp
-                | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp
-                | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp
-                | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp
-                | constant                                                                                              # constantExprComp
-                | componentID                                                                                           # compId
-            ;
+        exprComponent:
+            LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp # noqa E501
+            | functionsComponents                                                                                   # functionsExpressionComp # noqa E501
+            | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp # noqa E501
+            | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp # noqa E501
+            | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp # noqa E501
+            | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp # noqa E501
+            | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp # noqa E501
+            | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp # noqa E501
+            | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp # noqa E501
+            | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp # noqa E501
+            | constant                                                                                              # constantExprComp # noqa E501
+            | componentID                                                                                           # compId # noqa E501
+        ;
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -85,9 +98,9 @@ class ExprComp(VtlVisitor):
                 return Terminals().visitComponentID(c)
             token = c.children[0].getSymbol()
             # check token text
-            has_scaped_char = token.text.find("\'") != -1
+            has_scaped_char = token.text.find("'") != -1
             if has_scaped_char:
-                token.text = str(token.text.replace("\'", ""))
+                token.text = str(token.text.replace("'", ""))
             var_id_node = VarID(token.text)
             return var_id_node
 
@@ -170,14 +183,14 @@ class ExprComp(VtlVisitor):
         elif isinstance(c, TerminalNodeImpl):
             token = c.getSymbol()
             opt = token.text
-            return ID('OPTIONAL', opt)
+            return ID("OPTIONAL", opt)
 
-    """______________________________________________________________________________________
+    """____________________________________________________________________________________
 
 
-                                        FunctionsComponents Definition.
+                                    FunctionsComponents Definition.
 
-            _______________________________________________________________________________________"""
+      _____________________________________________________________________________________"""
 
     def visitFunctionsComponents(self, ctx: Parser.FunctionsComponentsContext):
         """
@@ -224,7 +237,7 @@ class ExprComp(VtlVisitor):
 
     """
                                 -----------------------------------
-                                    Generic Functions Components        
+                                    Generic Functions Components
                                 -----------------------------------
     """
 
@@ -240,56 +253,74 @@ class ExprComp(VtlVisitor):
 
     def visitCallComponent(self, ctx: Parser.CallComponentContext):
         """
-        callFunction: operatorID LPAREN (parameterComponent (COMMA parameterComponent)*)? RPAREN    # callComponent
+        callFunction: operatorID LPAREN (parameterComponent (COMMA parameterComponent)*)? RPAREN    # callComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
         op = Terminals().visitOperatorID(c)
-        param_nodes = [self.visitParameterComponent(element) for element in ctx_list if
-                       isinstance(element, Parser.ParameterComponentContext)]
+        param_nodes = [
+            self.visitParameterComponent(element)
+            for element in ctx_list
+            if isinstance(element, Parser.ParameterComponentContext)
+        ]
 
         return UDOCall(op=op, params=param_nodes)
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
-            | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
+        | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 
         routine_name = Terminals().visitRoutineName(ctx_list[2])
 
         # Think of a way to maintain the order, for now its not necessary.
-        var_ids_nodes = [Terminals().visitVarID(varID) for varID in ctx_list if
-                         isinstance(varID, Parser.VarIDContext)]
-        constant_nodes = [Terminals().visitScalarItem(scalar) for scalar in ctx_list if
-                          isinstance(scalar, Parser.ScalarItemContext)]
+        var_ids_nodes = [
+            Terminals().visitVarID(varID)
+            for varID in ctx_list
+            if isinstance(varID, Parser.VarIDContext)
+        ]
+        constant_nodes = [
+            Terminals().visitScalarItem(scalar)
+            for scalar in ctx_list
+            if isinstance(scalar, Parser.ScalarItemContext)
+        ]
         children_nodes = var_ids_nodes + constant_nodes
 
         if len(children_nodes) > 1:
             raise Exception("Only one operand is allowed in Eval")
 
         # Reference manual says it is mandatory.
-        language_name = [language for language in ctx_list if
-                         isinstance(language,
-                                    TerminalNodeImpl) and language.getSymbol().type == Parser.STRING_CONSTANT]
+        language_name = [
+            language
+            for language in ctx_list
+            if isinstance(language, TerminalNodeImpl)
+            and language.getSymbol().type == Parser.STRING_CONSTANT
+        ]
         if len(language_name) == 0:
             # AST_ASTCONSTRUCTOR.12
-            raise SemanticError("1-4-2-1", option='language')
+            raise SemanticError("1-4-2-1", option="language")
         # Reference manual says it is mandatory.
-        output_node = [Terminals().visitOutputParameterTypeComponent(output) for output in ctx_list
-                       if
-                       isinstance(output, Parser.OutputParameterTypeComponentContext)]
+        output_node = [
+            Terminals().visitOutputParameterTypeComponent(output)
+            for output in ctx_list
+            if isinstance(output, Parser.OutputParameterTypeComponentContext)
+        ]
         if len(output_node) == 0:
             # AST_ASTCONSTRUCTOR.13
-            raise SemanticError("1-4-2-1", option='output')
+            raise SemanticError("1-4-2-1", option="output")
 
-        return EvalOp(name=routine_name, operands=children_nodes[0], output=output_node[0],
-                      language=language_name[0].getSymbol().text)
+        return EvalOp(
+            name=routine_name,
+            operands=children_nodes[0],
+            output=output_node[0],
+            language=language_name[0].getSymbol().text,
+        )
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
         """
-            | CAST LPAREN exprComponent COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN         # castExprComponent
+        | CAST LPAREN exprComponent COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN         # castExprComponent  # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -297,19 +328,30 @@ class ExprComp(VtlVisitor):
         token = c.getSymbol()
 
         op = token.text
-        expr_node = [self.visitExprComponent(expr) for expr in ctx_list if
-                     isinstance(expr, Parser.ExprComponentContext)]
-        basic_scalar_type = [Terminals().visitBasicScalarType(type_) for type_ in ctx_list if
-                             isinstance(type_, Parser.BasicScalarTypeContext)]
+        expr_node = [
+            self.visitExprComponent(expr)
+            for expr in ctx_list
+            if isinstance(expr, Parser.ExprComponentContext)
+        ]
+        basic_scalar_type = [
+            Terminals().visitBasicScalarType(type_)
+            for type_ in ctx_list
+            if isinstance(type_, Parser.BasicScalarTypeContext)
+        ]
 
-        [Terminals().visitValueDomainName(valueD) for valueD in ctx_list if
-         isinstance(valueD, Parser.ValueDomainNameContext)]
+        [
+            Terminals().visitValueDomainName(valueD)
+            for valueD in ctx_list
+            if isinstance(valueD, Parser.ValueDomainNameContext)
+        ]
 
         if len(ctx_list) > 6:
-            param_node = [ParamConstant('PARAM_CAST', str_.symbol.text.strip('"')) for str_ in
-                          ctx_list if
-                          isinstance(str_,
-                                     TerminalNodeImpl) and str_.getSymbol().type == Parser.STRING_CONSTANT]
+            param_node = [
+                ParamConstant("PARAM_CAST", str_.symbol.text.strip('"'))
+                for str_ in ctx_list
+                if isinstance(str_, TerminalNodeImpl)
+                and str_.getSymbol().type == Parser.STRING_CONSTANT
+            ]
         else:
             param_node = []
 
@@ -330,13 +372,13 @@ class ExprComp(VtlVisitor):
         if isinstance(c, Parser.ExprComponentContext):
             return self.visitExprComponent(c)
         elif isinstance(c, TerminalNodeImpl):
-            return ID('OPTIONAL', c.getSymbol().text)
+            return ID("OPTIONAL", c.getSymbol().text)
         else:
             raise NotImplementedError
 
     """
                             -----------------------------------
-                                    String Functions             
+                                    String Functions
                             -----------------------------------
         """
 
@@ -370,8 +412,9 @@ class ExprComp(VtlVisitor):
 
         token = c.getSymbol()
         childrens = [expr for expr in ctx_list if isinstance(expr, Parser.ExprComponentContext)]
-        params = [param for param in ctx_list if
-                  isinstance(param, Parser.OptionalExprComponentContext)]
+        params = [
+            param for param in ctx_list if isinstance(param, Parser.OptionalExprComponentContext)
+        ]
 
         op_node = token.text
         for children in childrens:
@@ -388,10 +431,16 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         token = c.getSymbol()
-        expressions = [self.visitExprComponent(expr) for expr in ctx_list if
-                       isinstance(expr, Parser.ExprComponentContext)]
-        params = [self.visitOptionalExprComponent(param) for param in ctx_list if
-                  isinstance(param, Parser.OptionalExprComponentContext)]
+        expressions = [
+            self.visitExprComponent(expr)
+            for expr in ctx_list
+            if isinstance(expr, Parser.ExprComponentContext)
+        ]
+        params = [
+            self.visitOptionalExprComponent(param)
+            for param in ctx_list
+            if isinstance(param, Parser.OptionalExprComponentContext)
+        ]
 
         op_node = token.text
 
@@ -405,10 +454,16 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         token = c.getSymbol()
-        expressions = [self.visitExprComponent(expr) for expr in ctx_list if
-                       isinstance(expr, Parser.ExprComponentContext)]
-        params = [self.visitOptionalExprComponent(param) for param in ctx_list if
-                  isinstance(param, Parser.OptionalExprComponentContext)]
+        expressions = [
+            self.visitExprComponent(expr)
+            for expr in ctx_list
+            if isinstance(expr, Parser.ExprComponentContext)
+        ]
+        params = [
+            self.visitOptionalExprComponent(param)
+            for param in ctx_list
+            if isinstance(param, Parser.OptionalExprComponentContext)
+        ]
 
         op_node = token.text
 
@@ -419,7 +474,7 @@ class ExprComp(VtlVisitor):
 
     """
                         -----------------------------------
-                                Numeric Component Functions             
+                                Numeric Component Functions
                         -----------------------------------
     """
 
@@ -442,8 +497,9 @@ class ExprComp(VtlVisitor):
         operand_node = self.visitExprComponent(ctx_list[2])
         return UnaryOp(op_node, operand_node)
 
-    def visitUnaryWithOptionalNumericComponent(self,
-                                               ctx: Parser.UnaryWithOptionalNumericComponentContext):
+    def visitUnaryWithOptionalNumericComponent(
+        self, ctx: Parser.UnaryWithOptionalNumericComponentContext
+    ):
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -452,8 +508,9 @@ class ExprComp(VtlVisitor):
 
         token = c.getSymbol()
         childrens = [expr for expr in ctx_list if isinstance(expr, Parser.ExprComponentContext)]
-        params = [param for param in ctx_list if
-                  isinstance(param, Parser.OptionalExprComponentContext)]
+        params = [
+            param for param in ctx_list if isinstance(param, Parser.OptionalExprComponentContext)
+        ]
 
         op_node = token.text
         for children in childrens:
@@ -478,7 +535,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Time Functions             
+                                    Time Functions
                             -----------------------------------
         """
 
@@ -506,8 +563,11 @@ class ExprComp(VtlVisitor):
         c = ctx_list[0]
 
         op = c.getSymbol().text
-        operand_node = [self.visitExprComponent(operand) for operand in ctx_list if
-                        isinstance(operand, Parser.ExprComponentContext)]
+        operand_node = [
+            self.visitExprComponent(operand)
+            for operand in ctx_list
+            if isinstance(operand, Parser.ExprComponentContext)
+        ]
 
         if len(operand_node) == 0:
             # AST_ASTCONSTRUCTOR.15
@@ -524,7 +584,7 @@ class ExprComp(VtlVisitor):
 
         op = c.getSymbol().text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = Constant('INTEGER_CONSTANT', int(ctx_list[4].getSymbol().text))
+        right_node = Constant("INTEGER_CONSTANT", int(ctx_list[4].getSymbol().text))
 
         return BinOp(left=left_node, op=op, right=right_node)
 
@@ -539,7 +599,7 @@ class ExprComp(VtlVisitor):
         children_node = [self.visitExprComponent(ctx_list[2])]
 
         if len(ctx_list) > 4:
-            param_constant_node = [ParamConstant('PARAM_TIMESERIES', ctx_list[4].getSymbol().text)]
+            param_constant_node = [ParamConstant("PARAM_TIMESERIES", ctx_list[4].getSymbol().text)]
         else:
             param_constant_node = []
 
@@ -547,8 +607,8 @@ class ExprComp(VtlVisitor):
 
     def visitTimeAggAtomComponent(self, ctx: Parser.TimeAggAtomComponentContext):
         """
-        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))?
-        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
+        TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? # noqa E501
+        (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent; # noqa E501
         """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -561,9 +621,12 @@ class ExprComp(VtlVisitor):
             # raise SemanticError("periodIndFrom is not allowed in Time_agg")
             period_from = str(ctx.periodIndFrom.text)[1:-1]
 
-        conf = [str_.getSymbol().text for str_ in ctx_list if
-                isinstance(str_, TerminalNodeImpl) and str_.getSymbol().type in [Parser.FIRST,
-                                                                                 Parser.LAST]]
+        conf = [
+            str_.getSymbol().text
+            for str_ in ctx_list
+            if isinstance(str_, TerminalNodeImpl)
+            and str_.getSymbol().type in [Parser.FIRST, Parser.LAST]
+        ]
 
         if len(conf) == 0:
             conf = None
@@ -582,8 +645,9 @@ class ExprComp(VtlVisitor):
         if operand_node is None:
             # AST_ASTCONSTRUCTOR.17
             raise SemanticError("1-4-2-2")
-        return TimeAggregation(op=op, operand=operand_node, period_to=period_to,
-                               period_from=period_from, conf=conf)
+        return TimeAggregation(
+            op=op, operand=operand_node, period_to=period_to, period_from=period_from, conf=conf
+        )
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
         c = list(ctx.getChildren())[0]
@@ -591,12 +655,13 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                    Conditional Functions             
+                                    Conditional Functions
                             -----------------------------------
     """
 
-    def visitConditionalFunctionsComponents(self,
-                                            ctx: Parser.ConditionalFunctionsComponentsContext):
+    def visitConditionalFunctionsComponents(
+        self, ctx: Parser.ConditionalFunctionsComponentsContext
+    ):
         if isinstance(ctx, Parser.NvlAtomComponentContext):
             return self.visitNvlAtomComponent(ctx)
         else:
@@ -615,7 +680,7 @@ class ExprComp(VtlVisitor):
 
     """
                         -----------------------------------
-                            Comparison Components Functions             
+                            Comparison Components Functions
                         -----------------------------------
     """
 
@@ -664,7 +729,7 @@ class ExprComp(VtlVisitor):
 
     """
                             -----------------------------------
-                                Aggregate Components Functions             
+                                Aggregate Components Functions
                             -----------------------------------
         """
 
@@ -689,7 +754,7 @@ class ExprComp(VtlVisitor):
 
     """
                                 -----------------------------------
-                                        Analytic Components Functions             
+                                    Analytic Components Functions
                                 -----------------------------------
     """
 
@@ -729,8 +794,9 @@ class ExprComp(VtlVisitor):
             else:
                 raise NotImplementedError
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
-                        window=params)
+        return Analytic(
+            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+        )
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -749,8 +815,9 @@ class ExprComp(VtlVisitor):
             elif isinstance(c, Parser.OrderByClauseContext):
                 order_by = Terminals().visitOrderByClause(c)
                 continue
-            elif isinstance(c, Parser.SignedIntegerContext) or isinstance(c,
-                                                                          Parser.ScalarItemContext):
+            elif isinstance(c, Parser.SignedIntegerContext) or isinstance(
+                c, Parser.ScalarItemContext
+            ):
                 if params is None:
                     params = []
                 if isinstance(c, Parser.SignedIntegerContext):
@@ -759,8 +826,9 @@ class ExprComp(VtlVisitor):
                     params.append(Terminals().visitScalarItem(c))
                 continue
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
-                        params=params)
+        return Analytic(
+            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params
+        )
 
     def visitRankAnComponent(self, ctx: Parser.RankAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -778,8 +846,9 @@ class ExprComp(VtlVisitor):
                 order_by = Terminals().visitOrderByClause(c)
                 continue
 
-        return Analytic(op=op_node, operand=None, partition_by=partition_by, order_by=order_by,
-                        window=None)
+        return Analytic(
+            op=op_node, operand=None, partition_by=partition_by, order_by=order_by, window=None
+        )
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -792,5 +861,6 @@ class ExprComp(VtlVisitor):
 
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by,
-                        window=params)
+        return Analytic(
+            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+        )

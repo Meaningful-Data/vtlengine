@@ -18,18 +18,21 @@ from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, EQ, GT, GTE, IN, ISNULL,
 from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, String, Number, Null
 import vtlengine.Operators as Operator
 
+
 class Unary(Operator.Unary):
     """
     Unary comparison operator. It returns a boolean.
     """
+
     return_type = Boolean
 
 
 class IsNull(Unary):
     """
-    Class that allows to perform the isnull comparison operator. It has different class methods to allow performing
-    the operation with different datatypes.
+    Class that allows to perform the isnull comparison operator.
+    It has different class methods to allow performing the operation with different datatypes.
     """
+
     op = ISNULL
     py_op = pd.isnull
 
@@ -59,6 +62,7 @@ class Binary(Operator.Binary):
     """
     Binary comparison operator. It returns a boolean.
     """
+
     return_type = Boolean
 
     @classmethod
@@ -94,14 +98,16 @@ class Binary(Operator.Binary):
         if scalar is None:
             return pd.Series(None, index=series.index)
         if series_left:
-            return series.map(lambda x: cls.op_func(x, scalar), na_action='ignore')
+            return series.map(lambda x: cls.op_func(x, scalar), na_action="ignore")
         else:
-            return series.map(lambda x: cls.op_func(scalar, x), na_action='ignore')
+            return series.map(lambda x: cls.op_func(scalar, x), na_action="ignore")
 
     @classmethod
     def apply_return_type_dataset(
-            cls, result_dataset: Dataset, left_operand: Dataset,
-            right_operand: Union[Dataset, Scalar, ScalarSet]
+        cls,
+        result_dataset: Dataset,
+        left_operand: Dataset,
+        right_operand: Union[Dataset, Scalar, ScalarSet],
     ) -> None:
         super().apply_return_type_dataset(result_dataset, left_operand, right_operand)
         is_mono_measure = len(result_dataset.get_measures()) == 1
@@ -111,7 +117,7 @@ class Binary(Operator.Binary):
                 name=COMP_NAME_MAPPING[Boolean],
                 data_type=Boolean,
                 role=Role.MEASURE,
-                nullable=measure.nullable
+                nullable=measure.nullable,
             )
             result_dataset.delete_component(measure.name)
             result_dataset.add_component(component)
@@ -153,13 +159,11 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def apply_operation_two_series(cls,
-                                   left_series: Any,
-                                   right_series: ScalarSet) -> Any:
+    def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
         if right_series.data_type == Null:
             return pd.Series(None, index=left_series.index)
 
-        return left_series.map(lambda x: x in right_series, na_action='ignore')
+        return left_series.map(lambda x: x in right_series, na_action="ignore")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
@@ -174,7 +178,7 @@ class NotIn(Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         series_result = In.apply_operation_two_series(left_series, right_series)
-        return series_result.map(lambda x: not x, na_action='ignore')
+        return series_result.map(lambda x: not x, na_action="ignore")
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
@@ -198,17 +202,15 @@ class Between(Operator.Operator):
     return_type = Boolean
     """
     This comparison operator has the following class methods.
-    
+
     Class methods:
         op_function: Sets the data to be manipulated.
-        
-        apply_operation_component: Returns a pandas dataframe with the operation, considering each component with the
-        schema of op_function. 
-        
-        apply_return_type_dataset: Because the result must be a boolean, this function evaluates if the measure 
-        is actually a boolean one.
-        
-        
+        apply_operation_component: Returns a pandas dataframe with the operation,
+
+        considering each component with the schema of op_function.
+
+        apply_return_type_dataset: Because the result must be a boolean,
+        this function evaluates if the measure is actually a boolean one.
     """
 
     @classmethod
@@ -229,9 +231,10 @@ class Between(Operator.Operator):
                 from_data = pd.Series(from_data, index=series.index, dtype=object)
             if not isinstance(to_data, pd.Series):
                 to_data = pd.Series(to_data, index=series.index)
-            df = pd.DataFrame({'operand': series, 'from_data': from_data, 'to_data': to_data})
-            return df.apply(lambda x: cls.op_func(x['operand'], x['from_data'], x['to_data']),
-                            axis=1)
+            df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
+            return df.apply(
+                lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]), axis=1
+            )
 
         return series.map(lambda x: cls.op_func(x, from_data, to_data))
 
@@ -246,7 +249,7 @@ class Between(Operator.Operator):
                     name=COMP_NAME_MAPPING[result_data_type],
                     data_type=result_data_type,
                     role=Role.MEASURE,
-                    nullable=measure.nullable
+                    nullable=measure.nullable,
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
@@ -264,9 +267,11 @@ class Between(Operator.Operator):
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
-            result_components = {comp_name: copy(comp) for comp_name, comp in
-                                 operand.components.items()
-                                 if comp.role == Role.IDENTIFIER or comp.role == Role.MEASURE}
+            result_components = {
+                comp_name: copy(comp)
+                for comp_name, comp in operand.components.items()
+                if comp.role == Role.IDENTIFIER or comp.role == Role.MEASURE
+            }
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(name=operand.name, data=None,
@@ -274,8 +279,9 @@ class Between(Operator.Operator):
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
         else:  # From or To is a DataComponent, or both
-            result = DataComponent(name=operand.name, data=None,
-                                   data_type=cls.return_type, role=Role.MEASURE)
+            result = DataComponent(
+                name=operand.name, data=None, data_type=cls.return_type, role=Role.MEASURE
+            )
 
         if isinstance(operand, Dataset):
             for measure in operand.get_measures():
@@ -335,12 +341,14 @@ class ExistIn(Operator.Operator):
         validate: Sets the identifiers and check if the left one exists in the right one.
         evaluate: Evaluates if the result data type is actually a boolean.
     """
+
     op = IN
 
     # noinspection PyTypeChecker
     @classmethod
-    def validate(cls, dataset_1: Dataset, dataset_2: Dataset,
-                 retain_element: Optional[Boolean]) -> Any:
+    def validate(
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+    ) -> Any:
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 
@@ -356,8 +364,9 @@ class ExistIn(Operator.Operator):
         return result_dataset
 
     @classmethod
-    def evaluate(cls, dataset_1: Dataset, dataset_2: Dataset,
-                 retain_element: Optional[Boolean]) -> Any:
+    def evaluate(
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+    ) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
 
         # Checking the subset
@@ -385,7 +394,7 @@ class ExistIn(Operator.Operator):
 
         # Check for empty values
         if true_results.empty:
-            true_results['bool_var'] = None
+            true_results["bool_var"] = None
         else:
             true_results['bool_var'] = True
         if dataset_1.data is None:
@@ -396,7 +405,7 @@ class ExistIn(Operator.Operator):
         final_result = final_result[reference_identifiers_names + ['bool_var']]
 
         # No null values are returned, only True or False
-        final_result['bool_var'] = final_result['bool_var'].fillna(False)
+        final_result["bool_var"] = final_result["bool_var"].fillna(False)
 
         # Adding to the result dataset
         result_dataset.data = final_result
@@ -404,7 +413,8 @@ class ExistIn(Operator.Operator):
         # Retain only the elements that are specified (True or False)
         if retain_element is not None:
             result_dataset.data = result_dataset.data[
-                result_dataset.data['bool_var'] == retain_element]
+                result_dataset.data["bool_var"] == retain_element
+            ]
             result_dataset.data = result_dataset.data.reset_index(drop=True)
 
         return result_dataset

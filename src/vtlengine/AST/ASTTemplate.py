@@ -6,6 +6,7 @@ Description
 -----------
 Template to start a new visitor for the AST.
 """
+
 from typing import Any
 
 import vtlengine.AST as AST
@@ -208,7 +209,7 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
-        if node.value == '_':
+        if node.value == "_":
             return
         return node.value
 
@@ -277,9 +278,7 @@ class ASTTemplate(NodeVisitor):
                 self.visit(group)
 
     def visit_Analytic(self, node: AST.Analytic) -> None:
-        """
-
-        """
+        """ """
         if node.operand is not None:
             self.visit(node.operand)
 

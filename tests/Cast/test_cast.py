@@ -15,16 +15,15 @@ class CastHelper(TestHelper):
 
 
 class CastExplicitWithoutMask(CastHelper):
-    """
+    """ """
 
-    """
-
-    classTest = 'Cast.CastExplicitWithoutMask'
+    classTest = "Cast.CastExplicitWithoutMask"
 
     def test_GL_461_1(self):
-        code = 'GL_461_1'
+        code = "GL_461_1"
         number_inputs = 1
 
         error_code = "1-1-5-5"
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )

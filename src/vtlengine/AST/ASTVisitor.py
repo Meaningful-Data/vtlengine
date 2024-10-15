@@ -11,7 +11,6 @@ from typing import Any
 
 class NodeVisitor(object):
     """
-
     """
 
     def visit(self, node: Any):
@@ -24,7 +23,6 @@ class NodeVisitor(object):
 
     def generic_visit(self, node):
         """
-
         """
         # AST_ASTVISITOR.1
-        raise Exception('No visit_{} method'.format(type(node).__name__))
+        raise Exception("No visit_{} method".format(type(node).__name__))

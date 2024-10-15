@@ -7,12 +7,24 @@ from vtlengine.DataTypes import Integer, Number, unary_implicit_promotion, Boole
     TimePeriod, Date
 
 import vtlengine.Operators as Operator
-from vtlengine.AST.Grammar.tokens import (AVG, COUNT, MAX, MEDIAN, MIN, STDDEV_POP, STDDEV_SAMP,
-                                          SUM, VAR_POP,
-                                          VAR_SAMP)
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, DURATION_MAPPING_REVERSED, \
-    TimePeriodHandler, \
-    TimeIntervalHandler
+from vtlengine.AST.Grammar.tokens import (
+    AVG,
+    COUNT,
+    MAX,
+    MEDIAN,
+    MIN,
+    STDDEV_POP,
+    STDDEV_SAMP,
+    SUM,
+    VAR_POP,
+    VAR_SAMP,
+)
+from vtlengine.DataTypes.TimeHandling import (
+    DURATION_MAPPING,
+    DURATION_MAPPING_REVERSED,
+    TimePeriodHandler,
+    TimeIntervalHandler,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 
@@ -22,7 +34,7 @@ def extract_grouping_identifiers(identifier_names: List[str],
                                  grouping_components: Any) -> List[str]:
     if group_op == 'group by':
         return grouping_components
-    elif group_op == 'group except':
+    elif group_op == "group except":
         return [comp for comp in identifier_names if comp not in grouping_components]
     else:
         return identifier_names
@@ -36,21 +48,21 @@ class Aggregation(Operator.Unary):
         new_value: List[Optional[str]]
         if cls.op == COUNT:
             return
-        if mode == 'input':
+        if mode == "input":
             to_replace = [None]
-            new_value = ['']
+            new_value = [""]
         else:
-            to_replace = ['']
+            to_replace = [""]
             new_value = [None]
 
         for measure in measures:
             if measure.data_type == Date:
                 if cls.op == MIN:
-                    if mode == 'input':
+                    if mode == "input":
                         # Invalid date only for null values
-                        new_value = ['9999-99-99']
+                        new_value = ["9999-99-99"]
                     else:
-                        to_replace = ['9999-99-99']
+                        to_replace = ["9999-99-99"]
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
             elif measure.data_type == TimePeriod:
                 if mode == 'input':
@@ -94,16 +106,20 @@ class Aggregation(Operator.Unary):
         if group_op is not None:
             for comp_name in grouping_columns:
                 if comp_name not in operand.components:
-                    raise SemanticError("1-1-1-10", op=cls.op, comp_name=comp_name,
-                                        dataset_name=operand.name)
+                    raise SemanticError(
+                        "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                    )
                 if operand.components[comp_name].role != Role.IDENTIFIER:
-                    raise SemanticError("1-1-2-2", op=cls.op,
-                                        id_name=comp_name,
-                                        id_type=operand.components[comp_name].role)
+                    raise SemanticError(
+                        "1-1-2-2",
+                        op=cls.op,
+                        id_name=comp_name,
+                        id_type=operand.components[comp_name].role,
+                    )
 
-            identifiers_to_keep = extract_grouping_identifiers(operand.get_identifiers_names(),
-                                                               group_op,
-                                                               grouping_columns)
+            identifiers_to_keep = extract_grouping_identifiers(
+                operand.get_identifiers_names(), group_op, grouping_columns
+            )
             for comp_name, comp in operand.components.items():
                 if comp.role == Role.IDENTIFIER and comp_name not in identifiers_to_keep:
                     del result_components[comp_name]
@@ -124,19 +140,25 @@ class Aggregation(Operator.Unary):
         if cls.op == COUNT:
             for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
-            new_comp = Component(name="int_var", role=Role.MEASURE, data_type=Integer,
-                                 nullable=True)
+            new_comp = Component(
+                name="int_var", role=Role.MEASURE, data_type=Integer, nullable=True
+            )
             result_components["int_var"] = new_comp
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def _agg_func(cls, df: pd.DataFrame, grouping_keys: Optional[List[str]],
-                  measure_names: Optional[List[str]],
-                  having_expression: Optional[str]) -> pd.DataFrame:
-        grouping_names = [f'"{name}"' for name in
-                          grouping_keys] if grouping_keys is not None else None
+    def _agg_func(
+        cls,
+        df: pd.DataFrame,
+        grouping_keys: Optional[List[str]],
+        measure_names: Optional[List[str]],
+        having_expression: Optional[str],
+    ) -> pd.DataFrame:
+        grouping_names = (
+            [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
+        )
         if grouping_names is not None and len(grouping_names) > 0:
-            grouping = "GROUP BY " + ', '.join(grouping_names)
+            grouping = "GROUP BY " + ", ".join(grouping_names)
         else:
             grouping = ""
 
@@ -145,7 +167,10 @@ class Aggregation(Operator.Unary):
 
         if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
             if grouping_names is not None:
-                query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping} {having_expression}"
+                query = (
+                    f"SELECT {', '.join(grouping_names)}, COUNT() AS "
+                    f"int_var from df {grouping} {having_expression}"
+                )
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
             return duckdb.query(query).to_df()
@@ -155,14 +180,19 @@ class Aggregation(Operator.Unary):
             for e in measure_names:
                 e = f'"{e}"'
                 if cls.type_to_check is not None and cls.op != COUNT:
-                    functions += f"{cls.py_op}(CAST({e} AS REAL)) AS {e}, "  # Count can only be one here
+                    functions += (
+                        f"{cls.py_op}(CAST({e} AS REAL)) AS {e}, "  # Count can only be one here
+                    )
                 elif cls.op == COUNT:
                     functions += f"{cls.py_op}({e}) AS int_var, "
                     break
                 else:
                     functions += f"{cls.py_op}({e}) AS {e}, "
             if grouping_names is not None and len(grouping_names) > 0:
-                query = f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} from df {grouping} {having_expression}"
+                query = (
+                    f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
+                    f"from df {grouping} {having_expression}"
+                )
             else:
                 query = f"SELECT {functions[:-2]} from df"
 
@@ -172,17 +202,19 @@ class Aggregation(Operator.Unary):
         try:
             return duckdb.query(query).to_df()
         except RuntimeError as e:
-            if 'Conversion' in e.args[0]:
+            if "Conversion" in e.args[0]:
                 raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
                 raise SemanticError("2-1-1-1", op=cls.op)
 
     @classmethod
-    def evaluate(cls,
-                 operand: Dataset,
-                 group_op: Optional[str],
-                 grouping_columns: Optional[List[str]],
-                 having_expr: Optional[str]) -> Dataset:
+    def evaluate(
+        cls,
+        operand: Dataset,
+        group_op: Optional[str],
+        grouping_columns: Optional[List[str]],
+        having_expr: Optional[str],
+    ) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
@@ -191,22 +223,21 @@ class Aggregation(Operator.Unary):
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
             result_df = result_df.dropna(subset=measure_names, how="any")
-        cls._handle_data_types(result_df, operand.get_measures(), 'input')
-        result_df = cls._agg_func(result_df, grouping_keys, measure_names,
-                                  having_expr)
+        cls._handle_data_types(result_df, operand.get_measures(), "input")
+        result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
 
-        cls._handle_data_types(result_df, operand.get_measures(), 'result')
+        cls._handle_data_types(result_df, operand.get_measures(), "result")
         # Handle correct order on result
         aux_df = operand.data[grouping_keys].drop_duplicates() if operand.data is not None else pd.DataFrame()
         if len(grouping_keys) == 0:
             aux_df = result_df
             aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
             if cls.op == COUNT and len(result_df) == 0:
-                aux_df['int_var'] = 0
+                aux_df["int_var"] = 0
         elif len(aux_df) == 0:
             aux_df = pd.DataFrame(columns=result.get_components_names())
         else:
-            aux_df = pd.merge(aux_df, result_df, how='left', on=grouping_keys)
+            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
         result.data = aux_df
@@ -215,64 +246,64 @@ class Aggregation(Operator.Unary):
 
 class Max(Aggregation):
     op = MAX
-    py_op = 'max'
+    py_op = "max"
 
 
 class Min(Aggregation):
     op = MIN
-    py_op = 'min'
+    py_op = "min"
 
 
 class Sum(Aggregation):
     op = SUM
     type_to_check = Number
-    py_op = 'sum'
+    py_op = "sum"
 
 
 class Count(Aggregation):
     op = COUNT
     type_to_check = None
     return_type = Integer
-    py_op = 'count'
+    py_op = "count"
 
 
 class Avg(Aggregation):
     op = AVG
     type_to_check = Number
     return_type = Number
-    py_op = 'avg'
+    py_op = "avg"
 
 
 class Median(Aggregation):
     op = MEDIAN
     type_to_check = Number
     return_type = Number
-    py_op = 'median'
+    py_op = "median"
 
 
 class PopulationStandardDeviation(Aggregation):
     op = STDDEV_POP
     type_to_check = Number
     return_type = Number
-    py_op = 'stddev_pop'
+    py_op = "stddev_pop"
 
 
 class SampleStandardDeviation(Aggregation):
     op = STDDEV_SAMP
     type_to_check = Number
     return_type = Number
-    py_op = 'stddev_samp'
+    py_op = "stddev_samp"
 
 
 class PopulationVariance(Aggregation):
     op = VAR_POP
     type_to_check = Number
     return_type = Number
-    py_op = 'var_pop'
+    py_op = "var_pop"
 
 
 class SampleVariance(Aggregation):
     op = VAR_SAMP
     type_to_check = Number
     return_type = Number
-    py_op = 'var_samp'
+    py_op = "var_samp"

@@ -54,18 +54,26 @@ class Join(Operator):
         for op in operands:
             for comp in op.components.values():
                 if comp.name in using:
-                    is_identifier = all(operand.components[comp.name].role == Role.IDENTIFIER
-                                        for operand in operands if
-                                        comp.name in operand.get_components_names())
-                    comp.role = Role.IDENTIFIER if is_identifier else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+                    is_identifier = all(
+                        operand.components[comp.name].role == Role.IDENTIFIER
+                        for operand in operands
+                        if comp.name in operand.get_components_names()
+                    )
+                    comp.role = (
+                        Role.IDENTIFIER
+                        if is_identifier
+                        else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+                    )
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)
                 if comp.role == Role.IDENTIFIER:
                     nullability[comp.name] = False
                 elif comp.name in totally_common:
                     nullability[comp.name] |= copy(comp.nullable)
-                elif cls.how == 'outer' or (
-                        cls.how == 'left' and comp.name not in cls.reference_dataset.get_components_names()):
+                elif cls.how == "outer" or (
+                    cls.how == "left"
+                    and comp.name not in cls.reference_dataset.get_components_names()
+                ):
                     nullability[comp.name] = True
                 else:
                     nullability[comp.name] = copy(comp.nullable)
@@ -78,12 +86,12 @@ class Join(Operator):
                 component.nullable = nullability[component_name]
 
                 if component_name in common and component_name not in using:
-                    if component.role != Role.IDENTIFIER or cls.how == 'cross':
-                        new_name = f'{operand_name}#{component_name}'
+                    if component.role != Role.IDENTIFIER or cls.how == "cross":
+                        new_name = f"{operand_name}#{component_name}"
                         if new_name in merged_components:
                             raise SemanticError("1-1-13-9", comp_name=new_name)
                         while new_name in common:
-                            new_name += '_dup'
+                            new_name += "_dup"
                         merged_components[new_name] = component
                         merged_components[new_name].name = new_name
                     else:
@@ -91,7 +99,8 @@ class Join(Operator):
                 else:
                     if component_name in using and component_name in merged_components:
                         data_type = binary_implicit_promotion(
-                            merged_components[component_name].data_type, component.data_type)
+                            merged_components[component_name].data_type, component.data_type
+                        )
                         component.data_type = data_type
                     merged_components[component_name] = component
 
@@ -102,7 +111,8 @@ class Join(Operator):
         str, Component]:
         components = {}
         inter_identifiers = cls.get_components_intersection(
-            *[op.get_identifiers_names() for op in operands])
+            *[op.get_identifiers_names() for op in operands]
+        )
 
         for op in operands:
             ids = op.get_identifiers_names()
@@ -129,7 +139,8 @@ class Join(Operator):
             return result
 
         common_measures = cls.get_components_intersection(
-            *[op.get_measures_names() + op.get_attributes_names() for op in operands])
+            *[op.get_measures_names() + op.get_attributes_names() for op in operands]
+        )
         for op in operands:
             if op.data is not None:
                 for column in op.data.columns.tolist():
@@ -170,8 +181,11 @@ class Join(Operator):
         for op in operands:
             if len(op.get_identifiers()) == 0:
                 raise SemanticError("1-3-27", op=cls.op)
-        cls.reference_dataset = max(operands, key=lambda x: len(
-            x.get_identifiers_names())) if cls.how not in ['cross', 'left'] else operands[0]
+        cls.reference_dataset = (
+            max(operands, key=lambda x: len(x.get_identifiers_names()))
+            if cls.how not in ["cross", "left"]
+            else operands[0]
+        )
         cls.identifiers_validation(operands, using)
         components = cls.merge_components(operands, using)
         if len(set(components.keys())) != len(components):
@@ -190,13 +204,18 @@ class Join(Operator):
 
         for op_name, identifiers in info.items():
             if op_name != cls.reference_dataset.name and not set(identifiers).issubset(
-                    set(info[cls.reference_dataset.name])):
+                set(info[cls.reference_dataset.name])
+            ):
                 if using is None:
                     missing_components = list(
-                        set(identifiers) - set(info[cls.reference_dataset.name]))
-                    raise SemanticError("1-1-13-11", op=cls.op,
-                                        dataset_reference=cls.reference_dataset.name,
-                                        component=missing_components[0])
+                        set(identifiers) - set(info[cls.reference_dataset.name])
+                    )
+                    raise SemanticError(
+                        "1-1-13-11",
+                        op=cls.op,
+                        dataset_reference=cls.reference_dataset.name,
+                        component=missing_components[0],
+                    )
         if using is None:
             return
 
@@ -225,7 +244,7 @@ class Join(Operator):
 
 
 class InnerJoin(Join):
-    how = 'inner'
+    how = "inner"
 
     @classmethod
     def generate_result_components(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dict[
@@ -237,18 +256,19 @@ class InnerJoin(Join):
         components = {}
         for op in operands:
             components.update(
-                {id: op.components[id] for id in using if id in op.get_measures_names()})
+                {id: op.components[id] for id in using if id in op.get_measures_names()}
+            )
         for op in operands:
             components.update({id: op.components[id] for id in op.get_identifiers_names()})
         return components
 
 
 class LeftJoin(Join):
-    how = 'left'
+    how = "left"
 
 
 class FullJoin(Join):
-    how = 'outer'
+    how = "outer"
 
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> None:
@@ -258,14 +278,15 @@ class FullJoin(Join):
             if op is cls.reference_dataset:
                 continue
             if len(op.get_identifiers_names()) != len(
-                    cls.reference_dataset.get_identifiers_names()):
+                cls.reference_dataset.get_identifiers_names()
+            ):
                 raise SemanticError("1-1-13-13", op=cls.op)
             if op.get_identifiers_names() != cls.reference_dataset.get_identifiers_names():
                 raise SemanticError("1-1-13-12", op=cls.op)
 
 
 class CrossJoin(Join):
-    how = 'cross'
+    how = "cross"
 
     @classmethod
     def execute(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dataset:
@@ -317,7 +338,8 @@ class Apply(Operator):
     def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
         if not isinstance(child, BinOp):
             raise Exception(
-                f"Invalid expression {child} on apply operator. Only BinOp are accepted")
+                f"Invalid expression {child} on apply operator. Only BinOp are accepted"
+            )
         if child.op not in op_map:
             raise Exception(f"Operator {child.op} not implemented")
         if hasattr(child.left, 'value') and hasattr(child.right, 'value'):
@@ -339,13 +361,20 @@ class Apply(Operator):
         data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
 
         for component in components.values():
-            component.name = component.name[len(prefix):] if (
-                    component.name.startswith(
-                        prefix) and component.role is not Role.IDENTIFIER) else component.name
+            component.name = (
+                component.name[len(prefix) :]
+                if (component.name.startswith(prefix) and component.role is not Role.IDENTIFIER)
+                else component.name
+            )
         components = {component.name: component for component in components.values()}
-        data.rename(columns={column: column[len(prefix):] for column in data.columns if
-                             column.startswith(prefix)},
-                    inplace=True)
+        data.rename(
+            columns={
+                column: column[len(prefix) :]
+                for column in data.columns
+                if column.startswith(prefix)
+            },
+            inplace=True,
+        )
         return Dataset(name=name, components=components, data=data)
 
     @classmethod

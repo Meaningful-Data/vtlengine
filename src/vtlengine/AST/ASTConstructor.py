@@ -14,7 +14,14 @@ from vtlengine.AST import (
     Assignment,
     PersistentAssignment,
     Operator,
-    Argument, DPRuleset, HRBinOp, DPRule, HRuleset, DefIdentifier, HRule, HRUnOp,
+    Argument,
+    DPRuleset,
+    HRBinOp,
+    DPRule,
+    HRuleset,
+    DefIdentifier,
+    HRule,
+    HRUnOp,
 )
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
@@ -51,8 +58,9 @@ class ASTVisitor(VtlVisitor):
         ctx_list = list(ctx.getChildren())
 
         statements_nodes = []
-        statements = [statement for statement in ctx_list if
-                      isinstance(statement, Parser.StatementContext)]
+        statements = [
+            statement for statement in ctx_list if isinstance(statement, Parser.StatementContext)
+        ]
         if len(statements) != 0:
             for statement in statements:
                 statements_nodes.append(self.visitStatement(statement))
@@ -119,10 +127,10 @@ class ASTVisitor(VtlVisitor):
 
     def visitDefineExpression(self, ctx: Parser.DefineExpressionContext):
         """
-         defExpr: defOperator
-                | defDatapoint
-                | defHierarchical
-                ;
+        defExpr: defOperator
+               | defDatapoint
+               | defHierarchical
+               ;
         """
         if isinstance(ctx, Parser.DefOperatorContext):
             return self.visitDefOperator(ctx)
@@ -135,40 +143,45 @@ class ASTVisitor(VtlVisitor):
 
     def visitDefOperator(self, ctx: Parser.DefOperatorContext):
         """
-            DEFINE OPERATOR operatorID LPAREN (parameterItem (COMMA parameterItem)*)? RPAREN
-            (RETURNS outputParameterType)? IS (expr) END OPERATOR        # defOperator        """
+        DEFINE OPERATOR operatorID LPAREN (parameterItem (COMMA parameterItem)*)? RPAREN
+        (RETURNS outputParameterType)? IS (expr) END OPERATOR        # defOperator"""
         ctx_list = list(ctx.getChildren())
 
         operator = Terminals().visitOperatorID(ctx_list[2])
-        parameters = [self.visitParameterItem(parameter) for parameter in ctx_list if
-                      isinstance(parameter, Parser.ParameterItemContext)]
+        parameters = [
+            self.visitParameterItem(parameter)
+            for parameter in ctx_list
+            if isinstance(parameter, Parser.ParameterItemContext)
+        ]
         return_ = [
             Terminals().visitOutputParameterType(datatype)
             for datatype in ctx_list
             if isinstance(datatype, Parser.OutputParameterTypeContext)
         ]
         # Here should be modified if we want to include more than one expr per function.
-        expr = \
-        [Expr().visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)][0]
+        expr = [
+            Expr().visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)
+        ][0]
 
         if len(return_) == 0:
             raise SemanticError("1-4-2-5", op=operator)
         else:
             return_node = return_[0]
 
-        return Operator(op=operator, parameters=parameters, output_type=return_node,
-                        expression=expr)
+        return Operator(
+            op=operator, parameters=parameters, output_type=return_node, expression=expr
+        )
 
     """
                         -----------------------------------
-                                Define Datapoint             
+                                Define Datapoint
                         -----------------------------------
     """
 
     def visitDefDatapointRuleset(self, ctx: Parser.DefDatapointRulesetContext):
         """
-            DEFINE DATAPOINT RULESET rulesetID LPAREN rulesetSignature RPAREN IS ruleClauseDatapoint
-            END DATAPOINT RULESET                            # defDatapointRuleset
+        DEFINE DATAPOINT RULESET rulesetID LPAREN rulesetSignature RPAREN IS ruleClauseDatapoint
+        END DATAPOINT RULESET                            # defDatapointRuleset
         """
 
         ctx_list = list(ctx.getChildren())
@@ -177,8 +190,12 @@ class ASTVisitor(VtlVisitor):
         signature_type, ruleset_elements = self.visitRulesetSignature(ctx_list[5])
         ruleset_rules = self.visitRuleClauseDatapoint(ctx_list[8])
 
-        return DPRuleset(name=ruleset_name, params=ruleset_elements, rules=ruleset_rules,
-                         signature_type=signature_type)
+        return DPRuleset(
+            name=ruleset_name,
+            params=ruleset_elements,
+            rules=ruleset_rules,
+            signature_type=signature_type,
+        )
 
     def visitRulesetSignature(self, ctx: Parser.RulesetSignatureContext):
         """
@@ -187,19 +204,29 @@ class ASTVisitor(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         signature_type = ctx_list[0].getSymbol().text
 
-        value_domains = [value_domain for value_domain in ctx_list if
-                         isinstance(value_domain, TerminalNodeImpl) and
-                         value_domain.getSymbol().type == Parser.VALUE_DOMAIN]
+        value_domains = [
+            value_domain
+            for value_domain in ctx_list
+            if isinstance(value_domain, TerminalNodeImpl)
+            and value_domain.getSymbol().type == Parser.VALUE_DOMAIN
+        ]
         if len(value_domains) != 0:
-            kind = 'ValuedomainID'
+            kind = "ValuedomainID"
 
-        variables = [variable for variable in ctx_list if isinstance(variable, TerminalNodeImpl) and
-                     variable.getSymbol().type == Parser.VARIABLE]
+        variables = [
+            variable
+            for variable in ctx_list
+            if isinstance(variable, TerminalNodeImpl)
+            and variable.getSymbol().type == Parser.VARIABLE
+        ]
         if len(variables) != 0:
-            kind = 'ComponentID'
+            kind = "ComponentID"
 
-        component_nodes = [Terminals().visitSignature(component, kind) for component in ctx_list if
-                           isinstance(component, Parser.SignatureContext)]
+        component_nodes = [
+            Terminals().visitSignature(component, kind)
+            for component in ctx_list
+            if isinstance(component, Parser.SignatureContext)
+        ]
 
         return signature_type, component_nodes
 
@@ -209,8 +236,11 @@ class ASTVisitor(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        ruleset_rules = [self.visitRuleItemDatapoint(ruleId) for ruleId in ctx_list if
-                         isinstance(ruleId, Parser.RuleItemDatapointContext)]
+        ruleset_rules = [
+            self.visitRuleItemDatapoint(ruleId)
+            for ruleId in ctx_list
+            if isinstance(ruleId, Parser.RuleItemDatapointContext)
+        ]
         return ruleset_rules
 
     def visitRuleItemDatapoint(self, ctx: Parser.RuleItemDatapointContext):
@@ -219,15 +249,25 @@ class ASTVisitor(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        when = [whens for whens in ctx_list if
-                isinstance(whens, TerminalNodeImpl) and whens.getSymbol().type == Parser.WHEN]
-        rule_name = [rule_name.getSymbol().text
-                     if isinstance(rule_name,
-                                   TerminalNodeImpl) and rule_name.getSymbol().type == Parser.IDENTIFIER
-                     else None
-                     for rule_name in ctx_list][0]
-        expr_node = [ExprComp().visitExprComponent(rule_node) for rule_node in ctx_list if
-                     isinstance(rule_node, Parser.ExprComponentContext)]
+        when = [
+            whens
+            for whens in ctx_list
+            if isinstance(whens, TerminalNodeImpl) and whens.getSymbol().type == Parser.WHEN
+        ]
+        rule_name = [
+            (
+                rule_name.getSymbol().text
+                if isinstance(rule_name, TerminalNodeImpl)
+                and rule_name.getSymbol().type == Parser.IDENTIFIER
+                else None
+            )
+            for rule_name in ctx_list
+        ][0]
+        expr_node = [
+            ExprComp().visitExprComponent(rule_node)
+            for rule_node in ctx_list
+            if isinstance(rule_node, Parser.ExprComponentContext)
+        ]
 
         if len(when) != 0:
             rule_node = HRBinOp(left=expr_node[0], op=when[0].getSymbol().text, right=expr_node[1])
@@ -235,14 +275,20 @@ class ASTVisitor(VtlVisitor):
         else:
             rule_node = expr_node[0]
 
-        er_code = [Terminals().visitErCode(erCode_name) for erCode_name in ctx_list if
-                   isinstance(erCode_name, Parser.ErCodeContext)]
+        er_code = [
+            Terminals().visitErCode(erCode_name)
+            for erCode_name in ctx_list
+            if isinstance(erCode_name, Parser.ErCodeContext)
+        ]
         if len(er_code) == 0:
             er_code = None
         else:
             er_code = er_code[0]
-        er_level = [Terminals().visitErLevel(erLevel_name) for erLevel_name in ctx_list if
-                    isinstance(erLevel_name, Parser.ErLevelContext)]
+        er_level = [
+            Terminals().visitErLevel(erLevel_name)
+            for erLevel_name in ctx_list
+            if isinstance(erLevel_name, Parser.ErLevelContext)
+        ]
         if len(er_level) == 0:
             er_level = None
         else:
@@ -256,12 +302,21 @@ class ASTVisitor(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        argument_name = [Terminals().visitVarID(element) for element in ctx_list
-                         if isinstance(element, Parser.VarIDContext)][0]
-        argument_type = [Terminals().visitInputParameterType(element) for element in ctx_list
-                         if isinstance(element, Parser.InputParameterTypeContext)][0]
-        argument_default = [Terminals().visitScalarItem(element) for element in ctx_list
-                            if isinstance(element, Parser.ScalarItemContext)]
+        argument_name = [
+            Terminals().visitVarID(element)
+            for element in ctx_list
+            if isinstance(element, Parser.VarIDContext)
+        ][0]
+        argument_type = [
+            Terminals().visitInputParameterType(element)
+            for element in ctx_list
+            if isinstance(element, Parser.InputParameterTypeContext)
+        ][0]
+        argument_default = [
+            Terminals().visitScalarItem(element)
+            for element in ctx_list
+            if isinstance(element, Parser.ScalarItemContext)
+        ]
 
         if len(argument_default) == 0:
             argument_default = None
@@ -274,14 +329,14 @@ class ASTVisitor(VtlVisitor):
 
     """
                         -----------------------------------
-                                Define Hierarchical             
+                                Define Hierarchical
                         -----------------------------------
     """
 
     def visitDefHierarchical(self, ctx: Parser.DefHierarchicalContext):
         """
-            DEFINE DATAPOINT RULESET rulesetID LPAREN rulesetSignature RPAREN IS ruleClauseDatapoint
-            END DATAPOINT RULESET                            # defDatapointRuleset
+        DEFINE DATAPOINT RULESET rulesetID LPAREN rulesetSignature RPAREN IS ruleClauseDatapoint
+        END DATAPOINT RULESET                            # defDatapointRuleset
         """
 
         ctx_list = list(ctx.getChildren())
@@ -298,8 +353,12 @@ class ASTVisitor(VtlVisitor):
         if len(ruleset_rules) == 0:
             raise Exception(f"No rules found for the ruleset {ruleset_name}")
 
-        return HRuleset(signature_type=signature_type, name=ruleset_name,
-                        element=ruleset_elements, rules=ruleset_rules)
+        return HRuleset(
+            signature_type=signature_type,
+            name=ruleset_name,
+            element=ruleset_elements,
+            rules=ruleset_rules,
+        )
 
     # TODO Add support for value Domains.
     def visitHierRuleSignature(self, ctx: Parser.HierRuleSignatureContext):
@@ -310,27 +369,37 @@ class ASTVisitor(VtlVisitor):
 
         signature_type = ctx_list[0].getSymbol().text
 
-        value_domain = [valueDomain for valueDomain in ctx_list
-                        if isinstance(valueDomain, TerminalNodeImpl) and
-                        valueDomain.getSymbol().type == Parser.VALUE_DOMAIN]
+        value_domain = [
+            valueDomain
+            for valueDomain in ctx_list
+            if isinstance(valueDomain, TerminalNodeImpl)
+            and valueDomain.getSymbol().type == Parser.VALUE_DOMAIN
+        ]
         if len(value_domain) != 0:
-            kind = 'ValuedomainID'
+            kind = "ValuedomainID"
         else:
-            kind = 'DatasetID'
+            kind = "DatasetID"
 
         conditions = [
-            self.visitValueDomainSignature(vtlsig) for vtlsig in ctx_list if
-            isinstance(vtlsig, Parser.ValueDomainSignatureContext)]
+            self.visitValueDomainSignature(vtlsig)
+            for vtlsig in ctx_list
+            if isinstance(vtlsig, Parser.ValueDomainSignatureContext)
+        ]
 
-        dataset = [identifier for identifier in ctx_list if
-                   isinstance(identifier,
-                              TerminalNodeImpl) and identifier.getSymbol().type == Parser.IDENTIFIER][
-            0]
+        dataset = [
+            identifier
+            for identifier in ctx_list
+            if isinstance(identifier, TerminalNodeImpl)
+            and identifier.getSymbol().type == Parser.IDENTIFIER
+        ][0]
 
         if conditions:
             identifiers_list = [
-                DefIdentifier(value=elto.alias if getattr(elto, "alias", None) else elto.value,
-                              kind=kind) for elto in conditions[0]]
+                DefIdentifier(
+                    value=elto.alias if getattr(elto, "alias", None) else elto.value, kind=kind
+                )
+                for elto in conditions[0]
+            ]
             identifiers_list.append(DefIdentifier(value=dataset.getSymbol().text, kind=kind))
             return signature_type, identifiers_list
         else:
@@ -339,12 +408,15 @@ class ASTVisitor(VtlVisitor):
     # TODO Support for valueDomainSignature.
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):
         """
-        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ;
+        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ; # noqa E501
         """
         # AST_ASTCONSTRUCTOR.7
         ctx_list = list(ctx.getChildren())
-        component_nodes = [Terminals().visitSignature(component) for component in ctx_list if
-                           isinstance(component, Parser.SignatureContext)]
+        component_nodes = [
+            Terminals().visitSignature(component)
+            for component in ctx_list
+            if isinstance(component, Parser.SignatureContext)
+        ]
         return component_nodes
 
     def visitRuleClauseHierarchical(self, ctx: Parser.RuleClauseHierarchicalContext):
@@ -353,8 +425,11 @@ class ASTVisitor(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        rules_nodes = [self.visitRuleItemHierarchical(rule) for rule in ctx_list if
-                       isinstance(rule, Parser.RuleItemHierarchicalContext)]
+        rules_nodes = [
+            self.visitRuleItemHierarchical(rule)
+            for rule in ctx_list
+            if isinstance(rule, Parser.RuleItemHierarchicalContext)
+        ]
         return rules_nodes
 
     def visitRuleItemHierarchical(self, ctx: Parser.RuleItemHierarchicalContext):
@@ -363,22 +438,35 @@ class ASTVisitor(VtlVisitor):
         """
         ctx_list = list(ctx.getChildren())
 
-        rule_name = [rule_name.getSymbol().text
-                     if isinstance(rule_name,
-                                   TerminalNodeImpl) and rule_name.getSymbol().type == Parser.IDENTIFIER
-                     else None
-                     for rule_name in ctx_list][0]
-        rule_node = [self.visitCodeItemRelation(rule_node) for rule_node in ctx_list if
-                     isinstance(rule_node, Parser.CodeItemRelationContext)][0]
+        rule_name = [
+            (
+                rule_name.getSymbol().text
+                if isinstance(rule_name, TerminalNodeImpl)
+                and rule_name.getSymbol().type == Parser.IDENTIFIER
+                else None
+            )
+            for rule_name in ctx_list
+        ][0]
+        rule_node = [
+            self.visitCodeItemRelation(rule_node)
+            for rule_node in ctx_list
+            if isinstance(rule_node, Parser.CodeItemRelationContext)
+        ][0]
 
-        er_code = [Terminals().visitErCode(erCode_name) for erCode_name in ctx_list if
-                   isinstance(erCode_name, Parser.ErCodeContext)]
+        er_code = [
+            Terminals().visitErCode(erCode_name)
+            for erCode_name in ctx_list
+            if isinstance(erCode_name, Parser.ErCodeContext)
+        ]
         if len(er_code) == 0:
             er_code = None
         else:
             er_code = er_code[0]
-        er_level = [Terminals().visitErLevel(erLevel_name) for erLevel_name in ctx_list if
-                    isinstance(erLevel_name, Parser.ErLevelContext)]
+        er_level = [
+            Terminals().visitErLevel(erLevel_name)
+            for erLevel_name in ctx_list
+            if isinstance(erLevel_name, Parser.ErLevelContext)
+        ]
         if len(er_level) == 0:
             er_level = None
         else:
@@ -388,8 +476,8 @@ class ASTVisitor(VtlVisitor):
 
     def visitCodeItemRelation(self, ctx: Parser.CodeItemRelationContext):
         """
-        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ;
-                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
+        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ; # noqa E501
+                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)* # noqa E501
 
         """
 
@@ -405,10 +493,12 @@ class ASTVisitor(VtlVisitor):
             vd_value = Terminals().visitValueDomainValue(ctx_list[0])
             op = Terminals().visitComparisonOperand(ctx_list[1])
 
-        rule_node = HRBinOp(left=DefIdentifier(value=vd_value, kind='CodeItemID'), op=op,
-                            right=None)
-        items = [item for item in ctx_list if
-                 isinstance(item, Parser.CodeItemRelationClauseContext)]
+        rule_node = HRBinOp(
+            left=DefIdentifier(value=vd_value, kind="CodeItemID"), op=op, right=None
+        )
+        items = [
+            item for item in ctx_list if isinstance(item, Parser.CodeItemRelationClauseContext)
+        ]
 
         # Means that no concatenations of operations is needed for that rule.
         if len(items) == 1:
@@ -441,7 +531,7 @@ class ASTVisitor(VtlVisitor):
 
     def visitCodeItemRelationClause(self, ctx: Parser.CodeItemRelationClauseContext):
         """
-        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )?
+        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )? # noqa E501
         """
         ctx_list = list(ctx.getChildren())
 
@@ -451,23 +541,23 @@ class ASTVisitor(VtlVisitor):
             raise NotImplementedError
 
         right_condition = [
-            ExprComp().visitExprComponent(right_condition) for right_condition in ctx_list if
-            isinstance(right_condition, Parser.ComparisonExprCompContext)
+            ExprComp().visitExprComponent(right_condition)
+            for right_condition in ctx_list
+            if isinstance(right_condition, Parser.ComparisonExprCompContext)
         ]
 
         if isinstance(ctx_list[0], TerminalNodeImpl):
             op = ctx_list[0].getSymbol().text
             value = Terminals().visitValueDomainValue(ctx_list[1])
 
-            code_item = DefIdentifier(value=value, kind='CodeItemID')
+            code_item = DefIdentifier(value=value, kind="CodeItemID")
             if right_condition:
                 setattr(code_item, "_right_condition", right_condition[0])
 
-            return HRBinOp(left=None, op=op,
-                           right=code_item)
+            return HRBinOp(left=None, op=op, right=code_item)
         else:
             value = Terminals().visitValueDomainValue(ctx_list[0])
-            code_item = DefIdentifier(value=value, kind='CodeItemID')
+            code_item = DefIdentifier(value=value, kind="CodeItemID")
             if right_condition:
                 setattr(code_item, "_right_condition", right_condition[0])
 

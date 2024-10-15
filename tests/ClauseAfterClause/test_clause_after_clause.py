@@ -19,7 +19,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
     Group 1
     """
 
-    classTest = 'clause_after_clause.ClauseAfterClauseOperatorsTest'
+    classTest = "clause_after_clause.ClauseAfterClauseOperatorsTest"
 
     def test_1(self):
         """
@@ -35,7 +35,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause_after-clause.
         Goal: Check the result of filter after filter in one statement.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 1
         references_names = ["1"]
 
@@ -55,7 +55,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after calc in one statement.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -75,7 +75,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after aggr in one statement.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 1
         references_names = ["1"]
 
@@ -94,7 +94,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after keep in one statement.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -113,7 +113,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after drop in one statement.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 1
         references_names = ["1"]
 
@@ -133,7 +133,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after rename in one statement.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 1
         references_names = ["1"]
 
@@ -152,7 +152,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of filter after sub in one statement.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 1
         references_names = ["1"]
 
@@ -172,7 +172,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after calc in one statement.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -192,7 +192,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after filter in one statement.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 1
         references_names = ["1"]
 
@@ -212,7 +212,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after aggr in one statement.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 1
         references_names = ["1"]
 
@@ -232,7 +232,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after keep in one statement.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 1
         references_names = ["1"]
 
@@ -252,7 +252,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after drop in one statement.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 1
         references_names = ["1"]
 
@@ -272,7 +272,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after rename in one statement.
         """
-        code = '1-1-1-13'
+        code = "1-1-1-13"
         number_inputs = 1
         references_names = ["1"]
 
@@ -292,7 +292,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of calc after sub in one statement.
         """
-        code = '1-1-1-14'
+        code = "1-1-1-14"
         number_inputs = 1
         references_names = ["1"]
 
@@ -311,7 +311,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after keep in one statement.
         """
-        code = '1-1-1-15'
+        code = "1-1-1-15"
         number_inputs = 1
         references_names = ["1"]
 
@@ -330,7 +330,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after filter in one statement.
         """
-        code = '1-1-1-16'
+        code = "1-1-1-16"
         number_inputs = 1
         references_names = ["1"]
 
@@ -349,7 +349,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after calc in one statement.
         """
-        code = '1-1-1-17'
+        code = "1-1-1-17"
         number_inputs = 1
         references_names = ["1"]
 
@@ -368,7 +368,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after aggr in one statement.
         """
-        code = '1-1-1-18'
+        code = "1-1-1-18"
         number_inputs = 1
         references_names = ["1"]
 
@@ -387,7 +387,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after drop in one statement.
         """
-        code = '1-1-1-19'
+        code = "1-1-1-19"
         number_inputs = 1
         references_names = ["1"]
 
@@ -407,7 +407,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after rename in one statement.
         """
-        code = '1-1-1-20'
+        code = "1-1-1-20"
         number_inputs = 1
         references_names = ["1"]
 
@@ -426,7 +426,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of keep after sub in one statement.
         """
-        code = '1-1-1-21'
+        code = "1-1-1-21"
         number_inputs = 1
         references_names = ["1"]
 
@@ -445,7 +445,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after drop in one statement.
         """
-        code = '1-1-1-22'
+        code = "1-1-1-22"
         number_inputs = 1
         references_names = ["1"]
 
@@ -464,7 +464,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after filter in one statement.
         """
-        code = '1-1-1-23'
+        code = "1-1-1-23"
         number_inputs = 1
         references_names = ["1"]
 
@@ -483,7 +483,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after calc in one statement.
         """
-        code = '1-1-1-24'
+        code = "1-1-1-24"
         number_inputs = 1
         references_names = ["1"]
 
@@ -502,7 +502,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after aggr in one statement.
         """
-        code = '1-1-1-25'
+        code = "1-1-1-25"
         number_inputs = 1
         references_names = ["1"]
 
@@ -521,7 +521,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after keep in one statement.
         """
-        code = '1-1-1-26'
+        code = "1-1-1-26"
         number_inputs = 1
         references_names = ["1"]
 
@@ -541,7 +541,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after rename in one statement.
         """
-        code = '1-1-1-27'
+        code = "1-1-1-27"
         number_inputs = 1
         references_names = ["1"]
 
@@ -560,7 +560,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of drop after sub in one statement.
         """
-        code = '1-1-1-28'
+        code = "1-1-1-28"
         number_inputs = 1
         references_names = ["1"]
 
@@ -581,7 +581,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after rename in one statement.
         """
-        code = '1-1-1-29'
+        code = "1-1-1-29"
         number_inputs = 1
         references_names = ["1"]
 
@@ -601,7 +601,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after filter in one statement.
         """
-        code = '1-1-1-30'
+        code = "1-1-1-30"
         number_inputs = 1
         references_names = ["1"]
 
@@ -621,7 +621,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after calc in one statement.
         """
-        code = '1-1-1-31'
+        code = "1-1-1-31"
         number_inputs = 1
         references_names = ["1"]
 
@@ -641,7 +641,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after aggr in one statement.
         """
-        code = '1-1-1-32'
+        code = "1-1-1-32"
         number_inputs = 1
         references_names = ["1"]
 
@@ -661,7 +661,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after keep in one statement.
         """
-        code = '1-1-1-33'
+        code = "1-1-1-33"
         number_inputs = 1
         references_names = ["1"]
 
@@ -681,7 +681,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after drop in one statement.
         """
-        code = '1-1-1-34'
+        code = "1-1-1-34"
         number_inputs = 1
         references_names = ["1"]
 
@@ -701,7 +701,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of rename after sub in one statement.
         """
-        code = '1-1-1-35'
+        code = "1-1-1-35"
         number_inputs = 1
         references_names = ["1"]
 
@@ -720,7 +720,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after sub in one statement.
         """
-        code = '1-1-1-36'
+        code = "1-1-1-36"
         number_inputs = 1
         references_names = ["1"]
 
@@ -739,7 +739,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after filter in one statement.
         """
-        code = '1-1-1-37'
+        code = "1-1-1-37"
         number_inputs = 1
         references_names = ["1"]
 
@@ -758,7 +758,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after calc in one statement.
         """
-        code = '1-1-1-38'
+        code = "1-1-1-38"
         number_inputs = 1
         references_names = ["1"]
 
@@ -777,7 +777,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after aggr in one statement.
         """
-        code = '1-1-1-39'
+        code = "1-1-1-39"
         number_inputs = 1
         references_names = ["1"]
 
@@ -796,7 +796,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after keep in one statement.
         """
-        code = '1-1-1-40'
+        code = "1-1-1-40"
         number_inputs = 1
         references_names = ["1"]
 
@@ -815,7 +815,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after drop in one statement.
         """
-        code = '1-1-1-41'
+        code = "1-1-1-41"
         number_inputs = 1
         references_names = ["1"]
 
@@ -835,7 +835,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after rename in one statement.
         """
-        code = '1-1-1-42'
+        code = "1-1-1-42"
         number_inputs = 1
         references_names = ["1"]
 
@@ -855,7 +855,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after aggr in one statement.
         """
-        code = '1-1-1-43'
+        code = "1-1-1-43"
         number_inputs = 1
         references_names = ["1"]
 
@@ -875,7 +875,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after filter in one statement.
         """
-        code = '1-1-1-44'
+        code = "1-1-1-44"
         number_inputs = 1
         references_names = ["1"]
 
@@ -895,7 +895,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after calc in one statement.
         """
-        code = '1-1-1-45'
+        code = "1-1-1-45"
         number_inputs = 1
         references_names = ["1"]
 
@@ -915,7 +915,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after keep in one statement.
         """
-        code = '1-1-1-46'
+        code = "1-1-1-46"
         number_inputs = 1
         references_names = ["1"]
 
@@ -935,7 +935,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after drop in one statement.
         """
-        code = '1-1-1-47'
+        code = "1-1-1-47"
         number_inputs = 1
         references_names = ["1"]
 
@@ -955,7 +955,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after rename in one statement.
         """
-        code = '1-1-1-48'
+        code = "1-1-1-48"
         number_inputs = 1
         references_names = ["1"]
 
@@ -975,7 +975,7 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after sub in one statement.
         """
-        code = '1-1-1-49'
+        code = "1-1-1-49"
         number_inputs = 1
         references_names = ["1"]
 

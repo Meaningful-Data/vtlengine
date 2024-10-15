@@ -19,7 +19,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
     Group 1
     """
 
-    classTest = 'join.JoinTimeIdentifiersTests'
+    classTest = "join.JoinTimeIdentifiersTests"
 
     def test_1(self):
         """
@@ -32,7 +32,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-1'
+        code = "1-1-1-1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -49,7 +49,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-2'
+        code = "1-1-1-2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -66,7 +66,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with time identifiers.
         """
-        code = '1-1-1-3'
+        code = "1-1-1-3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -83,7 +83,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with time identifiers.
         """
-        code = '1-1-1-4'
+        code = "1-1-1-4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -100,7 +100,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with time_period identifiers.
         """
-        code = '1-1-1-5'
+        code = "1-1-1-5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -117,7 +117,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with time_period identifiers.
         """
-        code = '1-1-1-6'
+        code = "1-1-1-6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -135,7 +135,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-7'
+        code = "1-1-1-7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -153,7 +153,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-8'
+        code = "1-1-1-8"
         number_inputs = 2
         references_names = ["1"]
 
@@ -172,7 +172,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-9'
+        code = "1-1-1-9"
         number_inputs = 2
         references_names = ["1"]
 
@@ -191,7 +191,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-10'
+        code = "1-1-1-10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -209,7 +209,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-11'
+        code = "1-1-1-11"
         number_inputs = 2
         references_names = ["1"]
 
@@ -227,7 +227,7 @@ class JoinTimeIdentifiersTests(JoinHelper):
         Git Branch: #301-tests-join-with-time-identifiers.
         Goal: Check the result of joins with date identifiers.
         """
-        code = '1-1-1-12'
+        code = "1-1-1-12"
         number_inputs = 2
         references_names = ["1"]
 
@@ -239,7 +239,7 @@ class CalcInsideJoinTests(JoinHelper):
     Group 2
     """
 
-    classTest = 'joins.CalcInsideJoinTests'
+    classTest = "joins.CalcInsideJoinTests"
 
     def test_GL_300_1(self):
         """
@@ -251,7 +251,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_1'
+        code = "GL_300_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -267,12 +267,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_2'
+        code = "GL_300_2"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_3(self):
         """
@@ -284,7 +285,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_3'
+        code = "GL_300_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -300,12 +301,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_4'
+        code = "GL_300_4"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_5(self):
         """
@@ -317,7 +319,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_5'
+        code = "GL_300_5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -333,7 +335,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_6'
+        code = "GL_300_6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -349,7 +351,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_7'
+        code = "GL_300_7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -365,7 +367,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_8'
+        code = "GL_300_8"
         number_inputs = 2
         references_names = ["1"]
 
@@ -381,7 +383,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_9'
+        code = "GL_300_9"
         number_inputs = 2
         references_names = ["1"]
 
@@ -397,7 +399,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_10'
+        code = "GL_300_10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -413,12 +415,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_11'
+        code = "GL_300_11"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_12(self):
         """
@@ -430,9 +433,9 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_12'
-        number_inputs = 2
-        error_code = "1-1-1-10"
+        # code = "GL_300_12"
+        # number_inputs = 2
+        # error_code = "1-1-1-10"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -447,12 +450,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_13'
+        code = "GL_300_13"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_14(self):
         """
@@ -464,12 +468,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_14'
+        code = "GL_300_14"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_15(self):
         """
@@ -481,12 +486,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_15'
+        code = "GL_300_15"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_16(self):
         """
@@ -498,7 +504,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_16'
+        code = "GL_300_16"
         number_inputs = 2
         references_names = ["1"]
 
@@ -514,7 +520,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_17'
+        code = "GL_300_17"
         number_inputs = 2
         references_names = ["1"]
 
@@ -530,12 +536,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_18'
+        code = "GL_300_18"
         number_inputs = 2
         error_code = "1-1-6-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_19(self):
         """
@@ -548,7 +555,7 @@ class CalcInsideJoinTests(JoinHelper):
         Goal: Check the performance of the calc inside joins operators.
         The engine gives an error that says: KeyError: 'me_5'
         """
-        code = 'GL_300_19'
+        code = "GL_300_19"
         number_inputs = 2
         references_names = ["1"]
 
@@ -564,12 +571,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_20'
+        code = "GL_300_20"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_21(self):
         """
@@ -581,7 +589,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_21'
+        code = "GL_300_21"
         number_inputs = 2
         references_names = ["1"]
 
@@ -597,7 +605,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_22'
+        code = "GL_300_22"
         number_inputs = 2
         references_names = ["1"]
 
@@ -613,7 +621,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_23'
+        code = "GL_300_23"
         number_inputs = 2
         references_names = ["1"]
 
@@ -629,7 +637,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_24'
+        code = "GL_300_24"
         number_inputs = 2
         references_names = ["1"]
 
@@ -645,7 +653,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_25'
+        code = "GL_300_25"
         number_inputs = 2
         references_names = ["1"]
 
@@ -661,7 +669,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_26'
+        code = "GL_300_26"
         number_inputs = 2
         references_names = ["1"]
 
@@ -677,12 +685,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_27'
+        code = "GL_300_27"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_28(self):
         """
@@ -694,9 +703,9 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_28'
-        number_inputs = 2
-        error_code = "1-1-1-10"
+        # code = "GL_300_28"
+        # number_inputs = 2
+        # error_code = "1-1-1-10"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -711,12 +720,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_29'
+        code = "GL_300_29"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_30(self):
         """
@@ -728,12 +738,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_30'
+        code = "GL_300_30"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_31(self):
         """
@@ -745,12 +756,13 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_31'
+        code = "GL_300_31"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_300_32(self):
         """
@@ -762,7 +774,7 @@ class CalcInsideJoinTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join
         Goal: Check the performance of the calc inside joins operators.
         """
-        code = 'GL_300_32'
+        code = "GL_300_32"
         number_inputs = 2
         references_names = ["1"]
 
@@ -774,7 +786,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
     Group 3
     """
 
-    classTest = 'join.JoinCalcIfThenElseTests'
+    classTest = "join.JoinCalcIfThenElseTests"
 
     def test_1(self):
         """
@@ -787,7 +799,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-1'
+        code = "3-1-1-1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -804,7 +816,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-2'
+        code = "3-1-1-2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -821,7 +833,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-3'
+        code = "3-1-1-3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -840,7 +852,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-4'
+        code = "3-1-1-4"
         number_inputs = 2
         references_names = ["1"]
 
@@ -858,7 +870,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-5'
+        code = "3-1-1-5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -876,7 +888,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-6'
+        code = "3-1-1-6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -894,12 +906,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-7'
+        code = "3-1-1-7"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_8(self):
         """
@@ -913,12 +926,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-8'
+        code = "3-1-1-8"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_9(self):
         """
@@ -932,12 +946,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-9'
+        code = "3-1-1-9"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_10(self):
         """
@@ -951,7 +966,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-10'
+        code = "3-1-1-10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -968,7 +983,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-11'
+        code = "3-1-1-11"
         number_inputs = 2
         references_names = ["1"]
 
@@ -986,12 +1001,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-12'
+        code = "3-1-1-12"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_13(self):
         """
@@ -1005,12 +1021,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-13'
+        code = "3-1-1-13"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_14(self):
         """
@@ -1024,7 +1041,7 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-14'
+        code = "3-1-1-14"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1042,12 +1059,13 @@ class JoinCalcIfThenElseTests(JoinHelper):
         Git Branch: #321-test-for-calc-inside-join.
         Goal: Check the performance of the joins with calc with if_then_else operators.
         """
-        code = '3-1-1-15'
+        code = "3-1-1-15"
         number_inputs = 2
         error_code = "1-1-1-1"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
 
 class UdosInsideJoinsTests(JoinHelper):
@@ -1055,7 +1073,7 @@ class UdosInsideJoinsTests(JoinHelper):
     Group 2
     """
 
-    classTest = 'joins.UdosInsideJoinsTests'
+    classTest = "joins.UdosInsideJoinsTests"
 
     def test_1(self):
         """
@@ -1069,7 +1087,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-1'
+        code = "2-1-1-1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1087,7 +1105,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-2'
+        code = "2-1-1-2"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1105,7 +1123,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-3'
+        code = "2-1-1-3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1122,7 +1140,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-4'
+        code = "2-1-1-4"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1159,7 +1177,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-7'
+        code = "2-1-1-7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1177,7 +1195,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-8'
+        code = "2-1-1-8"
         number_inputs = 1
         references_names = ["1"]
 
@@ -1201,7 +1219,7 @@ class UdosInsideJoinsTests(JoinHelper):
     #     number_inputs = 2
     #     references_names = ["1"]
     #
-    #     
+    #
     #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_10(self):
@@ -1217,7 +1235,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-10'
+        code = "2-1-1-10"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1235,10 +1253,9 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #306-udos-inside-joins.
         Goal: Check the result of joins with date identifiers and UDOS.
         """
-        code = '2-1-1-11'
-        number_inputs = 2
-
-        message = "1-1-13-3"
+        # code = "2-1-1-11"
+        # number_inputs = 2
+        # message = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
         assert True
@@ -1255,7 +1272,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #338-joins-with-udos-and-calc.
         Goal: Goal: Check the result of joins with udos and calc.
         """
-        code = '2-1-1-12'
+        code = "2-1-1-12"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1273,7 +1290,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #338-joins-with-udos-and-calc.
         Goal: Check the result of joins with udos and calc.
         """
-        code = '2-1-1-13'
+        code = "2-1-1-13"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1291,7 +1308,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #338-joins-with-udos-and-calc.
         Goal: Check the result of joins with udos and calc.
         """
-        code = '2-1-1-14'
+        code = "2-1-1-14"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1309,7 +1326,7 @@ class UdosInsideJoinsTests(JoinHelper):
         Git Branch: #338-joins-with-udos-and-calc.
         Goal: Goal: Check the result of joins with udos and calc.
         """
-        code = '2-1-1-15'
+        code = "2-1-1-15"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1320,14 +1337,14 @@ class UdosInsideJoinsTests(JoinHelper):
         Join: left_join
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
 
-        Description: 
+        Description:
 
         Git Branch: #399-fix-join-udo.
         Goal: Goal: Check the result of join inside udos.
         """
-        code = 'GL_399_1'
+        code = "GL_399_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1338,70 +1355,72 @@ class UdosInsideJoinsTests(JoinHelper):
         Join: left_join
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
 
         Description: aliasing is not required
 
         Git Branch: #399-fix-join-udo.
         Goal: Goal: Check the result of join inside udos.
         """
-        code = 'GL_399_2'
-        number_inputs = 2
-        references_names = ["1"]
+        # code = "GL_399_2"
+        # number_inputs = 2
+        # references_names = ["1"]
 
     def test_GL_399_3(self):
         """
         Join: inner_join
         Dataset --> Dataset
         Status:
-        Expression: 
+        Expression:
 
         Description: Here at least one aliasing is required.
 
         Git Branch: #399-fix-join-udo.
         Goal: Goal: Check the result of join inside udos.
         """
-        code = 'GL_399_3'
-        number_inputs = 2
-        references_names = ["1"]
+        # code = "GL_399_3"
+        # number_inputs = 2
+        # references_names = ["1"]
 
     def test_GL_399_4(self):
         """
         Join: inner_join
         Dataset --> Dataset
         Status:
-        Expression: 
+        Expression:
 
         Description: Here at least one aliasing is required.
 
         Git Branch: #399-fix-join-udo.
         Goal: Goal: Check the result of join inside udos.
         """
-        code = 'GL_399_4'
+        code = "GL_399_4"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_399_5(self):
         """
         Join: inner_join
         Dataset --> Dataset
         Status: OK
-        Expression: 
+        Expression:
 
-        Description: 
+        Description:
 
         Git Branch: #399-fix-join-udo.
         Goal: Goal: Check the result of join inside udos.
         """
-        code = 'GL_399_5'
+        code = "GL_399_5"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
 
 class JoinFilterTests(JoinHelper):
@@ -1409,7 +1428,7 @@ class JoinFilterTests(JoinHelper):
     Group 1
     """
 
-    classTest = 'joins.JoinFilterTests'
+    classTest = "joins.JoinFilterTests"
 
     def test_GL_320_1(self):
         """
@@ -1421,7 +1440,7 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #320.
         Goal: Check the semantic result.
         """
-        code = 'GL_320_1'
+        code = "GL_320_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1437,9 +1456,9 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #320.
         Goal: Check the semantic result.
         """
-        code = 'GL_320_1'
-        number_inputs = 2
-        references_names = ["1"]
+        # code = "GL_320_1"
+        # number_inputs = 2
+        # references_names = ["1"]
 
     def test_GL_320_3(self):
         """
@@ -1451,7 +1470,7 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #320.
         Goal: Check the result.
         """
-        code = 'GL_320_3'
+        code = "GL_320_3"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1467,12 +1486,13 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #333.
         Goal: Check the result.
         """
-        code = 'GL_333_1'
+        code = "GL_333_1"
         number_inputs = 2
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_333_2(self):
         """
@@ -1484,9 +1504,9 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #333.
         Goal: Check the result.
         """
-        code = 'GL_333_2'
-        number_inputs = 2
-        references_names = ["1"]
+        # code = "GL_333_2"
+        # number_inputs = 2
+        # references_names = ["1"]
 
     def test_GL_333_3(self):
         """
@@ -1498,9 +1518,9 @@ class JoinFilterTests(JoinHelper):
         Git Branch: #333.
         Goal: Check the result.
         """
-        code = 'GL_333_3'
-        number_inputs = 2
-        references_names = ["1"]
+        # code = "GL_333_3"
+        # number_inputs = 2
+        # references_names = ["1"]
 
 
 class JoinUsingTests(JoinHelper):
@@ -1508,7 +1528,7 @@ class JoinUsingTests(JoinHelper):
     Group 1
     """
 
-    classTest = 'joins.JoinUsingTests'
+    classTest = "joins.JoinUsingTests"
 
     def test_GL_251_1(self):
         """
@@ -1520,9 +1540,9 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #251.
         Goal: Check the semantic result.
         """
-        code = 'GL_251_1'
-        number_inputs = 3
-        references_names = ["1"]
+        # code = "GL_251_1"
+        # number_inputs = 3
+        # references_names = ["1"]
 
     def test_GL_251_2(self):
         """
@@ -1534,12 +1554,13 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #251.
         Goal: Check the semantic result.
         """
-        code = 'GL_251_2'
+        code = "GL_251_2"
         number_inputs = 3
         error_code = "1-1-1-1"
         # TODO: check the error code, there is no type to check on join operation type promotion
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_342_1(self):
         """
@@ -1552,7 +1573,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_1'
+        code = "GL_342_1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1569,7 +1590,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_2'
+        code = "GL_342_2"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1588,9 +1609,9 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_3'
-        number_inputs = 2
-        error_code = "1-1-13-4"
+        # code = "GL_342_3"
+        # number_inputs = 2
+        # error_code = "1-1-13-4"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -1608,9 +1629,9 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_4'
-        number_inputs = 2
-        error_code = "1-1-13-4"
+        # code = "GL_342_4"
+        # number_inputs = 2
+        # error_code = "1-1-13-4"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -1626,7 +1647,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_5'
+        code = "GL_342_5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1643,7 +1664,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_6'
+        code = "GL_342_6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1660,7 +1681,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_7'
+        code = "GL_342_7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1677,7 +1698,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_9'
+        code = "GL_342_9"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1695,9 +1716,9 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_10'
-        number_inputs = 2
-        error_code = "1-1-13-6"
+        # code = "GL_342_10"
+        # number_inputs = 2
+        # error_code = "1-1-13-6"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -1717,12 +1738,13 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_11'
+        code = "GL_342_11"
         number_inputs = 2
         error_code = "1-1-13-6"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_342_12(self):
         """
@@ -1735,7 +1757,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_12'
+        code = "GL_342_12"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1752,7 +1774,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_13'
+        code = "GL_342_13"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1769,7 +1791,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_14'
+        code = "GL_342_14"
         number_inputs = 3
         references_names = ["1"]
 
@@ -1786,7 +1808,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_15'
+        code = "GL_342_15"
         number_inputs = 3
         references_names = ["1"]
 
@@ -1805,12 +1827,13 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_16'
+        code = "GL_342_16"
         number_inputs = 3
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_342_17(self):
         """
@@ -1825,12 +1848,13 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_17'
+        code = "GL_342_17"
         number_inputs = 3
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_342_18(self):
         """
@@ -1843,7 +1867,7 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_18'
+        code = "GL_342_18"
         number_inputs = 3
         references_names = ["1"]
 
@@ -1862,12 +1886,13 @@ class JoinUsingTests(JoinHelper):
         Git Branch: #342-inner-left-with-using-with-measures.
         Goal: Check the performance of Inner-left joins with using with measures.
         """
-        code = 'GL_342_19'
+        code = "GL_342_19"
         number_inputs = 3
         error_code = "1-1-13-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_384_1(self):
         """
@@ -1877,15 +1902,16 @@ class JoinUsingTests(JoinHelper):
         Expression: DS_r := inner_join(DS_1, DS_2 using Id_2);
         Description: error case = 1.
 
-        Git Branch: 
+        Git Branch:
         Goal:
         """
-        code = 'GL_384_1'
+        code = "GL_384_1"
         number_inputs = 2
         error_code = "1-1-13-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_384_2(self):
         """
@@ -1895,12 +1921,12 @@ class JoinUsingTests(JoinHelper):
         Expression: DS_r := inner_join(DS_1, DS_2 using Id_2, Observation_1);
         Description:
 
-        Git Branch: 
-        Goal: Check the performance of 
+        Git Branch:
+        Goal: Check the performance of
         """
-        code = 'GL_384_2'
-        number_inputs = 3
-        references_names = ["1"]
+        # code = "GL_384_2"
+        # number_inputs = 3
+        # references_names = ["1"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -1914,12 +1940,12 @@ class JoinUsingTests(JoinHelper):
         Expression: DS_r := inner_join(DS_1, DS_2 using Id_2, Observation_1);
         Description:
 
-        Git Branch: 
-        Goal: Check the performance of 
+        Git Branch:
+        Goal: Check the performance of
         """
-        code = 'GL_384_9'
-        number_inputs = 3
-        references_names = ["1"]
+        # code = "GL_384_9"
+        # number_inputs = 3
+        # references_names = ["1"]
 
 
 class JoinsGeneralTests(JoinHelper):
@@ -1927,7 +1953,7 @@ class JoinsGeneralTests(JoinHelper):
     Group 6
     """
 
-    classTest = 'joins.JoinsGeneralTests'
+    classTest = "joins.JoinsGeneralTests"
 
     def test_1(self):
         """
@@ -1942,7 +1968,7 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-1'
+        code = "6-1-1-1"
         number_inputs = 2
         references_names = ["1"]
 
@@ -1961,12 +1987,13 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-2'
+        code = "6-1-1-2"
         number_inputs = 2
         error_code = "1-1-1-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_3(self):
         """
@@ -1979,12 +2006,13 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-3'
+        code = "6-1-1-3"
         number_inputs = 2
         error_code = "1-1-1-16"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_4(self):
         """
@@ -1997,12 +2025,13 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-4'
+        code = "6-1-1-4"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_5(self):
         """
@@ -2016,7 +2045,7 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-5'
+        code = "6-1-1-5"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2033,7 +2062,7 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-6'
+        code = "6-1-1-6"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2051,7 +2080,7 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-7'
+        code = "6-1-1-7"
         number_inputs = 2
         references_names = ["1"]
 
@@ -2068,18 +2097,17 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch: #339-joins-with-reuse-calcs-and-calc-identifier.
         Goal: Check the result of joins reuse calcs and calc identifier.
         """
-        code = '6-1-1-8'
+        code = "6-1-1-8"
         number_inputs = 2
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_419(self):
-        """
-        """
-        code = 'GL_419'
-        number_inputs = 1
-        error_code = "1-1-13-3"
+        """ """
+        # code = "GL_419"
+        # number_inputs = 1
+        # error_code = "1-1-13-3"
 
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -2090,22 +2118,23 @@ class JoinsGeneralTests(JoinHelper):
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join ( DS_1 as d1, DS_2 as d2
-			filter d1#Me_1 + d2#Me_2 <10
-			aggr Me_1 := sum(d1#Me_1), attribute At20 := avg(d2#Me_2)
-			group by Id_1, Id_2
-			having sum(Me_3) > 0 and avg(Me_4) < 10);
+                        filter d1#Me_1 + d2#Me_2 <10
+                        aggr Me_1 := sum(d1#Me_1), attribute At20 := avg(d2#Me_2)
+                        group by Id_1, Id_2
+                        having sum(Me_3) > 0 and avg(Me_4) < 10);
         Description: Join with aggregation with having clause
 
         Git Branch: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/422
         Goal: Check the result of joins with aggregation with having clause.
         """
-        code = 'GL_422_1'
+        code = "GL_422_1"
         number_inputs = 2
         # references_names = ["1"]
         message = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_422_2(self):
         """
@@ -2113,31 +2142,32 @@ class JoinsGeneralTests(JoinHelper):
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join ( DS_1 as d1, DS_2 as d2
-			filter d1#Me_1 + d2#Me_2 <10
-			aggr Me_1 := sum(d1#Me_1), attribute At20 := avg(d2#Me_2)
-			group by Id_1, Id_2
-			having sum(Me_3) > 0);
+                        filter d1#Me_1 + d2#Me_2 <10
+                        aggr Me_1 := sum(d1#Me_1), attribute At20 := avg(d2#Me_2)
+                        group by Id_1, Id_2
+                        having sum(Me_3) > 0);
         Description: Join with aggregation with having clause
 
         Git Branch: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/422
         Goal: Check the result of joins with aggregation with having clause.
         """
-        code = 'GL_422_2'
+        code = "GL_422_2"
         number_inputs = 2
         message = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=message)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_GL_422_3(self):
-        """
-        """
-        code = 'GL_422_3'
+        """ """
+        code = "GL_422_3"
         number_inputs = 2
         error_code = "1-1-1-10"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_384_3(self):
         """
@@ -2150,16 +2180,17 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_3'
+        code = "GL_384_3"
         number_inputs = 3
         # references_names = ["1"]
 
-        # 
+        #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
         error_code = "1-1-13-11"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     # Caso A inner join pero con una componente en el no-reference que sea identifier en el reference
     def test_GL_384_4(self):
@@ -2173,10 +2204,9 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_4'
-        number_inputs = 2
-
-        error_code = "1-1-13-3"
+        # code = "GL_384_4"
+        # number_inputs = 2
+        # error_code = "1-1-13-3"
         # TODO: check up this error test
         # self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs, exception_code=error_code)
         assert True
@@ -2193,13 +2223,14 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_5'
+        code = "GL_384_5"
         number_inputs = 2
 
         error_code = "1-1-13-11"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     # Aliases are mandatory for datasets which appear more than once in the Join
     def test_GL_384_6(self):
@@ -2213,13 +2244,14 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_6'
+        code = "GL_384_6"
         number_inputs = 2
 
         error_code = "1-1-13-9"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_384_7(self):
         """
@@ -2232,12 +2264,13 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_7'
+        code = "GL_384_7"
         number_inputs = 3
         error_code = "1-1-13-11"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
 
     def test_GL_384_8(self):
         """
@@ -2250,9 +2283,10 @@ class JoinsGeneralTests(JoinHelper):
         Git Branch:
         Goal: Check the performance of
         """
-        code = 'GL_384_8'
+        code = "GL_384_8"
         number_inputs = 3
         error_code = "1-1-13-4"
 
-        self.NewSemanticExceptionTest(code=code, number_inputs=number_inputs,
-                                      exception_code=error_code)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )

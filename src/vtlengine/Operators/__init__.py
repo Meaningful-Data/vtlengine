@@ -2,10 +2,20 @@ import os
 from copy import copy
 from typing import Any, Union
 
-from vtlengine.DataTypes import COMP_NAME_MAPPING, \
-    binary_implicit_promotion, check_binary_implicit_promotion, check_unary_implicit_promotion, \
-    unary_implicit_promotion, SCALAR_TYPES_CLASS_REVERSE
-from vtlengine.DataTypes.TimeHandling import TimeIntervalHandler, TimePeriodHandler, DURATION_MAPPING
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    ScalarType,
+    binary_implicit_promotion,
+    check_binary_implicit_promotion,
+    check_unary_implicit_promotion,
+    unary_implicit_promotion,
+    SCALAR_TYPES_CLASS_REVERSE,
+)
+from vtlengine.DataTypes.TimeHandling import (
+    TimeIntervalHandler,
+    TimePeriodHandler,
+    DURATION_MAPPING,
+)
 
 from vtlengine.AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
 from vtlengine.Exceptions import SemanticError
@@ -52,14 +62,13 @@ class Operator:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return series
         if data_type.__name__ == "TimeInterval":
-            series = series.map(lambda x: TimeIntervalHandler.from_iso_format(x),
-                                na_action='ignore')
+            series = series.map(
+                lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
+            )
         elif data_type.__name__ == "TimePeriod":
-            series = series.map(lambda x: TimePeriodHandler(x),
-                                na_action='ignore')
+            series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
         elif data_type.__name__ == "Duration":
-            series = series.map(lambda x: DURATION_MAPPING[x],
-                                na_action='ignore')
+            series = series.map(lambda x: DURATION_MAPPING[x], na_action="ignore")
         return series
 
     @classmethod
@@ -79,13 +88,16 @@ class Operator:
     @classmethod
     def modify_measure_column(cls, *args: Any) -> None:
         """
-        If an Operator change the data type of the Variable it is applied to (e.g., from string to number),
-        the result Data Set cannot maintain this Variable as it happens in the previous cases,
-        because a Variable cannot have different data types in different Data Sets.
-        As a consequence, the converted variable cannot follow the same rules described in the sections above and must be replaced,
-        in the result Data Set, by another Variable of the proper data type.
-        For sake of simplicity, the operators changing the data type are allowed only on mono-measure operand Data Sets, so that the conversion happens on just one Measure.
-        A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result (the default Measure Variables are reported in the table below).
+        If an Operator change the data type of the Variable it is applied to (e.g., from string to
+        number), the result Data Set cannot maintain this Variable as it happens in the previous
+        cases, because a Variable cannot have different data types in different Data Sets.
+        As a consequence, the converted variable cannot follow the same rules described in the
+        sections above and must be replaced, in the result Data Set, by another Variable of the
+        proper data type.
+        For sake of simplicity, the operators changing the data type are allowed only on
+        mono-measure operand Data Sets, so that the conversion happens on just one Measure.
+        A default generic Measure is assigned by default to the result Data Set, depending on the
+        data type of the result (the default Measure Variables are reported in the table below).
 
         Function used by the evaluate function when a dataset is involved
         """
@@ -166,7 +178,6 @@ def _id_type_promotion_join_keys(*args: Any) -> None:
     right_data: pd.DataFrame
     c_left, c_right, join_key, left_data, right_data = args
 
-
     left_type_name: str = str(c_left.data_type.__name__)
     right_type_name: str = str(c_right.data_type.__name__)
 
@@ -174,8 +185,9 @@ def _id_type_promotion_join_keys(*args: Any) -> None:
         left_data[join_key] = left_data[join_key].astype(object)
         right_data[join_key] = right_data[join_key].astype(object)
         return
-    if ((left_type_name == "Integer" and right_type_name == "Number") or
-            (left_type_name == "Number" and right_type_name == "Integer")):
+    if (left_type_name == "Integer" and right_type_name == "Number") or (
+        left_type_name == "Number" and right_type_name == "Integer"
+    ):
         left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
         right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
     elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
@@ -235,9 +247,9 @@ class Binary(Operator):
         if scalar is None:
             return pd.Series(None, index=series.index)
         if series_left:
-            return series.map(lambda x: cls.py_op(x, scalar), na_action='ignore')
+            return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore")
         else:
-            return series.map(lambda x: cls.py_op(scalar, x), na_action='ignore')
+            return series.map(lambda x: cls.py_op(scalar, x), na_action="ignore")
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
@@ -287,8 +299,9 @@ class Binary(Operator):
         right_measures_names = [measure.name for measure in right_measures]
 
         if left_measures_names != right_measures_names:
-            raise SemanticError("1-1-14-1", op=cls.op, left=left_measures_names,
-                                right=right_measures_names)
+            raise SemanticError(
+                "1-1-14-1", op=cls.op, left=left_measures_names, right=right_measures_names
+            )
         elif len(left_measures) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=left_operand.name)
         for left_measure, right_measure in zip(left_measures, right_measures):
@@ -307,9 +320,11 @@ class Binary(Operator):
         # Deleting extra identifiers that we do not need anymore
 
         base_operand = right_operand if use_right_components else left_operand
-        result_components = {component_name: copy(component) for component_name, component in
-                             base_operand.components.items()
-                             if component.role in [Role.IDENTIFIER, Role.MEASURE]}
+        result_components = {
+            component_name: copy(component)
+            for component_name, component in base_operand.components.items()
+            if component.role in [Role.IDENTIFIER, Role.MEASURE]
+        }
 
         for comp in [x for x in result_components.values() if x.role == Role.MEASURE]:
             if comp.name in left_operand.components and comp.name in right_operand.components:
@@ -344,10 +359,15 @@ class Binary(Operator):
         left_operand, right_operand = args
 
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
-            raise SemanticError("1-1-1-2", )
-        return Scalar(name="result",
-                      data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
-                      value=None)
+            raise SemanticError(
+                "1-1-1-2",
+            )
+
+        return Scalar(
+            name="result",
+            data_type=cls.type_validation(left_operand.data_type, right_operand.data_type),
+            value=None,
+        )
 
     @classmethod
     def component_validation(cls, *args: Any) -> DataComponent:
@@ -362,8 +382,14 @@ class Binary(Operator):
         left_operand, right_operand = args
 
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
-        result = DataComponent(name="result", data_type=result_data_type, data=None, role=left_operand.role,
-                               nullable=(left_operand.nullable or right_operand.nullable))
+
+        result = DataComponent(
+            name="result",
+            data_type=result_data_type,
+            data=None,
+            role=left_operand.role,
+            nullable=(left_operand.nullable or right_operand.nullable),
+        )
 
         return result
 
@@ -374,9 +400,15 @@ class Binary(Operator):
         component, scalar = args
 
         cls.type_validation(component.data_type, scalar.data_type)
-        result = DataComponent(name=component.name,
-                               data_type=cls.type_validation(component.data_type, scalar.data_type),
-                               data=None, role=component.role, nullable=component.nullable or scalar is None)
+
+        result = DataComponent(
+            name=component.name,
+            data_type=cls.type_validation(component.data_type, scalar.data_type),
+            data=None,
+            role=component.role,
+            nullable=component.nullable or scalar is None,
+        )
+
         return result
 
     @classmethod
@@ -392,8 +424,7 @@ class Binary(Operator):
         result_components = {comp_name: copy(comp) for comp_name, comp in dataset.components.items() if
                              comp.role in [Role.IDENTIFIER, Role.MEASURE]}
 
-        result_dataset = Dataset(name="result", components=result_components,
-                                 data=None)
+        result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar_set)
         return result_dataset
 
@@ -404,9 +435,14 @@ class Binary(Operator):
         component, scalar_set = args
 
         cls.type_validation(component.data_type, scalar_set.data_type)
-        result = DataComponent(name="result",
-                               data_type=cls.type_validation(component.data_type, scalar_set.data_type),
-                               data=None, role=Role.MEASURE, nullable=component.nullable)
+        result = DataComponent(
+            name="result",
+            data_type=cls.type_validation(component.data_type, scalar_set.data_type),
+            data=None,
+            role=Role.MEASURE,
+            nullable=component.nullable,
+        )
+
         return result
 
     @classmethod
@@ -416,8 +452,11 @@ class Binary(Operator):
         scalar, scalar_set = args
 
         cls.type_validation(scalar.data_type, scalar_set.data_type)
-        return Scalar(name="result",
-                      data_type=cls.type_validation(scalar.data_type, scalar_set.data_type), value=None)
+        return Scalar(
+            name="result",
+            data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
+            value=None,
+        )
 
     # The following class method implements the type promotion
     @classmethod
@@ -456,7 +495,8 @@ class Binary(Operator):
     def apply_return_type_dataset(cls, *args: Any) -> None:
         """
         Used in dataset's validation.
-        Changes the result dataset and give us his final form (#TODO: write this explanation in a better way)
+        Changes the result dataset and give us his final form
+        (#TODO: write this explanation in a better way)
         """
         result_dataset: Dataset
         result_dataset, left_operand, right_operand = args
@@ -476,15 +516,16 @@ class Binary(Operator):
                     name=COMP_NAME_MAPPING[result_data_type],
                     data_type=result_data_type,
                     role=Role.MEASURE,
-                    nullable=measure.nullable
+                    nullable=measure.nullable,
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
-            elif (changed_allowed is False and
-                  is_mono_measure is False and
-                  left_type.promotion_changed_type(result_data_type)
+            elif (
+                changed_allowed is False
+                and is_mono_measure is False
+                and left_type.promotion_changed_type(result_data_type)
             ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
@@ -507,13 +548,20 @@ class Binary(Operator):
             base_operand_data = left_operand.data
             other_operand_data = right_operand.data
 
-        join_keys = list(set(left_operand.get_identifiers_names()).intersection(
-            right_operand.get_identifiers_names()))
+        join_keys = list(
+            set(left_operand.get_identifiers_names()).intersection(
+                right_operand.get_identifiers_names()
+            )
+        )
 
         for join_key in join_keys:
-            _id_type_promotion_join_keys(left_operand.get_component(join_key),
-                                         right_operand.get_component(join_key),
-                                         join_key, base_operand_data, other_operand_data)
+            _id_type_promotion_join_keys(
+                left_operand.get_component(join_key),
+                right_operand.get_component(join_key),
+                join_key,
+                base_operand_data,
+                other_operand_data,
+            )
 
         try:
             # Merge the data
@@ -527,30 +575,33 @@ class Binary(Operator):
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():
-            result_data[measure.name + '_x'] = cls.cast_time_types(measure.data_type,
-                                                                   result_data[measure.name + '_x'])
-            result_data[measure.name + '_y'] = cls.cast_time_types(measure.data_type,
-                                                                   result_data[measure.name + '_y'])
+            result_data[measure.name + "_x"] = cls.cast_time_types(
+                measure.data_type, result_data[measure.name + "_x"]
+            )
+            result_data[measure.name + "_y"] = cls.cast_time_types(
+                measure.data_type, result_data[measure.name + "_y"]
+            )
             if use_right_as_base:
                 result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + '_y'],
-                    result_data[measure.name + '_x'])
+                    result_data[measure.name + "_y"], result_data[measure.name + "_x"]
+                )
             else:
                 result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + '_x'],
-                    result_data[measure.name + '_y'])
-            result_data = result_data.drop([measure.name + '_x', measure.name + '_y'], axis=1)
+                    result_data[measure.name + "_x"], result_data[measure.name + "_y"]
+                )
+            result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
 
         # Delete attributes from the result data
         attributes = list(
-            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names()))
+            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
+        )
         for att in attributes:
             if att in result_data.columns:
                 result_data = result_data.drop(att, axis=1)
-            if att + '_x' in result_data.columns:
-                result_data = result_data.drop(att + '_x', axis=1)
-            if att + '_y' in result_data.columns:
-                result_data = result_data.drop(att + '_y', axis=1)
+            if att + "_x" in result_data.columns:
+                result_data = result_data.drop(att + "_x", axis=1)
+            if att + "_y" in result_data.columns:
+                result_data = result_data.drop(att + "_y", axis=1)
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
@@ -584,7 +635,8 @@ class Binary(Operator):
             if measure.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
                 scalar_value = DURATION_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left)
+                measure_data, scalar_value, dataset_left
+            )
 
         result_dataset.data = result_data
         cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
@@ -618,7 +670,9 @@ class Binary(Operator):
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
             scalar_value = DURATION_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(comp_data, scalar_value, component_left)
+        result_component.data = cls.apply_operation_series_scalar(
+            comp_data, scalar_value, component_left
+        )
         return result_component
 
     @classmethod
@@ -704,7 +758,10 @@ class Unary(Operator):
 
     @classmethod
     def apply_operation_component(cls, *args: Any) -> Any:
-        """Applies the operation to a component"""
+        """
+        Applies the operation to a component
+        """
+
         series = args[0]
 
         return series.map(cls.py_op, na_action='ignore')
@@ -716,7 +773,9 @@ class Unary(Operator):
         can do a semantic check too.
         Returns an operand.
         """
+
         operand = args[0]
+
         if isinstance(operand, Dataset):
             return cls.dataset_validation(operand)
         elif isinstance(operand, DataComponent):
@@ -726,14 +785,17 @@ class Unary(Operator):
 
     @classmethod
     def dataset_validation(cls, *args: Any) -> Dataset:
+
         operand: Dataset = args[0]
 
         cls.validate_dataset_type(operand)
         if len(operand.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
-        result_components = {comp_name: copy(comp) for comp_name, comp in
-                             operand.components.items() if
-                             comp.role in [Role.IDENTIFIER, Role.MEASURE]}
+        result_components = {
+            comp_name: copy(comp)
+            for comp_name, comp in operand.components.items()
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE]
+        }
 
         result_dataset = Dataset(name="result", components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, operand)
@@ -752,8 +814,13 @@ class Unary(Operator):
         operand: DataComponent = args[0]
 
         result_type = cls.type_validation(operand.data_type)
-        result = DataComponent(name="result", data_type=result_type, data=None,
-                               role=operand.role, nullable=operand.nullable)
+        result = DataComponent(
+            name="result",
+            data_type=result_type,
+            data=None,
+            role=operand.role,
+            nullable=operand.nullable,
+        )
         return result
 
     # The following class method implements the type promotion
@@ -777,8 +844,13 @@ class Unary(Operator):
         if cls.type_to_check is not None:
             for measure in dataset.get_measures():
                 if not cls.validate_type_compatibility(measure.data_type):
-                    raise SemanticError("1-1-1-3", op=cls.op, entity=measure.role.value, name=measure.name,
-                                        target_type=SCALAR_TYPES_CLASS_REVERSE[cls.type_to_check])
+                    raise SemanticError(
+                        "1-1-1-3",
+                        op=cls.op,
+                        entity=measure.role.value,
+                        name=measure.name,
+                        target_type=SCALAR_TYPES_CLASS_REVERSE[cls.type_to_check],
+                    )
 
     @classmethod
     def validate_scalar_type(cls, *args: Any) -> None:
@@ -801,16 +873,21 @@ class Unary(Operator):
 
             result_data_type = cls.type_validation(operand_type)
             if is_mono_measure and operand_type.promotion_changed_type(result_data_type):
-                component = Component(name=COMP_NAME_MAPPING[result_data_type],
-                                      data_type=result_data_type, role=Role.MEASURE,
-                                      nullable=measure.nullable
+                component = Component(
+                    name=COMP_NAME_MAPPING[result_data_type],
+                    data_type=result_data_type,
+                    role=Role.MEASURE,
+                    nullable=measure.nullable,
                 )
                 result_dataset.delete_component(measure.name)
                 result_dataset.add_component(component)
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
-            elif changed_allowed is False and is_mono_measure is False and operand_type.promotion_changed_type(
-                    result_data_type):
+            elif (
+                changed_allowed is False
+                and is_mono_measure is False
+                and operand_type.promotion_changed_type(result_data_type)
+            ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type

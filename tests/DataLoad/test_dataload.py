@@ -22,9 +22,8 @@ from tests.Helper import TestHelper
 
 
 class DataLoadHelper(TestHelper):
-    """
+    """ """
 
-    """
     # Path Selection.----------------------------------------------------------
     base_path = Path(__file__).parent
     filepath_VTL = base_path / "data" / "vtl"
@@ -40,7 +39,7 @@ class DataLoadTest(DataLoadHelper):
     Group DataLoad
     """
 
-    classTest = 'DataLoad.DataLoadTest'
+    classTest = "DataLoad.DataLoadTest"
 
     def test_1(self):
         """
@@ -51,7 +50,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Result.
         """
-        code = 'DataLoad-1'
+        code = "DataLoad-1"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -66,7 +65,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Result.
         """
-        code = 'DataLoad-2'
+        code = "DataLoad-2"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -81,12 +80,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = 'DataLoad-3'
+        code = "DataLoad-3"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Number"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_4(self):
         """
@@ -97,7 +97,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Result.
         """
-        code = 'DataLoad-4'
+        code = "DataLoad-4"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -112,7 +112,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Result.
         """
-        code = 'DataLoad-5'
+        code = "DataLoad-5"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -127,12 +127,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = 'DataLoad-6'
+        code = "DataLoad-6"
         number_inputs = 1
 
         message = "Duplicated columns Me_3 found in file."
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_7(self):
         """
@@ -143,12 +144,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = 'DataLoad-7'
+        code = "DataLoad-7"
         number_inputs = 1
 
         message = ""
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_8(self):
         """
@@ -159,12 +161,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = 'DataLoad-8'
+        code = "DataLoad-8"
         number_inputs = 1
 
         exception_code = "0-1-1-4"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_code=exception_code)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_9(self):
         """
@@ -174,10 +177,10 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: tests-41-csv-strings-could-not-be-loaded-at-dataset-validation-2
         Goal: Check Record.
         """
-        code = 'GL_41'
+        code = "GL_41"
         number_inputs = 1
         string_to_compare = "Deshmoret e 4 Shkurtit, Godina nr. 6, Kati II"
-        dataset_input = self.LoadInputs(code=code, number_inputs=number_inputs)['DS_1']
+        dataset_input = self.LoadInputs(code=code, number_inputs=number_inputs)["DS_1"]
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
@@ -189,12 +192,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-11'
+        code = "GL_81-11"
         number_inputs = 1
 
         message = "On Dataset dsPrep.ENTTY_JN loading:  An identifier cannot have null values, found null values on VLD_T."
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_12(self):
         """
@@ -204,7 +208,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Result.
         """
-        code = 'GL_81-12'
+        code = "GL_81-12"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -218,7 +222,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Result.
         """
-        code = 'GL_81-13'
+        code = "GL_81-13"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -232,12 +236,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-14'
+        code = "GL_81-14"
         number_inputs = 1
 
-        message = 'On Dataset dsPrep.ENTTY_JN loading:  An identifier cannot have null values, found null values on VLD_T.'
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        message = "On Dataset dsPrep.ENTTY_JN loading:  An identifier cannot have null values, found null values on VLD_T."
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_15(self):
         """
@@ -247,12 +252,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-15'
+        code = "GL_81-15"
         number_inputs = 1
 
         message = "The following identifiers Id_1 were not found , review file GL_81-15-1.csv"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_16(self):
         """
@@ -262,12 +268,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-16'
+        code = "GL_81-16"
         number_inputs = 1
 
         message = "The following identifiers VLD_T were not found , review file GL_81-16-1.csv"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_17(self):
         """
@@ -277,12 +284,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-17'
+        code = "GL_81-17"
         number_inputs = 1
 
         message = "Component Me_2 is missing in the file."
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_18(self):
         """
@@ -292,7 +300,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Result.
         """
-        code = 'GL_81-18'
+        code = "GL_81-18"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -306,10 +314,9 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-19'
-        number_inputs = 1
-
-        message = "0-1-2-5"
+        # code = "GL_81-19"
+        # number_inputs = 1
+        # message = "0-1-2-5"
         # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
         #                            exception_code=message)
 
@@ -321,7 +328,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-20'
+        code = "GL_81-20"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -335,10 +342,9 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
         """
-        code = 'GL_81-21'
-        number_inputs = 1
-
-        message = "ERROR: line contains NUL"
+        # code = "GL_81-21"
+        # number_inputs = 1
+        # message = "ERROR: line contains NUL"
         # TODO: Check the dialect on the Dataload.
         # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
         #                            exception_message=message)
@@ -353,12 +359,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load.
         Goal: Check Exception.
         """
-        code = 'GL_91-22'
+        code = "GL_91-22"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_23(self):
         """
@@ -369,12 +376,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load.
         Goal: Check Exception.
         """
-        code = 'GL_91-23'
+        code = "GL_91-23"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_4 to Time"
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_24(self):
         """
@@ -385,12 +393,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load.
         Goal: Check Exception.
         """
-        code = 'GL_91-24'
+        code = "GL_91-24"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_4 to Time"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_25(self):
         """
@@ -399,13 +408,11 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Record.
         """
-        code = 'GL_91-25'
+        code = "GL_91-25"
         number_inputs = 1
         references_names = ["DS_r"]
 
-        self.DataLoadTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_26(self):
         """
@@ -415,12 +422,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-26'
+        code = "GL_91-26"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_27(self):
         """
@@ -429,12 +437,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load.
         Goal: Check Record.
         """
-        code = 'GL_91-27'
+        code = "GL_91-27"
         number_inputs = 1
         message = "Identifier Id_1 cannot be nullable"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_29(self):
         """
@@ -443,12 +452,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-29'
+        code = "GL_91-29"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_30(self):
         """
@@ -457,12 +467,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-30'
+        code = "GL_91-30"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Types of boolean
     def test_31(self):
@@ -472,14 +483,12 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Record.
         """
-        code = 'GL_91-31'
+        code = "GL_91-31"
         number_inputs = 1
 
         references_names = ["DS_r"]
 
-        self.DataLoadTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_32(self):
         """
@@ -488,7 +497,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-32'
+        code = "GL_91-32"
         number_inputs = 1
 
         self.DataLoadTest(code=code, number_inputs=number_inputs)
@@ -502,12 +511,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-33'
+        code = "GL_91-33"
         number_inputs = 1
 
         message = "Identifier Id_1 cannot be nullable"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Checking integers
     def test_34(self):
@@ -517,12 +527,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-34'
+        code = "GL_91-34"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_35(self):
         """
@@ -531,14 +542,12 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-35'
+        code = "GL_91-35"
         number_inputs = 1
 
         references_names = ["DS_r"]
 
-        self.DataLoadTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_36(self):
         """
@@ -547,13 +556,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-36'
+        code = "GL_91-36"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Checking Time, Data and Time_period
     # Time and Time period
@@ -564,13 +574,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-37'
+        code = "GL_91-37"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_38(self):
         """
@@ -579,14 +590,12 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-38'
+        code = "GL_91-38"
         number_inputs = 1
 
         references_names = ["DS_r"]
 
-        self.DataLoadTest(
-            code=code, number_inputs=number_inputs,
-            references_names=references_names)
+        self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_39(self):
         """
@@ -595,13 +604,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-39'
+        code = "GL_91-39"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Time
     def test_40(self):
@@ -611,13 +621,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-40'
+        code = "GL_91-40"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Date
     def test_41(self):
@@ -627,13 +638,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-41'
+        code = "GL_91-41"
         number_inputs = 1
 
         message = "Date 2014/12/31 is not in the correct format. Use YYYY-MM-DD."
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_42(self):
         """
@@ -642,13 +654,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 91-complete-data-load
         Goal: Check Exception.
         """
-        code = 'GL_91-42'
+        code = "GL_91-42"
         number_inputs = 1
 
         message = "Date 2014-02-31 is out of range for the month."
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     # Checking Identifiers without identifiers and nullable identifiers.
     def test_43(self):
@@ -658,12 +671,13 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-gl-100_fix-load-input-datastructure-for-not-allow-null-identifiers
         Goal: Check Exception.
         """
-        code = 'GL_100_1'
+        code = "GL_100_1"
         number_inputs = 1
 
         message = "Identifier Id_1 cannot be nullable"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message)
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_45(self):
         """
@@ -671,13 +685,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-99-fix-dataload-for-type-duration.
         Goal: Interpreter results.
         """
-        code = 'GL_91-26'
+        code = "GL_91-26"
         number_inputs = 1
 
         message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration"
 
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_46(self):
         """
@@ -685,13 +700,14 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: feat-199-DWI-loading
         Goal: Interpreter results.
         """
-        code = 'GL_91-43'
+        code = "GL_91-43"
         number_inputs = 1
 
         message = "Datasets without identifiers must have 0 or 1 datapoints"
 
-        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
-                                   exception_message=message)
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
 
     def test_47(self):
         """
@@ -700,7 +716,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: feat-199-DWI-loading
         Goal: Check Result.
         """
-        code = 'GL_91-44'
+        code = "GL_91-44"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -712,7 +728,7 @@ class DataLoadTest(DataLoadHelper):
         Description: load values that before were loaded as null.
         Goal: Interpreter results.
         """
-        code = 'GL_483_1'
+        code = "GL_483_1"
         number_inputs = 1
 
         references_names = ["1"]
@@ -725,7 +741,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 492-accept-sdmx-csv-1-0-and-2-0-on-dataset-load
         Goal: Check Record.
         """
-        code = 'GL_492-1'
+        code = "GL_492-1"
         number_inputs = 1
         references_names = ["DS_r"]
 
@@ -738,7 +754,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: 492-accept-sdmx-csv-1-0-and-2-0-on-dataset-load
         Goal: Check Record.
         """
-        code = 'GL_492-2'
+        code = "GL_492-2"
         number_inputs = 1
         references_names = ["DS_r"]
 

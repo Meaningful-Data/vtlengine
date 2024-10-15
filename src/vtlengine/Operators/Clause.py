@@ -25,26 +25,29 @@ class Calc(Operator):
 
             if operand.name in result_dataset.components:
                 if result_dataset.components[operand.name].role == Role.IDENTIFIER:
-                    raise SemanticError("1-1-6-13", op=cls.op,
-                                        comp_name=operand.name)
+                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
                 # Override component with same name
                 # TODO: Check this for version 2.1
                 result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
-                result_dataset.add_component(Component(
-                    name=operand.name,
-                    data_type=operand.data_type,
-                    role=Role.MEASURE,
-                    nullable=True
-                ))
+                result_dataset.add_component(
+                    Component(
+                        name=operand.name,
+                        data_type=operand.data_type,
+                        role=Role.MEASURE,
+                        nullable=True,
+                    )
+                )
             else:
-                result_dataset.add_component(Component(
-                    name=operand.name,
-                    data_type=operand.data_type,
-                    role=operand.role,
-                    nullable=operand.nullable
-                ))
+                result_dataset.add_component(
+                    Component(
+                        name=operand.name,
+                        data_type=operand.data_type,
+                        role=operand.role,
+                        nullable=operand.nullable,
+                    )
+                )
         return result_dataset
 
     @classmethod
@@ -77,19 +80,23 @@ class Aggregate(Operator):
                 dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
-                result_dataset.add_component(Component(
-                    name=operand.name,
-                    data_type=operand.data_type,
-                    role=Role.MEASURE,
-                    nullable=True
-                ))
+                result_dataset.add_component(
+                    Component(
+                        name=operand.name,
+                        data_type=operand.data_type,
+                        role=Role.MEASURE,
+                        nullable=True,
+                    )
+                )
             else:
-                result_dataset.add_component(Component(
-                    name=operand.name,
-                    data_type=operand.data_type,
-                    role=operand.role,
-                    nullable=operand.nullable
-                ))
+                result_dataset.add_component(
+                    Component(
+                        name=operand.name,
+                        data_type=operand.data_type,
+                        role=operand.role,
+                        nullable=operand.nullable,
+                    )
+                )
         return result_dataset
 
     @classmethod
@@ -132,8 +139,9 @@ class Keep(Operator):
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         for operand in operands:
             if operand not in dataset.get_components_names():
-                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand,
-                                    dataset_name=dataset.name)
+                raise SemanticError(
+                    "1-1-1-10", op=cls.op, comp_name=operand, dataset_name=dataset.name
+                )
             if dataset.get_component(operand).role == Role.IDENTIFIER:
                 raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
         result_components = {name: comp for name, comp in dataset.components.items()
@@ -143,10 +151,10 @@ class Keep(Operator):
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         if len(operands) == 0:
-            raise ValueError('Keep clause requires at least one operand')
+            raise ValueError("Keep clause requires at least one operand")
         if dataset is None:
             if sum(isinstance(operand, Dataset) for operand in operands) != 1:
-                raise ValueError('Keep clause requires at most one dataset operand')
+                raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
@@ -184,8 +192,7 @@ class Rename(Operator):
     def validate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         from_names = [operand.old_name for operand in operands]
         if len(from_names) != len(set(from_names)):
-            duplicates = set(
-                [name for name in from_names if from_names.count(name) > 1])
+            duplicates = set([name for name in from_names if from_names.count(name) > 1])
             raise SemanticError("1-1-6-9", op=cls.op, from_components=duplicates)
 
         to_names = [operand.new_name for operand in operands]
@@ -196,11 +203,13 @@ class Rename(Operator):
 
         for operand in operands:
             if operand.old_name not in dataset.components.keys():
-                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.old_name,
-                                    dataset_name=dataset.name)
+                raise SemanticError(
+                    "1-1-1-10", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name
+                )
             if operand.new_name in dataset.components.keys():
-                raise SemanticError("1-1-6-8", op=cls.op, comp_name=operand.new_name,
-                                    dataset_name=dataset.name)
+                raise SemanticError(
+                    "1-1-6-8", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name
+                )
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
         for operand in operands:
@@ -208,7 +217,7 @@ class Rename(Operator):
                 name=operand.new_name,
                 data_type=result_components[operand.old_name].data_type,
                 role=result_components[operand.old_name].role,
-                nullable=result_components[operand.old_name].nullable
+                nullable=result_components[operand.old_name].nullable,
             )
             del result_components[operand.old_name]
 
@@ -250,8 +259,9 @@ class Unpivot(Operator):
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
         # noinspection PyTypeChecker
-        result_dataset.add_component(Component(name=identifier, data_type=String,
-                                               role=Role.IDENTIFIER, nullable=False))
+        result_dataset.add_component(
+            Component(name=identifier, data_type=String, role=Role.IDENTIFIER, nullable=False)
+        )
         base_type = None
         final_type: Type[ScalarType] = String
         for comp in dataset.get_measures():
@@ -262,8 +272,9 @@ class Unpivot(Operator):
                     raise ValueError("All measures must have the same data type on unpivot clause")
             final_type = unary_implicit_promotion(base_type, comp.data_type)
 
-        result_dataset.add_component(Component(name=measure, data_type=final_type,
-                                               role=Role.MEASURE, nullable=True))
+        result_dataset.add_component(
+            Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
+        )
         return result_dataset
 
     @classmethod
@@ -287,16 +298,21 @@ class Sub(Operator):
             raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
             if operand.name not in dataset.components:
-                raise SemanticError("1-1-1-10", op=cls.op, comp_name=operand.name,
-                                    dataset_name=dataset.name)
+                raise SemanticError(
+                    "1-1-1-10", op=cls.op, comp_name=operand.name, dataset_name=dataset.name
+                )
             if operand.role != Role.IDENTIFIER:
-                raise SemanticError("1-1-6-10", op=cls.op, operand=operand.name,
-                                    dataset_name=dataset.name)
+                raise SemanticError(
+                    "1-1-6-10", op=cls.op, operand=operand.name, dataset_name=dataset.name
+                )
             if isinstance(operand, Scalar):
                 raise SemanticError("1-1-6-5", op=cls.op, name=operand.name)
 
-        result_components = {name: comp for name, comp in dataset.components.items()
-                             if comp.name not in [operand.name for operand in operands]}
+        result_components = {
+            name: comp
+            for name, comp in dataset.components.items()
+            if comp.name not in [operand.name for operand in operands]
+        }
         return Dataset(name=dataset.name, components=result_components, data=None)
 
     @classmethod

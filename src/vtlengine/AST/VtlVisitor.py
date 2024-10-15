@@ -5,6 +5,7 @@ from vtlengine.AST.Grammar.parser import Parser
 
 # This class defines a complete generic visitor for a parse tree produced by Parser.
 
+
 class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#start.
@@ -146,8 +147,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#conditionalFunctionsComponents.
-    def visitConditionalFunctionsComponents(self,
-                                            ctx: Parser.ConditionalFunctionsComponentsContext):
+    def visitConditionalFunctionsComponents(
+        self, ctx: Parser.ConditionalFunctionsComponentsContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#aggregateFunctionsComponents.
@@ -335,8 +337,9 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#unaryWithOptionalNumericComponent.
-    def visitUnaryWithOptionalNumericComponent(self,
-                                               ctx: Parser.UnaryWithOptionalNumericComponentContext):
+    def visitUnaryWithOptionalNumericComponent(
+        self, ctx: Parser.UnaryWithOptionalNumericComponentContext
+    ):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#binaryNumericComponent.

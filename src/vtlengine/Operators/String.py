@@ -29,7 +29,7 @@ class Unary(Operator.Unary):
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        return series.map(lambda x: cls.py_op(str(x)), na_action='ignore')
+        return series.map(lambda x: cls.py_op(str(x)), na_action="ignore")
 
     @classmethod
     def validate_dataset(cls, dataset: Dataset) -> None:
@@ -269,7 +269,7 @@ class Substr(Parameterized):
         if param2 is None or (param1 + param2) > len(x):
             param2 = len(x)
         else:
-            param2 = (param1 + param2)
+            param2 = param1 + param2
         return x[param1:param2]
 
     @classmethod
@@ -307,7 +307,7 @@ class Replace(Parameterized):
         if pd.isnull(param1):
             return ""
         elif pd.isnull(param2):
-            param2 = ''
+            param2 = ""
         x = str(x)
         if param1 is not None and param2 is not None:
             return x.replace(param1, param2)
@@ -340,8 +340,11 @@ class Instr(Parameterized):
                  param2: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
                  param3: Optional[Operator.ALL_MODEL_DATA_TYPES] = None) -> Any:
 
-        if isinstance(param1, Dataset) or isinstance(param2, Dataset) or isinstance(param3,
-                                                                                    Dataset):
+        if (
+            isinstance(param1, Dataset)
+            or isinstance(param2, Dataset)
+            or isinstance(param3, Dataset)
+        ):
             raise SemanticError("1-1-18-10", op=cls.op)
         if param1 is not None:
             cls.check_param(param1, 1)
@@ -367,16 +370,19 @@ class Instr(Parameterized):
 
         if position == 1:
             if not check_unary_implicit_promotion(data_type, String):
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Pattern",
-                                    correct_type="String")
+                raise SemanticError(
+                    "1-1-18-4", op=cls.op, param_type="Pattern", correct_type="String"
+                )
         elif position == 2:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start",
-                                    correct_type="Integer")
+                raise SemanticError(
+                    "1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer"
+                )
         else:
             if not check_unary_implicit_promotion(data_type, Integer):
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence",
-                                    correct_type="Integer")
+                raise SemanticError(
+                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                )
         if isinstance(param, DataComponent):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
@@ -390,8 +396,9 @@ class Instr(Parameterized):
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3:
             if not pd.isnull(param) and param < 1:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence",
-                                    correct_type=">= 1")
+                raise SemanticError(
+                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1"
+                )
 
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, param1: Any, param2: Any, param3: Any) -> Any:
@@ -406,12 +413,7 @@ class Instr(Parameterized):
         param2_data = cls.generate_series_from_param(param2, len(data))
         param3_data = cls.generate_series_from_param(param3, len(data))
 
-        df = pd.DataFrame([
-            data,
-            param1_data,
-            param2_data,
-            param3_data
-        ]).T
+        df = pd.DataFrame([data, param1_data, param2_data, param3_data]).T
         n1, n2, n3, n4 = df.columns
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3], x[n4]), axis=1)
 
@@ -454,8 +456,9 @@ class Instr(Parameterized):
             param_value1 = None if param1 is None else param1.value
             param_value2 = None if param2 is None else param2.value
             param_value3 = None if param3 is None else param3.value
-            result.data = cls.apply_operation_series_scalar(operand.data, param_value1,
-                                                            param_value2, param_value3)
+            result.data = cls.apply_operation_series_scalar(
+                operand.data, param_value1, param_value2, param_value3
+            )
         return result
 
     @classmethod
@@ -487,8 +490,13 @@ class Instr(Parameterized):
         return cls.py_op(x, param1, param2, param3)
 
     @classmethod
-    def py_op(cls, str_value: str, str_to_find: Optional[str], start: Optional[int],
-              occurrence: Optional[int]) -> Any:
+    def py_op(
+        cls,
+        str_value: str,
+        str_to_find: Optional[str],
+        start: Optional[int],
+        occurrence: Optional[int],
+    ) -> Any:
         str_value = str(str_value)
         if not pd.isnull(start):
             if isinstance(start, int) or isinstance(start, float):
@@ -504,8 +512,9 @@ class Instr(Parameterized):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence",
-                                    correct_type="Integer")
+                raise SemanticError(
+                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                )
         else:
             occurrence = 0
         if pd.isnull(str_to_find):

@@ -5,17 +5,25 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener # type: ignore[import-untyped]
 
-from vtlengine.API._InternalApi import load_vtl, load_datasets, load_value_domains, \
-    load_external_routines, \
-    load_datasets_with_data, _return_only_persistent_datasets, _check_output_folder
+from vtlengine.API._InternalApi import (
+    load_vtl,
+    load_datasets,
+    load_value_domains,
+    load_external_routines,
+    load_datasets_with_data,
+    _return_only_persistent_datasets,
+    _check_output_folder,
+)
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.files.output._time_period_representation import \
-    format_time_period_external_representation, TimePeriodRepresentation
+from vtlengine.files.output._time_period_representation import (
+    TimePeriodRepresentation,
+    format_time_period_external_representation,
+)
 
 pd.options.mode.chained_assignment = None
 
@@ -25,11 +33,14 @@ class __VTLSingleErrorListener(ErrorListener): # type: ignore[misc]
 
     """
 
-    def syntaxError(self, recognizer: Any, offendingSymbol: str, line: str, column: str, msg: str, e: Any) -> None:
-        raise Exception(f"Not valid VTL Syntax \n "
-                        f"offendingSymbol: {offendingSymbol} \n "
-                        f"msg: {msg} \n "
-                        f"line: {line}")
+    def syntaxError(self, recognizer: Any, offendingSymbol: str,
+                    line: str, column: str, msg: str, e: Any) -> None:
+        raise Exception(
+            f"Not valid VTL Syntax \n "
+            f"offendingSymbol: {offendingSymbol} \n "
+            f"msg: {msg} \n "
+            f"line: {line}"
+        )
 
 
 def _lexer(text: str) -> CommonTokenStream:
@@ -55,6 +66,15 @@ def _parser(stream: CommonTokenStream) -> Any:
 def create_ast(text: str) -> Start:
     """
     Function that creates the AST object.
+
+    Args:
+        text: Vtl string expression that will be used to create the AST object.
+
+    Returns:
+        The ast object.
+
+    Raises:
+        Exception: When the vtl syntax expression is wrong.
     """
     stream = _lexer(text)
     cst = _parser(stream)
@@ -98,16 +118,19 @@ def semantic_analysis(script: Union[str, Path],
 
     This function has the following params:
 
-    :param script: String or Path of the vtl expression.
+    Args:
+        script: String or Path of the vtl expression.
+        data_structures: Dict or Path (file or folder), \
+        or List of Dicts or Paths with the data structures JSON files.
+        value_domains: Dict or Path of the value domains JSON files. (default: None)
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
-    :param data_structures: Dict or Path (file or folder), \
-    or List of Dicts or Paths with the data structures JSON files.
+    Returns:
+        The computed datasets.
 
-    :param value_domains: Dict or Path of the value domains JSON files. (default: None)
-
-    :param external_routines: String or Path of the external routines SQL files. (default: None)
-
-    :return: The computed datasets.
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
     """
     # AST generation
     vtl = load_vtl(script)
@@ -125,10 +148,10 @@ def semantic_analysis(script: Union[str, Path],
         ext_routines = load_external_routines(external_routines)
 
     # Running the interpreter
-    interpreter = InterpreterAnalyzer(datasets=structures, value_domains=vd,
-                                      external_routines=ext_routines,
-                                      only_semantic=True)
-    with pd.option_context('future.no_silent_downcasting', True):
+    interpreter = InterpreterAnalyzer(
+        datasets=structures, value_domains=vd, external_routines=ext_routines, only_semantic=True
+    )
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
     return result
 
@@ -203,26 +226,33 @@ def run(script: Union[str, Path], data_structures: Union[Dict[str, Any], Path, L
 
     This function has the following params:
 
-    :param script: String or Path with the vtl expression.
+    Args:
+        script: String or Path with the vtl expression.
 
-    :param data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-    :param datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
 
-    :param value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path of the value domains JSON files. (default:None)
 
-    :param external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
-    :param time_period_output_format: String with the possible values \
-    ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
-    Time Period components.
+        time_period_output_format: String with the possible values \
+        ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
+        Time Period components.
 
-    :param return_only_persistent: If True, run function will only return the results of \
-    Persistent Assignments. (default: False)
+        return_only_persistent: If True, run function will only return the results of \
+        Persistent Assignments. (default: False)
 
-    :param output_folder: Path or S3 URI to the output folder. (default: None)
+        output_folder: Path or S3 URI to the output folder. (default: None)
 
-    :return: The datasets are produced without data if the output folder is defined.
+
+    Returns:
+       The datasets are produced without data if the output folder is defined.
+
+    Raises:
+        Exception: If the files have the wrong format, or they do not exist, \
+        or their Paths are invalid.
 
     """
     # AST generation
@@ -251,13 +281,16 @@ def run(script: Union[str, Path], data_structures: Union[Dict[str, Any], Path, L
         _check_output_folder(output_folder)
 
     # Running the interpreter
-    interpreter = InterpreterAnalyzer(datasets=datasets, value_domains=vd,
-                                      external_routines=ext_routines,
-                                      ds_analysis=ds_analysis,
-                                      datapoints_paths=path_dict,
-                                      output_path=output_folder,
-                                      time_period_representation=time_period_representation)
-    with pd.option_context('future.no_silent_downcasting', True):
+    interpreter = InterpreterAnalyzer(
+        datasets=datasets,
+        value_domains=vd,
+        external_routines=ext_routines,
+        ds_analysis=ds_analysis,
+        datapoints_paths=path_dict,
+        output_path=output_folder,
+        time_period_representation=time_period_representation,
+    )
+    with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)
 
     # Applying time period output format

@@ -19,8 +19,8 @@ def serializedATN():
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
         buf.write("\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36")
-        buf.write("\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t")
-        buf.write("&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
+        buf.write('\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%\4&\t')
+        buf.write("&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
         buf.write("/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64\t\64")
         buf.write("\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:\4;\t")
         buf.write(";\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4B\tB\4C\tC\4D\t")
@@ -111,7 +111,7 @@ def serializedATN():
         buf.write(" \3 \3 \5 \u03eb\n \3 \5 \u03ee\n \3 \5 \u03f1\n \3 \5")
         buf.write(" \u03f4\n \3 \3 \3 \3 \3 \3 \5 \u03fc\n \3 \5 \u03ff\n")
         buf.write(" \3 \5 \u0402\n \3 \5 \u0405\n \3 \3 \5 \u0409\n \3!\3")
-        buf.write("!\3!\3!\3!\3!\3!\3\"\3\"\3\"\3\"\3\"\3\"\3\"\3#\3#\3#")
+        buf.write('!\3!\3!\3!\3!\3!\3"\3"\3"\3"\3"\3"\3"\3#\3#\3#')
         buf.write("\3#\3#\3#\3#\3#\5#\u0421\n#\3$\3$\3$\3$\3$\5$\u0428\n")
         buf.write("$\5$\u042a\n$\3$\3$\3%\3%\3%\3%\3%\3%\5%\u0434\n%\3%\5")
         buf.write("%\u0437\n%\3%\5%\u043a\n%\3%\3%\3%\3%\3%\3%\3%\3%\3%\3")
@@ -121,7 +121,7 @@ def serializedATN():
         buf.write("&\3&\3&\3&\3&\3&\3&\3&\3&\5&\u0476\n&\5&\u0478\n&\3&\3")
         buf.write("&\3&\5&\u047d\n&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\5&\u0489")
         buf.write("\n&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\3&\5&\u0499")
-        buf.write("\n&\3\'\3\'\3\'\3\'\3(\3(\3(\7(\u04a2\n(\f(\16(\u04a5")
+        buf.write("\n&\3'\3'\3'\3'\3(\3(\3(\7(\u04a2\n(\f(\16(\u04a5")
         buf.write("\13(\3)\5)\u04a8\n)\3)\3)\3)\3)\3*\5*\u04af\n*\3*\3*\3")
         buf.write("*\3*\3+\3+\3+\3+\3,\3,\3,\3,\3,\3,\3,\3,\5,\u04c1\n,\3")
         buf.write(",\3,\5,\u04c5\n,\3-\3-\3-\7-\u04ca\n-\f-\16-\u04cd\13")
@@ -164,14 +164,14 @@ def serializedATN():
         buf.write("\13a\3a\3a\3b\3b\3b\3c\3c\3c\3d\3d\3e\3e\5e\u0687\ne\3")
         buf.write("f\3f\5f\u068b\nf\3g\3g\3g\3g\3g\5g\u0692\ng\3h\3h\3h\3")
         buf.write("i\3i\3j\3j\3k\3k\3l\3l\3m\3m\3n\3n\3n\2\4\6\bo\2\4\6\b")
-        buf.write("\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64\668")
+        buf.write('\n\f\16\20\22\24\26\30\32\34\36 "$&(*,.\60\62\64\668')
         buf.write(":<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtvxz|~\u0080\u0082\u0084")
         buf.write("\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094\u0096")
         buf.write("\u0098\u009a\u009c\u009e\u00a0\u00a2\u00a4\u00a6\u00a8")
         buf.write("\u00aa\u00ac\u00ae\u00b0\u00b2\u00b4\u00b6\u00b8\u00ba")
         buf.write("\u00bc\u00be\u00c0\u00c2\u00c4\u00c6\u00c8\u00ca\u00cc")
-        buf.write("\u00ce\u00d0\u00d2\u00d4\u00d6\u00d8\u00da\2\'\4\2\17")
-        buf.write("\20))\3\2\21\22\4\2\17\20TT\3\2\'(\3\2+,\3\2 !\4\2\u00c0")
+        buf.write("\u00ce\u00d0\u00d2\u00d4\u00d6\u00d8\u00da\2'\4\2\17")
+        buf.write("\20))\3\2\21\22\4\2\17\20TT\3\2'(\3\2+,\3\2 !\4\2\u00c0")
         buf.write("\u00c0\u00c2\u00c2\3\2\u00b7\u00b8\3\2\u00b9\u00ba\5\2")
         buf.write("SSUWyz\6\2KKMMbb}\177\3\2OP\4\2NNQR\4\2>>\u00c7\u00c7")
         buf.write("\3\2\u0098\u0099\4\2ii\u00ea\u00ea\3\2HI\4\2\62\62\u0081")
@@ -186,7 +186,7 @@ def serializedATN():
         buf.write("\3\2\2\2\16\u0174\3\2\2\2\20\u0176\3\2\2\2\22\u017f\3")
         buf.write("\2\2\2\24\u0187\3\2\2\2\26\u018a\3\2\2\2\30\u0193\3\2")
         buf.write("\2\2\32\u019c\3\2\2\2\34\u01a1\3\2\2\2\36\u01b6\3\2\2")
-        buf.write("\2 \u01ea\3\2\2\2\"\u0225\3\2\2\2$\u0260\3\2\2\2&\u0264")
+        buf.write('\2 \u01ea\3\2\2\2"\u0225\3\2\2\2$\u0260\3\2\2\2&\u0264')
         buf.write("\3\2\2\2(\u0268\3\2\2\2*\u029a\3\2\2\2,\u02cc\3\2\2\2")
         buf.write(".\u02e3\3\2\2\2\60\u02fa\3\2\2\2\62\u031c\3\2\2\2\64\u0333")
         buf.write("\3\2\2\2\66\u0363\3\2\2\28\u0393\3\2\2\2:\u03b2\3\2\2")
@@ -273,12 +273,12 @@ def serializedATN():
         buf.write("\u0154\3\2\2\2\u0152\u0150\3\2\2\2\u0152\u0153\3\2\2\2")
         buf.write("\u0153\t\3\2\2\2\u0154\u0152\3\2\2\2\u0155\u015e\5$\23")
         buf.write("\2\u0156\u015e\5,\27\2\u0157\u015e\5\60\31\2\u0158\u015e")
-        buf.write("\5\64\33\2\u0159\u015e\58\35\2\u015a\u015e\5B\"\2\u015b")
+        buf.write('\5\64\33\2\u0159\u015e\58\35\2\u015a\u015e\5B"\2\u015b')
         buf.write("\u015e\5D#\2\u015c\u015e\5J&\2\u015d\u0155\3\2\2\2\u015d")
         buf.write("\u0156\3\2\2\2\u015d\u0157\3\2\2\2\u015d\u0158\3\2\2\2")
         buf.write("\u015d\u0159\3\2\2\2\u015d\u015a\3\2\2\2\u015d\u015b\3")
         buf.write("\2\2\2\u015d\u015c\3\2\2\2\u015e\13\3\2\2\2\u015f\u016c")
-        buf.write("\5\36\20\2\u0160\u016c\5\"\22\2\u0161\u016c\5*\26\2\u0162")
+        buf.write('\5\36\20\2\u0160\u016c\5"\22\2\u0161\u016c\5*\26\2\u0162')
         buf.write("\u016c\5.\30\2\u0163\u016c\5\62\32\2\u0164\u016c\5\66")
         buf.write("\34\2\u0165\u016c\5:\36\2\u0166\u016c\5<\37\2\u0167\u016c")
         buf.write("\5> \2\u0168\u016c\5@!\2\u0169\u016c\5F$\2\u016a\u016c")
@@ -293,14 +293,14 @@ def serializedATN():
         buf.write("\u016e\3\2\2\2\u0174\u016f\3\2\2\2\u0174\u0170\3\2\2\2")
         buf.write("\u0174\u0171\3\2\2\2\u0174\u0172\3\2\2\2\u0174\u0173\3")
         buf.write("\2\2\2\u0175\17\3\2\2\2\u0176\u0177\7$\2\2\u0177\u017c")
-        buf.write("\5L\'\2\u0178\u0179\7\23\2\2\u0179\u017b\5L\'\2\u017a")
+        buf.write("\5L'\2\u0178\u0179\7\23\2\2\u0179\u017b\5L'\2\u017a")
         buf.write("\u0178\3\2\2\2\u017b\u017e\3\2\2\2\u017c\u017a\3\2\2\2")
         buf.write("\u017c\u017d\3\2\2\2\u017d\21\3\2\2\2\u017e\u017c\3\2")
         buf.write("\2\2\u017f\u0180\7?\2\2\u0180\u0185\5N(\2\u0181\u0183")
         buf.write("\5n8\2\u0182\u0184\5p9\2\u0183\u0182\3\2\2\2\u0183\u0184")
         buf.write("\3\2\2\2\u0184\u0186\3\2\2\2\u0185\u0181\3\2\2\2\u0185")
         buf.write("\u0186\3\2\2\2\u0186\23\3\2\2\2\u0187\u0188\7`\2\2\u0188")
-        buf.write("\u0189\5\b\5\2\u0189\25\3\2\2\2\u018a\u018b\7\"\2\2\u018b")
+        buf.write('\u0189\5\b\5\2\u0189\25\3\2\2\2\u018a\u018b\7"\2\2\u018b')
         buf.write("\u0190\5R*\2\u018c\u018d\7\23\2\2\u018d\u018f\5R*\2\u018e")
         buf.write("\u018c\3\2\2\2\u018f\u0192\3\2\2\2\u0190\u018e\3\2\2\2")
         buf.write("\u0190\u0191\3\2\2\2\u0191\27\3\2\2\2\u0192\u0190\3\2")
@@ -393,7 +393,7 @@ def serializedATN():
         buf.write("\u025f\u0261\3\2\2\2\u0260\u0227\3\2\2\2\u0260\u0235\3")
         buf.write("\2\2\2\u0260\u0243\3\2\2\2\u0261%\3\2\2\2\u0262\u0265")
         buf.write("\5\b\5\2\u0263\u0265\7i\2\2\u0264\u0262\3\2\2\2\u0264")
-        buf.write("\u0263\3\2\2\2\u0265\'\3\2\2\2\u0266\u0269\5\6\4\2\u0267")
+        buf.write("\u0263\3\2\2\2\u0265'\3\2\2\2\u0266\u0269\5\6\4\2\u0267")
         buf.write("\u0269\7i\2\2\u0268\u0266\3\2\2\2\u0268\u0267\3\2\2\2")
         buf.write("\u0269)\3\2\2\2\u026a\u026b\t\13\2\2\u026b\u026c\7\3\2")
         buf.write("\2\u026c\u026d\5\6\4\2\u026d\u026e\7\4\2\2\u026e\u029b")
@@ -838,7 +838,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u065b\u00af\3\2\2\2\u065c\u065a\3\2\2\2\u065d")
         buf.write("\u065e\t \2\2\u065e\u00b1\3\2\2\2\u065f\u0660\7<\2\2\u0660")
         buf.write("\u0661\5\6\4\2\u0661\u00b3\3\2\2\2\u0662\u0663\t!\2\2")
-        buf.write("\u0663\u00b5\3\2\2\2\u0664\u0665\t\"\2\2\u0665\u00b7\3")
+        buf.write('\u0663\u00b5\3\2\2\2\u0664\u0665\t"\2\2\u0665\u00b7\3')
         buf.write("\2\2\2\u0666\u0667\7\u00eb\2\2\u0667\u00b9\3\2\2\2\u0668")
         buf.write("\u0669\7\u00eb\2\2\u0669\u00bb\3\2\2\2\u066a\u066b\7\u00eb")
         buf.write("\2\2\u066b\u00bd\3\2\2\2\u066c\u066f\7\u00eb\2\2\u066d")
@@ -898,105 +898,485 @@ class Parser(Parser):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = ["<INVALID>", "'('", "')'", "'['", "']'", "'{'", "'}'",
-                    "'='", "'<'", "'>'", "'>='", "'<>'", "'<='", "'+'",
-                    "'-'", "'*'", "'/'", "','", "'->'", "':'", "':='",
-                    "'#'", "'eval'", "'if'", "'then'", "'else'", "'using'",
-                    "'with'", "'current_date'", "'on'", "'drop'", "'keep'",
-                    "'calc'", "'attrcalc'", "'rename'", "'as'", "'and'",
-                    "'or'", "'xor'", "'not'", "'between'", "'in'", "'not_in'",
-                    "'null'", "'isnull'", "'ex'", "'union'", "'diff'",
-                    "'symdiff'", "'intersect'", "'keys'", "'intyear'",
-                    "'intmonth'", "'intday'", "'check'", "'exists_in'",
-                    "'to'", "'return'", "'imbalance'", "'errorcode'", "'all'",
-                    "'aggr'", "'errorlevel'", "'order'", "'by'", "'rank'",
-                    "'asc'", "'desc'", "'min'", "'max'", "'first'", "'last'",
-                    "'indexof'", "'abs'", "'key'", "'ln'", "'log'", "'trunc'",
-                    "'round'", "'power'", "'mod'", "'length'", "'||'",
-                    "'trim'", "'upper'", "'lower'", "'substr'", "'sum'",
-                    "'avg'", "'median'", "'count'", "'identifier'", "'measure'",
-                    "'attribute'", "'filter'", "'merge'", "'exp'", "'componentRole'",
-                    "'viral'", "'match_characters'", "'type'", "'nvl'",
-                    "'hierarchy'", "'_'", "'invalid'", "'valuedomain'",
-                    "'variable'", "'data'", "'structure'", "'dataset'",
-                    "'operator'", "'define'", "'<-'", "'datapoint'", "'hierarchical'",
-                    "'ruleset'", "'rule'", "'end'", "'alterDataset'", "'ltrim'",
-                    "'rtrim'", "'instr'", "'replace'", "'ceil'", "'floor'",
-                    "'sqrt'", "'any'", "'setdiff'", "'stddev_pop'", "'stddev_samp'",
-                    "'var_pop'", "'var_samp'", "'group'", "'except'", "'having'",
-                    "'first_value'", "'last_value'", "'lag'", "'lead'",
-                    "'ratio_to_report'", "'over'", "'preceding'", "'following'",
-                    "'unbounded'", "'partition'", "'rows'", "'range'",
-                    "'current'", "'valid'", "'fill_time_series'", "'flow_to_stock'",
-                    "'stock_to_flow'", "'timeshift'", "'measures'", "'no_measures'",
-                    "'condition'", "'boolean'", "'date'", "'time_period'",
-                    "'number'", "'string'", "'time'", "'integer'", "'float'",
-                    "'list'", "'record'", "'restrict'", "'yyyy'", "'mm'",
-                    "'dd'", "'maxLength'", "'regexp'", "'is'", "'when'",
-                    "'from'", "'aggregates'", "'points'", "'point'", "'total'",
-                    "'partial'", "'always'", "'inner_join'", "'left_join'",
-                    "'cross_join'", "'full_join'", "'maps_from'", "'maps_to'",
-                    "'map_to'", "'map_from'", "'returns'", "'pivot'", "'customPivot'",
-                    "'unpivot'", "'sub'", "'apply'", "'conditioned'", "'period_indicator'",
-                    "'single'", "'duration'", "'time_agg'", "'unit'", "'Value'",
-                    "'valuedomains'", "'variables'", "'input'", "'output'",
-                    "'cast'", "'rule_priority'", "'dataset_priority'",
-                    "'default'", "'check_datapoint'", "'check_hierarchy'",
-                    "'computed'", "'non_null'", "'non_zero'", "'partial_null'",
-                    "'partial_zero'", "'always_null'", "'always_zero'",
-                    "'components'", "'all_measures'", "'scalar'", "'component'",
-                    "'datapoint_on_valuedomains'", "'datapoint_on_variables'",
-                    "'hierarchical_on_valuedomains'", "'hierarchical_on_variables'",
-                    "'set'", "'language'", "<INVALID>", "<INVALID>", "<INVALID>",
-                    "<INVALID>", "<INVALID>", "<INVALID>", "';'"]
+    literalNames = [
+        "<INVALID>",
+        "'('",
+        "')'",
+        "'['",
+        "']'",
+        "'{'",
+        "'}'",
+        "'='",
+        "'<'",
+        "'>'",
+        "'>='",
+        "'<>'",
+        "'<='",
+        "'+'",
+        "'-'",
+        "'*'",
+        "'/'",
+        "','",
+        "'->'",
+        "':'",
+        "':='",
+        "'#'",
+        "'eval'",
+        "'if'",
+        "'then'",
+        "'else'",
+        "'using'",
+        "'with'",
+        "'current_date'",
+        "'on'",
+        "'drop'",
+        "'keep'",
+        "'calc'",
+        "'attrcalc'",
+        "'rename'",
+        "'as'",
+        "'and'",
+        "'or'",
+        "'xor'",
+        "'not'",
+        "'between'",
+        "'in'",
+        "'not_in'",
+        "'null'",
+        "'isnull'",
+        "'ex'",
+        "'union'",
+        "'diff'",
+        "'symdiff'",
+        "'intersect'",
+        "'keys'",
+        "'intyear'",
+        "'intmonth'",
+        "'intday'",
+        "'check'",
+        "'exists_in'",
+        "'to'",
+        "'return'",
+        "'imbalance'",
+        "'errorcode'",
+        "'all'",
+        "'aggr'",
+        "'errorlevel'",
+        "'order'",
+        "'by'",
+        "'rank'",
+        "'asc'",
+        "'desc'",
+        "'min'",
+        "'max'",
+        "'first'",
+        "'last'",
+        "'indexof'",
+        "'abs'",
+        "'key'",
+        "'ln'",
+        "'log'",
+        "'trunc'",
+        "'round'",
+        "'power'",
+        "'mod'",
+        "'length'",
+        "'||'",
+        "'trim'",
+        "'upper'",
+        "'lower'",
+        "'substr'",
+        "'sum'",
+        "'avg'",
+        "'median'",
+        "'count'",
+        "'identifier'",
+        "'measure'",
+        "'attribute'",
+        "'filter'",
+        "'merge'",
+        "'exp'",
+        "'componentRole'",
+        "'viral'",
+        "'match_characters'",
+        "'type'",
+        "'nvl'",
+        "'hierarchy'",
+        "'_'",
+        "'invalid'",
+        "'valuedomain'",
+        "'variable'",
+        "'data'",
+        "'structure'",
+        "'dataset'",
+        "'operator'",
+        "'define'",
+        "'<-'",
+        "'datapoint'",
+        "'hierarchical'",
+        "'ruleset'",
+        "'rule'",
+        "'end'",
+        "'alterDataset'",
+        "'ltrim'",
+        "'rtrim'",
+        "'instr'",
+        "'replace'",
+        "'ceil'",
+        "'floor'",
+        "'sqrt'",
+        "'any'",
+        "'setdiff'",
+        "'stddev_pop'",
+        "'stddev_samp'",
+        "'var_pop'",
+        "'var_samp'",
+        "'group'",
+        "'except'",
+        "'having'",
+        "'first_value'",
+        "'last_value'",
+        "'lag'",
+        "'lead'",
+        "'ratio_to_report'",
+        "'over'",
+        "'preceding'",
+        "'following'",
+        "'unbounded'",
+        "'partition'",
+        "'rows'",
+        "'range'",
+        "'current'",
+        "'valid'",
+        "'fill_time_series'",
+        "'flow_to_stock'",
+        "'stock_to_flow'",
+        "'timeshift'",
+        "'measures'",
+        "'no_measures'",
+        "'condition'",
+        "'boolean'",
+        "'date'",
+        "'time_period'",
+        "'number'",
+        "'string'",
+        "'time'",
+        "'integer'",
+        "'float'",
+        "'list'",
+        "'record'",
+        "'restrict'",
+        "'yyyy'",
+        "'mm'",
+        "'dd'",
+        "'maxLength'",
+        "'regexp'",
+        "'is'",
+        "'when'",
+        "'from'",
+        "'aggregates'",
+        "'points'",
+        "'point'",
+        "'total'",
+        "'partial'",
+        "'always'",
+        "'inner_join'",
+        "'left_join'",
+        "'cross_join'",
+        "'full_join'",
+        "'maps_from'",
+        "'maps_to'",
+        "'map_to'",
+        "'map_from'",
+        "'returns'",
+        "'pivot'",
+        "'customPivot'",
+        "'unpivot'",
+        "'sub'",
+        "'apply'",
+        "'conditioned'",
+        "'period_indicator'",
+        "'single'",
+        "'duration'",
+        "'time_agg'",
+        "'unit'",
+        "'Value'",
+        "'valuedomains'",
+        "'variables'",
+        "'input'",
+        "'output'",
+        "'cast'",
+        "'rule_priority'",
+        "'dataset_priority'",
+        "'default'",
+        "'check_datapoint'",
+        "'check_hierarchy'",
+        "'computed'",
+        "'non_null'",
+        "'non_zero'",
+        "'partial_null'",
+        "'partial_zero'",
+        "'always_null'",
+        "'always_zero'",
+        "'components'",
+        "'all_measures'",
+        "'scalar'",
+        "'component'",
+        "'datapoint_on_valuedomains'",
+        "'datapoint_on_variables'",
+        "'hierarchical_on_valuedomains'",
+        "'hierarchical_on_variables'",
+        "'set'",
+        "'language'",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "';'",
+    ]
 
-    symbolicNames = ["<INVALID>", "LPAREN", "RPAREN", "QLPAREN", "QRPAREN",
-                     "GLPAREN", "GRPAREN", "EQ", "LT", "MT", "ME", "NEQ",
-                     "LE", "PLUS", "MINUS", "MUL", "DIV", "COMMA", "POINTER",
-                     "COLON", "ASSIGN", "MEMBERSHIP", "EVAL", "IF", "THEN",
-                     "ELSE", "USING", "WITH", "CURRENT_DATE", "ON", "DROP",
-                     "KEEP", "CALC", "ATTRCALC", "RENAME", "AS", "AND",
-                     "OR", "XOR", "NOT", "BETWEEN", "IN", "NOT_IN", "NULL_CONSTANT",
-                     "ISNULL", "EX", "UNION", "DIFF", "SYMDIFF", "INTERSECT",
-                     "KEYS", "INTYEAR", "INTMONTH", "INTDAY", "CHECK",
-                     "EXISTS_IN", "TO", "RETURN", "IMBALANCE", "ERRORCODE",
-                     "ALL", "AGGREGATE", "ERRORLEVEL", "ORDER", "BY", "RANK",
-                     "ASC", "DESC", "MIN", "MAX", "FIRST", "LAST", "INDEXOF",
-                     "ABS", "KEY", "LN", "LOG", "TRUNC", "ROUND", "POWER",
-                     "MOD", "LEN", "CONCAT", "TRIM", "UCASE", "LCASE",
-                     "SUBSTR", "SUM", "AVG", "MEDIAN", "COUNT", "DIMENSION",
-                     "MEASURE", "ATTRIBUTE", "FILTER", "MERGE", "EXP",
-                     "ROLE", "VIRAL", "CHARSET_MATCH", "TYPE", "NVL", "HIERARCHY",
-                     "OPTIONAL", "INVALID", "VALUE_DOMAIN", "VARIABLE",
-                     "DATA", "STRUCTURE", "DATASET", "OPERATOR", "DEFINE",
-                     "PUT_SYMBOL", "DATAPOINT", "HIERARCHICAL", "RULESET",
-                     "RULE", "END", "ALTER_DATASET", "LTRIM", "RTRIM",
-                     "INSTR", "REPLACE", "CEIL", "FLOOR", "SQRT", "ANY",
-                     "SETDIFF", "STDDEV_POP", "STDDEV_SAMP", "VAR_POP",
-                     "VAR_SAMP", "GROUP", "EXCEPT", "HAVING", "FIRST_VALUE",
-                     "LAST_VALUE", "LAG", "LEAD", "RATIO_TO_REPORT", "OVER",
-                     "PRECEDING", "FOLLOWING", "UNBOUNDED", "PARTITION",
-                     "ROWS", "RANGE", "CURRENT", "VALID", "FILL_TIME_SERIES",
-                     "FLOW_TO_STOCK", "STOCK_TO_FLOW", "TIMESHIFT", "MEASURES",
-                     "NO_MEASURES", "CONDITION", "BOOLEAN", "DATE", "TIME_PERIOD",
-                     "NUMBER", "STRING", "TIME", "INTEGER", "FLOAT", "LIST",
-                     "RECORD", "RESTRICT", "YYYY", "MM", "DD", "MAX_LENGTH",
-                     "REGEXP", "IS", "WHEN", "FROM", "AGGREGATES", "POINTS",
-                     "POINT", "TOTAL", "PARTIAL", "ALWAYS", "INNER_JOIN",
-                     "LEFT_JOIN", "CROSS_JOIN", "FULL_JOIN", "MAPS_FROM",
-                     "MAPS_TO", "MAP_TO", "MAP_FROM", "RETURNS", "PIVOT",
-                     "CUSTOMPIVOT", "UNPIVOT", "SUBSPACE", "APPLY", "CONDITIONED",
-                     "PERIOD_INDICATOR", "SINGLE", "DURATION", "TIME_AGG",
-                     "UNIT", "VALUE", "VALUEDOMAINS", "VARIABLES", "INPUT",
-                     "OUTPUT", "CAST", "RULE_PRIORITY", "DATASET_PRIORITY",
-                     "DEFAULT", "CHECK_DATAPOINT", "CHECK_HIERARCHY", "COMPUTED",
-                     "NON_NULL", "NON_ZERO", "PARTIAL_NULL", "PARTIAL_ZERO",
-                     "ALWAYS_NULL", "ALWAYS_ZERO", "COMPONENTS", "ALL_MEASURES",
-                     "SCALAR", "COMPONENT", "DATAPOINT_ON_VD", "DATAPOINT_ON_VAR",
-                     "HIERARCHICAL_ON_VD", "HIERARCHICAL_ON_VAR", "SET",
-                     "LANGUAGE", "INTEGER_CONSTANT", "NUMBER_CONSTANT",
-                     "BOOLEAN_CONSTANT", "STRING_CONSTANT", "IDENTIFIER",
-                     "WS", "EOL", "ML_COMMENT", "SL_COMMENT"]
+    symbolicNames = [
+        "<INVALID>",
+        "LPAREN",
+        "RPAREN",
+        "QLPAREN",
+        "QRPAREN",
+        "GLPAREN",
+        "GRPAREN",
+        "EQ",
+        "LT",
+        "MT",
+        "ME",
+        "NEQ",
+        "LE",
+        "PLUS",
+        "MINUS",
+        "MUL",
+        "DIV",
+        "COMMA",
+        "POINTER",
+        "COLON",
+        "ASSIGN",
+        "MEMBERSHIP",
+        "EVAL",
+        "IF",
+        "THEN",
+        "ELSE",
+        "USING",
+        "WITH",
+        "CURRENT_DATE",
+        "ON",
+        "DROP",
+        "KEEP",
+        "CALC",
+        "ATTRCALC",
+        "RENAME",
+        "AS",
+        "AND",
+        "OR",
+        "XOR",
+        "NOT",
+        "BETWEEN",
+        "IN",
+        "NOT_IN",
+        "NULL_CONSTANT",
+        "ISNULL",
+        "EX",
+        "UNION",
+        "DIFF",
+        "SYMDIFF",
+        "INTERSECT",
+        "KEYS",
+        "INTYEAR",
+        "INTMONTH",
+        "INTDAY",
+        "CHECK",
+        "EXISTS_IN",
+        "TO",
+        "RETURN",
+        "IMBALANCE",
+        "ERRORCODE",
+        "ALL",
+        "AGGREGATE",
+        "ERRORLEVEL",
+        "ORDER",
+        "BY",
+        "RANK",
+        "ASC",
+        "DESC",
+        "MIN",
+        "MAX",
+        "FIRST",
+        "LAST",
+        "INDEXOF",
+        "ABS",
+        "KEY",
+        "LN",
+        "LOG",
+        "TRUNC",
+        "ROUND",
+        "POWER",
+        "MOD",
+        "LEN",
+        "CONCAT",
+        "TRIM",
+        "UCASE",
+        "LCASE",
+        "SUBSTR",
+        "SUM",
+        "AVG",
+        "MEDIAN",
+        "COUNT",
+        "DIMENSION",
+        "MEASURE",
+        "ATTRIBUTE",
+        "FILTER",
+        "MERGE",
+        "EXP",
+        "ROLE",
+        "VIRAL",
+        "CHARSET_MATCH",
+        "TYPE",
+        "NVL",
+        "HIERARCHY",
+        "OPTIONAL",
+        "INVALID",
+        "VALUE_DOMAIN",
+        "VARIABLE",
+        "DATA",
+        "STRUCTURE",
+        "DATASET",
+        "OPERATOR",
+        "DEFINE",
+        "PUT_SYMBOL",
+        "DATAPOINT",
+        "HIERARCHICAL",
+        "RULESET",
+        "RULE",
+        "END",
+        "ALTER_DATASET",
+        "LTRIM",
+        "RTRIM",
+        "INSTR",
+        "REPLACE",
+        "CEIL",
+        "FLOOR",
+        "SQRT",
+        "ANY",
+        "SETDIFF",
+        "STDDEV_POP",
+        "STDDEV_SAMP",
+        "VAR_POP",
+        "VAR_SAMP",
+        "GROUP",
+        "EXCEPT",
+        "HAVING",
+        "FIRST_VALUE",
+        "LAST_VALUE",
+        "LAG",
+        "LEAD",
+        "RATIO_TO_REPORT",
+        "OVER",
+        "PRECEDING",
+        "FOLLOWING",
+        "UNBOUNDED",
+        "PARTITION",
+        "ROWS",
+        "RANGE",
+        "CURRENT",
+        "VALID",
+        "FILL_TIME_SERIES",
+        "FLOW_TO_STOCK",
+        "STOCK_TO_FLOW",
+        "TIMESHIFT",
+        "MEASURES",
+        "NO_MEASURES",
+        "CONDITION",
+        "BOOLEAN",
+        "DATE",
+        "TIME_PERIOD",
+        "NUMBER",
+        "STRING",
+        "TIME",
+        "INTEGER",
+        "FLOAT",
+        "LIST",
+        "RECORD",
+        "RESTRICT",
+        "YYYY",
+        "MM",
+        "DD",
+        "MAX_LENGTH",
+        "REGEXP",
+        "IS",
+        "WHEN",
+        "FROM",
+        "AGGREGATES",
+        "POINTS",
+        "POINT",
+        "TOTAL",
+        "PARTIAL",
+        "ALWAYS",
+        "INNER_JOIN",
+        "LEFT_JOIN",
+        "CROSS_JOIN",
+        "FULL_JOIN",
+        "MAPS_FROM",
+        "MAPS_TO",
+        "MAP_TO",
+        "MAP_FROM",
+        "RETURNS",
+        "PIVOT",
+        "CUSTOMPIVOT",
+        "UNPIVOT",
+        "SUBSPACE",
+        "APPLY",
+        "CONDITIONED",
+        "PERIOD_INDICATOR",
+        "SINGLE",
+        "DURATION",
+        "TIME_AGG",
+        "UNIT",
+        "VALUE",
+        "VALUEDOMAINS",
+        "VARIABLES",
+        "INPUT",
+        "OUTPUT",
+        "CAST",
+        "RULE_PRIORITY",
+        "DATASET_PRIORITY",
+        "DEFAULT",
+        "CHECK_DATAPOINT",
+        "CHECK_HIERARCHY",
+        "COMPUTED",
+        "NON_NULL",
+        "NON_ZERO",
+        "PARTIAL_NULL",
+        "PARTIAL_ZERO",
+        "ALWAYS_NULL",
+        "ALWAYS_ZERO",
+        "COMPONENTS",
+        "ALL_MEASURES",
+        "SCALAR",
+        "COMPONENT",
+        "DATAPOINT_ON_VD",
+        "DATAPOINT_ON_VAR",
+        "HIERARCHICAL_ON_VD",
+        "HIERARCHICAL_ON_VAR",
+        "SET",
+        "LANGUAGE",
+        "INTEGER_CONSTANT",
+        "NUMBER_CONSTANT",
+        "BOOLEAN_CONSTANT",
+        "STRING_CONSTANT",
+        "IDENTIFIER",
+        "WS",
+        "EOL",
+        "ML_COMMENT",
+        "SL_COMMENT",
+    ]
 
     RULE_start = 0
     RULE_statement = 1
@@ -1108,38 +1488,117 @@ class Parser(Parser):
     RULE_basicScalarType = 107
     RULE_retainType = 108
 
-    ruleNames = ["start", "statement", "expr", "exprComponent", "functionsComponents",
-                 "functions", "datasetClause", "renameClause", "aggrClause",
-                 "filterClause", "calcClause", "keepOrDropClause", "pivotOrUnpivotClause",
-                 "subspaceClause", "joinOperators", "defOperators", "genericOperators",
-                 "genericOperatorsComponent", "parameterComponent", "parameter",
-                 "stringOperators", "stringOperatorsComponent", "numericOperators",
-                 "numericOperatorsComponent", "comparisonOperators", "comparisonOperatorsComponent",
-                 "timeOperators", "timeOperatorsComponent", "setOperators",
-                 "hierarchyOperators", "validationOperators", "conditionalOperators",
-                 "conditionalOperatorsComponent", "aggrOperators", "aggrOperatorsGrouping",
-                 "anFunction", "anFunctionComponent", "renameClauseItem",
-                 "aggregateClause", "aggrFunctionClause", "calcClauseItem",
-                 "subspaceClauseItem", "scalarItem", "joinClauseWithoutUsing",
-                 "joinClause", "joinClauseItem", "joinBody", "joinApplyClause",
-                 "partitionByClause", "orderByClause", "orderByItem",
-                 "windowingClause", "signedInteger", "limitClauseItem",
-                 "groupingClause", "havingClause", "parameterItem", "outputParameterType",
-                 "outputParameterTypeComponent", "inputParameterType",
-                 "rulesetType", "scalarType", "componentType", "datasetType",
-                 "evalDatasetType", "scalarSetType", "dpRuleset", "hrRuleset",
-                 "valueDomainName", "rulesetID", "rulesetSignature", "signature",
-                 "ruleClauseDatapoint", "ruleItemDatapoint", "ruleClauseHierarchical",
-                 "ruleItemHierarchical", "hierRuleSignature", "valueDomainSignature",
-                 "codeItemRelation", "codeItemRelationClause", "valueDomainValue",
-                 "scalarTypeConstraint", "compConstraint", "multModifier",
-                 "validationOutput", "validationMode", "conditionClause",
-                 "inputMode", "imbalanceExpr", "inputModeHierarchy", "outputModeHierarchy",
-                 "alias", "varID", "simpleComponentId", "componentID",
-                 "lists", "erCode", "erLevel", "comparisonOperand", "optionalExpr",
-                 "optionalExprComponent", "componentRole", "viralAttribute",
-                 "valueDomainID", "operatorID", "routineName", "constant",
-                 "basicScalarType", "retainType"]
+    ruleNames = [
+        "start",
+        "statement",
+        "expr",
+        "exprComponent",
+        "functionsComponents",
+        "functions",
+        "datasetClause",
+        "renameClause",
+        "aggrClause",
+        "filterClause",
+        "calcClause",
+        "keepOrDropClause",
+        "pivotOrUnpivotClause",
+        "subspaceClause",
+        "joinOperators",
+        "defOperators",
+        "genericOperators",
+        "genericOperatorsComponent",
+        "parameterComponent",
+        "parameter",
+        "stringOperators",
+        "stringOperatorsComponent",
+        "numericOperators",
+        "numericOperatorsComponent",
+        "comparisonOperators",
+        "comparisonOperatorsComponent",
+        "timeOperators",
+        "timeOperatorsComponent",
+        "setOperators",
+        "hierarchyOperators",
+        "validationOperators",
+        "conditionalOperators",
+        "conditionalOperatorsComponent",
+        "aggrOperators",
+        "aggrOperatorsGrouping",
+        "anFunction",
+        "anFunctionComponent",
+        "renameClauseItem",
+        "aggregateClause",
+        "aggrFunctionClause",
+        "calcClauseItem",
+        "subspaceClauseItem",
+        "scalarItem",
+        "joinClauseWithoutUsing",
+        "joinClause",
+        "joinClauseItem",
+        "joinBody",
+        "joinApplyClause",
+        "partitionByClause",
+        "orderByClause",
+        "orderByItem",
+        "windowingClause",
+        "signedInteger",
+        "limitClauseItem",
+        "groupingClause",
+        "havingClause",
+        "parameterItem",
+        "outputParameterType",
+        "outputParameterTypeComponent",
+        "inputParameterType",
+        "rulesetType",
+        "scalarType",
+        "componentType",
+        "datasetType",
+        "evalDatasetType",
+        "scalarSetType",
+        "dpRuleset",
+        "hrRuleset",
+        "valueDomainName",
+        "rulesetID",
+        "rulesetSignature",
+        "signature",
+        "ruleClauseDatapoint",
+        "ruleItemDatapoint",
+        "ruleClauseHierarchical",
+        "ruleItemHierarchical",
+        "hierRuleSignature",
+        "valueDomainSignature",
+        "codeItemRelation",
+        "codeItemRelationClause",
+        "valueDomainValue",
+        "scalarTypeConstraint",
+        "compConstraint",
+        "multModifier",
+        "validationOutput",
+        "validationMode",
+        "conditionClause",
+        "inputMode",
+        "imbalanceExpr",
+        "inputModeHierarchy",
+        "outputModeHierarchy",
+        "alias",
+        "varID",
+        "simpleComponentId",
+        "componentID",
+        "lists",
+        "erCode",
+        "erLevel",
+        "comparisonOperand",
+        "optionalExpr",
+        "optionalExprComponent",
+        "componentRole",
+        "viralAttribute",
+        "valueDomainID",
+        "operatorID",
+        "routineName",
+        "constant",
+        "basicScalarType",
+        "retainType",
+    ]
 
     EOF = Token.EOF
     LPAREN = 1
@@ -1382,8 +1841,9 @@ class Parser(Parser):
 
     def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
-        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA,
-                                          self.sharedContextCache)
+        self._interp = ParserATNSimulator(
+            self, self.atn, self.decisionsToDFA, self.sharedContextCache
+        )
         self._predicates = None
 
     class StartContext(ParserRuleContext):
@@ -1550,7 +2010,6 @@ class Parser(Parser):
                 self.state = 236
                 self.defOperators()
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -1922,8 +2381,16 @@ class Parser(Parser):
                 self.state = 245
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))) != 0)):
+                if not (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -1979,14 +2446,15 @@ class Parser(Parser):
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input, 4, self._ctx)
                     if la_ == 1:
-                        localctx = Parser.ArithmeticExprContext(self,
-                                                                Parser.ExprContext(self, _parentctx,
-                                                                                   _parentState))
+                        localctx = Parser.ArithmeticExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 258
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 259
                         localctx.op = self._input.LT(1)
@@ -2001,15 +2469,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 2:
-                        localctx = Parser.ArithmeticExprOrConcatContext(self,
-                                                                        Parser.ExprContext(self,
-                                                                                           _parentctx,
-                                                                                           _parentState))
+                        localctx = Parser.ArithmeticExprOrConcatContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 261
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 262
                         localctx.op = self._input.LT(1)
@@ -2024,14 +2492,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 3:
-                        localctx = Parser.ComparisonExprContext(self,
-                                                                Parser.ExprContext(self, _parentctx,
-                                                                                   _parentState))
+                        localctx = Parser.ComparisonExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 264
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 265
                         localctx.op = self.comparisonOperand()
@@ -2040,14 +2509,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 4:
-                        localctx = Parser.BooleanExprContext(self,
-                                                             Parser.ExprContext(self, _parentctx,
-                                                                                _parentState))
+                        localctx = Parser.BooleanExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 268
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 269
                         localctx.op = self.match(Parser.AND)
@@ -2056,14 +2526,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 5:
-                        localctx = Parser.BooleanExprContext(self,
-                                                             Parser.ExprContext(self, _parentctx,
-                                                                                _parentState))
+                        localctx = Parser.BooleanExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 271
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 272
                         localctx.op = self._input.LT(1)
@@ -2078,14 +2549,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 6:
-                        localctx = Parser.ClauseExprContext(self,
-                                                            Parser.ExprContext(self, _parentctx,
-                                                                               _parentState))
+                        localctx = Parser.ClauseExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.dataset = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 274
                         if not self.precpred(self._ctx, 12):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
                         self.state = 275
                         self.match(Parser.QLPAREN)
@@ -2096,13 +2568,14 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 7:
-                        localctx = Parser.MembershipExprContext(self,
-                                                                Parser.ExprContext(self, _parentctx,
-                                                                                   _parentState))
+                        localctx = Parser.MembershipExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 279
                         if not self.precpred(self._ctx, 11):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
                         self.state = 280
                         self.match(Parser.MEMBERSHIP)
@@ -2111,14 +2584,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 8:
-                        localctx = Parser.InNotInExprContext(self,
-                                                             Parser.ExprContext(self, _parentctx,
-                                                                                _parentState))
+                        localctx = Parser.InNotInExprContext(
+                            self, Parser.ExprContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 282
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 283
                         localctx.op = self._input.LT(1)
@@ -2170,8 +2644,9 @@ class Parser(Parser):
 
     class ArithmeticExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.op = None  # Token
@@ -2198,8 +2673,9 @@ class Parser(Parser):
 
     class IfExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.conditionalExpr = None  # ExprComponentContext
             self.thenExpr = None  # ExprComponentContext
@@ -2229,8 +2705,9 @@ class Parser(Parser):
 
     class ComparisonExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.right = None  # ExprComponentContext
@@ -2253,8 +2730,9 @@ class Parser(Parser):
 
     class FunctionsExpressionCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2269,8 +2747,9 @@ class Parser(Parser):
 
     class CompIdContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2285,8 +2764,9 @@ class Parser(Parser):
 
     class ConstantExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2301,8 +2781,9 @@ class Parser(Parser):
 
     class ArithmeticExprOrConcatCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.op = None  # Token
@@ -2332,8 +2813,9 @@ class Parser(Parser):
 
     class ParenthesisExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2354,8 +2836,9 @@ class Parser(Parser):
 
     class InNotInExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.op = None  # Token
@@ -2384,8 +2867,9 @@ class Parser(Parser):
 
     class UnaryExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.right = None  # ExprComponentContext
@@ -2411,8 +2895,9 @@ class Parser(Parser):
 
     class BooleanExprCompContext(ExprComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ExprComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ExprComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.op = None  # Token
@@ -2481,8 +2966,16 @@ class Parser(Parser):
                 self.state = 299
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))) != 0)):
+                if not (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2538,15 +3031,15 @@ class Parser(Parser):
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input, 8, self._ctx)
                     if la_ == 1:
-                        localctx = Parser.ArithmeticExprCompContext(self,
-                                                                    Parser.ExprComponentContext(
-                                                                        self, _parentctx,
-                                                                        _parentState))
+                        localctx = Parser.ArithmeticExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 312
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 313
                         localctx.op = self._input.LT(1)
@@ -2561,15 +3054,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 2:
-                        localctx = Parser.ArithmeticExprOrConcatCompContext(self,
-                                                                            Parser.ExprComponentContext(
-                                                                                self, _parentctx,
-                                                                                _parentState))
+                        localctx = Parser.ArithmeticExprOrConcatCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 315
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 316
                         localctx.op = self._input.LT(1)
@@ -2584,15 +3077,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 3:
-                        localctx = Parser.ComparisonExprCompContext(self,
-                                                                    Parser.ExprComponentContext(
-                                                                        self, _parentctx,
-                                                                        _parentState))
+                        localctx = Parser.ComparisonExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 318
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 319
                         self.comparisonOperand()
@@ -2601,15 +3094,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 4:
-                        localctx = Parser.BooleanExprCompContext(self,
-                                                                 Parser.ExprComponentContext(self,
-                                                                                             _parentctx,
-                                                                                             _parentState))
+                        localctx = Parser.BooleanExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 322
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 323
                         localctx.op = self.match(Parser.AND)
@@ -2618,15 +3111,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 5:
-                        localctx = Parser.BooleanExprCompContext(self,
-                                                                 Parser.ExprComponentContext(self,
-                                                                                             _parentctx,
-                                                                                             _parentState))
+                        localctx = Parser.BooleanExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 325
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 326
                         localctx.op = self._input.LT(1)
@@ -2641,15 +3134,15 @@ class Parser(Parser):
                         pass
 
                     elif la_ == 6:
-                        localctx = Parser.InNotInExprCompContext(self,
-                                                                 Parser.ExprComponentContext(self,
-                                                                                             _parentctx,
-                                                                                             _parentState))
+                        localctx = Parser.InNotInExprCompContext(
+                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                        )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
                         self.state = 328
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
+
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 329
                         localctx.op = self._input.LT(1)
@@ -2701,8 +3194,9 @@ class Parser(Parser):
 
     class NumericFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2717,8 +3211,9 @@ class Parser(Parser):
 
     class StringFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2733,8 +3228,9 @@ class Parser(Parser):
 
     class ComparisonFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2749,8 +3245,9 @@ class Parser(Parser):
 
     class TimeFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2765,8 +3262,9 @@ class Parser(Parser):
 
     class GenericFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2781,8 +3279,9 @@ class Parser(Parser):
 
     class AnalyticFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2797,8 +3296,9 @@ class Parser(Parser):
 
     class ConditionalFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2813,8 +3313,9 @@ class Parser(Parser):
 
     class AggregateFunctionsComponentsContext(FunctionsComponentsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.FunctionsComponentsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.FunctionsComponentsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2890,7 +3391,6 @@ class Parser(Parser):
                 self.state = 346
                 self.anFunctionComponent()
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3184,7 +3684,6 @@ class Parser(Parser):
                 self.anFunction()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -3394,9 +3893,6 @@ class Parser(Parser):
                 if _la == Parser.HAVING:
                     self.state = 384
                     self.havingClause()
-
-
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3714,8 +4210,9 @@ class Parser(Parser):
 
     class JoinExprContext(JoinOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.JoinOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.JoinOperatorsContext
             super().__init__(parser)
             self.joinKeyword = None  # Token
             self.copyFrom(ctx)
@@ -3827,8 +4324,9 @@ class Parser(Parser):
 
     class DefOperatorContext(DefOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.DefOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3885,8 +4383,9 @@ class Parser(Parser):
 
     class DefHierarchicalContext(DefOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.DefOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -3934,8 +4433,9 @@ class Parser(Parser):
 
     class DefDatapointRulesetContext(DefOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.DefOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.DefOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4099,7 +4599,6 @@ class Parser(Parser):
                 self.match(Parser.RULESET)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -4122,8 +4621,9 @@ class Parser(Parser):
 
     class EvalAtomContext(GenericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4183,8 +4683,9 @@ class Parser(Parser):
 
     class CastExprDatasetContext(GenericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4223,8 +4724,9 @@ class Parser(Parser):
 
     class CallDatasetContext(GenericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4274,69 +4776,117 @@ class Parser(Parser):
                 self.state = 500
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (
-                        1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CURRENT_DATE) | (
-                                1 << Parser.NOT) | (1 << Parser.BETWEEN) | (
-                                1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (
-                                1 << Parser.UNION) | (1 << Parser.SYMDIFF) | (
-                                1 << Parser.INTERSECT) | (1 << Parser.CHECK) | (
-                                1 << Parser.EXISTS_IN))) != 0) or ((((_la - 68)) & ~0x3f) == 0 and (
-                        (1 << (_la - 68)) & ((1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                        1 << (Parser.ABS - 68)) | (1 << (Parser.LN - 68)) | (
-                                                     1 << (Parser.LOG - 68)) | (
-                                                     1 << (Parser.TRUNC - 68)) | (
-                                                     1 << (Parser.ROUND - 68)) | (
-                                                     1 << (Parser.POWER - 68)) | (
-                                                     1 << (Parser.MOD - 68)) | (
-                                                     1 << (Parser.LEN - 68)) | (
-                                                     1 << (Parser.TRIM - 68)) | (
-                                                     1 << (Parser.UCASE - 68)) | (
-                                                     1 << (Parser.LCASE - 68)) | (
-                                                     1 << (Parser.SUBSTR - 68)) | (
-                                                     1 << (Parser.SUM - 68)) | (
-                                                     1 << (Parser.AVG - 68)) | (
-                                                     1 << (Parser.MEDIAN - 68)) | (
-                                                     1 << (Parser.COUNT - 68)) | (
-                                                     1 << (Parser.EXP - 68)) | (
-                                                     1 << (Parser.CHARSET_MATCH - 68)) | (
-                                                     1 << (Parser.NVL - 68)) | (
-                                                     1 << (Parser.HIERARCHY - 68)) | (
-                                                     1 << (Parser.OPTIONAL - 68)) | (
-                                                     1 << (Parser.LTRIM - 68)) | (
-                                                     1 << (Parser.RTRIM - 68)) | (
-                                                     1 << (Parser.INSTR - 68)) | (
-                                                     1 << (Parser.REPLACE - 68)) | (
-                                                     1 << (Parser.CEIL - 68)) | (
-                                                     1 << (Parser.FLOOR - 68)) | (
-                                                     1 << (Parser.SQRT - 68)) | (
-                                                     1 << (Parser.SETDIFF - 68)) | (
-                                                     1 << (Parser.STDDEV_POP - 68)) | (
-                                                     1 << (Parser.STDDEV_SAMP - 68)) | (
-                                                     1 << (Parser.VAR_POP - 68)) | (
-                                                     1 << (Parser.VAR_SAMP - 68)))) != 0) or (
-                        (((_la - 135)) & ~0x3f) == 0 and ((1 << (_la - 135)) & (
-                        (1 << (Parser.FIRST_VALUE - 135)) | (1 << (Parser.LAST_VALUE - 135)) | (
-                        1 << (Parser.LAG - 135)) | (1 << (Parser.LEAD - 135)) | (
-                                1 << (Parser.RATIO_TO_REPORT - 135)) | (
-                                1 << (Parser.FILL_TIME_SERIES - 135)) | (
-                                1 << (Parser.FLOW_TO_STOCK - 135)) | (
-                                1 << (Parser.STOCK_TO_FLOW - 135)) | (
-                                1 << (Parser.TIMESHIFT - 135)) | (
-                                1 << (Parser.INNER_JOIN - 135)) | (
-                                1 << (Parser.LEFT_JOIN - 135)) | (
-                                1 << (Parser.CROSS_JOIN - 135)) | (
-                                1 << (Parser.FULL_JOIN - 135)) | (
-                                1 << (Parser.PERIOD_INDICATOR - 135)))) != 0) or (
-                        (((_la - 199)) & ~0x3f) == 0 and ((1 << (_la - 199)) & (
-                        (1 << (Parser.TIME_AGG - 199)) | (1 << (Parser.CAST - 199)) | (
-                        1 << (Parser.CHECK_DATAPOINT - 199)) | (
-                                1 << (Parser.CHECK_HIERARCHY - 199)) | (
-                                1 << (Parser.INTEGER_CONSTANT - 199)) | (
-                                1 << (Parser.NUMBER_CONSTANT - 199)) | (
-                                1 << (Parser.BOOLEAN_CONSTANT - 199)) | (
-                                1 << (Parser.STRING_CONSTANT - 199)) | (
-                                1 << (Parser.IDENTIFIER - 199)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.UNION)
+                                | (1 << Parser.SYMDIFF)
+                                | (1 << Parser.INTERSECT)
+                                | (1 << Parser.CHECK)
+                                | (1 << Parser.EXISTS_IN)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 68)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 68))
+                            & (
+                                (1 << (Parser.MIN - 68))
+                                | (1 << (Parser.MAX - 68))
+                                | (1 << (Parser.ABS - 68))
+                                | (1 << (Parser.LN - 68))
+                                | (1 << (Parser.LOG - 68))
+                                | (1 << (Parser.TRUNC - 68))
+                                | (1 << (Parser.ROUND - 68))
+                                | (1 << (Parser.POWER - 68))
+                                | (1 << (Parser.MOD - 68))
+                                | (1 << (Parser.LEN - 68))
+                                | (1 << (Parser.TRIM - 68))
+                                | (1 << (Parser.UCASE - 68))
+                                | (1 << (Parser.LCASE - 68))
+                                | (1 << (Parser.SUBSTR - 68))
+                                | (1 << (Parser.SUM - 68))
+                                | (1 << (Parser.AVG - 68))
+                                | (1 << (Parser.MEDIAN - 68))
+                                | (1 << (Parser.COUNT - 68))
+                                | (1 << (Parser.EXP - 68))
+                                | (1 << (Parser.CHARSET_MATCH - 68))
+                                | (1 << (Parser.NVL - 68))
+                                | (1 << (Parser.HIERARCHY - 68))
+                                | (1 << (Parser.OPTIONAL - 68))
+                                | (1 << (Parser.LTRIM - 68))
+                                | (1 << (Parser.RTRIM - 68))
+                                | (1 << (Parser.INSTR - 68))
+                                | (1 << (Parser.REPLACE - 68))
+                                | (1 << (Parser.CEIL - 68))
+                                | (1 << (Parser.FLOOR - 68))
+                                | (1 << (Parser.SQRT - 68))
+                                | (1 << (Parser.SETDIFF - 68))
+                                | (1 << (Parser.STDDEV_POP - 68))
+                                | (1 << (Parser.STDDEV_SAMP - 68))
+                                | (1 << (Parser.VAR_POP - 68))
+                                | (1 << (Parser.VAR_SAMP - 68))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 135)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 135))
+                            & (
+                                (1 << (Parser.FIRST_VALUE - 135))
+                                | (1 << (Parser.LAST_VALUE - 135))
+                                | (1 << (Parser.LAG - 135))
+                                | (1 << (Parser.LEAD - 135))
+                                | (1 << (Parser.RATIO_TO_REPORT - 135))
+                                | (1 << (Parser.FILL_TIME_SERIES - 135))
+                                | (1 << (Parser.FLOW_TO_STOCK - 135))
+                                | (1 << (Parser.STOCK_TO_FLOW - 135))
+                                | (1 << (Parser.TIMESHIFT - 135))
+                                | (1 << (Parser.INNER_JOIN - 135))
+                                | (1 << (Parser.LEFT_JOIN - 135))
+                                | (1 << (Parser.CROSS_JOIN - 135))
+                                | (1 << (Parser.FULL_JOIN - 135))
+                                | (1 << (Parser.PERIOD_INDICATOR - 135))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 199)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 199))
+                            & (
+                                (1 << (Parser.TIME_AGG - 199))
+                                | (1 << (Parser.CAST - 199))
+                                | (1 << (Parser.CHECK_DATAPOINT - 199))
+                                | (1 << (Parser.CHECK_HIERARCHY - 199))
+                                | (1 << (Parser.INTEGER_CONSTANT - 199))
+                                | (1 << (Parser.NUMBER_CONSTANT - 199))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 199))
+                                | (1 << (Parser.STRING_CONSTANT - 199))
+                                | (1 << (Parser.IDENTIFIER - 199))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 492
                     self.parameter()
                     self.state = 497
@@ -4372,9 +4922,14 @@ class Parser(Parser):
                     self.state = 508
                     self.varID()
                     pass
-                elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT,
-                               Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                               Parser.STRING_CONSTANT]:
+                elif token in [
+                    Parser.NULL_CONSTANT,
+                    Parser.CAST,
+                    Parser.INTEGER_CONSTANT,
+                    Parser.NUMBER_CONSTANT,
+                    Parser.BOOLEAN_CONSTANT,
+                    Parser.STRING_CONSTANT,
+                ]:
                     self.state = 509
                     self.scalarItem()
                     pass
@@ -4395,9 +4950,14 @@ class Parser(Parser):
                         self.state = 513
                         self.varID()
                         pass
-                    elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT,
-                                   Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                                   Parser.STRING_CONSTANT]:
+                    elif token in [
+                        Parser.NULL_CONSTANT,
+                        Parser.CAST,
+                        Parser.INTEGER_CONSTANT,
+                        Parser.NUMBER_CONSTANT,
+                        Parser.BOOLEAN_CONSTANT,
+                        Parser.STRING_CONSTANT,
+                    ]:
                         self.state = 514
                         self.scalarItem()
                         pass
@@ -4445,9 +5005,17 @@ class Parser(Parser):
                 self.state = 539
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                             Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION,
-                             Parser.SCALAR]:
+                if token in [
+                    Parser.BOOLEAN,
+                    Parser.DATE,
+                    Parser.TIME_PERIOD,
+                    Parser.NUMBER,
+                    Parser.STRING,
+                    Parser.TIME,
+                    Parser.INTEGER,
+                    Parser.DURATION,
+                    Parser.SCALAR,
+                ]:
                     self.state = 537
                     self.basicScalarType()
                     pass
@@ -4495,8 +5063,9 @@ class Parser(Parser):
 
     class EvalAtomComponentContext(GenericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4556,8 +5125,9 @@ class Parser(Parser):
 
     class CastExprComponentContext(GenericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4596,8 +5166,9 @@ class Parser(Parser):
 
     class CallComponentContext(GenericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GenericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GenericOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -4647,45 +5218,105 @@ class Parser(Parser):
                 self.state = 559
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (
-                        1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CURRENT_DATE) | (
-                                1 << Parser.NOT) | (1 << Parser.BETWEEN) | (
-                                1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL))) != 0) or (
-                        (((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & (
-                        (1 << (Parser.RANK - 65)) | (1 << (Parser.MIN - 65)) | (
-                        1 << (Parser.MAX - 65)) | (1 << (Parser.ABS - 65)) | (
-                                1 << (Parser.LN - 65)) | (1 << (Parser.LOG - 65)) | (
-                                1 << (Parser.TRUNC - 65)) | (1 << (Parser.ROUND - 65)) | (
-                                1 << (Parser.POWER - 65)) | (1 << (Parser.MOD - 65)) | (
-                                1 << (Parser.LEN - 65)) | (1 << (Parser.TRIM - 65)) | (
-                                1 << (Parser.UCASE - 65)) | (1 << (Parser.LCASE - 65)) | (
-                                1 << (Parser.SUBSTR - 65)) | (1 << (Parser.SUM - 65)) | (
-                                1 << (Parser.AVG - 65)) | (1 << (Parser.MEDIAN - 65)) | (
-                                1 << (Parser.COUNT - 65)) | (1 << (Parser.EXP - 65)) | (
-                                1 << (Parser.CHARSET_MATCH - 65)) | (1 << (Parser.NVL - 65)) | (
-                                1 << (Parser.OPTIONAL - 65)) | (1 << (Parser.LTRIM - 65)) | (
-                                1 << (Parser.RTRIM - 65)) | (1 << (Parser.INSTR - 65)) | (
-                                1 << (Parser.REPLACE - 65)) | (1 << (Parser.CEIL - 65)) | (
-                                1 << (Parser.FLOOR - 65)) | (1 << (Parser.SQRT - 65)) | (
-                                1 << (Parser.STDDEV_POP - 65)))) != 0) or (
-                        (((_la - 129)) & ~0x3f) == 0 and ((1 << (_la - 129)) & (
-                        (1 << (Parser.STDDEV_SAMP - 129)) | (1 << (Parser.VAR_POP - 129)) | (
-                        1 << (Parser.VAR_SAMP - 129)) | (1 << (Parser.FIRST_VALUE - 129)) | (
-                                1 << (Parser.LAST_VALUE - 129)) | (1 << (Parser.LAG - 129)) | (
-                                1 << (Parser.LEAD - 129)) | (
-                                1 << (Parser.RATIO_TO_REPORT - 129)) | (
-                                1 << (Parser.FILL_TIME_SERIES - 129)) | (
-                                1 << (Parser.FLOW_TO_STOCK - 129)) | (
-                                1 << (Parser.STOCK_TO_FLOW - 129)) | (
-                                1 << (Parser.TIMESHIFT - 129)))) != 0) or (
-                        (((_la - 196)) & ~0x3f) == 0 and ((1 << (_la - 196)) & (
-                        (1 << (Parser.PERIOD_INDICATOR - 196)) | (1 << (Parser.TIME_AGG - 196)) | (
-                        1 << (Parser.CAST - 196)) | (1 << (Parser.INTEGER_CONSTANT - 196)) | (
-                                1 << (Parser.NUMBER_CONSTANT - 196)) | (
-                                1 << (Parser.BOOLEAN_CONSTANT - 196)) | (
-                                1 << (Parser.STRING_CONSTANT - 196)) | (
-                                1 << (Parser.IDENTIFIER - 196)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 65)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 65))
+                            & (
+                                (1 << (Parser.RANK - 65))
+                                | (1 << (Parser.MIN - 65))
+                                | (1 << (Parser.MAX - 65))
+                                | (1 << (Parser.ABS - 65))
+                                | (1 << (Parser.LN - 65))
+                                | (1 << (Parser.LOG - 65))
+                                | (1 << (Parser.TRUNC - 65))
+                                | (1 << (Parser.ROUND - 65))
+                                | (1 << (Parser.POWER - 65))
+                                | (1 << (Parser.MOD - 65))
+                                | (1 << (Parser.LEN - 65))
+                                | (1 << (Parser.TRIM - 65))
+                                | (1 << (Parser.UCASE - 65))
+                                | (1 << (Parser.LCASE - 65))
+                                | (1 << (Parser.SUBSTR - 65))
+                                | (1 << (Parser.SUM - 65))
+                                | (1 << (Parser.AVG - 65))
+                                | (1 << (Parser.MEDIAN - 65))
+                                | (1 << (Parser.COUNT - 65))
+                                | (1 << (Parser.EXP - 65))
+                                | (1 << (Parser.CHARSET_MATCH - 65))
+                                | (1 << (Parser.NVL - 65))
+                                | (1 << (Parser.OPTIONAL - 65))
+                                | (1 << (Parser.LTRIM - 65))
+                                | (1 << (Parser.RTRIM - 65))
+                                | (1 << (Parser.INSTR - 65))
+                                | (1 << (Parser.REPLACE - 65))
+                                | (1 << (Parser.CEIL - 65))
+                                | (1 << (Parser.FLOOR - 65))
+                                | (1 << (Parser.SQRT - 65))
+                                | (1 << (Parser.STDDEV_POP - 65))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 129)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 129))
+                            & (
+                                (1 << (Parser.STDDEV_SAMP - 129))
+                                | (1 << (Parser.VAR_POP - 129))
+                                | (1 << (Parser.VAR_SAMP - 129))
+                                | (1 << (Parser.FIRST_VALUE - 129))
+                                | (1 << (Parser.LAST_VALUE - 129))
+                                | (1 << (Parser.LAG - 129))
+                                | (1 << (Parser.LEAD - 129))
+                                | (1 << (Parser.RATIO_TO_REPORT - 129))
+                                | (1 << (Parser.FILL_TIME_SERIES - 129))
+                                | (1 << (Parser.FLOW_TO_STOCK - 129))
+                                | (1 << (Parser.STOCK_TO_FLOW - 129))
+                                | (1 << (Parser.TIMESHIFT - 129))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 196)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 196))
+                            & (
+                                (1 << (Parser.PERIOD_INDICATOR - 196))
+                                | (1 << (Parser.TIME_AGG - 196))
+                                | (1 << (Parser.CAST - 196))
+                                | (1 << (Parser.INTEGER_CONSTANT - 196))
+                                | (1 << (Parser.NUMBER_CONSTANT - 196))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 196))
+                                | (1 << (Parser.STRING_CONSTANT - 196))
+                                | (1 << (Parser.IDENTIFIER - 196))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 551
                     self.parameterComponent()
                     self.state = 556
@@ -4717,9 +5348,17 @@ class Parser(Parser):
                 self.state = 569
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                             Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION,
-                             Parser.SCALAR]:
+                if token in [
+                    Parser.BOOLEAN,
+                    Parser.DATE,
+                    Parser.TIME_PERIOD,
+                    Parser.NUMBER,
+                    Parser.STRING,
+                    Parser.TIME,
+                    Parser.INTEGER,
+                    Parser.DURATION,
+                    Parser.SCALAR,
+                ]:
                     self.state = 567
                     self.basicScalarType()
                     pass
@@ -4760,9 +5399,14 @@ class Parser(Parser):
                     self.state = 581
                     self.componentID()
                     pass
-                elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT,
-                               Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                               Parser.STRING_CONSTANT]:
+                elif token in [
+                    Parser.NULL_CONSTANT,
+                    Parser.CAST,
+                    Parser.INTEGER_CONSTANT,
+                    Parser.NUMBER_CONSTANT,
+                    Parser.BOOLEAN_CONSTANT,
+                    Parser.STRING_CONSTANT,
+                ]:
                     self.state = 582
                     self.scalarItem()
                     pass
@@ -4783,9 +5427,14 @@ class Parser(Parser):
                         self.state = 586
                         self.componentID()
                         pass
-                    elif token in [Parser.NULL_CONSTANT, Parser.CAST, Parser.INTEGER_CONSTANT,
-                                   Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                                   Parser.STRING_CONSTANT]:
+                    elif token in [
+                        Parser.NULL_CONSTANT,
+                        Parser.CAST,
+                        Parser.INTEGER_CONSTANT,
+                        Parser.NUMBER_CONSTANT,
+                        Parser.BOOLEAN_CONSTANT,
+                        Parser.STRING_CONSTANT,
+                    ]:
                         self.state = 587
                         self.scalarItem()
                         pass
@@ -4859,20 +5508,68 @@ class Parser(Parser):
             self.state = 610
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF,
-                         Parser.CURRENT_DATE, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT,
-                         Parser.ISNULL, Parser.RANK, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN,
-                         Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD,
-                         Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR,
-                         Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP,
-                         Parser.CHARSET_MATCH, Parser.NVL, Parser.LTRIM, Parser.RTRIM, Parser.INSTR,
-                         Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.STDDEV_POP,
-                         Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE,
-                         Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT,
-                         Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW,
-                         Parser.TIMESHIFT, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST,
-                         Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                         Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CURRENT_DATE,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.RANK,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 608
                 self.exprComponent(0)
@@ -4922,24 +5619,80 @@ class Parser(Parser):
             self.state = 614
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF,
-                         Parser.CURRENT_DATE, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT,
-                         Parser.ISNULL, Parser.UNION, Parser.SYMDIFF, Parser.INTERSECT,
-                         Parser.CHECK, Parser.EXISTS_IN, Parser.MIN, Parser.MAX, Parser.ABS,
-                         Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER,
-                         Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE,
-                         Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT,
-                         Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.HIERARCHY,
-                         Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL,
-                         Parser.FLOOR, Parser.SQRT, Parser.SETDIFF, Parser.STDDEV_POP,
-                         Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE,
-                         Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT,
-                         Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW,
-                         Parser.TIMESHIFT, Parser.INNER_JOIN, Parser.LEFT_JOIN, Parser.CROSS_JOIN,
-                         Parser.FULL_JOIN, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST,
-                         Parser.CHECK_DATAPOINT, Parser.CHECK_HIERARCHY, Parser.INTEGER_CONSTANT,
-                         Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT,
-                         Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CURRENT_DATE,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.UNION,
+                Parser.SYMDIFF,
+                Parser.INTERSECT,
+                Parser.CHECK,
+                Parser.EXISTS_IN,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.HIERARCHY,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.SETDIFF,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.INNER_JOIN,
+                Parser.LEFT_JOIN,
+                Parser.CROSS_JOIN,
+                Parser.FULL_JOIN,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.CHECK_DATAPOINT,
+                Parser.CHECK_HIERARCHY,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 612
                 self.expr(0)
@@ -4974,8 +5727,9 @@ class Parser(Parser):
 
     class InstrAtomContext(StringOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsContext
             super().__init__(parser)
             self.pattern = None  # ExprContext
             self.startParameter = None  # OptionalExprContext
@@ -5017,8 +5771,9 @@ class Parser(Parser):
 
     class UnaryStringFunctionContext(StringOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5058,8 +5813,9 @@ class Parser(Parser):
 
     class SubstrAtomContext(StringOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsContext
             super().__init__(parser)
             self.startParameter = None  # OptionalExprContext
             self.endParameter = None  # OptionalExprContext
@@ -5097,8 +5853,9 @@ class Parser(Parser):
 
     class ReplaceAtomContext(StringOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsContext
             super().__init__(parser)
             self.param = None  # ExprContext
             self.copyFrom(ctx)
@@ -5142,17 +5899,36 @@ class Parser(Parser):
             self.state = 664
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.LTRIM,
-                         Parser.RTRIM]:
+            if token in [
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.LTRIM,
+                Parser.RTRIM,
+            ]:
                 localctx = Parser.UnaryStringFunctionContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 616
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 81)) & ~0x3f) == 0 and ((1 << (_la - 81)) & (
-                        (1 << (Parser.LEN - 81)) | (1 << (Parser.TRIM - 81)) | (
-                        1 << (Parser.UCASE - 81)) | (1 << (Parser.LCASE - 81)) | (
-                                1 << (Parser.LTRIM - 81)) | (1 << (Parser.RTRIM - 81)))) != 0)):
+                if not (
+                    (
+                        (((_la - 81)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 81))
+                            & (
+                                (1 << (Parser.LEN - 81))
+                                | (1 << (Parser.TRIM - 81))
+                                | (1 << (Parser.UCASE - 81))
+                                | (1 << (Parser.LCASE - 81))
+                                | (1 << (Parser.LTRIM - 81))
+                                | (1 << (Parser.RTRIM - 81))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5287,8 +6063,9 @@ class Parser(Parser):
 
     class ReplaceAtomComponentContext(StringOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsComponentContext
             super().__init__(parser)
             self.param = None  # ExprComponentContext
             self.copyFrom(ctx)
@@ -5325,8 +6102,9 @@ class Parser(Parser):
 
     class UnaryStringFunctionComponentContext(StringOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5366,8 +6144,9 @@ class Parser(Parser):
 
     class SubstrAtomComponentContext(StringOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsComponentContext
             super().__init__(parser)
             self.startParameter = None  # OptionalExprComponentContext
             self.endParameter = None  # OptionalExprComponentContext
@@ -5405,8 +6184,9 @@ class Parser(Parser):
 
     class InstrAtomComponentContext(StringOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.StringOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.StringOperatorsComponentContext
             super().__init__(parser)
             self.pattern = None  # ExprComponentContext
             self.startParameter = None  # OptionalExprComponentContext
@@ -5455,17 +6235,36 @@ class Parser(Parser):
             self.state = 714
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.LTRIM,
-                         Parser.RTRIM]:
+            if token in [
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.LTRIM,
+                Parser.RTRIM,
+            ]:
                 localctx = Parser.UnaryStringFunctionComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 666
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 81)) & ~0x3f) == 0 and ((1 << (_la - 81)) & (
-                        (1 << (Parser.LEN - 81)) | (1 << (Parser.TRIM - 81)) | (
-                        1 << (Parser.UCASE - 81)) | (1 << (Parser.LCASE - 81)) | (
-                                1 << (Parser.LTRIM - 81)) | (1 << (Parser.RTRIM - 81)))) != 0)):
+                if not (
+                    (
+                        (((_la - 81)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 81))
+                            & (
+                                (1 << (Parser.LEN - 81))
+                                | (1 << (Parser.TRIM - 81))
+                                | (1 << (Parser.UCASE - 81))
+                                | (1 << (Parser.LCASE - 81))
+                                | (1 << (Parser.LTRIM - 81))
+                                | (1 << (Parser.RTRIM - 81))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5600,8 +6399,9 @@ class Parser(Parser):
 
     class UnaryNumericContext(NumericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5641,8 +6441,9 @@ class Parser(Parser):
 
     class UnaryWithOptionalNumericContext(NumericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5676,8 +6477,9 @@ class Parser(Parser):
 
     class BinaryNumericContext(NumericOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.left = None  # ExprContext
@@ -5729,10 +6531,23 @@ class Parser(Parser):
                 self.state = 716
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & (
-                        (1 << (Parser.ABS - 73)) | (1 << (Parser.LN - 73)) | (
-                        1 << (Parser.EXP - 73)) | (1 << (Parser.CEIL - 73)) | (
-                                1 << (Parser.FLOOR - 73)) | (1 << (Parser.SQRT - 73)))) != 0)):
+                if not (
+                    (
+                        (((_la - 73)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 73))
+                            & (
+                                (1 << (Parser.ABS - 73))
+                                | (1 << (Parser.LN - 73))
+                                | (1 << (Parser.EXP - 73))
+                                | (1 << (Parser.CEIL - 73))
+                                | (1 << (Parser.FLOOR - 73))
+                                | (1 << (Parser.SQRT - 73))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5777,9 +6592,20 @@ class Parser(Parser):
                 self.state = 730
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & (
-                        (1 << (Parser.LOG - 76)) | (1 << (Parser.POWER - 76)) | (
-                        1 << (Parser.MOD - 76)))) != 0)):
+                if not (
+                    (
+                        (((_la - 76)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 76))
+                            & (
+                                (1 << (Parser.LOG - 76))
+                                | (1 << (Parser.POWER - 76))
+                                | (1 << (Parser.MOD - 76))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5820,8 +6646,9 @@ class Parser(Parser):
 
     class UnaryNumericComponentContext(NumericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5861,8 +6688,9 @@ class Parser(Parser):
 
     class BinaryNumericComponentContext(NumericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.left = None  # ExprComponentContext
@@ -5901,8 +6729,9 @@ class Parser(Parser):
 
     class UnaryWithOptionalNumericComponentContext(NumericOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.NumericOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.NumericOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -5949,10 +6778,23 @@ class Parser(Parser):
                 self.state = 739
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & (
-                        (1 << (Parser.ABS - 73)) | (1 << (Parser.LN - 73)) | (
-                        1 << (Parser.EXP - 73)) | (1 << (Parser.CEIL - 73)) | (
-                                1 << (Parser.FLOOR - 73)) | (1 << (Parser.SQRT - 73)))) != 0)):
+                if not (
+                    (
+                        (((_la - 73)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 73))
+                            & (
+                                (1 << (Parser.ABS - 73))
+                                | (1 << (Parser.LN - 73))
+                                | (1 << (Parser.EXP - 73))
+                                | (1 << (Parser.CEIL - 73))
+                                | (1 << (Parser.FLOOR - 73))
+                                | (1 << (Parser.SQRT - 73))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -5997,9 +6839,20 @@ class Parser(Parser):
                 self.state = 753
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & (
-                        (1 << (Parser.LOG - 76)) | (1 << (Parser.POWER - 76)) | (
-                        1 << (Parser.MOD - 76)))) != 0)):
+                if not (
+                    (
+                        (((_la - 76)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 76))
+                            & (
+                                (1 << (Parser.LOG - 76))
+                                | (1 << (Parser.POWER - 76))
+                                | (1 << (Parser.MOD - 76))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -6040,8 +6893,9 @@ class Parser(Parser):
 
     class BetweenAtomContext(ComparisonOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsContext
             super().__init__(parser)
             self.op = None  # ExprContext
             self.from_ = None  # ExprContext
@@ -6077,8 +6931,9 @@ class Parser(Parser):
 
     class CharsetMatchAtomContext(ComparisonOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsContext
             super().__init__(parser)
             self.op = None  # ExprContext
             self.pattern = None  # ExprContext
@@ -6110,8 +6965,9 @@ class Parser(Parser):
 
     class IsNullAtomContext(ComparisonOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6135,8 +6991,9 @@ class Parser(Parser):
 
     class ExistInAtomContext(ComparisonOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.right = None  # ExprContext
@@ -6279,8 +7136,9 @@ class Parser(Parser):
 
     class IsNullAtomComponentContext(ComparisonOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6304,8 +7162,9 @@ class Parser(Parser):
 
     class CharsetMatchAtomComponentContext(ComparisonOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # ExprComponentContext
             self.pattern = None  # ExprComponentContext
@@ -6337,8 +7196,9 @@ class Parser(Parser):
 
     class BetweenAtomComponentContext(ComparisonOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ComparisonOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ComparisonOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # ExprComponentContext
             self.from_ = None  # ExprComponentContext
@@ -6453,8 +7313,9 @@ class Parser(Parser):
 
     class FlowAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -6482,8 +7343,9 @@ class Parser(Parser):
 
     class TimeShiftAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6513,8 +7375,9 @@ class Parser(Parser):
 
     class TimeAggAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.periodIndTo = None  # Token
             self.periodIndFrom = None  # Token
@@ -6562,8 +7425,9 @@ class Parser(Parser):
 
     class CurrentDateAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6584,8 +7448,9 @@ class Parser(Parser):
 
     class PeriodAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6609,8 +7474,9 @@ class Parser(Parser):
 
     class FillTimeAtomContext(TimeOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6660,68 +7526,116 @@ class Parser(Parser):
                 self.state = 822
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (
-                        1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CURRENT_DATE) | (
-                                1 << Parser.NOT) | (1 << Parser.BETWEEN) | (
-                                1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL) | (
-                                1 << Parser.UNION) | (1 << Parser.SYMDIFF) | (
-                                1 << Parser.INTERSECT) | (1 << Parser.CHECK) | (
-                                1 << Parser.EXISTS_IN))) != 0) or ((((_la - 68)) & ~0x3f) == 0 and (
-                        (1 << (_la - 68)) & ((1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                        1 << (Parser.ABS - 68)) | (1 << (Parser.LN - 68)) | (
-                                                     1 << (Parser.LOG - 68)) | (
-                                                     1 << (Parser.TRUNC - 68)) | (
-                                                     1 << (Parser.ROUND - 68)) | (
-                                                     1 << (Parser.POWER - 68)) | (
-                                                     1 << (Parser.MOD - 68)) | (
-                                                     1 << (Parser.LEN - 68)) | (
-                                                     1 << (Parser.TRIM - 68)) | (
-                                                     1 << (Parser.UCASE - 68)) | (
-                                                     1 << (Parser.LCASE - 68)) | (
-                                                     1 << (Parser.SUBSTR - 68)) | (
-                                                     1 << (Parser.SUM - 68)) | (
-                                                     1 << (Parser.AVG - 68)) | (
-                                                     1 << (Parser.MEDIAN - 68)) | (
-                                                     1 << (Parser.COUNT - 68)) | (
-                                                     1 << (Parser.EXP - 68)) | (
-                                                     1 << (Parser.CHARSET_MATCH - 68)) | (
-                                                     1 << (Parser.NVL - 68)) | (
-                                                     1 << (Parser.HIERARCHY - 68)) | (
-                                                     1 << (Parser.LTRIM - 68)) | (
-                                                     1 << (Parser.RTRIM - 68)) | (
-                                                     1 << (Parser.INSTR - 68)) | (
-                                                     1 << (Parser.REPLACE - 68)) | (
-                                                     1 << (Parser.CEIL - 68)) | (
-                                                     1 << (Parser.FLOOR - 68)) | (
-                                                     1 << (Parser.SQRT - 68)) | (
-                                                     1 << (Parser.SETDIFF - 68)) | (
-                                                     1 << (Parser.STDDEV_POP - 68)) | (
-                                                     1 << (Parser.STDDEV_SAMP - 68)) | (
-                                                     1 << (Parser.VAR_POP - 68)) | (
-                                                     1 << (Parser.VAR_SAMP - 68)))) != 0) or (
-                        (((_la - 135)) & ~0x3f) == 0 and ((1 << (_la - 135)) & (
-                        (1 << (Parser.FIRST_VALUE - 135)) | (1 << (Parser.LAST_VALUE - 135)) | (
-                        1 << (Parser.LAG - 135)) | (1 << (Parser.LEAD - 135)) | (
-                                1 << (Parser.RATIO_TO_REPORT - 135)) | (
-                                1 << (Parser.FILL_TIME_SERIES - 135)) | (
-                                1 << (Parser.FLOW_TO_STOCK - 135)) | (
-                                1 << (Parser.STOCK_TO_FLOW - 135)) | (
-                                1 << (Parser.TIMESHIFT - 135)) | (
-                                1 << (Parser.INNER_JOIN - 135)) | (
-                                1 << (Parser.LEFT_JOIN - 135)) | (
-                                1 << (Parser.CROSS_JOIN - 135)) | (
-                                1 << (Parser.FULL_JOIN - 135)) | (
-                                1 << (Parser.PERIOD_INDICATOR - 135)))) != 0) or (
-                        (((_la - 199)) & ~0x3f) == 0 and ((1 << (_la - 199)) & (
-                        (1 << (Parser.TIME_AGG - 199)) | (1 << (Parser.CAST - 199)) | (
-                        1 << (Parser.CHECK_DATAPOINT - 199)) | (
-                                1 << (Parser.CHECK_HIERARCHY - 199)) | (
-                                1 << (Parser.INTEGER_CONSTANT - 199)) | (
-                                1 << (Parser.NUMBER_CONSTANT - 199)) | (
-                                1 << (Parser.BOOLEAN_CONSTANT - 199)) | (
-                                1 << (Parser.STRING_CONSTANT - 199)) | (
-                                1 << (Parser.IDENTIFIER - 199)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                                | (1 << Parser.UNION)
+                                | (1 << Parser.SYMDIFF)
+                                | (1 << Parser.INTERSECT)
+                                | (1 << Parser.CHECK)
+                                | (1 << Parser.EXISTS_IN)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 68)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 68))
+                            & (
+                                (1 << (Parser.MIN - 68))
+                                | (1 << (Parser.MAX - 68))
+                                | (1 << (Parser.ABS - 68))
+                                | (1 << (Parser.LN - 68))
+                                | (1 << (Parser.LOG - 68))
+                                | (1 << (Parser.TRUNC - 68))
+                                | (1 << (Parser.ROUND - 68))
+                                | (1 << (Parser.POWER - 68))
+                                | (1 << (Parser.MOD - 68))
+                                | (1 << (Parser.LEN - 68))
+                                | (1 << (Parser.TRIM - 68))
+                                | (1 << (Parser.UCASE - 68))
+                                | (1 << (Parser.LCASE - 68))
+                                | (1 << (Parser.SUBSTR - 68))
+                                | (1 << (Parser.SUM - 68))
+                                | (1 << (Parser.AVG - 68))
+                                | (1 << (Parser.MEDIAN - 68))
+                                | (1 << (Parser.COUNT - 68))
+                                | (1 << (Parser.EXP - 68))
+                                | (1 << (Parser.CHARSET_MATCH - 68))
+                                | (1 << (Parser.NVL - 68))
+                                | (1 << (Parser.HIERARCHY - 68))
+                                | (1 << (Parser.LTRIM - 68))
+                                | (1 << (Parser.RTRIM - 68))
+                                | (1 << (Parser.INSTR - 68))
+                                | (1 << (Parser.REPLACE - 68))
+                                | (1 << (Parser.CEIL - 68))
+                                | (1 << (Parser.FLOOR - 68))
+                                | (1 << (Parser.SQRT - 68))
+                                | (1 << (Parser.SETDIFF - 68))
+                                | (1 << (Parser.STDDEV_POP - 68))
+                                | (1 << (Parser.STDDEV_SAMP - 68))
+                                | (1 << (Parser.VAR_POP - 68))
+                                | (1 << (Parser.VAR_SAMP - 68))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 135)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 135))
+                            & (
+                                (1 << (Parser.FIRST_VALUE - 135))
+                                | (1 << (Parser.LAST_VALUE - 135))
+                                | (1 << (Parser.LAG - 135))
+                                | (1 << (Parser.LEAD - 135))
+                                | (1 << (Parser.RATIO_TO_REPORT - 135))
+                                | (1 << (Parser.FILL_TIME_SERIES - 135))
+                                | (1 << (Parser.FLOW_TO_STOCK - 135))
+                                | (1 << (Parser.STOCK_TO_FLOW - 135))
+                                | (1 << (Parser.TIMESHIFT - 135))
+                                | (1 << (Parser.INNER_JOIN - 135))
+                                | (1 << (Parser.LEFT_JOIN - 135))
+                                | (1 << (Parser.CROSS_JOIN - 135))
+                                | (1 << (Parser.FULL_JOIN - 135))
+                                | (1 << (Parser.PERIOD_INDICATOR - 135))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 199)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 199))
+                            & (
+                                (1 << (Parser.TIME_AGG - 199))
+                                | (1 << (Parser.CAST - 199))
+                                | (1 << (Parser.CHECK_DATAPOINT - 199))
+                                | (1 << (Parser.CHECK_HIERARCHY - 199))
+                                | (1 << (Parser.INTEGER_CONSTANT - 199))
+                                | (1 << (Parser.NUMBER_CONSTANT - 199))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 199))
+                                | (1 << (Parser.STRING_CONSTANT - 199))
+                                | (1 << (Parser.IDENTIFIER - 199))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 821
                     self.expr(0)
 
@@ -6873,8 +7787,9 @@ class Parser(Parser):
 
     class PeriodAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6898,8 +7813,9 @@ class Parser(Parser):
 
     class TimeShiftAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -6929,8 +7845,9 @@ class Parser(Parser):
 
     class TimeAggAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.periodIndTo = None  # Token
             self.periodIndFrom = None  # Token
@@ -6978,8 +7895,9 @@ class Parser(Parser):
 
     class CurrentDateAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -7000,8 +7918,9 @@ class Parser(Parser):
 
     class FlowAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -7029,8 +7948,9 @@ class Parser(Parser):
 
     class FillTimeAtomComponentContext(TimeOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.TimeOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -7080,45 +8000,104 @@ class Parser(Parser):
                 self.state = 870
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                        (1 << Parser.LPAREN) | (1 << Parser.PLUS) | (1 << Parser.MINUS) | (
-                        1 << Parser.EVAL) | (1 << Parser.IF) | (1 << Parser.CURRENT_DATE) | (
-                                1 << Parser.NOT) | (1 << Parser.BETWEEN) | (
-                                1 << Parser.NULL_CONSTANT) | (1 << Parser.ISNULL))) != 0) or (
-                        (((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & (
-                        (1 << (Parser.RANK - 65)) | (1 << (Parser.MIN - 65)) | (
-                        1 << (Parser.MAX - 65)) | (1 << (Parser.ABS - 65)) | (
-                                1 << (Parser.LN - 65)) | (1 << (Parser.LOG - 65)) | (
-                                1 << (Parser.TRUNC - 65)) | (1 << (Parser.ROUND - 65)) | (
-                                1 << (Parser.POWER - 65)) | (1 << (Parser.MOD - 65)) | (
-                                1 << (Parser.LEN - 65)) | (1 << (Parser.TRIM - 65)) | (
-                                1 << (Parser.UCASE - 65)) | (1 << (Parser.LCASE - 65)) | (
-                                1 << (Parser.SUBSTR - 65)) | (1 << (Parser.SUM - 65)) | (
-                                1 << (Parser.AVG - 65)) | (1 << (Parser.MEDIAN - 65)) | (
-                                1 << (Parser.COUNT - 65)) | (1 << (Parser.EXP - 65)) | (
-                                1 << (Parser.CHARSET_MATCH - 65)) | (1 << (Parser.NVL - 65)) | (
-                                1 << (Parser.LTRIM - 65)) | (1 << (Parser.RTRIM - 65)) | (
-                                1 << (Parser.INSTR - 65)) | (1 << (Parser.REPLACE - 65)) | (
-                                1 << (Parser.CEIL - 65)) | (1 << (Parser.FLOOR - 65)) | (
-                                1 << (Parser.SQRT - 65)) | (
-                                1 << (Parser.STDDEV_POP - 65)))) != 0) or (
-                        (((_la - 129)) & ~0x3f) == 0 and ((1 << (_la - 129)) & (
-                        (1 << (Parser.STDDEV_SAMP - 129)) | (1 << (Parser.VAR_POP - 129)) | (
-                        1 << (Parser.VAR_SAMP - 129)) | (1 << (Parser.FIRST_VALUE - 129)) | (
-                                1 << (Parser.LAST_VALUE - 129)) | (1 << (Parser.LAG - 129)) | (
-                                1 << (Parser.LEAD - 129)) | (
-                                1 << (Parser.RATIO_TO_REPORT - 129)) | (
-                                1 << (Parser.FILL_TIME_SERIES - 129)) | (
-                                1 << (Parser.FLOW_TO_STOCK - 129)) | (
-                                1 << (Parser.STOCK_TO_FLOW - 129)) | (
-                                1 << (Parser.TIMESHIFT - 129)))) != 0) or (
-                        (((_la - 196)) & ~0x3f) == 0 and ((1 << (_la - 196)) & (
-                        (1 << (Parser.PERIOD_INDICATOR - 196)) | (1 << (Parser.TIME_AGG - 196)) | (
-                        1 << (Parser.CAST - 196)) | (1 << (Parser.INTEGER_CONSTANT - 196)) | (
-                                1 << (Parser.NUMBER_CONSTANT - 196)) | (
-                                1 << (Parser.BOOLEAN_CONSTANT - 196)) | (
-                                1 << (Parser.STRING_CONSTANT - 196)) | (
-                                1 << (Parser.IDENTIFIER - 196)))) != 0):
+                if (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << Parser.LPAREN)
+                                | (1 << Parser.PLUS)
+                                | (1 << Parser.MINUS)
+                                | (1 << Parser.EVAL)
+                                | (1 << Parser.IF)
+                                | (1 << Parser.CURRENT_DATE)
+                                | (1 << Parser.NOT)
+                                | (1 << Parser.BETWEEN)
+                                | (1 << Parser.NULL_CONSTANT)
+                                | (1 << Parser.ISNULL)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 65)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 65))
+                            & (
+                                (1 << (Parser.RANK - 65))
+                                | (1 << (Parser.MIN - 65))
+                                | (1 << (Parser.MAX - 65))
+                                | (1 << (Parser.ABS - 65))
+                                | (1 << (Parser.LN - 65))
+                                | (1 << (Parser.LOG - 65))
+                                | (1 << (Parser.TRUNC - 65))
+                                | (1 << (Parser.ROUND - 65))
+                                | (1 << (Parser.POWER - 65))
+                                | (1 << (Parser.MOD - 65))
+                                | (1 << (Parser.LEN - 65))
+                                | (1 << (Parser.TRIM - 65))
+                                | (1 << (Parser.UCASE - 65))
+                                | (1 << (Parser.LCASE - 65))
+                                | (1 << (Parser.SUBSTR - 65))
+                                | (1 << (Parser.SUM - 65))
+                                | (1 << (Parser.AVG - 65))
+                                | (1 << (Parser.MEDIAN - 65))
+                                | (1 << (Parser.COUNT - 65))
+                                | (1 << (Parser.EXP - 65))
+                                | (1 << (Parser.CHARSET_MATCH - 65))
+                                | (1 << (Parser.NVL - 65))
+                                | (1 << (Parser.LTRIM - 65))
+                                | (1 << (Parser.RTRIM - 65))
+                                | (1 << (Parser.INSTR - 65))
+                                | (1 << (Parser.REPLACE - 65))
+                                | (1 << (Parser.CEIL - 65))
+                                | (1 << (Parser.FLOOR - 65))
+                                | (1 << (Parser.SQRT - 65))
+                                | (1 << (Parser.STDDEV_POP - 65))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 129)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 129))
+                            & (
+                                (1 << (Parser.STDDEV_SAMP - 129))
+                                | (1 << (Parser.VAR_POP - 129))
+                                | (1 << (Parser.VAR_SAMP - 129))
+                                | (1 << (Parser.FIRST_VALUE - 129))
+                                | (1 << (Parser.LAST_VALUE - 129))
+                                | (1 << (Parser.LAG - 129))
+                                | (1 << (Parser.LEAD - 129))
+                                | (1 << (Parser.RATIO_TO_REPORT - 129))
+                                | (1 << (Parser.FILL_TIME_SERIES - 129))
+                                | (1 << (Parser.FLOW_TO_STOCK - 129))
+                                | (1 << (Parser.STOCK_TO_FLOW - 129))
+                                | (1 << (Parser.TIMESHIFT - 129))
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 196)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 196))
+                            & (
+                                (1 << (Parser.PERIOD_INDICATOR - 196))
+                                | (1 << (Parser.TIME_AGG - 196))
+                                | (1 << (Parser.CAST - 196))
+                                | (1 << (Parser.INTEGER_CONSTANT - 196))
+                                | (1 << (Parser.NUMBER_CONSTANT - 196))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 196))
+                                | (1 << (Parser.STRING_CONSTANT - 196))
+                                | (1 << (Parser.IDENTIFIER - 196))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self.state = 869
                     self.exprComponent(0)
 
@@ -7270,8 +8249,9 @@ class Parser(Parser):
 
     class SetOrSYmDiffAtomContext(SetOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.SetOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.SetOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.left = None  # ExprContext
@@ -7307,8 +8287,9 @@ class Parser(Parser):
 
     class IntersectAtomContext(SetOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.SetOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.SetOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.copyFrom(ctx)
@@ -7342,8 +8323,9 @@ class Parser(Parser):
 
     class UnionAtomContext(SetOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.SetOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.SetOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.copyFrom(ctx)
@@ -7559,11 +8541,17 @@ class Parser(Parser):
             self.state = 959
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 213)) & ~0x3f) == 0 and ((1 << (_la - 213)) & (
-                    (1 << (Parser.NON_NULL - 213)) | (1 << (Parser.NON_ZERO - 213)) | (
-                    1 << (Parser.PARTIAL_NULL - 213)) | (1 << (Parser.PARTIAL_ZERO - 213)) | (
-                            1 << (Parser.ALWAYS_NULL - 213)) | (
-                            1 << (Parser.ALWAYS_ZERO - 213)))) != 0):
+            if (((_la - 213)) & ~0x3F) == 0 and (
+                (1 << (_la - 213))
+                & (
+                    (1 << (Parser.NON_NULL - 213))
+                    | (1 << (Parser.NON_ZERO - 213))
+                    | (1 << (Parser.PARTIAL_NULL - 213))
+                    | (1 << (Parser.PARTIAL_ZERO - 213))
+                    | (1 << (Parser.ALWAYS_NULL - 213))
+                    | (1 << (Parser.ALWAYS_ZERO - 213))
+                )
+            ) != 0:
                 self.state = 958
                 self.validationMode()
 
@@ -7605,8 +8593,9 @@ class Parser(Parser):
 
     class ValidateHRrulesetContext(ValidationOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ValidationOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ValidationOperatorsContext
             super().__init__(parser)
             self.op = None  # ExprContext
             self.hrName = None  # Token
@@ -7656,8 +8645,9 @@ class Parser(Parser):
 
     class ValidateDPrulesetContext(ValidationOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ValidationOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ValidationOperatorsContext
             super().__init__(parser)
             self.op = None  # ExprContext
             self.dpName = None  # Token
@@ -7704,8 +8694,9 @@ class Parser(Parser):
 
     class ValidationSimpleContext(ValidationOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ValidationOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ValidationOperatorsContext
             super().__init__(parser)
             self.op = None  # ExprContext
             self.codeErr = None  # ErCodeContext
@@ -7830,11 +8821,17 @@ class Parser(Parser):
                 self.state = 1003
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if ((((_la - 213)) & ~0x3f) == 0 and ((1 << (_la - 213)) & (
-                        (1 << (Parser.NON_NULL - 213)) | (1 << (Parser.NON_ZERO - 213)) | (
-                        1 << (Parser.PARTIAL_NULL - 213)) | (1 << (Parser.PARTIAL_ZERO - 213)) | (
-                                1 << (Parser.ALWAYS_NULL - 213)) | (
-                                1 << (Parser.ALWAYS_ZERO - 213)))) != 0):
+                if (((_la - 213)) & ~0x3F) == 0 and (
+                    (1 << (_la - 213))
+                    & (
+                        (1 << (Parser.NON_NULL - 213))
+                        | (1 << (Parser.NON_ZERO - 213))
+                        | (1 << (Parser.PARTIAL_NULL - 213))
+                        | (1 << (Parser.PARTIAL_ZERO - 213))
+                        | (1 << (Parser.ALWAYS_NULL - 213))
+                        | (1 << (Parser.ALWAYS_ZERO - 213))
+                    )
+                ) != 0:
                     self.state = 1002
                     self.validationMode()
 
@@ -7926,8 +8923,9 @@ class Parser(Parser):
 
     class NvlAtomContext(ConditionalOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ConditionalOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ConditionalOperatorsContext
             super().__init__(parser)
             self.left = None  # ExprContext
             self.right = None  # ExprContext
@@ -7998,8 +8996,9 @@ class Parser(Parser):
 
     class NvlAtomComponentContext(ConditionalOperatorsComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ConditionalOperatorsComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ConditionalOperatorsComponentContext
             super().__init__(parser)
             self.left = None  # ExprComponentContext
             self.right = None  # ExprComponentContext
@@ -8070,8 +9069,9 @@ class Parser(Parser):
 
     class AggrCompContext(AggrOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AggrOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AggrOperatorsContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -8123,8 +9123,9 @@ class Parser(Parser):
 
     class CountAggrCompContext(AggrOperatorsContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AggrOperatorsContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AggrOperatorsContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -8158,13 +9159,27 @@ class Parser(Parser):
                 self.state = 1046
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 68)) & ~0x3f) == 0 and ((1 << (_la - 68)) & (
-                        (1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                        1 << (Parser.SUM - 68)) | (1 << (Parser.AVG - 68)) | (
-                                1 << (Parser.MEDIAN - 68)) | (1 << (Parser.COUNT - 68)) | (
-                                1 << (Parser.STDDEV_POP - 68)) | (
-                                1 << (Parser.STDDEV_SAMP - 68)) | (1 << (Parser.VAR_POP - 68)) | (
-                                1 << (Parser.VAR_SAMP - 68)))) != 0)):
+                if not (
+                    (
+                        (((_la - 68)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 68))
+                            & (
+                                (1 << (Parser.MIN - 68))
+                                | (1 << (Parser.MAX - 68))
+                                | (1 << (Parser.SUM - 68))
+                                | (1 << (Parser.AVG - 68))
+                                | (1 << (Parser.MEDIAN - 68))
+                                | (1 << (Parser.COUNT - 68))
+                                | (1 << (Parser.STDDEV_POP - 68))
+                                | (1 << (Parser.STDDEV_SAMP - 68))
+                                | (1 << (Parser.VAR_POP - 68))
+                                | (1 << (Parser.VAR_SAMP - 68))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8188,7 +9203,6 @@ class Parser(Parser):
                 self.match(Parser.RPAREN)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -8211,8 +9225,9 @@ class Parser(Parser):
 
     class AggrDatasetContext(AggrOperatorsGroupingContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AggrOperatorsGroupingContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AggrOperatorsGroupingContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -8279,12 +9294,27 @@ class Parser(Parser):
             self.state = 1056
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
-            if not (((((_la - 68)) & ~0x3f) == 0 and ((1 << (_la - 68)) & (
-                    (1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                    1 << (Parser.SUM - 68)) | (1 << (Parser.AVG - 68)) | (
-                            1 << (Parser.MEDIAN - 68)) | (1 << (Parser.COUNT - 68)) | (
-                            1 << (Parser.STDDEV_POP - 68)) | (1 << (Parser.STDDEV_SAMP - 68)) | (
-                            1 << (Parser.VAR_POP - 68)) | (1 << (Parser.VAR_SAMP - 68)))) != 0)):
+            if not (
+                (
+                    (((_la - 68)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 68))
+                        & (
+                            (1 << (Parser.MIN - 68))
+                            | (1 << (Parser.MAX - 68))
+                            | (1 << (Parser.SUM - 68))
+                            | (1 << (Parser.AVG - 68))
+                            | (1 << (Parser.MEDIAN - 68))
+                            | (1 << (Parser.COUNT - 68))
+                            | (1 << (Parser.STDDEV_POP - 68))
+                            | (1 << (Parser.STDDEV_SAMP - 68))
+                            | (1 << (Parser.VAR_POP - 68))
+                            | (1 << (Parser.VAR_SAMP - 68))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8330,8 +9360,9 @@ class Parser(Parser):
 
     class LagOrLeadAnContext(AnFunctionContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.offet = None  # SignedIntegerContext
@@ -8390,8 +9421,9 @@ class Parser(Parser):
 
     class RatioToReportAnContext(AnFunctionContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -8429,8 +9461,9 @@ class Parser(Parser):
 
     class AnSimpleFunctionContext(AnFunctionContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -8516,22 +9549,48 @@ class Parser(Parser):
             self.state = 1114
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.MIN, Parser.MAX, Parser.SUM, Parser.AVG, Parser.MEDIAN,
-                         Parser.COUNT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP,
-                         Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE]:
+            if token in [
+                Parser.MIN,
+                Parser.MAX,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+            ]:
                 localctx = Parser.AnSimpleFunctionContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1067
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 68)) & ~0x3f) == 0 and ((1 << (_la - 68)) & (
-                        (1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                        1 << (Parser.SUM - 68)) | (1 << (Parser.AVG - 68)) | (
-                                1 << (Parser.MEDIAN - 68)) | (1 << (Parser.COUNT - 68)) | (
-                                1 << (Parser.STDDEV_POP - 68)) | (
-                                1 << (Parser.STDDEV_SAMP - 68)) | (1 << (Parser.VAR_POP - 68)) | (
-                                1 << (
-                                Parser.VAR_SAMP - 68)))) != 0) or _la == Parser.FIRST_VALUE or _la == Parser.LAST_VALUE):
+                if not (
+                    (
+                        (((_la - 68)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 68))
+                            & (
+                                (1 << (Parser.MIN - 68))
+                                | (1 << (Parser.MAX - 68))
+                                | (1 << (Parser.SUM - 68))
+                                | (1 << (Parser.AVG - 68))
+                                | (1 << (Parser.MEDIAN - 68))
+                                | (1 << (Parser.COUNT - 68))
+                                | (1 << (Parser.STDDEV_POP - 68))
+                                | (1 << (Parser.STDDEV_SAMP - 68))
+                                | (1 << (Parser.VAR_POP - 68))
+                                | (1 << (Parser.VAR_SAMP - 68))
+                            )
+                        )
+                        != 0
+                    )
+                    or _la == Parser.FIRST_VALUE
+                    or _la == Parser.LAST_VALUE
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8668,8 +9727,9 @@ class Parser(Parser):
 
     class AnSimpleFunctionComponentContext(AnFunctionComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -8748,8 +9808,9 @@ class Parser(Parser):
 
     class LagOrLeadAnComponentContext(AnFunctionComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.offet = None  # SignedIntegerContext
@@ -8805,8 +9866,9 @@ class Parser(Parser):
 
     class RankAnComponentContext(AnFunctionComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -8845,8 +9907,9 @@ class Parser(Parser):
 
     class RatioToReportAnComponentContext(AnFunctionComponentContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.AnFunctionComponentContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.AnFunctionComponentContext
             super().__init__(parser)
             self.op = None  # Token
             self.partition = None  # PartitionByClauseContext
@@ -8891,22 +9954,48 @@ class Parser(Parser):
             self.state = 1174
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.MIN, Parser.MAX, Parser.SUM, Parser.AVG, Parser.MEDIAN,
-                         Parser.COUNT, Parser.STDDEV_POP, Parser.STDDEV_SAMP, Parser.VAR_POP,
-                         Parser.VAR_SAMP, Parser.FIRST_VALUE, Parser.LAST_VALUE]:
+            if token in [
+                Parser.MIN,
+                Parser.MAX,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+            ]:
                 localctx = Parser.AnSimpleFunctionComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1116
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not (((((_la - 68)) & ~0x3f) == 0 and ((1 << (_la - 68)) & (
-                        (1 << (Parser.MIN - 68)) | (1 << (Parser.MAX - 68)) | (
-                        1 << (Parser.SUM - 68)) | (1 << (Parser.AVG - 68)) | (
-                                1 << (Parser.MEDIAN - 68)) | (1 << (Parser.COUNT - 68)) | (
-                                1 << (Parser.STDDEV_POP - 68)) | (
-                                1 << (Parser.STDDEV_SAMP - 68)) | (1 << (Parser.VAR_POP - 68)) | (
-                                1 << (
-                                Parser.VAR_SAMP - 68)))) != 0) or _la == Parser.FIRST_VALUE or _la == Parser.LAST_VALUE):
+                if not (
+                    (
+                        (((_la - 68)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 68))
+                            & (
+                                (1 << (Parser.MIN - 68))
+                                | (1 << (Parser.MAX - 68))
+                                | (1 << (Parser.SUM - 68))
+                                | (1 << (Parser.AVG - 68))
+                                | (1 << (Parser.MEDIAN - 68))
+                                | (1 << (Parser.COUNT - 68))
+                                | (1 << (Parser.STDDEV_POP - 68))
+                                | (1 << (Parser.STDDEV_SAMP - 68))
+                                | (1 << (Parser.VAR_POP - 68))
+                                | (1 << (Parser.VAR_SAMP - 68))
+                            )
+                        )
+                        != 0
+                    )
+                    or _la == Parser.FIRST_VALUE
+                    or _la == Parser.LAST_VALUE
+                ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8972,12 +10061,20 @@ class Parser(Parser):
                     self.state = 1139
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la == Parser.NULL_CONSTANT or ((((_la - 206)) & ~0x3f) == 0 and (
-                            (1 << (_la - 206)) & (
-                            (1 << (Parser.CAST - 206)) | (1 << (Parser.INTEGER_CONSTANT - 206)) | (
-                            1 << (Parser.NUMBER_CONSTANT - 206)) | (
-                                    1 << (Parser.BOOLEAN_CONSTANT - 206)) | (
-                                    1 << (Parser.STRING_CONSTANT - 206)))) != 0):
+                    if _la == Parser.NULL_CONSTANT or (
+                        (((_la - 206)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 206))
+                            & (
+                                (1 << (Parser.CAST - 206))
+                                | (1 << (Parser.INTEGER_CONSTANT - 206))
+                                | (1 << (Parser.NUMBER_CONSTANT - 206))
+                                | (1 << (Parser.BOOLEAN_CONSTANT - 206))
+                                | (1 << (Parser.STRING_CONSTANT - 206))
+                            )
+                        )
+                        != 0
+                    ):
                         self.state = 1138
                         localctx.defaultValue = self.scalarItem()
 
@@ -9197,10 +10294,19 @@ class Parser(Parser):
             self.state = 1189
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 91)) & ~0x3f) == 0 and ((1 << (_la - 91)) & (
-                    (1 << (Parser.DIMENSION - 91)) | (1 << (Parser.MEASURE - 91)) | (
-                    1 << (Parser.ATTRIBUTE - 91)) | (
-                            1 << (Parser.VIRAL - 91)))) != 0) or _la == Parser.COMPONENT:
+            if (
+                (((_la - 91)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 91))
+                    & (
+                        (1 << (Parser.DIMENSION - 91))
+                        | (1 << (Parser.MEASURE - 91))
+                        | (1 << (Parser.ATTRIBUTE - 91))
+                        | (1 << (Parser.VIRAL - 91))
+                    )
+                )
+                != 0
+            ) or _la == Parser.COMPONENT:
                 self.state = 1188
                 self.componentRole()
 
@@ -9255,10 +10361,19 @@ class Parser(Parser):
             self.state = 1196
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 91)) & ~0x3f) == 0 and ((1 << (_la - 91)) & (
-                    (1 << (Parser.DIMENSION - 91)) | (1 << (Parser.MEASURE - 91)) | (
-                    1 << (Parser.ATTRIBUTE - 91)) | (
-                            1 << (Parser.VIRAL - 91)))) != 0) or _la == Parser.COMPONENT:
+            if (
+                (((_la - 91)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 91))
+                    & (
+                        (1 << (Parser.DIMENSION - 91))
+                        | (1 << (Parser.MEASURE - 91))
+                        | (1 << (Parser.ATTRIBUTE - 91))
+                        | (1 << (Parser.VIRAL - 91))
+                    )
+                )
+                != 0
+            ) or _la == Parser.COMPONENT:
                 self.state = 1195
                 self.componentRole()
 
@@ -9334,8 +10449,9 @@ class Parser(Parser):
 
     class ScalarWithCastContext(ScalarItemContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ScalarItemContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ScalarItemContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -9371,8 +10487,9 @@ class Parser(Parser):
 
     class SimpleScalarContext(ScalarItemContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ScalarItemContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ScalarItemContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -9394,8 +10511,13 @@ class Parser(Parser):
             self.state = 1218
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.NULL_CONSTANT, Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT,
-                         Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT]:
+            if token in [
+                Parser.NULL_CONSTANT,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+            ]:
                 localctx = Parser.SimpleScalarContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1206
@@ -9571,8 +10693,6 @@ class Parser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -9622,7 +10742,6 @@ class Parser(Parser):
                 self.match(Parser.AS)
                 self.state = 1249
                 self.alias()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9711,7 +10830,6 @@ class Parser(Parser):
             if _la == Parser.RENAME:
                 self.state = 1263
                 self.renameClause()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9937,7 +11055,6 @@ class Parser(Parser):
                     self._errHandler.reportMatch(self)
                     self.consume()
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10142,7 +11259,6 @@ class Parser(Parser):
                 self.match(Parser.FOLLOWING)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10165,8 +11281,9 @@ class Parser(Parser):
 
     class GroupAllContext(GroupingClauseContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GroupingClauseContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GroupingClauseContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -10187,8 +11304,9 @@ class Parser(Parser):
 
     class GroupByOrExceptContext(GroupingClauseContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.GroupingClauseContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.GroupingClauseContext
             super().__init__(parser)
             self.op = None  # Token
             self.copyFrom(ctx)
@@ -10268,7 +11386,6 @@ class Parser(Parser):
                 self.state = 1330
                 self.exprComponent(0)
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10364,7 +11481,6 @@ class Parser(Parser):
                 self.state = 1339
                 self.scalarItem()
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10405,9 +11521,18 @@ class Parser(Parser):
             self.state = 1345
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                         Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR,
-                         Parser.IDENTIFIER]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1342
                 self.scalarType()
@@ -10417,8 +11542,13 @@ class Parser(Parser):
                 self.state = 1343
                 self.datasetType()
                 pass
-            elif token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL,
-                           Parser.COMPONENT]:
+            elif token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 1344
                 self.componentType()
@@ -10463,15 +11593,29 @@ class Parser(Parser):
             self.state = 1349
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL,
-                         Parser.COMPONENT]:
+            if token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1347
                 self.componentType()
                 pass
-            elif token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                           Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION,
-                           Parser.SCALAR, Parser.IDENTIFIER]:
+            elif token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1348
                 self.scalarType()
@@ -10525,9 +11669,18 @@ class Parser(Parser):
             self.state = 1356
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                         Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION, Parser.SCALAR,
-                         Parser.IDENTIFIER]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1351
                 self.scalarType()
@@ -10542,15 +11695,26 @@ class Parser(Parser):
                 self.state = 1353
                 self.scalarSetType()
                 pass
-            elif token in [Parser.DATAPOINT, Parser.HIERARCHICAL, Parser.RULESET,
-                           Parser.DATAPOINT_ON_VD, Parser.DATAPOINT_ON_VAR,
-                           Parser.HIERARCHICAL_ON_VD, Parser.HIERARCHICAL_ON_VAR]:
+            elif token in [
+                Parser.DATAPOINT,
+                Parser.HIERARCHICAL,
+                Parser.RULESET,
+                Parser.DATAPOINT_ON_VD,
+                Parser.DATAPOINT_ON_VAR,
+                Parser.HIERARCHICAL_ON_VD,
+                Parser.HIERARCHICAL_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 1354
                 self.rulesetType()
                 pass
-            elif token in [Parser.DIMENSION, Parser.MEASURE, Parser.ATTRIBUTE, Parser.VIRAL,
-                           Parser.COMPONENT]:
+            elif token in [
+                Parser.DIMENSION,
+                Parser.MEASURE,
+                Parser.ATTRIBUTE,
+                Parser.VIRAL,
+                Parser.COMPONENT,
+            ]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 1355
                 self.componentType()
@@ -10608,8 +11772,11 @@ class Parser(Parser):
                 self.state = 1359
                 self.dpRuleset()
                 pass
-            elif token in [Parser.HIERARCHICAL, Parser.HIERARCHICAL_ON_VD,
-                           Parser.HIERARCHICAL_ON_VAR]:
+            elif token in [
+                Parser.HIERARCHICAL,
+                Parser.HIERARCHICAL_ON_VD,
+                Parser.HIERARCHICAL_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 1360
                 self.hrRuleset()
@@ -10665,9 +11832,17 @@ class Parser(Parser):
             self.state = 1365
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                         Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION,
-                         Parser.SCALAR]:
+            if token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+            ]:
                 self.state = 1363
                 self.basicScalarType()
                 pass
@@ -10698,7 +11873,6 @@ class Parser(Parser):
 
                 self.state = 1373
                 self.match(Parser.NULL_CONSTANT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10754,7 +11928,6 @@ class Parser(Parser):
                 self.scalarType()
                 self.state = 1379
                 self.match(Parser.MT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10832,7 +12005,6 @@ class Parser(Parser):
                 self.state = 1393
                 self.match(Parser.GRPAREN)
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10875,9 +12047,18 @@ class Parser(Parser):
                 self.state = 1397
                 self.datasetType()
                 pass
-            elif token in [Parser.BOOLEAN, Parser.DATE, Parser.TIME_PERIOD, Parser.NUMBER,
-                           Parser.STRING, Parser.TIME, Parser.INTEGER, Parser.DURATION,
-                           Parser.SCALAR, Parser.IDENTIFIER]:
+            elif token in [
+                Parser.BOOLEAN,
+                Parser.DATE,
+                Parser.TIME_PERIOD,
+                Parser.NUMBER,
+                Parser.STRING,
+                Parser.TIME,
+                Parser.INTEGER,
+                Parser.DURATION,
+                Parser.SCALAR,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1398
                 self.scalarType()
@@ -10939,7 +12120,6 @@ class Parser(Parser):
                 self.scalarType()
                 self.state = 1404
                 self.match(Parser.MT)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11521,7 +12701,6 @@ class Parser(Parser):
                 self.state = 1496
                 self.alias()
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -11671,7 +12850,6 @@ class Parser(Parser):
                 self.state = 1521
                 self.erLevel()
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -11798,7 +12976,6 @@ class Parser(Parser):
             if _la == Parser.ERRORLEVEL:
                 self.state = 1540
                 self.erLevel()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11992,9 +13169,17 @@ class Parser(Parser):
             self.state = 1567
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                    (1 << Parser.EQ) | (1 << Parser.LT) | (1 << Parser.MT) | (1 << Parser.ME) | (
-                    1 << Parser.NEQ) | (1 << Parser.LE))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << Parser.EQ)
+                    | (1 << Parser.LT)
+                    | (1 << Parser.MT)
+                    | (1 << Parser.ME)
+                    | (1 << Parser.NEQ)
+                    | (1 << Parser.LE)
+                )
+            ) != 0:
                 self.state = 1566
                 self.comparisonOperand()
 
@@ -12003,9 +13188,22 @@ class Parser(Parser):
             self.state = 1573
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la == Parser.PLUS or _la == Parser.MINUS or ((((_la - 229)) & ~0x3f) == 0 and (
-                    (1 << (_la - 229)) & ((1 << (Parser.INTEGER_CONSTANT - 229)) | (
-                    1 << (Parser.NUMBER_CONSTANT - 229)) | (1 << (Parser.IDENTIFIER - 229)))) != 0):
+            while (
+                _la == Parser.PLUS
+                or _la == Parser.MINUS
+                or (
+                    (((_la - 229)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 229))
+                        & (
+                            (1 << (Parser.INTEGER_CONSTANT - 229))
+                            | (1 << (Parser.NUMBER_CONSTANT - 229))
+                            | (1 << (Parser.IDENTIFIER - 229))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self.state = 1570
                 self.codeItemRelationClause()
                 self.state = 1575
@@ -12089,7 +13287,6 @@ class Parser(Parser):
                 self.state = 1582
                 self.match(Parser.QRPAREN)
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -12131,10 +13328,20 @@ class Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1586
             _la = self._input.LA(1)
-            if not (((((_la - 229)) & ~0x3f) == 0 and ((1 << (_la - 229)) & (
-                    (1 << (Parser.INTEGER_CONSTANT - 229)) | (
-                    1 << (Parser.NUMBER_CONSTANT - 229)) | (
-                            1 << (Parser.IDENTIFIER - 229)))) != 0)):
+            if not (
+                (
+                    (((_la - 229)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 229))
+                        & (
+                            (1 << (Parser.INTEGER_CONSTANT - 229))
+                            | (1 << (Parser.NUMBER_CONSTANT - 229))
+                            | (1 << (Parser.IDENTIFIER - 229))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -12161,8 +13368,9 @@ class Parser(Parser):
 
     class RangeConstraintContext(ScalarTypeConstraintContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ScalarTypeConstraintContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ScalarTypeConstraintContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -12192,8 +13400,9 @@ class Parser(Parser):
 
     class ConditionConstraintContext(ScalarTypeConstraintContext):
 
-        def __init__(self, parser,
-                     ctx: ParserRuleContext):  # actually a VtlParser.ScalarTypeConstraintContext
+        def __init__(
+            self, parser, ctx: ParserRuleContext
+        ):  # actually a VtlParser.ScalarTypeConstraintContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -12363,7 +13572,6 @@ class Parser(Parser):
                     self._errHandler.reportMatch(self)
                     self.consume()
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -12460,11 +13668,23 @@ class Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1616
             _la = self._input.LA(1)
-            if not (((((_la - 213)) & ~0x3f) == 0 and ((1 << (_la - 213)) & (
-                    (1 << (Parser.NON_NULL - 213)) | (1 << (Parser.NON_ZERO - 213)) | (
-                    1 << (Parser.PARTIAL_NULL - 213)) | (1 << (Parser.PARTIAL_ZERO - 213)) | (
-                            1 << (Parser.ALWAYS_NULL - 213)) | (
-                            1 << (Parser.ALWAYS_ZERO - 213)))) != 0)):
+            if not (
+                (
+                    (((_la - 213)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 213))
+                        & (
+                            (1 << (Parser.NON_NULL - 213))
+                            | (1 << (Parser.NON_ZERO - 213))
+                            | (1 << (Parser.PARTIAL_NULL - 213))
+                            | (1 << (Parser.PARTIAL_ZERO - 213))
+                            | (1 << (Parser.ALWAYS_NULL - 213))
+                            | (1 << (Parser.ALWAYS_ZERO - 213))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -12852,7 +14072,6 @@ class Parser(Parser):
                 self.state = 1644
                 self.match(Parser.IDENTIFIER)
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -13047,9 +14266,23 @@ class Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1664
             _la = self._input.LA(1)
-            if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & (
-                    (1 << Parser.EQ) | (1 << Parser.LT) | (1 << Parser.MT) | (1 << Parser.ME) | (
-                    1 << Parser.NEQ) | (1 << Parser.LE))) != 0)):
+            if not (
+                (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << Parser.EQ)
+                            | (1 << Parser.LT)
+                            | (1 << Parser.MT)
+                            | (1 << Parser.ME)
+                            | (1 << Parser.NEQ)
+                            | (1 << Parser.LE)
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -13091,24 +14324,80 @@ class Parser(Parser):
             self.state = 1668
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF,
-                         Parser.CURRENT_DATE, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT,
-                         Parser.ISNULL, Parser.UNION, Parser.SYMDIFF, Parser.INTERSECT,
-                         Parser.CHECK, Parser.EXISTS_IN, Parser.MIN, Parser.MAX, Parser.ABS,
-                         Parser.LN, Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER,
-                         Parser.MOD, Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE,
-                         Parser.SUBSTR, Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT,
-                         Parser.EXP, Parser.CHARSET_MATCH, Parser.NVL, Parser.HIERARCHY,
-                         Parser.LTRIM, Parser.RTRIM, Parser.INSTR, Parser.REPLACE, Parser.CEIL,
-                         Parser.FLOOR, Parser.SQRT, Parser.SETDIFF, Parser.STDDEV_POP,
-                         Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE,
-                         Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT,
-                         Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW,
-                         Parser.TIMESHIFT, Parser.INNER_JOIN, Parser.LEFT_JOIN, Parser.CROSS_JOIN,
-                         Parser.FULL_JOIN, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST,
-                         Parser.CHECK_DATAPOINT, Parser.CHECK_HIERARCHY, Parser.INTEGER_CONSTANT,
-                         Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT, Parser.STRING_CONSTANT,
-                         Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CURRENT_DATE,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.UNION,
+                Parser.SYMDIFF,
+                Parser.INTERSECT,
+                Parser.CHECK,
+                Parser.EXISTS_IN,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.HIERARCHY,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.SETDIFF,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.INNER_JOIN,
+                Parser.LEFT_JOIN,
+                Parser.CROSS_JOIN,
+                Parser.FULL_JOIN,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.CHECK_DATAPOINT,
+                Parser.CHECK_HIERARCHY,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1666
                 self.expr(0)
@@ -13158,20 +14447,68 @@ class Parser(Parser):
             self.state = 1672
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.LPAREN, Parser.PLUS, Parser.MINUS, Parser.EVAL, Parser.IF,
-                         Parser.CURRENT_DATE, Parser.NOT, Parser.BETWEEN, Parser.NULL_CONSTANT,
-                         Parser.ISNULL, Parser.RANK, Parser.MIN, Parser.MAX, Parser.ABS, Parser.LN,
-                         Parser.LOG, Parser.TRUNC, Parser.ROUND, Parser.POWER, Parser.MOD,
-                         Parser.LEN, Parser.TRIM, Parser.UCASE, Parser.LCASE, Parser.SUBSTR,
-                         Parser.SUM, Parser.AVG, Parser.MEDIAN, Parser.COUNT, Parser.EXP,
-                         Parser.CHARSET_MATCH, Parser.NVL, Parser.LTRIM, Parser.RTRIM, Parser.INSTR,
-                         Parser.REPLACE, Parser.CEIL, Parser.FLOOR, Parser.SQRT, Parser.STDDEV_POP,
-                         Parser.STDDEV_SAMP, Parser.VAR_POP, Parser.VAR_SAMP, Parser.FIRST_VALUE,
-                         Parser.LAST_VALUE, Parser.LAG, Parser.LEAD, Parser.RATIO_TO_REPORT,
-                         Parser.FILL_TIME_SERIES, Parser.FLOW_TO_STOCK, Parser.STOCK_TO_FLOW,
-                         Parser.TIMESHIFT, Parser.PERIOD_INDICATOR, Parser.TIME_AGG, Parser.CAST,
-                         Parser.INTEGER_CONSTANT, Parser.NUMBER_CONSTANT, Parser.BOOLEAN_CONSTANT,
-                         Parser.STRING_CONSTANT, Parser.IDENTIFIER]:
+            if token in [
+                Parser.LPAREN,
+                Parser.PLUS,
+                Parser.MINUS,
+                Parser.EVAL,
+                Parser.IF,
+                Parser.CURRENT_DATE,
+                Parser.NOT,
+                Parser.BETWEEN,
+                Parser.NULL_CONSTANT,
+                Parser.ISNULL,
+                Parser.RANK,
+                Parser.MIN,
+                Parser.MAX,
+                Parser.ABS,
+                Parser.LN,
+                Parser.LOG,
+                Parser.TRUNC,
+                Parser.ROUND,
+                Parser.POWER,
+                Parser.MOD,
+                Parser.LEN,
+                Parser.TRIM,
+                Parser.UCASE,
+                Parser.LCASE,
+                Parser.SUBSTR,
+                Parser.SUM,
+                Parser.AVG,
+                Parser.MEDIAN,
+                Parser.COUNT,
+                Parser.EXP,
+                Parser.CHARSET_MATCH,
+                Parser.NVL,
+                Parser.LTRIM,
+                Parser.RTRIM,
+                Parser.INSTR,
+                Parser.REPLACE,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+                Parser.STDDEV_POP,
+                Parser.STDDEV_SAMP,
+                Parser.VAR_POP,
+                Parser.VAR_SAMP,
+                Parser.FIRST_VALUE,
+                Parser.LAST_VALUE,
+                Parser.LAG,
+                Parser.LEAD,
+                Parser.RATIO_TO_REPORT,
+                Parser.FILL_TIME_SERIES,
+                Parser.FLOW_TO_STOCK,
+                Parser.STOCK_TO_FLOW,
+                Parser.TIMESHIFT,
+                Parser.PERIOD_INDICATOR,
+                Parser.TIME_AGG,
+                Parser.CAST,
+                Parser.INTEGER_CONSTANT,
+                Parser.NUMBER_CONSTANT,
+                Parser.BOOLEAN_CONSTANT,
+                Parser.STRING_CONSTANT,
+                Parser.IDENTIFIER,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1670
                 self.exprComponent(0)
@@ -13446,11 +14783,22 @@ class Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1690
             _la = self._input.LA(1)
-            if not (_la == Parser.NULL_CONSTANT or ((((_la - 229)) & ~0x3f) == 0 and (
-                    (1 << (_la - 229)) & ((1 << (Parser.INTEGER_CONSTANT - 229)) | (
-                    1 << (Parser.NUMBER_CONSTANT - 229)) | (
-                                                  1 << (Parser.BOOLEAN_CONSTANT - 229)) | (
-                                                  1 << (Parser.STRING_CONSTANT - 229)))) != 0)):
+            if not (
+                _la == Parser.NULL_CONSTANT
+                or (
+                    (((_la - 229)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 229))
+                        & (
+                            (1 << (Parser.INTEGER_CONSTANT - 229))
+                            | (1 << (Parser.NUMBER_CONSTANT - 229))
+                            | (1 << (Parser.BOOLEAN_CONSTANT - 229))
+                            | (1 << (Parser.STRING_CONSTANT - 229))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -13514,12 +14862,26 @@ class Parser(Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 1692
             _la = self._input.LA(1)
-            if not (((((_la - 156)) & ~0x3f) == 0 and ((1 << (_la - 156)) & (
-                    (1 << (Parser.BOOLEAN - 156)) | (1 << (Parser.DATE - 156)) | (
-                    1 << (Parser.TIME_PERIOD - 156)) | (1 << (Parser.NUMBER - 156)) | (
-                            1 << (Parser.STRING - 156)) | (1 << (Parser.TIME - 156)) | (
-                            1 << (Parser.INTEGER - 156)) | (
-                            1 << (Parser.DURATION - 156)))) != 0) or _la == Parser.SCALAR):
+            if not (
+                (
+                    (((_la - 156)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 156))
+                        & (
+                            (1 << (Parser.BOOLEAN - 156))
+                            | (1 << (Parser.DATE - 156))
+                            | (1 << (Parser.TIME_PERIOD - 156))
+                            | (1 << (Parser.NUMBER - 156))
+                            | (1 << (Parser.STRING - 156))
+                            | (1 << (Parser.TIME - 156))
+                            | (1 << (Parser.INTEGER - 156))
+                            | (1 << (Parser.DURATION - 156))
+                        )
+                    )
+                    != 0
+                )
+                or _la == Parser.SCALAR
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
