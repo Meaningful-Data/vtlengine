@@ -1,9 +1,19 @@
 from copy import copy
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import duckdb
 import pandas as pd
-from vtlengine.DataTypes import Integer, Number, unary_implicit_promotion, Boolean
+from vtlengine.DataTypes import (
+    Integer,
+    Number,
+    unary_implicit_promotion,
+    Boolean,
+    String,
+    Duration,
+    TimeInterval,
+    TimePeriod,
+    Date,
+)
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -25,11 +35,11 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role
 
 
 def extract_grouping_identifiers(
-    identifier_names: List[str], group_op: str, grouping_components: List[str]
+    identifier_names: List[str], group_op: Optional[str], grouping_components: Any
 ) -> List[str]:
     if group_op == "group by":
         return grouping_components
@@ -42,7 +52,9 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
     @classmethod
-    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str):
+    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
+        to_replace: List[Optional[str]]
+        new_value: List[Optional[str]]
         if cls.op == COUNT:
             return
         if mode == "input":
@@ -53,7 +65,7 @@ class Aggregation(Operator.Unary):
             new_value = [None]
 
         for measure in measures:
-            if measure.data_type.__name__ == "Date":
+            if measure.data_type == Date:
                 if cls.op == MIN:
                     if mode == "input":
                         # Invalid date only for null values
@@ -61,7 +73,7 @@ class Aggregation(Operator.Unary):
                     else:
                         to_replace = ["9999-99-99"]
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type.__name__ == "TimePeriod":
+            elif measure.data_type == TimePeriod:
                 if mode == "input":
                     data[measure.name] = (
                         data[measure.name]
@@ -72,7 +84,7 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
                     )
-            elif measure.data_type.__name__ == "TimeInterval":
+            elif measure.data_type == TimeInterval:
                 if mode == "input":
                     data[measure.name] = (
                         data[measure.name]
@@ -83,9 +95,9 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
                     )
-            elif measure.data_type.__name__ == "String":
+            elif measure.data_type == String:
                 data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type.__name__ == "Duration":
+            elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
                         lambda x: DURATION_MAPPING[x], na_action="ignore"
@@ -94,7 +106,7 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: DURATION_MAPPING_REVERSED[x], na_action="ignore"
                     )
-            elif measure.data_type.__name__ == "Boolean":
+            elif measure.data_type == Boolean:
                 if mode == "result":
                     data[measure.name] = data[measure.name].map(
                         lambda x: Boolean().cast(x), na_action="ignore"
@@ -102,13 +114,12 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
-    def validate(
-        cls,
-        operand: Dataset,
-        group_op: Optional[str],
-        grouping_columns: Optional[List[str]],
-        having_data: Optional[List[DataComponent]],
-    ) -> Dataset:
+    def validate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 group_op: Optional[str],
+                 grouping_columns: Any,
+                 having_data: Any
+                 ) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -174,17 +185,15 @@ class Aggregation(Operator.Unary):
         if having_expression is None:
             having_expression = ""
 
-        if len(measure_names) == 0 and cls.op == COUNT:
+        if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
             if grouping_names is not None:
-                query = (
-                    f"SELECT {', '.join(grouping_names)}, COUNT() AS "
-                    f"int_var from df {grouping} {having_expression}"
-                )
+                query = (f"SELECT {', '.join(grouping_names)}, COUNT() AS "
+                         f"int_var from df {grouping} {having_expression}")
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
             return duckdb.query(query).to_df()
 
-        if len(measure_names) > 0:
+        if measure_names is not None and len(measure_names) > 0:
             functions = ""
             for e in measure_names:
                 e = f'"{e}"'
@@ -198,15 +207,15 @@ class Aggregation(Operator.Unary):
                 else:
                     functions += f"{cls.py_op}({e}) AS {e}, "
             if grouping_names is not None and len(grouping_names) > 0:
-                query = (
-                    f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
-                    f"from df {grouping} {having_expression}"
-                )
+                query = (f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
+                         f"from df {grouping} {having_expression}")
             else:
                 query = f"SELECT {functions[:-2]} from df"
 
         else:
-            query = f"SELECT {', '.join(grouping_names)} from df {grouping} {having_expression}"
+            query = (
+                f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
+            )
 
         try:
             return duckdb.query(query).to_df()
@@ -217,17 +226,16 @@ class Aggregation(Operator.Unary):
                 raise SemanticError("2-1-1-1", op=cls.op)
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Dataset,
-        group_op: Optional[str],
-        grouping_columns: Optional[List[str]],
-        having_expr: Optional[str],
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 group_op: Optional[str],
+                 grouping_columns: Optional[List[str]],
+                 having_expr: Optional[str],
+                 ) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy()
+        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
@@ -237,7 +245,11 @@ class Aggregation(Operator.Unary):
 
         cls._handle_data_types(result_df, operand.get_measures(), "result")
         # Handle correct order on result
-        aux_df = operand.data[grouping_keys].drop_duplicates()
+        aux_df = (
+            operand.data[grouping_keys].drop_duplicates()
+            if operand.data is not None
+            else pd.DataFrame()
+        )
         if len(grouping_keys) == 0:
             aux_df = result_df
             aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)

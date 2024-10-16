@@ -235,9 +235,9 @@ class Windowing(AST):
     """
 
     type_: str
-    start: int
+    start: str
     start_mode: str
-    stop: int
+    stop: Union[int, str]
     stop_mode: str
 
 
@@ -408,7 +408,7 @@ class Argument(AST):
     """
 
     name: str
-    type_: ScalarType
+    type_: Type[ScalarType]
     default: Optional[AST]
 
 

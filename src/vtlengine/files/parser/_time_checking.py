@@ -7,7 +7,7 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 
 
-def check_date(value: str):
+def check_date(value: str) -> str:
     """
     Check if the date is in the correct format.
     """
@@ -37,7 +37,7 @@ def check_date(value: str):
     return date_value.isoformat()
 
 
-def dates_to_string(date1, date2):
+def dates_to_string(date1: date, date2: date) -> str:
     date1_str = date1.strftime("%Y-%m-%d")
     date2_str = date2.strftime("%Y-%m-%d")
     return f"{date1_str}/{date2_str}"
@@ -49,7 +49,7 @@ month_pattern = r"\d{4}[-][0-1]?\d"
 time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
 
 
-def check_time(value: str):
+def check_time(value: str) -> str:
     value = value.replace(" ", "")
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
@@ -92,7 +92,7 @@ further_options_period_pattern = (
 )
 
 
-def check_time_period(value: str):
+def check_time_period(value: str) -> str:
     value = value.replace(" ", "")
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:

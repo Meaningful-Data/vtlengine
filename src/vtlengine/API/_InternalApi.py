@@ -1,10 +1,10 @@
 import json
 import os
 from pathlib import Path
-from typing import Union, Optional, Dict, List
+from typing import Union, Optional, Dict, List, Any
 
 import pandas as pd
-from s3fs import S3FileSystem
+from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -21,7 +21,7 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 
-def _load_dataset_from_structure(structures: dict):
+def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
     """
     Loads a dataset with the structure given.
     """
@@ -47,11 +47,11 @@ def _load_dataset_from_structure(structures: dict):
             scalar = Scalar(
                 name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
             )
-            datasets[scalar_name] = scalar
+            datasets[scalar_name] = scalar  # type: ignore[assignment]
     return datasets
 
 
-def _load_single_datapoint(datapoint: Union[str, Path]):
+def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     """
     Returns a dict with the data given from one dataset.
     """
@@ -70,7 +70,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]):
 
             # Check if the S3 URI is a directory
             if s3fs_obj.isdir(datapoint):
-                datapoints = {}
+                datapoints: Dict[str, Any] = {}
                 for f in s3fs_obj.ls(datapoint):
                     if f.endswith(".csv"):
                         dataset_name = f.split("/")[-1].removesuffix(".csv")
@@ -99,16 +99,18 @@ def _load_single_datapoint(datapoint: Union[str, Path]):
         dict_data = datapoints
     else:
         dataset_name = datapoint.name.removesuffix(".csv")
-        dict_data = {dataset_name: datapoint}
+        dict_data = {dataset_name: datapoint}  # type: ignore[dict-item]
     return dict_data
 
 
-def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]):
+def _load_datapoints_path(
+    datapoints: Union[Path, str, List[Union[str, Path]]]
+) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
     """
     if isinstance(datapoints, list):
-        dict_datapoints = {}
+        dict_datapoints: Dict[str, Any] = {}
         for x in datapoints:
             result = _load_single_datapoint(x)
             dict_datapoints = {**dict_datapoints, **result}
@@ -116,7 +118,7 @@ def _load_datapoints_path(datapoints: Union[Path, str, List[Union[str, Path]]]):
     return _load_single_datapoint(datapoints)
 
 
-def _load_datastructure_single(data_structure: Union[dict, Path]):
+def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> Dict[str, Dataset]:
     """
     Loads a single data structure.
     """
@@ -127,7 +129,7 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     if not data_structure.exists():
         raise Exception("Invalid datastructure. Input does not exist")
     if data_structure.is_dir():
-        datasets = {}
+        datasets: Dict[str, Any] = {}
         for f in data_structure.iterdir():
             if f.suffix != ".json":
                 continue
@@ -142,7 +144,9 @@ def _load_datastructure_single(data_structure: Union[dict, Path]):
     return _load_dataset_from_structure(structures)
 
 
-def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
+def load_datasets(
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
 
@@ -160,7 +164,7 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure)
     if isinstance(data_structure, list):
-        ds_structures = {}
+        ds_structures: Dict[str, Any] = {}
         for x in data_structure:
             result = _load_datastructure_single(x)
             ds_structures = {**ds_structures, **result}  # Overwrite ds_structures dict.
@@ -168,10 +172,7 @@ def load_datasets(data_structure: Union[dict, Path, List[Union[dict, Path]]]):
     return _load_datastructure_single(data_structure)
 
 
-def load_datasets_with_data(
-    data_structures: Union[dict, Path, List[Union[dict, Path]]],
-    datapoints: Optional[Union[dict, Path, List[Path]]] = None,
-):
+def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
 
@@ -196,8 +197,9 @@ def load_datasets_with_data(
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name}")
-            datasets[dataset_name].data = _validate_pandas(datasets[dataset_name].components,
-                                                           data, dataset_name)
+            datasets[dataset_name].data = _validate_pandas(
+                datasets[dataset_name].components, data, dataset_name
+            )
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:
                 datasets[dataset_name].data = pd.DataFrame(
@@ -213,7 +215,7 @@ def load_datasets_with_data(
     return datasets, dict_datapoints
 
 
-def load_vtl(input: Union[str, Path]):
+def load_vtl(input: Union[str, Path]) -> str:
     """
     Reads the vtl expression.
 
@@ -242,7 +244,7 @@ def load_vtl(input: Union[str, Path]):
         return f.read()
 
 
-def _load_single_value_domain(input: Path):
+def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
         raise Exception("Invalid Value Domain file. Must have .json extension")
     with open(input, "r") as f:
@@ -250,7 +252,7 @@ def _load_single_value_domain(input: Path):
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[dict, Path]):
+def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
@@ -272,7 +274,7 @@ def load_value_domains(input: Union[dict, Path]):
     if not input.exists():
         raise Exception("Invalid vd file. Input does not exist")
     if input.is_dir():
-        value_domains = {}
+        value_domains: Dict[str, Any] = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}
@@ -282,7 +284,7 @@ def load_value_domains(input: Union[dict, Path]):
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[dict, Path]) -> Optional[Dict[str, ExternalRoutine]]:
+def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
     """
     Load the external routines.
 
@@ -318,22 +320,20 @@ def load_external_routines(input: Union[dict, Path]) -> Optional[Dict[str, Exter
     return external_routines
 
 
-def _return_only_persistent_datasets(datasets: Dict[str, Dataset], ast: Start):
+def _return_only_persistent_datasets(
+    datasets: Dict[str, Dataset], ast: Start
+) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
     """
     persistent = []
     for child in ast.children:
-        if isinstance(child, PersistentAssignment):
+        if isinstance(child, PersistentAssignment) and hasattr(child.left, "value"):
             persistent.append(child.left.value)
-    return {
-        dataset.name: dataset
-        for dataset in datasets.values()
-        if isinstance(dataset, Dataset) and dataset.name in persistent
-    }
+    return {dataset.name: dataset for dataset in datasets.values() if dataset.name in persistent}
 
 
-def _load_single_external_routine_from_file(input: Path):
+def _load_single_external_routine_from_file(input: Path) -> Any:
     """
     Returns a single external routine.
     """
@@ -348,7 +348,7 @@ def _load_single_external_routine_from_file(input: Path):
     return ext_rout
 
 
-def _check_output_folder(output_folder: Union[str, Path]):
+def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     Check if the output folder exists. If not, it will create it.
     """
@@ -361,8 +361,8 @@ def _check_output_folder(output_folder: Union[str, Path]):
                     s3fs_obj.mkdir(output_folder)
                 except Exception:
                     raise Exception(
-                        f"Invalid output folder. S3 URI is invalid or it is not accessible: "
-                        f"{output_folder}"
+                        f"Invalid output folder. S3 URI is invalid or "
+                        f"it is not accessible: {output_folder}"
                     )
             return
         try:

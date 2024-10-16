@@ -1,11 +1,10 @@
-from typing import Any, Type
-
+from typing import Any, Optional, Type, Dict, Set, Union
 import pandas as pd
 
 from vtlengine.DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
 from vtlengine.Exceptions import SemanticError
 
-DTYPE_MAPPING = {
+DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
     "Number": "float64",
     "Integer": "int64",
@@ -16,7 +15,7 @@ DTYPE_MAPPING = {
     "Boolean": "object",
 }
 
-CAST_MAPPING = {
+CAST_MAPPING: Dict[str, type] = {
     "String": str,
     "Number": float,
     "Integer": int,
@@ -31,66 +30,74 @@ CAST_MAPPING = {
 class ScalarType:
     """ """
 
-    default = None
+    default: Optional[Union[str, "ScalarType"]] = None
+
+    def __name__(self) -> Any:
+        return self.__class__.__name__
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def strictly_same_class(self, obj) -> bool:
+    def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
             raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self.__class__.__name__ == other.__class__.__name__
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def instance_is_included(self, set_: set) -> bool:
+    def instance_is_included(self, set_: Set[Any]) -> bool:
         return self.__class__ in set_
 
     @classmethod
-    def is_included(cls, set_: set) -> bool:
+    def is_included(cls, set_: Set[Any]) -> bool:
         return cls in set_
 
     @classmethod
-    def promotion_changed_type(cls, promoted: Type["ScalarType"]) -> bool:
+    def promotion_changed_type(cls, promoted: Any) -> bool:
         return not issubclass(cls, promoted)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def is_subtype(cls, obj: Type["ScalarType"]) -> bool:
+    def is_subtype(cls, obj: Any) -> bool:
         return issubclass(cls, obj)
 
-    def is_null_type(self) -> bool:
+    @classmethod
+    def is_null_type(cls) -> bool:
         return False
 
     @classmethod
-    def check_type(cls, value):
-        if isinstance(value, CAST_MAPPING[cls.__name__]):
+    def check_type(cls, value: Any) -> bool:
+        if isinstance(value, CAST_MAPPING[cls.__name__]):  # type: ignore[index]
             return True
-
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> Any:
         if pd.isnull(value):
             return None
-        return CAST_MAPPING[cls.__name__](value)
+        class_name: str = cls.__name__.__str__()
+        return CAST_MAPPING[class_name](value)
 
     @classmethod
     def dtype(cls) -> str:
-        return DTYPE_MAPPING[cls.__name__]
+        class_name: str = cls.__name__.__str__()
+        return DTYPE_MAPPING[class_name]
 
-    __str__ = __repr__
+    # __str__ = __repr__
 
 
 class String(ScalarType):
@@ -99,7 +106,7 @@ class String(ScalarType):
     default = ""
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> str:
+    def implicit_cast(cls, value: Any, from_type: Any) -> str:
         # if pd.isna(value):
         #     return cls.default
         if from_type in {
@@ -122,7 +129,7 @@ class String(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> str:
+    def explicit_cast(cls, value: Any, from_type: Any) -> str:
         if from_type in {TimePeriod, Date, String}:
             return str(value)
 
@@ -137,17 +144,17 @@ class String(ScalarType):
 class Number(ScalarType):
     """ """
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             self.__class__.__name__ == other.__class__.__name__
             or other.__class__.__name__ == Integer.__name__
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> float:
+    def implicit_cast(cls, value: Any, from_type: Any) -> float:
         # if pd.isna(value):
         #     return cls.default
         if from_type in {Integer, Number}:
@@ -161,7 +168,7 @@ class Number(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> float:
+    def explicit_cast(cls, value: Any, from_type: Any) -> float:
         if from_type in {Boolean}:
             if value:
                 return 1.0
@@ -181,7 +188,7 @@ class Number(ScalarType):
         )
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> Optional[float]:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -195,17 +202,17 @@ class Number(ScalarType):
 class Integer(Number):
     """ """
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             self.__class__.__name__ == other.__class__.__name__
             or other.__class__.__name__ == Number.__name__
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> int:
+    def implicit_cast(cls, value: Any, from_type: Any) -> int:
         if from_type.__name__ == "Integer":
             return value
 
@@ -228,7 +235,7 @@ class Integer(Number):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> int:
+    def explicit_cast(cls, value: Any, from_type: Any) -> int:
         if from_type in {Boolean}:
             if value:
                 return 1
@@ -260,7 +267,7 @@ class Integer(Number):
         )
 
     @classmethod
-    def cast(cls, value):
+    def cast(cls, value: Any) -> Optional[int]:
         if pd.isnull(value):
             return None
         if isinstance(value, float):
@@ -283,7 +290,7 @@ class TimeInterval(ScalarType):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {TimeInterval, String}:
             return value
@@ -305,7 +312,7 @@ class TimeInterval(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
 
         raise SemanticError(
             "2-1-5-1",
@@ -321,7 +328,7 @@ class Date(TimeInterval):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {Date, String}:
             return value
@@ -334,7 +341,7 @@ class Date(TimeInterval):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
             return value
@@ -353,7 +360,7 @@ class TimePeriod(TimeInterval):
     default = None
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {TimePeriod, String}:
             return value
@@ -366,7 +373,7 @@ class TimePeriod(TimeInterval):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type in {Date}:
             try:
                 period_str = date_to_period_str(value, "D")
@@ -393,7 +400,7 @@ class TimePeriod(TimeInterval):
 class Duration(ScalarType):
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> str:
+    def implicit_cast(cls, value: Any, from_type: Any) -> str:
         if from_type in {Duration, String}:
             return value
 
@@ -405,7 +412,7 @@ class Duration(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> Any:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
             return value
 
@@ -422,7 +429,8 @@ class Boolean(ScalarType):
 
     default = None
 
-    def cast(self, value):
+    @classmethod
+    def cast(cls, value: Any) -> Optional[bool]:
         if pd.isnull(value):
             return None
         if isinstance(value, str):
@@ -451,7 +459,7 @@ class Boolean(ScalarType):
         return value
 
     @classmethod
-    def implicit_cast(cls, value, from_type: Type["ScalarType"]) -> bool:
+    def implicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Boolean}:
             return value
 
@@ -463,7 +471,7 @@ class Boolean(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value, from_type: Type["ScalarType"]) -> bool:
+    def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
             if value in {0, 0.0}:
                 return False
@@ -480,20 +488,24 @@ class Boolean(ScalarType):
 class Null(ScalarType):
     """ """
 
-    def is_null_type(self) -> bool:
+    @classmethod
+    def is_null_type(cls) -> bool:
         return True
 
-    def check_type(self, value):
+    @classmethod
+    def check_type(cls, value: Any) -> bool:
         return True
 
-    def cast(self, value):
+    @classmethod
+    def cast(cls, value: Any) -> None:
         return None
 
-    def dtype(self):
+    @classmethod
+    def dtype(cls) -> str:
         return "string"
 
 
-SCALAR_TYPES = {
+SCALAR_TYPES: Dict[str, Type[ScalarType]] = {
     "String": String,
     "Number": Number,
     "Integer": Integer,
@@ -504,7 +516,7 @@ SCALAR_TYPES = {
     "Boolean": Boolean,
 }
 
-SCALAR_TYPES_CLASS_REVERSE = {
+SCALAR_TYPES_CLASS_REVERSE: Dict[Type[ScalarType], str] = {
     String: "String",
     Number: "Number",
     Integer: "Integer",
@@ -515,9 +527,15 @@ SCALAR_TYPES_CLASS_REVERSE = {
     Boolean: "Boolean",
 }
 
-BASIC_TYPES = {str: String, int: Integer, float: Number, bool: Boolean, type(None): Null}
+BASIC_TYPES: Dict[type, Type[ScalarType]] = {
+    str: String,
+    int: Integer,
+    float: Number,
+    bool: Boolean,
+    type(None): Null,
+}
 
-COMP_NAME_MAPPING = {
+COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
     String: "str_var",
     Number: "num_var",
     Integer: "int_var",
@@ -529,7 +547,7 @@ COMP_NAME_MAPPING = {
     Null: "null_var",
 }
 
-IMPLICIT_TYPE_PROMOTION_MAPPING = {
+IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove Time types, only for compatibility with previous engine
     String: {String, Boolean, TimePeriod},
     Number: {String, Number, Integer},
@@ -544,7 +562,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING = {
 }
 
 # TODO: Implicit are valid as cast without mask
-EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
+EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     # TODO: Remove time types, only for compatibility with previous engine
     String: {Integer, String, Date, TimePeriod, TimeInterval, Duration, Number},
     Number: {Integer, Boolean, String, Number},
@@ -558,7 +576,7 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING = {
     Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null},
 }
 
-EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
+EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {Number, TimeInterval, Date, TimePeriod, Duration},
     Number: {},
     Integer: {},
@@ -572,11 +590,11 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING = {
 
 
 def binary_implicit_promotion(
-    left_type: ScalarType,
-    right_type: ScalarType,
-    type_to_check: ScalarType = None,
-    return_type: ScalarType = None,
-) -> ScalarType:
+    left_type: Type[ScalarType],
+    right_type: Type[ScalarType],
+    type_to_check: Optional[Type[ScalarType]] = None,
+    return_type: Optional[Type[ScalarType]] = None,
+) -> Type[ScalarType]:
     """
     Validates the compatibility between the types of the operands and the operator
     (implicit type promotion : check_binary_implicit_type_promotion)
@@ -605,8 +623,8 @@ def binary_implicit_promotion(
             type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
             type_check=SCALAR_TYPES_CLASS_REVERSE[type_to_check],
         )
-        # raise Exception(f"Implicit cast not allowed from {left_type} and
-        # {right_type} to {type_to_check}")
+        # raise Exception(f"Implicit cast not allowed from
+        # {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (
         left_type.is_included(right_implicities) or right_type.is_included(left_implicities)
@@ -625,10 +643,7 @@ def binary_implicit_promotion(
 
 
 def check_binary_implicit_promotion(
-    left: ScalarType,
-    right: ScalarType,
-    type_to_check: ScalarType = None,
-    return_type: ScalarType = None,
+    left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -648,8 +663,10 @@ def check_binary_implicit_promotion(
 
 
 def unary_implicit_promotion(
-    operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
-) -> ScalarType:
+    operand_type: Type[ScalarType],
+    type_to_check: Optional[Type[ScalarType]] = None,
+    return_type: Optional[Type[ScalarType]] = None,
+) -> Type[ScalarType]:
     """
     Validates the compatibility between the type of the operand and the operator
     param operand: The operand
@@ -665,7 +682,6 @@ def unary_implicit_promotion(
                 type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
                 type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check],
             )
-
     if return_type:
         return return_type
     if (
@@ -678,7 +694,7 @@ def unary_implicit_promotion(
 
 
 def check_unary_implicit_promotion(
-    operand_type: ScalarType, type_to_check: ScalarType = None, return_type: ScalarType = None
+    operand_type: Type[ScalarType], type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator

@@ -1,17 +1,15 @@
 import operator
-import os
 import re
-
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 
-if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK", False):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from typing import Optional, Any, Union
-
 from vtlengine.AST.Grammar.tokens import (
     LEN,
     CONCAT,
@@ -24,7 +22,7 @@ from vtlengine.AST.Grammar.tokens import (
     REPLACE,
     INSTR,
 )
-from vtlengine.DataTypes import Integer, String, ScalarType, check_unary_implicit_promotion
+from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 import vtlengine.Operators as Operator
 
 
@@ -33,6 +31,7 @@ class Unary(Operator.Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
+
         x = "" if pd.isnull(x) else str(x)
         return cls.py_op(x)
 
@@ -48,7 +47,7 @@ class Unary(Operator.Unary):
         """
         measures = dataset.get_measures()
 
-        if measures is None or len(measures) != 1:
+        if len(measures) != 1:
             raise SemanticError("1-1-18-1", op=cls.op, name=dataset.name)
 
 
@@ -119,44 +118,49 @@ class Concatenate(Binary):
 class Parameterized(Unary):
 
     @classmethod
-    def validate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        param1: Optional[Scalar] = None,
-        param2: Optional[Scalar] = None,
-    ):
+    def validate(cls, *args: Any) -> Any:
+        operand: Operator.ALL_MODEL_DATA_TYPES
+        param1: Optional[Scalar]
+        param2: Optional[Scalar]
+        operand, param1, param2 = (args + (None, None))[:3]
 
         if param1 is not None:
             cls.check_param(param1, 1)
         if param2 is not None:
             cls.check_param(param2, 2)
-
         return super().validate(operand)
 
     @classmethod
-    def op_func(
-        cls, x: Union[Dataset, String], param1: Optional[Any], param2: Optional[Any]
-    ) -> Any:
+    def op_func(cls, *args: Any) -> Any:
+        x: Optional[Any]
+        param1: Optional[Any]
+        param2: Optional[Any]
+        x, param1, param2 = (args + (None, None))[:3]
+
         x = "" if pd.isnull(x) else x
         return cls.py_op(x, param1, param2)
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: pd.Series, right_series: pd.Series) -> Any:
+    def apply_operation_two_series(cls, *args: Any) -> Any:
+        left_series, right_series = args
+
         return left_series.combine(right_series, cls.op_func)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, param1: Any, param2: Any) -> Any:
+    def apply_operation_series_scalar(cls, *args: Any) -> Any:
+        series, param1, param2 = args
+
         return series.map(lambda x: cls.op_func(x, param1, param2))
 
     @classmethod
-    def dataset_evaluation(
-        cls,
-        operand: Dataset,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-    ):
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand: Dataset
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        operand, param1, param2 = (args + (None, None))[:3]
+
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
                 result.data[measure_name] = cls.apply_operation_series(
@@ -171,19 +175,18 @@ class Parameterized(Unary):
 
         cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
         result.data = result.data[cols_to_keep]
-
         cls.modify_measure_column(result)
         return result
 
     @classmethod
-    def component_evaluation(
-        cls,
-        operand: DataComponent,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-    ):
+    def component_evaluation(cls, *args: Any) -> DataComponent:
+        operand: DataComponent
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        operand, param1, param2 = (args + (None, None))[:3]
+
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
             result.data = cls.apply_operation_series(result.data, param1, param2)
         else:
@@ -195,12 +198,12 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def scalar_evaluation(
-        cls,
-        operand: Scalar,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-    ):
+    def scalar_evaluation(cls, *args: Any) -> Scalar:
+        operand: Scalar
+        param1: Optional[Scalar]
+        param2: Optional[Scalar]
+        operand, param1, param2 = (args + (None, None))[:3]
+
         result = cls.validate(operand, param1, param2)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
@@ -208,29 +211,34 @@ class Parameterized(Unary):
         return result
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        param1: Optional[Union[DataComponent, Scalar]] = None,
-        param2: Optional[Union[DataComponent, Scalar]] = None,
-    ) -> Operator.ALL_MODEL_DATA_TYPES:
+    def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        operand, param1, param2 = (args + (None, None))[:3]
+
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2)
         if isinstance(operand, DataComponent):
             return cls.component_evaluation(operand, param1, param2)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand, param1, param2)
+        return cls.scalar_evaluation(operand, param1, param2)
 
     @classmethod
-    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
+    def check_param(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def check_param_value(cls, param: Optional[Union[int, str]], position: int):
+    def check_param_value(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
     @classmethod
-    def generate_series_from_param(cls, param: Optional[Union[DataComponent, Scalar]], length: int):
+    def generate_series_from_param(cls, *args: Any) -> Any:
+        param: Optional[Union[DataComponent, Scalar]] = None
+        length: int
+        if len(args) == 2:
+            param, length = args
+        else:
+            length = args[0]
+
         if param is None:
             return pd.Series(index=range(length), dtype=object)
         if isinstance(param, Scalar):
@@ -238,15 +246,13 @@ class Parameterized(Unary):
         return param.data
 
     @classmethod
-    def apply_operation_series(
-        cls,
-        data: pd.Series,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-    ):
+    def apply_operation_series(cls, *args: Any) -> Any:
+        param1: Optional[Union[DataComponent, Scalar]]
+        param2: Optional[Union[DataComponent, Scalar]]
+        data, param1, param2 = (args + (None, None))[:3]
+
         param1_data = cls.generate_series_from_param(param1, len(data))
         param2_data = cls.generate_series_from_param(param2, len(data))
-
         df = pd.DataFrame([data, param1_data, param2_data]).T
         n1, n2, n3 = df.columns
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3]), axis=1)
@@ -257,12 +263,12 @@ class Substr(Parameterized):
     return_type = String
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]):
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
     @classmethod
-    def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
+    def py_op(cls, x: str, param1: Any, param2: Any) -> Any:
         x = str(x)
         param1 = None if pd.isnull(param1) else int(param1)
         param2 = None if pd.isnull(param2) else int(param2)
@@ -281,12 +287,12 @@ class Substr(Parameterized):
         return x[param1:param2]
 
     @classmethod
-    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
         if not param:
             return
         if position not in (1, 2):
             raise SemanticError("1-1-18-3", op=cls.op, pos=position)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if not check_unary_implicit_promotion(data_type, Integer):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
@@ -298,11 +304,12 @@ class Substr(Parameterized):
             cls.check_param_value(param.value, position)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Union[int, str]], position: int):
-        if not pd.isnull(param) and not param >= 1 and position == 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif not pd.isnull(param) and not param >= 0 and position == 2:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
+    def check_param_value(cls, param: Optional[Any], position: int) -> None:
+        if param is not None:
+            if not pd.isnull(param) and not param >= 1 and position == 1:
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
+            elif not pd.isnull(param) and not param >= 0 and position == 2:
+                raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 
 class Replace(Parameterized):
@@ -316,21 +323,23 @@ class Replace(Parameterized):
         elif pd.isnull(param2):
             param2 = ""
         x = str(x)
-        return x.replace(param1, param2)
+        if param1 is not None and param2 is not None:
+            return x.replace(param1, param2)
+        return x
 
     @classmethod
-    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
         if not param:
             return
         if position not in (1, 2):
             raise SemanticError("1-1-18-3", op=cls.op, pos=position)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if not check_unary_implicit_promotion(data_type, String):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="String")
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]):
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
@@ -343,10 +352,10 @@ class Instr(Parameterized):
     def validate(
         cls,
         operand: Operator.ALL_MODEL_DATA_TYPES,
-        param1: Optional[Scalar] = None,
-        param2: Optional[Scalar] = None,
-        param3: Optional[Scalar] = None,
-    ):
+        param1: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
+        param2: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
+        param3: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
+    ) -> Any:
 
         if (
             isinstance(param1, Dataset)
@@ -364,17 +373,17 @@ class Instr(Parameterized):
         return super().validate(operand)
 
     @classmethod
-    def validate_params(cls, params: Optional[Any]):
+    def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
 
     @classmethod
-    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int):
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
         if not param:
             return
         if position not in (1, 2, 3):
             raise SemanticError("1-1-18-9", op=cls.op)
-        data_type: ScalarType = param.data_type
+        data_type: Any = param.data_type
 
         if position == 1:
             if not check_unary_implicit_promotion(data_type, String):
@@ -398,7 +407,7 @@ class Instr(Parameterized):
             cls.check_param_value(param.value, position)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Union[int, str]], position: int):
+    def check_param_value(cls, param: Any, position: int) -> None:
         if position == 2:
             if not pd.isnull(param) and param < 1:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
@@ -410,18 +419,18 @@ class Instr(Parameterized):
 
     @classmethod
     def apply_operation_series_scalar(
-        cls, series: pd.Series, param1: Any, param2: Any, param3: Any
+        cls, series: Any, param1: Any, param2: Any, param3: Any
     ) -> Any:
         return series.map(lambda x: cls.op_func(x, param1, param2, param3))
 
     @classmethod
     def apply_operation_series(
         cls,
-        data: pd.Series,
+        data: Any,
         param1: Optional[Union[DataComponent, Scalar]],
         param2: Optional[Union[DataComponent, Scalar]],
         param3: Optional[Union[DataComponent, Scalar]],
-    ):
+    ) -> Any:
         param1_data = cls.generate_series_from_param(param1, len(data))
         param2_data = cls.generate_series_from_param(param2, len(data))
         param3_data = cls.generate_series_from_param(param3, len(data))
@@ -431,24 +440,24 @@ class Instr(Parameterized):
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3], x[n4]), axis=1)
 
     @classmethod
-    def dataset_evaluation(
-        cls,
-        operand: Dataset,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ):
+    def dataset_evaluation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           param1: Optional[Union[DataComponent, Scalar]],
+                           param2: Optional[Union[DataComponent, Scalar]],
+                           param3: Optional[Union[DataComponent, Scalar]],
+                           ) -> Dataset:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
             if (
                 isinstance(param1, DataComponent)
                 or isinstance(param2, DataComponent)
                 or isinstance(param3, DataComponent)
             ):
-                result.data[measure_name] = cls.apply_operation_series(
-                    operand.data[measure_name], param1, param2, param3
-                )
+                if operand.data is not None:
+                    result.data[measure_name] = cls.apply_operation_series(
+                        operand.data[measure_name], param1, param2, param3
+                    )
             else:
                 param_value1 = None if param1 is None else param1.value
                 param_value2 = None if param2 is None else param2.value
@@ -462,15 +471,14 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def component_evaluation(
-        cls,
-        operand: DataComponent,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ):
+    def component_evaluation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             param1: Optional[Union[DataComponent, Scalar]],
+                             param2: Optional[Union[DataComponent, Scalar]],
+                             param3: Optional[Union[DataComponent, Scalar]],
+                             ) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if (
             isinstance(param1, DataComponent)
             or isinstance(param2, DataComponent)
@@ -487,13 +495,12 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def scalar_evaluation(
-        cls,
-        operand: Scalar,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ):
+    def scalar_evaluation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          param1: Optional[Scalar],
+                          param2: Optional[Scalar],
+                          param3: Optional[Scalar],
+                          ) -> Scalar:
         result = cls.validate(operand, param1, param2, param3)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
@@ -502,13 +509,12 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        param1: Optional[Union[DataComponent, Scalar]] = None,
-        param2: Optional[Union[DataComponent, Scalar]] = None,
-        param3: Optional[Union[DataComponent, Scalar]] = None,
-    ) -> Operator.ALL_MODEL_DATA_TYPES:
+    def evaluate(cls,
+                 operand: Operator.ALL_MODEL_DATA_TYPES,
+                 param1: Optional[Any] = None,
+                 param2: Optional[Any] = None,
+                 param3: Optional[Any] = None,
+                 ) -> Any:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):
@@ -517,24 +523,26 @@ class Instr(Parameterized):
             return cls.scalar_evaluation(operand, param1, param2, param3)
 
     @classmethod
-    def op_func(
-        cls, x: str, param1: Optional[Any], param2: Optional[Any], param3: Optional[Any]
-    ) -> Any:
+    def op_func(cls,  # type: ignore[override]
+                x: Any,
+                param1: Optional[Any],
+                param2: Optional[Any],
+                param3: Optional[Any]) -> Any:
+
         if pd.isnull(x):
             return None
         return cls.py_op(x, param1, param2, param3)
 
     @classmethod
-    def py_op(
-        cls,
-        str_value: str,
-        str_to_find: Optional[str],
-        start: Optional[int],
-        occurrence: Optional[int],
-    ) -> Any:
+    def py_op(cls,
+              str_value: str,
+              str_to_find: Optional[str],
+              start: Optional[int],
+              occurrence: Optional[int],
+              ) -> Any:
         str_value = str(str_value)
         if not pd.isnull(start):
-            if isinstance(start, int) or start.is_integer():
+            if isinstance(start, int) or isinstance(start, float):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
@@ -545,7 +553,7 @@ class Instr(Parameterized):
             start = 0
 
         if not pd.isnull(occurrence):
-            if isinstance(occurrence, int) or occurrence.is_integer():
+            if isinstance(occurrence, int) or isinstance(occurrence, float):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93

@@ -1,4 +1,3 @@
-import os
 from copy import copy
 from typing import List, Optional
 
@@ -6,10 +5,11 @@ import duckdb
 
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK"):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK"):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -48,17 +48,16 @@ class Analytic(Operator.Unary):
         Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
     """
 
-    sql_op = None
+    sql_op: Optional[str] = None
 
     @classmethod
-    def validate(
-        cls,
-        operand: Dataset,
-        partitioning: List[str],
-        ordering: Optional[List[OrderBy]],
-        window: Optional[Windowing],
-        params: Optional[List[int]],
-    ) -> Dataset:
+    def validate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 partitioning: List[str],
+                 ordering: Optional[List[OrderBy]],
+                 window: Optional[Windowing],
+                 params: Optional[List[int]]
+                 ) -> Dataset:
         if ordering is None:
             order_components = []
         else:
@@ -115,11 +114,12 @@ class Analytic(Operator.Unary):
         ordering: List[OrderBy],
         window: Optional[Windowing],
         params: Optional[List[int]] = None,
-    ):
+    ) -> pd.DataFrame:
         """Annotation class
 
-        It is used to analyze the attributes specified bellow ensuring that the
-        type of data is the correct one to perform the operation.
+        It is used to analyze the attributes specified bellow
+        ensuring that the type of data is the correct one to perform
+        the operation.
 
         Attributes:
             identifier_names: List with the id names.
@@ -142,7 +142,7 @@ class Analytic(Operator.Unary):
                 if window.stop_mode != "current" and window.stop != "CURRENT ROW"
                 else ""
             )
-            if window.start == -1:
+            if isinstance(window.start, int) and window.start == -1:
                 window.start = "UNBOUNDED"
 
             if stop_mode == "" and window.stop == 0:
@@ -173,7 +173,7 @@ class Analytic(Operator.Unary):
             elif cls.op == RATIO_TO_REPORT:
                 measure_query = f"CAST({measure} AS REAL) / SUM(CAST({measure} AS REAL))"
             elif cls.op in [LAG, LEAD]:
-                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params))})"
+                measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params or []))})"
             else:
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
@@ -192,21 +192,20 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        if os.getenv("SPARK", False):
-            df = df.to_pandas()
+        # if os.getenv("SPARK", False):
+        #     df = df.to_pandas()
         return duckdb.query(query).to_df()
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Dataset,
-        partitioning: List[str],
-        ordering: Optional[List[OrderBy]],
-        window: Optional[Windowing],
-        params: Optional[List[int]],
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 partitioning: List[str],
+                 ordering: Optional[List[OrderBy]],
+                 window: Optional[Windowing],
+                 params: Optional[List[int]],
+                 ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params)
-        df = operand.data.copy()
+        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()
         identifier_names = operand.get_identifiers_names()
 
@@ -215,7 +214,7 @@ class Analytic(Operator.Unary):
             partitioning=partitioning,
             identifier_names=identifier_names,
             measure_names=measure_names,
-            ordering=ordering,
+            ordering=ordering or [],
             window=window,
             params=params,
         )
