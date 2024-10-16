@@ -1,12 +1,12 @@
-import os
-from typing import List
+from typing import List, Any, Dict
 
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK"):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK"):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
@@ -42,7 +42,7 @@ class Set(Operator):
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
 
-        result_components = {}
+        result_components: Dict[str, Any] = {}
         for operand in operands:
             if len(result_components) == 0:
                 result_components = operand.components
@@ -80,6 +80,9 @@ class Intersection(Set):
             if result.data is None:
                 result.data = data
             else:
+                if data is None:
+                    result.data = pd.DataFrame(columns=result.get_identifiers_names())
+                    break
                 result.data = result.data.merge(
                     data, how="inner", on=result.get_identifiers_names()
                 )
@@ -91,7 +94,8 @@ class Intersection(Set):
                 for col in not_identifiers:
                     result.data[col] = result.data[col + "_x"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result
 
 
@@ -102,6 +106,8 @@ class Symdiff(Set):
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
+            if data is None:
+                data = pd.DataFrame(columns=result.get_identifiers_names())
             if result.data is None:
                 result.data = data
             else:
@@ -131,14 +137,15 @@ class Symdiff(Set):
                         axis=1,
                     )
                 result.data = result.data[result.get_identifiers_names() + not_identifiers].dropna()
-        result.data = result.data.reset_index(drop=True)
+        if result.data is not None:
+            result.data = result.data.reset_index(drop=True)
         return result
 
 
 class Setdiff(Set):
 
     @staticmethod
-    def has_null(row):
+    def has_null(row: Any) -> bool:
         return row.isnull().any()
 
     @classmethod
@@ -149,6 +156,8 @@ class Setdiff(Set):
             if result.data is None:
                 result.data = data
             else:
+                if data is None:
+                    data = pd.DataFrame(columns=result.get_identifiers_names())
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
                 if len(result.data) > 0:
                     result.data = result.data[result.data.apply(cls.has_null, axis=1)]
@@ -163,5 +172,6 @@ class Setdiff(Set):
                     if col + "_y" in result.data:
                         del result.data[col + "_y"]
                 result.data = result.data[result.get_identifiers_names() + not_identifiers]
-        result.data.reset_index(drop=True, inplace=True)
+        if result.data is not None:
+            result.data.reset_index(drop=True, inplace=True)
         return result

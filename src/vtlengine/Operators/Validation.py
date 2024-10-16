@@ -79,11 +79,13 @@ class Check(Operator):
         result = cls.validate(
             validation_element, imbalance_element, error_code, error_level, invalid
         )
+        if validation_element.data is None:
+            validation_element.data = pd.DataFrame()
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
         result.data = validation_element.data.loc[:, columns_to_keep]
-        if imbalance_element is not None:
+        if imbalance_element is not None and imbalance_element.data is not None:
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
             result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
         else:
@@ -199,6 +201,8 @@ class Check_Hierarchy(Validation):
                 df = rule_df
             else:
                 df = pd.concat([df, rule_df], ignore_index=True)
+        if df is None:
+            df = pd.DataFrame()
         return df
 
     @classmethod
@@ -210,7 +214,7 @@ class Check_Hierarchy(Validation):
         return result
 
     @staticmethod
-    def validate_hr_dataset(dataset: Dataset, component_name: str):
+    def validate_hr_dataset(dataset: Dataset, component_name: str) -> None:
         if len(dataset.get_measures()) != 1:
             raise SemanticError(
                 "1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number"

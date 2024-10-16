@@ -1,11 +1,10 @@
 from copy import copy
-from typing import Optional, Any
+from typing import Optional, Any, Union, Type
 
 import vtlengine.Operators as Operator
 import pandas as pd
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
-    ScalarType,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
@@ -16,6 +15,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
     Duration,
     SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
 )
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 
@@ -25,6 +25,8 @@ from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
+ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
+
 
 class Cast(Operator.Unary):
     op = CAST
@@ -32,7 +34,7 @@ class Cast(Operator.Unary):
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
-    def cast_string_to_number(cls, value, mask_value) -> float:
+    def cast_string_to_number(cls, *args: Any) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
@@ -41,7 +43,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_date(cls, value, mask_value) -> float:
+    def cast_string_to_date(cls, *args: Any) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
@@ -50,7 +52,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_duration(cls, value, mask_value) -> str:
+    def cast_string_to_duration(cls, *args: Any) -> Any:
         """
         This method casts a string to a duration, according to the mask.
 
@@ -59,7 +61,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time_period(cls, value, mask_value) -> str:
+    def cast_string_to_time_period(cls, *args: Any) -> Any:
         """
         This method casts a string to a time period, according to the mask.
 
@@ -68,7 +70,7 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, value, mask_value) -> str:
+    def cast_string_to_time(cls, *args: Any) -> Any:
         """
         This method casts a string to a time, according to the mask.
 
@@ -77,33 +79,40 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_date_to_string(cls, value, mask_value) -> str:
+    def cast_date_to_string(cls, *args: Any) -> Any:
         """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_duration_to_string(cls, value, mask_value) -> str:
+    def cast_duration_to_string(cls, *args: Any) -> Any:
         """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_to_string(cls, value, mask_value):
+    def cast_time_to_string(cls, *args: Any) -> Any:
         """ """
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_period_to_date(cls, value, mask_value):
-        """ """
+    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
+        """
+        """
+
         start = mask_value == "START"
         return str_period_to_date(value, start)
 
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
     @classmethod
-    def check_mask_value(cls, from_type, to_type, mask_value) -> None:
+    def check_mask_value(cls,
+                         from_type: Type[ScalarType],
+                         to_type: Type[ScalarType],
+                         mask_value: str
+                         ) -> None:
         """
         This method checks if the mask value is valid for the cast operation.
         """
+
         if from_type == TimeInterval and to_type == String:
             return cls.check_mask_value_from_time_to_string(mask_value)
         # from = Date
@@ -126,7 +135,6 @@ class Cast(Operator.Unary):
         # from = Duration
         if from_type == Duration and to_type == String:
             return cls.check_mask_value_from_duration_to_string(mask_value)
-
         raise SemanticError(
             "1-1-5-5",
             op=cls.op,
@@ -136,51 +144,62 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def check_mask_value_from_time_period_to_date(cls, mask_value) -> None:
+    def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
+
         if mask_value not in ["START", "END"]:
             raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
 
     @classmethod
-    def check_mask_value_from_time_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_time_to_string(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_date_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_date_to_string(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_number(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_number(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_time(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_time(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_date(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_date(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_time_period(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_time_period(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_string_to_duration(cls, mask_value) -> None:
+    def check_mask_value_from_string_to_duration(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_mask_value_from_duration_to_string(cls, mask_value) -> None:
+    def check_mask_value_from_duration_to_string(cls, *args: Any) -> None:
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_cast(cls, from_type, to_type, mask_value=None):
+    def check_cast(cls,
+                   from_type: Type[ScalarType],
+                   to_type: Type[ScalarType],
+                   mask_value: Optional[str]
+                   ) -> None:
+
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         else:
             cls.check_without_mask(from_type, to_type)
 
     @classmethod
-    def check_with_mask(cls, from_type: ScalarType, to_type: ScalarType, mask_value: str):
+    def check_with_mask(cls,
+                        from_type: Type[ScalarType],
+                        to_type: Type[ScalarType],
+                        mask_value: str
+                        ) -> None:
+
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
@@ -194,7 +213,8 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def check_without_mask(cls, from_type: ScalarType, to_type: ScalarType):
+    def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
+
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
@@ -214,61 +234,54 @@ class Cast(Operator.Unary):
             )
 
     @classmethod
-    def cast_component(
-        cls, data: pd.Series, from_type: ScalarType, to_type: ScalarType
-    ) -> pd.Series:
+    def cast_component(cls,
+                       data: Any,
+                       from_type: Type[ScalarType],
+                       to_type: Type[ScalarType]
+                       ) -> Any:
         """
         cast the component to the type to_type without mask
-
         """
+
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
             result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action="ignore")
-
         return result
 
     @classmethod
-    def cast_mask_component(
-        cls, data: pd.Series, from_type: ScalarType, to_type: ScalarType, mask: str
-    ) -> pd.Series:
+    def cast_mask_component(cls, data: Any, from_type: Any, to_type: Any, mask: str) -> Any:
 
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
-
         return result
 
     @classmethod
-    def cast_value(
-        cls, value: Any, provided_type: ScalarType, to_type: ScalarType, mask_value: str
-    ):
-        """ """
+    def cast_value(cls,
+                   value: Any,
+                   provided_type: Type[ScalarType],
+                   to_type: Type[ScalarType],
+                   mask_value: str
+                   ) -> Any:
 
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
-
         if provided_type == String and to_type == Date:
             return cls.cast_string_to_date(value, mask_value)
-
         if provided_type == String and to_type == Duration:
             return cls.cast_string_to_duration(value, mask_value)
-
         if provided_type == String and to_type == TimePeriod:
             return cls.cast_string_to_time_period(value, mask_value)
-
         if provided_type == String and to_type == TimeInterval:
             return cls.cast_string_to_time(value, mask_value)
-
         if provided_type == Date and to_type == String:
             return cls.cast_date_to_string(value, mask_value)
-
         if provided_type == Duration and to_type == String:
             return cls.cast_duration_to_string(value, mask_value)
-
         if provided_type == TimeInterval and to_type == String:
             return cls.cast_time_to_string(value, mask_value)
-
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
+
         raise SemanticError(
             "2-1-5-1",
             op=cls.op,
@@ -278,12 +291,12 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def validate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        scalarType: ScalarType,
-        mask: Optional[str] = None,
-    ) -> Operator.ALL_MODEL_DATA_TYPES:
+    def validate(cls,  # type: ignore[override]
+                 operand: ALL_MODEL_DATA_TYPES,
+                 scalarType: Type[ScalarType],
+                 mask: Optional[str] = None
+                 ) -> Any:
+
         if mask is not None:
             if not isinstance(mask, str):
                 raise Exception(f"{cls.op} mask must be a string")
@@ -296,12 +309,15 @@ class Cast(Operator.Unary):
             return cls.scalar_validation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_validation(
-        cls, operand: Dataset, to_type: ScalarType, mask: Optional[str] = None
-    ) -> Dataset:
+    def dataset_validation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           to_type: Type[ScalarType],
+                           mask: Optional[str] = None
+                           ) -> Dataset:
         """
         This method validates the operation when the operand is a Dataset.
         """
+
         # monomeasure
         if len(operand.get_measures()) != 1:
             raise Exception(f"{cls.op} can only be applied to a Dataset with one measure")
@@ -309,7 +325,6 @@ class Cast(Operator.Unary):
         from_type = measure.data_type
 
         cls.check_cast(from_type, to_type, mask)
-
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
@@ -323,40 +338,42 @@ class Cast(Operator.Unary):
         result_components[measure_name] = Component(
             name=measure_name, data_type=to_type, role=Role.MEASURE, nullable=measure.nullable
         )
-
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def component_validation(
-        cls, operand: DataComponent, to_type: ScalarType, mask: Optional[str] = None
-    ) -> DataComponent:
+    def component_validation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             to_type: Type[ScalarType],
+                             mask: Optional[str] = None
+                             ) -> DataComponent:
         """
         This method validates the operation when the operand is a DataComponent.
         """
+
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-
         return DataComponent(name=operand.name, data=None, data_type=to_type, role=operand.role)
 
     @classmethod
-    def scalar_validation(
-        cls, operand: Scalar, to_type: ScalarType, mask: Optional[str] = None
-    ) -> Scalar:
+    def scalar_validation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          to_type: Type[ScalarType],
+                          mask: Optional[str] = None
+                          ) -> Scalar:
         """
         This method validates the operation when the operand is a DataComponent.
         """
+
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        scalarType: ScalarType,
-        mask: Optional[str] = None,
-    ) -> Operator.ALL_MODEL_DATA_TYPES:
+    def evaluate(cls,  # type: ignore[override]
+                 operand: ALL_MODEL_DATA_TYPES,
+                 scalarType: Type[ScalarType],
+                 mask: Optional[str] = None
+                 ) -> Any:
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, scalarType, mask)
@@ -366,15 +383,17 @@ class Cast(Operator.Unary):
             return cls.component_evaluation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_evaluation(
-        cls, operand: Dataset, to_type: ScalarType, mask: Optional[str] = None
-    ) -> Dataset:
+    def dataset_evaluation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           to_type: Type[ScalarType],
+                           mask: Optional[str] = None
+                           ) -> Dataset:
+
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
         new_measure = result_dataset.get_measures()[0]
-
-        result_dataset.data = operand.data.copy()
+        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
 
         if original_measure.name != new_measure.name:
             result_dataset.data.rename(
@@ -389,13 +408,15 @@ class Cast(Operator.Unary):
             result_dataset.data[new_measure.name] = cls.cast_component(
                 measure_data, from_type, to_type
             )
-
         return result_dataset
 
     @classmethod
-    def scalar_evaluation(
-        cls, operand: Scalar, to_type: ScalarType, mask: Optional[str] = None
-    ) -> Scalar:
+    def scalar_evaluation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          to_type: Type[ScalarType],
+                          mask: Optional[str] = None
+                          ) -> Scalar:
+
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
         if pd.isna(operand.value):
@@ -407,21 +428,20 @@ class Cast(Operator.Unary):
                 casted_data = to_type.implicit_cast(operand.value, from_type)
             else:
                 casted_data = to_type.explicit_cast(operand.value, from_type)
-
         return Scalar(name=result_scalar.name, data_type=to_type, value=casted_data)
 
     @classmethod
-    def component_evaluation(
-        cls, operand: DataComponent, to_type: ScalarType, mask: Optional[str] = None
-    ) -> DataComponent:
+    def component_evaluation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             to_type: Type[ScalarType],
+                             mask: Optional[str] = None
+                             ) -> DataComponent:
+
         from_type = operand.data_type
         result_component = cls.component_validation(operand, to_type, mask)
-        # result_component.data = cls.apply_operation_component(operand.data.copy())
         if mask:
             casted_data = cls.cast_mask_component(operand.data, from_type, to_type, mask)
         else:
             casted_data = cls.cast_component(operand.data, from_type, to_type)
-
         result_component.data = casted_data
-
         return result_component

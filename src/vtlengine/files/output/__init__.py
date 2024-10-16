@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Optional, Union
 
-# from time import time
+import pandas as pd
 
 from vtlengine.Model import Dataset
 from vtlengine.files.output._time_period_representation import (
@@ -10,11 +11,15 @@ from vtlengine.files.output._time_period_representation import (
 
 
 def save_datapoints(
-    time_period_representation: TimePeriodRepresentation, dataset: Dataset, output_path: str | Path
-):
+    time_period_representation: Optional[TimePeriodRepresentation],
+    dataset: Dataset,
+    output_path: Union[str, Path],
+) -> None:
+
+    if dataset.data is None:
+        dataset.data = pd.DataFrame()
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
-
     if isinstance(output_path, str):
         if output_path.endswith("/"):
             s3_file_output = output_path + f"{dataset.name}.csv"

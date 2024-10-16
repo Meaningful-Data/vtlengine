@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Any, Union, List, Optional
+from typing import Any, Union, List, Optional, Dict
 
 import pandas as pd
-from antlr4 import CommonTokenStream, InputStream
-from antlr4.error.ErrorListener import ErrorListener
+from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
+from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 
 from vtlengine.API._InternalApi import (
     load_vtl,
@@ -20,18 +20,20 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.files.output import (
-    TimePeriodRepresentation,
+from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
+    TimePeriodRepresentation,
 )
 
 pd.options.mode.chained_assignment = None
 
 
-class __VTLSingleErrorListener(ErrorListener):
+class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(
+        self, recognizer: Any, offendingSymbol: str, line: str, column: str, msg: str, e: Any
+    ) -> None:
         raise Exception(
             f"Not valid VTL Syntax \n "
             f"offendingSymbol: {offendingSymbol} \n "
@@ -83,10 +85,10 @@ def create_ast(text: str) -> Start:
 
 def semantic_analysis(
     script: Union[str, Path],
-    data_structures: Union[dict, Path, List[Union[dict, Path]]],
-    value_domains: Union[dict, Path] = None,
-    external_routines: Union[str, Path] = None,
-):
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+) -> Any:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.
@@ -157,14 +159,14 @@ def semantic_analysis(
 
 def run(
     script: Union[str, Path],
-    data_structures: Union[dict, Path, List[Union[dict, Path]]],
-    datapoints: Union[dict, str, Path, List[Union[str, Path]]],
-    value_domains: Union[dict, Path] = None,
-    external_routines: Union[str, Path] = None,
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent=False,
+    return_only_persistent: bool = False,
     output_folder: Optional[Union[str, Path]] = None,
-):
+) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.

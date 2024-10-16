@@ -1,30 +1,29 @@
-import os
 from copy import copy
+from typing import Any, Union
 
 from vtlengine.Exceptions import SemanticError
 
-if os.environ.get("SPARK", False):
-    import pyspark.pandas as pd
-else:
-    import pandas as pd
+# if os.environ.get("SPARK", False):
+#     import pyspark.pandas as pd
+# else:
+#     import pandas as pd
+import pandas as pd
 
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
 
-ALLOWED_MODEL_TYPES = [DataComponent, Scalar]
+ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]
 
 
 class RoleSetter(Unary):
-    role = None
+    role: Role
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
+    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         if isinstance(operand, Scalar):
-
             nullable = True
             if cls.role == Role.IDENTIFIER or operand.value is not None:
                 nullable = False
-
             return DataComponent(
                 name=operand.name,
                 data_type=operand.data_type,
@@ -36,8 +35,8 @@ class RoleSetter(Unary):
         return copy(operand)
 
     @classmethod
-    def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
-        if isinstance(operand, DataComponent):
+    def evaluate(cls, operand: Any, data_size: int = 0) -> DataComponent:
+        if isinstance(operand, DataComponent) and operand.data is not None:
             if not operand.nullable and any(operand.data.isnull()):
                 raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
@@ -52,14 +51,17 @@ class Identifier(RoleSetter):
     role = Role.IDENTIFIER
 
     @classmethod
-    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
+    def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         result = super().validate(operand)
         if result.nullable:
             raise SemanticError("1-1-1-16")
         return result
 
     @classmethod
-    def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0):
+    def evaluate(cls,  # type: ignore[override]
+                 operand: ALLOWED_MODEL_TYPES,
+                 data_size: int = 0
+                 ) -> DataComponent:
         if isinstance(operand, Scalar):
             if operand.value is None:
                 raise SemanticError("1-1-1-16")
