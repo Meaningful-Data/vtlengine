@@ -98,7 +98,7 @@ class ScalarType:
         return DTYPE_MAPPING[class_name]
 
     # __str__ = __repr__
-0
+
 
 class String(ScalarType):
     """ """
