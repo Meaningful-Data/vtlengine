@@ -33,7 +33,7 @@ class Join(Operator):
         return common
 
     @classmethod
-    def get_components_intersection(cls, *operands: *List[Any]) -> Any:  # type: ignore[valid-type]
+    def get_components_intersection(cls, operands: List[Any]) -> Any:
         element_count: Dict[str, Any] = {}
         for operand in operands:
             operand_set = set(operand)
@@ -52,7 +52,7 @@ class Join(Operator):
         nullability = {}
         merged_components = {}
         using = using or []
-        common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+        common = cls.get_components_intersection([op.get_components_names() for op in operands])
         totally_common = list(
             reduce(
                 lambda x, y: x & set(y.get_components_names()),  # type: ignore[operator]
@@ -122,7 +122,7 @@ class Join(Operator):
     ) -> Dict[str, Component]:
         components = {}
         inter_identifiers = cls.get_components_intersection(
-            *[op.get_identifiers_names() for op in operands]
+            [op.get_identifiers_names() for op in operands]
         )
 
         for op in operands:
@@ -152,7 +152,7 @@ class Join(Operator):
             return result
 
         common_measures = cls.get_components_intersection(
-            *[op.get_measures_names() + op.get_attributes_names() for op in operands]
+            [op.get_measures_names() + op.get_attributes_names() for op in operands]
         )
         for op in operands:
             if op.data is not None:
@@ -328,7 +328,7 @@ class CrossJoin(Join):
         if len(operands) == 1:
             result.data = operands[0].data
             return result
-        common = cls.get_components_intersection(*[op.get_components_names() for op in operands])
+        common = cls.get_components_intersection([op.get_components_names() for op in operands])
 
         for op in operands:
             if op.data is None:
