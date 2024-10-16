@@ -94,10 +94,9 @@ class Cast(Operator.Unary):
         return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
-    def cast_time_period_to_date(cls, *args: Any) -> Any:
-        """ """
-        mask_value: str
-        value, mask_value = args
+    def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
+        """
+        """
 
         start = mask_value == "START"
         return str_period_to_date(value, start)
@@ -105,12 +104,14 @@ class Cast(Operator.Unary):
     invalid_mask_message = "At op {op}: Invalid mask to cast from type {type_1} to {type_2}."
 
     @classmethod
-    def check_mask_value(cls, *args: Any) -> None:
+    def check_mask_value(cls,
+                         from_type: Type[ScalarType],
+                         to_type: Type[ScalarType],
+                         mask_value: str
+                         ) -> None:
         """
         This method checks if the mask value is valid for the cast operation.
         """
-        mask_value: str
-        from_type, to_type, mask_value = args
 
         if from_type == TimeInterval and to_type == String:
             return cls.check_mask_value_from_time_to_string(mask_value)
@@ -143,9 +144,7 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def check_mask_value_from_time_period_to_date(cls, *args: Any) -> None:
-        mask_value: str
-        mask_value = args[0]
+    def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
 
         if mask_value not in ["START", "END"]:
             raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
@@ -183,9 +182,11 @@ class Cast(Operator.Unary):
         raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def check_cast(cls, *args: Any) -> None:
-        mask_value: Optional[str]
-        from_type, to_type, mask_value = args
+    def check_cast(cls,
+                   from_type: Type[ScalarType],
+                   to_type: Type[ScalarType],
+                   mask_value: Optional[str]
+                   ) -> None:
 
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
@@ -193,9 +194,11 @@ class Cast(Operator.Unary):
             cls.check_without_mask(from_type, to_type)
 
     @classmethod
-    def check_with_mask(cls, *args: Any) -> None:
-        mask_value: str
-        from_type, to_type, mask_value = args
+    def check_with_mask(cls,
+                        from_type: Type[ScalarType],
+                        to_type: Type[ScalarType],
+                        mask_value: str
+                        ) -> None:
 
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
@@ -210,8 +213,7 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def check_without_mask(cls, *args: Any) -> None:
-        from_type, to_type = args
+    def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
 
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
@@ -232,11 +234,14 @@ class Cast(Operator.Unary):
             )
 
     @classmethod
-    def cast_component(cls, *args: Any) -> Any:
+    def cast_component(cls,
+                       data: Any,
+                       from_type: Type[ScalarType],
+                       to_type: Type[ScalarType]
+                       ) -> Any:
         """
         cast the component to the type to_type without mask
         """
-        data, from_type, to_type = args
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
@@ -245,19 +250,18 @@ class Cast(Operator.Unary):
         return result
 
     @classmethod
-    def cast_mask_component(cls, *args: Any) -> Any:
-        mask: str
-        data, from_type, to_type, mask = args
+    def cast_mask_component(cls, data: Any, from_type: Any, to_type: Any, mask: str) -> Any:
 
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
         return result
 
     @classmethod
-    def cast_value(cls, *args: Any) -> Any:
-        mask_value: str
-        provided_type: Type[ScalarType]
-        to_type: Type[ScalarType]
-        value, provided_type, to_type, mask_value = args
+    def cast_value(cls,
+                   value: Any,
+                   provided_type: Type[ScalarType],
+                   to_type: Type[ScalarType],
+                   mask_value: str
+                   ) -> Any:
 
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
@@ -287,13 +291,11 @@ class Cast(Operator.Unary):
         )
 
     @classmethod
-    def validate(cls, *args: Any) -> Any:
-        operand: ALL_MODEL_DATA_TYPES
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, scalarType, mask = args
-        else:
-            operand, scalarType = args
+    def validate(cls,  # type: ignore[override]
+                 operand: ALL_MODEL_DATA_TYPES,
+                 scalarType: Type[ScalarType],
+                 mask: Optional[str] = None
+                 ) -> Any:
 
         if mask is not None:
             if not isinstance(mask, str):
@@ -307,16 +309,14 @@ class Cast(Operator.Unary):
             return cls.scalar_validation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_validation(cls, *args: Any) -> Dataset:
+    def dataset_validation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           to_type: Type[ScalarType],
+                           mask: Optional[str] = None
+                           ) -> Dataset:
         """
         This method validates the operation when the operand is a Dataset.
         """
-        operand: Dataset
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
 
         # monomeasure
         if len(operand.get_measures()) != 1:
@@ -341,45 +341,39 @@ class Cast(Operator.Unary):
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
-    def component_validation(cls, *args: Any) -> DataComponent:
+    def component_validation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             to_type: Type[ScalarType],
+                             mask: Optional[str] = None
+                             ) -> DataComponent:
         """
         This method validates the operation when the operand is a DataComponent.
         """
-        operand: DataComponent
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
 
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
         return DataComponent(name=operand.name, data=None, data_type=to_type, role=operand.role)
 
     @classmethod
-    def scalar_validation(cls, *args: Any) -> Scalar:
+    def scalar_validation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          to_type: Type[ScalarType],
+                          mask: Optional[str] = None
+                          ) -> Scalar:
         """
         This method validates the operation when the operand is a DataComponent.
         """
-        operand: Scalar
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
 
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
         return Scalar(name=operand.name, data_type=to_type, value=None)
 
     @classmethod
-    def evaluate(cls, *args: Any) -> Any:
-        operand: ALL_MODEL_DATA_TYPES
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, scalarType, mask = args
-        else:
-            operand, scalarType = args
+    def evaluate(cls,  # type: ignore[override]
+                 operand: ALL_MODEL_DATA_TYPES,
+                 scalarType: Type[ScalarType],
+                 mask: Optional[str] = None
+                 ) -> Any:
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, scalarType, mask)
@@ -389,13 +383,11 @@ class Cast(Operator.Unary):
             return cls.component_evaluation(operand, scalarType, mask)
 
     @classmethod
-    def dataset_evaluation(cls, *args: Any) -> Dataset:
-        operand: Dataset
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
+    def dataset_evaluation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           to_type: Type[ScalarType],
+                           mask: Optional[str] = None
+                           ) -> Dataset:
 
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
@@ -419,13 +411,11 @@ class Cast(Operator.Unary):
         return result_dataset
 
     @classmethod
-    def scalar_evaluation(cls, *args: Any) -> Scalar:
-        operand: Scalar
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
+    def scalar_evaluation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          to_type: Type[ScalarType],
+                          mask: Optional[str] = None
+                          ) -> Scalar:
 
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
@@ -441,13 +431,11 @@ class Cast(Operator.Unary):
         return Scalar(name=result_scalar.name, data_type=to_type, value=casted_data)
 
     @classmethod
-    def component_evaluation(cls, *args: Any) -> DataComponent:
-        operand: DataComponent
-        mask: Optional[str] = None
-        if len(args) == 3:
-            operand, to_type, mask = args
-        else:
-            operand, to_type = args
+    def component_evaluation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             to_type: Type[ScalarType],
+                             mask: Optional[str] = None
+                             ) -> DataComponent:
 
         from_type = operand.data_type
         result_component = cls.component_validation(operand, to_type, mask)

@@ -114,9 +114,12 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
-    def validate(
-        cls, operand: Dataset, group_op: Optional[str], grouping_columns: Any, having_data: Any
-    ) -> Dataset:
+    def validate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 group_op: Optional[str],
+                 grouping_columns: Any,
+                 having_data: Any
+                 ) -> Dataset:
         result_components = {k: copy(v) for k, v in operand.components.items()}
         if cls.op not in [COUNT, MIN, MAX] and len(operand.get_measures_names()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -223,13 +226,12 @@ class Aggregation(Operator.Unary):
                 raise SemanticError("2-1-1-1", op=cls.op)
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Dataset,
-        group_op: Optional[str],
-        grouping_columns: Optional[List[str]],
-        having_expr: Optional[str],
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 operand: Dataset,
+                 group_op: Optional[str],
+                 grouping_columns: Optional[List[str]],
+                 having_expr: Optional[str],
+                 ) -> Dataset:
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()

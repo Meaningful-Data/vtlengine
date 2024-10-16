@@ -58,7 +58,10 @@ class Identifier(RoleSetter):
         return result
 
     @classmethod
-    def evaluate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
+    def evaluate(cls,  # type: ignore[override]
+                 operand: ALLOWED_MODEL_TYPES,
+                 data_size: int = 0
+                 ) -> DataComponent:
         if isinstance(operand, Scalar):
             if operand.value is None:
                 raise SemanticError("1-1-1-16")
