@@ -128,10 +128,15 @@ class Component:
         }
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict(), indent=4)
+        return json.dumps(self.to_dict())
 
     def rename(self, new_name: str) -> None:
         self.name = new_name
+
+    def __str__(self) -> str:
+        return self.to_json()
+
+    __repr__ = __str__
 
 
 @dataclass
