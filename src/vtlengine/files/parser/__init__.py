@@ -143,7 +143,15 @@ def _validate_pandas(
 ) -> pd.DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
     # Identifier checking
+
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
+
+    missing_columns = [name for name in components.keys() if name not in data.columns.tolist()]
+    if missing_columns:
+        for name in missing_columns:
+            if components[name].nullable is False:
+                raise SemanticError("0-1-1-9", name=dataset_name, column=name)
+        data = data.reindex(columns=list(components.keys()))
 
     for id_name in id_names:
         if data[id_name].isnull().any():
