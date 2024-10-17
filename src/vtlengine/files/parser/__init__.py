@@ -150,7 +150,7 @@ def _validate_pandas(
     if missing_columns:
         for name in missing_columns:
             if components[name].nullable is False:
-                raise SemanticError("0-1-1-9", name=dataset_name, column=name)
+                raise SemanticError("0-1-1-10", name=dataset_name, comp_name=name)
         data = data.reindex(columns=list(components.keys()))
 
     for id_name in id_names:

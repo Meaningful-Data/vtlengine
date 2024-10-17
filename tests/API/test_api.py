@@ -13,6 +13,7 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
 )
 from vtlengine.DataTypes import String
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
 
 # Path selection
@@ -490,3 +491,163 @@ def test_readme_example():
             ),
         )
     }
+
+def test_non_mandatory_fill_at():
+    script = """
+        DS_r := DS_1;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O']})
+
+    datapoints = {"DS_1": data_df}
+
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+    assert run_result == {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(
+                    name="Me_1", data_type=DataTypes.String, role=Role.MEASURE, nullable=True
+                ),
+                "At_1": Component(
+                    name="At_1", data_type=DataTypes.String, role=Role.ATTRIBUTE, nullable=True
+                ),
+            },
+            data=pd.DataFrame(
+                columns=["Id_1", "Id_2", "Me_1", "At_1"], index=[0, 1, 2], data=pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O'], "At_1": [None, None, None]})
+            ),
+        )
+    }
+
+def test_non_mandatory_fill_me():
+    script = """
+        DS_r := DS_1;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "At_1": ['N', 'N', 'O']})
+
+    datapoints = {"DS_1": data_df}
+
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+    assert run_result == {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Id_2": Component(
+                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(
+                    name="Me_1", data_type=DataTypes.String, role=Role.MEASURE, nullable=True
+                ),
+                "At_1": Component(
+                    name="At_1", data_type=DataTypes.String, role=Role.ATTRIBUTE, nullable=True
+                ),
+            },
+            data=pd.DataFrame(
+                columns=["Id_1", "Id_2", "Me_1", "At_1"], index=[0, 1, 2], data=pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": [None, None, None], "At_1": ['N', 'N', 'O']})
+            ),
+        )
+    }
+
+def test_mandatory_at_error():
+    exception_code = "0-1-1-10"
+
+    script = """
+        DS_r := DS_1;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": False},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O']})
+
+    datapoints = {"DS_1": data_df}
+
+    with pytest.raises(SemanticError) as context:
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
+    result = exception_code == str(context.value.args[1])
+    if result is False:
+        print(f"\n{exception_code} != {context.value.args[1]}")
+    assert result
+
+def test_mandatory_me_error():
+    exception_code = "0-1-1-10"
+
+    script = """
+        DS_r := DS_1;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": False},
+                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "At_1": ['N', 'N', 'O']})
+
+    datapoints = {"DS_1": data_df}
+
+    with pytest.raises(SemanticError) as context:
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
+    result = exception_code == str(context.value.args[1])
+    if result is False:
+        print(f"\n{exception_code} != {context.value.args[1]}")
+    assert result
