@@ -27,6 +27,8 @@ if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
     version = str(data["tool"]["poetry"]["version"])
     description = str(data["tool"]["poetry"]["description"])
 
+copyright = "2024 MeaningfulData"
+
 
 
 # -- General configuration ---------------------------------------------------
