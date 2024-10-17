@@ -128,10 +128,15 @@ class Component:
         }
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict(), indent=4)
+        return json.dumps(self.to_dict())
 
     def rename(self, new_name: str) -> None:
         self.name = new_name
+
+    def __str__(self) -> str:
+        return self.to_json()
+
+    __repr__ = __str__
 
 
 @dataclass
@@ -228,12 +233,14 @@ class Dataset:
                     type_ = "float32"
                     # We use here a number to avoid errors on equality on empty strings
                 self.data[comp.name] = (
-                    self.data[comp.name].replace("", -1234997).
-                    astype(type_)  # type: ignore[call-overload]
+                    self.data[comp.name]
+                    .replace("", -1234997)
+                    .astype(type_)  # type: ignore[call-overload]
                 )
                 other.data[comp.name] = (
-                    other.data[comp.name].replace("", -1234997).
-                    astype(type_)  # type: ignore[call-overload]
+                    other.data[comp.name]
+                    .replace("", -1234997)
+                    .astype(type_)  # type: ignore[call-overload]
                 )
         try:
             assert_frame_equal(
