@@ -15,7 +15,7 @@ from vtlengine.AST import (
     EvalOp,
     VarID,
     Analytic,
-    UDOCall,
+    UDOCall, Case, CaseObj,
 )
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar.parser import Parser
@@ -86,6 +86,10 @@ class ExprComp(VtlVisitor):
         # IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
         elif isinstance(ctx, Parser.IfExprCompContext):
             return self.visitIfExprComp(ctx)
+
+        # CASE WHEN conditionalExpr=expr THEN thenExpr=expr ELSE elseExpr=expr END # caseExpr
+        elif isinstance(ctx, Parser.CaseExprCompContext):
+            return self.visitCaseExprComp(ctx)
 
         # constant
         elif isinstance(ctx, Parser.ConstantExprCompContext):
@@ -168,6 +172,26 @@ class ExprComp(VtlVisitor):
         if_node = If(condition_node, then_op_node, else_op_node)
 
         return if_node
+
+    def visitCaseExprComp(self, ctx: Parser.CaseExprCompContext):
+        ctx_list = list(ctx.getChildren())
+
+        if len(ctx_list) % 4 != 3:
+            raise ValueError("Syntax error.")
+
+        else_node = self.visitExprComponent(ctx_list[-1])
+        ctx_list = ctx_list[1:-2]
+        cases = []
+
+        for i in range(0, len(ctx_list), 4):
+            condition = self.visitExprComponent(ctx_list[i + 1])
+            thenOp = self.visitExprComponent(ctx_list[i + 3])
+            case_obj = CaseObj(condition, thenOp)
+            cases.append(case_obj)
+
+        case_node = Case(cases, else_node)
+
+        return case_node
 
     def visitOptionalExprComponent(self, ctx: Parser.OptionalExprComponentContext):
         """

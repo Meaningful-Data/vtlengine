@@ -24,7 +24,7 @@ from vtlengine.AST import (
     Validation,
     Analytic,
     Windowing,
-    VarID,
+    VarID, Case, CaseObj,
 )
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
@@ -59,6 +59,7 @@ class Expr(VtlVisitor):
                | left=expr op=AND right=expr                                           # booleanExpr # noqa E501
                | left=expr op=(OR|XOR) right=expr							            # booleanExpr # noqa E501
                | IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr # noqa E501
+               | CASE WHEN expr THEN expr ELSE expr END                             # caseExpr # noqa E501
                | constant														        # constantExpr # noqa E501
                | varID															        # varIdExpr # noqa E501
         ;
@@ -114,6 +115,26 @@ class Expr(VtlVisitor):
             if_node = If(condition_node, then_op_node, else_op_node)
 
             return if_node
+
+        # CASE WHEN expr THEN expr ELSE expr END                             # caseExpr
+        elif isinstance(c, TerminalNodeImpl) and (c.getSymbol().type == Parser.CASE):
+
+            if len(ctx_list) % 4 != 3:
+                raise ValueError("Syntax error.")
+
+            else_node = self.visitExpr(ctx_list[-1])
+            ctx_list = ctx_list[1:-2]
+            cases = []
+
+            for i in range(0, len(ctx_list), 4):
+                condition = self.visitExpr(ctx_list[i + 1])
+                thenOp = self.visitExpr(ctx_list[i + 3])
+                case_obj = CaseObj(condition, thenOp)
+                cases.append(case_obj)
+
+            case_node = Case(cases, else_node)
+
+            return case_node
 
         # constant
         elif isinstance(ctx, Parser.ConstantExprContext):

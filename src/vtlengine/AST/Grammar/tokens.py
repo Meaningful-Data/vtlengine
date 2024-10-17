@@ -70,6 +70,8 @@ SYMDIFF = "symdiff"
 IF = "if"
 THEN = "then"
 ELSE = "else"
+CASE = "case"
+WHEN = "when"
 NVL = "nvl"
 # Clause Operators.
 FILTER = "filter"

@@ -11,13 +11,13 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
     ScalarType,
     Boolean,
-    SCALAR_TYPES_CLASS_REVERSE,
+    SCALAR_TYPES_CLASS_REVERSE, String,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Comparison import Between, ExistIn
-from vtlengine.Operators.Conditional import If
+from vtlengine.Operators.Conditional import If, Case
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from vtlengine.Operators.Numeric import Round, Trunc
@@ -115,6 +115,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
     if_stack: Optional[List[str]] = None
+    case_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -985,6 +986,21 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.if_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
+
+    def visit_Case(self, node: AST.Case) -> Any:
+        conditions: List[Any] = []
+        thenOps: List[Any] = []
+
+        while node.cases:
+            case = node.cases.pop(0)
+            self.is_from_condition = True
+            conditions.append(self.visit(case.condition))
+            self.is_from_condition = False
+            if isinstance(conditions[-1], Scalar) and conditions[-1].value:
+                return self.visit(case.thenOp)
+            thenOps.append(self.visit(case.thenOp))
+
+        return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
