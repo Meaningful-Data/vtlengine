@@ -13,6 +13,7 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
 )
 from vtlengine.DataTypes import String
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
 
 # Path selection
@@ -451,7 +452,7 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
     assert result == reference
 
 
-def test_readme_example():
+def test_readme_run():
     script = """
         DS_A := DS_1 * 10;
     """
@@ -490,3 +491,31 @@ def test_readme_example():
             ),
         )
     }
+
+
+def test_readme_semantic_error():
+    from vtlengine import semantic_analysis
+
+    script = """
+        DS_A := DS_1 * 10;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    # Check error message
+    with pytest.raises(SemanticError, match="1-1-1-2"):
+        semantic_analysis(script=script, data_structures=data_structures)
+
+    # Check output dataset on error message
+    with pytest.raises(SemanticError, match="DS_A"):
+        semantic_analysis(script=script, data_structures=data_structures)

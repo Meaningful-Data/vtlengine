@@ -469,8 +469,7 @@ class Fill_time_series(Binary):
                     empty_row[cls.time_id] = interval
                     empty_row[cls.measures] = None
                     group_df = group_df.append(  # type: ignore[operator]
-                        empty_row,
-                        ignore_index=True
+                        empty_row, ignore_index=True
                     )
             start_group_df = group_df.copy()
             start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
