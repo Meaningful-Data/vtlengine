@@ -1,12 +1,10 @@
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Union, List
 
-import vtlengine.Operators as Operators
 import pandas as pd
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 
+import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
     TIME_AGG,
     TIMESHIFT,
@@ -14,6 +12,9 @@ from vtlengine.AST.Grammar.tokens import (
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
 )
+from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, Integer
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler, date_to_period_str, \
+    str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
 
@@ -152,7 +153,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def validate(
-        cls, operand: Dataset | DataComponent | Scalar
+            cls, operand: Dataset | DataComponent | Scalar
     ) -> Dataset | DataComponent | Scalar:
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
@@ -176,7 +177,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: Dataset | DataComponent | Scalar | str
+            cls, operand: Dataset | DataComponent | Scalar | str
     ) -> Dataset | DataComponent | Scalar | str:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -580,7 +581,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -617,7 +618,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -630,7 +631,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -639,12 +640,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Union[Date, TimePeriod, TimeInterval],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            value: str,
+            data_type: Union[Date, TimePeriod, TimeInterval],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -663,7 +664,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy()
@@ -679,7 +680,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         result.data = operand.data.map(
@@ -692,7 +693,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -702,11 +703,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -718,11 +719,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -759,3 +760,22 @@ class Current_Date(Time):
         result = cls.validate()
         result.value = date.today().isoformat()
         return result
+
+
+class Month(Operators.Unary):
+    op = 'month'
+
+    @classmethod
+    def py_op(cls, value: str):
+        if '/' in value:
+            raise RuntimeError
+        if '-' in value:
+            month = datetime.strptime(value, '%Y-%m-%d')
+            return month.month
+        else:
+            month = TimePeriodHandler(value).start_date(as_date=True).month
+            return month
+
+    type_to_check = TimeInterval
+    return_type = Integer
+
