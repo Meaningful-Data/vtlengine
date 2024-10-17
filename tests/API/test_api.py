@@ -492,6 +492,7 @@ def test_readme_example():
         )
     }
 
+
 def test_non_mandatory_fill_at():
     script = """
         DS_r := DS_1;
@@ -539,6 +540,7 @@ def test_non_mandatory_fill_at():
             ),
         )
     }
+
 
 def test_non_mandatory_fill_me():
     script = """
@@ -588,6 +590,7 @@ def test_non_mandatory_fill_me():
         )
     }
 
+
 def test_mandatory_at_error():
     exception_code = "0-1-1-10"
 
@@ -619,6 +622,7 @@ def test_mandatory_at_error():
     if result is False:
         print(f"\n{exception_code} != {context.value.args[1]}")
     assert result
+
 
 def test_mandatory_me_error():
     exception_code = "0-1-1-10"
