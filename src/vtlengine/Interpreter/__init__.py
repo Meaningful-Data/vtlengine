@@ -11,7 +11,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
     ScalarType,
     Boolean,
-    SCALAR_TYPES_CLASS_REVERSE, String,
+    SCALAR_TYPES_CLASS_REVERSE,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
