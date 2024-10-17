@@ -26,7 +26,7 @@ expr:
     | left=expr op=AND right=expr                                           # booleanExpr
     | left=expr op=(OR|XOR) right=expr							            # booleanExpr
     | IF  conditionalExpr=expr  THEN thenExpr=expr ELSE elseExpr=expr       # ifExpr
-    | CASE WHEN expr THEN expr (WHEN expr THEN expr)* ELSE expr             # caseExpr
+    | CASE (WHEN expr THEN expr)+ ELSE expr                                 # caseExpr
     | constant														        # constantExpr
     | varID															        # varIdExpr
 
@@ -35,18 +35,19 @@ expr:
 
 
 exprComponent:
-    LPAREN exprComponent RPAREN                                                                             # parenthesisExprComp
-    | functionsComponents                                                                                   # functionsExpressionComp
-    | op=(PLUS|MINUS|NOT) right=exprComponent                                                               # unaryExprComp
-    | left=exprComponent op=(MUL|DIV) right=exprComponent                                                   # arithmeticExprComp
-    | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                         # arithmeticExprOrConcatComp
-    | left=exprComponent comparisonOperand right=exprComponent                                              # comparisonExprComp
-    | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                # inNotInExprComp
-    | left=exprComponent op=AND right=exprComponent                                                         # booleanExprComp
-    | left=exprComponent op=(OR|XOR) right=exprComponent                                                    # booleanExprComp
-    | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent            # ifExprComp
-    | constant                                                                                              # constantExprComp
-    | componentID                                                                                           # compId
+    LPAREN exprComponent RPAREN                                                                                 # parenthesisExprComp
+    | functionsComponents                                                                                       # functionsExpressionComp
+    | op=(PLUS|MINUS|NOT) right=exprComponent                                                                   # unaryExprComp
+    | left=exprComponent op=(MUL|DIV) right=exprComponent                                                       # arithmeticExprComp
+    | left=exprComponent op=(PLUS|MINUS|CONCAT) right=exprComponent                                             # arithmeticExprOrConcatComp
+    | left=exprComponent comparisonOperand right=exprComponent                                                  # comparisonExprComp
+    | left=exprComponent op=(IN|NOT_IN)(lists|valueDomainID)                                                    # inNotInExprComp
+    | left=exprComponent op=AND right=exprComponent                                                             # booleanExprComp
+    | left=exprComponent op=(OR|XOR) right=exprComponent                                                        # booleanExprComp
+    | IF  conditionalExpr=exprComponent  THEN thenExpr=exprComponent ELSE elseExpr=exprComponent                # ifExprComp
+    | CASE (WHEN exprComponent THEN exprComponent)+ ELSE exprComponent                                          # caseExprComp
+    | constant                                                                                                  # constantExprComp
+    | componentID                                                                                               # compId
 ;
 
 functionsComponents:

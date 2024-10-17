@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, Any
+from typing import Union, Any, List
 
 import numpy as np
 
@@ -288,3 +288,86 @@ class Nvl(Binary):
             for comp in result_components.values():
                 comp.nullable = False
         return Dataset(name="result", components=result_components, data=None)
+
+class Case(Operator):
+
+    @classmethod
+    def evaluate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        result = cls.validate(conditions, thenOps, elseOp)
+        return result
+
+    @classmethod
+    def validate(cls, conditions: List[Any], thenOps: List[Any], elseOp: Any) -> Union[Scalar, DataComponent, Dataset]:
+
+        if len(conditions) != len(thenOps):
+            raise ValueError("Number of conditions and then operations must be the same")
+
+        if len(set(map(type, conditions))) > 1:
+            raise ValueError("All conditions must be of the same type")
+
+        then_else_types = set(map(type, thenOps + [elseOp]))
+
+        condition_type = type(conditions[0])
+
+        if condition_type is Scalar:
+            for condition in conditions:
+                if condition.data_type != Boolean:
+                    condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
+                    condition.value = bool(condition.value)
+
+            if len(then_else_types) > 1 and then_else_types[0] != Scalar:
+                raise ValueError("All then and else operands must be Scalars")
+
+            output = next((thenOps[i] for i in range(len(conditions)) if conditions[i].value), elseOp)
+            output.name = "result"
+            output.value = None
+            return output
+
+        elif condition_type is DataComponent:
+            if not all(cond.data_type == Boolean for cond in conditions):
+                raise SemanticError(
+                    "1-1-9-11", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[conditions[0].data_type]
+                )
+            if Dataset in then_else_types:
+                raise ValueError("Error, then and else operands at Component level cannot be Datasets")
+            if not DataComponent in then_else_types:
+                raise ValueError("Error, tat least one of then and else operands must be a DataComponent")
+
+            nullable = any(
+                thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
+                for thenOp in thenOps + [elseOp]
+            )
+
+            return DataComponent(
+                name="result",
+                data=None,
+                data_type=binary_implicit_promotion(*[thenOp.data_type for thenOp in thenOps + [elseOp]]),
+                role=Role.MEASURE,
+                nullable=nullable,
+            )
+
+        elif condition_type is Dataset:
+            for condition in conditions:
+                bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
+                if bool_count == 0:
+                    raise ValueError("Error, at least one boolean measure is required in the condition")
+                if bool_count > 1:
+                    raise ValueError("Error, only one boolean measure is allowed in the condition")
+            if DataComponent in then_else_types:
+                raise ValueError("Error, then and else operands at Dataset level cannot be DataComponents")
+            if not Dataset in then_else_types:
+                raise ValueError("Error, at least one of then and else operands must be a Dataset")
+
+            return Dataset(
+                name="result",
+                components=copy(conditions[0].components),
+                data=None
+            )
+
+        raise ValueError("Invalid type for conditions")
+
