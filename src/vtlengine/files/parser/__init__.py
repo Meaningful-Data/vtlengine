@@ -2,8 +2,7 @@ import warnings
 from csv import DictReader
 from pathlib import Path
 
-# from time import time
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Any, Type, List
 
 import numpy as np
 import pandas as pd
@@ -16,6 +15,7 @@ from vtlengine.DataTypes import (
     Boolean,
     Duration,
     SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
 )
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.files.parser._rfc_dialect import register_rfc
@@ -24,10 +24,14 @@ from vtlengine.files.parser._time_checking import check_date, check_time_period,
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Role, Dataset
 
-TIME_CHECKS_MAPPING = {Date: check_date, TimePeriod: check_time_period, TimeInterval: check_time}
+TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
+    Date: check_date,
+    TimePeriod: check_time_period,
+    TimeInterval: check_time,
+}
 
 
-def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
+def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
     # GE1 check if the file is empty
     if not csv_path.exists():
         raise Exception(f"Path {csv_path} does not exist.")
@@ -58,7 +62,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path):
         raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing = [id_m for id_m in comp_names if id_m not in reader.fieldnames]
+    comps_missing: Union[str, List[str]] = (
+        [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
+    )
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
@@ -82,7 +88,7 @@ def _sanitize_pandas_columns(
 
     # Validate identifiers
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing = [id_m for id_m in comp_names if id_m not in data.columns]
+    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in data.columns]
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         file = csv_path if isinstance(csv_path, str) else csv_path.name
@@ -123,15 +129,10 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
         raise InputValidationException(code="0-1-2-5", file=csv_path)
     except Exception as e:
         raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
-
-    # print(f"Data loaded from {csv_path}, shape: {data.shape}")
-    # end = time()
-    # print(f"Time to load data from s3 URI: {end - start}")
-
     return _sanitize_pandas_columns(components, csv_path, data)
 
 
-def _parse_boolean(value: str):
+def _parse_boolean(value: str) -> bool:
     if value.lower() == "true" or value == "1":
         return True
     return False
@@ -186,7 +187,7 @@ def _validate_pandas(
                 )
             data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
     except ValueError:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type]
+        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 
     return data
@@ -194,7 +195,7 @@ def _validate_pandas(
 
 def load_datapoints(
     components: Dict[str, Component], dataset_name: str, csv_path: Optional[Union[Path, str]] = None
-):
+) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, str):
@@ -209,5 +210,5 @@ def load_datapoints(
     return data
 
 
-def _fill_dataset_empty_data(dataset: Dataset):
+def _fill_dataset_empty_data(dataset: Dataset) -> None:
     dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))

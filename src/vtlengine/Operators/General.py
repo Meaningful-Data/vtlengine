@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Any, Union
 
 import pandas as pd
 import sqlite3
@@ -20,7 +20,7 @@ class Membership(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: str):
+    def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
         if right_operand not in left_operand.components:
             raise SemanticError(
                 "1-1-1-10", op=cls.op, comp_name=right_operand, dataset_name=left_operand.name
@@ -38,7 +38,6 @@ class Membership(Binary):
             if left_operand.data is not None:
                 left_operand.data[right_operand] = left_operand.data[component.name]
             left_operand.data[right_operand] = left_operand.data[component.name]
-
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
@@ -49,18 +48,19 @@ class Membership(Binary):
 
     @classmethod
     def evaluate(
-        cls, left_operand: Dataset, right_operand: str, is_from_component_assignment=False
-    ) -> Dataset:
+        cls, left_operand: Dataset, right_operand: str, is_from_component_assignment: bool = False
+    ) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
-        if is_from_component_assignment:
-            return DataComponent(
-                name=right_operand,
-                data_type=left_operand.components[right_operand].data_type,
-                role=Role.MEASURE,
-                nullable=left_operand.components[right_operand].nullable,
-                data=left_operand.data[right_operand],
-            )
-        result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+        if left_operand.data is not None:
+            if is_from_component_assignment:
+                return DataComponent(
+                    name=right_operand,
+                    data_type=left_operand.components[right_operand].data_type,
+                    role=Role.MEASURE,
+                    nullable=left_operand.components[right_operand].nullable,
+                    data=left_operand.data[right_operand],
+                )
+            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
         return result_dataset
 
 
@@ -74,14 +74,14 @@ class Alias(Binary):
     """
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: str):
+    def validate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
             raise SemanticError("1-3-1", alias=new_name)
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
-    def evaluate(cls, left_operand: Dataset, right_operand: str) -> Dataset:
+    def evaluate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         result = cls.validate(left_operand, right_operand)
         result.data = left_operand.data
         return result
@@ -122,8 +122,11 @@ class Eval(Unary):
         return df_result
 
     @classmethod
-    def validate(
-        cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine, output: Dataset
+    def validate(  # type: ignore[override]
+        cls,
+        operands: Dict[str, Dataset],
+        external_routine: ExternalRoutine,
+        output: Dataset,
     ) -> Dataset:
 
         empty_data_dict = {}
@@ -156,15 +159,17 @@ class Eval(Unary):
         return output
 
     @classmethod
-    def evaluate(
-        cls, operands: Dict[str, Dataset], external_routine: ExternalRoutine, output: Dataset
+    def evaluate(  # type: ignore[override]
+        cls,
+        operands: Dict[str, Dataset],
+        external_routine: ExternalRoutine,
+        output: Dataset,
     ) -> Dataset:
-        result = cls.validate(operands, external_routine, output)
-
+        result: Dataset = cls.validate(operands, external_routine, output)
         operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
-
         result.data = cls._execute_query(
-            external_routine.query, external_routine.dataset_names, operands_data_dict
+            external_routine.query,
+            external_routine.dataset_names,
+            operands_data_dict,  # type: ignore[arg-type]
         )
-
         return result

@@ -1,10 +1,13 @@
 import re
-from datetime import date, datetime
-from typing import Optional, Union, List
-
 import pandas as pd
 
+from datetime import date, datetime
+from typing import Optional, Union, List, Any, Dict, Type
+
 import vtlengine.Operators as Operators
+from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
+
 from vtlengine.AST.Grammar.tokens import (
     TIME_AGG,
     TIMESHIFT,
@@ -12,18 +15,15 @@ from vtlengine.AST.Grammar.tokens import (
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
 )
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, Integer
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler, date_to_period_str, \
-    str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
 
 
 class Time(Operators.Operator):
-    periods = None
-    time_id = None
-    other_ids = None
-    measures = None
+    periods: Any
+    time_id: Any
+    other_ids: Any
+    measures: Any
 
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
 
@@ -47,7 +47,7 @@ class Time(Operators.Operator):
     def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
         time_id = cls._get_time_id(operand)
         if time_id is None:
-            return
+            return None
         ids = [id.name for id in operand.get_identifiers() if id.name != time_id]
         ids.append(time_id)
         if operand.data is None:
@@ -60,18 +60,18 @@ class Time(Operators.Operator):
         return tp_value.period_indicator
 
     @classmethod
-    def parse_date(cls, date_str):
+    def parse_date(cls, date_str: str) -> date:
         return date.fromisoformat(date_str)
 
     @classmethod
-    def get_frequencies(cls, dates):
+    def get_frequencies(cls, dates: Any) -> Any:
         dates = pd.to_datetime(dates)
         dates = dates.sort_values()
         deltas = dates.diff().dropna()
         return deltas
 
     @classmethod
-    def find_min_frequency(cls, differences):
+    def find_min_frequency(cls, differences: Any) -> str:
         months_deltas = differences.apply(lambda x: x.days // 30)
         days_deltas = differences.apply(lambda x: x.days)
         min_months = min(
@@ -84,12 +84,12 @@ class Time(Operators.Operator):
         return "D" if min_days else "M" if min_months else "Y"
 
     @classmethod
-    def get_frequency_from_time(cls, interval):
+    def get_frequency_from_time(cls, interval: str) -> Any:
         start_date, end_date = interval.split("/")
         return date.fromisoformat(end_date) - date.fromisoformat(start_date)
 
     @classmethod
-    def get_date_format(cls, date_str):
+    def get_date_format(cls, date_str: Union[str, date]) -> str:
         date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
         return "%Y-%m-%d" if date.day >= 1 else "%Y-%m" if date.month >= 1 else "%Y"
 
@@ -97,7 +97,7 @@ class Time(Operators.Operator):
 class Unary(Time):
 
     @classmethod
-    def validate(cls, operand: Dataset) -> Dataset:
+    def validate(cls, operand: Any) -> Any:
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
@@ -106,9 +106,9 @@ class Unary(Time):
         return Dataset(name="result", components=operand.components.copy(), data=None)
 
     @classmethod
-    def evaluate(cls, operand: Dataset) -> Dataset:
+    def evaluate(cls, operand: Any) -> Any:
         result = cls.validate(operand)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         if len(operand.data) < 2:
             return result
 
@@ -152,9 +152,7 @@ class Period_indicator(Unary):
     op = PERIOD_INDICATOR
 
     @classmethod
-    def validate(
-            cls, operand: Dataset | DataComponent | Scalar
-    ) -> Dataset | DataComponent | Scalar:
+    def validate(cls, operand: Any) -> Any:
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if time_id is None or operand.components[time_id].data_type != TimePeriod:
@@ -177,8 +175,8 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-            cls, operand: Dataset | DataComponent | Scalar | str
-    ) -> Dataset | DataComponent | Scalar | str:
+        cls, operand: Union[Dataset, DataComponent, Scalar, str]
+    ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
             return cls._get_period(str(operand))
@@ -186,26 +184,31 @@ class Period_indicator(Unary):
             result.value = cls._get_period(str(operand.value))
             return result
         if isinstance(operand, DataComponent):
-            result.data = operand.data.map(cls._get_period, na_action="ignore")
+            if operand.data is not None:
+                result.data = operand.data.map(cls._get_period, na_action="ignore")
             return result
         cls.time_id = cls._get_time_id(operand)
-
-        result.data = operand.data.copy()[result.get_identifiers_names()]
-        period_series = result.data[cls.time_id].map(cls._get_period)
+        result.data = (
+            operand.data.copy()[result.get_identifiers_names()]
+            if (operand.data is not None)
+            else pd.Series()
+        )
+        period_series: Any = result.data[cls.time_id].map(cls._get_period)  # type: ignore[index]
         result.data["duration_var"] = period_series
-
         return result
 
 
 class Flow_to_stock(Unary):
-    @staticmethod
-    def py_op(x):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
         return x.cumsum().fillna(x)
 
 
 class Stock_to_flow(Unary):
-    @staticmethod
-    def py_op(x):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
         return x.diff().fillna(x)
 
 
@@ -215,6 +218,8 @@ class Fill_time_series(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
+        if operand.data is None:
+            operand.data = pd.DataFrame()
         result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
@@ -255,8 +260,9 @@ class Fill_time_series(Binary):
         return Dataset(name="result", components=operand.components.copy(), data=None)
 
     @classmethod
-    def max_min_from_period(cls, data, mode="all"):
+    def max_min_from_period(cls, data: pd.DataFrame, mode: str = "all") -> Dict[str, Any]:
 
+        result_dict: Dict[Any, Any] = {}
         data = data.assign(
             Periods_col=data[cls.time_id].apply(cls._get_period),
             Periods_values_col=data[cls.time_id].apply(
@@ -275,7 +281,6 @@ class Fill_time_series(Binary):
                     result_dict["max"][period] = group["Periods_values_col"].max()
 
         elif mode == "single":
-            result_dict = {}
             for name, group in data.groupby(cls.other_ids + ["Periods_col"]):
                 key = name[:-1] if len(name[:-1]) > 1 else name[0]
                 period = name[-1]
@@ -305,7 +310,7 @@ class Fill_time_series(Binary):
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def period_filler(cls, data: pd.DataFrame, single=False) -> pd.DataFrame:
+    def period_filler(cls, data: pd.DataFrame, single: bool = False) -> pd.DataFrame:
         filled_data = []
         MAX_MIN = cls.max_min_from_period(data, mode="single" if single else "all")
         cls.periods = (
@@ -319,19 +324,21 @@ class Fill_time_series(Binary):
             period_limits = (
                 MAX_MIN if not single else MAX_MIN[group if len(group) > 1 else group[0]]
             )
-            years = range(period_limits["min"]["A"], period_limits["max"]["A"] + 1)
+            years = list(range(period_limits["min"]["A"], period_limits["max"]["A"] + 1))
             for period in cls.periods:
                 if period == "A":
                     filled_data.extend(cls.fill_periods_rows(group_df, period, years))
                 else:
                     if period in period_limits["min"] and period in period_limits["max"]:
-                        vals = range(period_limits["min"][period], period_limits["max"][period] + 1)
+                        vals = list(
+                            range(period_limits["min"][period], period_limits["max"][period] + 1)
+                        )
                         filled_data.extend(
                             cls.fill_periods_rows(group_df, period, years, vals=vals)
                         )
 
         filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
         if len(cls.periods) == 1 and cls.periods[0] == "A":
             combined_data[cls.time_id] = combined_data[cls.time_id].astype(int)
         else:
@@ -339,26 +346,30 @@ class Fill_time_series(Binary):
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
-    def fill_periods_rows(cls, group_df, period, years, vals=None):
+    def fill_periods_rows(
+        cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
+    ) -> List[Any]:
         rows = []
         for year in years:
             if period == "A":
                 rows.append(cls.create_period_row(group_df, period, year))
-            else:
+            elif vals is not None:
                 for val in vals:
                     rows.append(cls.create_period_row(group_df, period, year, val=val))
         return rows
 
     @classmethod
-    def create_period_row(cls, group_df, period, year, val=None):
+    def create_period_row(
+        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
+    ) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
         row[cls.measures] = None
         return row.to_frame().T
 
     @classmethod
-    def max_min_from_date(cls, data, fill_type="all"):
-        def compute_min_max(group):
+    def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
+        def compute_min_max(group: Any) -> Dict[str, Any]:
             min_date = cls.parse_date(group.min())
             max_date = cls.parse_date(group.max())
             date_format = cls.get_date_format(max_date)
@@ -375,19 +386,21 @@ class Fill_time_series(Binary):
         return result_dict
 
     @classmethod
-    def fill_dates(cls, data: pd.DataFrame, fill_type, min_frequency) -> pd.DataFrame:
+    def fill_dates(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
         result_data = cls.date_filler(data, fill_type, min_frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def date_filler(cls, data: pd.DataFrame, fill_type, min_frequency) -> pd.DataFrame:
+    def date_filler(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
         MAX_MIN = cls.max_min_from_date(data, fill_type)
         date_format = None
         filled_data = []
 
-        def create_filled_dates(group, min_max):
+        def create_filled_dates(
+            group: Any, min_max: Dict[str, Any]
+        ) -> (pd.DataFrame, str):  # type: ignore[syntax]
             date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
             date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
@@ -401,15 +414,17 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
-    def max_min_from_time(cls, data, fill_type="all"):
-        data = data.applymap(str).sort_values(by=cls.other_ids + [cls.time_id])
+    def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
+        data = data.applymap(str).sort_values(  # type: ignore[operator]
+            by=cls.other_ids + [cls.time_id]
+        )
 
-        def extract_max_min(group):
+        def extract_max_min(group: Any) -> Dict[str, Any]:
             start_dates = group.apply(lambda x: x.split("/")[0])
             end_dates = group.apply(lambda x: x.split("/")[1])
             return {
@@ -426,17 +441,19 @@ class Fill_time_series(Binary):
             }
 
     @classmethod
-    def fill_time_intervals(cls, data: pd.DataFrame, fill_type, frequency) -> pd.DataFrame:
+    def fill_time_intervals(
+        cls, data: pd.DataFrame, fill_type: str, frequency: str
+    ) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def time_filler(cls, data: pd.DataFrame, fill_type, frequency) -> pd.DataFrame:
+    def time_filler(cls, data: pd.DataFrame, fill_type: str, frequency: str) -> pd.DataFrame:
         MAX_MIN = cls.max_min_from_time(data, fill_type)
 
-        def fill_group(group_df):
+        def fill_group(group_df: pd.DataFrame) -> pd.DataFrame:
             group_key = group_df.iloc[0][cls.other_ids].values
             if fill_type != "all":
                 group_key = group_key[0] if len(group_key) == 1 else tuple(group_key)
@@ -451,7 +468,9 @@ class Fill_time_series(Binary):
                     empty_row = group_df.iloc[0].copy()
                     empty_row[cls.time_id] = interval
                     empty_row[cls.measures] = None
-                    group_df = group_df.append(empty_row, ignore_index=True)
+                    group_df = group_df.append(  # type: ignore[operator]
+                        empty_row, ignore_index=True
+                    )
             start_group_df = group_df.copy()
             start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
                 lambda x: x.split("/")[0]
@@ -477,12 +496,15 @@ class Time_Shift(Binary):
     op = TIMESHIFT
 
     @classmethod
-    def evaluate(cls, operand: Dataset, shift_value: Scalar) -> Dataset:
+    def evaluate(cls, operand: Dataset, shift_value: Any) -> Dataset:
         result = cls.validate(operand, shift_value)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
-        data_type = result.components[cls.time_id].data_type
+
+        data_type: Any = (
+            result.components[cls.time_id].data_type if isinstance(cls.time_id, str) else None
+        )
 
         if data_type == Date:
             freq = cls.find_min_frequency(
@@ -509,13 +531,12 @@ class Time_Shift(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
-        if not isinstance(operand, Dataset) or cls._get_time_id(operand) is None:
+        if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-
         return Dataset(name="result", components=operand.components.copy(), data=None)
 
     @classmethod
-    def shift_dates(cls, dates, shift_value, frequency):
+    def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
         dates = pd.to_datetime(dates)
         if frequency == "D":
             return dates + pd.to_timedelta(shift_value, unit="D")
@@ -528,7 +549,9 @@ class Time_Shift(Binary):
         raise SemanticError("2-1-19-2", period=frequency)
 
     @classmethod
-    def shift_period(cls, period_str, shift_value, frequency=None):
+    def shift_period(
+        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
+    ) -> str:
         period_type = cls._get_period(period_str)
 
         if period_type == "A":
@@ -555,7 +578,7 @@ class Time_Shift(Binary):
         return f"{year}-{period}{value}"
 
     @classmethod
-    def shift_interval(cls, interval, shift_value, frequency):
+    def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:
         start_date, end_date = interval.split("/")
         start_date = cls.shift_dates(start_date, shift_value, frequency)
         end_date = cls.shift_dates(end_date, shift_value, frequency)
@@ -566,12 +589,12 @@ class Time_Aggregation(Time):
     op = TIME_AGG
 
     @classmethod
-    def _check_duration(cls, value: str):
+    def _check_duration(cls, value: str) -> None:
         if value not in DURATION_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
-    def _check_params(cls, period_from: Optional[str], period_to: str):
+    def _check_params(cls, period_from: Optional[str], period_to: str) -> None:
         cls._check_duration(period_to)
         if period_from is not None:
             cls._check_duration(period_from)
@@ -581,7 +604,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -618,7 +641,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -631,7 +654,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -640,12 +663,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-            cls,
-            value: str,
-            data_type: Union[Date, TimePeriod, TimeInterval],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        value: str,
+        data_type: Type[ScalarType],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -664,10 +687,10 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy()
+        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(
@@ -680,20 +703,21 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.map(
-            lambda x: cls._execute_time_aggregation(
-                x, operand.data_type, period_from, period_to, conf
-            ),
-            na_action="ignore",
-        )
+        if operand.data is not None:
+            result.data = operand.data.map(
+                lambda x: cls._execute_time_aggregation(
+                    x, operand.data_type, period_from, period_to, conf
+                ),
+                na_action="ignore",
+            )
         return result
 
     @classmethod
     def scalar_evaluation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -703,11 +727,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -719,11 +743,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -734,7 +758,7 @@ class Time_Aggregation(Time):
             return cls.scalar_evaluation(operand, period_from, period_to, conf)
 
 
-def _time_period_access(v: str, to_param: str) -> str:
+def _time_period_access(v: Any, to_param: str) -> Any:
     v = TimePeriodHandler(v)
     if v.period_indicator == to_param:
         return str(v)
@@ -742,7 +766,7 @@ def _time_period_access(v: str, to_param: str) -> str:
     return str(v)
 
 
-def _date_access(v, to_param, start: bool):
+def _date_access(v: str, to_param: str, start: bool) -> Any:
     period_value = date_to_period(date.fromisoformat(v), to_param)
     if start:
         return period_value.start_date()
@@ -752,11 +776,11 @@ def _date_access(v, to_param, start: bool):
 class Current_Date(Time):
 
     @classmethod
-    def validate(cls):
+    def validate(cls) -> Scalar:
         return Scalar(name="current_date", data_type=Date, value=None)
 
     @classmethod
-    def evaluate(cls):
+    def evaluate(cls) -> Scalar:
         result = cls.validate()
         result.value = date.today().isoformat()
         return result

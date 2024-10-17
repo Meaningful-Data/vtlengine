@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import vtlengine.AST as AST
+import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 import pandas as pd
 from vtlengine.DataTypes import (
@@ -38,11 +39,13 @@ from vtlengine.Utils import (
     HR_COMP_MAPPING,
     HR_NUM_BINARY_MAPPING,
 )
-from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
+from vtlengine.files.output import save_datapoints
+from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
 
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG import HRDAGAnalyzer, GLOBAL, DELETE, INSERT
+from vtlengine.AST.DAG import HRDAGAnalyzer
+from vtlengine.AST.DAG._words import GLOBAL, DELETE, INSERT
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
@@ -94,13 +97,13 @@ class InterpreterAnalyzer(ASTTemplate):
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
-    ds_analysis: Optional[dict] = None
+    ds_analysis: Optional[Dict[str, Any]] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
     output_path: Optional[Union[str, Path]] = None
     # Time Period Representation
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
-    nested_if = False
+    nested_if: Union[str, bool] = False
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -117,29 +120,31 @@ class InterpreterAnalyzer(ASTTemplate):
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
-    then_condition_dataset: Optional[List[pd.DataFrame]] = None
-    else_condition_dataset: Optional[List[pd.DataFrame]] = None
+    then_condition_dataset: Optional[List[Any]] = None
+    else_condition_dataset: Optional[List[Any]] = None
     ruleset_dataset: Optional[Dataset] = None
     rule_data: Optional[pd.DataFrame] = None
-    ruleset_signature: Dict[str, str] = None
-    udo_params: List[Dict[str, Any]] = None
+    ruleset_signature: Optional[Dict[str, str]] = None
+    udo_params: Optional[List[Dict[str, Any]]] = None
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
     hr_condition: Optional[Dict[str, str]] = None
     # DL
-    dprs: Dict[str, Dict[str, Any]] = None
-    udos: Dict[str, Dict[str, Any]] = None
-    hrs: Dict[str, Dict[str, Any]] = None
+    dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
 
     # **********************************
     # *                                *
     # *          Memory efficient      *
     # *                                *
     # **********************************
-    def _load_datapoints_efficient(self, statement_num: int):
+    def _load_datapoints_efficient(self, statement_num: int) -> None:
         if self.datapoints_paths is None:
+            return
+        if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis[INSERT]:
             return
@@ -151,9 +156,11 @@ class InterpreterAnalyzer(ASTTemplate):
             elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
-    def _save_datapoints_efficient(self, statement_num: int):
+    def _save_datapoints_efficient(self, statement_num: int) -> None:
         if self.output_path is None:
             # Keeping the data in memory if no output path is provided
+            return
+        if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis[DELETE]:
             return
@@ -190,6 +197,7 @@ class InterpreterAnalyzer(ASTTemplate):
         results = {}
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
             if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
                 if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
@@ -205,6 +213,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            # Removing output dataset
+            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
@@ -238,7 +249,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(param_info) > 1:
                 previous_default = param_info[0]
                 for i in [1, len(param_info) - 1]:
-                    if previous_default is True and param_info[i] is False:
+                    if previous_default and not param_info[i]:
                         raise SemanticError("1-3-12")
                     previous_default = param_info[i]
 
@@ -257,7 +268,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-4-1-7", type="Datapoint Ruleset", name=node.name)
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
-                rule.name = i + 1
+                rule.name = (i + 1).__str__()
 
         if len(rule_names) != len(set(rule_names)):
             not_unique = [name for name in rule_names if rule_names.count(name) > 1]
@@ -270,16 +281,21 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Signature has the actual parameters names or aliases if provided
         signature_actual_names = {}
-        for param in node.params:
-            if param.alias is not None:
-                signature_actual_names[param.alias] = param.value
-            else:
-                signature_actual_names[param.value] = param.value
+        if not isinstance(node.params, AST.DefIdentifier):
+            for param in node.params:
+                if param.alias is not None:
+                    signature_actual_names[param.alias] = param.value
+                else:
+                    signature_actual_names[param.value] = param.value
 
         ruleset_data = {
             "rules": node.rules,
             "signature": signature_actual_names,
-            "params": [x.value for x in node.params],
+            "params": (
+                [x.value for x in node.params]
+                if not isinstance(node.params, AST.DefIdentifier)
+                else []
+            ),
             "signature_type": node.signature_type,
         }
 
@@ -303,7 +319,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise ValueError("All rules must have a name, or none of them")
         if len(rule_names) == 0:
             for i, rule in enumerate(node.rules):
-                rule.name = i + 1
+                rule.name = (i + 1).__str__()
 
         cond_comp = []
         if isinstance(node.element, list):
@@ -339,7 +355,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
 
-    def visit_BinOp(self, node: AST.BinOp) -> None:
+    def visit_BinOp(self, node: AST.BinOp) -> Any:
 
         is_from_if = False
         if (
@@ -352,15 +368,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_if = False
 
         if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
-            else:
-                comp_name = f"{node.left.value}#{node.right.value}"
-            ast_var_id = AST.VarID(value=comp_name)
-            return self.visit(ast_var_id)
-        else:
-            left_operand = self.visit(node.left)
-            right_operand = self.visit(node.right)
+            if hasattr(node.left, "value") and hasattr(node.right, "value"):
+                if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                    comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+                else:
+                    comp_name = f"{node.left.value}#{node.right.value}"
+                ast_var_id = AST.VarID(value=comp_name)
+                return self.visit(ast_var_id)
+        left_operand = self.visit(node.left)
+        right_operand = self.visit(node.right)
         if is_from_if:
             left_operand, right_operand = self.merge_then_else_datasets(left_operand, right_operand)
         if node.op == MEMBERSHIP:
@@ -380,7 +396,11 @@ class InterpreterAnalyzer(ASTTemplate):
         operand = self.visit(node.operand)
         if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
             raise NotImplementedError
-        if self.is_from_regular_aggregation and node.op in ROLE_SETTER_MAPPING:
+        if (
+            self.is_from_regular_aggregation
+            and self.regular_aggregation_dataset is not None
+            and node.op in ROLE_SETTER_MAPPING
+        ):
             if self.regular_aggregation_dataset.data is None:
                 data_size = 0
             else:
@@ -394,9 +414,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.operand is not None:
                 self.visit(node.operand)
             operand = self.aggregation_dataset
-        elif self.is_from_regular_aggregation:
+        elif self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             operand = self.regular_aggregation_dataset
-            if node.operand is not None:
+            if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
                 comps_to_keep = {}
                 for comp_name, comp in self.regular_aggregation_dataset.components.items():
@@ -427,7 +447,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.having_clause is not None and node.grouping is None:
             raise SemanticError("1-3-33")
 
-        groupings = []
+        groupings: Any = []
         having = None
         grouping_op = node.grouping_op
         if node.grouping is not None:
@@ -435,7 +455,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic:
                     data = None
                 else:
-                    data = operand.data.copy()
+                    data = copy(operand.data)
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
                 )
@@ -446,7 +466,11 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_grouping = False
             if grouping_op == "group all":
                 comp_grouped = groupings[0]
-                if comp_grouped.data is not None and len(comp_grouped.data) > 0:
+                if (
+                    operand.data is not None
+                    and comp_grouped.data is not None
+                    and len(comp_grouped.data) > 0
+                ):
                     operand.data[comp_grouped.name] = comp_grouped.data
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
@@ -476,7 +500,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         return AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
 
-    def _format_having_expression_udo(self, having: str):
+    def _format_having_expression_udo(self, having: str) -> str:
         if self.udo_params is None:
             return having
         for k, v in self.udo_params[-1].items():
@@ -495,8 +519,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 having = having.replace(old_param, new_param)
         return having
 
-    def visit_Analytic(self, node: AST.Analytic) -> None:
+    def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         if self.is_from_regular_aggregation:
+            if self.regular_aggregation_dataset is None:
+                raise SemanticError("1-1-6-10")
             if node.operand is None:
                 operand = self.regular_aggregation_dataset
             else:
@@ -507,7 +533,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     if name != operand_comp.name:
                         dataset_components.pop(name)
 
-                if self.only_semantic:
+                if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
                     data = self.regular_aggregation_dataset.data[dataset_components.keys()]
@@ -519,8 +545,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
 
         else:
-            operand: Dataset = self.visit(node.operand)
-        partitioning = []
+            operand = self.visit(node.operand)
+        partitioning: Any = []
         ordering = []
         if self.udo_params is not None:
             if node.partition_by is not None:
@@ -553,7 +579,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if not isinstance(operand, Dataset):
             raise SemanticError("2-3-4", op=node.op, comp="dataset")
         if node.partition_by is None:
-            order_components = [x.component for x in node.order_by]
+            order_components = (
+                [x.component for x in node.order_by] if node.order_by is not None else []
+            )
             partitioning = [x for x in operand.get_identifiers_names() if x not in order_components]
 
         params = []
@@ -575,7 +603,11 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
 
         # Extracting the components we need (only identifiers)
-        id_columns = self.regular_aggregation_dataset.get_identifiers_names()
+        id_columns = (
+            self.regular_aggregation_dataset.get_identifiers_names()
+            if (self.regular_aggregation_dataset is not None)
+            else None
+        )
 
         # # Extracting the component we need (only measure)
         measure_name = result.get_measures_names()[0]
@@ -583,13 +615,19 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.only_semantic:
             data = None
         else:
-            joined_result = pd.merge(
-                self.regular_aggregation_dataset.data[id_columns],
-                result.data,
-                on=id_columns,
-                how="inner",
-            )
-            data = joined_result[measure_name]
+            if (
+                self.regular_aggregation_dataset is not None
+                and self.regular_aggregation_dataset.data is not None
+            ):
+                joined_result = pd.merge(
+                    self.regular_aggregation_dataset.data[id_columns],
+                    result.data,
+                    on=id_columns,
+                    how="inner",
+                )
+                data = joined_result[measure_name]
+            else:
+                data = None
 
         return DataComponent(
             name=measure_name,
@@ -599,7 +637,7 @@ class InterpreterAnalyzer(ASTTemplate):
             nullable=result.components[measure_name].nullable,
         )
 
-    def visit_MulOp(self, node: AST.MulOp):
+    def visit_MulOp(self, node: AST.MulOp) -> None:
         """
         MulOp: (op, children)
 
@@ -665,7 +703,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return udo_element
             # If it is only the component or dataset name, we rename the node.value
             node.value = udo_element
-        if self.is_from_having or self.is_from_grouping:
+        if self.aggregation_dataset is not None and (self.is_from_having or self.is_from_grouping):
             if node.value not in self.aggregation_dataset.components:
                 raise SemanticError(
                     "1-1-1-10",
@@ -687,52 +725,56 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets.keys():
                 return self.datasets[node.value]
-            if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
-                if node.value in self.regular_aggregation_dataset.components:
-                    raise SemanticError("1-1-6-11", comp_name=node.value)
-                return self.datasets[node.value]
-
-            if self.regular_aggregation_dataset.data is not None:
-                if (
-                    self.is_from_join
-                    and node.value not in self.regular_aggregation_dataset.get_components_names()
-                ):
-                    is_partial_present = 0
-                    found_comp = None
-                    for comp_name in self.regular_aggregation_dataset.get_components_names():
-                        if "#" in comp_name and comp_name.split("#")[1] == node.value:
-                            is_partial_present += 1
-                            found_comp = comp_name
-                        elif "#" in node.value and node.value.split("#")[1] == comp_name:
-                            is_partial_present += 1
-                            found_comp = comp_name
-                    if is_partial_present == 0:
+            if self.regular_aggregation_dataset is not None:
+                if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
+                    if node.value in self.regular_aggregation_dataset.components:
+                        raise SemanticError("1-1-6-11", comp_name=node.value)
+                    return self.datasets[node.value]
+                if self.regular_aggregation_dataset.data is not None:
+                    if (
+                        self.is_from_join
+                        and node.value
+                        not in self.regular_aggregation_dataset.get_components_names()
+                    ):
+                        is_partial_present = 0
+                        found_comp = None
+                        for comp_name in self.regular_aggregation_dataset.get_components_names():
+                            if "#" in comp_name and comp_name.split("#")[1] == node.value:
+                                is_partial_present += 1
+                                found_comp = comp_name
+                            elif "#" in node.value and node.value.split("#")[1] == comp_name:
+                                is_partial_present += 1
+                                found_comp = comp_name
+                        if is_partial_present == 0:
+                            raise SemanticError(
+                                "1-1-1-10",
+                                comp_name=node.value,
+                                dataset_name=self.regular_aggregation_dataset.name,
+                            )
+                        elif is_partial_present == 2:
+                            raise SemanticError("1-1-13-9", comp_name=node.value)
+                        node.value = found_comp
+                    if node.value not in self.regular_aggregation_dataset.components:
                         raise SemanticError(
                             "1-1-1-10",
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    elif is_partial_present == 2:
-                        raise SemanticError("1-1-13-9", comp_name=node.value)
-                    node.value = found_comp
-                if node.value not in self.regular_aggregation_dataset.components:
-                    raise SemanticError(
-                        "1-1-1-10",
-                        comp_name=node.value,
-                        dataset_name=self.regular_aggregation_dataset.name,
-                    )
-                data = self.regular_aggregation_dataset.data[node.value]
-            else:
-                data = None
-
-            return DataComponent(
-                name=node.value,
-                data=data,
-                data_type=self.regular_aggregation_dataset.components[node.value].data_type,
-                role=self.regular_aggregation_dataset.components[node.value].role,
-                nullable=self.regular_aggregation_dataset.components[node.value].nullable,
-            )
-        if self.is_from_rule:
+                    data = self.regular_aggregation_dataset.data[node.value]
+                else:
+                    data = None
+                return DataComponent(
+                    name=node.value,
+                    data=data,
+                    data_type=self.regular_aggregation_dataset.components[node.value].data_type,
+                    role=self.regular_aggregation_dataset.components[node.value].role,
+                    nullable=self.regular_aggregation_dataset.components[node.value].nullable,
+                )
+        if (
+            self.is_from_rule
+            and self.ruleset_dataset is not None
+            and self.ruleset_signature is not None
+        ):
             if node.value not in self.ruleset_signature:
                 raise SemanticError("1-1-10-7", comp_name=node.value)
             comp_name = self.ruleset_signature[node.value]
@@ -787,7 +829,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             raise SemanticError("1-3-26", name=node.name)
 
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:
+    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:  # noqa: C901
         operands = []
         dataset = self.visit(node.dataset)
         if isinstance(dataset, Scalar):
@@ -805,9 +847,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
-            role_info = {child.left.value: child.left.role for child in node.children}
+            role_info = {
+                child.left.value: child.left.role
+                for child in node.children
+                if hasattr(child, "left")
+            }
             dataset = copy(operands[0])
-            dataset.name = self.regular_aggregation_dataset.name
+            if self.regular_aggregation_dataset is not None:
+                dataset.name = self.regular_aggregation_dataset.name
             dataset.components = {
                 comp_name: comp
                 for comp_name, comp in dataset.components.items()
@@ -834,14 +881,14 @@ class InterpreterAnalyzer(ASTTemplate):
                         name=operand.name,
                         data=data,
                         data_type=measure.data_type,
-                        role=role,
+                        role=role if role is not None else measure.role,
                         nullable=measure.nullable,
                     )
                 )
             operands = aux_operands
         self.regular_aggregation_dataset = None
         if node.op == FILTER:
-            if not isinstance(operands[0], DataComponent):
+            if not isinstance(operands[0], DataComponent) and hasattr(child, "left"):
                 measure = child.left.value
                 operands[0] = DataComponent(
                     name=measure,
@@ -954,7 +1001,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 if node.old_name in self.udo_params[-1]:
                     node.old_name = self.udo_params[-1][node.old_name]
 
-        if self.is_from_join and node.old_name not in self.regular_aggregation_dataset.components:
+        if (
+            self.is_from_join
+            and self.regular_aggregation_dataset is not None
+            and node.old_name not in self.regular_aggregation_dataset.components
+        ):
             node.old_name = node.old_name.split("#")[1]
 
         return node
@@ -979,7 +1030,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa C901
+    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
             if len(node.params) != 0:
@@ -1013,21 +1064,27 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 raise NotImplementedError
         elif node.op == HAVING:
-            for id_name in self.aggregation_grouping:
-                if id_name not in self.aggregation_dataset.components:
-                    raise SemanticError("1-1-2-4", op=node.op, id_name=id_name)
-            if len(self.aggregation_dataset.get_measures()) != 1:
-                raise ValueError("Only one measure is allowed")
-            # Deepcopy is necessary for components to avoid changing the original dataset
-            self.aggregation_dataset.components = {
-                comp_name: deepcopy(comp)
-                for comp_name, comp in self.aggregation_dataset.components.items()
-                if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
-            }
-            self.aggregation_dataset.data = self.aggregation_dataset.data[
-                self.aggregation_dataset.get_identifiers_names()
-                + self.aggregation_dataset.get_measures_names()
-            ]
+            if self.aggregation_dataset is not None and self.aggregation_grouping is not None:
+                for id_name in self.aggregation_grouping:
+                    if id_name not in self.aggregation_dataset.components:
+                        raise SemanticError("1-1-2-4", op=node.op, id_name=id_name)
+                if len(self.aggregation_dataset.get_measures()) != 1:
+                    raise ValueError("Only one measure is allowed")
+                # Deepcopy is necessary for components to avoid changing the original dataset
+                self.aggregation_dataset.components = {
+                    comp_name: deepcopy(comp)
+                    for comp_name, comp in self.aggregation_dataset.components.items()
+                    if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
+                }
+
+                self.aggregation_dataset.data = (
+                    self.aggregation_dataset.data[
+                        self.aggregation_dataset.get_identifiers_names()
+                        + self.aggregation_dataset.get_measures_names()
+                    ]
+                    if (self.aggregation_dataset.data is not None)
+                    else None
+                )
             result = self.visit(node.params)
             measure = result.get_measures()[0]
             if measure.data_type != Boolean:
@@ -1048,7 +1105,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.dprs is None:
                 raise SemanticError("1-3-19", node_type="Datapoint Rulesets", node_value="")
             # Checking if ruleset exists
-            dpr_name = node.children[1]
+            dpr_name: Any = node.children[1]
             if dpr_name not in self.dprs:
                 raise SemanticError("1-3-19", node_type="Datapoint Ruleset", node_value=dpr_name)
             dpr_info = self.dprs[dpr_name]
@@ -1060,11 +1117,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # Checking if list of components supplied is valid
             if len(node.children) > 2:
                 for comp_name in node.children[2:]:
-                    if comp_name not in dataset_element.components:
+                    if comp_name.__str__() not in dataset_element.components:
                         raise SemanticError(
                             "1-1-1-10", comp_name=comp_name, dataset_name=dataset_element.name
                         )
-                if dpr_info["signature_type"] == "variable":
+                if dpr_info is not None and dpr_info["signature_type"] == "variable":
                     for i, comp_name in enumerate(node.children[2:]):
                         if comp_name != dpr_info["params"][i]:
                             raise SemanticError(
@@ -1074,19 +1131,22 @@ class InterpreterAnalyzer(ASTTemplate):
                                 found=comp_name,
                             )
 
-            output = node.params[0]  # invalid, all_measures, all
+            output: Any = node.params[0]  # invalid, all_measures, all
+            if dpr_info is None:
+                dpr_info = {}
 
             rule_output_values = {}
             self.ruleset_dataset = dataset_element
             self.ruleset_signature = dpr_info["signature"]
             self.ruleset_mode = output
             # Gather rule data, adding the ruleset dataset to the interpreter
-            for rule in dpr_info["rules"]:
-                rule_output_values[rule.name] = {
-                    "errorcode": rule.erCode,
-                    "errorlevel": rule.erLevel,
-                    "output": self.visit(rule),
-                }
+            if dpr_info is not None:
+                for rule in dpr_info["rules"]:
+                    rule_output_values[rule.name] = {
+                        "errorcode": rule.erCode,
+                        "errorlevel": rule.erLevel,
+                        "output": self.visit(rule),
+                    }
             self.ruleset_mode = None
             self.ruleset_signature = None
             self.ruleset_dataset = None
@@ -1113,105 +1173,115 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if self.hrs is None:
                 raise SemanticError("1-3-19", node_type="Hierarchical Rulesets", node_value="")
-            if hr_name not in self.hrs:
-                raise SemanticError("1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name)
-
-            if not isinstance(dataset, Dataset):
-                raise SemanticError("1-1-1-20", op=node.op)
-
-            hr_info = self.hrs[hr_name]
-
-            if len(cond_components) != len(hr_info["condition"]):
-                raise SemanticError("1-1-10-2", op=node.op)
-
-            if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
-                raise SemanticError(
-                    "1-1-10-3", op=node.op, found=component, expected=hr_info["signature"]
-                )
-            elif hr_info["node"].signature_type == "valuedomain" and component is None:
-                raise SemanticError("1-1-10-4", op=node.op)
-
-            cond_info = {}
-            for i, cond_comp in enumerate(hr_info["condition"]):
-                if hr_info["node"].signature_type == "variable" and cond_components[i] != cond_comp:
+            else:
+                if hr_name not in self.hrs:
                     raise SemanticError(
-                        "1-1-10-6", op=node.op, expected=cond_comp, found=cond_components[i]
+                        "1-3-19", node_type="Hierarchical Ruleset", node_value=hr_name
                     )
-                cond_info[cond_comp] = cond_components[i]
 
-            if node.op == HIERARCHY:
-                aux = []
-                for rule in hr_info["rules"]:
-                    if rule.rule.op == EQ:
-                        aux.append(rule)
-                    elif rule.rule.op == WHEN:
-                        if rule.rule.right.op == EQ:
+                if not isinstance(dataset, Dataset):
+                    raise SemanticError("1-1-1-20", op=node.op)
+
+                hr_info = self.hrs[hr_name]
+            if hr_info is not None:
+                if len(cond_components) != len(hr_info["condition"]):
+                    raise SemanticError("1-1-10-2", op=node.op)
+
+                if (
+                    hr_info["node"].signature_type == "variable"
+                    and hr_info["signature"] != component
+                ):
+                    raise SemanticError(
+                        "1-1-10-3", op=node.op, found=component, expected=hr_info["signature"]
+                    )
+                elif hr_info["node"].signature_type == "valuedomain" and component is None:
+                    raise SemanticError("1-1-10-4", op=node.op)
+
+                cond_info = {}
+                for i, cond_comp in enumerate(hr_info["condition"]):
+                    if (
+                        hr_info["node"].signature_type == "variable"
+                        and cond_components[i] != cond_comp
+                    ):
+                        raise SemanticError(
+                            "1-1-10-6", op=node.op, expected=cond_comp, found=cond_components[i]
+                        )
+                    cond_info[cond_comp] = cond_components[i]
+
+                if node.op == HIERARCHY:
+                    aux = []
+                    for rule in hr_info["rules"]:
+                        if rule.rule.op == EQ:
                             aux.append(rule)
-                # Filter only the rules with HRBinOP as =,
-                # as they are the ones that will be computed
-                if len(aux) == 0:
-                    raise SemanticError("1-1-10-5")
-                hr_info["rules"] = aux
+                        elif rule.rule.op == WHEN:
+                            if rule.rule.right.op == EQ:
+                                aux.append(rule)
+                    # Filter only the rules with HRBinOP as =,
+                    # as they are the ones that will be computed
+                    if len(aux) == 0:
+                        raise SemanticError("1-1-10-5")
+                    hr_info["rules"] = aux
 
-                hierarchy_ast = AST.HRuleset(
-                    name=hr_name,
-                    signature_type=hr_info["node"].signature_type,
-                    element=hr_info["node"].element,
-                    rules=aux,
-                )
-                HRDAGAnalyzer().visit(hierarchy_ast)
+                    hierarchy_ast = AST.HRuleset(
+                        name=hr_name,
+                        signature_type=hr_info["node"].signature_type,
+                        element=hr_info["node"].element,
+                        rules=aux,
+                    )
+                    HRDAGAnalyzer().visit(hierarchy_ast)
 
-            Check_Hierarchy.validate_hr_dataset(dataset, component)
+                Check_Hierarchy.validate_hr_dataset(dataset, component)
 
-            # Gather rule data, adding the necessary elements to the interpreter
-            # for simplicity
-            self.ruleset_dataset = dataset
-            self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
-            self.ruleset_mode = mode
-            self.hr_input = input_
-            rule_output_values = {}
-            if node.op == HIERARCHY:
-                self.is_from_hr_agg = True
-                self.hr_agg_rules_computed = {}
-                for rule in hr_info["rules"]:
-                    self.visit(rule)
-                self.is_from_hr_agg = False
-            else:
-                self.is_from_hr_val = True
-                for rule in hr_info["rules"]:
-                    rule_output_values[rule.name] = {
-                        "errorcode": rule.erCode,
-                        "errorlevel": rule.erLevel,
-                        "output": self.visit(rule),
-                    }
-                self.is_from_hr_val = False
-            self.ruleset_signature = None
-            self.ruleset_dataset = None
-            self.ruleset_mode = None
-            self.hr_input = None
+                # Gather rule data, adding the necessary elements to the interpreter
+                # for simplicity
+                self.ruleset_dataset = dataset
+                self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
+                self.ruleset_mode = mode
+                self.hr_input = input_
+                rule_output_values = {}
+                if node.op == HIERARCHY:
+                    self.is_from_hr_agg = True
+                    self.hr_agg_rules_computed = {}
+                    for rule in hr_info["rules"]:
+                        self.visit(rule)
+                    self.is_from_hr_agg = False
+                else:
+                    self.is_from_hr_val = True
+                    for rule in hr_info["rules"]:
+                        rule_output_values[rule.name] = {
+                            "errorcode": rule.erCode,
+                            "errorlevel": rule.erLevel,
+                            "output": self.visit(rule),
+                        }
+                    self.is_from_hr_val = False
+                self.ruleset_signature = None
+                self.ruleset_dataset = None
+                self.ruleset_mode = None
+                self.hr_input = None
 
-            # Final evaluation
-            if node.op == CHECK_HIERARCHY:
-                result = Check_Hierarchy.analyze(
-                    dataset_element=dataset, rule_info=rule_output_values, output=output
-                )
-                del rule_output_values
-            else:
-                result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
-                self.hr_agg_rules_computed = None
-            return result
+                # Final evaluation
+                if node.op == CHECK_HIERARCHY:
+                    result = Check_Hierarchy.analyze(
+                        dataset_element=dataset, rule_info=rule_output_values, output=output
+                    )
+                    del rule_output_values
+                else:
+                    result = Hierarchy.analyze(dataset, self.hr_agg_rules_computed, output)
+                    self.hr_agg_rules_computed = None
+                return result
 
         raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
-        if self.ruleset_dataset.data is None:
-            self.rule_data = None
-        else:
-            self.rule_data = self.ruleset_dataset.data.copy()
+        if self.ruleset_dataset is not None:
+            if self.ruleset_dataset.data is None:
+                self.rule_data = None
+            else:
+                self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
-            if self.rule_data is not None:
+            if self.rule_data is not None and self.ruleset_dataset is not None:
                 aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
                 aux["bool_var"] = validation_data.data
                 validation_data = aux
@@ -1225,26 +1295,29 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
-        if self.ruleset_dataset.data is None:
-            self.rule_data = None
-        else:
-            self.rule_data = self.ruleset_dataset.data.copy()
+        if self.ruleset_dataset is not None:
+            self.rule_data = (
+                None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
+            )
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
             return None
         if self.is_from_hr_agg:
             measure_name = rule_result.get_measures_names()[0]
-            if rule_result.data is not None:
-                if len(rule_result.data[measure_name]) > 0:
-                    self.hr_agg_rules_computed[rule_result.name] = rule_result.data
+            if (
+                self.hr_agg_rules_computed is not None
+                and rule_result.data is not None
+                and len(rule_result.data[measure_name]) > 0
+            ):
+                self.hr_agg_rules_computed[rule_result.name] = rule_result.data
         else:
             rule_result = rule_result.data
         self.rule_data = None
         self.is_from_rule = False
         return rule_result
 
-    def visit_HRBinOp(self, node: AST.HRBinOp) -> None:
+    def visit_HRBinOp(self, node: AST.HRBinOp) -> Any:
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
@@ -1308,6 +1381,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 and not self.only_semantic
             ):
                 measure_name = left_operand.get_measures_names()[0]
+                if left_operand.data is None:
+                    left_operand.data = pd.DataFrame({measure_name: []})
+                if right_operand.data is None:
+                    right_operand.data = pd.DataFrame({measure_name: []})
                 left_null_indexes = set(
                     list(left_operand.data[left_operand.data[measure_name].isnull()].index)
                 )
@@ -1378,8 +1455,12 @@ class InterpreterAnalyzer(ASTTemplate):
         output_to_check = node.output
         return Eval.analyze(operands, external_routine, output_to_check)
 
-    def generate_then_else_datasets(self, condition):
+    def generate_then_else_datasets(self, condition: Union[Dataset, DataComponent]) -> None:
         components = {}
+        if self.then_condition_dataset is None:
+            self.then_condition_dataset = []
+        if self.else_condition_dataset is None:
+            self.else_condition_dataset = []
         if isinstance(condition, Dataset):
             if (
                 len(condition.get_measures()) != 1
@@ -1403,7 +1484,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = condition.data
 
         if data is not None:
-            if self.nested_if:
+            if self.nested_if and self.if_stack is not None:
                 merge_df = (
                     self.then_condition_dataset[-1]
                     if self.if_stack[-1] == THEN_ELSE["then"]
@@ -1416,13 +1497,21 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if isinstance(condition, Dataset):
                 filtered_data = data.iloc[indexes]
-                then_data = condition.data[condition.data[name] == True]
-                then_indexes = list(filtered_data[filtered_data == True].index)
+                then_data: Any = (
+                    condition.data[condition.data[name] == True]
+                    if (condition.data is not None)
+                    else []
+                )
+                then_indexes: Any = list(filtered_data[filtered_data == True].index)
                 if len(then_data) > len(then_indexes):
                     then_data = then_data.iloc[then_indexes]
                 then_data[name] = then_indexes
-                else_data = condition.data[condition.data[name] != True]
-                else_indexes = list(set(indexes) - set(then_indexes))
+                else_data: Any = (
+                    condition.data[condition.data[name] != True]
+                    if (condition.data is not None)
+                    else []
+                )
+                else_indexes: Any = list(set(indexes) - set(then_indexes))
                 if len(else_data) > len(else_indexes):
                     else_data = else_data.iloc[else_indexes]
                 else_data[name] = else_indexes
@@ -1447,7 +1536,13 @@ class InterpreterAnalyzer(ASTTemplate):
         self.then_condition_dataset.append(then_dataset)
         self.else_condition_dataset.append(else_dataset)
 
-    def merge_then_else_datasets(self, left_operand: Dataset | DataComponent, right_operand):
+    def merge_then_else_datasets(self, left_operand: Any, right_operand: Any) -> Any:
+        if (
+            self.then_condition_dataset is None
+            or self.else_condition_dataset is None
+            or self.if_stack is None
+        ):
+            return left_operand, right_operand
         merge_dataset = (
             self.then_condition_dataset.pop()
             if self.if_stack.pop() == THEN_ELSE["then"]
@@ -1489,7 +1584,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 right_operand.data = right.reindex(merge_index, fill_value=None)
         return left_operand, right_operand
 
-    def visit_Identifier(self, node: AST.Identifier) -> AST.AST:
+    def visit_Identifier(self, node: AST.Identifier) -> Union[AST.AST, Dataset, str]:
         """
         Identifier: (value)
 
@@ -1507,7 +1602,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.datasets[node.value]
         return node.value
 
-    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> AST.AST:
+    def visit_DefIdentifier(self, node: AST.DefIdentifier) -> Any:
         """
         DefIdentifier: (value, kind)
 
@@ -1522,10 +1617,11 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Getting Dataset elements
         result_components = {
-            comp_name: copy(comp) for comp_name, comp in self.ruleset_dataset.components.items()
+            c_name: copy(comp)
+            for c_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
-        hr_component = self.ruleset_signature["RULE_COMPONENT"]
-
+        if self.ruleset_signature is not None:
+            hr_component = self.ruleset_signature["RULE_COMPONENT"]
         name = node.value
 
         if self.rule_data is None:
@@ -1533,17 +1629,23 @@ class InterpreterAnalyzer(ASTTemplate):
 
         condition = None
         if hasattr(node, "_right_condition"):
-            condition: DataComponent = self.visit(node._right_condition)
-            condition = condition.data[condition.data == True].index
+            condition: DataComponent = self.visit(node._right_condition)  # type: ignore[no-redef]
+            if condition is not None:
+                condition = condition.data[condition.data == True].index
 
-        if self.hr_input == "rule" and node.value in self.hr_agg_rules_computed:
+        if (
+            self.hr_agg_rules_computed is not None
+            and self.hr_input == "rule"
+            and node.value in self.hr_agg_rules_computed
+        ):
             df = self.hr_agg_rules_computed[node.value].copy()
             return Dataset(name=name, components=result_components, data=df)
 
         df = self.rule_data.copy()
         if condition is not None:
             df = df.loc[condition].reset_index(drop=True)
-        measure_name = self.ruleset_dataset.get_measures_names()[0]
+
+        measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
         if node.value in df[hr_component].values:
             rest_identifiers = [
                 comp.name
@@ -1587,7 +1689,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 df[measure_name] = 0
             else:  # For non_null, partial_null and always_null
                 df[measure_name] = None
-        if self.ruleset_mode in ("partial_null", "partial_zero"):
+        if self.hr_partial_is_valid is not None and self.ruleset_mode in (
+            "partial_null",
+            "partial_zero",
+        ):
             self.hr_partial_is_valid.append(partial_is_valid)
         return Dataset(name=name, components=result_components, data=df)
 
@@ -1597,10 +1702,11 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op not in self.udos:
             raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
 
+        operator = self.udos[node.op]
         signature_values = {}
 
-        operator = self.udos[node.op]
-
+        if operator is None:
+            raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
         if operator["output"] == "Component" and not (
             self.is_from_regular_aggregation or self.is_from_rule
         ):
@@ -1626,7 +1732,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = node.params[i].value
+                            signature_values[param["name"]] = node.params[
+                                i
+                            ].value  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):
@@ -1691,7 +1799,8 @@ class InterpreterAnalyzer(ASTTemplate):
         self.udo_params.append(signature_values)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
-        result = self.visit(deepcopy(operator["expression"]))
+        if operator is not None:
+            result = self.visit(deepcopy(operator["expression"]))
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = "Component" if isinstance(result, DataComponent) else "Scalar"
