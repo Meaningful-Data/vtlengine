@@ -49,6 +49,7 @@ black = "^24.8.0"
 mypy = "^1.11.2"
 pandas-stubs = "^2.2.3.241009"
 stubs = "^1.0.0"
+toml = "^0.10"
 
 [tool.black]
 line_length = 100

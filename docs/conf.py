@@ -5,6 +5,9 @@
 import asyncio
 import os
 import sys
+from pathlib import Path
+
+import tomlkit
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -16,10 +19,15 @@ os.environ["PYTHONPATH"] = ";".join((package_path, os.environ.get("PYTHONPATH", 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Vtl Engine Docs"
-copyright = "2024, MeaningfulData"
-author = "MeaningfulData"
-release = "1.0.0"
+pyproject_toml_file = Path(__file__).parent.parent / "pyproject.toml"
+if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
+    with open(pyproject_toml_file, "r") as f:
+        data = tomlkit.load(f)
+    project = str(data["tool"]["poetry"]["name"])
+    version = str(data["tool"]["poetry"]["version"])
+    description = str(data["tool"]["poetry"]["description"])
+
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
