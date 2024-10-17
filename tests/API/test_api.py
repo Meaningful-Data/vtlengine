@@ -449,3 +449,44 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
     }
 
     assert result == reference
+
+
+def test_readme_example():
+    script = """
+        DS_A := DS_1 * 10;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+    assert run_result == {
+        "DS_A": Dataset(
+            name="DS_A",
+            components={
+                "Id_1": Component(
+                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                ),
+                "Me_1": Component(
+                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                ),
+            },
+            data=pd.DataFrame(
+                columns=["Id_1", "Me_1"], index=[0, 1, 2], data=[(1, 100), (2, 200), (3, 300)]
+            ),
+        )
+    }
