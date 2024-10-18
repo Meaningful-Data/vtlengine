@@ -300,18 +300,18 @@ class Case(Operator):
                  ) -> Union[Scalar, DataComponent, Dataset]:
 
         result = cls.validate(conditions, thenOps, elseOp)
-        operands = thenOps + [elseOp]
 
         if isinstance(result, Scalar):
             result.value = next((thenOps[i].value for i in range(len(conditions)) if
-                           conditions[i].value), elseOp.value)
+                                 conditions[i].value), elseOp.value)
 
         if isinstance(result, DataComponent):
-            result.data = pd.Series([None] * len(conditions[0].data), index=conditions[0].data.index)
+            result.data = pd.Series(None, index=conditions[0].data.index)
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(condition.data, value, result.data)
+                result.data = np.where(condition.data, value,  # type: ignore[call-overload]
+                                       result.data)
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
             else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
@@ -320,7 +320,8 @@ class Case(Operator):
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = copy(conditions[0].data[identifiers])
+            result.data = copy(conditions[0].data[identifiers] if conditions[0].data is not None
+                               else pd.DataFrame(columns=identifiers))
 
             for i in range(len(conditions)):
                 condition = conditions[i]
@@ -333,7 +334,8 @@ class Case(Operator):
                 )
 
             condition_mask_else = ~np.logical_or.reduce([
-                condition.data[next(x.name for x in condition.get_measures() if x.data_type == Boolean)]
+                condition.data[next(x.name for x in condition.get_measures() if
+                                    x.data_type == Boolean)]
                 for condition in conditions
             ])
 
@@ -371,7 +373,7 @@ class Case(Operator):
             # The output data type is the data type of the last then operation that has a true
             # condition, defaulting to the data type of the else operation if no condition is true
             output_data_type = next((thenOps[i].data_type for i in range(len(conditions)) if
-                           conditions[i].value), elseOp.data_type)
+                                     conditions[i].value), elseOp.data_type)
 
             return Scalar(
                 name="result",
@@ -427,7 +429,8 @@ class Case(Operator):
 
             return Dataset(
                 name="result",
-                components=copy(next(operand for operand in ops if isinstance(operand, Dataset)).components),
+                components=copy(next(operand for operand in ops if
+                                     isinstance(operand, Dataset)).components),
                 data=None
             )
 
