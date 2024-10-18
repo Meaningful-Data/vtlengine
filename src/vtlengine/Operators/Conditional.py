@@ -300,6 +300,48 @@ class Case(Operator):
                  ) -> Union[Scalar, DataComponent, Dataset]:
 
         result = cls.validate(conditions, thenOps, elseOp)
+        operands = thenOps + [elseOp]
+
+        if isinstance(result, Scalar):
+            result.value = next((thenOps[i].value for i in range(len(conditions)) if
+                           conditions[i].value), elseOp.value)
+
+        if isinstance(result, DataComponent):
+            result.data = pd.Series([None] * len(conditions[0].data), index=conditions[0].data.index)
+
+            for i, condition in enumerate(conditions):
+                value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
+                result.data = np.where(condition.data, value, result.data)
+
+            condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
+            else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
+            result.data = np.where(condition_mask_else, else_value, result.data)
+
+        if isinstance(result, Dataset):
+            identifiers = result.get_identifiers_names()
+            columns = [col for col in result.get_components_names() if col not in identifiers]
+            result.data = copy(conditions[0].data[identifiers])
+
+            for i in range(len(conditions)):
+                condition = conditions[i]
+                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
+                condition_mask = condition.data[bool_col]
+
+                result.data.loc[condition_mask, columns] = (
+                    thenOps[i].value if isinstance(thenOps[i], Scalar)
+                    else thenOps[i].data.loc[condition_mask, columns]
+                )
+
+            condition_mask_else = ~np.logical_or.reduce([
+                condition.data[next(x.name for x in condition.get_measures() if x.data_type == Boolean)]
+                for condition in conditions
+            ])
+
+            result.data.loc[condition_mask_else, columns] = (
+                elseOp.value if isinstance(elseOp, Scalar)
+                else elseOp.data.loc[condition_mask_else, columns]
+            )
+
         return result
 
     @classmethod
@@ -311,7 +353,6 @@ class Case(Operator):
 
         if len(conditions) != len(thenOps):
             raise ValueError("Number of conditions and then operations must be the same")
-
         if len(set(map(type, conditions))) > 1:
             raise ValueError("All conditions must be of the same type")
 
@@ -324,15 +365,19 @@ class Case(Operator):
                 if condition.data_type != Boolean:
                     condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
                     condition.value = bool(condition.value)
-
-            if len(then_else_types) > 1 and list(then_else_types)[0] != Scalar:
+            if list(then_else_types) != [Scalar]:
                 raise ValueError("All then and else operands must be Scalars")
 
-            output = next((thenOps[i] for i in range(len(conditions)) if
-                           conditions[i].value), elseOp)
-            output.name = "result"
-            output.value = None
-            return output
+            # The output data type is the data type of the last then operation that has a true
+            # condition, defaulting to the data type of the else operation if no condition is true
+            output_data_type = next((thenOps[i].data_type for i in range(len(conditions)) if
+                           conditions[i].value), elseOp.data_type)
+
+            return Scalar(
+                name="result",
+                value=None,
+                data_type=output_data_type,
+            )
 
         elif condition_type is DataComponent:
             if not all(cond.data_type == Boolean for cond in conditions):
@@ -353,10 +398,14 @@ class Case(Operator):
                 for thenOp in ops
             )
 
+            data_type = ops[0].data_type
+            for op in ops[1:]:
+                data_type = binary_implicit_promotion(data_type, op.data_type)
+
             return DataComponent(
                 name="result",
                 data=None,
-                data_type=binary_implicit_promotion(*[thenOp.data_type for thenOp in ops]),
+                data_type=data_type,
                 role=Role.MEASURE,
                 nullable=nullable,
             )
@@ -378,7 +427,7 @@ class Case(Operator):
 
             return Dataset(
                 name="result",
-                components=copy(conditions[0].components),
+                components=copy(next(operand for operand in ops if isinstance(operand, Dataset)).components),
                 data=None
             )
 
