@@ -103,7 +103,16 @@ from vtlengine.Operators.Time import (
     Period_indicator,
     Stock_to_flow,
     Fill_time_series,
-    Time_Shift, Year, Month, Day_of_Month, Day_of_Year, Day_to_Year, Day_to_Month, Year_to_Day, Month_to_Day, Date_Diff,
+    Time_Shift,
+    Year,
+    Month,
+    Day_of_Month,
+    Day_of_Year,
+    Day_to_Year,
+    Day_to_Month,
+    Year_to_Day,
+    Month_to_Day,
+    Date_Diff,
     Date_Add,
 )
 
@@ -191,7 +200,17 @@ from vtlengine.AST.Grammar.tokens import (
     LEFT_JOIN,
     FULL_JOIN,
     CROSS_JOIN,
-    RANDOM, DAYOFYEAR, DAYOFMONTH, MONTH, YEAR, DAYTOYEAR, DAYTOMONTH, YEARTODAY, MONTHTODAY, DATE_DIFF, DATE_ADD,
+    RANDOM,
+    DAYOFYEAR,
+    DAYOFMONTH,
+    MONTH,
+    YEAR,
+    DAYTOYEAR,
+    DAYTOMONTH,
+    YEARTODAY,
+    MONTHTODAY,
+    DATE_DIFF,
+    DATE_ADD,
 )
 
 BINARY_MAPPING = {

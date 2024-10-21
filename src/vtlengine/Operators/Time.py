@@ -825,9 +825,8 @@ class Year(Unary):
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
-        #TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
         pass
-
 
     @classmethod
     def py_op(cls, x: Any) -> Any:
