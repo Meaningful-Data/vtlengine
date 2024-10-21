@@ -207,7 +207,11 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
 
 
 class Nvl(Binary):
@@ -287,7 +291,11 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
 
 
 class Case(Operator):

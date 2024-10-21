@@ -147,6 +147,9 @@ class Unary(Time):
 class Binary(Time):
     pass
 
+class Parameterized(Time):
+    pass
+
 
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
@@ -810,7 +813,7 @@ class Date_Diff(Binary):
         pass
 
 
-class Date_Add(Binary):
+class Date_Add(Parametrized):
     @classmethod
     def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
         # TODO: Implement this method (or adapt Binary's validate method to work with this operator)

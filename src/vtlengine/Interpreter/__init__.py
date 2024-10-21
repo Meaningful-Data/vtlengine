@@ -1334,9 +1334,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.rule_data is None:
                 return None
             filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
+            nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
                 self.rule_data["bool_var"] = True
+                self.rule_data.loc[nan_indexes, "bool_var"] = None
                 return self.rule_data
             non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
 
@@ -1351,6 +1353,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.rule_data, how="left", on=original_data.columns.tolist()
             )
             original_data.loc[non_filtering_indexes, "bool_var"] = True
+            original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
