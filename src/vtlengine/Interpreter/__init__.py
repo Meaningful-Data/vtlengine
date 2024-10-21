@@ -73,6 +73,7 @@ from vtlengine.AST.Grammar.tokens import (
     EQ,
     CURRENT_DATE,
     CALC,
+    COUNT,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import (
@@ -520,6 +521,7 @@ class InterpreterAnalyzer(ASTTemplate):
         return having
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
+        component_name = None
         if self.is_from_regular_aggregation:
             if self.regular_aggregation_dataset is None:
                 raise SemanticError("1-1-6-10")
@@ -527,6 +529,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand = self.regular_aggregation_dataset
             else:
                 operand_comp = self.visit(node.operand)
+                component_name = operand_comp.name
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
@@ -598,6 +601,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ordering=ordering,
             window=node.window,
             params=params,
+            component_name=component_name,
         )
         if not self.is_from_regular_aggregation:
             return result
@@ -610,7 +614,10 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
         # # Extracting the component we need (only measure)
-        measure_name = result.get_measures_names()[0]
+        if component_name is None or node.op == COUNT:
+            measure_name = result.get_measures_names()[0]
+        else:
+            measure_name = component_name
         # Joining the result with the original dataset
         if self.only_semantic:
             data = None

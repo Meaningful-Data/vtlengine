@@ -20,12 +20,6 @@
           "role": "Identifier",
           "type": "Integer",
           "nullable": false
-        },
-        {
-          "name": "Me_1",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
         }
       ]
     }

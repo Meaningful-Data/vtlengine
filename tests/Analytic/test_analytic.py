@@ -1027,11 +1027,13 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         Status: OK
         Expression: DS_r := DS_1[calc Me_2 := rank(over(order by Id_1))];
                     DS_1 Dataset
-        Description: Error on rank operation calculation (see issue #34)
+        Description: Error with no measures inside Analytic operator (see issue #34, on comments)
         """
 
         code = "2-1-1-28"
         number_inputs = 1
-        references_names = ["1"]
+        message = "1-1-1-8"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
