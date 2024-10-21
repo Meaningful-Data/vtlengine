@@ -407,7 +407,7 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#periodAtomComponent.
-    def visitPeriodAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
+    def visitTimeUnaryAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#fillTimeAtomComponent.

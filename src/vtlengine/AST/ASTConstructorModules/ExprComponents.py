@@ -565,7 +565,7 @@ class ExprComp(VtlVisitor):
 
     def visitTimeFunctionsComponents(self, ctx: Parser.TimeFunctionsComponentsContext):
         if isinstance(ctx, Parser.PeriodAtomComponentContext):
-            return self.visitPeriodAtomComponent(ctx)
+            return self.visitTimeUnaryAtomComponent(ctx)
         elif isinstance(ctx, Parser.FillTimeAtomComponentContext):
             return self.visitFillTimeAtomComponent(ctx)
         elif isinstance(ctx, Parser.FlowAtomComponentContext):
@@ -576,10 +576,30 @@ class ExprComp(VtlVisitor):
             return self.visitTimeAggAtomComponent(ctx)
         elif isinstance(ctx, Parser.CurrentDateAtomComponentContext):
             return self.visitCurrentDateAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DateDiffAtomComponentContext):
+            return self.visitDateAddAtomComponentContext(ctx)
+        elif isinstance(ctx, Parser.DateAddAtomComponentContext):
+            return self.visitDateAddAtomComponentContext(ctx)
+        elif isinstance(ctx, Parser.YearAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.MonthAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DayOfMonthAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DayOfYearAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DayToYearAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DayToMonthAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.YearToDayAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
+        elif isinstance(ctx, Parser.MonthToDayAtomComponentContext):
+            return self.visitTimeUnaryAtomComponent(ctx)
         else:
             raise NotImplementedError
 
-    def visitPeriodAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
+    def visitTimeUnaryAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
         """
         periodExpr: PERIOD_INDICATOR '(' expr? ')' ;
         """
@@ -676,6 +696,36 @@ class ExprComp(VtlVisitor):
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
         c = list(ctx.getChildren())[0]
         return MulOp(op=c.getSymbol().text, children=[])
+
+    def visitDateDiffAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
+        """
+        """
+        ctx_list = list(ctx.getChildren())
+        c = ctx_list[0]
+
+        op = c.getSymbol().text
+        left_node = self.visitExprComponent(ctx_list[2])
+        right_node = Constant("INTEGER_CONSTANT", int(ctx_list[4].getSymbol().text))
+
+        return BinOp(left=left_node, op=op, right=right_node)
+
+    def visitDateAddAtomComponentContext(self, ctx: Parser.DateAddAtomComponentContext):
+        """
+        """
+        ctx_list = list(ctx.getChildren())
+        c = ctx_list[0]
+
+        op = c.getSymbol().text
+        children_node = [self.visitExprComponent(ctx_list[2])]
+
+        param_constant_node = []
+
+        if len(ctx_list) > 4:
+            param_constant_node = [self.visitExprComponent(ctx_list[4])]
+            if len(ctx_list) > 6:
+                param_constant_node.append(self.visitExprComponent(ctx_list[6]))
+
+        return ParamOp(op=op, children=children_node, params=param_constant_node)
 
     """
                             -----------------------------------

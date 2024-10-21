@@ -233,16 +233,16 @@ timeOperatorsComponent:
     | TIMESHIFT LPAREN exprComponent COMMA signedInteger RPAREN                                                                                 # timeShiftAtomComponent
     | TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))? (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent
     | CURRENT_DATE LPAREN RPAREN                                                                                                               # currentDateAtomComponent
-    | DATEDIFF LPAREN dateFrom=expr COMMA dateTo=expr RPAREN                    # dateDiffAtomComponent
-    | DATEADD LPAREN op=expr COMMA shiftNumber=expr COMMA periodInd=expr RPAREN # dateAddAtomComponent
-    | YEAR_OP LPAREN expr RPAREN                                                # yearAtomComponent
-    | MONTH_OP LPAREN expr RPAREN                                               # monthAtomComponent
-    | DAYOFMONTH LPAREN expr RPAREN                                             # dayOfMonthAtomComponent
-    | DAYOFYEAR LPAREN expr RPAREN                                              # datOfYearAtomComponent
-    | DAYTOYEAR LPAREN expr RPAREN                                              # dayToYearAtomComponent
-    | DAYTOMONTH LPAREN expr RPAREN                                             # dayToMonthAtomComponent
-    | YEARTODAY LPAREN expr RPAREN                                              # yearTodayAtomComponent
-    | MONTHTODAY LPAREN expr RPAREN                                             # monthTodayAtomComponent
+    | DATEDIFF LPAREN dateFrom=exprComponent COMMA dateTo=exprComponent RPAREN                    # dateDiffAtomComponent
+    | DATEADD LPAREN op=exprComponent COMMA shiftNumber=exprComponent COMMA periodInd=exprComponent RPAREN # dateAddAtomComponent
+    | YEAR_OP LPAREN exprComponent RPAREN                                                # yearAtomComponent
+    | MONTH_OP LPAREN exprComponent RPAREN                                               # monthAtomComponent
+    | DAYOFMONTH LPAREN exprComponent RPAREN                                             # dayOfMonthAtomComponent
+    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # datOfYearAtomComponent
+    | DAYTOYEAR LPAREN exprComponent RPAREN                                              # dayToYearAtomComponent
+    | DAYTOMONTH LPAREN exprComponent RPAREN                                             # dayToMonthAtomComponent
+    | YEARTODAY LPAREN exprComponent RPAREN                                              # yearTodayAtomComponent
+    | MONTHTODAY LPAREN exprComponent RPAREN                                             # monthTodayAtomComponent
 ;
 
 setOperators:

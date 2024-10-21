@@ -578,26 +578,26 @@ def serializedATN():
         buf.write("\3\2\2\2\u03ee\u03ef\3\2\2\2\u03ef\u03f0\3\2\2\2\u03f0")
         buf.write("\u042d\7\4\2\2\u03f1\u03f2\7\37\2\2\u03f2\u03f3\7\3\2")
         buf.write("\2\u03f3\u042d\7\4\2\2\u03f4\u03f5\7 \2\2\u03f5\u03f6")
-        buf.write("\7\3\2\2\u03f6\u03f7\5\6\4\2\u03f7\u03f8\7\23\2\2\u03f8")
-        buf.write("\u03f9\5\6\4\2\u03f9\u03fa\7\4\2\2\u03fa\u042d\3\2\2\2")
+        buf.write("\7\3\2\2\u03f6\u03f7\5\b\5\2\u03f7\u03f8\7\23\2\2\u03f8")
+        buf.write("\u03f9\5\b\5\2\u03f9\u03fa\7\4\2\2\u03fa\u042d\3\2\2\2")
         buf.write("\u03fb\u03fc\7!\2\2\u03fc\u03fd\7\3\2\2\u03fd\u03fe\5")
-        buf.write("\6\4\2\u03fe\u03ff\7\23\2\2\u03ff\u0400\5\6\4\2\u0400")
-        buf.write("\u0401\7\23\2\2\u0401\u0402\5\6\4\2\u0402\u0403\7\4\2")
+        buf.write("\b\5\2\u03fe\u03ff\7\23\2\2\u03ff\u0400\5\b\5\2\u0400")
+        buf.write("\u0401\7\23\2\2\u0401\u0402\5\b\5\2\u0402\u0403\7\4\2")
         buf.write("\2\u0403\u042d\3\2\2\2\u0404\u0405\7\"\2\2\u0405\u0406")
-        buf.write("\7\3\2\2\u0406\u0407\5\6\4\2\u0407\u0408\7\4\2\2\u0408")
+        buf.write("\7\3\2\2\u0406\u0407\5\b\5\2\u0407\u0408\7\4\2\2\u0408")
         buf.write("\u042d\3\2\2\2\u0409\u040a\7#\2\2\u040a\u040b\7\3\2\2")
-        buf.write("\u040b\u040c\5\6\4\2\u040c\u040d\7\4\2\2\u040d\u042d\3")
+        buf.write("\u040b\u040c\5\b\5\2\u040c\u040d\7\4\2\2\u040d\u042d\3")
         buf.write("\2\2\2\u040e\u040f\7$\2\2\u040f\u0410\7\3\2\2\u0410\u0411")
-        buf.write("\5\6\4\2\u0411\u0412\7\4\2\2\u0412\u042d\3\2\2\2\u0413")
-        buf.write("\u0414\7%\2\2\u0414\u0415\7\3\2\2\u0415\u0416\5\6\4\2")
+        buf.write("\5\b\5\2\u0411\u0412\7\4\2\2\u0412\u042d\3\2\2\2\u0413")
+        buf.write("\u0414\7%\2\2\u0414\u0415\7\3\2\2\u0415\u0416\5\b\5\2")
         buf.write("\u0416\u0417\7\4\2\2\u0417\u042d\3\2\2\2\u0418\u0419\7")
-        buf.write("&\2\2\u0419\u041a\7\3\2\2\u041a\u041b\5\6\4\2\u041b\u041c")
+        buf.write("&\2\2\u0419\u041a\7\3\2\2\u041a\u041b\5\b\5\2\u041b\u041c")
         buf.write("\7\4\2\2\u041c\u042d\3\2\2\2\u041d\u041e\7\'\2\2\u041e")
-        buf.write("\u041f\7\3\2\2\u041f\u0420\5\6\4\2\u0420\u0421\7\4\2\2")
+        buf.write("\u041f\7\3\2\2\u041f\u0420\5\b\5\2\u0420\u0421\7\4\2\2")
         buf.write("\u0421\u042d\3\2\2\2\u0422\u0423\7(\2\2\u0423\u0424\7")
-        buf.write("\3\2\2\u0424\u0425\5\6\4\2\u0425\u0426\7\4\2\2\u0426\u042d")
+        buf.write("\3\2\2\u0424\u0425\5\b\5\2\u0425\u0426\7\4\2\2\u0426\u042d")
         buf.write("\3\2\2\2\u0427\u0428\7)\2\2\u0428\u0429\7\3\2\2\u0429")
-        buf.write("\u042a\5\6\4\2\u042a\u042b\7\4\2\2\u042b\u042d\3\2\2\2")
+        buf.write("\u042a\5\b\5\2\u042a\u042b\7\4\2\2\u042b\u042d\3\2\2\2")
         buf.write("\u042c\u03c6\3\2\2\2\u042c\u03cc\3\2\2\2\u042c\u03d5\3")
         buf.write("\2\2\2\u042c\u03da\3\2\2\2\u042c\u03e1\3\2\2\2\u042c\u03f1")
         buf.write("\3\2\2\2\u042c\u03f4\3\2\2\2\u042c\u03fb\3\2\2\2\u042c")
@@ -1528,7 +1528,7 @@ class Parser (Parser):
 
 
 
-    def start(self) -> StartContext:
+    def start(self):
 
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
@@ -6977,7 +6977,7 @@ class Parser (Parser):
                 listener.exitDayToMonthAtom(self)
 
 
-    class DatOfYearAtomContext(TimeOperatorsContext):
+    class DayOfYearAtomContext(TimeOperatorsContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsContext
             super().__init__(parser)
@@ -7550,7 +7550,7 @@ class Parser (Parser):
                 self.match(Parser.RPAREN)
                 pass
             elif token in [Parser.DAYOFYEAR]:
-                localctx = Parser.DatOfYearAtomContext(self, localctx)
+                localctx = Parser.DayOfYearAtomContext(self, localctx)
                 self.enterOuterAlt(localctx, 12)
                 self.state = 937
                 self.match(Parser.DAYOFYEAR)
@@ -7693,7 +7693,7 @@ class Parser (Parser):
                 listener.exitTimeShiftAtomComponent(self)
 
 
-    class MonthTodayAtomComponentContext(TimeOperatorsComponentContext):
+    class MonthToDayAtomComponentContext(TimeOperatorsComponentContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
@@ -7703,8 +7703,8 @@ class Parser (Parser):
             return self.getToken(Parser.MONTHTODAY, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7772,8 +7772,8 @@ class Parser (Parser):
             return self.getToken(Parser.DAYTOMONTH, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7791,9 +7791,9 @@ class Parser (Parser):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
-            self.op = None # ExprContext
-            self.shiftNumber = None # ExprContext
-            self.periodInd = None # ExprContext
+            self.op = None # ExprComponentContext
+            self.shiftNumber = None # ExprComponentContext
+            self.periodInd = None # ExprComponentContext
             self.copyFrom(ctx)
 
         def DATEADD(self):
@@ -7807,11 +7807,11 @@ class Parser (Parser):
                 return self.getToken(Parser.COMMA, i)
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+        def exprComponent(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(Parser.ExprContext)
+                return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext, i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -7823,7 +7823,7 @@ class Parser (Parser):
                 listener.exitDateAddAtomComponent(self)
 
 
-    class YearTodayAtomComponentContext(TimeOperatorsComponentContext):
+    class YearToDayAtomComponentContext(TimeOperatorsComponentContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
@@ -7833,8 +7833,8 @@ class Parser (Parser):
             return self.getToken(Parser.YEARTODAY, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7858,8 +7858,8 @@ class Parser (Parser):
             return self.getToken(Parser.DAYOFMONTH, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7883,8 +7883,8 @@ class Parser (Parser):
             return self.getToken(Parser.MONTH_OP, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7929,7 +7929,7 @@ class Parser (Parser):
                 listener.exitFillTimeAtomComponent(self)
 
 
-    class DatOfYearAtomComponentContext(TimeOperatorsComponentContext):
+    class DayOfYearAtomComponentContext(TimeOperatorsComponentContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
@@ -7939,8 +7939,8 @@ class Parser (Parser):
             return self.getToken(Parser.DAYOFYEAR, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -7964,8 +7964,8 @@ class Parser (Parser):
             return self.getToken(Parser.DAYTOYEAR, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -8033,8 +8033,8 @@ class Parser (Parser):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a VtlParser.TimeOperatorsComponentContext
             super().__init__(parser)
-            self.dateFrom = None # ExprContext
-            self.dateTo = None # ExprContext
+            self.dateFrom = None # ExprComponentContext
+            self.dateTo = None # ExprComponentContext
             self.copyFrom(ctx)
 
         def DATEDIFF(self):
@@ -8045,11 +8045,11 @@ class Parser (Parser):
             return self.getToken(Parser.COMMA, 0)
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
-        def expr(self, i:int=None):
+        def exprComponent(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(Parser.ExprContext)
+                return self.getTypedRuleContexts(Parser.ExprComponentContext)
             else:
-                return self.getTypedRuleContext(Parser.ExprContext, i)
+                return self.getTypedRuleContext(Parser.ExprComponentContext, i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -8071,8 +8071,8 @@ class Parser (Parser):
             return self.getToken(Parser.YEAR_OP, 0)
         def LPAREN(self):
             return self.getToken(Parser.LPAREN, 0)
-        def expr(self):
-            return self.getTypedRuleContext(Parser.ExprContext, 0)
+        def exprComponent(self):
+            return self.getTypedRuleContext(Parser.ExprComponentContext, 0)
 
         def RPAREN(self):
             return self.getToken(Parser.RPAREN, 0)
@@ -8246,11 +8246,11 @@ class Parser (Parser):
                 self.state = 1011
                 self.match(Parser.LPAREN)
                 self.state = 1012
-                localctx.dateFrom = self.expr(0)
+                localctx.dateFrom = self.exprComponent(0)
                 self.state = 1013
                 self.match(Parser.COMMA)
                 self.state = 1014
-                localctx.dateTo = self.expr(0)
+                localctx.dateTo = self.exprComponent(0)
                 self.state = 1015
                 self.match(Parser.RPAREN)
                 pass
@@ -8262,15 +8262,15 @@ class Parser (Parser):
                 self.state = 1018
                 self.match(Parser.LPAREN)
                 self.state = 1019
-                localctx.op = self.expr(0)
+                localctx.op = self.exprComponent(0)
                 self.state = 1020
                 self.match(Parser.COMMA)
                 self.state = 1021
-                localctx.shiftNumber = self.expr(0)
+                localctx.shiftNumber = self.exprComponent(0)
                 self.state = 1022
                 self.match(Parser.COMMA)
                 self.state = 1023
-                localctx.periodInd = self.expr(0)
+                localctx.periodInd = self.exprComponent(0)
                 self.state = 1024
                 self.match(Parser.RPAREN)
                 pass
@@ -8282,7 +8282,7 @@ class Parser (Parser):
                 self.state = 1027
                 self.match(Parser.LPAREN)
                 self.state = 1028
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1029
                 self.match(Parser.RPAREN)
                 pass
@@ -8294,7 +8294,7 @@ class Parser (Parser):
                 self.state = 1032
                 self.match(Parser.LPAREN)
                 self.state = 1033
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1034
                 self.match(Parser.RPAREN)
                 pass
@@ -8306,19 +8306,19 @@ class Parser (Parser):
                 self.state = 1037
                 self.match(Parser.LPAREN)
                 self.state = 1038
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1039
                 self.match(Parser.RPAREN)
                 pass
             elif token in [Parser.DAYOFYEAR]:
-                localctx = Parser.DatOfYearAtomComponentContext(self, localctx)
+                localctx = Parser.DayOfYearAtomComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 12)
                 self.state = 1041
                 self.match(Parser.DAYOFYEAR)
                 self.state = 1042
                 self.match(Parser.LPAREN)
                 self.state = 1043
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1044
                 self.match(Parser.RPAREN)
                 pass
@@ -8330,7 +8330,7 @@ class Parser (Parser):
                 self.state = 1047
                 self.match(Parser.LPAREN)
                 self.state = 1048
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1049
                 self.match(Parser.RPAREN)
                 pass
@@ -8342,31 +8342,31 @@ class Parser (Parser):
                 self.state = 1052
                 self.match(Parser.LPAREN)
                 self.state = 1053
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1054
                 self.match(Parser.RPAREN)
                 pass
             elif token in [Parser.YEARTODAY]:
-                localctx = Parser.YearTodayAtomComponentContext(self, localctx)
+                localctx = Parser.YearToDayAtomComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 15)
                 self.state = 1056
                 self.match(Parser.YEARTODAY)
                 self.state = 1057
                 self.match(Parser.LPAREN)
                 self.state = 1058
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1059
                 self.match(Parser.RPAREN)
                 pass
             elif token in [Parser.MONTHTODAY]:
-                localctx = Parser.MonthTodayAtomComponentContext(self, localctx)
+                localctx = Parser.MonthToDayAtomComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 16)
                 self.state = 1061
                 self.match(Parser.MONTHTODAY)
                 self.state = 1062
                 self.match(Parser.LPAREN)
                 self.state = 1063
-                self.expr(0)
+                self.exprComponent(0)
                 self.state = 1064
                 self.match(Parser.RPAREN)
                 pass

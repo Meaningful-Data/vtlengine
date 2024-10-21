@@ -24,6 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     SQRT,
     TRUNC,
+    RANDOM,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -230,6 +231,19 @@ class Power(Binary):
         if pd.isnull(param):
             return None
         return x**param
+
+
+class Random(Binary):
+    """
+    """
+
+    op = RANDOM
+    return_type = Number
+
+    @classmethod
+    def py_op(cls, seed: Any, index: Any) -> Any:
+        # Dataset.random_seed = seed
+        return Dataset(name='result', components={}, data=pd.DataFrame())
 
 
 class Parameterized(Unary):

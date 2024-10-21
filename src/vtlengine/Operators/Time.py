@@ -198,6 +198,17 @@ class Period_indicator(Unary):
         return result
 
 
+class Parametrized(Time):
+
+    @classmethod
+    def validate(cls, operand: Any, param: Any) -> Any:
+        pass
+
+    @classmethod
+    def evaluate(cls, operand: Any, param: Any) -> Any:
+        pass
+
+
 class Flow_to_stock(Unary):
 
     @classmethod
@@ -785,3 +796,123 @@ class Current_Date(Time):
         result = cls.validate()
         result.value = date.today().isoformat()
         return result
+
+
+class Date_Diff(Binary):
+
+    @classmethod
+    def evaluate(cls, Date1: Any, Date2: Any) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, Date1: Any, Date2: Any) -> Any:
+        pass
+
+
+class Date_Add(Binary):
+    @classmethod
+    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
+        pass
+
+
+class Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        #TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Year_to_Day(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month_to_Day(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass

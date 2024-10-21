@@ -1,5 +1,6 @@
 import re
 from copy import copy
+from typing import Any
 
 from antlr4.tree.Tree import TerminalNodeImpl
 
@@ -776,7 +777,8 @@ class Expr(VtlVisitor):
 
     def visitTimeFunctions(self, ctx: Parser.TimeFunctionsContext):
         if isinstance(ctx, Parser.PeriodAtomContext):
-            return self.visitPeriodAtom(ctx)
+            # return self.visitPeriodAtom(ctx)
+            return self.visitTimeUnaryAtom(ctx)
         elif isinstance(ctx, Parser.FillTimeAtomContext):
             return self.visitFillTimeAtom(ctx)
         elif isinstance(ctx, Parser.FlowAtomContext):
@@ -787,13 +789,30 @@ class Expr(VtlVisitor):
             return self.visitTimeAggAtom(ctx)
         elif isinstance(ctx, Parser.CurrentDateAtomContext):
             return self.visitCurrentDateAtom(ctx)
+        elif isinstance(ctx, Parser.DateDiffAtomContext):
+            return self.visitTimeDiffAtom(ctx)
+        elif isinstance(ctx, Parser.DateAddAtomContext):
+            return self.visitTimeAddAtom(ctx)
+        elif isinstance(ctx, Parser.YearAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.MonthAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.DayOfMonthAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.DayOfYearAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.DayToYearAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.DayToMonthAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.YearTodayAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
+        elif isinstance(ctx, Parser.MonthTodayAtomContext):
+            return self.visitTimeUnaryAtom(ctx)
         else:
             raise NotImplementedError
 
-    def visitPeriodAtom(self, ctx: Parser.PeriodAtomContext):
-        """
-        periodExpr: PERIOD_INDICATOR '(' expr? ')' ;
-        """
+    def visitTimeUnaryAtom(self, ctx: Any):
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -809,6 +828,26 @@ class Expr(VtlVisitor):
             raise NotImplementedError
 
         return UnaryOp(op=op, operand=operand_node[0])
+
+    # def visitPeriodAtom(self, ctx: Parser.PeriodAtomContext):
+    #     """
+    #     periodExpr: PERIOD_INDICATOR '(' expr? ')' ;
+    #     """
+    #     ctx_list = list(ctx.getChildren())
+    #     c = ctx_list[0]
+    #
+    #     op = c.getSymbol().text
+    #     operand_node = [
+    #         self.visitExpr(operand)
+    #         for operand in ctx_list
+    #         if isinstance(operand, Parser.ExprContext)
+    #     ]
+    #
+    #     if len(operand_node) == 0:
+    #         # AST_ASTCONSTRUCTOR.15
+    #         raise NotImplementedError
+    #
+    #     return UnaryOp(op=op, operand=operand_node[0])
 
     def visitTimeShiftAtom(self, ctx: Parser.TimeShiftAtomContext):
         """
@@ -892,6 +931,37 @@ class Expr(VtlVisitor):
     def visitCurrentDateAtom(self, ctx: Parser.CurrentDateAtomContext):
         c = list(ctx.getChildren())[0]
         return MulOp(op=c.getSymbol().text, children=[])
+
+    def visitTimeDiffAtom(self, ctx: Parser.TimeShiftAtomContext):
+        """
+        """
+        ctx_list = list(ctx.getChildren())
+        c = ctx_list[0]
+
+        op = c.getSymbol().text
+        left_node = self.visitExpr(ctx_list[2])
+        right_node = self.visitExpr(ctx_list[4])
+
+        return BinOp(left=left_node, op=op, right=right_node)
+
+    def visitTimeAddAtom(self, ctx: Parser.TimeShiftAtomContext):
+        """
+        """
+
+        ctx_list = list(ctx.getChildren())
+        c = ctx_list[0]
+
+        op = c.getSymbol().text
+        children_node = [self.visitExpr(ctx_list[2])]
+
+        param_constant_node = []
+
+        if len(ctx_list) > 4:
+            param_constant_node = [self.visitExpr(ctx_list[4])]
+            if len(ctx_list) > 6:
+                param_constant_node.append(self.visitExpr(ctx_list[6]))
+
+        return ParamOp(op=op, children=children_node, params=param_constant_node)
 
     """
                             -----------------------------------
