@@ -133,6 +133,11 @@ class Component:
     def rename(self, new_name: str) -> None:
         self.name = new_name
 
+    def __str__(self) -> str:
+        return self.to_json()
+
+    __repr__ = __str__
+
 
 @dataclass
 class Dataset:

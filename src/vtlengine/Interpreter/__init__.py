@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import vtlengine.AST as AST
+import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 import pandas as pd
 from vtlengine.DataTypes import (
@@ -197,6 +198,7 @@ class InterpreterAnalyzer(ASTTemplate):
         results = {}
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
+                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
             if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
                 if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
@@ -212,6 +214,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            # Removing output dataset
+            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result

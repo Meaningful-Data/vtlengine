@@ -38,9 +38,6 @@ class ScalarType:
     def __str__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}"
-
     def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
             raise Exception("Not use strictly_same_class")
@@ -96,8 +93,6 @@ class ScalarType:
     def dtype(cls) -> str:
         class_name: str = cls.__name__.__str__()
         return DTYPE_MAPPING[class_name]
-
-    # __str__ = __repr__
 
 
 class String(ScalarType):
