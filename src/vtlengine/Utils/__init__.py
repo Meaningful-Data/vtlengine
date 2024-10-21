@@ -83,7 +83,8 @@ from vtlengine.Operators.Numeric import (
     SquareRoot,
     Trunc,
     UnMinus,
-    UnPlus, Random,
+    UnPlus,
+    Random,
 )
 from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure
 from vtlengine.Operators.Set import Intersection, Setdiff, Symdiff, Union

@@ -234,8 +234,7 @@ class Power(Binary):
 
 
 class Random(Binary):
-    """
-    """
+    """ """
 
     op = RANDOM
     return_type = Number
@@ -243,7 +242,7 @@ class Random(Binary):
     @classmethod
     def py_op(cls, seed: Any, index: Any) -> Any:
         # Dataset.random_seed = seed
-        return Dataset(name='result', components={}, data=pd.DataFrame())
+        return Dataset(name="result", components={}, data=pd.DataFrame())
 
 
 class Parameterized(Unary):

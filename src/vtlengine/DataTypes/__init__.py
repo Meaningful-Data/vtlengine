@@ -36,7 +36,9 @@ class ScalarType:
         return self.__class__.__name__
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}"
+        return SCALAR_TYPES_CLASS_REVERSE[self.__class__]
+
+    __repr__ = __str__
 
     def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
