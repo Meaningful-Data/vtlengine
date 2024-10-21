@@ -581,7 +581,7 @@ def test_non_mandatory_fill_at():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O']})
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -605,7 +605,16 @@ def test_non_mandatory_fill_at():
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1", "At_1"], index=[0, 1, 2], data=pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O'], "At_1": [None, None, None]})
+                columns=["Id_1", "Id_2", "Me_1", "At_1"],
+                index=[0, 1, 2],
+                data=pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 2],
+                        "Id_2": ["A", "B", "A"],
+                        "Me_1": ["N", "N", "O"],
+                        "At_1": [None, None, None],
+                    }
+                ),
             ),
         )
     }
@@ -630,7 +639,7 @@ def test_non_mandatory_fill_me():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "At_1": ['N', 'N', 'O']})
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -654,7 +663,16 @@ def test_non_mandatory_fill_me():
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1", "At_1"], index=[0, 1, 2], data=pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": [None, None, None], "At_1": ['N', 'N', 'O']})
+                columns=["Id_1", "Id_2", "Me_1", "At_1"],
+                index=[0, 1, 2],
+                data=pd.DataFrame(
+                    {
+                        "Id_1": [1, 1, 2],
+                        "Id_2": ["A", "B", "A"],
+                        "Me_1": [None, None, None],
+                        "At_1": ["N", "N", "O"],
+                    }
+                ),
             ),
         )
     }
@@ -681,7 +699,7 @@ def test_mandatory_at_error():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "Me_1": ['N', 'N', 'O']})
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -714,7 +732,7 @@ def test_mandatory_me_error():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ['A', 'B', 'A'], "At_1": ['N', 'N', 'O']})
+    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 

@@ -62,6 +62,10 @@ class VtlVisitor(ParseTreeVisitor):
     def visitIfExpr(self, ctx: Parser.IfExprContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by Parser#caseExpr.
+    def visitCaseExpr(self, ctx: Parser.CaseExprContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by Parser#clauseExpr.
     def visitClauseExpr(self, ctx: Parser.ClauseExprContext):
         return self.visitChildren(ctx)
@@ -88,6 +92,10 @@ class VtlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by Parser#ifExprComp.
     def visitIfExprComp(self, ctx: Parser.IfExprCompContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by Parser#caseExprComp.
+    def visitCaseExprComp(self, ctx: Parser.CaseExprCompContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#comparisonExprComp.
@@ -399,7 +407,7 @@ class VtlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#periodAtomComponent.
-    def visitPeriodAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
+    def visitTimeUnaryAtomComponent(self, ctx: Parser.PeriodAtomComponentContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by Parser#fillTimeAtomComponent.

@@ -1,2 +1,2 @@
-DS_r := securities [calc carryingAmount := if accountingClassification = null
+DS_r := securities [calc carryingAmount := if isnull(accountingClassification)
                                         then amortisedCost else marketValue];

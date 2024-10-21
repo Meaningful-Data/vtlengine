@@ -1,3 +1,3 @@
-DS_r2 := count(DS_1 group by month);
-DS_r1 := DS_1[aggr Me_3 := count (ME1) , Me_4 := count (ME2) group by month];
-DS_r3 := max(DS_1 group by month);
+DS_r2 := count(DS_1 group by 'month');
+DS_r1 := DS_1[aggr Me_3 := count (ME1) , Me_4 := count (ME2) group by 'month'];
+DS_r3 := max(DS_1 group by 'month');

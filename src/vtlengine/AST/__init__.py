@@ -344,6 +344,25 @@ class If(AST):
     elseOp: AST
 
 
+class CaseObj:
+    condition: AST
+    thenOp: AST
+
+    def __init__(self, condition: AST, thenOp: AST):
+        self.condition = condition
+        self.thenOp = thenOp
+
+
+@dataclass
+class Case(AST):
+    """
+    Case: (condition, thenOp, elseOp)
+    """
+
+    cases: List[CaseObj]
+    elseOp: AST
+
+
 @dataclass
 class Validation(AST):
     """
