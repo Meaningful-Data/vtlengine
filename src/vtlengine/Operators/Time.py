@@ -148,6 +148,10 @@ class Binary(Time):
     pass
 
 
+class Parameterized(Time):
+    pass
+
+
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
 
@@ -196,6 +200,17 @@ class Period_indicator(Unary):
         period_series: Any = result.data[cls.time_id].map(cls._get_period)  # type: ignore[index]
         result.data["duration_var"] = period_series
         return result
+
+
+class Parametrized(Time):
+
+    @classmethod
+    def validate(cls, operand: Any, param: Any) -> Any:
+        pass
+
+    @classmethod
+    def evaluate(cls, operand: Any, param: Any) -> Any:
+        pass
 
 
 class Flow_to_stock(Unary):
@@ -469,7 +484,8 @@ class Fill_time_series(Binary):
                     empty_row[cls.time_id] = interval
                     empty_row[cls.measures] = None
                     group_df = group_df.append(  # type: ignore[operator]
-                        empty_row, ignore_index=True
+                        empty_row,
+                        ignore_index=True
                     )
             start_group_df = group_df.copy()
             start_group_df[cls.time_id] = start_group_df[cls.time_id].apply(
@@ -784,3 +800,122 @@ class Current_Date(Time):
         result = cls.validate()
         result.value = date.today().isoformat()
         return result
+
+
+class Date_Diff(Binary):
+
+    @classmethod
+    def evaluate(cls, Date1: Any, Date2: Any) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, Date1: Any, Date2: Any) -> Any:
+        pass
+
+
+class Date_Add(Parametrized):
+    @classmethod
+    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
+        pass
+
+
+class Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Year(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Month(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Year_to_Day(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month_to_Day(Unary):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass

@@ -440,13 +440,12 @@ class Instr(Parameterized):
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3], x[n4]), axis=1)
 
     @classmethod
-    def dataset_evaluation(  # type: ignore[override]
-        cls,
-        operand: Dataset,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ) -> Dataset:
+    def dataset_evaluation(cls,  # type: ignore[override]
+                           operand: Dataset,
+                           param1: Optional[Union[DataComponent, Scalar]],
+                           param2: Optional[Union[DataComponent, Scalar]],
+                           param3: Optional[Union[DataComponent, Scalar]],
+                           ) -> Dataset:
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         for measure_name in operand.get_measures_names():
@@ -472,13 +471,12 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def component_evaluation(  # type: ignore[override]
-        cls,
-        operand: DataComponent,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ) -> DataComponent:
+    def component_evaluation(cls,  # type: ignore[override]
+                             operand: DataComponent,
+                             param1: Optional[Union[DataComponent, Scalar]],
+                             param2: Optional[Union[DataComponent, Scalar]],
+                             param3: Optional[Union[DataComponent, Scalar]],
+                             ) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data.copy() if operand.data is not None else pd.Series()
         if (
@@ -497,13 +495,12 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def scalar_evaluation(  # type: ignore[override]
-        cls,
-        operand: Scalar,
-        param1: Optional[Scalar],
-        param2: Optional[Scalar],
-        param3: Optional[Scalar],
-    ) -> Scalar:
+    def scalar_evaluation(cls,  # type: ignore[override]
+                          operand: Scalar,
+                          param1: Optional[Scalar],
+                          param2: Optional[Scalar],
+                          param3: Optional[Scalar],
+                          ) -> Scalar:
         result = cls.validate(operand, param1, param2, param3)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
@@ -512,13 +509,12 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def evaluate(
-        cls,
-        operand: Operator.ALL_MODEL_DATA_TYPES,
-        param1: Optional[Any] = None,
-        param2: Optional[Any] = None,
-        param3: Optional[Any] = None,
-    ) -> Any:
+    def evaluate(cls,
+                 operand: Operator.ALL_MODEL_DATA_TYPES,
+                 param1: Optional[Any] = None,
+                 param2: Optional[Any] = None,
+                 param3: Optional[Any] = None,
+                 ) -> Any:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):
@@ -527,26 +523,23 @@ class Instr(Parameterized):
             return cls.scalar_evaluation(operand, param1, param2, param3)
 
     @classmethod
-    def op_func(  # type: ignore[override]
-        cls,
-        x: Any,
-        param1: Optional[Any],
-        param2: Optional[Any],
-        param3: Optional[Any],
-    ) -> Any:
+    def op_func(cls,  # type: ignore[override]
+                x: Any,
+                param1: Optional[Any],
+                param2: Optional[Any],
+                param3: Optional[Any]) -> Any:
 
         if pd.isnull(x):
             return None
         return cls.py_op(x, param1, param2, param3)
 
     @classmethod
-    def py_op(
-        cls,
-        str_value: str,
-        str_to_find: Optional[str],
-        start: Optional[int],
-        occurrence: Optional[int],
-    ) -> Any:
+    def py_op(cls,
+              str_value: str,
+              str_to_find: Optional[str],
+              start: Optional[int],
+              occurrence: Optional[int],
+              ) -> Any:
         str_value = str(str_value)
         if not pd.isnull(start):
             if isinstance(start, int) or isinstance(start, float):

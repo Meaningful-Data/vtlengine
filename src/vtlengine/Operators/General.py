@@ -122,12 +122,11 @@ class Eval(Unary):
         return df_result
 
     @classmethod
-    def validate(  # type: ignore[override]
-        cls,
-        operands: Dict[str, Dataset],
-        external_routine: ExternalRoutine,
-        output: Dataset,
-    ) -> Dataset:
+    def validate(cls,  # type: ignore[override]
+                 operands: Dict[str, Dataset],
+                 external_routine: ExternalRoutine,
+                 output: Dataset
+                 ) -> Dataset:
 
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
@@ -159,17 +158,16 @@ class Eval(Unary):
         return output
 
     @classmethod
-    def evaluate(  # type: ignore[override]
-        cls,
-        operands: Dict[str, Dataset],
-        external_routine: ExternalRoutine,
-        output: Dataset,
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 operands: Dict[str, Dataset],
+                 external_routine: ExternalRoutine,
+                 output: Dataset
+                 ) -> Dataset:
         result: Dataset = cls.validate(operands, external_routine, output)
         operands_data_dict = {ds_name: operands[ds_name].data for ds_name in operands}
         result.data = cls._execute_query(
             external_routine.query,
             external_routine.dataset_names,
-            operands_data_dict,  # type: ignore[arg-type]
+            operands_data_dict  # type: ignore[arg-type]
         )
         return result

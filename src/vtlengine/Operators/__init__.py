@@ -166,13 +166,12 @@ class Operator:
         raise Exception("Method should be implemented by inheritors")
 
 
-def _id_type_promotion_join_keys(
-    c_left: Component,
-    c_right: Component,
-    join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
-) -> None:
+def _id_type_promotion_join_keys(c_left: Component,
+                                 c_right: Component,
+                                 join_key: str,
+                                 left_data: Optional[pd.DataFrame] = None,
+                                 right_data: Optional[pd.DataFrame] = None
+                                 ) -> None:
 
     if left_data is None:
         left_data = pd.DataFrame()
@@ -237,12 +236,11 @@ class Binary(Operator):
         return pd.Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
-    def apply_operation_series_scalar(
-        cls,
-        series: Any,
-        scalar: Scalar,
-        series_left: bool,
-    ) -> Any:
+    def apply_operation_series_scalar(cls,
+                                      series: Any,
+                                      scalar: Scalar,
+                                      series_left: bool,
+                                      ) -> Any:
 
         if scalar is None:
             return pd.Series(None, index=series.index)
@@ -362,9 +360,10 @@ class Binary(Operator):
         )
 
     @classmethod
-    def component_validation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
-    ) -> DataComponent:
+    def component_validation(cls,
+                             left_operand: DataComponent,
+                             right_operand: DataComponent
+                             ) -> DataComponent:
         """
         Validates the compatibility between the types of the components and the operator
         :param left_operand: The left component
@@ -414,9 +413,10 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_set_validation(
-        cls, component: DataComponent, scalar_set: ScalarSet
-    ) -> DataComponent:
+    def component_set_validation(cls,
+                                 component: DataComponent,
+                                 scalar_set: ScalarSet
+                                 ) -> DataComponent:
 
         cls.type_validation(component.data_type, scalar_set.data_type)
         result = DataComponent(
@@ -470,9 +470,11 @@ class Binary(Operator):
         return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
     @classmethod
-    def apply_return_type_dataset(
-        cls, result_dataset: Dataset, left_operand: Any, right_operand: Any
-    ) -> None:
+    def apply_return_type_dataset(cls,
+                                  result_dataset: Dataset,
+                                  left_operand: Any,
+                                  right_operand: Any
+                                  ) -> None:
         """
         Used in dataset's validation.
         Changes the result dataset and give us his final form
@@ -596,9 +598,11 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
-    def dataset_scalar_evaluation(
-        cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
-    ) -> Dataset:
+    def dataset_scalar_evaluation(cls,
+                                  dataset: Dataset,
+                                  scalar: Scalar,
+                                  dataset_left: bool = True
+                                  ) -> Dataset:
 
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
@@ -623,9 +627,10 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_evaluation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
-    ) -> DataComponent:
+    def component_evaluation(cls,
+                             left_operand: DataComponent,
+                             right_operand: DataComponent
+                             ) -> DataComponent:
 
         result_component = cls.component_validation(left_operand, right_operand)
         left_data = cls.cast_time_types(
@@ -640,9 +645,11 @@ class Binary(Operator):
         return result_component
 
     @classmethod
-    def component_scalar_evaluation(
-        cls, component: DataComponent, scalar: Scalar, component_left: bool = True
-    ) -> DataComponent:
+    def component_scalar_evaluation(cls,
+                                    component: DataComponent,
+                                    scalar: Scalar,
+                                    component_left: bool = True
+                                    ) -> DataComponent:
 
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = cls.cast_time_types(
@@ -678,9 +685,10 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_set_evaluation(
-        cls, component: DataComponent, scalar_set: ScalarSet
-    ) -> DataComponent:
+    def component_set_evaluation(cls,
+                                 component: DataComponent,
+                                 scalar_set: ScalarSet
+                                 ) -> DataComponent:
 
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(

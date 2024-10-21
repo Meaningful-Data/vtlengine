@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, Any
+from typing import Union, Any, List
 
 import numpy as np
 
@@ -207,7 +207,11 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
 
 
 class Nvl(Binary):
@@ -287,4 +291,155 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
+
+
+class Case(Operator):
+
+    @classmethod
+    def evaluate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        result = cls.validate(conditions, thenOps, elseOp)
+
+        if isinstance(result, Scalar):
+            result.value = next((thenOps[i].value for i in range(len(conditions)) if
+                                 conditions[i].value), elseOp.value)
+
+        if isinstance(result, DataComponent):
+            result.data = pd.Series(None, index=conditions[0].data.index)
+
+            for i, condition in enumerate(conditions):
+                value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
+                result.data = np.where(condition.data, value,  # type: ignore[call-overload]
+                                       result.data)
+
+            condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
+            else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
+            result.data = np.where(condition_mask_else, else_value, result.data)
+
+        if isinstance(result, Dataset):
+            identifiers = result.get_identifiers_names()
+            columns = [col for col in result.get_components_names() if col not in identifiers]
+            result.data = copy(conditions[0].data[identifiers] if conditions[0].data is not None
+                               else pd.DataFrame(columns=identifiers))
+
+            for i in range(len(conditions)):
+                condition = conditions[i]
+                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
+                condition_mask = condition.data[bool_col]
+
+                result.data.loc[condition_mask, columns] = (
+                    thenOps[i].value if isinstance(thenOps[i], Scalar)
+                    else thenOps[i].data.loc[condition_mask, columns]
+                )
+
+            condition_mask_else = ~np.logical_or.reduce([
+                condition.data[next(x.name for x in condition.get_measures() if
+                                    x.data_type == Boolean)]
+                for condition in conditions
+            ])
+
+            result.data.loc[condition_mask_else, columns] = (
+                elseOp.value if isinstance(elseOp, Scalar)
+                else elseOp.data.loc[condition_mask_else, columns]
+            )
+
+        return result
+
+    @classmethod
+    def validate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        if len(conditions) != len(thenOps):
+            raise ValueError("Number of conditions and then operations must be the same")
+        if len(set(map(type, conditions))) > 1:
+            raise ValueError("All conditions must be of the same type")
+
+        ops = thenOps + [elseOp]
+        then_else_types = set(map(type, ops))
+        condition_type = type(conditions[0])
+
+        if condition_type is Scalar:
+            for condition in conditions:
+                if condition.data_type != Boolean:
+                    condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
+                    condition.value = bool(condition.value)
+            if list(then_else_types) != [Scalar]:
+                raise ValueError("All then and else operands must be Scalars")
+
+            # The output data type is the data type of the last then operation that has a true
+            # condition, defaulting to the data type of the else operation if no condition is true
+            output_data_type = next((thenOps[i].data_type for i in range(len(conditions)) if
+                                     conditions[i].value), elseOp.data_type)
+
+            return Scalar(
+                name="result",
+                value=None,
+                data_type=output_data_type,
+            )
+
+        elif condition_type is DataComponent:
+            if not all(cond.data_type == Boolean for cond in conditions):
+                raise SemanticError(
+                    "1-1-9-11",
+                    op=cls.op,
+                    type=SCALAR_TYPES_CLASS_REVERSE[conditions[0].data_type]
+                )
+            if Dataset in then_else_types:
+                raise ValueError("Error, then and else operands at Component level "
+                                 "cannot be Datasets")
+            if DataComponent not in then_else_types:
+                raise ValueError("Error, tat least one of then and else operands must "
+                                 "be a DataComponent")
+
+            nullable = any(
+                thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
+                for thenOp in ops
+            )
+
+            data_type = ops[0].data_type
+            for op in ops[1:]:
+                data_type = binary_implicit_promotion(data_type, op.data_type)
+
+            return DataComponent(
+                name="result",
+                data=None,
+                data_type=data_type,
+                role=Role.MEASURE,
+                nullable=nullable,
+            )
+
+        elif condition_type is Dataset:
+            for condition in conditions:
+                bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
+                if bool_count == 0:
+                    raise ValueError("Error, at least one boolean measure is "
+                                     "required in the condition")
+                if bool_count > 1:
+                    raise ValueError("Error, only one boolean measure is "
+                                     "allowed in the condition")
+            if DataComponent in then_else_types:
+                raise ValueError("Error, then and else operands at Dataset "
+                                 "level cannot be DataComponents")
+            if Dataset not in then_else_types:
+                raise ValueError("Error, at least one of then and else operands must be a Dataset")
+
+            return Dataset(
+                name="result",
+                components=copy(next(operand for operand in ops if
+                                     isinstance(operand, Dataset)).components),
+                data=None
+            )
+
+        raise ValueError("Invalid type for conditions")

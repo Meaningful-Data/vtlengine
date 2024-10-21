@@ -314,6 +314,23 @@ class ASTTemplate(NodeVisitor):
         self.visit(node.thenOp)
         self.visit(node.elseOp)
 
+    def visit_Case(self, node: AST.Case) -> Any:
+
+        """
+        Case: (conditions, thenOp, elseOp)
+
+        Basic usage:
+
+            for condition in node.conditions:
+                self.visit(condition)
+            self.visit(node.thenOp)
+            self.visit(node.elseOp)
+        """
+        for case in node.cases:
+            self.visit(case.condition)
+            self.visit(case.thenOp)
+        self.visit(node.elseOp)
+
     def visit_Validation(self, node: AST.Validation) -> Any:
         """
         Validation: (op, validation, params, inbalance, invalid)

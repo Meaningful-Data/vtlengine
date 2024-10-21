@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import vtlengine.AST as AST
-import vtlengine.Exceptions
 import vtlengine.Operators as Operators
 import pandas as pd
 from vtlengine.DataTypes import (
@@ -18,7 +17,7 @@ from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Comparison import Between, ExistIn
-from vtlengine.Operators.Conditional import If
+from vtlengine.Operators.Conditional import If, Case
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
 from vtlengine.Operators.Numeric import Round, Trunc
@@ -116,6 +115,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
     if_stack: Optional[List[str]] = None
+    case_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -197,7 +197,6 @@ class InterpreterAnalyzer(ASTTemplate):
         results = {}
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
             if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
                 if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
@@ -213,9 +212,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
-
-            # Removing output dataset
-            vtlengine.Exceptions.dataset_output = None
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
@@ -991,6 +987,21 @@ class InterpreterAnalyzer(ASTTemplate):
 
         return If.analyze(condition, thenOp, elseOp)
 
+    def visit_Case(self, node: AST.Case) -> Any:
+        conditions: List[Any] = []
+        thenOps: List[Any] = []
+
+        while node.cases:
+            case = node.cases.pop(0)
+            self.is_from_condition = True
+            conditions.append(self.visit(case.condition))
+            self.is_from_condition = False
+            if isinstance(conditions[-1], Scalar) and conditions[-1].value:
+                return self.visit(case.thenOp)
+            thenOps.append(self.visit(case.thenOp))
+
+        return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
+
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
             if "#" in node.old_name:
@@ -1323,9 +1334,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.rule_data is None:
                 return None
             filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
+            nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
                 self.rule_data["bool_var"] = True
+                self.rule_data.loc[nan_indexes, "bool_var"] = None
                 return self.rule_data
             non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
 
@@ -1340,6 +1353,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.rule_data, how="left", on=original_data.columns.tolist()
             )
             original_data.loc[non_filtering_indexes, "bool_var"] = True
+            original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
@@ -1617,8 +1631,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Getting Dataset elements
         result_components = {
-            c_name: copy(comp)
-            for c_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            comp_name: copy(comp)
+            for comp_name, comp in
+            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
@@ -1732,9 +1747,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = node.params[
-                                i
-                            ].value  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = (
+                                node.params[i].value)  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):

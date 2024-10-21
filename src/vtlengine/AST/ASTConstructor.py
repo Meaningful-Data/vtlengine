@@ -97,7 +97,6 @@ class ASTVisitor(VtlVisitor):
 
         left_node = Terminals().visitVarID(ctx_list[0])
         op_node = ctx_list[1].getSymbol().text
-
         right_node = Expr().visitExpr(ctx_list[2])
 
         assignment_node = Assignment(left_node, op_node, right_node)

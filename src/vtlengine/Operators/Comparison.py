@@ -229,11 +229,8 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
-        return (
-            None
-            if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z))
+        return None if pd.isnull(x) or pd.isnull(y) or pd.isnull(z) \
             else y <= x <= z  # type: ignore[operator]
-        )
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:

@@ -80,9 +80,11 @@ class HRComparison(Operators.Binary):
         )
 
     @classmethod
-    def evaluate(  # type: ignore[override]
-        cls, left: Dataset, right: DataComponent, hr_mode: str
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 left: Dataset,
+                 right: DataComponent,
+                 hr_mode: str
+                 ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
@@ -188,9 +190,11 @@ class HAAssignment(Operators.Binary):
         return Dataset(name=f"{left.name}", components=result_components, data=None)
 
     @classmethod
-    def evaluate(  # type: ignore[override]
-        cls, left: Dataset, right: DataComponent, hr_mode: str
-    ) -> Dataset:
+    def evaluate(cls,  # type: ignore[override]
+                 left: Dataset,
+                 right: DataComponent,
+                 hr_mode: str
+                 ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()

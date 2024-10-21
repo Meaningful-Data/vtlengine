@@ -83,7 +83,7 @@ from vtlengine.Operators.Numeric import (
     SquareRoot,
     Trunc,
     UnMinus,
-    UnPlus,
+    UnPlus, Random,
 )
 from vtlengine.Operators.RoleSetter import Attribute, Identifier, Measure
 from vtlengine.Operators.Set import Intersection, Setdiff, Symdiff, Union
@@ -104,6 +104,16 @@ from vtlengine.Operators.Time import (
     Stock_to_flow,
     Fill_time_series,
     Time_Shift,
+    Year,
+    Month,
+    Day_of_Month,
+    Day_of_Year,
+    Day_to_Year,
+    Day_to_Month,
+    Year_to_Day,
+    Month_to_Day,
+    Date_Diff,
+    Date_Add,
 )
 
 from vtlengine.AST.Grammar.tokens import (
@@ -190,6 +200,17 @@ from vtlengine.AST.Grammar.tokens import (
     LEFT_JOIN,
     FULL_JOIN,
     CROSS_JOIN,
+    RANDOM,
+    DAYOFYEAR,
+    DAYOFMONTH,
+    MONTH,
+    YEAR,
+    DAYTOYEAR,
+    DAYTOMONTH,
+    YEARTODAY,
+    MONTHTODAY,
+    DATE_DIFF,
+    DATE_ADD,
 )
 
 BINARY_MAPPING = {
@@ -218,6 +239,7 @@ BINARY_MAPPING = {
     MOD: Modulo,
     POWER: Power,
     DIV: Div,
+    RANDOM: Random,
     # General
     AS: Alias,
     # String
@@ -225,6 +247,7 @@ BINARY_MAPPING = {
     # Time
     TIMESHIFT: Time_Shift,
     CHARSET_MATCH: Match,
+    DATE_DIFF: Date_Diff,
 }
 
 UNARY_MAPPING = {
@@ -253,6 +276,14 @@ UNARY_MAPPING = {
     PERIOD_INDICATOR: Period_indicator,
     FLOW_TO_STOCK: Flow_to_stock,
     STOCK_TO_FLOW: Stock_to_flow,
+    YEAR: Year,
+    MONTH: Month,
+    DAYOFMONTH: Day_of_Month,
+    DAYOFYEAR: Day_of_Year,
+    DAYTOYEAR: Day_to_Year,
+    DAYTOMONTH: Day_to_Month,
+    YEARTODAY: Year_to_Day,
+    MONTHTODAY: Month_to_Day,
 }
 
 PARAMETRIC_MAPPING = {
@@ -264,6 +295,7 @@ PARAMETRIC_MAPPING = {
     REPLACE: Replace,
     # Time
     FILL_TIME_SERIES: Fill_time_series,
+    DATE_ADD: Date_Add,
 }
 
 ROLE_SETTER_MAPPING = {
@@ -320,6 +352,7 @@ ANALYTIC_MAPPING = {
 }
 
 THEN_ELSE = {"then": "T", "else": "E"}
+
 JOIN_MAPPING = {
     INNER_JOIN: InnerJoin,
     LEFT_JOIN: LeftJoin,
