@@ -147,6 +147,7 @@ class Unary(Time):
 class Binary(Time):
     pass
 
+
 class Parameterized(Time):
     pass
 
