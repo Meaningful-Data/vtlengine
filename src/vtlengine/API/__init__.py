@@ -165,7 +165,7 @@ def run(
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = False,
-    output_folder: Optional[Union[str, Path]] = "development/data/case/dataPoints/output",
+    output_folder: Optional[Union[str, Path]] = None,
 ) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
