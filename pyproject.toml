@@ -28,7 +28,6 @@ python = "^3.10"
 duckdb = "^1.1.1"
 #numba = "^0.60.0"
 s3fs = "^2024.9.0"
-pyarrow = "^17.0.0"
 
 # APT dependencies
 antlr4-python3-runtime = "4.9.2"
