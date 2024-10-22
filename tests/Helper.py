@@ -170,10 +170,6 @@ class TestHelper(TestCase):
                 f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}"
             )
 
-        # cls._override_structures(code, result, reference_datasets)
-        # cls._override_data(code, result, reference_datasets)
-        result = sorted(result)
-        reference_datasets = sorted(reference_datasets)
         assert result == reference_datasets
 
     @classmethod

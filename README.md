@@ -1,5 +1,11 @@
 # VTL Engine
 
+|         |                                                                                                                                                                                |
+|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Testing | [![Testing](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml/badge.svg)](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml) |
+| Package | [![PyPI Latest Release](https://img.shields.io/pypi/v/vtlengine.svg)](https://pypi.org/project/vtlengine/)                                                                     |
+| License | [![License - AGPL 3.0](https://img.shields.io/pypi/l/vtlengine.svg)](https://github.com/Meaningful-Data/vtlengine/blob/main/LICENSE.md)                                        |
+
 ## Introduction
 
 The VTL Engine is a Python library for validating and running VTL scripts.
@@ -37,7 +43,8 @@ Any action with VTL requires the following elements as input:
 * **VTL Script**: Is the VTL to be executed, which includes the transformation scheme, as well as de
   User Defined Operators, Hierarchical Rulesets and Datapoint Rulesets. It is provided as a string
   or as a Path object to a vtl file.
-* **Data structures** : Provides the structure of the input artifacts of the VTL script, according to
+* **Data structures** : Provides the structure of the input artifacts of the VTL script, according
+  to
   the VTL Information model. Given that the current version doesn't prescribe a standard format for
   providing the information, the VTL Engine is implementing a JSON format that can be found here.
   Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have

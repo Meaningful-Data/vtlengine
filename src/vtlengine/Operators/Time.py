@@ -147,6 +147,10 @@ class Binary(Time):
     pass
 
 
+class Parameterized(Time):
+    pass
+
+
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
 
@@ -195,6 +199,17 @@ class Period_indicator(Unary):
         period_series: Any = result.data[cls.time_id].map(cls._get_period)  # type: ignore[index]
         result.data["duration_var"] = period_series
         return result
+
+
+class Parametrized(Time):
+
+    @classmethod
+    def validate(cls, operand: Any, param: Any) -> Any:
+        pass
+
+    @classmethod
+    def evaluate(cls, operand: Any, param: Any) -> Any:
+        pass
 
 
 class Flow_to_stock(Unary):
@@ -785,6 +800,29 @@ class Current_Date(Time):
         return result
 
 
+class Date_Diff(Binary):
+
+    @classmethod
+    def evaluate(cls, Date1: Any, Date2: Any) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, Date1: Any, Date2: Any) -> Any:
+        pass
+
+
+class Date_Add(Parametrized):
+    @classmethod
+    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
+        pass
+
+
 class SimpleUnaryTime(Operators.Unary):
     @classmethod
     def validate(cls, operand: Union[Dataset, DataComponent, Scalar]):
@@ -799,6 +837,13 @@ class SimpleUnaryTime(Operators.Unary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         else:
             return super().evaluate(operand)
+
+
+class Year(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
 
 
 class Month(SimpleUnaryTime):
@@ -817,3 +862,75 @@ class Month(SimpleUnaryTime):
 
     type_to_check = TimeInterval
     return_type = Integer
+
+
+class Day_of_Month(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Year(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Year(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Month(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Year_to_Day(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month_to_Day(SimpleUnaryTime):
+
+    @classmethod
+    def validate(cls, operand: Any) -> Any:
+        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
