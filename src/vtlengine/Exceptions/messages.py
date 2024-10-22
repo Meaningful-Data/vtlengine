@@ -134,6 +134,18 @@ centralised_messages = {
     "be Datasets or at least one of them a Scalar.",
     "1-1-9-13": "At op {op}: then {then} and else {else_clause} datasets must contain the same "
     "number of components.",
+    "2-1-9-1": "At op {op}: Number of conditions ({num_conditions}) and then operators "
+               "({num_thenOps}) must be the same.",
+    "2-1-9-2": "At op {op}: Condition operators must the same type.",
+    "2-1-9-3": "At op {op}: All then and else operators must be scalars.",
+    "2-1-9-4": "At op {op}: Condition {name} must be boolean type.",
+    "2-1-9-5": "At op {op}: A condition cannot be Dataset at Component level.",
+    "2-1-9-6": "At op {op}: Condition Dataset {name} must have one boolean measure.",
+    "2-1-9-7": "At op {op}: Condition Dataset {name} must have only one boolean measure.",
+    "2-1-9-8": "At op {op}: A condition cannot be DataComponent at Dataset level.",
+    "2-1-9-9": "At op {op}: At least a then or else operand must be Dataset.",
+    "2-1-9-10": "At op {op}: Invalid condition type.",
+
     # Data Validation errors
     "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",
     "1-1-10-2": "At op {op}: Number of variable has to be equal between the call and signature.",

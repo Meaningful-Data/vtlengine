@@ -1003,8 +1003,6 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_condition = True
             conditions.append(self.visit(case.condition))
             self.is_from_condition = False
-            if isinstance(conditions[-1], Scalar) and conditions[-1].value:
-                return self.visit(case.thenOp)
             thenOps.append(self.visit(case.thenOp))
 
         return Case.analyze(conditions, thenOps, self.visit(node.elseOp))

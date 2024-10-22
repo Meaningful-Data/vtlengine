@@ -359,9 +359,10 @@ class Case(Operator):
                  ) -> Union[Scalar, DataComponent, Dataset]:
 
         if len(conditions) != len(thenOps):
-            raise ValueError("Number of conditions and then operations must be the same")
+            raise SemanticError("2-1-9-1", op=cls.op, num_conditions=len(conditions),
+                                num_thenOps=len(thenOps))
         if len(set(map(type, conditions))) > 1:
-            raise ValueError("All conditions must be of the same type")
+            raise SemanticError("2-1-9-2", op=cls.op)
 
         ops = thenOps + [elseOp]
         then_else_types = set(map(type, ops))
@@ -373,7 +374,7 @@ class Case(Operator):
                     condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
                     condition.value = bool(condition.value)
             if list(then_else_types) != [Scalar]:
-                raise ValueError("All then and else operands must be Scalars")
+                raise SemanticError("2-1-9-3", op=cls.op)
 
             # The output data type is the data type of the last then operation that has a true
             # condition, defaulting to the data type of the else operation if no condition is true
@@ -387,18 +388,11 @@ class Case(Operator):
             )
 
         elif condition_type is DataComponent:
-            if not all(cond.data_type == Boolean for cond in conditions):
-                raise SemanticError(
-                    "1-1-9-11",
-                    op=cls.op,
-                    type=SCALAR_TYPES_CLASS_REVERSE[conditions[0].data_type]
-                )
+            for condition in conditions:
+                if not condition.data_type == Boolean:
+                    raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
             if Dataset in then_else_types:
-                raise ValueError("Error, then and else operands at Component level "
-                                 "cannot be Datasets")
-            # if DataComponent not in then_else_types:
-            #     raise ValueError("Error, tat least one of then and else operands must "
-            #                      "be a DataComponent")
+                raise SemanticError("2-1-9-5", op=cls.op)
 
             nullable = any(
                 thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
@@ -421,22 +415,18 @@ class Case(Operator):
             for condition in conditions:
                 bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
                 if bool_count == 0:
-                    raise ValueError("Error, at least one boolean measure is "
-                                     "required in the condition")
+                    raise SemanticError("2-1-9-6", op=cls.op, name=condition.name)
                 if bool_count > 1:
-                    raise ValueError("Error, only one boolean measure is "
-                                     "allowed in the condition")
+                    raise SemanticError("2-1-9-7", op=cls.op, name=condition.name)
             if DataComponent in then_else_types:
-                raise ValueError("Error, then and else operands at Dataset "
-                                 "level cannot be DataComponents")
+                raise SemanticError("2-1-9-8", op=cls.op)
             if Dataset not in then_else_types:
-                raise ValueError("Error, at least one of then and else operands must be a Dataset")
+                raise SemanticError("2-1-9-9", op=cls.op)
 
             return Dataset(
                 name="result",
-                components=copy(next(operand for operand in ops if
-                                     isinstance(operand, Dataset)).components),
+                components=copy(next(op for op in ops if isinstance(op, Dataset)).components),
                 data=None
             )
 
-        raise ValueError("Invalid type for conditions")
+        raise SemanticError("2-1-9-10", op=cls.op)
