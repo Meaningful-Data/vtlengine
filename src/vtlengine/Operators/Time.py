@@ -844,10 +844,15 @@ class SimpleUnaryTime(Operators.Unary):
 
 
 class Year(SimpleUnaryTime):
-
+    op = 'year'
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str):
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        return int(value[:4])
+
+    type_to_check = TimeInterval
+    return_type = Integer
 
 
 class Month(SimpleUnaryTime):
