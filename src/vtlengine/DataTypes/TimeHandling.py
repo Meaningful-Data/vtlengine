@@ -207,7 +207,7 @@ class TimePeriodHandler:
             raise SemanticError(
                 "2-1-19-7",
                 periods=PeriodDuration.periods[self.period_indicator],
-                period_inidcator=self.period_indicator,
+                period_indicator=self.period_indicator,
             )
             # raise ValueError(f'Period Number must be between 1 and '
             #                  f'{PeriodDuration.periods[self.period_indicator]} '
