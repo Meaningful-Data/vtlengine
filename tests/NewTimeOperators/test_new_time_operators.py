@@ -13,22 +13,20 @@ scalar_params = [
     (Month, "2022Q4", 10),
     (Month, "2022-09-24", 9),
     (Year, "2022Q3", 2022),
-    (Year, "2022-01-23", 2022)
+    (Year, "2022-01-23", 2022),
 ]
 
 dc_params = [
     (Month, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [1, 5]),
     (Month, pd.Series(name="TEST", data=["2022Q4", "2023-05-26"]), [10, 5]),
-    (Year, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [2022, 2023])
+    (Year, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [2022, 2023]),
 ]
 
-error_params_scalar = [(Month, "2022 / 01", "2-1-19-11"),
-                       (Year, "2022 / 01", "2-1-19-11")
-                       ]
+error_params_scalar = [(Month, "2022 / 01", "2-1-19-11"), (Year, "2022 / 01", "2-1-19-11")]
 
 error_params_dc = [
     (Month, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
-    (Year, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11")
+    (Year, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
 ]
 
 month_ds_error_params = [

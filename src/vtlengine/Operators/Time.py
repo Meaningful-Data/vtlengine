@@ -844,9 +844,10 @@ class SimpleUnaryTime(Operators.Unary):
 
 
 class Year(SimpleUnaryTime):
-    op = 'year'
+    op = "year"
+
     @classmethod
-    def py_op(cls, value: str):
+    def py_op(cls, value: str) -> int:
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         return int(value[:4])
