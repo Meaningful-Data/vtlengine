@@ -1505,7 +1505,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = condition.data
 
         if data is not None:
-            if self.nested_condition and (self.condition_stack is not None or self.case_stack):
+            if self.nested_condition and self.condition_stack is not None:
                 merge_df = (
                     self.then_condition_dataset[-1]
                     if self.condition_stack[-1] == THEN_ELSE["then"]
