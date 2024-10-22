@@ -16,7 +16,7 @@ month_scalar_params = [
 
 month_dc_params = [
     (Month, pd.Series(name='TEST', data=['2022Q1', '2023-05-26']), [1, 5]),
-    (Month, pd.Series(name='TEST', data=['2022Q5', '2023-05-26']), [10, 5])
+    (Month, pd.Series(name='TEST', data=['2022Q4', '2023-05-26']), [10, 5])
 ]
 
 error_params_scalar = [
