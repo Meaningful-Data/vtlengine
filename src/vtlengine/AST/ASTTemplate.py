@@ -315,7 +315,6 @@ class ASTTemplate(NodeVisitor):
         self.visit(node.elseOp)
 
     def visit_Case(self, node: AST.Case) -> Any:
-
         """
         Case: (conditions, thenOp, elseOp)
 

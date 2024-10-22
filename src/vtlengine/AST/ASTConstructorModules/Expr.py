@@ -935,8 +935,7 @@ class Expr(VtlVisitor):
         return MulOp(op=c.getSymbol().text, children=[])
 
     def visitTimeDiffAtom(self, ctx: Parser.TimeShiftAtomContext):
-        """
-        """
+        """ """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -947,8 +946,7 @@ class Expr(VtlVisitor):
         return BinOp(left=left_node, op=op, right=right_node)
 
     def visitTimeAddAtom(self, ctx: Parser.TimeShiftAtomContext):
-        """
-        """
+        """ """
 
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]

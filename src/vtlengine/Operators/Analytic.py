@@ -51,13 +51,14 @@ class Analytic(Operator.Unary):
     sql_op: Optional[str] = None
 
     @classmethod
-    def validate(cls,  # type: ignore[override]
-                 operand: Dataset,
-                 partitioning: List[str],
-                 ordering: Optional[List[OrderBy]],
-                 window: Optional[Windowing],
-                 params: Optional[List[int]]
-                 ) -> Dataset:
+    def validate(  # type: ignore[override]
+        cls,
+        operand: Dataset,
+        partitioning: List[str],
+        ordering: Optional[List[OrderBy]],
+        window: Optional[Windowing],
+        params: Optional[List[int]],
+    ) -> Dataset:
         if ordering is None:
             order_components = []
         else:
@@ -197,13 +198,14 @@ class Analytic(Operator.Unary):
         return duckdb.query(query).to_df()
 
     @classmethod
-    def evaluate(cls,  # type: ignore[override]
-                 operand: Dataset,
-                 partitioning: List[str],
-                 ordering: Optional[List[OrderBy]],
-                 window: Optional[Windowing],
-                 params: Optional[List[int]],
-                 ) -> Dataset:
+    def evaluate(  # type: ignore[override]
+        cls,
+        operand: Dataset,
+        partitioning: List[str],
+        ordering: Optional[List[OrderBy]],
+        window: Optional[Windowing],
+        params: Optional[List[int]],
+    ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()

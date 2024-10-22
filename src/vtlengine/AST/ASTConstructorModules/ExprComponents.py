@@ -700,8 +700,7 @@ class ExprComp(VtlVisitor):
         return MulOp(op=c.getSymbol().text, children=[])
 
     def visitDateDiffAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
-        """
-        """
+        """ """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -712,8 +711,7 @@ class ExprComp(VtlVisitor):
         return BinOp(left=left_node, op=op, right=right_node)
 
     def visitDateAddAtomComponentContext(self, ctx: Parser.DateAddAtomComponentContext):
-        """
-        """
+        """ """
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 

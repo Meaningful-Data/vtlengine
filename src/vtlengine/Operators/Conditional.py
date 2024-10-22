@@ -207,11 +207,7 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
-        return Dataset(
-            name="result",
-            components=result_components,
-            data=None
-        )
+        return Dataset(name="result", components=result_components, data=None)
 
 
 class Nvl(Binary):
@@ -323,7 +319,8 @@ class Case(Operator):
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
             else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
-            result.data = np.where(condition_mask_else, else_value, result.data)
+            result.data = pd.Series(np.where(condition_mask_else, else_value, result.data),
+                                    index=conditions[0].data.index)
 
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
