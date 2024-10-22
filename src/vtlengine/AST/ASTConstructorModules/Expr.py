@@ -25,7 +25,9 @@ from vtlengine.AST import (
     Validation,
     Analytic,
     Windowing,
-    VarID, Case, CaseObj,
+    VarID,
+    Case,
+    CaseObj,
 )
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals

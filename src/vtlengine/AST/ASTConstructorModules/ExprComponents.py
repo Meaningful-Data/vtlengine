@@ -15,7 +15,9 @@ from vtlengine.AST import (
     EvalOp,
     VarID,
     Analytic,
-    UDOCall, Case, CaseObj,
+    UDOCall,
+    Case,
+    CaseObj,
 )
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar.parser import Parser
