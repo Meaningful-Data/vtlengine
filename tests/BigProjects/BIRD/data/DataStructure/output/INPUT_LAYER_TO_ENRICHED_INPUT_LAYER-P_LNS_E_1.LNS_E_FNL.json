@@ -7,7 +7,7 @@
           "name": "IS_ELGBL_INSTRMNT_AC",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "TYP_INSTRMNT",

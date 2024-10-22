@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date
 from typing import Optional, Union, List, Any, Dict, Type
 
 import pandas as pd
@@ -147,6 +147,10 @@ class Binary(Time):
     pass
 
 
+class Parameterized(Time):
+    pass
+
+
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
 
@@ -174,7 +178,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Dataset, DataComponent, Scalar, str]
+        cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -195,6 +199,17 @@ class Period_indicator(Unary):
         period_series: Any = result.data[cls.time_id].map(cls._get_period)  # type: ignore[index]
         result.data["duration_var"] = period_series
         return result
+
+
+class Parametrized(Time):
+
+    @classmethod
+    def validate(cls, operand: Any, param: Any) -> Any:
+        pass
+
+    @classmethod
+    def evaluate(cls, operand: Any, param: Any) -> Any:
+        pass
 
 
 class Flow_to_stock(Unary):
@@ -346,7 +361,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods_rows(
-            cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
+        cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
     ) -> List[Any]:
         rows = []
         for year in years:
@@ -359,7 +374,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def create_period_row(
-            cls, group_df: Any, period: str, year: int, val: Optional[int] = None
+        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
     ) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
@@ -398,7 +413,7 @@ class Fill_time_series(Binary):
         filled_data = []
 
         def create_filled_dates(
-                group: Any, min_max: Dict[str, Any]
+            group: Any, min_max: Dict[str, Any]
         ) -> (pd.DataFrame, str):  # type: ignore[syntax]
             date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
@@ -441,7 +456,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_time_intervals(
-            cls, data: pd.DataFrame, fill_type: str, frequency: str
+        cls, data: pd.DataFrame, fill_type: str, frequency: str
     ) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
@@ -549,7 +564,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_period(
-            cls, period_str: str, shift_value: int, frequency: Optional[int] = None
+        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
     ) -> str:
         period_type = cls._get_period(period_str)
 
@@ -603,7 +618,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -640,7 +655,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -653,7 +668,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -662,12 +677,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-            cls,
-            value: str,
-            data_type: Type[ScalarType],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        value: str,
+        data_type: Type[ScalarType],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -686,7 +701,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -702,7 +717,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -716,7 +731,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -726,11 +741,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -742,11 +757,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -785,35 +800,109 @@ class Current_Date(Time):
         return result
 
 
+class Date_Diff(Binary):
+
+    @classmethod
+    def evaluate(cls, Date1: Any, Date2: Any) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, Date1: Any, Date2: Any) -> Any:
+        pass
+
+
+class Date_Add(Parametrized):
+    @classmethod
+    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
+        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
+        pass
+
+    @classmethod
+    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
+        pass
+
+
 class SimpleUnaryTime(Operators.Unary):
     @classmethod
-    def validate(cls, operand: Union[Dataset, DataComponent, Scalar]):
+    def validate(
+        cls, operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         else:
             return super().validate(operand)
 
     @classmethod
-    def evaluate(cls, operand: Union[Dataset, DataComponent, Scalar]):
+    def evaluate(
+        cls, operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         else:
             return super().evaluate(operand)
 
 
-class Month(SimpleUnaryTime):
-    op = 'month'
+class Year(SimpleUnaryTime):
 
     @classmethod
-    def py_op(cls, value: str):
-        if '/' in value:
-            raise SemanticError('2-1-19-11', op=cls.op)
-        if value.count('-') == 2:
-            month = datetime.strptime(value, '%Y-%m-%d')
-            return month.month
-        else:
-            month = TimePeriodHandler(value).start_date(as_date=True).month
-            return month
+    def py_op(cls, x: Any) -> Any:
+        pass
 
+
+class Month(SimpleUnaryTime):
+    op = "month"
     type_to_check = TimeInterval
     return_type = Integer
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            return date.fromisoformat(value).month
+        else:
+            result = TimePeriodHandler(value).start_date(as_date=True)
+            return result.month  # type: ignore[union-attr]
+
+
+class Day_of_Month(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_of_Year(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Year(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Day_to_Month(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Year_to_Day(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
+
+
+class Month_to_Day(SimpleUnaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        pass
