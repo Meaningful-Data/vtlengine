@@ -73,3 +73,96 @@ class CaseTest(TestCase):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        """
+        """
+        code = "7"
+        number_inputs = 3
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        """
+        """
+        code = "8"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_9(self):
+        """
+        """
+        code = "9"
+        number_inputs = 4
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_10(self):
+        """
+        """
+        code = "10"
+        number_inputs = 1
+        error_code = "2-1-9-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_11(self):
+        """
+        """
+        code = "11"
+        number_inputs = 1
+        error_code = "2-1-9-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_12(self):
+        """
+        """
+        code = "12"
+        number_inputs = 1
+        error_code = "2-1-9-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_13(self):
+        """
+        """
+        code = "13"
+        number_inputs = 1
+        error_code = "2-1-9-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_14(self):
+        """
+        """
+        code = "14"
+        number_inputs = 1
+        error_code = "2-1-9-7"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_15(self):
+        """
+        """
+        code = "15"
+        number_inputs = 1
+        error_code = "2-1-9-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )

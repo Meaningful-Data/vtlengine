@@ -144,7 +144,8 @@ centralised_messages = {
     "2-1-9-7": "At op {op}: Condition Dataset {name} must have only one boolean measure.",
     "2-1-9-8": "At op {op}: A condition cannot be DataComponent at Dataset level.",
     "2-1-9-9": "At op {op}: At least a then or else operand must be Dataset.",
-    "2-1-9-10": "At op {op}: Invalid condition type.",
+    "2-1-9-10": "At op {op}: All Dataset operands must have the same components.",
+    "2-1-9-11": "At op {op}: Invalid condition type.",
 
     # Data Validation errors
     "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",

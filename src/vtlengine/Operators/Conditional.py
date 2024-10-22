@@ -340,9 +340,8 @@ class Case(Operator):
 
             condition_mask_else = ~np.logical_or.reduce([
                 condition.data[next(x.name for x in condition.get_measures() if
-                                    x.data_type == Boolean)]
-                for condition in conditions
-            ])
+                                    x.data_type == Boolean)].astype(bool) for
+                condition in conditions])
 
             result.data.loc[condition_mask_else, columns] = (
                 elseOp.value if isinstance(elseOp, Scalar)
@@ -423,10 +422,16 @@ class Case(Operator):
             if Dataset not in then_else_types:
                 raise SemanticError("2-1-9-9", op=cls.op)
 
+            components = copy(next(op for op in ops if isinstance(op, Dataset)).components)
+            comp_names = [comp.name for comp in components.values()]
+            for op in ops:
+                if isinstance(op, Dataset) and op.get_components_names() != comp_names:
+                    raise SemanticError("2-1-9-10", op=cls.op)
+
             return Dataset(
                 name="result",
-                components=copy(next(op for op in ops if isinstance(op, Dataset)).components),
+                components=components,
                 data=None
             )
 
-        raise SemanticError("2-1-9-10", op=cls.op)
+        raise SemanticError("2-1-9-11", op=cls.op)
