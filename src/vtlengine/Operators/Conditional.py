@@ -396,9 +396,9 @@ class Case(Operator):
             if Dataset in then_else_types:
                 raise ValueError("Error, then and else operands at Component level "
                                  "cannot be Datasets")
-            if DataComponent not in then_else_types:
-                raise ValueError("Error, tat least one of then and else operands must "
-                                 "be a DataComponent")
+            # if DataComponent not in then_else_types:
+            #     raise ValueError("Error, tat least one of then and else operands must "
+            #                      "be a DataComponent")
 
             nullable = any(
                 thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
