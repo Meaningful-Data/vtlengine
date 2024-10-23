@@ -327,8 +327,8 @@ class Case(Operator):
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = copy(conditions[0].data[identifiers] if conditions[0].data is not None
-                               else pd.DataFrame(columns=identifiers))
+            result.data = (conditions[0].data[identifiers] if conditions[0].data is not None
+                           else pd.DataFrame(columns=identifiers))
 
             for i in range(len(conditions)):
                 condition = conditions[i]
@@ -353,7 +353,7 @@ class Case(Operator):
         return result
 
     @classmethod
-    def validate(cls,  # noqa: C901
+    def validate(cls,
                  conditions: List[Any],
                  thenOps: List[Any],
                  elseOp: Any
@@ -408,27 +408,24 @@ class Case(Operator):
                 nullable=nullable,
             )
 
-        elif condition_type is Dataset:
-            for condition in conditions:
-                bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
-                if bool_count == 0:
-                    raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
-                if bool_count > 1:
-                    raise SemanticError("2-1-9-6", op=cls.op, name=condition.name)
+        # Dataset
+        for condition in conditions:
+            if len(condition.get_measures_names()) != 1:
+                raise SemanticError("1-1-1-4", op=cls.op)
+            if condition.get_measures()[0].data_type != Boolean:
+                raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
 
-            if Dataset not in then_else_types:
+        if Dataset not in then_else_types:
+            raise SemanticError("2-1-9-6", op=cls.op)
+
+        components = next(op for op in ops if isinstance(op, Dataset)).components
+        comp_names = [comp.name for comp in components.values()]
+        for op in ops:
+            if isinstance(op, Dataset) and op.get_components_names() != comp_names:
                 raise SemanticError("2-1-9-7", op=cls.op)
 
-            components = copy(next(op for op in ops if isinstance(op, Dataset)).components)
-            comp_names = [comp.name for comp in components.values()]
-            for op in ops:
-                if isinstance(op, Dataset) and op.get_components_names() != comp_names:
-                    raise SemanticError("2-1-9-8", op=cls.op)
-
-            return Dataset(
-                name="result",
-                components=components,
-                data=None
-            )
-
-        raise SemanticError("2-1-9-9", op=cls.op)
+        return Dataset(
+            name="result",
+            components=components,
+            data=None
+        )

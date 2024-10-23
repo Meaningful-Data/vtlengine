@@ -138,11 +138,9 @@ centralised_messages = {
     "2-1-9-2": "At op {op}: Condition {name} it's not a boolean.",
     "2-1-9-3": "At op {op}: All then and else operands must be scalars.",
     "2-1-9-4": "At op {op}: Condition {name} must be boolean type.",
-    "2-1-9-5": "At op {op}: Condition Dataset {name} must have one boolean measure.",
-    "2-1-9-6": "At op {op}: Condition Dataset {name} must have only one boolean measure.",
-    "2-1-9-7": "At op {op}: At least a then or else operand must be Dataset.",
-    "2-1-9-8": "At op {op}: All Dataset operands must have the same components.",
-    "2-1-9-9": "At op {op}: Invalid condition type.",
+    "2-1-9-5": "At op {op}: Condition Dataset {name} measure must be Boolean.",
+    "2-1-9-6": "At op {op}: At least a then or else operand must be Dataset.",
+    "2-1-9-7": "At op {op}: All Dataset operands must have the same components.",
 
     # Data Validation errors
     "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",

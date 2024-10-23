@@ -29,10 +29,10 @@ error_param = [
     ("11", 'x := 1; DS_r := case when x = 1 then 1 when x = 2 then DS_1 else 0;', "2-1-9-3"),
     ("12", 'DS_r := DS_1 [calc Me_3 := case when Me_1 then 1 else 0];', "2-1-9-4"),
     ("13", 'DS_r := case when DS_1 then DS_1 else null;', "2-1-9-5"),
-    ("14", 'DS_r := case when DS_cond1 then 1 else null;', "2-1-9-6"),
-    ("15", 'DS_r := case when DS_cond1 then 1 else null;', "2-1-9-7"),
-    ("16", 'DS_r := case when DS_cond1 then DS_1 else DS_2;', "2-1-9-8"),
-    ("17", 'DS_r := case when DS_cond1 then DS_1 else DS_2;', "2-1-9-8"),
+    ("14", 'DS_r := case when DS_cond1 then 1 else null;', "1-1-1-4"),
+    ("15", 'DS_r := case when DS_cond1 then 1 else null;', "2-1-9-6"),
+    ("16", 'DS_r := case when DS_cond1 then DS_1 else DS_2;', "2-1-9-7"),
+    ("17", 'DS_r := case when DS_cond1 then DS_1 else DS_2;', "2-1-9-7"),
     ("18", 'x := 1; DS_r := case when x then 1 else 0;', "2-1-9-2")
 ]
 
