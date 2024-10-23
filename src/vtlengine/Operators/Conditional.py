@@ -306,8 +306,10 @@ class Case(Operator):
         result = cls.validate(conditions, thenOps, elseOp)
 
         if isinstance(result, Scalar):
-            result.value = next((thenOps[i].value for i in range(len(conditions)) if
-                                 conditions[i].value), elseOp.value)
+            result.value = elseOp.value
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    result.value = thenOps[i].value
 
         if isinstance(result, DataComponent):
             result.data = pd.Series(None, index=conditions[0].data.index)
@@ -351,17 +353,14 @@ class Case(Operator):
         return result
 
     @classmethod
-    def validate(cls,
+    def validate(cls,  # noqa: C901
                  conditions: List[Any],
                  thenOps: List[Any],
                  elseOp: Any
                  ) -> Union[Scalar, DataComponent, Dataset]:
 
-        if len(conditions) != len(thenOps):
-            raise SemanticError("2-1-9-1", op=cls.op, num_conditions=len(conditions),
-                                num_thenOps=len(thenOps))
         if len(set(map(type, conditions))) > 1:
-            raise SemanticError("2-1-9-2", op=cls.op)
+            raise SemanticError("2-1-9-1", op=cls.op)
 
         ops = thenOps + [elseOp]
         then_else_types = set(map(type, ops))
@@ -370,15 +369,16 @@ class Case(Operator):
         if condition_type is Scalar:
             for condition in conditions:
                 if condition.data_type != Boolean:
-                    condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
-                    condition.value = bool(condition.value)
+                    raise SemanticError("2-1-9-2", op=cls.op, name=condition.name)
             if list(then_else_types) != [Scalar]:
                 raise SemanticError("2-1-9-3", op=cls.op)
 
             # The output data type is the data type of the last then operation that has a true
             # condition, defaulting to the data type of the else operation if no condition is true
-            output_data_type = next((thenOps[i].data_type for i in range(len(conditions)) if
-                                     conditions[i].value), elseOp.data_type)
+            output_data_type = elseOp.data_type
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    output_data_type = thenOps[i].data_type
 
             return Scalar(
                 name="result",
@@ -390,8 +390,6 @@ class Case(Operator):
             for condition in conditions:
                 if not condition.data_type == Boolean:
                     raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
-            if Dataset in then_else_types:
-                raise SemanticError("2-1-9-5", op=cls.op)
 
             nullable = any(
                 thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
@@ -414,19 +412,18 @@ class Case(Operator):
             for condition in conditions:
                 bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
                 if bool_count == 0:
-                    raise SemanticError("2-1-9-6", op=cls.op, name=condition.name)
+                    raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
                 if bool_count > 1:
-                    raise SemanticError("2-1-9-7", op=cls.op, name=condition.name)
-            if DataComponent in then_else_types:
-                raise SemanticError("2-1-9-8", op=cls.op)
+                    raise SemanticError("2-1-9-6", op=cls.op, name=condition.name)
+
             if Dataset not in then_else_types:
-                raise SemanticError("2-1-9-9", op=cls.op)
+                raise SemanticError("2-1-9-7", op=cls.op)
 
             components = copy(next(op for op in ops if isinstance(op, Dataset)).components)
             comp_names = [comp.name for comp in components.values()]
             for op in ops:
                 if isinstance(op, Dataset) and op.get_components_names() != comp_names:
-                    raise SemanticError("2-1-9-10", op=cls.op)
+                    raise SemanticError("2-1-9-8", op=cls.op)
 
             return Dataset(
                 name="result",
@@ -434,4 +431,4 @@ class Case(Operator):
                 data=None
             )
 
-        raise SemanticError("2-1-9-11", op=cls.op)
+        raise SemanticError("2-1-9-9", op=cls.op)

@@ -106,7 +106,7 @@ class CaseTest(TestCase):
         """
         code = "10"
         number_inputs = 1
-        error_code = "2-1-9-2"
+        error_code = "2-1-9-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -139,7 +139,7 @@ class CaseTest(TestCase):
         """
         code = "13"
         number_inputs = 1
-        error_code = "2-1-9-6"
+        error_code = "2-1-9-5"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -150,7 +150,7 @@ class CaseTest(TestCase):
         """
         code = "14"
         number_inputs = 1
-        error_code = "2-1-9-7"
+        error_code = "2-1-9-6"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -161,7 +161,40 @@ class CaseTest(TestCase):
         """
         code = "15"
         number_inputs = 1
-        error_code = "2-1-9-9"
+        error_code = "2-1-9-7"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_16(self):
+        """
+        """
+        code = "16"
+        number_inputs = 3
+        error_code = "2-1-9-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_17(self):
+        """
+        """
+        code = "17"
+        number_inputs = 3
+        error_code = "2-1-9-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_18(self):
+        """
+                """
+        code = "18"
+        number_inputs = 1
+        error_code = "2-1-9-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
