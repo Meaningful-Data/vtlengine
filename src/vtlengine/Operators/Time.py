@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Union, List, Any, Dict, Type
 
 import pandas as pd
@@ -14,6 +14,7 @@ from vtlengine.AST.Grammar.tokens import (
     DAYOFMONTH,
     YEAR,
     MONTH,
+    DAYOFYEAR,
 )
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
@@ -892,10 +893,23 @@ class Day_of_Month(SimpleUnaryTime):
 
 
 class Day_of_Year(SimpleUnaryTime):
+    op = DAYOFYEAR
+    type_to_check = TimeInterval
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            day_y = datetime.strptime(value, "%Y-%m-%d")
+            return day_y.timetuple().tm_yday
+        else:
+            result = TimePeriodHandler(value).end_date(as_date=True)
+            datetime_value = datetime(
+                year=result.year, month=result.month, day=result.day  # type: ignore[union-attr]
+            )
+            return datetime_value.timetuple().tm_yday
 
 
 class Day_to_Year(SimpleUnaryTime):

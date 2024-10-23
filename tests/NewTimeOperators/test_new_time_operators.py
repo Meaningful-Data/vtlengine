@@ -5,7 +5,7 @@ from vtlengine import DataTypes
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Scalar, Role, DataComponent, Dataset, Component
-from vtlengine.Operators.Time import Month, Year, Day_of_Month
+from vtlengine.Operators.Time import Month, Year, Day_of_Month, Day_of_Year
 
 scalar_params = [
     (Month, "2022-01-23", 1),
@@ -16,6 +16,8 @@ scalar_params = [
     (Year, "2022-01-23", 2022),
     (Day_of_Month, "2022-01-23", 23),
     (Day_of_Month, "2022Q1", 31),
+    (Day_of_Year, "2022-02-15", 46),
+    (Day_of_Year, "2024Q1", 91),
 ]
 
 dc_params = [
@@ -23,21 +25,24 @@ dc_params = [
     (Month, pd.Series(name="TEST", data=["2022Q4", "2023-05-26"]), [10, 5]),
     (Year, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [2022, 2023]),
     (Day_of_Month, pd.Series(name="TEST", data=["2024Q2", "2023-01-12"]), [30, 12]),
+    (Day_of_Year, pd.Series(name="TEST", data=["2024Q1", "2023-01-12"]), [91, 12]),
 ]
 
 error_params_scalar = [
     (Month, "2022 / 01", "2-1-19-11"),
     (Year, "2022 / 01", "2-1-19-11"),
     (Day_of_Month, "2022 / 03", "2-1-19-11"),
+    (Day_of_Year, "2022 / 03", "2-1-19-11"),
 ]
 
 error_params_dc = [
     (Month, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
     (Year, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
     (Day_of_Month, pd.Series(name="TEST", data=["2024 / 02", "2023-01-12"]), "2-1-19-11"),
+    (Day_of_Year, pd.Series(name="TEST", data=["2024 / 02", "2023-01-12"]), "2-1-19-11"),
 ]
 
-month_ds_error_params = [
+ds_error_params = [
     (
         Month,
         pd.DataFrame(
@@ -78,7 +83,7 @@ def test_error_dc(op, value, code):
         op.evaluate(dc)
 
 
-@pytest.mark.parametrize("op, value, code", month_ds_error_params)
+@pytest.mark.parametrize("op, value, code", ds_error_params)
 def test_ds_error(op, value, code):
     ds = Dataset(
         "TEST",
