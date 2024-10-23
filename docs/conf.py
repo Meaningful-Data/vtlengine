@@ -30,7 +30,6 @@ if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
 copyright = "2024 MeaningfulData"
 
 
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 

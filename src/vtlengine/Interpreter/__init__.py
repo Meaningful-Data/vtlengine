@@ -103,7 +103,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Time Period Representation
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
-    nested_if: Union[str, bool] = False
+    nested_condition: Union[str, bool] = False
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -115,8 +115,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_condition: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    if_stack: Optional[List[str]] = None
-    case_stack: Optional[List[str]] = None
+    condition_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -207,10 +206,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
-            self.if_stack = None
+            self.condition_stack = None
             self.then_condition_dataset = None
             self.else_condition_dataset = None
-            self.nested_if = False
+            self.nested_condition = False
 
             if result is None:
                 continue
@@ -362,8 +361,8 @@ class InterpreterAnalyzer(ASTTemplate):
         if (
             not self.is_from_condition
             and node.op != MEMBERSHIP
-            and self.if_stack is not None
-            and len(self.if_stack) > 0
+            and self.condition_stack is not None
+            and len(self.condition_stack) > 0
         ):
             is_from_if = self.is_from_if
             self.is_from_if = False
@@ -962,33 +961,33 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Analysis for data component and dataset
         else:
-            if self.if_stack is None:
-                self.if_stack = []
+            if self.condition_stack is None:
+                self.condition_stack = []
             if self.then_condition_dataset is None:
                 self.then_condition_dataset = []
             if self.else_condition_dataset is None:
                 self.else_condition_dataset = []
             self.generate_then_else_datasets(copy(condition))
 
-        self.if_stack.append(THEN_ELSE["then"])
+        self.condition_stack.append(THEN_ELSE["then"])
         self.is_from_if = True
-        self.nested_if = "T" if isinstance(node.thenOp, AST.If) else False
+        self.nested_condition = "T" if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
             self.then_condition_dataset.pop()
-            self.if_stack.pop()
+            self.condition_stack.pop()
 
-        self.if_stack.append(THEN_ELSE["else"])
+        self.condition_stack.append(THEN_ELSE["else"])
         self.is_from_if = True
-        self.nested_if = "E" if isinstance(node.elseOp, AST.If) else False
+        self.nested_condition = "E" if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (
             not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)
         ):
             if len(self.else_condition_dataset) > 0:
                 self.else_condition_dataset.pop()
-            if len(self.if_stack) > 0:
-                self.if_stack.pop()
+            if len(self.condition_stack) > 0:
+                self.condition_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -996,13 +995,14 @@ class InterpreterAnalyzer(ASTTemplate):
         conditions: List[Any] = []
         thenOps: List[Any] = []
 
+        if self.condition_stack is None:
+            self.condition_stack = []
+
         while node.cases:
             case = node.cases.pop(0)
             self.is_from_condition = True
             conditions.append(self.visit(case.condition))
             self.is_from_condition = False
-            if isinstance(conditions[-1], Scalar) and conditions[-1].value:
-                return self.visit(case.thenOp)
             thenOps.append(self.visit(case.thenOp))
 
         return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
@@ -1503,10 +1503,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = condition.data
 
         if data is not None:
-            if self.nested_if and self.if_stack is not None:
+            if self.nested_condition and self.condition_stack is not None:
                 merge_df = (
                     self.then_condition_dataset[-1]
-                    if self.if_stack[-1] == THEN_ELSE["then"]
+                    if self.condition_stack[-1] == THEN_ELSE["then"]
                     else self.else_condition_dataset[-1]
                 )
                 indexes = merge_df.data[merge_df.data.columns[-1]]
@@ -1559,12 +1559,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if (
             self.then_condition_dataset is None
             or self.else_condition_dataset is None
-            or self.if_stack is None
+            or self.condition_stack is None
         ):
             return left_operand, right_operand
         merge_dataset = (
             self.then_condition_dataset.pop()
-            if self.if_stack.pop() == THEN_ELSE["then"]
+            if self.condition_stack.pop() == THEN_ELSE["then"]
             else (self.else_condition_dataset.pop())
         )
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
@@ -1636,8 +1636,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Getting Dataset elements
         result_components = {
-            c_name: copy(comp)
-            for c_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            comp_name: copy(comp)
+            for comp_name, comp in
+            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
@@ -1751,9 +1752,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = node.params[
-                                i
-                            ].value  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = (
+                                node.params[i].value)  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):
