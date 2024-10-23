@@ -1,20 +1,23 @@
 import re
-import pandas as pd
-
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Union, List, Any, Dict, Type
 
-import vtlengine.Operators as Operators
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
+import pandas as pd
 
+import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
     TIME_AGG,
     TIMESHIFT,
     PERIOD_INDICATOR,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
+    DAYOFMONTH,
+    YEAR,
+    MONTH,
+    DAYOFYEAR,
 )
+from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
 
@@ -824,96 +827,113 @@ class Date_Add(Parametrized):
         pass
 
 
-class Year(Unary):
+class SimpleUnaryTime(Operators.Unary):
+    @classmethod
+    def validate(
+        cls, operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
+        if isinstance(operand, Dataset):
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+        else:
+            return super().validate(operand)
 
     @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
+    def evaluate(
+        cls, operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
+        if isinstance(operand, Dataset):
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+        else:
+            return super().evaluate(operand)
+
+
+class Year(SimpleUnaryTime):
+    op = YEAR
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        return int(value[:4])
+
+    type_to_check = TimeInterval
+    return_type = Integer
+
+
+class Month(SimpleUnaryTime):
+    op = MONTH
+    type_to_check = TimeInterval
+    return_type = Integer
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            return date.fromisoformat(value).month
+        else:
+            result = TimePeriodHandler(value).start_date(as_date=True)
+            return result.month  # type: ignore[union-attr]
+
+
+class Day_of_Month(SimpleUnaryTime):
+    op = DAYOFMONTH
+    type_to_check = TimeInterval
+    return_type = Integer
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            return date.fromisoformat(value).day
+        else:
+            result = TimePeriodHandler(value).end_date(as_date=True)
+            return result.day  # type: ignore[union-attr]
+
+
+class Day_of_Year(SimpleUnaryTime):
+    op = DAYOFYEAR
+    type_to_check = TimeInterval
+    return_type = Integer
+
+    @classmethod
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            day_y = datetime.strptime(value, "%Y-%m-%d")
+            return day_y.timetuple().tm_yday
+        else:
+            result = TimePeriodHandler(value).end_date(as_date=True)
+            datetime_value = datetime(
+                year=result.year, month=result.month, day=result.day  # type: ignore[union-attr]
+            )
+            return datetime_value.timetuple().tm_yday
+
+
+class Day_to_Year(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, x: Any) -> Any:
         pass
 
 
-class Month(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
+class Day_to_Month(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, x: Any) -> Any:
         pass
 
 
-class Day_of_Month(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
+class Year_to_Day(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, x: Any) -> Any:
         pass
 
 
-class Day_of_Year(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
-
-    @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
-
-
-class Day_to_Year(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
-
-    @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
-
-
-class Day_to_Month(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
-
-    @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
-
-
-class Year_to_Day(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
-
-    @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
-
-
-class Month_to_Day(Unary):
-
-    @classmethod
-    def validate(cls, operand: Any) -> Any:
-        # TODO: Implement this method (or adapt Unary's validate method to work with this operator)
-        pass
+class Month_to_Day(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, x: Any) -> Any:

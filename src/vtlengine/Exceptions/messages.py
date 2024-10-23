@@ -245,6 +245,7 @@ centralised_messages = {
     "2-1-19-8": "Invalid date format, must be YYYY-MM-DD: {str}",
     "2-1-19-9": "Invalid day {day} for year {year}.",
     "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
+    "2-1-19-11": "{op} operator is not compatible with time values",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
