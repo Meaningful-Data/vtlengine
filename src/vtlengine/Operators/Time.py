@@ -11,6 +11,9 @@ from vtlengine.AST.Grammar.tokens import (
     PERIOD_INDICATOR,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
+    DAYOFMONTH,
+    YEAR,
+    MONTH,
 )
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
@@ -844,7 +847,7 @@ class SimpleUnaryTime(Operators.Unary):
 
 
 class Year(SimpleUnaryTime):
-    op = "year"
+    op = YEAR
 
     @classmethod
     def py_op(cls, value: str) -> int:
@@ -857,7 +860,7 @@ class Year(SimpleUnaryTime):
 
 
 class Month(SimpleUnaryTime):
-    op = "month"
+    op = MONTH
     type_to_check = TimeInterval
     return_type = Integer
 
@@ -873,10 +876,19 @@ class Month(SimpleUnaryTime):
 
 
 class Day_of_Month(SimpleUnaryTime):
+    op = DAYOFMONTH
+    type_to_check = TimeInterval
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if value.count("-") == 2:
+            return date.fromisoformat(value).day
+        else:
+            result = TimePeriodHandler(value).end_date(as_date=True)
+            return result.day  # type: ignore[union-attr]
 
 
 class Day_of_Year(SimpleUnaryTime):

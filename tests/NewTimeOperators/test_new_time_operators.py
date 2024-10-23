@@ -5,7 +5,7 @@ from vtlengine import DataTypes
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Scalar, Role, DataComponent, Dataset, Component
-from vtlengine.Operators.Time import Month, Year
+from vtlengine.Operators.Time import Month, Year, Day_of_Month
 
 scalar_params = [
     (Month, "2022-01-23", 1),
@@ -14,19 +14,27 @@ scalar_params = [
     (Month, "2022-09-24", 9),
     (Year, "2022Q3", 2022),
     (Year, "2022-01-23", 2022),
+    (Day_of_Month, "2022-01-23", 23),
+    (Day_of_Month, "2022Q1", 31),
 ]
 
 dc_params = [
     (Month, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [1, 5]),
     (Month, pd.Series(name="TEST", data=["2022Q4", "2023-05-26"]), [10, 5]),
     (Year, pd.Series(name="TEST", data=["2022Q1", "2023-05-26"]), [2022, 2023]),
+    (Day_of_Month, pd.Series(name="TEST", data=["2024Q2", "2023-01-12"]), [30, 12]),
 ]
 
-error_params_scalar = [(Month, "2022 / 01", "2-1-19-11"), (Year, "2022 / 01", "2-1-19-11")]
+error_params_scalar = [
+    (Month, "2022 / 01", "2-1-19-11"),
+    (Year, "2022 / 01", "2-1-19-11"),
+    (Day_of_Month, "2022 / 03", "2-1-19-11"),
+]
 
 error_params_dc = [
     (Month, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
     (Year, pd.Series(name="TEST", data=["2022 / 01", "2023-05-26"]), "2-1-19-11"),
+    (Day_of_Month, pd.Series(name="TEST", data=["2024 / 02", "2023-01-12"]), "2-1-19-11"),
 ]
 
 month_ds_error_params = [
