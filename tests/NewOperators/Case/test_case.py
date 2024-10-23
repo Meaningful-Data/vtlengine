@@ -36,6 +36,7 @@ error_param = [
     ("18", 'x := 1; DS_r := case when x then 1 else 0;', "2-1-9-2")
 ]
 
+
 @pytest.mark.parametrize("code, expression", ds_param)
 def test_case_ds(load_input, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -43,6 +44,7 @@ def test_case_ds(load_input, load_reference, code, expression):
     interpreter = InterpreterAnalyzer(load_input)
     result = interpreter.visit(ast)
     assert result == load_reference
+
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
 def test_errors(load_input, code, expression, error_code):
