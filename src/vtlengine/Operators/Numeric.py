@@ -1,3 +1,4 @@
+import _random
 import math
 import operator
 from decimal import getcontext, Decimal
@@ -52,7 +53,8 @@ class Binary(Operator.Binary):
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
                 raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            return cls.py_op(x, y)
+            if cls.op == RANDOM:
+                return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         # Handles precision to avoid floating point errors
@@ -233,16 +235,35 @@ class Power(Binary):
         return x**param
 
 
+class PsuedoRandom(_random.Random):
+
+    def __init__(self, seed: int):
+        super().__init__()
+        self.seed(seed)
+
+
 class Random(Binary):
-    """ """
 
     op = RANDOM
     return_type = Number
 
+    seed: int
+    index: int
+    pr: Any
+
+    def __init__(self, seed: Union[Dataset, DataComponent, Scalar], index: Union[int, float, Scalar]):
+        self.seed = hash(seed)
+        self.index = int(index.value if isinstance(index, Scalar) else index)
+        if self.index < 0:
+            raise SemanticError("2-1-15-2", op=self.op, value=self.index)
+        self.pr = PsuedoRandom(self.seed)
+
     @classmethod
-    def py_op(cls, seed: Any, index: Any) -> Any:
-        # Dataset.random_seed = seed
-        return Dataset(name="result", components={}, data=pd.DataFrame())
+    def py_op(cls, _, index) -> Any:
+        instance = cls(_, index)
+        for _ in range(instance.index):
+            instance.pr.random()
+        return instance.pr.random()
 
 
 class Parameterized(Unary):
