@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from vtlengine.Operators.Aggregation import (
     Avg,
     Count,
@@ -214,7 +216,7 @@ from vtlengine.AST.Grammar.tokens import (
     DATE_ADD,
 )
 
-BINARY_MAPPING = {
+BINARY_MAPPING: Dict[Any, Any] = {
     # General
     MEMBERSHIP: Membership,
     # Boolean
