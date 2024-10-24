@@ -579,7 +579,7 @@ class ExprComp(VtlVisitor):
         elif isinstance(ctx, Parser.CurrentDateAtomComponentContext):
             return self.visitCurrentDateAtomComponent(ctx)
         elif isinstance(ctx, Parser.DateDiffAtomComponentContext):
-            return self.visitDateAddAtomComponentContext(ctx)
+            return self.visitDateDiffAtomComponent(ctx)
         elif isinstance(ctx, Parser.DateAddAtomComponentContext):
             return self.visitDateAddAtomComponentContext(ctx)
         elif isinstance(ctx, Parser.YearAtomComponentContext):
@@ -706,7 +706,7 @@ class ExprComp(VtlVisitor):
 
         op = c.getSymbol().text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = Constant("INTEGER_CONSTANT", int(ctx_list[4].getSymbol().text))
+        right_node = self.visitExprComponent(ctx_list[4])
 
         return BinOp(left=left_node, op=op, right=right_node)
 
