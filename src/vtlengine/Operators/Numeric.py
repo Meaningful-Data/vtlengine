@@ -237,7 +237,7 @@ class Power(Binary):
 
 class PsuedoRandom(_random.Random):
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int) -> None:
         super().__init__()
         self.seed(seed)
 
@@ -251,7 +251,10 @@ class Random(Binary):
     index: int
     pr: Any
 
-    def __init__(self, seed: Union[Dataset, DataComponent, Scalar], index: Union[int, float, Scalar]):
+    def __init__(self,
+                 seed: Union[Dataset, DataComponent, Scalar],
+                 index: Union[int, float, Scalar]
+                 ) -> None:
         self.seed = hash(seed)
         self.index = int(index.value if isinstance(index, Scalar) else index)
         if self.index < 0:
@@ -259,8 +262,11 @@ class Random(Binary):
         self.pr = PsuedoRandom(self.seed)
 
     @classmethod
-    def py_op(cls, _, index) -> Any:
-        instance = cls(_, index)
+    def py_op(cls,
+              seed: Union[Dataset, DataComponent, Scalar],
+              index: Union[int, float, Scalar]
+              ) -> float:
+        instance = cls(seed, index)
         for _ in range(instance.index):
             instance.pr.random()
         return instance.pr.random()
