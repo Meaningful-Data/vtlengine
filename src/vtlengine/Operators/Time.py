@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 
-from datetime import date
+from datetime import datetime, date
 from typing import Optional, Union, List, Any, Dict, Type
 
 import vtlengine.Operators as Operators
@@ -800,18 +800,36 @@ class Current_Date(Time):
         result.value = date.today().isoformat()
         return result
 
-
-class Date_Diff(Binary):
-
-    @classmethod
-    def evaluate(cls, Date1: Any, Date2: Any) -> Any:
-        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
-        pass
+class SimpleBinaryTime(Operators.Binary):
 
     @classmethod
-    def validate(cls, Date1: Any, Date2: Any) -> Any:
-        pass
+    def validate(
+            cls, left_operand: Union[Dataset, DataComponent, Scalar],
+            right_operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
+        if isinstance(left_operand, Dataset) or isinstance(right_operand, Dataset):
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+        else:
+            return super().validate(left_operand, right_operand)
 
+    @classmethod
+    def evaluate(
+            cls, left_operand: Union[Dataset, DataComponent, Scalar],
+            right_operand: Union[Dataset, DataComponent, Scalar]
+    ) -> Union[Dataset, DataComponent, Scalar]:
+        if isinstance(left_operand, Dataset) or isinstance(right_operand, Dataset):
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+        else:
+            return super().evaluate(left_operand, right_operand)
+
+class Date_Diff(SimpleBinaryTime):
+
+    @classmethod
+    def py_op(cls, x: Any, y: Any) -> Any:
+        fecha1=date.fromisoformat(x)
+        fecha2=date.fromisoformat(y)
+
+        return abs((fecha2 - fecha1).days)
 
 class Date_Add(Parametrized):
     @classmethod
