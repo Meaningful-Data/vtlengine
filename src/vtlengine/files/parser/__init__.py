@@ -133,6 +133,8 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
 
 
 def _parse_boolean(value: str) -> bool:
+    if isinstance(value, bool):
+        return value
     if value.lower() == "true" or value == "1":
         return True
     return False
