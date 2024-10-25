@@ -826,8 +826,15 @@ class Date_Diff(SimpleBinaryTime):
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
-        fecha1=date.fromisoformat(x)
-        fecha2=date.fromisoformat(y)
+        if len(x)>4:
+            fecha1 = TimePeriodHandler(x).end_date(as_date=True)
+        else:
+            fecha1 = date.fromisoformat(x)
+
+        if len(y)>4:
+            fecha2 = TimePeriodHandler(y).end_date(as_date=True)
+        else:
+            fecha2 = date.fromisoformat(y)
 
         return abs((fecha2 - fecha1).days)
 
