@@ -6,7 +6,7 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "Number",
+          "type": "String",
           "nullable": false
         },
         {

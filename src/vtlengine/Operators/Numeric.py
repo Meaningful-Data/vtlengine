@@ -1,12 +1,13 @@
 import _random
 import math
 import operator
+import warnings
 from decimal import getcontext, Decimal
 from typing import Any, Optional, Union
 
 import vtlengine.Operators as Operator
 import pandas as pd
-from vtlengine.DataTypes import Integer, Number
+from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 from vtlengine.AST.Grammar.tokens import (
@@ -235,43 +236,6 @@ class Power(Binary):
         return x**param
 
 
-class PsuedoRandom(_random.Random):
-
-    def __init__(self, seed: int) -> None:
-        super().__init__()
-        self.seed(seed)
-
-
-class Random(Binary):
-
-    op = RANDOM
-    return_type = Number
-
-    seed: int
-    index: int
-    pr: Any
-
-    def __init__(self,
-                 seed: Union[Dataset, DataComponent, Scalar],
-                 index: Union[int, float, Scalar]
-                 ) -> None:
-        self.seed = hash(seed)
-        self.index = int(index.value if isinstance(index, Scalar) else index)
-        if self.index < 0:
-            raise SemanticError("2-1-15-2", op=self.op, value=self.index)
-        self.pr = PsuedoRandom(self.seed)
-
-    @classmethod
-    def py_op(cls,
-              seed: Union[Dataset, DataComponent, Scalar],
-              index: Union[int, float, Scalar]
-              ) -> float:
-        instance = cls(seed, index)
-        for _ in range(instance.index):
-            instance.pr.random()
-        return instance.pr.random()
-
-
 class Parameterized(Unary):
     """Parametrized class
     Inherits from Unary class, to validate the data type and evaluate if it is the correct one to
@@ -417,3 +381,36 @@ class Trunc(Parameterized):
             return truncated_value
 
         return int(truncated_value)
+
+
+class PseudoRandom(_random.Random):
+
+    def __init__(self, seed: int) -> None:
+        super().__init__()
+        self.seed(seed)
+
+
+class Random(Parameterized):
+
+    op = RANDOM
+    return_type = Number
+
+    @classmethod
+    def validate(cls, seed: Any, index: Any = None) -> Any:
+        if index.data_type != Integer:
+            index.data_type = binary_implicit_promotion(index.data_type, Integer)
+        if index.value < 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=index)
+        if index.value > 10000:
+            warnings.warn("The value of 'index' is very big. This can affect performance.", UserWarning)
+        return super().validate(seed, index)
+
+    @classmethod
+    def py_op(cls,
+              seed: Union[Dataset, DataComponent, Scalar],
+              index: int
+              ) -> float:
+        instance: PseudoRandom = PseudoRandom(hash(seed))
+        for _ in range(index):
+            instance.random()
+        return instance.random()

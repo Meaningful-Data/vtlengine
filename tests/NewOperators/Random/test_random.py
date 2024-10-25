@@ -17,12 +17,14 @@ ds_param = [
     ("2", 'DS_r := DS_1[calc Me_1 := random(Id_1, 1)];'),
     ("3", 'DS_r := random(DS_1, 1);'),
     ("4", 'DS_r := random(DS_1, 1);'),
-    ("5", 'DS_r := random(DS_1, 0);')
+    ("5", 'DS_r := random(DS_1, 0);'),
+    ("6", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];'),
+    ("7", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];')
 ]
 
 error_param = [
-    ("6", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];', "1-1-1-2"),
-    ("7", 'DS_r := random(1, -1);', "2-1-15-2")
+    ("8", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];', "1-1-1-1"),
+    ("9", 'DS_r := random(1, -1);', "2-1-15-2")
 ]
 
 
