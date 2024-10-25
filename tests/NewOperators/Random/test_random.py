@@ -15,8 +15,8 @@ pytestmark = mark.input_path(Path(__file__).parent / "data")
 ds_param = [
     ("1", 'DS_r := DS_1[calc Me_1 := random(1, 1)];'),
     ("2", 'DS_r := DS_1[calc Me_1 := random(Id_1, 1)];'),
-    ("3", 'DS_r := random(DS_1, 1);'),
-    ("4", 'DS_r := random(DS_1, 1);'),
+    ("3", 'DS_r := random(DS_1, 4);'),
+    ("4", 'DS_r := random(DS_1, 25);'),
     ("5", 'DS_r := random(DS_1, 0);'),
     ("6", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];'),
     ("7", 'DS_r := DS_1[calc Me_1 := random(Id_1, 0)];')

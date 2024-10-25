@@ -385,7 +385,7 @@ class Trunc(Parameterized):
 
 class PseudoRandom(_random.Random):
 
-    def __init__(self, seed: int) -> None:
+    def __init__(self, seed: Union[int, float]) -> None:
         super().__init__()
         self.seed(seed)
 
@@ -402,16 +402,16 @@ class Random(Parameterized):
         if index.value < 0:
             raise SemanticError("2-1-15-2", op=cls.op, value=index)
         if index.value > 10000:
-            warnings.warn("The value of 'index' is very big. This can affect "
+            warnings.warn("Random: The value of 'index' is very big. This can affect "
                           "performance.", UserWarning)
         return super().validate(seed, index)
 
     @classmethod
     def py_op(cls,
-              seed: Union[Dataset, DataComponent, Scalar],
+              seed: Union[int, float],
               index: int
               ) -> float:
-        instance: PseudoRandom = PseudoRandom(hash(seed))
+        instance: PseudoRandom = PseudoRandom(seed)
         for _ in range(index):
             instance.random()
-        return instance.random()
+        return instance.random().__round__(6)
