@@ -402,7 +402,8 @@ class Random(Parameterized):
         if index.value < 0:
             raise SemanticError("2-1-15-2", op=cls.op, value=index)
         if index.value > 10000:
-            warnings.warn("The value of 'index' is very big. This can affect performance.", UserWarning)
+            warnings.warn("The value of 'index' is very big. This can affect "
+                          "performance.", UserWarning)
         return super().validate(seed, index)
 
     @classmethod
