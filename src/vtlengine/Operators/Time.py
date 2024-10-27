@@ -828,23 +828,26 @@ class Date_Add(Parametrized):
 
 
 class SimpleUnaryTime(Operators.Unary):
+
     @classmethod
     def validate(
         cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        else:
-            return super().validate(operand)
+
+        # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check)
+        if operand.data_type == TimeInterval or operand.data_type not in (Date, TimePeriod):
+            raise SemanticError("1-1-19-10", op=cls.op)
+
+        return super().validate(operand)
 
     @classmethod
     def evaluate(
         cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
-        if isinstance(operand, Dataset):
-            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        else:
-            return super().evaluate(operand)
+        cls.validate(operand)
+        return super().evaluate(operand)
 
 
 class Year(SimpleUnaryTime):
@@ -856,13 +859,11 @@ class Year(SimpleUnaryTime):
             raise SemanticError("2-1-19-11", op=cls.op)
         return int(value[:4])
 
-    type_to_check = TimeInterval
     return_type = Integer
 
 
 class Month(SimpleUnaryTime):
     op = MONTH
-    type_to_check = TimeInterval
     return_type = Integer
 
     @classmethod
@@ -871,14 +872,13 @@ class Month(SimpleUnaryTime):
             raise SemanticError("2-1-19-11", op=cls.op)
         if value.count("-") == 2:
             return date.fromisoformat(value).month
-        else:
-            result = TimePeriodHandler(value).start_date(as_date=True)
-            return result.month  # type: ignore[union-attr]
+
+        result = TimePeriodHandler(value).start_date(as_date=True)
+        return result.month  # type: ignore[union-attr]
 
 
 class Day_of_Month(SimpleUnaryTime):
     op = DAYOFMONTH
-    type_to_check = TimeInterval
     return_type = Integer
 
     @classmethod
@@ -887,14 +887,13 @@ class Day_of_Month(SimpleUnaryTime):
             raise SemanticError("2-1-19-11", op=cls.op)
         if value.count("-") == 2:
             return date.fromisoformat(value).day
-        else:
-            result = TimePeriodHandler(value).end_date(as_date=True)
-            return result.day  # type: ignore[union-attr]
+
+        result = TimePeriodHandler(value).end_date(as_date=True)
+        return result.day  # type: ignore[union-attr]
 
 
 class Day_of_Year(SimpleUnaryTime):
     op = DAYOFYEAR
-    type_to_check = TimeInterval
     return_type = Integer
 
     @classmethod
@@ -904,12 +903,12 @@ class Day_of_Year(SimpleUnaryTime):
         if value.count("-") == 2:
             day_y = datetime.strptime(value, "%Y-%m-%d")
             return day_y.timetuple().tm_yday
-        else:
-            result = TimePeriodHandler(value).end_date(as_date=True)
-            datetime_value = datetime(
-                year=result.year, month=result.month, day=result.day  # type: ignore[union-attr]
-            )
-            return datetime_value.timetuple().tm_yday
+
+        result = TimePeriodHandler(value).end_date(as_date=True)
+        datetime_value = datetime(
+            year=result.year, month=result.month, day=result.day  # type: ignore[union-attr]
+        )
+        return datetime_value.timetuple().tm_yday
 
 
 class Day_to_Year(SimpleUnaryTime):

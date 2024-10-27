@@ -231,6 +231,8 @@ centralised_messages = {
     # flow_to_stock, stock_to_flow
     "1-1-19-8": "At op {op}: {op} can only be applied to a {comp_type}",
     "1-1-19-9": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
+    # New Unary time operators
+    "1-1-19-10": "{op} can only be applied to operands with data type as Date or Time Period",
     # Other time operators
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, "
     "periodIndTo parameter must be a larger duration value than the "
