@@ -108,8 +108,9 @@ slash_in_vtl_expression_error = [
     ("DS_1[calc Me_2 := dayofmonth(Me_1)]", "2-1-19-11"),
 ]
 
-transfomration_with_masks_params = [
-    ("DS_1[calc Me_2 := daytoyear(Me_1)]", pd.Series(name="Me_2", data=["P2Y52D", None]))
+transformation_with_masks_params = [
+    ("DS_1[calc Me_2 := daytoyear(Me_1)]", pd.Series(name="Me_2", data=["P2Y52D", None])),
+    ("DS_1[calc Me_2 := daytomonth(Me_1)]", pd.Series(name="Me_2", data=["P26M2D", None])),
 ]
 
 
@@ -144,7 +145,7 @@ def test_vtl_expression_unary_time_op(text, reference):
         assert_series_equal(result["DS_r"].data["Me_2"], reference)
 
 
-@pytest.mark.parametrize("text, reference", transfomration_with_masks_params)
+@pytest.mark.parametrize("text, reference", transformation_with_masks_params)
 def test_vtl_expression_unary_time_op_with_masks(text, reference):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)

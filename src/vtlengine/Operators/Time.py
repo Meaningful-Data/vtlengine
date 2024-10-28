@@ -16,8 +16,17 @@ from vtlengine.AST.Grammar.tokens import (
     MONTH,
     DAYOFYEAR,
     DAYTOYEAR,
+    DAYTOMONTH,
 )
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
+from vtlengine.DataTypes import (
+    Date,
+    TimePeriod,
+    TimeInterval,
+    Duration,
+    ScalarType,
+    Integer,
+    String,
+)
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
@@ -914,7 +923,7 @@ class Day_of_Year(SimpleUnaryTime):
 
 class Day_to_Year(SimpleUnaryTime):
     op = DAYTOYEAR
-    return_type = Integer
+    return_type = String
 
     @classmethod
     def py_op(cls, value: str) -> str:
@@ -922,16 +931,24 @@ class Day_to_Year(SimpleUnaryTime):
             raise SemanticError("2-1-19-11", op=cls.op)
         days = int(value)
         if days >= 366:
-            Y = days // 365
-            D = days % 365
-        return f"P{Y}Y{D}D"
+            years = days // 365
+            days_remaining = days % 365
+        return f"P{years}Y{days_remaining}D"
 
 
 class Day_to_Month(SimpleUnaryTime):
+    op = DAYTOMONTH
+    return_type = String
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> str:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        days = int(value)
+        if days >= 366:
+            months = days // 30
+            days_remaining = days % 30
+        return f"P{months}M{days_remaining}D"
 
 
 class Year_to_Day(SimpleUnaryTime):
