@@ -15,6 +15,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     MONTH,
     DAYOFYEAR,
+    DAYTOYEAR,
 )
 from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
@@ -912,10 +913,18 @@ class Day_of_Year(SimpleUnaryTime):
 
 
 class Day_to_Year(SimpleUnaryTime):
+    op = DAYTOYEAR
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> str:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        days = int(value)
+        if days >= 366:
+            Y = days // 365
+            D = days % 365
+        return f"P{Y}Y{D}D"
 
 
 class Day_to_Month(SimpleUnaryTime):

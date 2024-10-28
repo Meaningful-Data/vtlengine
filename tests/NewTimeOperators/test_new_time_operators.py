@@ -47,6 +47,18 @@ ds_3 = Dataset(
     ),
 )
 
+ds_4 = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1],
+        data=[("A", "782"), ("B", None)],
+    ),
+)
 ds_slash_error = Dataset(
     name="DS_1",
     components={
@@ -56,7 +68,7 @@ ds_slash_error = Dataset(
     data=pd.DataFrame(
         columns=["Id_1", "Me_1"],
         index=[0, 1, 2],
-        data=[("A", "2022-01-30"), ("B", "2022-08-21 / 2023-09-21"), ("C", None)],
+        data=[("A", "2022-01-30"), ("B", "2022-08-21/2023-09-21"), ("C", None)],
     ),
 )
 ds_error_params = [
@@ -85,7 +97,7 @@ vtl_expression_test_params = [
     ('dayofyear(cast("2022Q1", time_period))', 90),
     ("DS_1[calc Me_2 := dayofyear(Me_1)]", pd.Series(name="Me_2", data=[30, 233, None])),
 ]
-me_str_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-1-1")]
+me_str_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-19-10")]
 
 me_time_interval_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-19-10")]
 
@@ -94,6 +106,10 @@ slash_in_vtl_expression_error = [
     ("DS_1[calc Me_2 := month(Me_1)]", "2-1-19-11"),
     ("DS_1[calc Me_2 := dayofyear(Me_1)]", "2-1-19-11"),
     ("DS_1[calc Me_2 := dayofmonth(Me_1)]", "2-1-19-11"),
+]
+
+transfomration_with_masks_params = [
+    ("DS_1[calc Me_2 := daytoyear(Me_1)]", pd.Series(name="Me_2", data=["P2Y52D", None]))
 ]
 
 
@@ -128,12 +144,25 @@ def test_vtl_expression_unary_time_op(text, reference):
         assert_series_equal(result["DS_r"].data["Me_2"], reference)
 
 
+@pytest.mark.parametrize("text, reference", transfomration_with_masks_params)
+def test_vtl_expression_unary_time_op_with_masks(text, reference):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_4})
+    result = interpreter.visit(ast)
+    if isinstance(result["DS_r"], Scalar):
+        assert result["DS_r"].value == reference
+        assert result["DS_r"].data_type == Integer
+    else:
+        assert_series_equal(result["DS_r"].data["Me_2"], reference)
+
+
 @pytest.mark.parametrize("text, code", me_str_params)
 def test_vtl_expression_unary_time_op_me_str(text, code):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_2})
-    with pytest.raises(SemanticError, match="1-1-1-1"):
+    with pytest.raises(SemanticError, match="1-1-19-10"):
         interpreter.visit(ast)
 
 
