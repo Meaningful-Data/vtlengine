@@ -47,6 +47,18 @@ ds_3 = Dataset(
     ),
 )
 
+ds_slash_error = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1, 2],
+        data=[("A", "2022-01-30"), ("B", "2022-08-21 / 2023-09-21"), ("C", None)],
+    ),
+)
 ds_error_params = [
     (
         Month,
@@ -75,7 +87,14 @@ vtl_expression_test_params = [
 ]
 me_str_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-1-1")]
 
-me_time_interval_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-1-1")]
+me_time_interval_params = [("DS_1[calc Me_2 := year(Me_1)]", "1-1-19-10")]
+
+slash_in_vtl_expression_error = [
+    ("DS_1[calc Me_2 := year(Me_1)]", "2-1-19-11"),
+    ("DS_1[calc Me_2 := month(Me_1)]", "2-1-19-11"),
+    ("DS_1[calc Me_2 := dayofyear(Me_1)]", "2-1-19-11"),
+    ("DS_1[calc Me_2 := dayofmonth(Me_1)]", "2-1-19-11"),
+]
 
 
 @pytest.mark.parametrize("op, value, code", ds_error_params)
@@ -120,4 +139,17 @@ def test_vtl_expression_unary_time_op_me_str(text, code):
 
 @pytest.mark.parametrize("text, reference", me_time_interval_params)
 def test_vtl_expression_unary_time_op_me_time_interval(text, reference):
-    pass
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_2})
+    with pytest.raises(SemanticError, match="1-1-19-10"):
+        interpreter.visit(ast)
+
+
+@pytest.mark.parametrize("text, code", slash_in_vtl_expression_error)
+def test_slash_in_date_error(text, code):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_slash_error})
+    with pytest.raises(SemanticError, match="2-1-19-11"):
+        interpreter.visit(ast)
