@@ -120,14 +120,17 @@ class DataLoadTest(DataLoadHelper):
 
     def test_6(self):
         """
-        Status: OK
-        Expression: DS_r := DS_1;
-        Description: Missing columns and empty values.
-        Jira issue: VTLEN 423.
-        Git Branch: csv_validation.
-        Goal: Check Result.
         """
         code = "DataLoad-6"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        """
+        """
+        code = "DataLoad-7"
         number_inputs = 1
         references_names = ["DS_r"]
 
