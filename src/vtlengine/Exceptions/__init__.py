@@ -130,3 +130,47 @@ class InputValidationException(VTLEngineException):
             super().__init__(message, lino, colno, code)
         else:
             super().__init__(message, lino, colno)
+
+
+def check_key(field: str, dict_keys: List[Any], key: str) -> None:
+    if key not in dict_keys:
+        closest_key = find_closest_key(dict_keys, key)
+        message_append = f". Did you mean {closest_key}?" if closest_key else ""
+        raise SemanticError("0-1-1-13", field=field, key=key, closest_key=message_append)
+
+
+def find_closest_key(dict_keys, key):
+    closest_key = None
+    max_distance = 3
+    min_distance = float('inf')
+
+    for dict_key in dict_keys:
+        distance = key_distance(key, dict_key)
+        if distance < min_distance:
+            min_distance = distance
+            closest_key = dict_key
+
+    if min_distance <= max_distance:
+        return closest_key
+    return None
+
+
+def key_distance(key, objetive):
+    dp = [[0] * (len(objetive) + 1) for _ in range(len(key) + 1)]
+
+    for i in range(len(key) + 1):
+        dp[i][0] = i
+    for j in range(len(objetive) + 1):
+        dp[0][j] = j
+
+    for i in range(1, len(key) + 1):
+        for j in range(1, len(objetive) + 1):
+            if key[i - 1] == objetive[j - 1]:
+                cost = 0
+            else:
+                cost = 1
+            dp[i][j] = min(dp[i - 1][j] + 1,
+                           dp[i][j - 1] + 1,
+                           dp[i - 1][j - 1] + cost)
+
+    return dp[-1][-1]
