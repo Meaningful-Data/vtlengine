@@ -47,7 +47,7 @@ ds_3 = Dataset(
     ),
 )
 
-ds_4 = Dataset(
+ds_conversion_to_mask = Dataset(
     name="DS_1",
     components={
         "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
@@ -57,6 +57,30 @@ ds_4 = Dataset(
         columns=["Id_1", "Me_1"],
         index=[0, 1],
         data=[("A", "782"), ("B", None)],
+    ),
+)
+ds_conversion_from_mask_year = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1],
+        data=[("A", "P2Y20D"), ("B", None)],
+    ),
+)
+ds_conversion_from_mask_month = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1],
+        data=[("A", "P2M20D"), ("B", None)],
     ),
 )
 ds_slash_error = Dataset(
@@ -82,7 +106,30 @@ ds_error_params = [
         "1-1-19-8",
     )
 ]
-
+ds_error_from_mask_year = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1],
+        data=[("A", "P2M20D"), ("B", None)],
+    ),
+)
+ds_error_from_mask_month = Dataset(
+    name="DS_1",
+    components={
+        "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
+        "Me_1": Component(name="Me_1", data_type=Date, role=Role.MEASURE, nullable=True),
+    },
+    data=pd.DataFrame(
+        columns=["Id_1", "Me_1"],
+        index=[0, 1],
+        data=[("A", "P2Y20D"), ("B", None)],
+    ),
+)
 vtl_expression_test_params = [
     ('year(cast("2023-01-12", date))', 2023),
     ('year(cast("2022Q1", time_period))', 2022),
@@ -108,9 +155,24 @@ slash_in_vtl_expression_error = [
     ("DS_1[calc Me_2 := dayofmonth(Me_1)]", "2-1-19-11"),
 ]
 
-transformation_with_masks_params = [
+transformation_to_masks_params = [
     ("DS_1[calc Me_2 := daytoyear(Me_1)]", pd.Series(name="Me_2", data=["P2Y52D", None])),
     ("DS_1[calc Me_2 := daytomonth(Me_1)]", pd.Series(name="Me_2", data=["P26M2D", None])),
+]
+
+transformation_from_mask_params_year = [
+    ("DS_1[calc Me_2 := yeartoday(Me_1)]", pd.Series(name="Me_2", data=[750, None]))
+]
+
+transformation_from_mask_params_month = [
+    ("DS_1[calc Me_2 := monthtoday(Me_1)]", pd.Series(name="Me_2", data=[80, None]))
+]
+
+transformation_from_mask_error_year = [
+    ("DS_1[calc Me_2 := yeartoday(Me_1)]", "1-1-19-11")
+]
+transformation_from_mask_error_month = [
+    ("DS_1[calc Me_2 := monthtoday(Me_1)]", "1-1-19-12")
 ]
 
 
@@ -145,11 +207,11 @@ def test_vtl_expression_unary_time_op(text, reference):
         assert_series_equal(result["DS_r"].data["Me_2"], reference)
 
 
-@pytest.mark.parametrize("text, reference", transformation_with_masks_params)
+@pytest.mark.parametrize("text, reference", transformation_to_masks_params)
 def test_vtl_expression_unary_time_op_with_masks(text, reference):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
-    interpreter = InterpreterAnalyzer({"DS_1": ds_4})
+    interpreter = InterpreterAnalyzer({"DS_1": ds_conversion_to_mask})
     result = interpreter.visit(ast)
     if isinstance(result["DS_r"], Scalar):
         assert result["DS_r"].value == reference
@@ -182,4 +244,48 @@ def test_slash_in_date_error(text, code):
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_slash_error})
     with pytest.raises(SemanticError, match="2-1-19-11"):
+        interpreter.visit(ast)
+
+
+@pytest.mark.parametrize("text, reference", transformation_from_mask_params_year)
+def test_vtl_expression_unary_time_op_with_masks(text, reference):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_conversion_from_mask_year})
+    result = interpreter.visit(ast)
+    if isinstance(result["DS_r"], Scalar):
+        assert result["DS_r"].value == reference
+        assert result["DS_r"].data_type == Integer
+    else:
+        assert_series_equal(result["DS_r"].data["Me_2"], reference)
+
+
+@pytest.mark.parametrize("text, reference", transformation_from_mask_params_month)
+def test_vtl_expression_unary_time_op_with_masks(text, reference):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_conversion_from_mask_month})
+    result = interpreter.visit(ast)
+    if isinstance(result["DS_r"], Scalar):
+        assert result["DS_r"].value == reference
+        assert result["DS_r"].data_type == Integer
+    else:
+        assert_series_equal(result["DS_r"].data["Me_2"], reference)
+
+
+@pytest.mark.parametrize("text, code", transformation_from_mask_error_month)
+def test_error_month_to_day(text, code):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_error_from_mask_month})
+    with pytest.raises(SemanticError, match="1-1-19-12"):
+        interpreter.visit(ast)
+
+
+@pytest.mark.parametrize("text, code", transformation_from_mask_error_year)
+def test_error_year_to_day(text, code):
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({"DS_1": ds_error_from_mask_year})
+    with pytest.raises(SemanticError, match="1-1-19-11"):
         interpreter.visit(ast)

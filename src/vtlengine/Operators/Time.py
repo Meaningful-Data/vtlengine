@@ -16,7 +16,7 @@ from vtlengine.AST.Grammar.tokens import (
     MONTH,
     DAYOFYEAR,
     DAYTOYEAR,
-    DAYTOMONTH,
+    DAYTOMONTH, YEARTODAY, MONTHTODAY,
 )
 from vtlengine.DataTypes import (
     Date,
@@ -192,7 +192,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Dataset, DataComponent, Scalar, str]
+            cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -375,7 +375,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods_rows(
-        cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
+            cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
     ) -> List[Any]:
         rows = []
         for year in years:
@@ -388,7 +388,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def create_period_row(
-        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
+            cls, group_df: Any, period: str, year: int, val: Optional[int] = None
     ) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
@@ -427,7 +427,7 @@ class Fill_time_series(Binary):
         filled_data = []
 
         def create_filled_dates(
-            group: Any, min_max: Dict[str, Any]
+                group: Any, min_max: Dict[str, Any]
         ) -> (pd.DataFrame, str):  # type: ignore[syntax]
             date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
@@ -470,7 +470,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_time_intervals(
-        cls, data: pd.DataFrame, fill_type: str, frequency: str
+            cls, data: pd.DataFrame, fill_type: str, frequency: str
     ) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
@@ -578,7 +578,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_period(
-        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
+            cls, period_str: str, shift_value: int, frequency: Optional[int] = None
     ) -> str:
         period_type = cls._get_period(period_str)
 
@@ -632,7 +632,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -669,7 +669,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -682,7 +682,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -691,12 +691,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Type[ScalarType],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            value: str,
+            data_type: Type[ScalarType],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -715,7 +715,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -731,7 +731,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -745,7 +745,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -755,11 +755,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -771,11 +771,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -841,7 +841,7 @@ class SimpleUnaryTime(Operators.Unary):
 
     @classmethod
     def validate(
-        cls, operand: Union[Dataset, DataComponent, Scalar]
+            cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
@@ -854,7 +854,7 @@ class SimpleUnaryTime(Operators.Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Dataset, DataComponent, Scalar]
+            cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls.validate(operand)
         return super().evaluate(operand)
@@ -930,7 +930,7 @@ class Day_to_Year(SimpleUnaryTime):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         days = int(value)
-        if days >= 366:
+        if days >= 365:
             years = days // 365
             days_remaining = days % 365
         return f"P{years}Y{days_remaining}D"
@@ -945,21 +945,37 @@ class Day_to_Month(SimpleUnaryTime):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         days = int(value)
-        if days >= 366:
+        if days >= 30:
             months = days // 30
             days_remaining = days % 30
         return f"P{months}M{days_remaining}D"
 
 
 class Year_to_Day(SimpleUnaryTime):
+    op = YEARTODAY
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if 'M' in value:
+            raise SemanticError("1-1-19-11", op=cls.op)
+        years = int(value[1])
+        days = int(value[3: -1])
+        return years * 365 + days
 
 
 class Month_to_Day(SimpleUnaryTime):
+    op = MONTHTODAY
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any) -> Any:
-        pass
+    def py_op(cls, value: str) -> int:
+        if "/" in value:
+            raise SemanticError("2-1-19-11", op=cls.op)
+        if 'Y' in value:
+            raise SemanticError("1-1-19-12", op=cls.op)
+        months = int(value[1])
+        days = int(value[3: -1])
+        return months * 30 + days
