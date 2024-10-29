@@ -1,11 +1,13 @@
+import _random
 import math
 import operator
+import warnings
 from decimal import getcontext, Decimal
 from typing import Any, Optional, Union
 
 import vtlengine.Operators as Operator
 import pandas as pd
-from vtlengine.DataTypes import Integer, Number
+from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 from vtlengine.AST.Grammar.tokens import (
@@ -52,7 +54,8 @@ class Binary(Operator.Binary):
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
                 raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            return cls.py_op(x, y)
+            if cls.op == RANDOM:
+                return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         # Handles precision to avoid floating point errors
@@ -233,18 +236,6 @@ class Power(Binary):
         return x**param
 
 
-class Random(Binary):
-    """ """
-
-    op = RANDOM
-    return_type = Number
-
-    @classmethod
-    def py_op(cls, seed: Any, index: Any) -> Any:
-        # Dataset.random_seed = seed
-        return Dataset(name="result", components={}, data=pd.DataFrame())
-
-
 class Parameterized(Unary):
     """Parametrized class
     Inherits from Unary class, to validate the data type and evaluate if it is the correct one to
@@ -390,3 +381,37 @@ class Trunc(Parameterized):
             return truncated_value
 
         return int(truncated_value)
+
+
+class PseudoRandom(_random.Random):
+
+    def __init__(self, seed: Union[int, float]) -> None:
+        super().__init__()
+        self.seed(seed)
+
+
+class Random(Parameterized):
+
+    op = RANDOM
+    return_type = Number
+
+    @classmethod
+    def validate(cls, seed: Any, index: Any = None) -> Any:
+        if index.data_type != Integer:
+            index.data_type = binary_implicit_promotion(index.data_type, Integer)
+        if index.value < 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=index)
+        if index.value > 10000:
+            warnings.warn("Random: The value of 'index' is very big. This can affect "
+                          "performance.", UserWarning)
+        return super().validate(seed, index)
+
+    @classmethod
+    def py_op(cls,
+              seed: Union[int, float],
+              index: int
+              ) -> float:
+        instance: PseudoRandom = PseudoRandom(seed)
+        for _ in range(index):
+            instance.random()
+        return instance.random().__round__(6)

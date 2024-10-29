@@ -120,6 +120,24 @@ class DataLoadTest(DataLoadHelper):
 
     def test_6(self):
         """
+        """
+        code = "DataLoad-6"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_7(self):
+        """
+        """
+        code = "DataLoad-7"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_8(self):
+        """
         Status: OK
         Expression: DS_r := DS_1;
         Description: Duplicated column.
@@ -127,7 +145,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = "DataLoad-6"
+        code = "DataLoad-8"
         number_inputs = 1
 
         message = "Duplicated columns Me_3 found in file."
@@ -135,7 +153,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_7(self):
+    def test_9(self):
         """
         Status: OK
         Expression: DS_r := DS_1;
@@ -144,7 +162,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = "DataLoad-7"
+        code = "DataLoad-9"
         number_inputs = 1
 
         message = ""
@@ -152,7 +170,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_8(self):
+    def test_10(self):
         """
         Status: OK
         Expression: DS_r := DS_1;
@@ -161,7 +179,7 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: csv_validation.
         Goal: Check Exception.
         """
-        code = "DataLoad-8"
+        code = "DataLoad-10"
         number_inputs = 1
 
         exception_code = "0-1-1-4"
@@ -169,7 +187,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
-    def test_9(self):
+    def test_11(self):
         """
         Status: OK
         Expression: None
@@ -184,7 +202,7 @@ class DataLoadTest(DataLoadHelper):
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
-    def test_11(self):
+    def test_12(self):
         """
         Status: OK
         Description: Data Load, example bad quotes with commas.
@@ -200,7 +218,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_12(self):
+    def test_13(self):
         """
         Status: OK
         Description: Data Load, the same example correct writing.
@@ -214,7 +232,7 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_13(self):
+    def test_14(self):
         """
         Status: OK
         Description: Data Load.
@@ -228,7 +246,7 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_14(self):
+    def test_15(self):
         """
         Status: OK
         Description: Data Load,example bad quotes with commas.
@@ -244,7 +262,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_15(self):
+    def test_16(self):
         """
         Status: OK
         Description: Data Load, without headers.
@@ -260,7 +278,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_16(self):
+    def test_17(self):
         """
         Status: OK
         Description: Data Load, without identifier(isNull false) in the headers.
@@ -276,7 +294,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_17(self):
+    def test_18(self):
         """
         Status: OK
         Description: Data Load, without non nullable measure in the headers.
@@ -292,7 +310,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_18(self):
+    def test_19(self):
         """
         Status: OK
         Description: Data Load with value in quotes in the identifiers.
@@ -306,7 +324,7 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_19(self):
+    def test_20(self):
         """
         Status: OK
         Description: Data Load, with ñ in a latin-1(ISO-8859-1) encoding.
@@ -320,7 +338,7 @@ class DataLoadTest(DataLoadHelper):
         # self.DataLoadExceptionTest(code=code, number_inputs=number_inputs,
         #                            exception_code=message)
 
-    def test_20(self):
+    def test_21(self):
         """
         Status: OK
         Description: Data Load, without ñ in a latin-1(ISO-8859-1) encoding.
@@ -334,7 +352,7 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_21(self):
+    def test_22(self):
         """
         Status: OK
         Description: Data Load, with utf-16 encoding.
@@ -351,7 +369,7 @@ class DataLoadTest(DataLoadHelper):
         assert True
 
     # Quotes on the types
-    def test_22(self):
+    def test_23(self):
         """
         Status: OK
         Description: Data Load, with "" is omitted, but with \"\"\" fails.
@@ -367,7 +385,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_23(self):
+    def test_24(self):
         """
         Status: OK
         Description: Data Load, with spaces. Left spaces for integer,number
@@ -384,7 +402,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_24(self):
+    def test_25(self):
         """
         Status: OK
         Description: Data Load, with spaces. Right spaces for integer,number
@@ -401,7 +419,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_25(self):
+    def test_26(self):
         """
         Status: OK
         Description: check if the spaces are represented for the types allowed.
@@ -414,7 +432,7 @@ class DataLoadTest(DataLoadHelper):
 
         self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_26(self):
+    def test_27(self):
         """
         Status: OK
         Expression: None
@@ -430,7 +448,7 @@ class DataLoadTest(DataLoadHelper):
             code=code, number_inputs=number_inputs, exception_message=message
         )
 
-    def test_27(self):
+    def test_28(self):
         """
         Status:
         Description: Null identifiers are allowed.
