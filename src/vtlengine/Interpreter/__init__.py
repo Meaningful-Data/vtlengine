@@ -200,9 +200,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
-            if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
-                if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                    raise SemanticError("1-3-17")
+            if (not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)) and
+                    not isinstance(child, (AST.Assignment, AST.PersistentAssignment))):
+                raise SemanticError("1-3-17")
             result = self.visit(child)
 
             # Reset some handlers (joins and if)
@@ -368,14 +368,14 @@ class InterpreterAnalyzer(ASTTemplate):
             is_from_if = self.is_from_if
             self.is_from_if = False
 
-        if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            if hasattr(node.left, "value") and hasattr(node.right, "value"):
-                if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                    comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
-                else:
-                    comp_name = f"{node.left.value}#{node.right.value}"
-                ast_var_id = AST.VarID(value=comp_name)
-                return self.visit(ast_var_id)
+        if (self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE] and
+                hasattr(node.left, "value") and hasattr(node.right, "value")):
+            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+            else:
+                comp_name = f"{node.left.value}#{node.right.value}"
+            ast_var_id = AST.VarID(value=comp_name)
+            return self.visit(ast_var_id)
         left_operand = self.visit(node.left)
         right_operand = self.visit(node.right)
         if is_from_if:
@@ -838,7 +838,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
-        if node.op == CALC and any([isinstance(operand, Dataset) for operand in operands]):
+        if node.op == CALC and any(isinstance(operand, Dataset) for operand in operands):
             raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
@@ -1392,12 +1392,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     left_operand.data = pd.DataFrame({measure_name: []})
                 if right_operand.data is None:
                     right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(
-                    list(left_operand.data[left_operand.data[measure_name].isnull()].index)
-                )
-                right_null_indexes = set(
-                    list(right_operand.data[right_operand.data[measure_name].isnull()].index)
-                )
+                left_null_indexes = set(left_operand.data[left_operand.data[
+                    measure_name].isnull()].index)
+                right_null_indexes = set(right_operand.data[right_operand.data[
+                    measure_name].isnull()].index)
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:

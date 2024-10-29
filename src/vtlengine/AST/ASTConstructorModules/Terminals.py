@@ -407,15 +407,9 @@ class Terminals(VtlVisitor):
             for constraint in ctx_list
             if isinstance(constraint, Parser.ScalarTypeContext)
         ]
-        if len(data_type) > 0:
-            data_type = data_type[0]
-        else:
-            data_type = String()
+        data_type = data_type[0] if len(data_type) > 0 else String()
 
-        if role_node == Role.IDENTIFIER:
-            nullable = False
-        else:
-            nullable = True
+        nullable = role_node != Role.IDENTIFIER
 
         return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
@@ -513,10 +507,7 @@ class Terminals(VtlVisitor):
         const_node = self.visitConstant(ctx_list[2])
         basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
 
-        if len(ctx_list) > 6:
-            param_node = [ParamConstant("PARAM_CAST", ctx_list[6])]
-        else:
-            param_node = []
+        param_node = [ParamConstant("PARAM_CAST", ctx_list[6])] if len(ctx_list) > 6 else []
 
         if len(basic_scalar_type) == 1:
             children_nodes = [const_node, basic_scalar_type[0]]
@@ -681,14 +672,12 @@ class Terminals(VtlVisitor):
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
-        if mode_2 == "preceding":
-            if (
-                mode_1 == "preceding" and num_rows_1 == -1 and num_rows_2 == -1
-            ):  # preceding and preceding (error)
-                raise Exception(
-                    f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
-                    f"line {ctx_list[3].start.line}"
-                )
+        if (mode_2 == "preceding" and mode_1 == "preceding" and num_rows_1 == -1
+                and num_rows_2 == -1):  # preceding and preceding (error)
+            raise Exception(
+                f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
+                f"line {ctx_list[3].start.line}"
+            )
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1

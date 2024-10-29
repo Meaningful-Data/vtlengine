@@ -143,7 +143,7 @@ class Eval(Unary):
         df = cls._execute_query(
             external_routine.query, external_routine.dataset_names, empty_data_dict
         )
-        component_names = [name for name in df.columns]
+        component_names = df.columns.tolist()
         for comp_name in component_names:
             if comp_name not in output.components:
                 raise SemanticError(

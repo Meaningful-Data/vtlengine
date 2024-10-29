@@ -219,7 +219,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         return datasets, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
-    for dataset_name, file_path in dict_datapoints.items():
+    for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
 

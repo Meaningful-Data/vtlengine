@@ -279,19 +279,13 @@ class ASTVisitor(VtlVisitor):
             for erCode_name in ctx_list
             if isinstance(erCode_name, Parser.ErCodeContext)
         ]
-        if len(er_code) == 0:
-            er_code = None
-        else:
-            er_code = er_code[0]
+        er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
             if isinstance(erLevel_name, Parser.ErLevelContext)
         ]
-        if len(er_level) == 0:
-            er_level = None
-        else:
-            er_level = er_level[0]
+        er_level = None if len(er_level) == 0 else er_level[0]
 
         return DPRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
 
@@ -316,11 +310,7 @@ class ASTVisitor(VtlVisitor):
             for element in ctx_list
             if isinstance(element, Parser.ScalarItemContext)
         ]
-
-        if len(argument_default) == 0:
-            argument_default = None
-        else:
-            argument_default = argument_default[0]
+        argument_default = None if len(argument_default) == 0 else argument_default[0]
 
         if isinstance(argument_type, (Dataset, Component, Scalar)):
             argument_type.name = argument_name.value
@@ -374,10 +364,7 @@ class ASTVisitor(VtlVisitor):
             if isinstance(valueDomain, TerminalNodeImpl)
             and valueDomain.getSymbol().type == Parser.VALUE_DOMAIN
         ]
-        if len(value_domain) != 0:
-            kind = "ValuedomainID"
-        else:
-            kind = "DatasetID"
+        kind = "ValuedomainID" if len(value_domain) != 0 else "DatasetID"
 
         conditions = [
             self.visitValueDomainSignature(vtlsig)
@@ -457,19 +444,13 @@ class ASTVisitor(VtlVisitor):
             for erCode_name in ctx_list
             if isinstance(erCode_name, Parser.ErCodeContext)
         ]
-        if len(er_code) == 0:
-            er_code = None
-        else:
-            er_code = er_code[0]
+        er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
             if isinstance(erLevel_name, Parser.ErLevelContext)
         ]
-        if len(er_level) == 0:
-            er_level = None
-        else:
-            er_level = er_level[0]
+        er_level = None if len(er_level) == 0 else er_level[0]
 
         return HRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
 

@@ -896,10 +896,7 @@ class Expr(VtlVisitor):
             and str_.getSymbol().type in [Parser.FIRST, Parser.LAST]
         ]
 
-        if len(conf) == 0:
-            conf = None
-        else:
-            conf = conf[0]
+        conf = None if len(conf) == 0 else conf[0]
 
         if ctx.op is not None:
             operand_node = self.visitOptionalExpr(ctx.op)
@@ -1221,11 +1218,7 @@ class Expr(VtlVisitor):
                 inbalance_node = self.visitImbalanceExpr(param)
 
         invalid = ctx_list[-2] if isinstance(ctx_list[-2], TerminalNodeImpl) else None
-
-        if invalid is None:
-            invalid_value = False
-        else:
-            invalid_value = True if invalid.getSymbol().text == "invalid" else False
+        invalid_value = False if invalid is None else invalid.getSymbol().text == "invalid"
 
         return Validation(
             op=token.text,

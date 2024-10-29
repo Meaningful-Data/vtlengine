@@ -668,10 +668,7 @@ class ExprComp(VtlVisitor):
             and str_.getSymbol().type in [Parser.FIRST, Parser.LAST]
         ]
 
-        if len(conf) == 0:
-            conf = None
-        else:
-            conf = conf[0]
+        conf = None if len(conf) == 0 else conf[0]
 
         if ctx.op is not None:
             operand_node = self.visitOptionalExprComponent(ctx.op)

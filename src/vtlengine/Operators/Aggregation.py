@@ -153,7 +153,7 @@ class Aggregation(Operator.Unary):
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
         # Change Measure data type
-        for comp_name, comp in result_components.items():
+        for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
                 unary_implicit_promotion(comp.data_type, cls.type_to_check)
                 if cls.return_type is not None:

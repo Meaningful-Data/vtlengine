@@ -159,7 +159,7 @@ class Dataset:
                 raise ValueError(
                     "The number of components must match the number of columns in the data"
                 )
-            for name, component in self.components.items():
+            for name, _ in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 

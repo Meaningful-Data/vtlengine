@@ -195,7 +195,7 @@ class Join(Operator):
     def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
-        if not all([isinstance(op, Dataset) for op in operands]):
+        if not all(isinstance(op, Dataset) for op in operands):
             raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
             return Dataset(name="result", components=operands[0].components, data=None)
@@ -252,7 +252,7 @@ class Join(Operator):
                     reference=cls.reference_dataset.name,
                 )
 
-            for op_name, identifiers in info.items():
+            for _, identifiers in info.items():
                 if not set(using).issubset(identifiers):
                     # (Case B2)
                     if not set(using).issubset(reference_components):
