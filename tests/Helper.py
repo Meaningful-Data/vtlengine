@@ -160,7 +160,7 @@ class TestHelper(TestCase):
         )
         result = interpreter.visit(ast)
         for dataset in result.values():
-            _ = format_time_period_external_representation(
+            format_time_period_external_representation(
                 dataset, TimePeriodRepresentation.SDMX_REPORTING
             )
 
@@ -170,6 +170,8 @@ class TestHelper(TestCase):
                 f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}"
             )
 
+        # cls._override_structures(code, result, reference_datasets)
+        # cls._override_data(code, result, reference_datasets)
         assert result == reference_datasets
 
     @classmethod
