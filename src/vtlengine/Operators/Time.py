@@ -6,14 +6,23 @@ import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
+    DATE_ADD,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
     PERIOD_INDICATOR,
     TIME_AGG,
-    TIMESHIFT, DATE_ADD,
+    TIMESHIFT,
 )
-from vtlengine.DataTypes import Date, Duration, ScalarType, TimeInterval, TimePeriod, Integer, String, \
-    binary_implicit_promotion
+from vtlengine.DataTypes import (
+    Date,
+    Duration,
+    Integer,
+    ScalarType,
+    String,
+    TimeInterval,
+    TimePeriod,
+    binary_implicit_promotion,
+)
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -816,9 +825,9 @@ class Date_Add(Parametrized):
 
     @classmethod
     def validate(cls,
-                 operand: [Scalar, DataComponent, Dataset],
+                 operand: Union[Scalar, DataComponent, Dataset],
                  param_list: List[Scalar]
-                 ) -> [Scalar, DataComponent, Dataset]:
+                 ) -> Union[Scalar, DataComponent, Dataset]:
 
         # param validation
         if len(param_list) != 2:
@@ -849,20 +858,22 @@ class Date_Add(Parametrized):
 
     @classmethod
     def evaluate(cls,
-                 operand: [Scalar, DataComponent, Dataset],
+                 operand: Union[Scalar, DataComponent, Dataset],
                  param_list: List[Scalar]
-                 ) -> [Scalar, DataComponent, Dataset]:
+                 ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
 
-        if isinstance(operand, Scalar):
+        if isinstance(result, Scalar) and isinstance(operand, Scalar):
             result.value = cls.op_date(operand.value, shift, period)
 
-        elif isinstance(operand, DataComponent):
+        if (isinstance(result, DataComponent) and isinstance(operand, DataComponent) and
+                operand.data is not None):
             result.data = operand.data.map(
                 lambda x: cls.op_date(x, shift, period), na_action="ignore")
 
-        else:
+        if (isinstance(result, Dataset) and isinstance(operand, Dataset) and
+                operand.data is not None):
             result.data = operand.data.copy()
             for measure in operand.get_measures():
                 if measure.data_type == Date:
@@ -873,16 +884,18 @@ class Date_Add(Parametrized):
 
     @classmethod
     def op_date(cls, date_str: str, shift: int, period: str) -> str:
-        date = datetime.strptime(date_str, "%Y" if len(date_str) == 4 else "%Y-%m" if len(date_str) == 7 else "%Y-%m-%d")
+        date = datetime.strptime(date_str, "%Y" if len(date_str) == 4 else
+            "%Y-%m" if len(date_str) == 7 else "%Y-%m-%d")
         if period == 'D':
             return (date + timedelta(days=shift)).strftime("%Y-%m-%d"[:len(date_str)])
         if period == 'W':
-            a = (date + timedelta(weeks=shift)).strftime("%Y-%m-%d"[:len(date_str)])
             return (date + timedelta(weeks=shift)).strftime("%Y-%m-%d"[:len(date_str)])
         new_month = (date.month - 1 + shift * {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period]) % 12 + 1
-        new_year = date.year + (date.month - 1 + shift * {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period]) // 12
+        new_year = date.year + (
+                date.month - 1 + shift * {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period]) // 12
         last_day = (datetime(new_year, new_month + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime("%Y-%m-%d"[:len(date_str)])
+        return (date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).
+                strftime("%Y-%m-%d"[:len(date_str)]))
 
 
 
