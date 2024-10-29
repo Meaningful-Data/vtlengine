@@ -13,6 +13,7 @@ from pandas._testing import assert_frame_equal
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.Exceptions import SemanticError
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
@@ -209,8 +210,8 @@ class Dataset:
             return True
         elif self.data is None or other.data is None:
             return False
-        if len(self.data) == len(other.data) == 0:
-            assert self.data.shape == other.data.shape
+        if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
+            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
