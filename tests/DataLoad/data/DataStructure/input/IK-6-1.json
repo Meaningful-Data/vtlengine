@@ -1,0 +1,63 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "Id_3",
+          "role": "Identifier",
+          "type": "Boolean",
+          "nullable": false
+        },
+        {
+          "name": "Id_4",
+          "role": "Identifier",
+          "type": "Time",
+          "nullable": false
+        },
+        {
+          "name": "Id_5",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "Id_6",
+          "role": "Identifier",
+          "type": "TimPerod",
+          "nullable": false
+        },
+        {
+          "name": "Id_7",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Id_8",
+          "role": "Identifier",
+          "type": "Duration",
+          "nullable": false
+        },
+        {
+          "name": "Me_1",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

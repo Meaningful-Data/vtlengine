@@ -145,6 +145,8 @@ class TimePeriodHandler:
     _period_number: int
 
     def __init__(self, period: str) -> None:
+        if isinstance(period, int):
+            period = str(period)
         if "-" in period:
             self.year, self.period_indicator, self.period_number = (
                 from_input_customer_support_to_internal(period)

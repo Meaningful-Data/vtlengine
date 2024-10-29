@@ -20,21 +20,21 @@ centralised_messages = {
     # Infer Data Structure errors
     # "0-1-1-1": "A csv file or a dataframe is required.",
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
-    "0-1-1-3": "Can not infer data structure: {errors}",
+    "0-1-1-3": "Can not infer data structure: {errors}.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
     "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
     "1 datapoints.",
     "0-1-1-6": "Duplicated records. Combination of identifiers are repeated.",
-    "0-1-1-7": "G1 - The provided CSV file is empty",
-    "0-1-1-8": "The following identifiers {ids} were not found , review file {file}",
+    "0-1-1-7": "G1 - The provided CSV file is empty.",
+    "0-1-1-8": "The following identifiers {ids} were not found , review file {file}.",
     "0-1-1-9": "You have a problem related with commas, review rfc4180 standard, review file "
-    "{file}",
+    "{file}.",
     "0-1-1-10": "On Dataset {name} loading: Component {comp_name} is missing in Datapoints.",
-    "0-1-1-11": "Wrong data in the file for this scalardataset {name}",
-    "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}",
-    #
-    "0-1-0-1": " Trying to redefine input datasets {dataset}",  # Semantic Error
+    "0-1-1-11": "Wrong data in the file for this scalardataset {name}.",
+    "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
+    "0-1-1-13": "Invalid key on {field} field: {key}{closest_key}.",
+    "0-1-0-1": " Trying to redefine input datasets {dataset}.",  # Semantic Error
     # ------------Operators-------------
     # General Semantic errors
     # "1-1-1-1": "At op {op}. Unable to validate types.",
@@ -134,6 +134,14 @@ centralised_messages = {
     "be Datasets or at least one of them a Scalar.",
     "1-1-9-13": "At op {op}: then {then} and else {else_clause} datasets must contain the same "
     "number of components.",
+    "2-1-9-1": "At op {op}: Condition operators must have the same operator type.",
+    "2-1-9-2": "At op {op}: Condition {name} it's not a boolean.",
+    "2-1-9-3": "At op {op}: All then and else operands must be scalars.",
+    "2-1-9-4": "At op {op}: Condition {name} must be boolean type.",
+    "2-1-9-5": "At op {op}: Condition Dataset {name} measure must be Boolean.",
+    "2-1-9-6": "At op {op}: At least a then or else operand must be Dataset.",
+    "2-1-9-7": "At op {op}: All Dataset operands must have the same components.",
+
     # Data Validation errors
     "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",
     "1-1-10-2": "At op {op}: Number of variable has to be equal between the call and signature.",

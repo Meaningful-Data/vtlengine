@@ -41,6 +41,13 @@ class Scalar:
         return same_name and same_type and same_value
 
 
+Role_keys = [
+    "Identifier",
+    "Attribute",
+    "Measure",
+]
+
+
 class Role(Enum):
     """
     Enum class for the role of a component  (Identifier, Attribute, Measure)
