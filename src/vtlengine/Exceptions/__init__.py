@@ -132,14 +132,14 @@ class InputValidationException(VTLEngineException):
             super().__init__(message, lino, colno)
 
 
-def check_key(field: str, dict_keys: List[Any], key: str) -> None:
+def check_key(field: str, dict_keys: Any, key: str) -> None:
     if key not in dict_keys:
         closest_key = find_closest_key(dict_keys, key)
         message_append = f". Did you mean {closest_key}?" if closest_key else ""
         raise SemanticError("0-1-1-13", field=field, key=key, closest_key=message_append)
 
 
-def find_closest_key(dict_keys, key):
+def find_closest_key(dict_keys: Any, key: str) -> Optional[str]:
     closest_key = None
     max_distance = 3
     min_distance = float('inf')
@@ -155,7 +155,7 @@ def find_closest_key(dict_keys, key):
     return None
 
 
-def key_distance(key, objetive):
+def key_distance(key: str, objetive: str) -> int:
     dp = [[0] * (len(objetive) + 1) for _ in range(len(key) + 1)]
 
     for i in range(len(key) + 1):

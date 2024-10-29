@@ -9,7 +9,8 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import check_key
-from vtlengine.Model import ValueDomain, Dataset, Scalar, Component, Role, ExternalRoutine
+from vtlengine.Model import (ValueDomain, Dataset, Scalar, Component, Role,
+                             ExternalRoutine, Role_keys)
 from vtlengine.files.parser import _validate_pandas, _fill_dataset_empty_data
 
 base_path = Path(__file__).parent
@@ -35,13 +36,13 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
 
             for component in dataset_json["DataStructure"]:
                 check_key("data_type", SCALAR_TYPES.keys(), component["type"])
-                check_key("role", Role, component["role"])
+                check_key("role", Role_keys, component["role"])
                 components[component["name"]] = Component(
-                        name=component["name"],
-                        data_type=SCALAR_TYPES[component["type"]],
-                        role=Role(component["role"]),
-                        nullable=component["nullable"],
-                    )
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["type"]],
+                    role=Role(component["role"]),
+                    nullable=component["nullable"],
+                )
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if "scalars" in structures:
