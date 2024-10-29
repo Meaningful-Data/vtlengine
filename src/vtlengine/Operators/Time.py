@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
@@ -10,9 +10,10 @@ from vtlengine.AST.Grammar.tokens import (
     FLOW_TO_STOCK,
     PERIOD_INDICATOR,
     TIME_AGG,
-    TIMESHIFT,
+    TIMESHIFT, DATE_ADD,
 )
-from vtlengine.DataTypes import Date, Duration, ScalarType, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Date, Duration, ScalarType, TimeInterval, TimePeriod, Integer, String, \
+    binary_implicit_promotion
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -810,14 +811,79 @@ class Date_Diff(Binary):
 
 
 class Date_Add(Parametrized):
-    @classmethod
-    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
-        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
-        pass
+
+    op = DATE_ADD
 
     @classmethod
-    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
-        pass
+    def validate(cls,
+                 operand: [Scalar, DataComponent, Dataset],
+                 param_list: List[Scalar]
+                 ) -> [Scalar, DataComponent, Dataset]:
+
+        # param validation
+        if len(param_list) != 2:
+            raise SemanticError("2-1-19-11", op=cls.op, given=len(param_list), expected=2)
+        if not isinstance(param_list[0], Scalar):
+            raise SemanticError("2-1-19-12", op=cls.op, type=param_list[0].__class__.__name__,
+                                name=param_list[0].name, expected="Scalar")
+        if param_list[0].data_type != Integer:
+            raise SemanticError("2-1-19-13", op=cls.op, type=param_list[0].data_type,
+                                name=param_list[0].name, expected="Integer")
+        if not isinstance(param_list[1], Scalar):
+            raise SemanticError("2-1-19-12", op=cls.op, type=param_list[1].__class__.__name__,
+                                name=param_list[1].name, expected="Scalar")
+        if param_list[1].data_type != String:
+            raise SemanticError("2-1-19-13", op=cls.op, type=param_list[1].data_type,
+                                name=param_list[1].name, expected="String")
+
+        if isinstance(operand, (Scalar, DataComponent)) and operand.data_type != Date:
+            binary_implicit_promotion(operand.data_type, Date)
+
+        if isinstance(operand, Scalar):
+            return Scalar(name='result', data_type=Date, value=None)
+        if isinstance(operand, DataComponent):
+            return DataComponent(name='result', data_type=Date, data=None)
+        if Date not in [comp.data_type for comp in operand.components.values()]:
+            raise SemanticError("2-1-19-14", op=cls.op)
+        return Dataset(name='result', components=operand.components.copy(), data=None)
+
+    @classmethod
+    def evaluate(cls,
+                 operand: [Scalar, DataComponent, Dataset],
+                 param_list: List[Scalar]
+                 ) -> [Scalar, DataComponent, Dataset]:
+        result = cls.validate(operand, param_list)
+        shift, period = param_list[0].value, param_list[1].value
+
+        if isinstance(operand, Scalar):
+            result.value = cls.op_date(operand.value, shift, period)
+
+        elif isinstance(operand, DataComponent):
+            result.data = operand.data.map(
+                lambda x: cls.op_date(x, shift, period), na_action="ignore")
+
+        else:
+            result.data = operand.data.copy()
+            for measure in operand.get_measures():
+                if measure.data_type == Date:
+                    result.data[measure.name] = result.data[measure.name].map(
+                        lambda x: cls.op_date(x, shift, period), na_action="ignore")
+
+        return result
+
+    @classmethod
+    def op_date(cls, date_str: str, shift: int, period: str) -> str:
+        date = datetime.strptime(date_str, "%Y" if len(date_str) == 4 else "%Y-%m" if len(date_str) == 7 else "%Y-%m-%d")
+        if period == 'D':
+            return (date + timedelta(days=shift)).strftime("%Y-%m-%d"[:len(date_str)])
+        if period == 'W':
+            a = (date + timedelta(weeks=shift)).strftime("%Y-%m-%d"[:len(date_str)])
+            return (date + timedelta(weeks=shift)).strftime("%Y-%m-%d"[:len(date_str)])
+        new_month = (date.month - 1 + shift * {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period]) % 12 + 1
+        new_year = date.year + (date.month - 1 + shift * {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period]) // 12
+        last_day = (datetime(new_year, new_month + 1, 1) - timedelta(days=1)).day
+        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime("%Y-%m-%d"[:len(date_str)])
+
 
 
 class Year(Unary):

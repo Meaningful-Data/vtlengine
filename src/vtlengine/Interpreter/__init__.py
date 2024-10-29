@@ -38,7 +38,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     SUBSTR,
     TRUNC,
-    WHEN,
+    WHEN, DATE_ADD,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -70,7 +70,7 @@ from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import HAAssignment, Hierarchy, get_measure_from_dataset
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import Instr, Replace, Substr
-from vtlengine.Operators.Time import Current_Date, Fill_time_series, Time_Aggregation
+from vtlengine.Operators.Time import Current_Date, Fill_time_series, Time_Aggregation, Date_Add
 from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -1100,6 +1100,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else "all"
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
+        elif node.op == DATE_ADD:
+            params = [self.visit(node.params[0]), self.visit(node.params[1])]
+            return Date_Add.analyze(self.visit(node.children[0]), params)
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             scalar_type = node.children[1]
