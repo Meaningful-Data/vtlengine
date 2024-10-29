@@ -123,7 +123,7 @@ class InputValidationException(VTLEngineException):
         lino: Optional[str] = None,
         colno: Optional[str] = None,
         code: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if code is not None:
             message = centralised_messages[code].format(**kwargs)
@@ -142,7 +142,7 @@ def check_key(field: str, dict_keys: Any, key: str) -> None:
 def find_closest_key(dict_keys: Any, key: str) -> Optional[str]:
     closest_key = None
     max_distance = 3
-    min_distance = float('inf')
+    min_distance = float("inf")
 
     for dict_key in dict_keys:
         distance = key_distance(key, dict_key)
@@ -169,8 +169,6 @@ def key_distance(key: str, objetive: str) -> int:
                 cost = 0
             else:
                 cost = 1
-            dp[i][j] = min(dp[i - 1][j] + 1,
-                           dp[i][j - 1] + 1,
-                           dp[i - 1][j - 1] + cost)
+            dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
 
     return dp[-1][-1]

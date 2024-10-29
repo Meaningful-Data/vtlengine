@@ -168,8 +168,8 @@ transformation_from_mask_params_month = [
     ("DS_1[calc Me_2 := monthtoday(Me_1)]", pd.Series(name="Me_2", data=[80, None]))
 ]
 
-transformation_from_mask_error_year = [("DS_1[calc Me_2 := yeartoday(Me_1)]", "1-1-19-11")]
-transformation_from_mask_error_month = [("DS_1[calc Me_2 := monthtoday(Me_1)]", "1-1-19-12")]
+transformation_from_mask_error_year = [("DS_1[calc Me_2 := yeartoday(Me_1)]", "2-1-19-12")]
+transformation_from_mask_error_month = [("DS_1[calc Me_2 := monthtoday(Me_1)]", "2-1-19-13")]
 
 
 @pytest.mark.parametrize("op, value, code", ds_error_params)
@@ -274,7 +274,7 @@ def test_error_month_to_day(text, code):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_error_from_mask_month})
-    with pytest.raises(SemanticError, match="1-1-19-12"):
+    with pytest.raises(SemanticError, match="2-1-19-13"):
         interpreter.visit(ast)
 
 
@@ -283,5 +283,5 @@ def test_error_year_to_day(text, code):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_error_from_mask_year})
-    with pytest.raises(SemanticError, match="1-1-19-11"):
+    with pytest.raises(SemanticError, match="2-1-19-12"):
         interpreter.visit(ast)

@@ -9,8 +9,15 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import check_key
-from vtlengine.Model import (ValueDomain, Dataset, Scalar, Component, Role,
-                             ExternalRoutine, Role_keys)
+from vtlengine.Model import (
+    ValueDomain,
+    Dataset,
+    Scalar,
+    Component,
+    Role,
+    ExternalRoutine,
+    Role_keys,
+)
 from vtlengine.files.parser import _validate_pandas, _fill_dataset_empty_data
 
 base_path = Path(__file__).parent

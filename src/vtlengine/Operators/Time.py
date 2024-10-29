@@ -961,10 +961,11 @@ class Year_to_Day(SimpleUnaryTime):
     def py_op(cls, value: str) -> int:
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
-        if "M" in value:
-            raise SemanticError("1-1-19-11", op=cls.op)
-        years = int(value[1])
-        days = int(value[3:-1])
+        if "Y" not in value:
+            raise SemanticError("2-1-19-12", op=cls.op)
+        index_y = value.index("Y")
+        years = int(value[1:index_y])
+        days = int(value[(index_y + 1) : -1])
         return years * 365 + days
 
 
@@ -976,8 +977,9 @@ class Month_to_Day(SimpleUnaryTime):
     def py_op(cls, value: str) -> int:
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
-        if "Y" in value:
-            raise SemanticError("1-1-19-12", op=cls.op)
-        months = int(value[1])
-        days = int(value[3:-1])
+        if "M" not in value:
+            raise SemanticError("2-1-19-13", op=cls.op)
+        index_m = value.index("M")
+        months = int(value[1:index_m])
+        days = int(value[(index_m + 1) : -1])
         return months * 30 + days

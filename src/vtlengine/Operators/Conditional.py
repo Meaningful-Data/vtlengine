@@ -287,21 +287,15 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(
-            name="result",
-            components=result_components,
-            data=None
-        )
+        return Dataset(name="result", components=result_components, data=None)
 
 
 class Case(Operator):
 
     @classmethod
-    def evaluate(cls,
-                 conditions: List[Any],
-                 thenOps: List[Any],
-                 elseOp: Any
-                 ) -> Union[Scalar, DataComponent, Dataset]:
+    def evaluate(
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+    ) -> Union[Scalar, DataComponent, Dataset]:
 
         result = cls.validate(conditions, thenOps, elseOp)
 
@@ -316,19 +310,25 @@ class Case(Operator):
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(condition.data, value,  # type: ignore[call-overload]
-                                       result.data)
+                result.data = np.where(
+                    condition.data, value, result.data  # type: ignore[call-overload]
+                )
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
             else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
-            result.data = pd.Series(np.where(condition_mask_else, else_value, result.data),
-                                    index=conditions[0].data.index)
+            result.data = pd.Series(
+                np.where(condition_mask_else, else_value, result.data),
+                index=conditions[0].data.index,
+            )
 
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = (conditions[0].data[identifiers] if conditions[0].data is not None
-                           else pd.DataFrame(columns=identifiers))
+            result.data = (
+                conditions[0].data[identifiers]
+                if conditions[0].data is not None
+                else pd.DataFrame(columns=identifiers)
+            )
 
             for i in range(len(conditions)):
                 condition = conditions[i]
@@ -336,28 +336,32 @@ class Case(Operator):
                 condition_mask = condition.data[bool_col]
 
                 result.data.loc[condition_mask, columns] = (
-                    thenOps[i].value if isinstance(thenOps[i], Scalar)
+                    thenOps[i].value
+                    if isinstance(thenOps[i], Scalar)
                     else thenOps[i].data.loc[condition_mask, columns]
                 )
 
-            condition_mask_else = ~np.logical_or.reduce([
-                condition.data[next(x.name for x in condition.get_measures() if
-                                    x.data_type == Boolean)].astype(bool) for
-                condition in conditions])
+            condition_mask_else = ~np.logical_or.reduce(
+                [
+                    condition.data[
+                        next(x.name for x in condition.get_measures() if x.data_type == Boolean)
+                    ].astype(bool)
+                    for condition in conditions
+                ]
+            )
 
             result.data.loc[condition_mask_else, columns] = (
-                elseOp.value if isinstance(elseOp, Scalar)
+                elseOp.value
+                if isinstance(elseOp, Scalar)
                 else elseOp.data.loc[condition_mask_else, columns]
             )
 
         return result
 
     @classmethod
-    def validate(cls,
-                 conditions: List[Any],
-                 thenOps: List[Any],
-                 elseOp: Any
-                 ) -> Union[Scalar, DataComponent, Dataset]:
+    def validate(
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+    ) -> Union[Scalar, DataComponent, Dataset]:
 
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
@@ -424,8 +428,4 @@ class Case(Operator):
             if isinstance(op, Dataset) and op.get_components_names() != comp_names:
                 raise SemanticError("2-1-9-7", op=cls.op)
 
-        return Dataset(
-            name="result",
-            components=components,
-            data=None
-        )
+        return Dataset(name="result", components=components, data=None)

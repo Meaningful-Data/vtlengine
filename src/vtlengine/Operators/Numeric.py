@@ -402,15 +402,14 @@ class Random(Parameterized):
         if index.value < 0:
             raise SemanticError("2-1-15-2", op=cls.op, value=index)
         if index.value > 10000:
-            warnings.warn("Random: The value of 'index' is very big. This can affect "
-                          "performance.", UserWarning)
+            warnings.warn(
+                "Random: The value of 'index' is very big. This can affect " "performance.",
+                UserWarning,
+            )
         return super().validate(seed, index)
 
     @classmethod
-    def py_op(cls,
-              seed: Union[int, float],
-              index: int
-              ) -> float:
+    def py_op(cls, seed: Union[int, float], index: int) -> float:
         instance: PseudoRandom = PseudoRandom(seed)
         for _ in range(index):
             instance.random()

@@ -141,7 +141,6 @@ centralised_messages = {
     "2-1-9-5": "At op {op}: Condition Dataset {name} measure must be Boolean.",
     "2-1-9-6": "At op {op}: At least a then or else operand must be Dataset.",
     "2-1-9-7": "At op {op}: All Dataset operands must have the same components.",
-
     # Data Validation errors
     "1-1-10-1": "At op {op}: The {op_type} operand must have exactly one measure of type {me_type}",
     "1-1-10-2": "At op {op}: Number of variable has to be equal between the call and signature.",
@@ -241,8 +240,6 @@ centralised_messages = {
     "1-1-19-9": "At op {op}: {op} can only be applied to a {comp_type} with a {param}",
     # New Unary time operators
     "1-1-19-10": "{op} can only be applied to operands with data type as Date or Time Period",
-    "1-1-19-11": "{op} can only be applied according to the following mask: PY/YDD/D",
-    "1-1-19-12": "{op} can only be applied according to the following mask: PM/MDD/D",
     # Other time operators
     "2-1-19-1": "At op {op}: Invalid values {value_1} and {value_2} for duration, "
     "periodIndTo parameter must be a larger duration value than the "
@@ -258,6 +255,8 @@ centralised_messages = {
     "2-1-19-9": "Invalid day {day} for year {year}.",
     "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
     "2-1-19-11": "{op} operator is not compatible with time values",
+    "2-1-19-12": "{op} can only be applied according to the following mask: PY/YDDD/D",
+    "2-1-19-13": "{op} can only be applied according to the following mask: PM/MDD/D",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
