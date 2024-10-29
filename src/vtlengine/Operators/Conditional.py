@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, Any
+from typing import Union, Any, List
 
 import numpy as np
 
@@ -287,4 +287,145 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
+
+
+class Case(Operator):
+
+    @classmethod
+    def evaluate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        result = cls.validate(conditions, thenOps, elseOp)
+
+        if isinstance(result, Scalar):
+            result.value = elseOp.value
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    result.value = thenOps[i].value
+
+        if isinstance(result, DataComponent):
+            result.data = pd.Series(None, index=conditions[0].data.index)
+
+            for i, condition in enumerate(conditions):
+                value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
+                result.data = np.where(condition.data, value,  # type: ignore[call-overload]
+                                       result.data)
+
+            condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
+            else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
+            result.data = pd.Series(np.where(condition_mask_else, else_value, result.data),
+                                    index=conditions[0].data.index)
+
+        if isinstance(result, Dataset):
+            identifiers = result.get_identifiers_names()
+            columns = [col for col in result.get_components_names() if col not in identifiers]
+            result.data = (conditions[0].data[identifiers] if conditions[0].data is not None
+                           else pd.DataFrame(columns=identifiers))
+
+            for i in range(len(conditions)):
+                condition = conditions[i]
+                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
+                condition_mask = condition.data[bool_col]
+
+                result.data.loc[condition_mask, columns] = (
+                    thenOps[i].value if isinstance(thenOps[i], Scalar)
+                    else thenOps[i].data.loc[condition_mask, columns]
+                )
+
+            condition_mask_else = ~np.logical_or.reduce([
+                condition.data[next(x.name for x in condition.get_measures() if
+                                    x.data_type == Boolean)].astype(bool) for
+                condition in conditions])
+
+            result.data.loc[condition_mask_else, columns] = (
+                elseOp.value if isinstance(elseOp, Scalar)
+                else elseOp.data.loc[condition_mask_else, columns]
+            )
+
+        return result
+
+    @classmethod
+    def validate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        if len(set(map(type, conditions))) > 1:
+            raise SemanticError("2-1-9-1", op=cls.op)
+
+        ops = thenOps + [elseOp]
+        then_else_types = set(map(type, ops))
+        condition_type = type(conditions[0])
+
+        if condition_type is Scalar:
+            for condition in conditions:
+                if condition.data_type != Boolean:
+                    raise SemanticError("2-1-9-2", op=cls.op, name=condition.name)
+            if list(then_else_types) != [Scalar]:
+                raise SemanticError("2-1-9-3", op=cls.op)
+
+            # The output data type is the data type of the last then operation that has a true
+            # condition, defaulting to the data type of the else operation if no condition is true
+            output_data_type = elseOp.data_type
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    output_data_type = thenOps[i].data_type
+
+            return Scalar(
+                name="result",
+                value=None,
+                data_type=output_data_type,
+            )
+
+        elif condition_type is DataComponent:
+            for condition in conditions:
+                if not condition.data_type == Boolean:
+                    raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
+
+            nullable = any(
+                thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
+                for thenOp in ops
+            )
+
+            data_type = ops[0].data_type
+            for op in ops[1:]:
+                data_type = binary_implicit_promotion(data_type, op.data_type)
+
+            return DataComponent(
+                name="result",
+                data=None,
+                data_type=data_type,
+                role=Role.MEASURE,
+                nullable=nullable,
+            )
+
+        # Dataset
+        for condition in conditions:
+            if len(condition.get_measures_names()) != 1:
+                raise SemanticError("1-1-1-4", op=cls.op)
+            if condition.get_measures()[0].data_type != Boolean:
+                raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
+
+        if Dataset not in then_else_types:
+            raise SemanticError("2-1-9-6", op=cls.op)
+
+        components = next(op for op in ops if isinstance(op, Dataset)).components
+        comp_names = [comp.name for comp in components.values()]
+        for op in ops:
+            if isinstance(op, Dataset) and op.get_components_names() != comp_names:
+                raise SemanticError("2-1-9-7", op=cls.op)
+
+        return Dataset(
+            name="result",
+            components=components,
+            data=None
+        )
