@@ -7,7 +7,8 @@ Description
 All exceptions exposed by the Vtl engine.
 """
 
-from typing import Optional, Any, List
+from typing import Any, List, Optional
+
 from vtlengine.Exceptions.messages import centralised_messages
 
 dataset_output = None
@@ -165,10 +166,7 @@ def key_distance(key: str, objetive: str) -> int:
 
     for i in range(1, len(key) + 1):
         for j in range(1, len(objetive) + 1):
-            if key[i - 1] == objetive[j - 1]:
-                cost = 0
-            else:
-                cost = 1
+            cost = 0 if key[i - 1] == objetive[j - 1] else 1
             dp[i][j] = min(dp[i - 1][j] + 1,
                            dp[i][j - 1] + 1,
                            dp[i - 1][j - 1] + cost)

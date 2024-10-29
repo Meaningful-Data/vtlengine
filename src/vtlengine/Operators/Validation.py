@@ -2,12 +2,12 @@ from copy import copy
 from typing import Any, Dict, Optional
 
 import pandas as pd
-from vtlengine.DataTypes import Boolean, Integer, Number, String, check_unary_implicit_promotion
-from vtlengine.Operators import Operator
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
+from vtlengine.DataTypes import Boolean, Integer, Number, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Operators import Operator
 
 
 # noinspection PyTypeChecker
@@ -197,10 +197,7 @@ class Check_Hierarchy(Validation):
             rule_df["ruleid"] = rule_name
             rule_df["errorcode"] = rule_data["errorcode"]
             rule_df["errorlevel"] = rule_data["errorlevel"]
-            if df is None:
-                df = rule_df
-            else:
-                df = pd.concat([df, rule_df], ignore_index=True)
+            df = rule_df if df is None else pd.concat([df, rule_df], ignore_index=True)
         if df is None:
             df = pd.DataFrame()
         return df

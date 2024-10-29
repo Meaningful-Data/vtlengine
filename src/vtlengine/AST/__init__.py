@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-
 from vtlengine.Model import Role
 
 

@@ -3,61 +3,34 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import pandas as pd
+
 import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators
-import pandas as pd
-from vtlengine.DataTypes import (
-    BASIC_TYPES,
-    check_unary_implicit_promotion,
-    ScalarType,
-    Boolean,
-    SCALAR_TYPES_CLASS_REVERSE,
-)
-from vtlengine.Operators.Aggregation import extract_grouping_identifiers
-from vtlengine.Operators.Assignment import Assignment
-from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Comparison import Between, ExistIn
-from vtlengine.Operators.Conditional import If, Case
-from vtlengine.Operators.General import Eval
-from vtlengine.Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
-from vtlengine.Operators.Numeric import Round, Trunc
-from vtlengine.Operators.String import Instr, Replace, Substr
-from vtlengine.Operators.Time import Fill_time_series, Time_Aggregation, Current_Date
-from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
-from vtlengine.Utils import (
-    AGGREGATION_MAPPING,
-    ANALYTIC_MAPPING,
-    BINARY_MAPPING,
-    JOIN_MAPPING,
-    REGULAR_AGGREGATION_MAPPING,
-    ROLE_SETTER_MAPPING,
-    SET_MAPPING,
-    UNARY_MAPPING,
-    THEN_ELSE,
-    HR_UNARY_MAPPING,
-    HR_COMP_MAPPING,
-    HR_NUM_BINARY_MAPPING,
-)
-from vtlengine.files.output import save_datapoints
-from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
-from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
-
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._words import GLOBAL, DELETE, INSERT
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
     APPLY,
     AS,
     BETWEEN,
+    CALC,
+    CAST,
     CHECK_DATAPOINT,
+    CHECK_HIERARCHY,
+    COUNT,
+    CURRENT_DATE,
     DROP,
+    EQ,
     EXISTS_IN,
     EXTERNAL,
+    FILL_TIME_SERIES,
     FILTER,
     HAVING,
+    HIERARCHY,
     INSTR,
     KEEP,
     MEMBERSHIP,
@@ -66,25 +39,52 @@ from vtlengine.AST.Grammar.tokens import (
     SUBSTR,
     TRUNC,
     WHEN,
-    FILL_TIME_SERIES,
-    CAST,
-    CHECK_HIERARCHY,
-    HIERARCHY,
-    EQ,
-    CURRENT_DATE,
-    CALC,
-    COUNT,
+)
+from vtlengine.DataTypes import (
+    BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Boolean,
+    ScalarType,
+    check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.files.output import save_datapoints
+from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
+from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
 from vtlengine.Model import (
+    Component,
     DataComponent,
     Dataset,
     ExternalRoutine,
     Role,
     Scalar,
     ScalarSet,
-    Component,
     ValueDomain,
+)
+from vtlengine.Operators.Aggregation import extract_grouping_identifiers
+from vtlengine.Operators.Assignment import Assignment
+from vtlengine.Operators.CastOperator import Cast
+from vtlengine.Operators.Comparison import Between, ExistIn
+from vtlengine.Operators.Conditional import Case, If
+from vtlengine.Operators.General import Eval
+from vtlengine.Operators.HROperators import HAAssignment, Hierarchy, get_measure_from_dataset
+from vtlengine.Operators.Numeric import Round, Trunc
+from vtlengine.Operators.String import Instr, Replace, Substr
+from vtlengine.Operators.Time import Current_Date, Fill_time_series, Time_Aggregation
+from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
+from vtlengine.Utils import (
+    AGGREGATION_MAPPING,
+    ANALYTIC_MAPPING,
+    BINARY_MAPPING,
+    HR_COMP_MAPPING,
+    HR_NUM_BINARY_MAPPING,
+    HR_UNARY_MAPPING,
+    JOIN_MAPPING,
+    REGULAR_AGGREGATION_MAPPING,
+    ROLE_SETTER_MAPPING,
+    SET_MAPPING,
+    THEN_ELSE,
+    UNARY_MAPPING,
 )
 
 
@@ -453,10 +453,7 @@ class InterpreterAnalyzer(ASTTemplate):
         grouping_op = node.grouping_op
         if node.grouping is not None:
             if grouping_op == "group all":
-                if self.only_semantic:
-                    data = None
-                else:
-                    data = copy(operand.data)
+                data = None if self.only_semantic else copy(operand.data)
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
                 )
@@ -730,7 +727,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 nullable=self.aggregation_dataset.components[node.value].nullable,
             )
         if self.is_from_regular_aggregation:
-            if self.is_from_join and node.value in self.datasets.keys():
+            if self.is_from_join and node.value in self.datasets:
                 return self.datasets[node.value]
             if self.regular_aggregation_dataset is not None:
                 if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
@@ -746,10 +743,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         is_partial_present = 0
                         found_comp = None
                         for comp_name in self.regular_aggregation_dataset.get_components_names():
-                            if "#" in comp_name and comp_name.split("#")[1] == node.value:
-                                is_partial_present += 1
-                                found_comp = comp_name
-                            elif "#" in node.value and node.value.split("#")[1] == comp_name:
+                            if ("#" in comp_name and comp_name.split("#")[1] == node.value or "#"
+                                    in node.value and node.value.split("#")[1] == comp_name):
                                 is_partial_present += 1
                                 found_comp = comp_name
                         if is_partial_present == 0:
@@ -789,10 +784,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError(
                     "1-1-1-10", comp_name=node.value, dataset_name=self.ruleset_dataset.name
                 )
-            if self.rule_data is None:
-                data = None
-            else:
-                data = self.rule_data[comp_name]
+            data = None if self.rule_data is None else self.rule_data[comp_name]
             return DataComponent(
                 name=comp_name,
                 data=data,
@@ -809,10 +801,7 @@ class InterpreterAnalyzer(ASTTemplate):
             elements = []
             duplicates = []
             for child in node.children:
-                if isinstance(child, AST.ParamOp):
-                    ref_element = child.children[1]
-                else:
-                    ref_element = child
+                ref_element = child.children[1] if isinstance(child, AST.ParamOp) else child
                 if ref_element in elements:
                     duplicates.append(ref_element)
                 elements.append(self.visit(child).value)
@@ -849,9 +838,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
-        if node.op == CALC:
-            if any([isinstance(operand, Dataset) for operand in operands]):
-                raise SemanticError("1-3-35", op=node.op)
+        if node.op == CALC and any([isinstance(operand, Dataset) for operand in operands]):
+            raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
             role_info = {
@@ -1056,11 +1044,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
-            if len(node.params) != 0:
-                param_element = self.visit(node.params[0])
-            else:
-                param_element = None
-
+            param_element = self.visit(node.params[0]) if len(node.params) != 0 else None
             return Round.analyze(op_element, param_element)
 
         # Numeric Operator
@@ -1234,11 +1218,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 if node.op == HIERARCHY:
                     aux = []
                     for rule in hr_info["rules"]:
-                        if rule.rule.op == EQ:
+                        if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
                             aux.append(rule)
-                        elif rule.rule.op == WHEN:
-                            if rule.rule.right.op == EQ:
-                                aux.append(rule)
                     # Filter only the rules with HRBinOP as =,
                     # as they are the ones that will be computed
                     if len(aux) == 0:
@@ -1504,10 +1485,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if condition.data_type != BASIC_TYPES[bool]:
                 raise ValueError("Only boolean scalars are allowed on data component condition")
             name = condition.name
-            if condition.data is None:
-                data = None
-            else:
-                data = condition.data
+            data = None if condition.data is None else condition.data
 
         if data is not None:
             if self.nested_condition and self.condition_stack is not None:

@@ -1,19 +1,8 @@
 from copy import copy
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import duckdb
 import pandas as pd
-from vtlengine.DataTypes import (
-    Integer,
-    Number,
-    unary_implicit_promotion,
-    Boolean,
-    String,
-    Duration,
-    TimeInterval,
-    TimePeriod,
-    Date,
-)
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -28,11 +17,22 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.DataTypes import (
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
+    unary_implicit_promotion,
+)
 from vtlengine.DataTypes.TimeHandling import (
     DURATION_MAPPING,
     DURATION_MAPPING_REVERSED,
-    TimePeriodHandler,
     TimeIntervalHandler,
+    TimePeriodHandler,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role

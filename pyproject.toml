@@ -49,9 +49,27 @@ mypy = "^1.11.2"
 pandas-stubs = "^2.2.3.241009"
 stubs = "^1.0.0"
 toml = "^0.10.2"
+ruff = "^0.7.1"
 
-[tool.black]
-line_length = 100
+[tool.ruff]
+line-length = 100
+
+select = [
+    "B", "B9", "C", "C4", "D", "E", "F", "I", "PT", "S", "SIM", "W"
+]
+
+ignore = ["B904", "C403", "D100", "D101", "D102", "D103", "D104", "D105", "D107",
+    "D200", "D201", "D202", "D203", "D205", "D209", "D212", "D213", "D301",
+    "D400", "D401", "D404", "D411", "D413", "D415", "D419", "E203", "S320"]
+
+exclude = ["*/Grammar/*"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101", "PT006", "PT012", "PT013", "E501", "W605"]
+"src/vtlengine/*" = ["E712"]
 
 [tool.mypy]
 files = "src"

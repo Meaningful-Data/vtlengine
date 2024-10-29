@@ -1,11 +1,11 @@
-from typing import Dict, List, Any, Union
+import sqlite3
+from typing import Any, Dict, List, Union
 
 import pandas as pd
-import sqlite3
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Dataset, ExternalRoutine, Role, Component, DataComponent
+from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
 
 

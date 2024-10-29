@@ -1,6 +1,7 @@
 import itertools
 import json
 import os
+import warnings
 from pathlib import Path
 
 # if os.environ.get("SPARK", False):
@@ -38,11 +39,9 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Component, Role, Dataset, ValueDomain
 from vtlengine.files.parser import load_datapoints
-
-import warnings
+from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Component, Dataset, Role, ValueDomain
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"

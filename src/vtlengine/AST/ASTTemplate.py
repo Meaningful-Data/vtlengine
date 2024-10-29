@@ -10,7 +10,6 @@ Template to start a new visitor for the AST.
 from typing import Any
 
 import vtlengine.AST as AST
-
 from vtlengine.AST.ASTVisitor import NodeVisitor
 
 

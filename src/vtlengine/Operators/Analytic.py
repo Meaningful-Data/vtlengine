@@ -3,8 +3,6 @@ from typing import List, Optional
 
 import duckdb
 
-from vtlengine.Exceptions import SemanticError
-
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
 # else:
@@ -32,6 +30,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
 )
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Integer, Number, unary_implicit_promotion
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
 
@@ -60,10 +59,7 @@ class Analytic(Operator.Unary):
         params: Optional[List[int]],
         component_name: Optional[str] = None,
     ) -> Dataset:
-        if ordering is None:
-            order_components = []
-        else:
-            order_components = [o.component for o in ordering]
+        order_components = [] if ordering is None else [o.component for o in ordering]
         identifier_names = operand.get_identifiers_names()
         result_components = operand.components.copy()
 
@@ -178,10 +174,7 @@ class Analytic(Operator.Unary):
             window_str = f"{mode} BETWEEN {window.start} {start_mode} AND {window.stop} {stop_mode}"
 
         # Partitioning
-        if len(partitioning) > 0:
-            partition = "PARTITION BY " + ", ".join(partitioning)
-        else:
-            partition = ""
+        partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
 
         # Ordering
         order_str = ""

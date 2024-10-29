@@ -1,13 +1,3 @@
-from vtlengine.DataTypes import (
-    Boolean,
-    Date,
-    Duration,
-    Integer,
-    Number,
-    String,
-    TimeInterval,
-    TimePeriod,
-)
 from antlr4.tree.Tree import TerminalNodeImpl
 
 from vtlengine.AST import (
@@ -24,6 +14,16 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
+from vtlengine.DataTypes import (
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
+)
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -377,21 +377,21 @@ class Terminals(VtlVisitor):
 
     def visitDpRuleset(self, ctx: Parser.DpRulesetContext):
         """
-        DATAPOINT                                                                               # dataPoint  # noqa E501
-            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd  # noqa E501
-            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar  # noqa E501
+        DATAPOINT                                                                               # dataPoint
+            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
+            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
         ;
-        """
+        """ # noqa E501
         # AST_ASTCONSTRUCTOR.54
         raise NotImplementedError
 
     def visitHrRuleset(self, ctx: Parser.HrRulesetContext):
         """
-        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType  # noqa E501
-            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType  # noqa E501
-            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType  # noqa E501
+        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
+            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
+            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
         ;
-        """
+        """ # noqa E501
         # AST_ASTCONSTRUCTOR.55
         raise NotImplementedError
 
@@ -503,7 +503,7 @@ class Terminals(VtlVisitor):
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         """
         |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast  # noqa E501
-        """
+        """ # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 

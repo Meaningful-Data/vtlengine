@@ -1,9 +1,8 @@
-from typing import Union, Any
-
-from vtlengine.Operators import Binary
+from typing import Any, Union
 
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset
+from vtlengine.Operators import Binary
 
 ALL_MODEL_TYPES = Union[DataComponent, Dataset]
 

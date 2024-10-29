@@ -1,6 +1,7 @@
 import json
+import warnings
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
 from unittest import TestCase
 
 import pytest
@@ -8,15 +9,21 @@ import pytest
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key
-from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar, Role_keys
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.files.parser import load_datapoints
-
-import warnings
+from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import (
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Role_keys,
+    Scalar,
+    ValueDomain,
+)
 
 
 class TestHelper(TestCase):
@@ -110,7 +117,7 @@ class TestHelper(TestCase):
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             for dataset in new_datasets.values():
-                setattr(dataset, "ref_name", name)
+                dataset.ref_name = name
             datasets.update(new_datasets)
 
         return datasets

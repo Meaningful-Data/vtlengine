@@ -1,28 +1,27 @@
 import warnings
 from csv import DictReader
 from pathlib import Path
-
-from typing import Optional, Dict, Union, Any, Type, List
+from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 import pandas as pd
+
 from vtlengine.DataTypes import (
+    SCALAR_TYPES_CLASS_REVERSE,
+    Boolean,
     Date,
-    TimePeriod,
-    TimeInterval,
+    Duration,
     Integer,
     Number,
-    Boolean,
-    Duration,
-    SCALAR_TYPES_CLASS_REVERSE,
     ScalarType,
+    TimeInterval,
+    TimePeriod,
 )
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
-from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import check_date, check_time_period, check_time
-
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Model import Component, Role, Dataset
+from vtlengine.files.parser._rfc_dialect import register_rfc
+from vtlengine.files.parser._time_checking import check_date, check_time, check_time_period
+from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
@@ -74,9 +73,9 @@ def _sanitize_pandas_columns(
     components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
 ) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
-    if "DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW":
-        if "DATAFLOW" not in components:
-            data.drop(columns=["DATAFLOW"], inplace=True)
+    if ("DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW" and
+            "DATAFLOW" not in components):
+        data.drop(columns=["DATAFLOW"], inplace=True)
     if "STRUCTURE" in data.columns and data.columns[0] == "STRUCTURE":
         if "STRUCTURE" not in components:
             data.drop(columns=["STRUCTURE"], inplace=True)
@@ -135,9 +134,8 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
 def _parse_boolean(value: str) -> bool:
     if isinstance(value, bool):
         return value
-    if value.lower() == "true" or value == "1":
-        return True
-    return False
+    result = value.lower() == "true" or value == "1"
+    return result
 
 
 def _validate_pandas(
@@ -148,7 +146,7 @@ def _validate_pandas(
 
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    missing_columns = [name for name in components.keys() if name not in data.columns.tolist()]
+    missing_columns = [name for name in components if name not in data.columns.tolist()]
     if missing_columns:
         for name in missing_columns:
             if components[name].nullable is False:

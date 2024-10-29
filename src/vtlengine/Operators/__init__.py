@@ -1,23 +1,6 @@
 import os
 from copy import copy
-from typing import Any, Union, Optional
-
-from vtlengine.DataTypes import (
-    COMP_NAME_MAPPING,
-    binary_implicit_promotion,
-    check_binary_implicit_promotion,
-    check_unary_implicit_promotion,
-    unary_implicit_promotion,
-    SCALAR_TYPES_CLASS_REVERSE,
-)
-from vtlengine.DataTypes.TimeHandling import (
-    TimeIntervalHandler,
-    TimePeriodHandler,
-    DURATION_MAPPING,
-)
-
-from vtlengine.AST.Grammar.tokens import CEIL, FLOOR, ROUND, EQ, NEQ, GT, GTE, LT, LTE, XOR, OR, AND
-from vtlengine.Exceptions import SemanticError
+from typing import Any, Optional, Union
 
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
@@ -25,7 +8,22 @@ from vtlengine.Exceptions import SemanticError
 #     import pandas as pd
 import pandas as pd
 
-from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent, ScalarSet
+from vtlengine.AST.Grammar.tokens import AND, CEIL, EQ, FLOOR, GT, GTE, LT, LTE, NEQ, OR, ROUND, XOR
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES_CLASS_REVERSE,
+    binary_implicit_promotion,
+    check_binary_implicit_promotion,
+    check_unary_implicit_promotion,
+    unary_implicit_promotion,
+)
+from vtlengine.DataTypes.TimeHandling import (
+    DURATION_MAPPING,
+    TimeIntervalHandler,
+    TimePeriodHandler,
+)
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 

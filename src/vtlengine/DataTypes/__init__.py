@@ -1,7 +1,8 @@
-from typing import Any, Optional, Type, Dict, Set, Union
+from typing import Any, Dict, Optional, Set, Type, Union
+
 import pandas as pd
 
-from vtlengine.DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
+from vtlengine.DataTypes.TimeHandling import check_max_date, date_to_period_str, str_period_to_date
 from vtlengine.Exceptions import SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
@@ -470,9 +471,7 @@ class Boolean(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
-            if value in {0, 0.0}:
-                return False
-            return True
+            return value not in {0, 0.0}
 
         raise SemanticError(
             "2-1-5-1",
@@ -672,13 +671,12 @@ def unary_implicit_promotion(
     return: The resulting type of the operation, after the implicit type promotion
     """
     operand_implicities = IMPLICIT_TYPE_PROMOTION_MAPPING[operand_type]
-    if type_to_check:
-        if not type_to_check.is_included(operand_implicities):
-            raise SemanticError(
-                code="1-1-1-1",
-                type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
-                type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check],
-            )
+    if type_to_check and not type_to_check.is_included(operand_implicities):
+        raise SemanticError(
+            code="1-1-1-1",
+            type_1=SCALAR_TYPES_CLASS_REVERSE[operand_type],
+            type_2=SCALAR_TYPES_CLASS_REVERSE[type_to_check],
+        )
     if return_type:
         return return_type
     if (

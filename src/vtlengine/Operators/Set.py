@@ -1,6 +1,4 @@
-from typing import List, Any, Dict
-
-from vtlengine.Exceptions import SemanticError
+from typing import Any, Dict, List
 
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
@@ -8,9 +6,10 @@ from vtlengine.Exceptions import SemanticError
 #     import pandas as pd
 import pandas as pd
 
+from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
-from vtlengine.DataTypes import binary_implicit_promotion
 
 
 class Set(Operator):
