@@ -93,6 +93,8 @@ further_options_period_pattern = (
 
 
 def check_time_period(value: str) -> str:
+    if isinstance(value, int):
+        value = str(value)
     value = value.replace(" ", "")
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:
