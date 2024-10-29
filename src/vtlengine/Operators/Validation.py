@@ -191,13 +191,13 @@ class Check_Hierarchy(Validation):
 
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = None
+        df = pd.DataFrame()
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
             rule_df["ruleid"] = rule_name
             rule_df["errorcode"] = rule_data["errorcode"]
             rule_df["errorlevel"] = rule_data["errorlevel"]
-            df = rule_df if df is None else pd.concat([df, rule_df], ignore_index=True)
+            df = pd.concat([df, rule_df], ignore_index=True)
         if df is None:
             df = pd.DataFrame()
         return df
