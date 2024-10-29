@@ -168,12 +168,8 @@ transformation_from_mask_params_month = [
     ("DS_1[calc Me_2 := monthtoday(Me_1)]", pd.Series(name="Me_2", data=[80, None]))
 ]
 
-transformation_from_mask_error_year = [
-    ("DS_1[calc Me_2 := yeartoday(Me_1)]", "1-1-19-11")
-]
-transformation_from_mask_error_month = [
-    ("DS_1[calc Me_2 := monthtoday(Me_1)]", "1-1-19-12")
-]
+transformation_from_mask_error_year = [("DS_1[calc Me_2 := yeartoday(Me_1)]", "1-1-19-11")]
+transformation_from_mask_error_month = [("DS_1[calc Me_2 := monthtoday(Me_1)]", "1-1-19-12")]
 
 
 @pytest.mark.parametrize("op, value, code", ds_error_params)
@@ -248,7 +244,7 @@ def test_slash_in_date_error(text, code):
 
 
 @pytest.mark.parametrize("text, reference", transformation_from_mask_params_year)
-def test_vtl_expression_unary_time_op_with_masks(text, reference):
+def test_vtl_expression_unary_time_op_from_masks_year(text, reference):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_conversion_from_mask_year})
@@ -261,7 +257,7 @@ def test_vtl_expression_unary_time_op_with_masks(text, reference):
 
 
 @pytest.mark.parametrize("text, reference", transformation_from_mask_params_month)
-def test_vtl_expression_unary_time_op_with_masks(text, reference):
+def test_vtl_expression_unary_time_op_from_masks_month(text, reference):
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({"DS_1": ds_conversion_from_mask_month})
