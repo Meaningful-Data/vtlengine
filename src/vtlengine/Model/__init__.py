@@ -2,17 +2,18 @@ import json
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Union, Any, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
-import vtlengine.DataTypes as DataTypes
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
 
+import vtlengine.DataTypes as DataTypes
+from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.Exceptions import SemanticError
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
@@ -159,7 +160,7 @@ class Dataset:
                 raise ValueError(
                     "The number of components must match the number of columns in the data"
                 )
-            for name, component in self.components.items():
+            for name, _ in self.components.items():
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
@@ -209,8 +210,8 @@ class Dataset:
             return True
         elif self.data is None or other.data is None:
             return False
-        if len(self.data) == len(other.data) == 0:
-            assert self.data.shape == other.data.shape
+        if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
+            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)
@@ -234,11 +235,8 @@ class Dataset:
                     lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
                 )
             elif type_name in ["Integer", "Number"]:
-                if type_name == "Integer":
-                    type_ = "int64"
-                else:
-                    type_ = "float32"
-                    # We use here a number to avoid errors on equality on empty strings
+                type_ = "int64" if type_name == "Integer" else "float32"
+                # We use here a number to avoid errors on equality on empty strings
                 self.data[comp.name] = (
                     self.data[comp.name]
                     .replace("", -1234997)

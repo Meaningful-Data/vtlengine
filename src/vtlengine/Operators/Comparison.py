@@ -3,15 +3,13 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
 # else:
 #     import pandas as pd
 import pandas as pd
 
+import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     CHARSET_MATCH,
     EQ,
@@ -24,8 +22,9 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataTypes import Boolean, COMP_NAME_MAPPING, String, Number, Null
-import vtlengine.Operators as Operator
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 
 
 class Unary(Operator.Unary):
@@ -408,10 +407,7 @@ class ExistIn(Operator.Operator):
         reference_identifiers_names = left_id_names
 
         # Checking if the left dataset is a subset of the right dataset
-        if is_subset_left:
-            common_columns = left_id_names
-        else:
-            common_columns = right_id_names
+        common_columns = left_id_names if is_subset_left else right_id_names
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:

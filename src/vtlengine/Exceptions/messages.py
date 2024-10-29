@@ -34,6 +34,7 @@ centralised_messages = {
     "0-1-1-11": "Wrong data in the file for this scalardataset {name}.",
     "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
     "0-1-1-13": "Invalid key on {field} field: {key}{closest_key}.",
+    "0-1-1-14": "Empty datasets {dataset1} and {dataset2} shape missmatch.",
     "0-1-0-1": " Trying to redefine input datasets {dataset}.",  # Semantic Error
     # ------------Operators-------------
     # General Semantic errors

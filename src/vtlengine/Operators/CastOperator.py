@@ -1,27 +1,27 @@
 from copy import copy
-from typing import Optional, Any, Union, Type
+from typing import Any, Optional, Type, Union
+
+import pandas as pd
 
 import vtlengine.Operators as Operator
-import pandas as pd
+from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
-    String,
-    Number,
-    TimeInterval,
-    Date,
-    TimePeriod,
-    Duration,
     SCALAR_TYPES_CLASS_REVERSE,
+    Date,
+    Duration,
+    Number,
     ScalarType,
+    String,
+    TimeInterval,
+    TimePeriod,
 )
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
-
-from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role, Scalar, DataComponent
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -286,9 +286,8 @@ class Cast(Operator.Unary):
         mask: Optional[str] = None,
     ) -> Any:
 
-        if mask is not None:
-            if not isinstance(mask, str):
-                raise Exception(f"{cls.op} mask must be a string")
+        if mask is not None and not isinstance(mask, str):
+            raise Exception(f"{cls.op} mask must be a string")
 
         if isinstance(operand, Dataset):
             return cls.dataset_validation(operand, scalarType, mask)

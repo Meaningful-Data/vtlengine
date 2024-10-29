@@ -1,19 +1,8 @@
 from copy import copy
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import duckdb
 import pandas as pd
-from vtlengine.DataTypes import (
-    Integer,
-    Number,
-    unary_implicit_promotion,
-    Boolean,
-    String,
-    Duration,
-    TimeInterval,
-    TimePeriod,
-    Date,
-)
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -28,11 +17,22 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.DataTypes import (
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
+    unary_implicit_promotion,
+)
 from vtlengine.DataTypes.TimeHandling import (
     DURATION_MAPPING,
     DURATION_MAPPING_REVERSED,
-    TimePeriodHandler,
     TimeIntervalHandler,
+    TimePeriodHandler,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -153,7 +153,7 @@ class Aggregation(Operator.Unary):
             if comp.role == Role.ATTRIBUTE:
                 del result_components[comp_name]
         # Change Measure data type
-        for comp_name, comp in result_components.items():
+        for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
                 unary_implicit_promotion(comp.data_type, cls.type_to_check)
                 if cls.return_type is not None:

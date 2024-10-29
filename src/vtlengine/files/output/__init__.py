@@ -3,11 +3,11 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from vtlengine.Model import Dataset
 from vtlengine.files.output._time_period_representation import (
-    format_time_period_external_representation,
     TimePeriodRepresentation,
+    format_time_period_external_representation,
 )
+from vtlengine.Model import Dataset
 
 
 def save_datapoints(

@@ -1,6 +1,4 @@
-from typing import List, Any, Dict
-
-from vtlengine.Exceptions import SemanticError
+from typing import Any, Dict, List
 
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
@@ -8,9 +6,10 @@ from vtlengine.Exceptions import SemanticError
 #     import pandas as pd
 import pandas as pd
 
+from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
-from vtlengine.DataTypes import binary_implicit_promotion
 
 
 class Set(Operator):
@@ -87,9 +86,7 @@ class Intersection(Set):
                     data, how="inner", on=result.get_identifiers_names()
                 )
 
-                not_identifiers = [
-                    col for col in result.get_measures_names() + result.get_attributes_names()
-                ]
+                not_identifiers = result.get_measures_names() + result.get_attributes_names()
 
                 for col in not_identifiers:
                     result.data[col] = result.data[col + "_x"]
@@ -120,8 +117,8 @@ class Symdiff(Set):
                     result.data["_merge"] = result.data.apply(
                         lambda row: (
                             "left_only"
-                            if pd.isnull(row[measure + "_y"])
-                            else ("right_only" if pd.isnull(row[measure + "_x"]) else "both")
+                            if pd.isnull(row[f"{measure}_y"])
+                            else ("right_only" if pd.isnull(row[f"{measure}_x"]) else "both")
                         ),
                         axis=1,
                     )
@@ -162,9 +159,7 @@ class Setdiff(Set):
                 if len(result.data) > 0:
                     result.data = result.data[result.data.apply(cls.has_null, axis=1)]
 
-                not_identifiers = [
-                    col for col in result.get_measures_names() + result.get_attributes_names()
-                ]
+                not_identifiers = result.get_measures_names() + result.get_attributes_names()
                 for col in not_identifiers:
                     if col + "_x" in result.data:
                         result.data[col] = result.data[col + "_x"]

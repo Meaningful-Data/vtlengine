@@ -1,21 +1,20 @@
+from copy import copy
+from typing import List, Type, Union
+
 import pandas as pd
 
-from copy import copy
-from typing import List, Union, Type
-
+from vtlengine.AST import RenameNode
+from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
 from vtlengine.DataTypes import (
     Boolean,
+    ScalarType,
     String,
     check_unary_implicit_promotion,
     unary_implicit_promotion,
-    ScalarType,
 )
-from vtlengine.Operators import Operator
-
-from vtlengine.AST import RenameNode
-from vtlengine.AST.Grammar.tokens import KEEP, DROP, RENAME, SUBSPACE, CALC, AGGREGATE
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Operators import Operator
 
 
 class Calc(Operator):
@@ -162,9 +161,8 @@ class Keep(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         if len(operands) == 0:
             raise ValueError("Keep clause requires at least one operand")
-        if dataset is None:
-            if sum(isinstance(operand, Dataset) for operand in operands) != 1:
-                raise ValueError("Keep clause requires at most one dataset operand")
+        if dataset is None and sum(isinstance(operand, Dataset) for operand in operands) != 1:
+            raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
@@ -212,11 +210,11 @@ class Rename(Operator):
             raise SemanticError("1-3-1", alias=duplicates)
 
         for operand in operands:
-            if operand.old_name not in dataset.components.keys():
+            if operand.old_name not in dataset.components:
                 raise SemanticError(
                     "1-1-1-10", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name
                 )
-            if operand.new_name in dataset.components.keys():
+            if operand.new_name in dataset.components:
                 raise SemanticError(
                     "1-1-6-8", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name
                 )

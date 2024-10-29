@@ -10,18 +10,18 @@ Node Creator.
 from antlr4.tree.Tree import TerminalNodeImpl
 
 from vtlengine.AST import (
-    Start,
-    Assignment,
-    PersistentAssignment,
-    Operator,
     Argument,
+    Assignment,
+    DefIdentifier,
+    DPRule,
     DPRuleset,
     HRBinOp,
-    DPRule,
-    HRuleset,
-    DefIdentifier,
     HRule,
+    HRuleset,
     HRUnOp,
+    Operator,
+    PersistentAssignment,
+    Start,
 )
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
@@ -30,8 +30,7 @@ from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Scalar, Component, Dataset
-
+from vtlengine.Model import Component, Dataset, Scalar
 
 # pylint: disable=unreachable,expression-not-assigned
 # pylint: disable=assignment-from-no-return
@@ -280,19 +279,13 @@ class ASTVisitor(VtlVisitor):
             for erCode_name in ctx_list
             if isinstance(erCode_name, Parser.ErCodeContext)
         ]
-        if len(er_code) == 0:
-            er_code = None
-        else:
-            er_code = er_code[0]
+        er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
             if isinstance(erLevel_name, Parser.ErLevelContext)
         ]
-        if len(er_level) == 0:
-            er_level = None
-        else:
-            er_level = er_level[0]
+        er_level = None if len(er_level) == 0 else er_level[0]
 
         return DPRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
 
@@ -317,11 +310,7 @@ class ASTVisitor(VtlVisitor):
             for element in ctx_list
             if isinstance(element, Parser.ScalarItemContext)
         ]
-
-        if len(argument_default) == 0:
-            argument_default = None
-        else:
-            argument_default = argument_default[0]
+        argument_default = None if len(argument_default) == 0 else argument_default[0]
 
         if isinstance(argument_type, (Dataset, Component, Scalar)):
             argument_type.name = argument_name.value
@@ -375,10 +364,7 @@ class ASTVisitor(VtlVisitor):
             if isinstance(valueDomain, TerminalNodeImpl)
             and valueDomain.getSymbol().type == Parser.VALUE_DOMAIN
         ]
-        if len(value_domain) != 0:
-            kind = "ValuedomainID"
-        else:
-            kind = "DatasetID"
+        kind = "ValuedomainID" if len(value_domain) != 0 else "DatasetID"
 
         conditions = [
             self.visitValueDomainSignature(vtlsig)
@@ -408,8 +394,8 @@ class ASTVisitor(VtlVisitor):
     # TODO Support for valueDomainSignature.
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):
         """
-        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ; # noqa E501
-        """
+        valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ;
+        """ # noqa E501
         # AST_ASTCONSTRUCTOR.7
         ctx_list = list(ctx.getChildren())
         component_nodes = [
@@ -458,28 +444,22 @@ class ASTVisitor(VtlVisitor):
             for erCode_name in ctx_list
             if isinstance(erCode_name, Parser.ErCodeContext)
         ]
-        if len(er_code) == 0:
-            er_code = None
-        else:
-            er_code = er_code[0]
+        er_code = None if len(er_code) == 0 else er_code[0]
         er_level = [
             Terminals().visitErLevel(erLevel_name)
             for erLevel_name in ctx_list
             if isinstance(erLevel_name, Parser.ErLevelContext)
         ]
-        if len(er_level) == 0:
-            er_level = None
-        else:
-            er_level = er_level[0]
+        er_level = None if len(er_level) == 0 else er_level[0]
 
         return HRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
 
     def visitCodeItemRelation(self, ctx: Parser.CodeItemRelationContext):
         """
-        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ; # noqa E501
-                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)* # noqa E501
+        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ;
+                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
 
-        """
+        """ # noqa E501
 
         ctx_list = list(ctx.getChildren())
 
@@ -531,8 +511,8 @@ class ASTVisitor(VtlVisitor):
 
     def visitCodeItemRelationClause(self, ctx: Parser.CodeItemRelationClauseContext):
         """
-        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )? # noqa E501
-        """
+        (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )?
+        """ # noqa E501
         ctx_list = list(ctx.getChildren())
 
         expr = [expr for expr in ctx_list if isinstance(expr, Parser.ExprContext)]
@@ -552,13 +532,13 @@ class ASTVisitor(VtlVisitor):
 
             code_item = DefIdentifier(value=value, kind="CodeItemID")
             if right_condition:
-                setattr(code_item, "_right_condition", right_condition[0])
+                code_item._right_condition = right_condition[0]
 
             return HRBinOp(left=None, op=op, right=code_item)
         else:
             value = Terminals().visitValueDomainValue(ctx_list[0])
             code_item = DefIdentifier(value=value, kind="CodeItemID")
             if right_condition:
-                setattr(code_item, "_right_condition", right_condition[0])
+                code_item._right_condition = right_condition[0]
 
             return code_item

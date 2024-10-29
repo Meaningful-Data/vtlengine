@@ -1,13 +1,3 @@
-from vtlengine.DataTypes import (
-    Boolean,
-    Date,
-    Duration,
-    Integer,
-    Number,
-    String,
-    TimeInterval,
-    TimePeriod,
-)
 from antlr4.tree.Tree import TerminalNodeImpl
 
 from vtlengine.AST import (
@@ -24,6 +14,16 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
+from vtlengine.DataTypes import (
+    Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
+)
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -377,21 +377,21 @@ class Terminals(VtlVisitor):
 
     def visitDpRuleset(self, ctx: Parser.DpRulesetContext):
         """
-        DATAPOINT                                                                               # dataPoint  # noqa E501
-            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd  # noqa E501
-            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar  # noqa E501
+        DATAPOINT                                                                               # dataPoint
+            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
+            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
         ;
-        """
+        """ # noqa E501
         # AST_ASTCONSTRUCTOR.54
         raise NotImplementedError
 
     def visitHrRuleset(self, ctx: Parser.HrRulesetContext):
         """
-        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType  # noqa E501
-            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType  # noqa E501
-            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType  # noqa E501
+        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
+            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
+            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
         ;
-        """
+        """ # noqa E501
         # AST_ASTCONSTRUCTOR.55
         raise NotImplementedError
 
@@ -407,15 +407,9 @@ class Terminals(VtlVisitor):
             for constraint in ctx_list
             if isinstance(constraint, Parser.ScalarTypeContext)
         ]
-        if len(data_type) > 0:
-            data_type = data_type[0]
-        else:
-            data_type = String()
+        data_type = data_type[0] if len(data_type) > 0 else String()
 
-        if role_node == Role.IDENTIFIER:
-            nullable = False
-        else:
-            nullable = True
+        nullable = role_node != Role.IDENTIFIER
 
         return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
@@ -503,7 +497,7 @@ class Terminals(VtlVisitor):
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         """
         |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast  # noqa E501
-        """
+        """ # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -513,10 +507,7 @@ class Terminals(VtlVisitor):
         const_node = self.visitConstant(ctx_list[2])
         basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
 
-        if len(ctx_list) > 6:
-            param_node = [ParamConstant("PARAM_CAST", ctx_list[6])]
-        else:
-            param_node = []
+        param_node = [ParamConstant("PARAM_CAST", ctx_list[6])] if len(ctx_list) > 6 else []
 
         if len(basic_scalar_type) == 1:
             children_nodes = [const_node, basic_scalar_type[0]]
@@ -681,14 +672,12 @@ class Terminals(VtlVisitor):
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
-        if mode_2 == "preceding":
-            if (
-                mode_1 == "preceding" and num_rows_1 == -1 and num_rows_2 == -1
-            ):  # preceding and preceding (error)
-                raise Exception(
-                    f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
-                    f"line {ctx_list[3].start.line}"
-                )
+        if (mode_2 == "preceding" and mode_1 == "preceding" and num_rows_1 == -1
+                and num_rows_2 == -1):  # preceding and preceding (error)
+            raise Exception(
+                f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
+                f"line {ctx_list[3].start.line}"
+            )
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1

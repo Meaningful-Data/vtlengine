@@ -1,22 +1,19 @@
 import operator
 from copy import copy
-from typing import Dict, Any
+from typing import Any, Dict
 
-import vtlengine.Operators as Operators
 import pandas as pd
-from vtlengine.DataTypes import Boolean, Number
 from pandas import DataFrame
 
+import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
-from vtlengine.Model import DataComponent, Dataset, Role, Component
+from vtlengine.DataTypes import Boolean, Number
+from vtlengine.Model import Component, DataComponent, Dataset, Role
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     measure_name = dataset.get_measures_names()[0]
-    if dataset.data is None:
-        data = None
-    else:
-        data = dataset.data[measure_name]
+    data = None if dataset.data is None else dataset.data[measure_name]
     return DataComponent(
         name=code_item,
         data=data,
@@ -40,19 +37,17 @@ class HRComparison(Operators.Binary):
         # so we delete the cases that does not satisfy the condition
         # (line 6509 of the reference manual)
         if hr_mode in ("partial_null", "partial_zero") and not pd.isnull(y) and y == "REMOVE_VALUE":
-            if hr_mode == "partial_null" and pd.isnull(x):
-                return "REMOVE_VALUE"
-            elif hr_mode == "partial_zero" and not pd.isnull(x) and x == 0:
+            if (hr_mode == "partial_null" and pd.isnull(x) or hr_mode == "partial_zero"
+                    and not pd.isnull(x) and x == 0):
                 return "REMOVE_VALUE"
             return None
         if hr_mode == "non_null":
             # If all the involved Data Points are not NULL
             if pd.isnull(x) or pd.isnull(y):
                 return "REMOVE_VALUE"
-        elif hr_mode == "non_zero":
+        elif hr_mode == "non_zero" and not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
             # If at least one of the involved Data Points is <> zero
-            if not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
-                return "REMOVE_VALUE"
+            return "REMOVE_VALUE"
 
         return func(x, y)
 
@@ -203,9 +198,7 @@ class HAAssignment(Operators.Binary):
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
         if not pd.isnull(x) and x == "REMOVE_VALUE":
             return "REMOVE_VALUE"
-        if hr_mode == "non_null" and pd.isnull(x):
-            return "REMOVE_VALUE"
-        elif hr_mode == "non_zero" and x == 0:
+        if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
             return "REMOVE_VALUE"
         return x
 
