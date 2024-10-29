@@ -777,3 +777,80 @@ class DataLoadTest(DataLoadHelper):
         references_names = ["DS_r"]
 
         self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_infer_keys_1(self):
+        """
+        """
+        code = "IK-1"
+        number_inputs = 1
+        message = "Invalid key on role field: Identfier. Did you mean Identifier?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_2(self):
+        """
+        """
+        code = "IK-2"
+        number_inputs = 1
+        message = "Invalid key on role field: Masure. Did you mean Measure?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_3(self):
+        """
+        """
+        code = "IK-3"
+        number_inputs = 1
+        message = "Invalid key on data_type field: Numver. Did you mean Number?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_4(self):
+        """
+        """
+        code = "IK-4"
+        number_inputs = 1
+        message = "Invalid key on data_type field: boolean. Did you mean Boolean?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_5(self):
+        """
+        """
+        code = "IK-5"
+        number_inputs = 1
+        message = "Invalid key on data_type field: TimePeriod. Did you mean Time_Period?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_6(self):
+        """
+        """
+        code = "IK-6"
+        number_inputs = 1
+        message = "Invalid key on data_type field: TimPerod. Did you mean Time_Period?."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
+
+    def test_infer_keys_7(self):
+        """
+        """
+        code = "IK-7"
+        number_inputs = 1
+        message = "Invalid key on data_type field: jbhfae."
+
+        self.DataLoadExceptionTest(
+            code=code, number_inputs=number_inputs, exception_message=message
+        )
