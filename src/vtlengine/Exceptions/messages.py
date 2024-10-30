@@ -260,6 +260,8 @@ centralised_messages = {
                  "expected {expected}.",
     "2-1-19-13": "At op {op}: Invalid param data_type {type} for param {name}, "
                      "expected {expected}.",
+    "2-1-19-14": "At op {op}: Invalid dataset {name}, requires at least one Date/Time_Period "
+                 "measure.",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
