@@ -81,10 +81,14 @@ class Analytic(Operator.Unary):
                     "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
                 )
         if component_name is not None:
+            if cls.type_to_check is None and cls.op in [MAX, MIN, SUM]:
+                cls.type_to_check = operand.components[component_name].data_type
             if cls.type_to_check is not None:
                 unary_implicit_promotion(
                     operand.components[component_name].data_type, cls.type_to_check
                 )
+            if cls.return_type is None and cls.op in [MAX, MIN, SUM]:
+                cls.return_type = operand.components[component_name].data_type
             if cls.return_type is not None:
                 result_components[component_name] = Component(
                     name=component_name,
@@ -106,19 +110,23 @@ class Analytic(Operator.Unary):
             measures = operand.get_measures()
             if len(measures) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
+
+            if cls.type_to_check is None and cls.op in [MAX, MIN, SUM]:
+                is_Number = False
+                for measure in measures:
+                    is_Number |= isinstance(measure.data_type, Number)
+                cls.type_to_check = Number if is_Number else Integer
             if cls.type_to_check is not None:
                 for measure in measures:
                     unary_implicit_promotion(measure.data_type, cls.type_to_check)
 
-            if cls.return_type is None:
-                is_Number = False
+            if cls.return_type is None and cls.op in [MAX, MIN, SUM]:
+                cls.return_type = cls.type_to_check
+            if cls.return_type is not None:
                 for measure in measures:
-                    is_Number |= isinstance(measure.data_type, Number)
-                cls.return_type = Number if is_Number else Integer
-            for measure in measures:
-                new_measure = copy(measure)
-                new_measure.data_type = cls.return_type
-                result_components[measure.name] = new_measure
+                    new_measure = copy(measure)
+                    new_measure.data_type = cls.return_type
+                    result_components[measure.name] = new_measure
 
             if cls.op == COUNT and len(measures) <= 1:
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
@@ -205,7 +213,7 @@ class Analytic(Operator.Unary):
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
                 measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
-            elif cls.op in [SUM] and cls.return_type == Integer:
+            elif cls.op in [MAX, MIN, SUM] and cls.return_type == Integer:
                 measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
             else:
                 measure_query += f" {analytic_str} as {measure}"
