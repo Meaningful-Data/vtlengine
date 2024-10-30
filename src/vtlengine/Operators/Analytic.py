@@ -109,11 +109,17 @@ class Analytic(Operator.Unary):
             if cls.type_to_check is not None:
                 for measure in measures:
                     unary_implicit_promotion(measure.data_type, cls.type_to_check)
-            if cls.return_type is not None:
+
+            if cls.return_type is None:
+                is_Number = False
                 for measure in measures:
-                    new_measure = copy(measure)
-                    new_measure.data_type = cls.return_type
-                    result_components[measure.name] = new_measure
+                    is_Number |= isinstance(measure.data_type, Number)
+                cls.return_type = Number if is_Number else Integer
+            for measure in measures:
+                new_measure = copy(measure)
+                new_measure.data_type = cls.return_type
+                result_components[measure.name] = new_measure
+
             if cls.op == COUNT and len(measures) <= 1:
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
                 nullable = False if len(measures) == 0 else measures[0].nullable
@@ -199,6 +205,8 @@ class Analytic(Operator.Unary):
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
                 measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+            elif cls.op in [SUM] and cls.return_type == Integer:
+                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
             else:
                 measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
@@ -245,6 +253,10 @@ class Analytic(Operator.Unary):
             window=window,
             params=params,
         )
+
+        # if cls.return_type == Integer:
+        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
+
         return result
 
 
@@ -272,8 +284,6 @@ class Sum(Analytic):
     """
 
     op = SUM
-    type_to_check = Number
-    return_type = Number
     sql_op = "SUM"
 
 
