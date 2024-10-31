@@ -826,17 +826,28 @@ class Date_Diff(SimpleBinaryTime):
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
-        if len(x)>4:
-            fecha1 = TimePeriodHandler(x).end_date(as_date=True)
+        if (x.count("/")>=1) or (y.count("/")>=1):
+            raise SemanticError("1-1-19-8 No se pueden poner intervalos", op=cls.op, comp_type="time dataset")
         else:
-            fecha1 = date.fromisoformat(x)
+            #Date,Time,TimePeriod
+            if x.count("-")==2:
+                fecha1 = datetime.strptime(x, '%Y-%m-%d').date()
+            else:
+                if x.count("D")==1 or x.count("W")==1 or x.count("M")==1 or x.count("Q")==1 or x.count("S")==1 or x.count("Y")==1:
+                    fecha1 = TimePeriodHandler(x).end_date(as_date=True)
+                else:
+                    raise SemanticError("1-1-19-8 Primer argumento no valido", op=cls.op, comp_type="time dataset")
 
-        if len(y)>4:
-            fecha2 = TimePeriodHandler(y).end_date(as_date=True)
-        else:
-            fecha2 = date.fromisoformat(y)
+            if y.count("-")==2:
+                fecha2 = datetime.strptime(y, '%Y-%m-%d').date()
+            else:
+                if y.count("D")==1 or y.count("W")==1 or y.count("M")==1 or y.count("Q")==1 or y.count("S")==1 or y.count("Y")==1:
+                    fecha2 = TimePeriodHandler(y).end_date(as_date=True)
+                else:
+                    raise SemanticError("1-1-19-8 Segundo argumento no valido", op=cls.op, comp_type="time dataset")
 
-        return abs((fecha2 - fecha1).days)
+            return abs((fecha2 - fecha1).days)
+
 
 class Date_Add(Parametrized):
     @classmethod
