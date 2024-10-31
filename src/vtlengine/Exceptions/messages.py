@@ -254,8 +254,6 @@ centralised_messages = {
     "2-1-19-8": "Invalid date format, must be YYYY-MM-DD: {str}",
     "2-1-19-9": "Invalid day {day} for year {year}.",
     "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
-    "2-1-19-11": "At op {op}: Invalid number of parameters, {given} were given, "
-                "expected {expected}.",
     "2-1-19-12": "At op {op}: Invalid param type {type} for param {name}, "
                  "expected {expected}.",
     "2-1-19-13": "At op {op}: Invalid param data_type {type} for param {name}, "

@@ -833,14 +833,12 @@ class Date_Add(Parametrized):
                  operand: Union[Scalar, DataComponent, Dataset],
                  param_list: List[Scalar]
                  ) -> Union[Scalar, DataComponent, Dataset]:
-        if len(param_list) != 2:
-            raise SemanticError("2-1-19-11", op=cls.op, given=len(param_list), expected=2)
 
         expected_types = [Integer, String]
         for i, param in enumerate(param_list):
-            error = 12 if not isinstance(param, Scalar) else 13 if (
+            error = 12 if not isinstance(param, Scalar) else 13 if (  # type: ignore[redundant-expr]
                     param.data_type != expected_types[i]) else None
-            if error:
+            if error is not None:
                 raise SemanticError(f"2-1-19-{error}",
                                     op=cls.op,
                                     type=param.__class__.__name__ if error == 12 else
@@ -855,7 +853,6 @@ class Date_Add(Parametrized):
 
         if isinstance(operand, Scalar):
             return Scalar(name=operand.name, data_type=operand.data_type, value=None)
-
         if isinstance(operand, DataComponent):
             return DataComponent(name=operand.name, data_type=operand.data_type, data=None)
 
@@ -870,13 +867,12 @@ class Date_Add(Parametrized):
                  ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
+        is_tp = isinstance(operand, (Scalar, DataComponent)) and operand.data_type == TimePeriod
 
         if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
-            is_tp = operand.data_type == TimePeriod
             result.value = cls.op_date(operand.value, shift, period, is_tp)
         elif (isinstance(result, DataComponent) and isinstance(operand, DataComponent) and
               operand.data is not None):
-            is_tp = operand.data_type == TimePeriod
             result.data = operand.data.map(lambda x: cls.op_date(x, shift, period, is_tp),
                                            na_action="ignore")
         elif (isinstance(result, Dataset) and isinstance(operand, Dataset) and
@@ -891,30 +887,30 @@ class Date_Add(Parametrized):
 
         if isinstance(result, (Scalar, DataComponent)):
             result.data_type = Date
-
         return result
 
     @classmethod
-    def op_date(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
+    def op_date(cls,
+                date_str: str,
+                shift: int, period: str,
+                is_tp: bool = False
+                ) -> str:
         if is_tp:
-            date_format = "%Y-%m-%d"
             tp_value = TimePeriodHandler(date_str)
             date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
         else:
-            date_format = "%Y" if len(date_str) == 4 else "%Y-%m" if len(date_str) == 7 else \
-                "%Y-%m-%d"
-            date = datetime.strptime(date_str, date_format)
+            date = datetime.strptime(date_str, "%Y-%m-%d")
 
         if period in ['D', 'W']:
             days_shift = shift * (7 if period == 'W' else 1)
-            return (date + timedelta(days=days_shift)).strftime(date_format)
+            return (date + timedelta(days=days_shift)).strftime("%Y-%m-%d")
 
         month_shift = {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period] * shift
-        new_month = (date.month - 1 + month_shift) % 12 + 1
         new_year = date.year + (date.month - 1 + month_shift) // 12
+        new_month = (date.month - 1 + month_shift) % 12 + 1
         last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(
-            date.day, last_day)).strftime(date_format)
+        return date.replace(year=new_year, month=new_month,
+                            day=min(date.day, last_day)).strftime("%Y-%m-%d")
 
 
 class Year(Unary):
