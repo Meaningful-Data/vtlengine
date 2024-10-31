@@ -836,15 +836,18 @@ class Date_Add(Parametrized):
         if len(param_list) != 2:
             raise SemanticError("2-1-19-11", op=cls.op, given=len(param_list), expected=2)
 
-        expected_types = [(Scalar, Integer), (Scalar, String)]
-        for i, (expected_class, expected_type) in enumerate(expected_types):
-            if (not isinstance(param_list[i], expected_class) or
-                    param_list[i].data_type != expected_type):
-                raise SemanticError(f"2-1-19-{12 if i == 0 else 13}",
+        expected_types = [Integer, String]
+        for i, param in enumerate(param_list):
+            error = 12 if not isinstance(param, Scalar) else 13 if (
+                    param.data_type != expected_types[i]) else None
+            if error:
+                raise SemanticError(f"2-1-19-{error}",
                                     op=cls.op,
-                                    type=param_list[i].__class__.__name__,
-                                    name=param_list[i].name,
-                                    expected=expected_class.__name__)
+                                    type=param.__class__.__name__ if error == 12 else
+                                    param.data_type.__name__,
+                                    name="shiftNumber" if error == 12 else "periodInd",
+                                    expected="Scalar" if error == 12 else expected_types[i].__name__
+                                    )
 
         if (isinstance(operand, (Scalar, DataComponent)) and
                 operand.data_type not in [Date, TimePeriod]):
@@ -909,7 +912,7 @@ class Date_Add(Parametrized):
         month_shift = {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period] * shift
         new_month = (date.month - 1 + month_shift) % 12 + 1
         new_year = date.year + (date.month - 1 + month_shift) // 12
-        last_day = (datetime(new_year, new_month + 1, 1) - timedelta(days=1)).day
+        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
         return date.replace(year=new_year, month=new_month, day=min(
             date.day, last_day)).strftime(date_format)
 
