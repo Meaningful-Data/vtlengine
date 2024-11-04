@@ -923,37 +923,39 @@ class Day_of_Year(SimpleUnaryTime):
         return datetime_value.timetuple().tm_yday
 
 
-class Day_to_Year(SimpleUnaryTime):
+class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
     return_type = String
 
     @classmethod
-    def py_op(cls, value: str) -> str:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
-        days = int(value)
-        if days >= 365:
-            years = days // 365
-            days_remaining = days % 365
-        return f"P{years}Y{days_remaining}D"
+    def py_op(cls, value: int) -> str:
+        if value < 0:
+            raise SemanticError("2-1-19-14", op=cls.op)
+        years = 0
+        days_remaining = value
+        if value >= 365:
+            years = value // 365
+            days_remaining = value % 365
+        return f"P{int(years)}Y{int(days_remaining)}D"
 
 
-class Day_to_Month(SimpleUnaryTime):
+class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
     return_type = String
 
     @classmethod
-    def py_op(cls, value: str) -> str:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
-        days = int(value)
-        if days >= 30:
-            months = days // 30
-            days_remaining = days % 30
-        return f"P{months}M{days_remaining}D"
+    def py_op(cls, value: int) -> str:
+        if value < 0:
+            raise SemanticError("2-1-19-14", op=cls.op)
+        months = 0
+        days_remaining = value
+        if value >= 30:
+            months = value // 30
+            days_remaining = value % 30
+        return f"P{int(months)}M{int(days_remaining)}D"
 
 
-class Year_to_Day(SimpleUnaryTime):
+class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
 
@@ -969,7 +971,7 @@ class Year_to_Day(SimpleUnaryTime):
         return years * 365 + days
 
 
-class Month_to_Day(SimpleUnaryTime):
+class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
 

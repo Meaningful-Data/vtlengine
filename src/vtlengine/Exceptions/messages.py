@@ -257,6 +257,7 @@ centralised_messages = {
     "2-1-19-11": "{op} operator is not compatible with time values",
     "2-1-19-12": "{op} can only be applied according to the following mask: PY/YDDD/D",
     "2-1-19-13": "{op} can only be applied according to the following mask: PM/MDD/D",
+    "2-1-19-14": "{op} can only be positive numbers",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",

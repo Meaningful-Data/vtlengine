@@ -1,0 +1,76 @@
+import warnings
+from pathlib import Path
+
+import pytest
+from pytest import mark
+
+from vtlengine.API import create_ast
+from vtlengine.DataTypes import Integer
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
+
+pytestmark = mark.input_path(Path(__file__).parent / "data")
+
+ds_param = [
+    ("1", "DS_r := DS_1 [calc Me_2 := year(Me_1)];"),
+    ("2", "DS_r := DS_1[calc Me_2 := month(Me_1)];"),
+    ("3", "DS_r := DS_1[calc Me_2 := dayofmonth(Me_1)];"),
+    ("4", "DS_r := DS_1[calc Me_2 := dayofyear(Me_1)];"),
+    ("5", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];"),
+    ("6", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];"),
+    ("7", "DS_r := DS_1[calc Me_2 := monthtoday(Me_1)];"),
+    ("8", "DS_r := DS_1[calc Me_2 := yeartoday(Me_1)];"),
+]
+
+error_param = [
+    ("9", "DS_r := DS_1[calc Me_2 := daytomonth(Me_1)];", "2-1-19-14"),
+    ("10", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];", "2-1-19-14"),
+    ("11", "DS_r := DS_1[calc Me_2 := monthtoday(Me_1)];", "2-1-19-13"),
+    ("12", "DS_r := DS_1[calc Me_2 := yeartoday(Me_1)];", "2-1-19-12"),
+    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", "2-1-19-11"),
+]
+
+scalar_time_params = [
+    ('year(cast("2023-01-12", date))', 2023),
+    ('year(cast("2022Q1", time_period))', 2022),
+    ('month(cast("2023-01-12", date))', 1),
+    ('month(cast("2022Q1", time_period))', 1),
+    ('dayofmonth(cast("2023-01-12", date))', 12),
+    ('dayofmonth(cast("2022Q1", time_period))', 31),
+    ('dayofyear(cast("2023-01-12", date))', 12),
+    ('dayofyear(cast("2022Q1", time_period))', 90),
+]
+
+
+@pytest.mark.parametrize("text, reference", scalar_time_params)
+def test_unary_time_scalar(text, reference):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    result = interpreter.visit(ast)
+    assert result["DS_r"].value == reference
+    assert result["DS_r"].data_type == Integer
+
+
+@pytest.mark.parametrize("code, expression", ds_param)
+def test_unary_time_ds(load_input, load_reference, code, expression):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer(load_input)
+    result = interpreter.visit(ast)
+    assert result == load_reference
+
+
+@pytest.mark.parametrize("code, expression, error_code", error_param)
+def test_errors(load_input, code, expression, error_code):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    datasets = load_input
+    with pytest.raises(SemanticError) as context:
+        ast = create_ast(expression)
+        interpreter = InterpreterAnalyzer(datasets)
+        interpreter.visit(ast)
+    result = error_code == str(context.value.args[1])
+    if result is False:
+        print(f"\n{error_code} != {context.value.args[1]}")
+    assert result
