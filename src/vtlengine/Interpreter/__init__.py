@@ -1644,8 +1644,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {
             comp_name: copy(comp)
-            for comp_name, comp in
-            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            for comp_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]

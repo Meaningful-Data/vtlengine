@@ -27,7 +27,11 @@ error_param = [
     ("10", "DS_r := DS_1[calc Me_2 := daytoyear(Me_1)];", "2-1-19-14"),
     ("11", "DS_r := DS_1[calc Me_2 := monthtoday(Me_1)];", "2-1-19-13"),
     ("12", "DS_r := DS_1[calc Me_2 := yeartoday(Me_1)];", "2-1-19-12"),
-    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", "2-1-19-11"),
+    ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", "1-1-19-10"),
+    ("14", "DS_r := DS_1 [calc Me_2 := month(Me_1)];", "1-1-19-10"),
+    ("15", "DS_r := DS_1 [calc Me_2 := dayofmonth(Me_1)];", "1-1-19-10"),
+    ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", "1-1-19-10")
+
 ]
 
 scalar_time_params = [
@@ -39,6 +43,13 @@ scalar_time_params = [
     ('dayofmonth(cast("2022Q1", time_period))', 31),
     ('dayofyear(cast("2023-01-12", date))', 12),
     ('dayofyear(cast("2022Q1", time_period))', 90),
+]
+
+scalar_time_error_params = [
+    ('year(cast("2023-01/12", date))', "2-1-19-11"),
+    ('month(cast("2023/01-12", date))', "2-1-19-11"),
+    ('dayofmonth(cast("2023/01-12", date))', "2-1-19-11"),
+    ('dayofyear(cast("2023/01-12", date))', "2-1-19-11")
 ]
 
 
@@ -63,7 +74,7 @@ def test_unary_time_ds(load_input, load_reference, code, expression):
 
 
 @pytest.mark.parametrize("code, expression, error_code", error_param)
-def test_errors(load_input, code, expression, error_code):
+def test_errors_ds(load_input, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
     datasets = load_input
     with pytest.raises(SemanticError) as context:
@@ -74,3 +85,13 @@ def test_errors(load_input, code, expression, error_code):
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")
     assert result
+
+
+@pytest.mark.parametrize("text, exception_message", scalar_time_error_params)
+def test_errors_time_scalar(text, exception_message):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer({})
+    with pytest.raises(SemanticError, match=f".*{exception_message}"):
+        interpreter.visit(ast)
