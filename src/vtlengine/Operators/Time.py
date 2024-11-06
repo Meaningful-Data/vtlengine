@@ -5,7 +5,7 @@ from datetime import datetime, date
 from typing import Optional, Union, List, Any, Dict, Type
 
 import vtlengine.Operators as Operators
-from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType
+from vtlengine.DataTypes import Date, TimePeriod, TimeInterval, Duration, ScalarType, Integer
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 
 from vtlengine.AST.Grammar.tokens import (
@@ -179,7 +179,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Dataset, DataComponent, Scalar, str]
+            cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -362,7 +362,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods_rows(
-        cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
+            cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
     ) -> List[Any]:
         rows = []
         for year in years:
@@ -375,7 +375,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def create_period_row(
-        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
+            cls, group_df: Any, period: str, year: int, val: Optional[int] = None
     ) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
@@ -414,7 +414,7 @@ class Fill_time_series(Binary):
         filled_data = []
 
         def create_filled_dates(
-            group: Any, min_max: Dict[str, Any]
+                group: Any, min_max: Dict[str, Any]
         ) -> (pd.DataFrame, str):  # type: ignore[syntax]
             date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
             date_df = pd.DataFrame(date_range, columns=[cls.time_id])
@@ -457,7 +457,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_time_intervals(
-        cls, data: pd.DataFrame, fill_type: str, frequency: str
+            cls, data: pd.DataFrame, fill_type: str, frequency: str
     ) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
@@ -565,7 +565,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_period(
-        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
+            cls, period_str: str, shift_value: int, frequency: Optional[int] = None
     ) -> str:
         period_type = cls._get_period(period_str)
 
@@ -619,7 +619,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -656,7 +656,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -669,7 +669,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -678,12 +678,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Type[ScalarType],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            value: str,
+            data_type: Type[ScalarType],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -702,7 +702,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -718,7 +718,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -732,7 +732,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -742,11 +742,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -758,11 +758,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-        cls,
-        operand: Union[Dataset, DataComponent, Scalar],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: Union[Dataset, DataComponent, Scalar],
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -800,6 +800,7 @@ class Current_Date(Time):
         result.value = date.today().isoformat()
         return result
 
+
 class SimpleBinaryTime(Operators.Binary):
 
     @classmethod
@@ -822,31 +823,27 @@ class SimpleBinaryTime(Operators.Binary):
         else:
             return super().evaluate(left_operand, right_operand)
 
+
 class Date_Diff(SimpleBinaryTime):
+    type_to_check = TimeInterval
+    return_type = Integer
 
     @classmethod
-    def py_op(cls, x: Any, y: Any) -> Any:
-        if (x.count("/")>=1) or (y.count("/")>=1):
+    def py_op(cls, x: Any, y: Any) -> int:
+        if (x.count("/") >= 1) or (y.count("/") >= 1):
             raise SemanticError("1-1-19-8 No se pueden poner intervalos", op=cls.op, comp_type="time dataset")
+
+        if x.count("-") == 2:
+            fecha1 = datetime.strptime(x, '%Y-%m-%d').date()
         else:
-            #Date,Time,TimePeriod
-            if x.count("-")==2:
-                fecha1 = datetime.strptime(x, '%Y-%m-%d').date()
-            else:
-                if x.count("D")==1 or x.count("W")==1 or x.count("M")==1 or x.count("Q")==1 or x.count("S")==1 or x.count("Y")==1:
-                    fecha1 = TimePeriodHandler(x).end_date(as_date=True)
-                else:
-                    raise SemanticError("1-1-19-8 Primer argumento no valido", op=cls.op, comp_type="time dataset")
+            fecha1 = TimePeriodHandler(x).end_date(as_date=True)
 
-            if y.count("-")==2:
-                fecha2 = datetime.strptime(y, '%Y-%m-%d').date()
-            else:
-                if y.count("D")==1 or y.count("W")==1 or y.count("M")==1 or y.count("Q")==1 or y.count("S")==1 or y.count("Y")==1:
-                    fecha2 = TimePeriodHandler(y).end_date(as_date=True)
-                else:
-                    raise SemanticError("1-1-19-8 Segundo argumento no valido", op=cls.op, comp_type="time dataset")
+        if y.count("-") == 2:
+            fecha2 = datetime.strptime(y, '%Y-%m-%d').date()
+        else:
+            fecha2 = TimePeriodHandler(y).end_date(as_date=True)
 
-            return abs((fecha2 - fecha1).days)
+        return abs((fecha2 - fecha1).days)
 
 
 class Date_Add(Parametrized):
