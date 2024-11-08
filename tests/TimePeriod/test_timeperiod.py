@@ -5,7 +5,6 @@ import pytest
 from pytest import mark
 
 from vtlengine.API import create_ast
-from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
