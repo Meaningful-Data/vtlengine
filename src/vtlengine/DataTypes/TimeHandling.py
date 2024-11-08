@@ -234,9 +234,16 @@ class TimePeriodHandler:
             if len(other) == 0:
                 return False
             other = TimePeriodHandler(other)
-        return py_op(
-            DURATION_MAPPING[self.period_indicator], DURATION_MAPPING[other.period_indicator]
-        )
+
+        if DURATION_MAPPING[self.period_indicator] != DURATION_MAPPING[other.period_indicator]:
+            return False
+        if not py_op(self.year, other.year):
+            if py_op.__name__ in ["lt", "gt"] and self.year == other.year:
+                return py_op(self.period_number, other.period_number)
+            return False
+        if py_op.__name__ in ["eq", "ne"] or self.year == other.year:
+            return py_op(self.period_number, other.period_number)
+        return True
 
     def start_date(self, as_date: bool = False) -> Union[date, str]:
         """

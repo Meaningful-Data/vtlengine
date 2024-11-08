@@ -99,6 +99,7 @@ class Binary(Operator.Binary):
         if pd.isnull(x) or pd.isnull(y):
             return None
         x, y = cls._cast_values(x, y)
+        a = cls.py_op(x, y)
         return cls.py_op(x, y)
 
     @classmethod
