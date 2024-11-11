@@ -328,7 +328,7 @@ class Date(TimeInterval):
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {Date, String}:
-            return value
+            return check_max_date(value)
 
         raise SemanticError(
             "2-1-5-1",
@@ -341,7 +341,7 @@ class Date(TimeInterval):
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
-            return value
+            return check_max_date(value)
 
         raise SemanticError(
             "2-1-5-1",

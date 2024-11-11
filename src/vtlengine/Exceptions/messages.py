@@ -251,7 +251,7 @@ centralised_messages = {
     "2-1-19-6": "Invalid period format, must be YYYY-(L)NNN: {period_format}",
     "2-1-19-7": "Period Number must be between 1 and {periods} for period indicator "
     "{period_indicator}.",
-    "2-1-19-8": "Invalid date format, must be YYYY-MM-DD: {str}",
+    "2-1-19-8": "Invalid date format, must be YYYY-MM-DD: {date}",
     "2-1-19-9": "Invalid day {day} for year {year}.",
     "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
     "2-1-19-11": "{op} operator is not compatible with time values",

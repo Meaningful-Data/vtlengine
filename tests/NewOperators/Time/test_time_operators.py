@@ -30,8 +30,7 @@ error_param = [
     ("13", "DS_r := DS_1 [calc Me_2 := year(Me_1)];", "1-1-19-10"),
     ("14", "DS_r := DS_1 [calc Me_2 := month(Me_1)];", "1-1-19-10"),
     ("15", "DS_r := DS_1 [calc Me_2 := dayofmonth(Me_1)];", "1-1-19-10"),
-    ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", "1-1-19-10")
-
+    ("16", "DS_r := DS_1 [calc Me_2 := dayofyear(Me_1)];", "1-1-19-10"),
 ]
 
 scalar_time_params = [
@@ -46,10 +45,14 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('year(cast("2023-01/12", date))', "2-1-19-11"),
-    ('month(cast("2023/01-12", date))', "2-1-19-11"),
-    ('dayofmonth(cast("2023/01-12", date))', "2-1-19-11"),
-    ('dayofyear(cast("2023/01-12", date))', "2-1-19-11")
+    ('year(cast("2023-01/12", date))', "2-1-19-8"),
+    ('month(cast("2023-01/12", date))', "2-1-19-8"),
+    ('dayofmonth(cast("2023-01/12", date))', "2-1-19-8"),
+    ('dayofyear(cast("2023-01/12", date))', "2-1-19-8"),
+    ('year(cast("2023-01-12/2024-01-31", time))', "2-1-19-8"),
+    ('month(cast("2023-01-12/2024-03-25", time))', "2-1-19-8"),
+    ('dayofmonth(cast("2023-01-12/2024-05-29", time))', "2-1-19-8"),
+    ('dayofyear(cast("2023-01-12/2024-06-08", time))', "2-1-19-8"),
 ]
 
 
