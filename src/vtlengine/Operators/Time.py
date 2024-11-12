@@ -867,8 +867,6 @@ class Year(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
         return int(value[:4])
 
     return_type = Integer
@@ -880,8 +878,6 @@ class Month(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
         if value.count("-") == 2:
             return date.fromisoformat(value).month
 
@@ -895,8 +891,6 @@ class Day_of_Month(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
         if value.count("-") == 2:
             return date.fromisoformat(value).day
 
@@ -910,8 +904,6 @@ class Day_of_Year(SimpleUnaryTime):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
         if value.count("-") == 2:
             day_y = datetime.strptime(value, "%Y-%m-%d")
             return day_y.timetuple().tm_yday

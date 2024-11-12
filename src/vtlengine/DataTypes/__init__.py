@@ -310,7 +310,8 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-
+        if from_type == String:
+            return check_max_date(value)
         raise SemanticError(
             "2-1-5-1",
             value=value,
