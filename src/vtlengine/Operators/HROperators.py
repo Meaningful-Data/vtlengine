@@ -2,7 +2,6 @@ import operator
 from copy import copy
 from typing import Any, Dict
 
-import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
@@ -33,7 +32,7 @@ class HRComparison(Operators.Binary):
         return x - y
 
     @staticmethod
-    def hr_func(left_series: pd.Series, right_series: pd.Series, hr_mode: str) -> pd.Series:
+    def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
         result = pd.Series(True, index=left_series.index)
 
         if hr_mode in ("partial_null", "partial_zero"):
@@ -52,29 +51,9 @@ class HRComparison(Operators.Binary):
             result[mask_remove] = "REMOVE_VALUE"
 
         return result
-    # def hr_func(x: Any, y: Any, hr_mode: str, func: Any) -> Any:
-    #     # In comments, it is specified the condition for evaluating the rule,
-    #     # so we delete the cases that does not satisfy the condition
-    #     # (line 6509 of the reference manual)
-    #     if hr_mode in ("partial_null", "partial_zero") and not pd.isnull(y) and y == "REMOVE_VALUE":
-    #         if (hr_mode == "partial_null" and pd.isnull(x) or hr_mode == "partial_zero"
-    #                 and not pd.isnull(x) and x == 0):
-    #             return "REMOVE_VALUE"
-    #         return None
-    #     if hr_mode == "non_null":
-    #         # If all the involved Data Points are not NULL
-    #         if pd.isnull(x) or pd.isnull(y):
-    #             return "REMOVE_VALUE"
-    #     elif hr_mode == "non_zero" and not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
-    #         # If at least one of the involved Data Points is <> zero
-    #         return "REMOVE_VALUE"
-    #
-    #     return func(x, y)
 
     @classmethod
-    def apply_hr_func(cls, left_series: pd.Series, right_series: pd.Series, hr_mode: str, func: Any) -> pd.Series:
-        # result = left_series.combine(right_series, lambda x, y: cls.hr_func(x, y, hr_mode, func))
-        # return result
+    def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
         left_series, right_series = left_series.align(right_series)
         remove_result = cls.hr_func(left_series, right_series, hr_mode)
         mask_valid = remove_result == True
@@ -83,7 +62,11 @@ class HRComparison(Operators.Binary):
         return result
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
+    def validate(cls,
+                 left_operand: Dataset,
+                 right_operand: DataComponent,
+                 hr_mode: str
+                 ) -> Dataset:
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in left_operand.components.items()
@@ -102,7 +85,7 @@ class HRComparison(Operators.Binary):
         )
 
     @classmethod
-    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
+    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]

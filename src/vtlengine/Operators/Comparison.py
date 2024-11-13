@@ -3,7 +3,6 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-import numpy as np
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
 # else:
@@ -75,9 +74,10 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(
-            cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
-    ) -> Any:
+    def _cast_values(cls,
+                     x: Optional[Union[int, float, str, bool]],
+                     y: Optional[Union[int, float, str, bool]]
+                     ) -> Any:
         # Cast values to compatible types for comparison
         try:
             if isinstance(x, str) and isinstance(y, bool):
@@ -105,7 +105,7 @@ class Binary(Operator.Binary):
     import pandas as pd
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any, series_left: bool) -> pd.Series:
+    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
         if scalar is None or pd.isnull(scalar):
             return pd.Series(None, index=series.index)
 
