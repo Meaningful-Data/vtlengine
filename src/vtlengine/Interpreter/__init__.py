@@ -1494,8 +1494,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 indexes = merge_df.data[merge_df.data.columns[-1]]
             else:
-                indexes = data.index
-            data = data.fillna(False)
+                indexes = data[data.notnull()].index
 
             if isinstance(condition, Dataset):
                 filtered_data = data.iloc[indexes]

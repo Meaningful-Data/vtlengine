@@ -3,6 +3,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
+import numpy as np
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
 # else:
@@ -75,10 +76,9 @@ class Binary(Operator.Binary):
 
     @classmethod
     def _cast_values(
-        cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
+            cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
     ) -> Any:
-        # Cast both values to the same data type
-        # An integer can be considered a bool, we must check first boolean, then numbers
+        # Cast values to compatible types for comparison
         try:
             if isinstance(x, str) and isinstance(y, bool):
                 y = String.cast(y)
@@ -96,19 +96,39 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
         if pd.isnull(x) or pd.isnull(y):
             return None
         x, y = cls._cast_values(x, y)
         return cls.py_op(x, y)
 
+    import pandas as pd
+
     @classmethod
-    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if scalar is None:
+    def apply_operation_series_scalar(cls, series: pd.Series, scalar: Any, series_left: bool) -> pd.Series:
+        if scalar is None or pd.isnull(scalar):
             return pd.Series(None, index=series.index)
+
+        first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
+        if first_non_null is not None:
+            scalar, first_non_null = cls._cast_values(scalar, first_non_null)
+
+            series_type = pd.api.types.infer_dtype(series, skipna=True)
+            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
+
+            if series_type != first_non_null_type:
+                if isinstance(first_non_null, str):
+                    series = series.astype(str)
+                elif isinstance(first_non_null, (int, float)):
+                    series = series.astype(float)
+
+        op = cls.py_op if cls.py_op is not None else cls.op_func
         if series_left:
-            return series.map(lambda x: cls.op_func(x, scalar), na_action="ignore")
+            result = series.apply(lambda x: op(x, scalar) if not pd.isnull(x) else None)
         else:
-            return series.map(lambda x: cls.op_func(scalar, x), na_action="ignore")
+            result = series.apply(lambda x: op(scalar, x) if not pd.isnull(x) else None)
+
+        return result
 
     @classmethod
     def apply_return_type_dataset(
