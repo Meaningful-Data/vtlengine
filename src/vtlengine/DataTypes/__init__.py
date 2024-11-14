@@ -465,7 +465,7 @@ class Boolean(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
-            return value not in {0, 0.0}
+            return value not in {0}
 
         raise SemanticError(
             "2-1-5-1",
