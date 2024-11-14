@@ -1,11 +1,14 @@
 import re
-from datetime import date, datetime
-from typing import Optional, Union, List, Any, Dict, Type
+from datetime import date
+from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
+    FILL_TIME_SERIES,
+    FLOW_TO_STOCK,
+    PERIOD_INDICATOR,
     TIME_AGG,
     TIMESHIFT,
     PERIOD_INDICATOR,
@@ -20,6 +23,8 @@ from vtlengine.AST.Grammar.tokens import (
     YEARTODAY,
     MONTHTODAY,
 )
+from vtlengine.DataTypes import Date, Duration, ScalarType, TimeInterval, TimePeriod
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.DataTypes import (
     Date,
     TimePeriod,
@@ -31,7 +36,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Dataset, DataComponent, Scalar, Component, Role
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 
 
 class Time(Operators.Operator):
@@ -136,7 +141,7 @@ class Unary(Time):
         result.data = result.data.sort_values(by=cls.other_ids + [cls.time_id])
         if data_type == TimePeriod:
             result.data = cls._period_accumulation(result.data, measure_names)
-        elif data_type == Date or data_type == TimeInterval:
+        elif data_type in (Date, TimeInterval):
             result.data[measure_names] = (
                 result.data.groupby(cls.other_ids)[measure_names]
                 .apply(cls.py_op)
@@ -704,10 +709,7 @@ class Time_Aggregation(Time):
             return _time_period_access(value, period_to)
 
         elif data_type == Date:
-            if conf == "first":
-                start = True
-            else:
-                start = False
+            start = conf == "first"
             # Date
             if period_to == "D":
                 return value

@@ -2,7 +2,6 @@ from enum import Enum
 
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-
 from vtlengine.Model import Dataset, Scalar
 
 

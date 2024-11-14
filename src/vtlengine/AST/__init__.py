@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-
 from vtlengine.Model import Role
 
 
@@ -33,7 +32,7 @@ class AST:
         """Returns a human-friendly description."""
         out = []
         name = self.__class__.__name__
-        for k in self.__all_annotations().keys():
+        for k in self.__all_annotations():
             v = self.__getattribute__(k)
             if v:
                 out.append(f"{k}={str(v)}")
@@ -41,7 +40,7 @@ class AST:
 
     def toJSON(self):
         base = {"class_name": self.__class__.__name__}
-        for k in self.__all_annotations().keys():
+        for k in self.__all_annotations():
             v = self.__getattribute__(k)
             base[k] = v
         return base

@@ -1,19 +1,7 @@
 from copy import copy
-from typing import Union, Any, List
+from typing import Any, List, Union
 
 import numpy as np
-
-from vtlengine.DataTypes import (
-    Boolean,
-    COMP_NAME_MAPPING,
-    binary_implicit_promotion,
-    SCALAR_TYPES_CLASS_REVERSE,
-    Null,
-)
-from vtlengine.Operators import Operator, Binary
-
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Scalar, DataComponent, Dataset, Role
 
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
@@ -21,11 +9,22 @@ from vtlengine.Model import Scalar, DataComponent, Dataset, Role
 #     import pandas as pd
 import pandas as pd
 
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Boolean,
+    Null,
+    binary_implicit_promotion,
+)
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Operators import Binary, Operator
+
 
 class If(Operator):
     """
     If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator # noqa E501
+        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
         inherits from Operator, a superclass that contains general validate and evaluate class methods.
         It has the following class methods:
     Class methods:
@@ -40,7 +39,7 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
-    """
+    """ # noqa E501
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
@@ -108,7 +107,7 @@ class If(Operator):
         )
         if isinstance(result, Dataset):
             drop_columns = [
-                column for column in result.data.columns if column not in result.components.keys()
+                column for column in result.data.columns if column not in result.components
             ]
             result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
@@ -213,14 +212,14 @@ class If(Operator):
 class Nvl(Binary):
     """
     Null class:
-        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class. # noqa E501
+        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class.
         It has the following class methods:
 
     Class methods:
         Validate: Class method that validates if the operation at scalar,
         datacomponent or dataset level can be performed.
         Evaluate: Evaluates the actual operation, returning the result.
-    """
+    """ # noqa E501
 
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:

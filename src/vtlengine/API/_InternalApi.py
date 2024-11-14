@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Union, Optional, Dict, List, Any
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
@@ -9,16 +9,16 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
-    ValueDomain,
-    Dataset,
-    Scalar,
     Component,
-    Role,
+    Dataset,
     ExternalRoutine,
+    Role,
     Role_keys,
+    Scalar,
+    ValueDomain,
 )
-from vtlengine.files.parser import _validate_pandas, _fill_dataset_empty_data
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -219,7 +219,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         return datasets, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
-    for dataset_name, file_path in dict_datapoints.items():
+    for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
 

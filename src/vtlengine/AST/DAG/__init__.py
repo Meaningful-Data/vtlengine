@@ -15,24 +15,24 @@ import networkx as nx
 
 from vtlengine.AST import (
     AST,
-    BinOp,
-    VarID,
     Aggregation,
     Analytic,
-    JoinOp,
-    ParamOp,
-    Operator,
-    Identifier,
-    DefIdentifier,
-    Start,
-    HRuleset,
-    RegularAggregation,
-    PersistentAssignment,
     Assignment,
+    BinOp,
+    DefIdentifier,
     DPRuleset,
+    HRuleset,
+    Identifier,
+    JoinOp,
+    Operator,
+    ParamOp,
+    PersistentAssignment,
+    RegularAggregation,
+    Start,
+    VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._words import INSERT, DELETE, OUTPUTS, PERSISTENT, INPUTS, GLOBAL
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT
 from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO
 from vtlengine.Exceptions import SemanticError
 
@@ -313,10 +313,7 @@ class DAGAnalyzer(ASTTemplate):
             self.visit(node.left)
             self.isDataset = False
             self.visit(node.right)
-        elif node.op == AS:
-            self.visit(node.left)
-            self.alias.append(node.right.value)
-        elif node.op == TO:
+        elif node.op == AS or node.op == TO:
             self.visit(node.left)
             self.alias.append(node.right.value)
         else:

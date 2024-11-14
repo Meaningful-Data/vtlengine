@@ -4,17 +4,17 @@ import pandas as pd
 import pytest
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.API import semantic_analysis, run
+from vtlengine.API import run, semantic_analysis
 from vtlengine.API._InternalApi import (
-    load_vtl,
-    load_value_domains,
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
+    load_value_domains,
+    load_vtl,
 )
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import ValueDomain, Dataset, Component, Role, ExternalRoutine
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
 
 # Path selection
 base_path = Path(__file__).parent

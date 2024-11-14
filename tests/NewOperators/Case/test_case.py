@@ -1,8 +1,7 @@
+import warnings
 from pathlib import Path
 
 import pytest
-import warnings
-
 from pytest import mark
 
 from vtlengine.API import create_ast
