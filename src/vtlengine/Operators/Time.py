@@ -870,10 +870,10 @@ class Date_Add(Parametrized):
         is_tp = isinstance(operand, (Scalar, DataComponent)) and operand.data_type == TimePeriod
 
         if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
-            result.value = cls.op_date(operand.value, shift, period, is_tp)
+            result.value = cls.py_op(operand.value, shift, period, is_tp)
         elif (isinstance(result, DataComponent) and isinstance(operand, DataComponent) and
               operand.data is not None):
-            result.data = operand.data.map(lambda x: cls.op_date(x, shift, period, is_tp),
+            result.data = operand.data.map(lambda x: cls.py_op(x, shift, period, is_tp),
                                            na_action="ignore")
         elif (isinstance(result, Dataset) and isinstance(operand, Dataset) and
               operand.data is not None):
@@ -881,7 +881,7 @@ class Date_Add(Parametrized):
             for measure in operand.get_measures():
                 if measure.data_type in [Date, TimePeriod]:
                     result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.op_date(x, shift, period, measure.data_type == TimePeriod),
+                        lambda x: cls.py_op(x, shift, period, measure.data_type == TimePeriod),
                         na_action="ignore")
                     measure.data_type = Date
 
@@ -890,7 +890,7 @@ class Date_Add(Parametrized):
         return result
 
     @classmethod
-    def op_date(cls,
+    def py_op(cls,
                 date_str: str,
                 shift: int, period: str,
                 is_tp: bool = False
