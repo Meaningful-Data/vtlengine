@@ -349,7 +349,8 @@ class Binary(Operator):
 
         if not cls.validate_type_compatibility(left_operand.data_type, right_operand.data_type):
             raise SemanticError(
-                "1-1-1-2", type_1=left_operand.data_type, type_2=right_operand.data_type, type_check=cls.type_to_check
+                "1-1-1-2", type_1=left_operand.data_type, type_2=right_operand.data_type,
+                type_check=cls.type_to_check
             )
         return Scalar(
             name="result",

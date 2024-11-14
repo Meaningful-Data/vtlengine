@@ -842,17 +842,17 @@ class Date_Diff(SimpleBinaryTime):
     @classmethod
     def py_op(cls, x: Any, y: Any) -> int:
         if (x.count("/") >= 1) or (y.count("/") >= 1):
-            raise SemanticError("1-1-19-8 No se pueden poner intervalos", op=cls.op, comp_type="time dataset")
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
         if x.count("-") == 2:
             fecha1 = datetime.strptime(x, '%Y-%m-%d').date()
         else:
-            fecha1 = TimePeriodHandler(x).end_date(as_date=True)
+            fecha1 = TimePeriodHandler(x).end_date(as_date=True)  # type: ignore[assignment]
 
         if y.count("-") == 2:
             fecha2 = datetime.strptime(y, '%Y-%m-%d').date()
         else:
-            fecha2 = TimePeriodHandler(y).end_date(as_date=True)
+            fecha2 = TimePeriodHandler(y).end_date(as_date=True)  # type: ignore[assignment]
 
         return abs((fecha2 - fecha1).days)
 
