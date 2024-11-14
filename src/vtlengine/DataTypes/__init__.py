@@ -4,6 +4,7 @@ import pandas as pd
 from vtlengine.DataTypes.TimeHandling import str_period_to_date, check_max_date, date_to_period_str
 from vtlengine.Exceptions import SemanticError
 
+
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
     "Number": "float64",
@@ -311,7 +312,7 @@ class TimeInterval(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
-            return check_max_date(value)
+            return value  # check_time(value). TODO: resolve this to avoid a circular import.
         raise SemanticError(
             "2-1-5-1",
             value=value,
@@ -385,7 +386,7 @@ class TimePeriod(TimeInterval):
             return period_str
         # TODO: Remove String, only for compatibility with previous engine
         elif from_type == String:
-            return value
+            return value  # check_time_period(value) TODO: resolve this to avoid a circular import.
 
         raise SemanticError(
             "2-1-5-1",
