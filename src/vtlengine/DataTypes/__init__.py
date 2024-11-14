@@ -5,7 +5,6 @@ import pandas as pd
 from vtlengine.DataTypes.TimeHandling import check_max_date, date_to_period_str, str_period_to_date
 from vtlengine.Exceptions import SemanticError
 
-
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
     "Number": "float64",
@@ -467,7 +466,7 @@ class Boolean(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
-            return value not in {0, 0.0}
+            return value not in {0}
 
         raise SemanticError(
             "2-1-5-1",

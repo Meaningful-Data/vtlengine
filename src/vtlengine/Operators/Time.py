@@ -1,40 +1,35 @@
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
+    DAYOFMONTH,
+    DAYOFYEAR,
+    DAYTOMONTH,
+    DAYTOYEAR,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
+    MONTH,
+    MONTHTODAY,
     PERIOD_INDICATOR,
     TIME_AGG,
     TIMESHIFT,
-    PERIOD_INDICATOR,
-    FILL_TIME_SERIES,
-    FLOW_TO_STOCK,
-    DAYOFMONTH,
     YEAR,
-    MONTH,
-    DAYOFYEAR,
-    DAYTOYEAR,
-    DAYTOMONTH,
     YEARTODAY,
-    MONTHTODAY,
 )
-from vtlengine.DataTypes import Date, Duration, ScalarType, TimeInterval, TimePeriod
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.DataTypes import (
     Date,
-    TimePeriod,
-    TimeInterval,
     Duration,
-    ScalarType,
     Integer,
+    ScalarType,
     String,
+    TimeInterval,
+    TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, date_to_period, TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 
