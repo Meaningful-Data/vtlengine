@@ -1,7 +1,6 @@
 import operator
 import re
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Scalar
+from typing import Any, Optional, Union
 
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
@@ -9,21 +8,22 @@ from vtlengine.Model import DataComponent, Dataset, Scalar
 #     import pandas as pd
 import pandas as pd
 
-from typing import Optional, Any, Union
+import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
-    LEN,
     CONCAT,
-    UCASE,
+    INSTR,
     LCASE,
+    LEN,
+    LTRIM,
+    REPLACE,
     RTRIM,
     SUBSTR,
-    LTRIM,
     TRIM,
-    REPLACE,
-    INSTR,
+    UCASE,
 )
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
-import vtlengine.Operators as Operator
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import DataComponent, Dataset, Scalar
 
 
 class Unary(Operator.Unary):
@@ -280,10 +280,7 @@ class Substr(Parameterized):
             param1 -= 1
         elif param1 > (len(x)):
             return ""
-        if param2 is None or (param1 + param2) > len(x):
-            param2 = len(x)
-        else:
-            param2 = param1 + param2
+        param2 = len(x) if param2 is None or param1 + param2 > len(x) else param1 + param2
         return x[param1:param2]
 
     @classmethod
@@ -408,14 +405,12 @@ class Instr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Any, position: int) -> None:
-        if position == 2:
-            if not pd.isnull(param) and param < 1:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif position == 3:
-            if not pd.isnull(param) and param < 1:
-                raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1"
-                )
+        if position == 2 and not pd.isnull(param) and param < 1:
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
+        elif position == 3 and not pd.isnull(param) and param < 1:
+            raise SemanticError(
+                "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1"
+            )
 
     @classmethod
     def apply_operation_series_scalar(
@@ -549,7 +544,7 @@ class Instr(Parameterized):
     ) -> Any:
         str_value = str(str_value)
         if not pd.isnull(start):
-            if isinstance(start, int) or isinstance(start, float):
+            if isinstance(start, (int, float)):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
@@ -560,7 +555,7 @@ class Instr(Parameterized):
             start = 0
 
         if not pd.isnull(occurrence):
-            if isinstance(occurrence, int) or isinstance(occurrence, float):
+            if isinstance(occurrence, (int, float)):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
@@ -578,9 +573,6 @@ class Instr(Parameterized):
 
         length = len(occurrences_list)
 
-        if occurrence > length - 1:
-            position = 0
-        else:
-            position = int(start + occurrences_list[occurrence] + 1)
+        position = 0 if occurrence > length - 1 else int(start + occurrences_list[occurrence] + 1)
 
         return position

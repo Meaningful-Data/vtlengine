@@ -1,8 +1,9 @@
 import calendar
 import copy
 import operator
-from datetime import date, datetime as dt
-from typing import Union, Optional, Any, Dict
+from datetime import date
+from datetime import datetime as dt
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
@@ -31,9 +32,11 @@ def date_to_period(date_value: date, period_indicator: str) -> Any:
         return TimePeriodHandler(f"{date_value.year}D{date_value.timetuple().tm_yday}")
 
 
-def period_to_date(
-    year: int, period_indicator: str, period_number: int, start: bool = False
-) -> date:
+def period_to_date(year: int,
+                   period_indicator: str,
+                   period_number: int,
+                   start: bool = False
+                   ) -> date:
     if period_indicator == "A":
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
@@ -145,6 +148,8 @@ class TimePeriodHandler:
     _period_number: int
 
     def __init__(self, period: str) -> None:
+        if isinstance(period, int):
+            period = str(period)
         if "-" in period:
             self.year, self.period_indicator, self.period_number = (
                 from_input_customer_support_to_internal(period)

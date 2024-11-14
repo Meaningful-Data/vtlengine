@@ -5,7 +5,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
-from vtlengine.DataTypes import String, Integer, Number
+from vtlengine.DataTypes import Integer, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 

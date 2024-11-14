@@ -3,61 +3,35 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import pandas as pd
+
 import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators
-import pandas as pd
-from vtlengine.DataTypes import (
-    BASIC_TYPES,
-    check_unary_implicit_promotion,
-    ScalarType,
-    Boolean,
-    SCALAR_TYPES_CLASS_REVERSE,
-)
-from vtlengine.Operators.Aggregation import extract_grouping_identifiers
-from vtlengine.Operators.Assignment import Assignment
-from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Comparison import Between, ExistIn
-from vtlengine.Operators.Conditional import If, Case
-from vtlengine.Operators.General import Eval
-from vtlengine.Operators.HROperators import get_measure_from_dataset, HAAssignment, Hierarchy
-from vtlengine.Operators.Numeric import Round, Trunc
-from vtlengine.Operators.String import Instr, Replace, Substr
-from vtlengine.Operators.Time import Fill_time_series, Time_Aggregation, Current_Date
-from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
-from vtlengine.Utils import (
-    AGGREGATION_MAPPING,
-    ANALYTIC_MAPPING,
-    BINARY_MAPPING,
-    JOIN_MAPPING,
-    REGULAR_AGGREGATION_MAPPING,
-    ROLE_SETTER_MAPPING,
-    SET_MAPPING,
-    UNARY_MAPPING,
-    THEN_ELSE,
-    HR_UNARY_MAPPING,
-    HR_COMP_MAPPING,
-    HR_NUM_BINARY_MAPPING,
-)
-from vtlengine.files.output import save_datapoints
-from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
-from vtlengine.files.parser import load_datapoints, _fill_dataset_empty_data
-
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._words import GLOBAL, DELETE, INSERT
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
     APPLY,
     AS,
     BETWEEN,
+    CALC,
+    CAST,
     CHECK_DATAPOINT,
+    CHECK_HIERARCHY,
+    COUNT,
+    CURRENT_DATE,
+    DATE_ADD,
     DROP,
+    EQ,
     EXISTS_IN,
     EXTERNAL,
+    FILL_TIME_SERIES,
     FILTER,
     HAVING,
+    HIERARCHY,
     INSTR,
     KEEP,
     MEMBERSHIP,
@@ -66,24 +40,52 @@ from vtlengine.AST.Grammar.tokens import (
     SUBSTR,
     TRUNC,
     WHEN,
-    FILL_TIME_SERIES,
-    CAST,
-    CHECK_HIERARCHY,
-    HIERARCHY,
-    EQ,
-    CURRENT_DATE,
-    CALC,
+)
+from vtlengine.DataTypes import (
+    BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Boolean,
+    ScalarType,
+    check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.files.output import save_datapoints
+from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
+from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
 from vtlengine.Model import (
+    Component,
     DataComponent,
     Dataset,
     ExternalRoutine,
     Role,
     Scalar,
     ScalarSet,
-    Component,
     ValueDomain,
+)
+from vtlengine.Operators.Aggregation import extract_grouping_identifiers
+from vtlengine.Operators.Assignment import Assignment
+from vtlengine.Operators.CastOperator import Cast
+from vtlengine.Operators.Comparison import Between, ExistIn
+from vtlengine.Operators.Conditional import Case, If
+from vtlengine.Operators.General import Eval
+from vtlengine.Operators.HROperators import HAAssignment, Hierarchy, get_measure_from_dataset
+from vtlengine.Operators.Numeric import Round, Trunc
+from vtlengine.Operators.String import Instr, Replace, Substr
+from vtlengine.Operators.Time import Current_Date, Date_Add, Fill_time_series, Time_Aggregation
+from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
+from vtlengine.Utils import (
+    AGGREGATION_MAPPING,
+    ANALYTIC_MAPPING,
+    BINARY_MAPPING,
+    HR_COMP_MAPPING,
+    HR_NUM_BINARY_MAPPING,
+    HR_UNARY_MAPPING,
+    JOIN_MAPPING,
+    REGULAR_AGGREGATION_MAPPING,
+    ROLE_SETTER_MAPPING,
+    SET_MAPPING,
+    THEN_ELSE,
+    UNARY_MAPPING,
 )
 
 
@@ -103,7 +105,7 @@ class InterpreterAnalyzer(ASTTemplate):
     # Time Period Representation
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Flags to change behavior
-    nested_if: Union[str, bool] = False
+    nested_condition: Union[str, bool] = False
     is_from_assignment: bool = False
     is_from_component_assignment: bool = False
     is_from_regular_aggregation: bool = False
@@ -115,8 +117,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_condition: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    if_stack: Optional[List[str]] = None
-    case_stack: Optional[List[str]] = None
+    condition_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
     aggregation_grouping: Optional[List[str]] = None
@@ -200,17 +201,17 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
-            if not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)):
-                if not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
-                    raise SemanticError("1-3-17")
+            if (not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)) and
+                    not isinstance(child, (AST.Assignment, AST.PersistentAssignment))):
+                raise SemanticError("1-3-17")
             result = self.visit(child)
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
-            self.if_stack = None
+            self.condition_stack = None
             self.then_condition_dataset = None
             self.else_condition_dataset = None
-            self.nested_if = False
+            self.nested_condition = False
 
             if result is None:
                 continue
@@ -362,20 +363,20 @@ class InterpreterAnalyzer(ASTTemplate):
         if (
             not self.is_from_condition
             and node.op != MEMBERSHIP
-            and self.if_stack is not None
-            and len(self.if_stack) > 0
+            and self.condition_stack is not None
+            and len(self.condition_stack) > 0
         ):
             is_from_if = self.is_from_if
             self.is_from_if = False
 
-        if self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE]:
-            if hasattr(node.left, "value") and hasattr(node.right, "value"):
-                if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                    comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
-                else:
-                    comp_name = f"{node.left.value}#{node.right.value}"
-                ast_var_id = AST.VarID(value=comp_name)
-                return self.visit(ast_var_id)
+        if (self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE] and
+                hasattr(node.left, "value") and hasattr(node.right, "value")):
+            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
+                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
+            else:
+                comp_name = f"{node.left.value}#{node.right.value}"
+            ast_var_id = AST.VarID(value=comp_name)
+            return self.visit(ast_var_id)
         left_operand = self.visit(node.left)
         right_operand = self.visit(node.right)
         if is_from_if:
@@ -453,10 +454,7 @@ class InterpreterAnalyzer(ASTTemplate):
         grouping_op = node.grouping_op
         if node.grouping is not None:
             if grouping_op == "group all":
-                if self.only_semantic:
-                    data = None
-                else:
-                    data = copy(operand.data)
+                data = None if self.only_semantic else copy(operand.data)
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
                 )
@@ -521,6 +519,7 @@ class InterpreterAnalyzer(ASTTemplate):
         return having
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
+        component_name = None
         if self.is_from_regular_aggregation:
             if self.regular_aggregation_dataset is None:
                 raise SemanticError("1-1-6-10")
@@ -528,6 +527,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand = self.regular_aggregation_dataset
             else:
                 operand_comp = self.visit(node.operand)
+                component_name = operand_comp.name
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
@@ -599,6 +599,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ordering=ordering,
             window=node.window,
             params=params,
+            component_name=component_name,
         )
         if not self.is_from_regular_aggregation:
             return result
@@ -611,7 +612,10 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
         # # Extracting the component we need (only measure)
-        measure_name = result.get_measures_names()[0]
+        if component_name is None or node.op == COUNT:
+            measure_name = result.get_measures_names()[0]
+        else:
+            measure_name = component_name
         # Joining the result with the original dataset
         if self.only_semantic:
             data = None
@@ -724,7 +728,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 nullable=self.aggregation_dataset.components[node.value].nullable,
             )
         if self.is_from_regular_aggregation:
-            if self.is_from_join and node.value in self.datasets.keys():
+            if self.is_from_join and node.value in self.datasets:
                 return self.datasets[node.value]
             if self.regular_aggregation_dataset is not None:
                 if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
@@ -740,10 +744,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         is_partial_present = 0
                         found_comp = None
                         for comp_name in self.regular_aggregation_dataset.get_components_names():
-                            if "#" in comp_name and comp_name.split("#")[1] == node.value:
-                                is_partial_present += 1
-                                found_comp = comp_name
-                            elif "#" in node.value and node.value.split("#")[1] == comp_name:
+                            if ("#" in comp_name and comp_name.split("#")[1] == node.value or "#"
+                                    in node.value and node.value.split("#")[1] == comp_name):
                                 is_partial_present += 1
                                 found_comp = comp_name
                         if is_partial_present == 0:
@@ -783,10 +785,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError(
                     "1-1-1-10", comp_name=node.value, dataset_name=self.ruleset_dataset.name
                 )
-            if self.rule_data is None:
-                data = None
-            else:
-                data = self.rule_data[comp_name]
+            data = None if self.rule_data is None else self.rule_data[comp_name]
             return DataComponent(
                 name=comp_name,
                 data=data,
@@ -803,10 +802,7 @@ class InterpreterAnalyzer(ASTTemplate):
             elements = []
             duplicates = []
             for child in node.children:
-                if isinstance(child, AST.ParamOp):
-                    ref_element = child.children[1]
-                else:
-                    ref_element = child
+                ref_element = child.children[1] if isinstance(child, AST.ParamOp) else child
                 if ref_element in elements:
                     duplicates.append(ref_element)
                 elements.append(self.visit(child).value)
@@ -843,9 +839,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
-        if node.op == CALC:
-            if any([isinstance(operand, Dataset) for operand in operands]):
-                raise SemanticError("1-3-35", op=node.op)
+        if node.op == CALC and any(isinstance(operand, Dataset) for operand in operands):
+            raise SemanticError("1-3-35", op=node.op)
         if node.op == AGGREGATE:
             # Extracting the role encoded inside the children assignments
             role_info = {
@@ -962,33 +957,33 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Analysis for data component and dataset
         else:
-            if self.if_stack is None:
-                self.if_stack = []
+            if self.condition_stack is None:
+                self.condition_stack = []
             if self.then_condition_dataset is None:
                 self.then_condition_dataset = []
             if self.else_condition_dataset is None:
                 self.else_condition_dataset = []
             self.generate_then_else_datasets(copy(condition))
 
-        self.if_stack.append(THEN_ELSE["then"])
+        self.condition_stack.append(THEN_ELSE["then"])
         self.is_from_if = True
-        self.nested_if = "T" if isinstance(node.thenOp, AST.If) else False
+        self.nested_condition = "T" if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
         if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
             self.then_condition_dataset.pop()
-            self.if_stack.pop()
+            self.condition_stack.pop()
 
-        self.if_stack.append(THEN_ELSE["else"])
+        self.condition_stack.append(THEN_ELSE["else"])
         self.is_from_if = True
-        self.nested_if = "E" if isinstance(node.elseOp, AST.If) else False
+        self.nested_condition = "E" if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
         if isinstance(elseOp, Scalar) or (
             not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)
         ):
             if len(self.else_condition_dataset) > 0:
                 self.else_condition_dataset.pop()
-            if len(self.if_stack) > 0:
-                self.if_stack.pop()
+            if len(self.condition_stack) > 0:
+                self.condition_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -996,13 +991,14 @@ class InterpreterAnalyzer(ASTTemplate):
         conditions: List[Any] = []
         thenOps: List[Any] = []
 
+        if self.condition_stack is None:
+            self.condition_stack = []
+
         while node.cases:
             case = node.cases.pop(0)
             self.is_from_condition = True
             conditions.append(self.visit(case.condition))
             self.is_from_condition = False
-            if isinstance(conditions[-1], Scalar) and conditions[-1].value:
-                return self.visit(case.thenOp)
             thenOps.append(self.visit(case.thenOp))
 
         return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
@@ -1049,11 +1045,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
-            if len(node.params) != 0:
-                param_element = self.visit(node.params[0])
-            else:
-                param_element = None
-
+            param_element = self.visit(node.params[0]) if len(node.params) != 0 else None
             return Round.analyze(op_element, param_element)
 
         # Numeric Operator
@@ -1109,6 +1101,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else "all"
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
+        elif node.op == DATE_ADD:
+            params = [self.visit(node.params[0]), self.visit(node.params[1])]
+            return Date_Add.analyze(self.visit(node.children[0]), params)
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             scalar_type = node.children[1]
@@ -1227,11 +1222,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 if node.op == HIERARCHY:
                     aux = []
                     for rule in hr_info["rules"]:
-                        if rule.rule.op == EQ:
+                        if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ:
                             aux.append(rule)
-                        elif rule.rule.op == WHEN:
-                            if rule.rule.right.op == EQ:
-                                aux.append(rule)
                     # Filter only the rules with HRBinOP as =,
                     # as they are the ones that will be computed
                     if len(aux) == 0:
@@ -1404,12 +1396,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     left_operand.data = pd.DataFrame({measure_name: []})
                 if right_operand.data is None:
                     right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(
-                    list(left_operand.data[left_operand.data[measure_name].isnull()].index)
-                )
-                right_null_indexes = set(
-                    list(right_operand.data[right_operand.data[measure_name].isnull()].index)
-                )
+                left_null_indexes = set(left_operand.data[left_operand.data[
+                    measure_name].isnull()].index)
+                right_null_indexes = set(right_operand.data[right_operand.data[
+                    measure_name].isnull()].index)
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
@@ -1497,16 +1487,13 @@ class InterpreterAnalyzer(ASTTemplate):
             if condition.data_type != BASIC_TYPES[bool]:
                 raise ValueError("Only boolean scalars are allowed on data component condition")
             name = condition.name
-            if condition.data is None:
-                data = None
-            else:
-                data = condition.data
+            data = None if condition.data is None else condition.data
 
         if data is not None:
-            if self.nested_if and self.if_stack is not None:
+            if self.nested_condition and self.condition_stack is not None:
                 merge_df = (
                     self.then_condition_dataset[-1]
-                    if self.if_stack[-1] == THEN_ELSE["then"]
+                    if self.condition_stack[-1] == THEN_ELSE["then"]
                     else self.else_condition_dataset[-1]
                 )
                 indexes = merge_df.data[merge_df.data.columns[-1]]
@@ -1559,12 +1546,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if (
             self.then_condition_dataset is None
             or self.else_condition_dataset is None
-            or self.if_stack is None
+            or self.condition_stack is None
         ):
             return left_operand, right_operand
         merge_dataset = (
             self.then_condition_dataset.pop()
-            if self.if_stack.pop() == THEN_ELSE["then"]
+            if self.condition_stack.pop() == THEN_ELSE["then"]
             else (self.else_condition_dataset.pop())
         )
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
@@ -1636,8 +1623,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Getting Dataset elements
         result_components = {
-            c_name: copy(comp)
-            for c_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            comp_name: copy(comp)
+            for comp_name, comp in
+            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
@@ -1751,9 +1739,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = node.params[
-                                i
-                            ].value  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = (
+                                node.params[i].value)  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):

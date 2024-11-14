@@ -1,15 +1,24 @@
 import json
 import os
 from pathlib import Path
-from typing import Union, Optional, Dict, List, Any
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Model import ValueDomain, Dataset, Scalar, Component, Role, ExternalRoutine
-from vtlengine.files.parser import _validate_pandas, _fill_dataset_empty_data
+from vtlengine.Exceptions import check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
+from vtlengine.Model import (
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Role_keys,
+    Scalar,
+    ValueDomain,
+)
 
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
@@ -30,15 +39,17 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
     if "datasets" in structures:
         for dataset_json in structures["datasets"]:
             dataset_name = dataset_json["name"]
-            components = {
-                component["name"]: Component(
+            components = {}
+
+            for component in dataset_json["DataStructure"]:
+                check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                check_key("role", Role_keys, component["role"])
+                components[component["name"]] = Component(
                     name=component["name"],
                     data_type=SCALAR_TYPES[component["type"]],
                     role=Role(component["role"]),
                     nullable=component["nullable"],
                 )
-                for component in dataset_json["DataStructure"]
-            }
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if "scalars" in structures:
@@ -208,7 +219,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         return datasets, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
-    for dataset_name, file_path in dict_datapoints.items():
+    for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
 

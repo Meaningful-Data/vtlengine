@@ -1,19 +1,7 @@
 from copy import copy
-from typing import Union, Any, List
+from typing import Any, List, Union
 
 import numpy as np
-
-from vtlengine.DataTypes import (
-    Boolean,
-    COMP_NAME_MAPPING,
-    binary_implicit_promotion,
-    SCALAR_TYPES_CLASS_REVERSE,
-    Null,
-)
-from vtlengine.Operators import Operator, Binary
-
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Scalar, DataComponent, Dataset, Role
 
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
@@ -21,11 +9,22 @@ from vtlengine.Model import Scalar, DataComponent, Dataset, Role
 #     import pandas as pd
 import pandas as pd
 
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Boolean,
+    Null,
+    binary_implicit_promotion,
+)
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Operators import Binary, Operator
+
 
 class If(Operator):
     """
     If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator # noqa E501
+        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
         inherits from Operator, a superclass that contains general validate and evaluate class methods.
         It has the following class methods:
     Class methods:
@@ -40,7 +39,7 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
-    """
+    """ # noqa E501
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
@@ -108,7 +107,7 @@ class If(Operator):
         )
         if isinstance(result, Dataset):
             drop_columns = [
-                column for column in result.data.columns if column not in result.components.keys()
+                column for column in result.data.columns if column not in result.components
             ]
             result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
@@ -213,14 +212,14 @@ class If(Operator):
 class Nvl(Binary):
     """
     Null class:
-        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class. # noqa E501
+        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class.
         It has the following class methods:
 
     Class methods:
         Validate: Class method that validates if the operation at scalar,
         datacomponent or dataset level can be performed.
         Evaluate: Evaluates the actual operation, returning the result.
-    """
+    """ # noqa E501
 
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
@@ -287,45 +286,48 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(
+            name="result",
+            components=result_components,
+            data=None
+        )
 
 
 class Case(Operator):
 
     @classmethod
-    def evaluate(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> Union[Scalar, DataComponent, Dataset]:
+    def evaluate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
 
         result = cls.validate(conditions, thenOps, elseOp)
 
         if isinstance(result, Scalar):
-            result.value = next(
-                (thenOps[i].value for i in range(len(conditions)) if conditions[i].value),
-                elseOp.value,
-            )
+            result.value = elseOp.value
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    result.value = thenOps[i].value
 
         if isinstance(result, DataComponent):
             result.data = pd.Series(None, index=conditions[0].data.index)
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data, value, result.data  # type: ignore[call-overload]
-                )
+                result.data = np.where(condition.data, value,  # type: ignore[call-overload]
+                                       result.data)
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
             else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
-            result.data = np.where(condition_mask_else, else_value, result.data)
+            result.data = pd.Series(np.where(condition_mask_else, else_value, result.data),
+                                    index=conditions[0].data.index)
 
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = copy(
-                conditions[0].data[identifiers]
-                if conditions[0].data is not None
-                else pd.DataFrame(columns=identifiers)
-            )
+            result.data = (conditions[0].data[identifiers] if conditions[0].data is not None
+                           else pd.DataFrame(columns=identifiers))
 
             for i in range(len(conditions)):
                 condition = conditions[i]
@@ -333,37 +335,31 @@ class Case(Operator):
                 condition_mask = condition.data[bool_col]
 
                 result.data.loc[condition_mask, columns] = (
-                    thenOps[i].value
-                    if isinstance(thenOps[i], Scalar)
+                    thenOps[i].value if isinstance(thenOps[i], Scalar)
                     else thenOps[i].data.loc[condition_mask, columns]
                 )
 
-            condition_mask_else = ~np.logical_or.reduce(
-                [
-                    condition.data[
-                        next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                    ]
-                    for condition in conditions
-                ]
-            )
+            condition_mask_else = ~np.logical_or.reduce([
+                condition.data[next(x.name for x in condition.get_measures() if
+                                    x.data_type == Boolean)].astype(bool) for
+                condition in conditions])
 
             result.data.loc[condition_mask_else, columns] = (
-                elseOp.value
-                if isinstance(elseOp, Scalar)
+                elseOp.value if isinstance(elseOp, Scalar)
                 else elseOp.data.loc[condition_mask_else, columns]
             )
 
         return result
 
     @classmethod
-    def validate(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
-    ) -> Union[Scalar, DataComponent, Dataset]:
+    def validate(cls,
+                 conditions: List[Any],
+                 thenOps: List[Any],
+                 elseOp: Any
+                 ) -> Union[Scalar, DataComponent, Dataset]:
 
-        if len(conditions) != len(thenOps):
-            raise ValueError("Number of conditions and then operations must be the same")
         if len(set(map(type, conditions))) > 1:
-            raise ValueError("All conditions must be of the same type")
+            raise SemanticError("2-1-9-1", op=cls.op)
 
         ops = thenOps + [elseOp]
         then_else_types = set(map(type, ops))
@@ -372,17 +368,16 @@ class Case(Operator):
         if condition_type is Scalar:
             for condition in conditions:
                 if condition.data_type != Boolean:
-                    condition.data_type = binary_implicit_promotion(condition.data_type, Boolean)
-                    condition.value = bool(condition.value)
+                    raise SemanticError("2-1-9-2", op=cls.op, name=condition.name)
             if list(then_else_types) != [Scalar]:
-                raise ValueError("All then and else operands must be Scalars")
+                raise SemanticError("2-1-9-3", op=cls.op)
 
             # The output data type is the data type of the last then operation that has a true
             # condition, defaulting to the data type of the else operation if no condition is true
-            output_data_type = next(
-                (thenOps[i].data_type for i in range(len(conditions)) if conditions[i].value),
-                elseOp.data_type,
-            )
+            output_data_type = elseOp.data_type
+            for i in range(len(conditions)):
+                if conditions[i].value:
+                    output_data_type = thenOps[i].data_type
 
             return Scalar(
                 name="result",
@@ -391,18 +386,9 @@ class Case(Operator):
             )
 
         elif condition_type is DataComponent:
-            if not all(cond.data_type == Boolean for cond in conditions):
-                raise SemanticError(
-                    "1-1-9-11", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[conditions[0].data_type]
-                )
-            if Dataset in then_else_types:
-                raise ValueError(
-                    "Error, then and else operands at Component level " "cannot be Datasets"
-                )
-            if DataComponent not in then_else_types:
-                raise ValueError(
-                    "Error, tat least one of then and else operands must " "be a DataComponent"
-                )
+            for condition in conditions:
+                if not condition.data_type == Boolean:
+                    raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
 
             nullable = any(
                 thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
@@ -421,30 +407,24 @@ class Case(Operator):
                 nullable=nullable,
             )
 
-        elif condition_type is Dataset:
-            for condition in conditions:
-                bool_count = sum(1 for x in condition.get_measures() if x.data_type == Boolean)
-                if bool_count == 0:
-                    raise ValueError(
-                        "Error, at least one boolean measure is " "required in the condition"
-                    )
-                if bool_count > 1:
-                    raise ValueError(
-                        "Error, only one boolean measure is " "allowed in the condition"
-                    )
-            if DataComponent in then_else_types:
-                raise ValueError(
-                    "Error, then and else operands at Dataset " "level cannot be DataComponents"
-                )
-            if Dataset not in then_else_types:
-                raise ValueError("Error, at least one of then and else operands must be a Dataset")
+        # Dataset
+        for condition in conditions:
+            if len(condition.get_measures_names()) != 1:
+                raise SemanticError("1-1-1-4", op=cls.op)
+            if condition.get_measures()[0].data_type != Boolean:
+                raise SemanticError("2-1-9-5", op=cls.op, name=condition.name)
 
-            return Dataset(
-                name="result",
-                components=copy(
-                    next(operand for operand in ops if isinstance(operand, Dataset)).components
-                ),
-                data=None,
-            )
+        if Dataset not in then_else_types:
+            raise SemanticError("2-1-9-6", op=cls.op)
 
-        raise ValueError("Invalid type for conditions")
+        components = next(op for op in ops if isinstance(op, Dataset)).components
+        comp_names = [comp.name for comp in components.values()]
+        for op in ops:
+            if isinstance(op, Dataset) and op.get_components_names() != comp_names:
+                raise SemanticError("2-1-9-7", op=cls.op)
+
+        return Dataset(
+            name="result",
+            components=components,
+            data=None
+        )

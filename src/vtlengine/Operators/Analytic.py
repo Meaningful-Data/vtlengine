@@ -3,8 +3,6 @@ from typing import List, Optional
 
 import duckdb
 
-from vtlengine.Exceptions import SemanticError
-
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
 # else:
@@ -32,6 +30,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
 )
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Integer, Number, unary_implicit_promotion
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
 
@@ -58,11 +57,9 @@ class Analytic(Operator.Unary):
         ordering: Optional[List[OrderBy]],
         window: Optional[Windowing],
         params: Optional[List[int]],
+        component_name: Optional[str] = None,
     ) -> Dataset:
-        if ordering is None:
-            order_components = []
-        else:
-            order_components = [o.component for o in ordering]
+        order_components = [] if ordering is None else [o.component for o in ordering]
         identifier_names = operand.get_identifiers_names()
         result_components = operand.components.copy()
 
@@ -83,25 +80,51 @@ class Analytic(Operator.Unary):
                 raise SemanticError(
                     "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
                 )
-        measures = operand.get_measures()
-        if measures is None:
-            raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
-        if cls.type_to_check is not None:
-            for measure in measures:
-                unary_implicit_promotion(measure.data_type, cls.type_to_check)
-        if cls.return_type is not None:
-            for measure in measures:
-                new_measure = copy(measure)
-                new_measure.data_type = cls.return_type
-                result_components[measure.name] = new_measure
-        if cls.op == COUNT and len(measures) <= 1:
-            measure_name = COMP_NAME_MAPPING[cls.return_type]
-            nullable = False if len(measures) == 0 else measures[0].nullable
-            if len(measures) == 1:
-                del result_components[measures[0].name]
-            result_components[measure_name] = Component(
-                name=measure_name, data_type=cls.return_type, role=Role.MEASURE, nullable=nullable
-            )
+        if component_name is not None:
+            if cls.type_to_check is not None:
+                unary_implicit_promotion(
+                    operand.components[component_name].data_type, cls.type_to_check
+                )
+            if cls.return_type is not None:
+                result_components[component_name] = Component(
+                    name=component_name,
+                    data_type=cls.return_type,
+                    role=operand.components[component_name].role,
+                    nullable=operand.components[component_name].nullable,
+                )
+            if cls.op == COUNT:
+                measure_name = COMP_NAME_MAPPING[cls.return_type]
+                result_components[measure_name] = Component(
+                    name=measure_name,
+                    data_type=cls.return_type,
+                    role=Role.MEASURE,
+                    nullable=operand.components[component_name].nullable,
+                )
+                if component_name in result_components:
+                    del result_components[component_name]
+        else:
+            measures = operand.get_measures()
+            if len(measures) == 0:
+                raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
+            if cls.type_to_check is not None:
+                for measure in measures:
+                    unary_implicit_promotion(measure.data_type, cls.type_to_check)
+            if cls.return_type is not None:
+                for measure in measures:
+                    new_measure = copy(measure)
+                    new_measure.data_type = cls.return_type
+                    result_components[measure.name] = new_measure
+            if cls.op == COUNT and len(measures) <= 1:
+                measure_name = COMP_NAME_MAPPING[cls.return_type]
+                nullable = False if len(measures) == 0 else measures[0].nullable
+                if len(measures) == 1:
+                    del result_components[measures[0].name]
+                result_components[measure_name] = Component(
+                    name=measure_name,
+                    data_type=cls.return_type,
+                    role=Role.MEASURE,
+                    nullable=nullable,
+                )
 
         return Dataset(name="result", components=result_components, data=None)
 
@@ -151,10 +174,7 @@ class Analytic(Operator.Unary):
             window_str = f"{mode} BETWEEN {window.start} {start_mode} AND {window.stop} {stop_mode}"
 
         # Partitioning
-        if len(partitioning) > 0:
-            partition = "PARTITION BY " + ", ".join(partitioning)
-        else:
-            partition = ""
+        partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
 
         # Ordering
         order_str = ""
@@ -205,11 +225,16 @@ class Analytic(Operator.Unary):
         ordering: Optional[List[OrderBy]],
         window: Optional[Windowing],
         params: Optional[List[int]],
+        component_name: Optional[str] = None,
     ) -> Dataset:
-        result = cls.validate(operand, partitioning, ordering, window, params)
+        result = cls.validate(operand, partitioning, ordering, window, params, component_name)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        measure_names = operand.get_measures_names()
         identifier_names = operand.get_identifiers_names()
+
+        if component_name is not None:
+            measure_names = [component_name]
+        else:
+            measure_names = operand.get_measures_names()
 
         result.data = cls.analyticfunc(
             df=df,

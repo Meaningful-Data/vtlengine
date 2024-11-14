@@ -1,11 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import List, Dict, Any, Optional
-
-from vtlengine.DataTypes import binary_implicit_promotion
-
-from vtlengine.AST import BinOp
-from vtlengine.Exceptions import SemanticError
+from typing import Any, Dict, List, Optional
 
 # if os.environ.get("SPARK"):
 #     import pyspark.pandas as pd
@@ -13,7 +8,10 @@ from vtlengine.Exceptions import SemanticError
 #     import pandas as pd
 import pandas as pd
 
-from vtlengine.Model import Dataset, Component, Role
+from vtlengine.AST import BinOp
+from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 
 
@@ -197,7 +195,7 @@ class Join(Operator):
     def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
-        if not all([isinstance(op, Dataset) for op in operands]):
+        if not all(isinstance(op, Dataset) for op in operands):
             raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
             return Dataset(name="result", components=operands[0].components, data=None)
@@ -226,19 +224,17 @@ class Join(Operator):
                 raise SemanticError("1-1-13-14", op=cls.op, name=op_name)
 
         for op_name, identifiers in info.items():
-            if op_name != cls.reference_dataset.name and not set(identifiers).issubset(
-                set(info[cls.reference_dataset.name])
-            ):
-                if using is None:
-                    missing_components = list(
-                        set(identifiers) - set(info[cls.reference_dataset.name])
-                    )
-                    raise SemanticError(
-                        "1-1-13-11",
-                        op=cls.op,
-                        dataset_reference=cls.reference_dataset.name,
-                        component=missing_components[0],
-                    )
+            if (using is None and op_name != cls.reference_dataset.name and not
+            set(identifiers).issubset(set(info[cls.reference_dataset.name]))):
+                missing_components = list(
+                    set(identifiers) - set(info[cls.reference_dataset.name])
+                )
+                raise SemanticError(
+                    "1-1-13-11",
+                    op=cls.op,
+                    dataset_reference=cls.reference_dataset.name,
+                    component=missing_components[0],
+                )
         if using is None:
             return
 
@@ -256,7 +252,7 @@ class Join(Operator):
                     reference=cls.reference_dataset.name,
                 )
 
-            for op_name, identifiers in info.items():
+            for _, identifiers in info.items():
                 if not set(using).issubset(identifiers):
                     # (Case B2)
                     if not set(using).issubset(reference_components):

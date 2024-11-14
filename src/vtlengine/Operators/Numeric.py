@@ -1,13 +1,13 @@
+import _random
 import math
 import operator
-from decimal import getcontext, Decimal
+import warnings
+from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
-import vtlengine.Operators as Operator
 import pandas as pd
-from vtlengine.DataTypes import Integer, Number
-from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
+import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     ABS,
     CEIL,
@@ -21,13 +21,15 @@ from vtlengine.AST.Grammar.tokens import (
     MULT,
     PLUS,
     POWER,
+    RANDOM,
     ROUND,
     SQRT,
     TRUNC,
-    RANDOM,
 )
+from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
+from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 
 class Unary(Operator.Unary):
@@ -52,7 +54,8 @@ class Binary(Operator.Binary):
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
                 raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            return cls.py_op(x, y)
+            if cls.op == RANDOM:
+                return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         # Handles precision to avoid floating point errors
@@ -69,8 +72,8 @@ class Binary(Operator.Binary):
 
 class UnPlus(Unary):
     """
-    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator # noqa E501
-    """
+    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator
+    """ # noqa E501
 
     op = PLUS
     py_op = operator.pos
@@ -82,8 +85,8 @@ class UnPlus(Unary):
 
 class UnMinus(Unary):
     """
-    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator # noqa E501
-    """
+    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator
+    """ # noqa E501
 
     op = MINUS
     py_op = operator.neg
@@ -91,8 +94,8 @@ class UnMinus(Unary):
 
 class AbsoluteValue(Unary):
     """
-    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator # noqa E501
-    """
+    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator
+    """ # noqa E501
 
     op = ABS
     py_op = operator.abs
@@ -100,8 +103,8 @@ class AbsoluteValue(Unary):
 
 class Exponential(Unary):
     """
-    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator # noqa E501
-    """
+    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator
+    """ # noqa E501
 
     op = EXP
     py_op = math.exp
@@ -110,9 +113,9 @@ class Exponential(Unary):
 
 class NaturalLogarithm(Unary):
     """
-    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_ # noqa E501
+    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_
     unary operator
-    """
+    """ # noqa E501
 
     op = LN
     py_op = math.log
@@ -121,9 +124,9 @@ class NaturalLogarithm(Unary):
 
 class SquareRoot(Unary):
     """
-    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_ # noqa E501
+    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_
     unary operator
-    """
+    """ # noqa E501
 
     op = SQRT
     py_op = math.sqrt
@@ -132,8 +135,8 @@ class SquareRoot(Unary):
 
 class Ceil(Unary):
     """
-    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator # noqa E501
-    """
+    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
+    """ # noqa E501
 
     op = CEIL
     py_op = math.ceil
@@ -142,8 +145,8 @@ class Ceil(Unary):
 
 class Floor(Unary):
     """
-    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator # noqa E501
-    """
+    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
+    """ # noqa E501
 
     op = FLOOR
     py_op = math.floor
@@ -152,8 +155,8 @@ class Floor(Unary):
 
 class BinPlus(Binary):
     """
-    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator # noqa E501
-    """
+    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator
+    """ # noqa E501
 
     op = PLUS
     py_op = operator.add
@@ -162,8 +165,8 @@ class BinPlus(Binary):
 
 class BinMinus(Binary):
     """
-    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator # noqa E501
-    """
+    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator
+    """ # noqa E501
 
     op = MINUS
     py_op = operator.sub
@@ -172,9 +175,9 @@ class BinMinus(Binary):
 
 class Mult(Binary):
     """
-    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_ # noqa E501
+    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_
     binary operator
-    """
+    """ # noqa E501
 
     op = MULT
     py_op = operator.mul
@@ -182,9 +185,9 @@ class Mult(Binary):
 
 class Div(Binary):
     """
-    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_ # noqa E501
+    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_
     binary operator
-    """
+    """ # noqa E501
 
     op = DIV
     py_op = operator.truediv
@@ -193,8 +196,8 @@ class Div(Binary):
 
 class Logarithm(Binary):
     """
-    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator # noqa E501
-    """
+    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator
+    """ # noqa E501
 
     op = LOG
     return_type = Number
@@ -211,8 +214,8 @@ class Logarithm(Binary):
 
 class Modulo(Binary):
     """
-    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator # noqa E501
-    """
+    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator
+    """ # noqa E501
 
     op = MOD
     py_op = operator.mod
@@ -220,8 +223,8 @@ class Modulo(Binary):
 
 class Power(Binary):
     """
-    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator # noqa E501
-    """
+    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator
+    """ # noqa E501
 
     op = POWER
     return_type = Number
@@ -231,18 +234,6 @@ class Power(Binary):
         if pd.isnull(param):
             return None
         return x**param
-
-
-class Random(Binary):
-    """ """
-
-    op = RANDOM
-    return_type = Number
-
-    @classmethod
-    def py_op(cls, seed: Any, index: Any) -> Any:
-        # Dataset.random_seed = seed
-        return Dataset(name="result", components={}, data=pd.DataFrame())
 
 
 class Parameterized(Unary):
@@ -348,8 +339,8 @@ class Parameterized(Unary):
 
 class Round(Parameterized):
     """
-    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator # noqa E501
-    """
+    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator
+    """ # noqa E501
 
     op = ROUND
     return_type = Integer
@@ -373,8 +364,8 @@ class Round(Parameterized):
 
 class Trunc(Parameterized):
     """
-    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator. # noqa E501
-    """
+    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator.
+    """ # noqa E501
 
     op = TRUNC
 
@@ -390,3 +381,37 @@ class Trunc(Parameterized):
             return truncated_value
 
         return int(truncated_value)
+
+
+class PseudoRandom(_random.Random):
+
+    def __init__(self, seed: Union[int, float]) -> None:
+        super().__init__()
+        self.seed(seed)
+
+
+class Random(Parameterized):
+
+    op = RANDOM
+    return_type = Number
+
+    @classmethod
+    def validate(cls, seed: Any, index: Any = None) -> Any:
+        if index.data_type != Integer:
+            index.data_type = binary_implicit_promotion(index.data_type, Integer)
+        if index.value < 0:
+            raise SemanticError("2-1-15-2", op=cls.op, value=index)
+        if index.value > 10000:
+            warnings.warn("Random: The value of 'index' is very big. This can affect "
+                          "performance.", UserWarning)
+        return super().validate(seed, index)
+
+    @classmethod
+    def py_op(cls,
+              seed: Union[int, float],
+              index: int
+              ) -> float:
+        instance: PseudoRandom = PseudoRandom(seed)
+        for _ in range(index):
+            instance.random()
+        return instance.random().__round__(6)

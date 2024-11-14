@@ -2,13 +2,13 @@
 #     import pyspark.pandas as pd
 # else:
 #     import pandas as pd
+from typing import Any, Optional
+
 import pandas as pd
 
-from typing import Optional, Any
-
-from vtlengine.AST.Grammar.tokens import AND, OR, XOR, NOT
-from vtlengine.DataTypes import Boolean
 import vtlengine.Operators as Operator
+from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
+from vtlengine.DataTypes import Boolean
 
 
 class Unary(Operator.Unary):

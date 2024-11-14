@@ -1,9 +1,8 @@
 import calendar
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-
 from vtlengine.Exceptions import InputValidationException
 
 
@@ -93,6 +92,8 @@ further_options_period_pattern = (
 
 
 def check_time_period(value: str) -> str:
+    if isinstance(value, int):
+        value = str(value)
     value = value.replace(" ", "")
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:

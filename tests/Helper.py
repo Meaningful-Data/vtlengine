@@ -1,22 +1,29 @@
 import json
+import warnings
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
 from unittest import TestCase
 
 import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException
-from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Component, ExternalRoutine, Role, ValueDomain, Scalar
+from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.files.parser import load_datapoints
-
-import warnings
+from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import (
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Role_keys,
+    Scalar,
+    ValueDomain,
+)
 
 
 class TestHelper(TestCase):
@@ -51,15 +58,18 @@ class TestHelper(TestCase):
         if "datasets" in structures:
             for dataset_json in structures["datasets"]:
                 dataset_name = dataset_json["name"]
-                components = {
-                    component["name"]: Component(
+                components = {}
+
+                for component in dataset_json["DataStructure"]:
+                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    check_key("role", Role_keys, component["role"])
+                    components[component["name"]] = Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["type"]],
                         role=Role(component["role"]),
                         nullable=component["nullable"],
                     )
-                    for component in dataset_json["DataStructure"]
-                }
+
                 if only_semantic:
                     data = None
                 else:
@@ -107,7 +117,7 @@ class TestHelper(TestCase):
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
             new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
             for dataset in new_datasets.values():
-                setattr(dataset, "ref_name", name)
+                dataset.ref_name = name
             datasets.update(new_datasets)
 
         return datasets
@@ -160,7 +170,7 @@ class TestHelper(TestCase):
         )
         result = interpreter.visit(ast)
         for dataset in result.values():
-            _ = format_time_period_external_representation(
+            format_time_period_external_representation(
                 dataset, TimePeriodRepresentation.SDMX_REPORTING
             )
 
@@ -170,6 +180,8 @@ class TestHelper(TestCase):
                 f"Expected {len(reference_datasets)} datasets, got {len(result)}, difference: {diff_datasets}"
             )
 
+        # cls._override_structures(code, result, reference_datasets)
+        # cls._override_data(code, result, reference_datasets)
         assert result == reference_datasets
 
     @classmethod
@@ -201,6 +213,51 @@ class TestHelper(TestCase):
         sql_names: List[str] = None,
         text: Optional[str] = None,
         scalars: Dict[str, Any] = None,
+    ):
+        # Data Loading.--------------------------------------------------------
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        if text is None:
+            text = cls.LoadVTL(code)
+        input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+
+        value_domains = None
+        if vd_names is not None:
+            value_domains = cls.LoadValueDomains(vd_names)
+
+        external_routines = None
+        if sql_names is not None:
+            external_routines = cls.LoadExternalRoutines(sql_names)
+
+        if scalars is not None:
+            for scalar_name, scalar_value in scalars.items():
+                if scalar_name not in input_datasets:
+                    raise Exception(f"Scalar {scalar_name} not found in the input datasets")
+                if not isinstance(input_datasets[scalar_name], Scalar):
+                    raise Exception(f"{scalar_name} is a dataset")
+                input_datasets[scalar_name].value = scalar_value
+
+        interpreter = InterpreterAnalyzer(
+            input_datasets, value_domains=value_domains, external_routines=external_routines
+        )
+        with pytest.raises(SemanticError) as context:
+            ast = create_ast(text)
+            interpreter.visit(ast)
+
+        result = exception_code == str(context.value.args[1])
+        if result is False:
+            print(f"\n{exception_code} != {context.value.args[1]}")
+        assert result
+
+    @classmethod
+    def SemanticExceptionTest(
+            cls,
+            code: str,
+            number_inputs: int,
+            exception_code: str,
+            vd_names: List[str] = None,
+            sql_names: List[str] = None,
+            text: Optional[str] = None,
+            scalars: Dict[str, Any] = None,
     ):
         # Data Loading.--------------------------------------------------------
         warnings.filterwarnings("ignore", category=FutureWarning)
