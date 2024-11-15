@@ -919,7 +919,7 @@ class Day_to_Year(Operators.Unary):
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-14", op=cls.op)
+            raise SemanticError("2-1-19-17", op=cls.op)
         years = 0
         days_remaining = value
         if value >= 365:
@@ -935,7 +935,7 @@ class Day_to_Month(Operators.Unary):
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-14", op=cls.op)
+            raise SemanticError("2-1-19-17", op=cls.op)
         months = 0
         days_remaining = value
         if value >= 30:
@@ -953,7 +953,7 @@ class Year_to_Day(Operators.Unary):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         if "Y" not in value:
-            raise SemanticError("2-1-19-12", op=cls.op)
+            raise SemanticError("2-1-19-15", op=cls.op)
         index_y = value.index("Y")
         years = int(value[1:index_y])
         days = int(value[(index_y + 1) : -1])
@@ -969,7 +969,7 @@ class Month_to_Day(Operators.Unary):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         if "M" not in value:
-            raise SemanticError("2-1-19-13", op=cls.op)
+            raise SemanticError("2-1-19-16", op=cls.op)
         index_m = value.index("M")
         months = int(value[1:index_m])
         days = int(value[(index_m + 1) : -1])
