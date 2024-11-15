@@ -1,4 +1,5 @@
 import re
+from datetime import date, datetime, timedelta
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -6,6 +7,7 @@ import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
+    DATE_ADD,
     DAYOFMONTH,
     DAYOFYEAR,
     DAYTOMONTH,
@@ -19,6 +21,22 @@ from vtlengine.AST.Grammar.tokens import (
     TIMESHIFT,
     YEAR,
     YEARTODAY,
+)
+from vtlengine.DataTypes import (
+    Date,
+    Duration,
+    Integer,
+    ScalarType,
+    String,
+    TimeInterval,
+    TimePeriod,
+    unary_implicit_promotion,
+)
+from vtlengine.DataTypes.TimeHandling import (
+    DURATION_MAPPING,
+    TimePeriodHandler,
+    date_to_period,
+    period_to_date,
 )
 from vtlengine.DataTypes import (
     Date,
@@ -826,14 +844,92 @@ class Date_Diff(Binary):
 
 
 class Date_Add(Parametrized):
-    @classmethod
-    def evaluate(cls, operand: Any, param_list: List[Any]) -> Any:
-        # TODO: Implement this method (or adapt Binary's validate method to work with this operator)
-        pass
+
+    op = DATE_ADD
 
     @classmethod
-    def validate(cls, operand: Any, param_list: List[Any]) -> Any:
-        pass
+    def validate(cls,
+                 operand: Union[Scalar, DataComponent, Dataset],
+                 param_list: List[Scalar]
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+
+        expected_types = [Integer, String]
+        for i, param in enumerate(param_list):
+            error = 12 if not isinstance(param, Scalar) else 13 if (  # type: ignore[redundant-expr]
+                    param.data_type != expected_types[i]) else None
+            if error is not None:
+                raise SemanticError(f"2-1-19-{error}",
+                                    op=cls.op,
+                                    type=param.__class__.__name__ if error == 12 else
+                                    param.data_type.__name__,
+                                    name="shiftNumber" if error == 12 else "periodInd",
+                                    expected="Scalar" if error == 12 else expected_types[i].__name__
+                                    )
+
+        if (isinstance(operand, (Scalar, DataComponent)) and
+                operand.data_type not in [Date, TimePeriod]):
+            unary_implicit_promotion(operand.data_type, Date)
+
+        if isinstance(operand, Scalar):
+            return Scalar(name=operand.name, data_type=operand.data_type, value=None)
+        if isinstance(operand, DataComponent):
+            return DataComponent(name=operand.name, data_type=operand.data_type, data=None)
+
+        if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
+            raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
+        return Dataset(name='result', components=operand.components.copy(), data=None)
+
+    @classmethod
+    def evaluate(cls,
+                 operand: Union[Scalar, DataComponent, Dataset],
+                 param_list: List[Scalar]
+                 ) -> Union[Scalar, DataComponent, Dataset]:
+        result = cls.validate(operand, param_list)
+        shift, period = param_list[0].value, param_list[1].value
+        is_tp = isinstance(operand, (Scalar, DataComponent)) and operand.data_type == TimePeriod
+
+        if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
+            result.value = cls.py_op(operand.value, shift, period, is_tp)
+        elif (isinstance(result, DataComponent) and isinstance(operand, DataComponent) and
+              operand.data is not None):
+            result.data = operand.data.map(lambda x: cls.py_op(x, shift, period, is_tp),
+                                           na_action="ignore")
+        elif (isinstance(result, Dataset) and isinstance(operand, Dataset) and
+              operand.data is not None):
+            result.data = operand.data.copy()
+            for measure in operand.get_measures():
+                if measure.data_type in [Date, TimePeriod]:
+                    result.data[measure.name] = result.data[measure.name].map(
+                        lambda x: cls.py_op(x, shift, period, measure.data_type == TimePeriod),
+                        na_action="ignore")
+                    measure.data_type = Date
+
+        if isinstance(result, (Scalar, DataComponent)):
+            result.data_type = Date
+        return result
+
+    @classmethod
+    def py_op(cls,
+                date_str: str,
+                shift: int, period: str,
+                is_tp: bool = False
+                ) -> str:
+        if is_tp:
+            tp_value = TimePeriodHandler(date_str)
+            date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+        else:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+
+        if period in ['D', 'W']:
+            days_shift = shift * (7 if period == 'W' else 1)
+            return (date + timedelta(days=days_shift)).strftime("%Y-%m-%d")
+
+        month_shift = {'M': 1, 'Q': 3, 'S': 6, 'A': 12}[period] * shift
+        new_year = date.year + (date.month - 1 + month_shift) // 12
+        new_month = (date.month - 1 + month_shift) % 12 + 1
+        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
+        return date.replace(year=new_year, month=new_month,
+                            day=min(date.day, last_day)).strftime("%Y-%m-%d")
 
 
 class SimpleUnaryTime(Operators.Unary):
