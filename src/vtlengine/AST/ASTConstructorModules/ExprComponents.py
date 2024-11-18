@@ -578,8 +578,9 @@ class ExprComp(VtlVisitor):
             return self.visitTimeAggAtomComponent(ctx)
         elif isinstance(ctx, Parser.CurrentDateAtomComponentContext):
             return self.visitCurrentDateAtomComponent(ctx)
-        elif (isinstance(ctx, (Parser.DateDiffAtomComponentContext,
-                               Parser.DateAddAtomComponentContext))):
+        elif isinstance(ctx, Parser.DateDiffAtomComponentContext):
+            return self.visitDateDiffAtomComponent(ctx)
+        elif isinstance(ctx, Parser.DateAddAtomComponentContext):
             return self.visitDateAddAtomComponentContext(ctx)
         elif (isinstance(ctx, (
             Parser.YearAtomComponentContext,
