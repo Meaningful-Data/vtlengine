@@ -101,6 +101,9 @@ class HRComparison(Operators.Binary):
                 left.data[measure_name], right.data, hr_mode, cls.imbalance_func
             )
 
+        # Removing datapoints that should not be returned
+        # (we do it below imbalance calculation
+        # to avoid errors on different shape)
         result.data = result.data[result.data["bool_var"] != "REMOVE_VALUE"]
         result.data.drop(measure_name, axis=1, inplace=True)
         return result
