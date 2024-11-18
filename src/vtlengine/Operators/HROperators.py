@@ -56,7 +56,8 @@ class HRComparison(Operators.Binary):
     def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
-        # The function is applied to the aligned series and the result is combined with the original series.
+        # The function is applied to the aligned series and the result is combined with the
+        # original series.
         left_series, right_series = left_series.align(right_series)
         remove_result = cls.hr_func(left_series, right_series, hr_mode)
         mask_valid = remove_result == True
