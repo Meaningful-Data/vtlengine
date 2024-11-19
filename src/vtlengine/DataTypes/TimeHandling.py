@@ -32,9 +32,11 @@ def date_to_period(date_value: date, period_indicator: str) -> Any:
         return TimePeriodHandler(f"{date_value.year}D{date_value.timetuple().tm_yday}")
 
 
-def period_to_date(
-    year: int, period_indicator: str, period_number: int, start: bool = False
-) -> date:
+def period_to_date(year: int,
+                   period_indicator: str,
+                   period_number: int,
+                   start: bool = False
+                   ) -> date:
     if period_indicator == "A":
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
