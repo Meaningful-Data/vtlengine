@@ -119,8 +119,7 @@ class DataLoadTest(DataLoadHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_6(self):
-        """
-        """
+        """ """
         code = "DataLoad-6"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -128,8 +127,7 @@ class DataLoadTest(DataLoadHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_7(self):
-        """
-        """
+        """ """
         code = "DataLoad-7"
         number_inputs = 1
         references_names = ["DS_r"]
@@ -779,8 +777,7 @@ class DataLoadTest(DataLoadHelper):
         self.DataLoadTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_infer_keys_1(self):
-        """
-        """
+        """ """
         code = "IK-1"
         number_inputs = 1
         message = "Invalid key on role field: Identfier. Did you mean Identifier?."
@@ -790,8 +787,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_2(self):
-        """
-        """
+        """ """
         code = "IK-2"
         number_inputs = 1
         message = "Invalid key on role field: Masure. Did you mean Measure?."
@@ -801,8 +797,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_3(self):
-        """
-        """
+        """ """
         code = "IK-3"
         number_inputs = 1
         message = "Invalid key on data_type field: Numver. Did you mean Number?."
@@ -812,8 +807,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_4(self):
-        """
-        """
+        """ """
         code = "IK-4"
         number_inputs = 1
         message = "Invalid key on data_type field: boolean. Did you mean Boolean?."
@@ -823,8 +817,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_5(self):
-        """
-        """
+        """ """
         code = "IK-5"
         number_inputs = 1
         message = "Invalid key on data_type field: TimePeriod. Did you mean Time_Period?."
@@ -834,8 +827,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_6(self):
-        """
-        """
+        """ """
         code = "IK-6"
         number_inputs = 1
         message = "Invalid key on data_type field: TimPerod. Did you mean Time_Period?."
@@ -845,8 +837,7 @@ class DataLoadTest(DataLoadHelper):
         )
 
     def test_infer_keys_7(self):
-        """
-        """
+        """ """
         code = "IK-7"
         number_inputs = 1
         message = "Invalid key on data_type field: jbhfae."
