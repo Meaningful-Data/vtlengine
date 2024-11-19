@@ -7,11 +7,11 @@ import pandas as pd
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
     DATE_ADD,
+    DATE_DIFF,
     DAYOFMONTH,
     DAYOFYEAR,
     DAYTOMONTH,
     DAYTOYEAR,
-    DATE_DIFF,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
     MONTH,
