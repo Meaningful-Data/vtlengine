@@ -1,6 +1,5 @@
 import re
 from datetime import date, datetime, timedelta
-from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
@@ -38,16 +37,6 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period,
     period_to_date,
 )
-from vtlengine.DataTypes import (
-    Date,
-    Duration,
-    Integer,
-    ScalarType,
-    String,
-    TimeInterval,
-    TimePeriod,
-)
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING, TimePeriodHandler, date_to_period
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 
