@@ -11,13 +11,13 @@
         },
         {
           "name": "Me_1",
-          "type": "Time_Period",
+          "type": "Integer",
           "role": "Measure",
           "nullable": true
         },
         {
           "name": "Me_2",
-          "type": "Time_Period",
+          "type": "Integer",
           "role": "Measure",
           "nullable": true
         }

@@ -1,8 +1,8 @@
-import pytest
 import warnings
-
-from pytest import mark
 from pathlib import Path
+
+import pytest
+from pytest import mark
 
 from vtlengine.API import create_ast
 from vtlengine.Exceptions import SemanticError
@@ -15,13 +15,11 @@ ds_param = [
     ("22", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
     ("23", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
     ("24", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
-    ("25", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
 ]
 
 error_param = [
-    ("26", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
-    # ("27", 'DS_r := DS_1[calc Me_3 := datediff(Me_2, Me_1)];', "0-1-1-12"),
-    # ("28", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_1)];', "2-3-6"),
+    ("25", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
+    ("26", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "2-3-6"),
 ]
 
 @pytest.mark.parametrize("code, expression", ds_param)

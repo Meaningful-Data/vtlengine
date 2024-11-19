@@ -7,6 +7,7 @@ import pandas as pd
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
     DATE_ADD,
+    DATE_DIFF,
     FILL_TIME_SERIES,
     FLOW_TO_STOCK,
     PERIOD_INDICATOR,
@@ -836,6 +837,7 @@ class SimpleBinaryTime(Operators.Binary):
 
 
 class Date_Diff(SimpleBinaryTime):
+    op=DATE_DIFF
     type_to_check = TimeInterval
     return_type = Integer
 
