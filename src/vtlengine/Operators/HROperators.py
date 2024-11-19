@@ -27,9 +27,7 @@ class HRComparison(Operators.Binary):
 
     @classmethod
     def imbalance_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        return x - y
+        return None if pd.isnull(x) or pd.isnull(y) else x - y
 
     @staticmethod
     def hr_func(x: Any, y: Any, hr_mode: str, func: Any) -> Any:
