@@ -212,7 +212,7 @@ class TimePeriodHandler:
             raise SemanticError(
                 "2-1-19-7",
                 periods=PeriodDuration.periods[self.period_indicator],
-                period_inidcator=self.period_indicator,
+                period_indicator=self.period_indicator,
             )
             # raise ValueError(f'Period Number must be between 1 and '
             #                  f'{PeriodDuration.periods[self.period_indicator]} '
@@ -486,7 +486,7 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
 
     # Format 2010-01-01. Prevent passthrough of other ISO 8601 formats.
     if len(str_) != 10 or str_[7] != "-":
-        raise SemanticError("2-1-19-8", date=str)
+        raise SemanticError("2-1-19-8", date=str_)
         # raise ValueError(f"Invalid date format, must be YYYY-MM-DD: {str_}")
 
     result = date.fromisoformat(str_)
