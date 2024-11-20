@@ -102,11 +102,9 @@ class Binary(Operator.Binary):
         x, y = cls._cast_values(x, y)
         return cls.py_op(x, y)
 
-    import pandas as pd
-
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if scalar is None or pd.isnull(scalar):
+        if pd.isnull(scalar):
             return pd.Series(None, index=series.index)
 
         first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
@@ -124,9 +122,9 @@ class Binary(Operator.Binary):
 
         op = cls.py_op if cls.py_op is not None else cls.op_func
         if series_left:
-            result = series.apply(lambda x: op(x, scalar) if not pd.isnull(x) else None)
+            result = series.map(lambda x: op(x, scalar), na_action="ignore")
         else:
-            result = series.apply(lambda x: op(scalar, x) if not pd.isnull(x) else None)
+            result = series.map(lambda x: op(scalar, x), na_action="ignore")
 
         return result
 
