@@ -1623,8 +1623,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {
             comp_name: copy(comp)
-            for comp_name, comp in
-            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            for comp_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
@@ -1738,8 +1737,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = (
-                                node.params[i].value)  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = node.params[
+                                i
+                            ].value  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):
