@@ -20,7 +20,7 @@ ds_param = [
 
 error_param = [
     ("25", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
-    ("26", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "2-3-6"),
+    ("26", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
 ]
 
 scalar_time_params = [
@@ -31,10 +31,10 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2020-12-14", date),cast("2021-04-20", time_period))', "2-1-19-8"),
-    ('datediff(cast("2020-01-01",time_period),cast("2021-01-01",date))', "2-1-19-8"),
     ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', "2-1-19-8"),
     ('datediff(cast("2020D1",time_period),cast("2020D15",date))', "2-1-19-8"),
+    ('datediff(cast("2022-06-30",date),cast("2023Q2",time_period))', "1-1-1-2"),
+    ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', "1-1-1-2"),
 ]
 
 @pytest.mark.parametrize("code, expression", ds_param)
