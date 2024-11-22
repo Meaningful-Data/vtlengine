@@ -50,7 +50,7 @@ class Analytic(Operator.Unary):
     sql_op: Optional[str] = None
 
     @classmethod
-    def validate(  # type: ignore[override]
+    def validate(  # type: ignore[override]  # noqa: C901
         cls,
         operand: Dataset,
         partitioning: List[str],
