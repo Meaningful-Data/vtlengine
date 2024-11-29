@@ -74,11 +74,11 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(
-        cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
-    ) -> Any:
-        # Cast both values to the same data type
-        # An integer can be considered a bool, we must check first boolean, then numbers
+    def _cast_values(cls,
+                     x: Optional[Union[int, float, str, bool]],
+                     y: Optional[Union[int, float, str, bool]]
+                     ) -> Any:
+        # Cast values to compatible types for comparison
         try:
             if isinstance(x, str) and isinstance(y, bool):
                 y = String.cast(y)
@@ -96,6 +96,7 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
+        # Return None if any of the values are NaN
         if pd.isnull(x) or pd.isnull(y):
             return None
         x, y = cls._cast_values(x, y)
@@ -103,12 +104,29 @@ class Binary(Operator.Binary):
 
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if scalar is None:
+        if pd.isnull(scalar):
             return pd.Series(None, index=series.index)
+
+        first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
+        if first_non_null is not None:
+            scalar, first_non_null = cls._cast_values(scalar, first_non_null)
+
+            series_type = pd.api.types.infer_dtype(series, skipna=True)
+            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
+
+            if series_type != first_non_null_type:
+                if isinstance(first_non_null, str):
+                    series = series.astype(str)
+                elif isinstance(first_non_null, (int, float)):
+                    series = series.astype(float)
+
+        op = cls.py_op if cls.py_op is not None else cls.op_func
         if series_left:
-            return series.map(lambda x: cls.op_func(x, scalar), na_action="ignore")
+            result = series.map(lambda x: op(x, scalar), na_action="ignore")
         else:
-            return series.map(lambda x: cls.op_func(scalar, x), na_action="ignore")
+            result = series.map(lambda x: op(scalar, x), na_action="ignore")
+
+        return result
 
     @classmethod
     def apply_return_type_dataset(
