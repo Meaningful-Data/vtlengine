@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vtlengine"
-version = "1.0.3"
+version = "1.0.3rc1"
 description = "Run and Validate VTL Scripts"
 authors = ["MeaningfulData <info@meaningfuldata.eu>"]
 license = "AGPL-3.0"
@@ -15,12 +15,11 @@ classifiers = [
 ]
 
 keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language']
-repository = 'https://github.com/Meaningful-Data/vtlengine'
 
 [project.urls]
 BugTracker = 'https://github.com/Meaningful-Data/vtlengine/issues'
 Documentation = 'https://docs.vtlengine.meaningfuldata.eu'
-SourceCode = 'https://github.com/Meaningful-Data/vtlengine'
+Repository = 'https://github.com/Meaningful-Data/vtlengine'
 
 [tool.poetry.dependencies]
 python = "^3.10"
