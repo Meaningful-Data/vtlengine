@@ -60,7 +60,7 @@
         {
           "name": "MX_3PPC",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         }
       ]

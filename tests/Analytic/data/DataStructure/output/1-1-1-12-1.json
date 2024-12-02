@@ -24,13 +24,13 @@
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {
           "name": "Me_2",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         }
       ]
