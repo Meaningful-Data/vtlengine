@@ -49,6 +49,7 @@ pandas-stubs = "^2.2.3.241009"
 stubs = "^1.0.0"
 toml = "^0.10.2"
 ruff = "^0.7.1"
+moto = "^5.0"
 
 [tool.ruff]
 line-length = 100
