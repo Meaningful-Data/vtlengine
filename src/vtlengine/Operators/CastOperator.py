@@ -40,7 +40,7 @@ class Cast(Operator.Unary):
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
     def cast_string_to_date(cls, *args: Any) -> Any:
@@ -49,7 +49,7 @@ class Cast(Operator.Unary):
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
     def cast_string_to_duration(cls, *args: Any) -> Any:
@@ -58,7 +58,7 @@ class Cast(Operator.Unary):
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
     def cast_string_to_time_period(cls, *args: Any) -> Any:
@@ -67,7 +67,7 @@ class Cast(Operator.Unary):
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
     def cast_string_to_time(cls, *args: Any) -> Any:
