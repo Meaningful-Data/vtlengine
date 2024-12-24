@@ -44,7 +44,23 @@ evaluate_params = [
     (Scalar("2022-05-21/2023-05-21", TimeInterval, "2022-05-21/2023-05-21"), String, "YYYY-MM-DD/YYYY-MM-DD",
      NotImplementedError,
      "How this mask should be implemented is not yet defined."
-     )
+     )]
+
+cast_error_params = [
+    ("40.000", String, Number, "DD.DDD", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    ("2022-01-01", String, Date, "YYYY-MM-DD", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    ("2023-01-12", String, Date, "\PY\YDDD\D", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    ("2000Q1", String, TimePeriod, "YYYY\QQ", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    ("2022-05-21/2023-05-21", String, TimeInterval, "YYYY-MM-DD/YYYY-MM-DD", NotImplementedError,
+     "How this cast should be implemented is not yet defined."),
+    ("2023-02-05", String, Duration, "P0Y240D", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    ("40.000", Number, String, "DD.DDD", SemanticError,
+     "('Impossible to cast 40.000 from type Number to String. Please check transformation with output dataset DS_r', '2-1-5-1')")
 
 ]
 test_params = [
@@ -114,6 +130,13 @@ def test_errors_validate_cast_scalar(text, type_of_error, exception_message):
     interpreter = InterpreterAnalyzer({})
     with pytest.raises(type_of_error, match=f"{exception_message}"):
         interpreter.visit(ast)
+
+
+@pytest.mark.parametrize("value, provided_type, to_type, mask, type_of_error, exception_message", cast_error_params)
+def test_errors_cast_scalar(value, provided_type, to_type, mask, type_of_error, exception_message):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    with pytest.raises(type_of_error, match=f"{exception_message}"):
+        Cast.cast_value(value, provided_type=provided_type, to_type=to_type, mask_value=mask)
 
 
 @pytest.mark.parametrize("operand, scalar_type, mask, type_of_error, exception_message", evaluate_params)

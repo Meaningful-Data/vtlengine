@@ -77,21 +77,21 @@ class Cast(Operator.Unary):
         """
 
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_date_to_string(cls, value: Any, mask: str) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_time_to_string(cls, value: Any, mask: str) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_date_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_time_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
@@ -255,12 +255,12 @@ class Cast(Operator.Unary):
             return cls.cast_string_to_time_period(value, mask_value)
         if provided_type == String and to_type == TimeInterval:
             return cls.cast_string_to_time(value, mask_value)
-        if provided_type == Date and to_type == String:
-            return cls.cast_date_to_string(value, mask_value)
-        if provided_type == Duration and to_type == String:
-            return cls.cast_duration_to_string(value, mask_value)
-        if provided_type == TimeInterval and to_type == String:
-            return cls.cast_time_to_string(value, mask_value)
+        # if provided_type == Date and to_type == String:
+        #     return cls.cast_date_to_string(value, mask_value)
+        # if provided_type == Duration and to_type == String:
+        #     return cls.cast_duration_to_string(value, mask_value)
+        # if provided_type == TimeInterval and to_type == String:
+        #     return cls.cast_time_to_string(value, mask_value)
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
 
