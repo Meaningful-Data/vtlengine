@@ -5,8 +5,10 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
+from vtlengine.DataTypes import Number, String, Date, TimePeriod, TimeInterval, Duration
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Scalar
 from vtlengine.Operators.CastOperator import Cast
 
 
@@ -21,6 +23,30 @@ class CastHelper(TestHelper):
     filepath_sql = base_path / "data" / "sql"
 
 
+evaluate_params = [
+    (Scalar("40.000", String, "40.000"), Number, "DD.DDD", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2022-01-01", String, "2022-01-01"), Date, "YYYY-MM-DD", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2023-01-12", String, "2023-01-12"), Date, "\PY\YDDD\D", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2000Q1", String, "2000Q1"), TimePeriod, "YYYY\QQ", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2022-05-21/2023-05-21", String, "2022-05-21/2023-05-21"), TimeInterval, "YYYY-MM-DD/YYYY-MM-DD",
+     NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2023-02-05", String, "2023-02-05"), Duration, "P0Y240D", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2021-12-21", Date, "2021-12-21"), String, "YYYY-MM-DD hh:mm:ss", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("P0Y240D", Duration, "P0Y240D"), String, "YYYY-MM-DD hh:mm:ss", NotImplementedError,
+     "How this mask should be implemented is not yet defined."),
+    (Scalar("2022-05-21/2023-05-21", TimeInterval, "2022-05-21/2023-05-21"), String, "YYYY-MM-DD/YYYY-MM-DD",
+     NotImplementedError,
+     "How this mask should be implemented is not yet defined."
+     )
+
+]
 test_params = [
     (
         'cast("40.000", number, "DD.DDD")',
@@ -81,7 +107,7 @@ class CastExplicitWithoutMask(CastHelper):
 
 
 @pytest.mark.parametrize("text, type_of_error, exception_message", test_params)
-def test_errors_cast_scalar(text, type_of_error, exception_message):
+def test_errors_validate_cast_scalar(text, type_of_error, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
@@ -90,6 +116,8 @@ def test_errors_cast_scalar(text, type_of_error, exception_message):
         interpreter.visit(ast)
 
 
+@pytest.mark.parametrize("operand, scalar_type, mask, type_of_error, exception_message", evaluate_params)
 def test_errors_cast_scalar_evaluate(operand, scalar_type, mask, type_of_error, exception_message):
+    warnings.filterwarnings("ignore", category=FutureWarning)
     with pytest.raises(type_of_error, match=f"{exception_message}"):
         Cast.evaluate(operand=operand, scalarType=scalar_type, mask=mask)
