@@ -97,6 +97,8 @@ Test number     | VTL expresion         | Test result
 70    | DS_r := DS_1 [ calc Me_1 := log (Me_1, 2) ];          | WIP 
 71    | DS_r := sqrt(DS_1);                                   | WIP
 72    | DS_r := DS_1 [ calc Me_1 := sqrt ( Me_1 ) ];          | WIP
+188   | DS_r := random(DS_1, 5);                              |
+189   | DS_r := DS_1 [ calc Me_2 := random( Me_1, 8 ) ];      |
 >>>
 
 ## 5. Comparison Operators.
