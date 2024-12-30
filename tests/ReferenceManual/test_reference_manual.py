@@ -66,6 +66,7 @@ analytic_operators = list(range(151, 157))
 validation_operators = list(range(157, 161))
 conditional_operators = list(range(161, 163))
 clause_operators = list(range(163, 177))
+new_time_operators = list(range(177, 187))
 
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)
@@ -109,6 +110,7 @@ params = itertools.chain(
     validation_operators,
     conditional_operators,
     clause_operators,
+    new_time_operators
 )
 
 params = [x for x in list(params) if x not in exceptions_tests]

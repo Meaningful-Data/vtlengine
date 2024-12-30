@@ -142,8 +142,8 @@ Test number     | VTL expresion     | Test result
 
 ## 7. Time Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
+Test number     | VTL expresion                                                           | Test result
+:------------:  |:------------------------------------------------------------------------|:-------------:
 99    | DS_r := period_indicator ( DS_1 );                                      | WIP
 100   | DS_r := DS_1 [ filter period_indicator ( Id_3 ) = "A" ];                | 
 101   | DS_r := fill_time_series ( DS_1, single );                              | 
@@ -170,8 +170,17 @@ Test number     | VTL expresion     | Test result
 122   | DS_r := time_agg ( "Q", cast ( "2012M01", time_period, "YYYY\MMM" ) );  | 
 123   | time_agg( "Q", cast("20120213", date, "YYYYMMDD"), _ , last );          | 
 124   | time_agg(cast( "A", "2012M1", date, "YYYYMMDD"), _ , first );           | 
-125   | cast ( current_date, string, "YYYY.MM.DD" );                            | 
-
+125   | cast ( current_date, string, "YYYY.MM.DD" );                            |
+177   | DS_r := DS_1 [calc Me2 := datediff(Id_2, Me_1)];                        |
+178   | DS_r := DS_1[ calc Me_2 := dateadd( Me_1, 2, "M" ) ];                   |
+179   | DS_r := DS_1[ calc Me_2 := month (Me_1) ];                              |
+180   | DS_r := DS_1[ calc Me_2 := year (Me_1) ];                               |
+181   | DS_r := DS_1[ calc Me_2 := dayofmonth (Me_1) ];                         |
+182   | DS_r := DS_1[ calc Me_2 := dayofyear (Me_1) ];                          |
+183   | DS_r := DS_1[ calc Me_2 := daytoyear (Me_1) ];                          |
+184   | DS_r := DS_1[ calc Me_2 := daytomonth (Me_1) ];                         |
+185   | DS_r := DS_1[ calc Me_2 := yeartoday (Me_1) ];                          |
+186   | DS_r := DS_1[ calc Me_2 := monthtoday (Me_1) ];                         |
 >>>
 
 ## 8. Set Operators.
@@ -257,21 +266,20 @@ Test number     | VTL expresion     | Test result
 
 ## 13. Clause Operators.
 >>>
-Test number     | VTL expresion     | Test result
-:------------:  | :-------------    |:-------------:
-163      | DS_r := DS_1 [ filter Id_1 = 1 and Me_1 < 10 ];                                                                | WIP
-164      | DS_r := DS_1 [ calc Me_1:= Me_1 * 2 ];                                                                         | WIP
-165      | DS_r := DS_1 [ calc attribute At_1:= "EP" ];                                                                   | WIP
+Test number     | VTL expresion     |            Test result             
+:------------:  | :-------------    |:----------------------------------:
+163      | DS_r := DS_1 [ filter Id_1 = 1 and Me_1 < 10 ];                                                                |                WIP                 
+164      | DS_r := DS_1 [ calc Me_1:= Me_1 * 2 ];                                                                         |                WIP                 
+165      | DS_r := DS_1 [ calc attribute At_1:= "EP" ];                                                                   |                WIP                 
 166      | DS_r := DS_1 [ aggr Me_1:= sum( Me_1 ) group by Id_1 , Id_2 ];                                                 | 
 167      | DS_r := DS_1 [ aggr Me_3:= min( Me_1 ) group except Id_3 ];                                                    | 
 168      | DS_r := DS_1 [ aggr Me_1:= sum( Me_1 ), Me_2 := max( Me_1) group by Id_1 , Id_2 having avg (Me_1 ) > 2 ];      | 
-169      | DS_r := DS_1 [ keep Me_1 ];                                                                                    | WIP
-170      | DS_r := DS_1 [ drop At_1 ];                                                                                    | WIP
-171      | DS_r := DS_1 [ rename Me_1 to Me_2, At_1 to At_2];                                                             | WIP
-172      | DS_r := DS_1 [ pivot Id_2, Me_1 ];                                                                             | WIP
-173      | DS_r := DS_1 [ unpivot Id_2, Me_1];                                                                            | WIP
-174      | DS_r := DS_1 [ sub Id_1 = 1, Id_2 = "A" ];                                                                     | WIP
-175      | DS_r := DS_1 [ sub Id_1 = 1, Id_2 = "B", Id_3 = "YY" ];                                                        | WIP
-176      | DS_r := DS_1 [ sub Id_2 = "A" ] + DS_1 [ sub Id_2 = "B" ];                                                     | 
-
+169      | DS_r := DS_1 [ keep Me_1 ];                                                                                    |                WIP                 
+170      | DS_r := DS_1 [ drop At_1 ];                                                                                    |                WIP                 
+171      | DS_r := DS_1 [ rename Me_1 to Me_2, At_1 to At_2];                                                             |                WIP                 
+172      | DS_r := DS_1 [ pivot Id_2, Me_1 ];                                                                             |                WIP                 
+173      | DS_r := DS_1 [ unpivot Id_2, Me_1];                                                                            |                WIP                 
+174      | DS_r := DS_1 [ sub Id_1 = 1, Id_2 = "A" ];                                                                     |                WIP                 
+175      | DS_r := DS_1 [ sub Id_1 = 1, Id_2 = "B", Id_3 = "YY" ];                                                        |                WIP                 
+176      | DS_r := DS_1 [ sub Id_2 = "A" ] + DS_1 [ sub Id_2 = "B" ];                                                     |                                    
 >>>
