@@ -261,7 +261,10 @@ Test number     | VTL expresion     | Test result
 :------------:  | :-------------    |:-------------:
 161      | DS_r := if ( DS_cond#Id_4 = ""F"" ) then DS_1 else DS_2;    | WIP
 162      | DS_r := nvl ( DS_1, 0 );                                    | WIP 
-
+187      |DS_r := DS_1 [calc Me_2 := case when Me_1 <= 1 then 0        |
+         |                   when Me_1 > 1 and Me_1 <= 10 then 1       |
+         |                   when Me_1 > 10 then 10                    |
+         |                   else 100];                                |
 >>>
 
 ## 13. Clause Operators.
