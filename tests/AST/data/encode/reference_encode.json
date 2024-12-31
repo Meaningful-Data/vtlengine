@@ -1,0 +1,25 @@
+{
+    "class_name": "Start",
+    "children": [
+        {
+            "class_name": "Assignment",
+            "right": {
+                "class_name": "BinOp",
+                "right": {
+                    "class_name": "VarID",
+                    "value": "DS_2"
+                },
+                "op": "+",
+                "left": {
+                    "class_name": "VarID",
+                    "value": "DS_1"
+                }
+            },
+            "op": ":=",
+            "left": {
+                "class_name": "VarID",
+                "value": "DS_r"
+            }
+        }
+    ]
+}
