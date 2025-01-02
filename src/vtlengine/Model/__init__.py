@@ -106,7 +106,7 @@ class Component:
     name: str
     data_type: Type[ScalarType]
     role: Role
-    nullable: bool
+    nullable: bool = False
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:

@@ -9,7 +9,6 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import check_key
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
     Dataset,
@@ -19,15 +18,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-
-base_path = Path(__file__).parent
-filepath_VTL = base_path / "data" / "vtl"
-filepath_ValueDomains = base_path / "data" / "ValueDomain"
-filepath_sql = base_path / "data" / "sql"
-filepath_json = base_path / "data" / "DataStructure" / "input"
-filepath_csv = base_path / "data" / "DataSet" / "input"
-filepath_out_json = base_path / "data" / "DataStructure" / "output"
-filepath_out_csv = base_path / "data" / "DataSet" / "output"
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 
 def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,7 +31,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
         for dataset_json in structures["datasets"]:
             dataset_name = dataset_json["name"]
             components = {}
-
+        if "DataStructure" in dataset_json:
             for component in dataset_json["DataStructure"]:
                 check_key("data_type", SCALAR_TYPES.keys(), component["type"])
                 check_key("role", Role_keys, component["role"])
@@ -50,8 +41,16 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                     role=Role(component["role"]),
                     nullable=component["nullable"],
                 )
-
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
+        if "components" in dataset_json:
+            for component in dataset_json["components"]:
+                check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
+                check_key("role", Role_keys, component["role"])
+                components[component["name"]] = Component(
+                    name=component["name"],
+                    data_type=SCALAR_TYPES[component["data_type"]],
+                    role=Role(component["role"])
+                )
+        datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if "scalars" in structures:
         for scalar_json in structures["scalars"]:
             scalar_name = scalar_json["name"]
@@ -115,7 +114,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]]
+        datapoints: Union[Path, str, List[Union[str, Path]]]
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -156,7 +155,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+        data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -332,7 +331,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-    datasets: Dict[str, Dataset], ast: Start
+        datasets: Dict[str, Dataset], ast: Start
 ) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
