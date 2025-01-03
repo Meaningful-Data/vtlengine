@@ -254,39 +254,7 @@ params_run = [
 ]
 
 params_schema = [
-    (({
-        "datasets": [
-            {
-                "name": "DS_1",
-                "components": [
-                    {
-                        "name": "Id_1",
-                        "role": "Identifier",
-                        "data_type": "Time_Period"
-                    },
-                    {
-                        "name": "Id_2",
-                        "role": "Identifier",
-                        "data_type": "String"
-                    },
-                    {
-                        "name": "Id_3",
-                        "role": "Identifier",
-                        "data_type": "String"
-                    },
-                    {
-                        "name": "Me_1",
-                        "role": "Measure",
-                        "data_type": "Integer"
-                    }
-                ]
-            }
-        ]
-    }), ({'DS_1': Dataset(name='DS_1', components={
-        'Id_1': {"name": "Id_1", "data_type": "Time_Period", "role": "Identifier", "nullable": 'false'},
-        'Id_2': {"name": "Id_2", "data_type": "String", "role": "Identifier", "nullable": 'false'},
-        'Id_3': {"name": "Id_3", "data_type": "String", "role": "Identifier", "nullable": 'false'},
-        'Me_1': {"name": "Me_1", "data_type": "Integer", "role": "Measure", "nullable": 'false'}}, data=None)})),
+    (filepath_json / 'DS_Schema.json')
 ]
 
 
@@ -781,7 +749,23 @@ def test_mandatory_me_error():
     assert result
 
 
-@pytest.mark.parametrize('data_structure, reference', params_schema)
-def test_load_data_structure_with_new_schema(data_structure, reference):
-    result = _load_dataset_from_structure(data_structure)
-    assert result == reference
+@pytest.mark.parametrize('data_structure', params_schema)
+def test_load_data_structure_with_new_schema(data_structure):
+    result = load_datasets(data_structure)
+    reference = Dataset(
+        name="DS_Schema",
+        components={
+            "Id_1": Component(
+                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+            ),
+            "Id_2": Component(
+                name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+            ),
+            "Me_1": Component(
+                name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=False
+            ),
+        },
+        data=None,
+    )
+    assert "DS_Schema" in result
+    assert result["DS_Schema"] == reference
