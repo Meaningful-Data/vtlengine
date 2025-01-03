@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
+from jsonschema import validate, exceptions
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
@@ -20,6 +21,11 @@ from vtlengine.Model import (
 )
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
+base_path = Path(__file__).parent
+schema_path = base_path / 'data' / 'schema'
+with open(schema_path / 'json_schema_2.1.json', 'r') as file:
+    schema = json.load(file)
+
 
 def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -31,6 +37,20 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
         for dataset_json in structures["datasets"]:
             dataset_name = dataset_json["name"]
             components = {}
+            if "components" in dataset_json:
+                try:
+                    validate(instance=dataset_json["components"], schema=schema)
+                except:
+                    raise exceptions.ValidationError(f"dataset {dataset_name} does not fit with schema")
+                for component in dataset_json["components"]:
+                    check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
+                    check_key("role", Role_keys, component["role"])
+                    components[component["name"]] = Component(
+                        name=component["name"],
+                        data_type=SCALAR_TYPES[component["data_type"]],
+                        role=Role(component["role"])
+                    )
+
             if "DataStructure" in dataset_json:
                 for component in dataset_json["DataStructure"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["type"])
@@ -42,15 +62,6 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                         nullable=component["nullable"],
                     )
 
-            if "components" in dataset_json:
-                for component in dataset_json["components"]:
-                    check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
-                    check_key("role", Role_keys, component["role"])
-                    components[component["name"]] = Component(
-                        name=component["name"],
-                        data_type=SCALAR_TYPES[component["data_type"]],
-                        role=Role(component["role"])
-                    )
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if "scalars" in structures:
         for scalar_json in structures["scalars"]:
@@ -387,4 +398,3 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
-
