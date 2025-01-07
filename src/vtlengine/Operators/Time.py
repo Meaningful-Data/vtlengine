@@ -910,12 +910,8 @@ class Date_Add(Parametrized):
         for i, param in enumerate(param_list):
             error = (
                 12
-                if not isinstance(param, Scalar) # type: ignore[redundant-expr]
-                else (
-                    13
-                    if (param.data_type != expected_types[i])
-                    else None
-                )
+                if not isinstance(param, Scalar)  # type: ignore[redundant-expr]
+                else (13 if (param.data_type != expected_types[i]) else None)
             )
             if error is not None:
                 raise SemanticError(
@@ -1071,8 +1067,8 @@ class Day_of_Year(SimpleUnaryTime):
 
         result = TimePeriodHandler(value).end_date(as_date=True)
         datetime_value = datetime(
-            year=result.year, # type: ignore[union-attr]
-            month=result.month, # type: ignore[union-attr]
+            year=result.year,  # type: ignore[union-attr]
+            month=result.month,  # type: ignore[union-attr]
             day=result.day,  # type: ignore[union-attr]
         )
         return datetime_value.timetuple().tm_yday
