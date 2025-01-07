@@ -382,7 +382,8 @@ class ASTVisitor(VtlVisitor):
         if conditions:
             identifiers_list = [
                 DefIdentifier(
-                    value=elto.alias if getattr(elto, "alias", None) else elto.value, kind=kind
+                    value=elto.alias if getattr(elto, "alias", None) else elto.value,
+                    kind=kind,
                 )
                 for elto in conditions[0]
             ]

@@ -3315,7 +3315,8 @@ class Parser(Parser):
                     la_ = self._interp.adaptivePredict(self._input, 10, self._ctx)
                     if la_ == 1:
                         localctx = Parser.ArithmeticExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3338,7 +3339,8 @@ class Parser(Parser):
 
                     elif la_ == 2:
                         localctx = Parser.ArithmeticExprOrConcatCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3361,7 +3363,8 @@ class Parser(Parser):
 
                     elif la_ == 3:
                         localctx = Parser.ComparisonExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3378,7 +3381,8 @@ class Parser(Parser):
 
                     elif la_ == 4:
                         localctx = Parser.BooleanExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3395,7 +3399,8 @@ class Parser(Parser):
 
                     elif la_ == 5:
                         localctx = Parser.BooleanExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3418,7 +3423,8 @@ class Parser(Parser):
 
                     elif la_ == 6:
                         localctx = Parser.InNotInExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -6998,7 +7004,14 @@ class Parser(Parser):
             self.state = 778
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.ABS, Parser.LN, Parser.EXP, Parser.CEIL, Parser.FLOOR, Parser.SQRT]:
+            if token in [
+                Parser.ABS,
+                Parser.LN,
+                Parser.EXP,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+            ]:
                 localctx = Parser.UnaryNumericContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 757
@@ -7248,7 +7261,14 @@ class Parser(Parser):
             self.state = 801
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.ABS, Parser.LN, Parser.EXP, Parser.CEIL, Parser.FLOOR, Parser.SQRT]:
+            if token in [
+                Parser.ABS,
+                Parser.LN,
+                Parser.EXP,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+            ]:
                 localctx = Parser.UnaryNumericComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 780
@@ -13191,7 +13211,11 @@ class Parser(Parser):
                 self.state = 1511
                 self.match(Parser.RULESET)
                 pass
-            elif token in [Parser.DATAPOINT, Parser.DATAPOINT_ON_VD, Parser.DATAPOINT_ON_VAR]:
+            elif token in [
+                Parser.DATAPOINT,
+                Parser.DATAPOINT_ON_VD,
+                Parser.DATAPOINT_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1512
                 self.dpRuleset()

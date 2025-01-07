@@ -32,7 +32,13 @@ class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
     def syntaxError(
-        self, recognizer: Any, offendingSymbol: str, line: str, column: str, msg: str, e: Any
+        self,
+        recognizer: Any,
+        offendingSymbol: str,
+        line: str,
+        column: str,
+        msg: str,
+        e: Any,
     ) -> None:
         raise Exception(
             f"Not valid VTL Syntax \n "
@@ -150,7 +156,10 @@ def semantic_analysis(
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
-        datasets=structures, value_domains=vd, external_routines=ext_routines, only_semantic=True
+        datasets=structures,
+        value_domains=vd,
+        external_routines=ext_routines,
+        only_semantic=True,
     )
     with pd.option_context("future.no_silent_downcasting", True):
         result = interpreter.visit(ast)

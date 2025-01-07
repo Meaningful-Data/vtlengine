@@ -229,10 +229,12 @@ class Dataset:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
+                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    na_action="ignore",
                 )
                 other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "", na_action="ignore"
+                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    na_action="ignore",
                 )
             elif type_name in ["Integer", "Number"]:
                 type_ = "int64" if type_name == "Integer" else "float32"
@@ -330,7 +332,7 @@ class Dataset:
         return {
             "name": self.name,
             "components": {k: v.to_dict() for k, v in self.components.items()},
-            "data": self.data.to_dict(orient="records") if self.data is not None else None,
+            "data": (self.data.to_dict(orient="records") if self.data is not None else None),
         }
 
     def to_json(self) -> str:

@@ -254,7 +254,9 @@ class Parameterized(Unary):
             if isinstance(param, DataComponent):
                 if isinstance(operand, Scalar):
                     raise SemanticError(
-                        "1-1-15-8", op=cls.op, comp_type="DataComponent and an Scalar operand"
+                        "1-1-15-8",
+                        op=cls.op,
+                        comp_type="DataComponent and an Scalar operand",
                     )
                 cls.validate_type_compatibility(param.data_type)
             else:
@@ -297,14 +299,19 @@ class Parameterized(Unary):
                     )
             except ValueError:
                 raise SemanticError(
-                    "2-1-15-1", op=cls.op, comp_name=measure_name, dataset_name=operand.name
+                    "2-1-15-1",
+                    op=cls.op,
+                    comp_name=measure_name,
+                    dataset_name=operand.name,
                 ) from None
         result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, param: Optional[Union[DataComponent, Scalar]] = None
+        cls,
+        operand: DataComponent,
+        param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> DataComponent:
         result = cls.validate(operand, param)
         if operand.data is None:
@@ -326,7 +333,9 @@ class Parameterized(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: ALL_MODEL_DATA_TYPES, param: Optional[Union[DataComponent, Scalar]] = None
+        cls,
+        operand: ALL_MODEL_DATA_TYPES,
+        param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)

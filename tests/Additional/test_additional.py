@@ -56,7 +56,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -70,7 +73,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -84,7 +90,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -98,7 +107,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -112,7 +124,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -126,7 +141,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -153,7 +171,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -167,7 +188,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_13(self):
@@ -181,7 +205,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_14(self):
@@ -195,7 +222,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_15(self):
@@ -209,7 +239,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -223,7 +256,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_17(self):
@@ -237,7 +273,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_18(self):
@@ -251,7 +290,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_19(self):
@@ -265,7 +307,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -279,7 +324,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_21(self):
@@ -292,7 +340,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -306,7 +357,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -320,7 +374,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_26(self):
@@ -334,7 +391,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_27(self):
@@ -348,7 +408,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_28(self):
@@ -362,7 +425,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_29(self):
@@ -375,7 +441,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_30(self):
@@ -388,7 +457,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_31(self):
@@ -401,7 +473,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_32(self):
@@ -414,7 +489,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_33(self):
@@ -427,7 +505,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_34(self):
@@ -440,7 +521,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_35(self):
@@ -453,7 +537,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_36(self):
@@ -466,7 +553,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_37(self):
@@ -479,7 +569,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_41(self):
@@ -492,7 +585,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_42(self):
@@ -505,7 +601,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_43(self):
@@ -518,7 +617,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_44(self):
@@ -531,7 +633,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_45(self):
@@ -544,7 +649,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_46(self):
@@ -557,7 +665,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_47(self):
@@ -570,7 +681,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_48(self):
@@ -583,7 +697,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_49(self):
@@ -596,7 +713,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_50(self):
@@ -609,7 +729,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_51(self):
@@ -623,7 +746,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_52(self):
@@ -636,7 +762,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_53(self):
@@ -649,7 +778,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_54(self):
@@ -662,7 +794,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_55(self):
@@ -675,7 +810,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_56(self):
@@ -688,7 +826,10 @@ class StringOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -712,7 +853,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -726,7 +870,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -740,7 +887,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -754,7 +904,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -768,7 +921,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_15(self):
@@ -782,7 +938,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -796,7 +955,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_17(self):
@@ -810,7 +972,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -824,7 +989,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_21(self):
@@ -838,7 +1006,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -852,7 +1023,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -866,7 +1040,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_24(self):
@@ -880,7 +1057,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_27(self):
@@ -894,7 +1074,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_28(self):
@@ -908,7 +1091,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_29(self):
@@ -922,7 +1108,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_30(self):
@@ -936,7 +1125,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_31(self):
@@ -950,7 +1142,10 @@ class NumericOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -971,7 +1166,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -984,7 +1182,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -997,7 +1198,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -1010,7 +1214,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -1023,7 +1230,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -1036,7 +1246,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -1049,7 +1262,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -1062,7 +1278,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -1075,7 +1294,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -1088,7 +1310,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_13(self):
@@ -1101,7 +1326,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -1114,7 +1342,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_17(self):
@@ -1127,7 +1358,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_18(self):
@@ -1140,7 +1374,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_19(self):
@@ -1153,7 +1390,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -1166,7 +1406,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_21(self):
@@ -1179,7 +1422,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -1192,7 +1438,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -1205,7 +1454,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_24(self):
@@ -1218,7 +1470,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_25(self):
@@ -1231,7 +1486,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_26(self):
@@ -1244,7 +1502,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_27(self):
@@ -1257,7 +1518,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_28(self):
@@ -1270,7 +1534,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_29(self):
@@ -1283,7 +1550,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_30(self):
@@ -1296,7 +1566,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_31(self):
@@ -1309,7 +1582,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_32(self):
@@ -1322,7 +1598,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_33(self):
@@ -1335,7 +1614,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_34(self):
@@ -1348,7 +1630,10 @@ class ComparisonOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -1382,7 +1667,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -1396,7 +1684,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -1410,7 +1701,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -1425,7 +1719,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -1437,7 +1734,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     # unpivot
@@ -1457,7 +1757,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
 
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=text
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text,
         )
 
     # OK
@@ -1477,7 +1780,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
 
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=text
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text,
         )
 
     # OK
@@ -1497,7 +1803,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         text = "DS_r := DS_1 [unpivot Id_2, Me_3];"
 
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=text
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text,
         )
 
     def test_GL_49_4(self):
@@ -1516,7 +1825,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         text = "DS_r := DS_1 [unpivot Id_3, Me_3];"
 
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=text
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text,
         )
 
     def test_GL_49_6(self):
@@ -1535,7 +1847,10 @@ class ClauseOperatorsTest(AdditionalHelper):
         text = "DS_r := DS_1 [unpivot Id_3, Me_2];"
 
         self.BaseTest(
-            code=code, number_inputs=number_inputs, references_names=references_names, text=text
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            text=text,
         )
 
 
@@ -1559,7 +1874,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -1573,7 +1891,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -1587,7 +1908,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -1601,7 +1925,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -1615,7 +1942,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -1642,7 +1972,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_8(self):
@@ -1656,7 +1989,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -1671,7 +2007,10 @@ class SetOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -1694,7 +2033,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -1707,7 +2049,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -1721,7 +2066,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -1735,7 +2083,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -1749,7 +2100,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -1792,7 +2146,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["DS_r1", "DS_r2"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_GL_222_1(self):
@@ -1803,7 +2160,10 @@ class AggregateOperatorsTest(AdditionalHelper):
         references_names = ["1"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -1822,7 +2182,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -1833,7 +2196,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -1844,7 +2210,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -1857,7 +2226,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -1868,7 +2240,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -1879,7 +2254,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -1890,7 +2268,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_8(self):
@@ -1901,7 +2282,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -1912,7 +2296,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -1923,7 +2310,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -1934,7 +2324,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -1945,7 +2338,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_13(self):
@@ -1971,7 +2367,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -2006,7 +2405,10 @@ class JoinOperatorsTest(AdditionalHelper):
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -2023,7 +2425,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -2040,7 +2445,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -2109,7 +2517,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_28(self):
@@ -2177,7 +2588,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_32(self):
@@ -2212,7 +2626,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_34(self):
@@ -2267,7 +2684,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_37(self):
@@ -2285,7 +2705,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_38(self):
@@ -2303,7 +2726,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     # BUG
@@ -2322,7 +2748,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_40(self):
@@ -2340,7 +2769,10 @@ class JoinOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -2362,7 +2794,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -2375,7 +2810,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
 
         with pytest.raises(Exception, match="Error level must be an integer, line 1"):
             self.BaseTest(
-                text=text, code=code, number_inputs=number_inputs, references_names=references_names
+                text=text,
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
             )
 
     def test_3(self):
@@ -2387,7 +2825,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -2414,7 +2855,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -2432,7 +2876,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -2450,7 +2897,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -2468,7 +2918,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_8(self):
@@ -2486,7 +2939,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -2504,7 +2960,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -2522,7 +2981,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -2540,7 +3002,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -2558,7 +3023,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_13(self):
@@ -2576,7 +3044,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_14(self):
@@ -2594,7 +3065,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_15(self):
@@ -2612,7 +3086,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -2630,7 +3107,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_17(self):
@@ -2648,7 +3128,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_18(self):
@@ -2666,7 +3149,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_19(self):
@@ -2684,7 +3170,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -2702,7 +3191,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_21(self):
@@ -2720,7 +3212,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -2738,7 +3233,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -2756,7 +3254,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_24(self):
@@ -2774,7 +3275,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_25(self):
@@ -2795,7 +3299,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_26(self):
@@ -2816,7 +3323,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_27(self):
@@ -2837,7 +3347,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_28(self):
@@ -2858,7 +3371,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_29(self):
@@ -2879,7 +3395,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_30(self):
@@ -2900,7 +3419,10 @@ class DataValidationOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -2923,7 +3445,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -2936,7 +3461,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -2949,7 +3477,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -2962,7 +3493,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -2975,7 +3509,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -2988,7 +3525,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -3001,7 +3541,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_8(self):
@@ -3014,7 +3557,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -3027,7 +3573,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -3040,7 +3589,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -3053,7 +3605,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -3066,7 +3621,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_13(self):
@@ -3079,7 +3637,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_14(self):
@@ -3092,7 +3653,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_15(self):
@@ -3105,7 +3669,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_16(self):
@@ -3118,7 +3685,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_17(self):
@@ -3131,7 +3701,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_18(self):
@@ -3144,7 +3717,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_19(self):
@@ -3157,7 +3733,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_20(self):
@@ -3169,7 +3748,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["1", "2", "3", "4", "5", "6"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_21(self):
@@ -3181,7 +3763,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["1", "2", "3", "4", "5", "6"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_22(self):
@@ -3193,7 +3778,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["1", "2", "3", "4", "5", "6"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_23(self):
@@ -3205,7 +3793,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["1"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_24(self):
@@ -3217,7 +3808,10 @@ class TimeOperatorsTest(AdditionalHelper):
         references_names = ["1"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_25(self):
@@ -3260,7 +3854,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -3270,7 +3867,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -3280,7 +3880,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -3290,7 +3893,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -3300,7 +3906,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -3310,7 +3919,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -3320,7 +3932,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_8(self):
@@ -3330,7 +3945,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_9(self):
@@ -3340,7 +3958,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_10(self):
@@ -3350,7 +3971,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_11(self):
@@ -3360,7 +3984,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_12(self):
@@ -3370,7 +3997,10 @@ class EmptyDatasetsTest(AdditionalHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -3400,7 +4030,10 @@ class DefinedOperatorsTest(AdditionalHelper):
         references_names = ["DS_r1", "DS_r2"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
 
@@ -3421,5 +4054,8 @@ class DatesTest(AdditionalHelper):
 
         # with pytest.raises(Exception, match="cast .+? without providing a mask"):
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )

@@ -39,8 +39,16 @@ ds_param = [
 ]
 
 error_param = [
-    ("10", "x := 1; DS_r := case when DS_cond then 1 when x = 2 then 2 else 0;", "2-1-9-1"),
-    ("11", "x := 1; DS_r := case when x = 1 then 1 when x = 2 then DS_1 else 0;", "2-1-9-3"),
+    (
+        "10",
+        "x := 1; DS_r := case when DS_cond then 1 when x = 2 then 2 else 0;",
+        "2-1-9-1",
+    ),
+    (
+        "11",
+        "x := 1; DS_r := case when x = 1 then 1 when x = 2 then DS_1 else 0;",
+        "2-1-9-3",
+    ),
     ("12", "DS_r := DS_1 [calc Me_3 := case when Me_1 then 1 else 0];", "2-1-9-4"),
     ("13", "DS_r := case when DS_1 then DS_1 else null;", "2-1-9-5"),
     ("14", "DS_r := case when DS_cond1 then 1 else null;", "1-1-1-4"),

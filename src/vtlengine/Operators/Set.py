@@ -17,7 +17,10 @@ class Set(Operator):
     def check_same_structure(cls, dataset_1: Dataset, dataset_2: Dataset) -> None:
         if len(dataset_1.components) != len(dataset_2.components):
             raise SemanticError(
-                "1-1-17-1", op=cls.op, dataset_1=dataset_1.name, dataset_2=dataset_2.name
+                "1-1-17-1",
+                op=cls.op,
+                dataset_1=dataset_1.name,
+                dataset_2=dataset_2.name,
             )
 
         for comp in dataset_1.components.values():
@@ -25,7 +28,10 @@ class Set(Operator):
                 raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
             second_comp = dataset_2.components[comp.name]
             binary_implicit_promotion(
-                comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type
+                comp.data_type,
+                second_comp.data_type,
+                cls.type_to_check,
+                cls.return_type,
             )
             if comp.role != second_comp.role:
                 raise Exception(
@@ -106,7 +112,10 @@ class Symdiff(Set):
             else:
                 # Realiza la operación equivalente en pyspark.pandas
                 result.data = result.data.merge(
-                    data, how="outer", on=result.get_identifiers_names(), suffixes=("_x", "_y")
+                    data,
+                    how="outer",
+                    on=result.get_identifiers_names(),
+                    suffixes=("_x", "_y"),
                 )
 
                 for measure in result.get_measures_names():

@@ -83,7 +83,13 @@ class AnaMart(ExternalProjectsHelper):
         rn = [str(i) for i in range(1, 30)]
         rn += [str(i) for i in range(72, 303)]
         # references_names = rn
-        sql_names = ["instDates", "instrFctJn", "instrFctJn2", "prtctnDts", "prtctnFctJn"]
+        sql_names = [
+            "instDates",
+            "instrFctJn",
+            "instrFctJn2",
+            "prtctnDts",
+            "prtctnFctJn",
+        ]
 
         # self.BaseTest(
         #     code=code,

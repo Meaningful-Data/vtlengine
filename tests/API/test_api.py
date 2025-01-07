@@ -28,7 +28,10 @@ filepath_out_csv = base_path / "data" / "DataSet" / "output"
 
 input_vtl_params_OK = [
     (filepath_VTL / "2.vtl", "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;"),
-    ("DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;", "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;"),
+    (
+        "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;",
+        "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;",
+    ),
 ]
 
 input_vtl_error_params = [
@@ -72,8 +75,18 @@ load_datasets_input_params_OK = [
                             "type": "Integer",
                             "nullable": False,
                         },
-                        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
-                        {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True},
+                        {
+                            "name": "Id_2",
+                            "role": "Identifier",
+                            "type": "String",
+                            "nullable": False,
+                        },
+                        {
+                            "name": "Me_1",
+                            "role": "Measure",
+                            "type": "Number",
+                            "nullable": True,
+                        },
                     ],
                 }
             ]
@@ -221,7 +234,11 @@ load_datasets_with_data_and_wrong_inputs = [
         filepath_csv / "DS_1.csv",
         "Invalid datastructure. Must have .json extension",
     ),
-    (filepath_json / "DS_1.json", filepath_json / "DS_2.json", "Not found dataset DS_2.json"),
+    (
+        filepath_json / "DS_1.json",
+        filepath_json / "DS_2.json",
+        "Not found dataset DS_2.json",
+    ),
     (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
 ]
 
@@ -309,13 +326,22 @@ def test_load_datastructures(datastructure):
         name="DS_1",
         components={
             "Id_1": Component(
-                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                name="Id_1",
+                data_type=DataTypes.Integer,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Id_2": Component(
-                name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                name="Id_2",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Me_1": Component(
-                name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                name="Me_1",
+                data_type=DataTypes.Number,
+                role=Role.MEASURE,
+                nullable=True,
             ),
         },
         data=None,
@@ -358,13 +384,22 @@ def test_semantic(script, data_structures, value_domains, external_routines):
             name="DS_r",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=None,
@@ -384,34 +419,56 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
             name="DS_r",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"], index=[0, 1], data=[(1, "A", 2), (1, "B", 4)]
+                columns=["Id_1", "Id_2", "Me_1"],
+                index=[0, 1],
+                data=[(1, "A", 2), (1, "B", 4)],
             ),
         ),
         "DS_r2": Dataset(
             name="DS_r2",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"], index=[0, 1], data=[(1, "A", 3), (1, "B", 6)]
+                columns=["Id_1", "Id_2", "Me_1"],
+                index=[0, 1],
+                data=[(1, "A", 3), (1, "B", 6)],
             ),
         ),
     }
@@ -436,17 +493,28 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
             name="DS_r2",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"], index=[0, 1], data=[(1, "A", 3), (1, "B", 6)]
+                columns=["Id_1", "Id_2", "Me_1"],
+                index=[0, 1],
+                data=[(1, "A", 3), (1, "B", 6)],
             ),
         )
     }
@@ -464,8 +532,18 @@ def test_readme_example():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "Number",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -482,14 +560,22 @@ def test_readme_example():
             name="DS_A",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Me_1"], index=[0, 1, 2], data=[(1, 100), (2, 200), (3, 300)]
+                columns=["Id_1", "Me_1"],
+                index=[0, 1, 2],
+                data=[(1, 100), (2, 200), (3, 300)],
             ),
         )
     }
@@ -505,8 +591,18 @@ def test_readme_run():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "Number",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -523,14 +619,22 @@ def test_readme_run():
             name="DS_A",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
-                columns=["Id_1", "Me_1"], index=[0, 1, 2], data=[(1, 100), (2, 200), (3, 300)]
+                columns=["Id_1", "Me_1"],
+                index=[0, 1, 2],
+                data=[(1, 100), (2, 200), (3, 300)],
             ),
         )
     }
@@ -548,8 +652,18 @@ def test_readme_semantic_error():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "String",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -574,10 +688,30 @@ def test_non_mandatory_fill_at():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
-                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Id_2",
+                        "type": "String",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "String",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                    {
+                        "name": "At_1",
+                        "type": "String",
+                        "role": "Attribute",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -594,16 +728,28 @@ def test_non_mandatory_fill_at():
             name="DS_r",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.String, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.String,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
                 "At_1": Component(
-                    name="At_1", data_type=DataTypes.String, role=Role.ATTRIBUTE, nullable=True
+                    name="At_1",
+                    data_type=DataTypes.String,
+                    role=Role.ATTRIBUTE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
@@ -632,10 +778,30 @@ def test_non_mandatory_fill_me():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
-                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Id_2",
+                        "type": "String",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "String",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                    {
+                        "name": "At_1",
+                        "type": "String",
+                        "role": "Attribute",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -652,16 +818,28 @@ def test_non_mandatory_fill_me():
             name="DS_r",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Me_1": Component(
-                    name="Me_1", data_type=DataTypes.String, role=Role.MEASURE, nullable=True
+                    name="Me_1",
+                    data_type=DataTypes.String,
+                    role=Role.MEASURE,
+                    nullable=True,
                 ),
                 "At_1": Component(
-                    name="At_1", data_type=DataTypes.String, role=Role.ATTRIBUTE, nullable=True
+                    name="At_1",
+                    data_type=DataTypes.String,
+                    role=Role.ATTRIBUTE,
+                    nullable=True,
                 ),
             },
             data=pd.DataFrame(
@@ -692,10 +870,30 @@ def test_mandatory_at_error():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
-                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": False},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Id_2",
+                        "type": "String",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "String",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                    {
+                        "name": "At_1",
+                        "type": "String",
+                        "role": "Attribute",
+                        "nullable": False,
+                    },
                 ],
             }
         ]
@@ -725,10 +923,30 @@ def test_mandatory_me_error():
             {
                 "name": "DS_1",
                 "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": False},
-                    {"name": "At_1", "type": "String", "role": "Attribute", "nullable": True},
+                    {
+                        "name": "Id_1",
+                        "type": "Integer",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Id_2",
+                        "type": "String",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "String",
+                        "role": "Measure",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "At_1",
+                        "type": "String",
+                        "role": "Attribute",
+                        "nullable": True,
+                    },
                 ],
             }
         ]
@@ -753,13 +971,22 @@ def test_load_data_structure_with_new_schema(data_structure):
         name="DS_Schema",
         components={
             "Id_1": Component(
-                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                name="Id_1",
+                data_type=DataTypes.Integer,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Id_2": Component(
-                name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                name="Id_2",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Me_1": Component(
-                name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
+                name="Me_1",
+                data_type=DataTypes.Number,
+                role=Role.MEASURE,
+                nullable=True,
             ),
         },
         data=None,
