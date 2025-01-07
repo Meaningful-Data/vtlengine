@@ -972,7 +972,7 @@ def test_load_data_structure_with_new_schema(data_structure):
         components={
             "Id_1": Component(
                 name="Id_1",
-                data_type=DataTypes.Integer,
+                data_type=DataTypes.String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
@@ -984,9 +984,15 @@ def test_load_data_structure_with_new_schema(data_structure):
             ),
             "Me_1": Component(
                 name="Me_1",
-                data_type=DataTypes.Number,
+                data_type=DataTypes.Integer,
                 role=Role.MEASURE,
                 nullable=True,
+            ),
+            "At_1": Component(
+                name="At_1",
+                data_type=DataTypes.String,
+                role=Role.ATTRIBUTE,
+                nullable=False,
             ),
         },
         data=None,

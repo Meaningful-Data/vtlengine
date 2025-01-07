@@ -41,11 +41,19 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 try:
                     validate(instance=dataset_json["components"], schema=schema)
                 except exceptions.ValidationError as e:
-                    raise InputValidationException(f" 0- {e.message}")
+                    raise InputValidationException(code="0-3-1-1", message=e.message)
 
                 for component in dataset_json["components"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
                     check_key("role", Role_keys, component["role"])
+                    if "nullable" not in dataset_json["components"]:
+                        if Role(component["role"]) == Role.IDENTIFIER:
+                            component["nullable"] = False
+                        elif Role(component["role"]) == Role.MEASURE:
+                            component["nullable"] = True
+                        else:
+                            component["nullable"] = False
+
                     components[component["name"]] = Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["data_type"]],
