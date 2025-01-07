@@ -9,7 +9,7 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import check_key
+from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
@@ -41,7 +41,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 try:
                     validate(instance=dataset_json["components"], schema=schema)
                 except exceptions.ValidationError as e:
-                    raise ValueError(f"Error in validation {e.message}")
+                    raise InputValidationException(f" 0- {e.message}")
 
                 for component in dataset_json["components"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])

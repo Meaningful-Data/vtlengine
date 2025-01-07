@@ -19,4 +19,4 @@ class RFCDialect(csv.Dialect):
 
 def register_rfc() -> None:
     """Register the RFC dialect."""
-    csv.register_dialect("rfc", RFCDialect)
+    csv.register_dialect("rfc", RFCDialect)  # type: ignore[arg-type]
