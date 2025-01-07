@@ -201,8 +201,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
                 self._load_datapoints_efficient(statement_num)
-            if (not isinstance(child, (AST.HRuleset, AST.DPRuleset, AST.Operator)) and
-                    not isinstance(child, (AST.Assignment, AST.PersistentAssignment))):
+            if not isinstance(
+                child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
+            ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-3-17")
             result = self.visit(child)
 
@@ -229,7 +230,6 @@ class InterpreterAnalyzer(ASTTemplate):
     # Definition Language
 
     def visit_Operator(self, node: AST.Operator) -> None:
-
         if self.udos is None:
             self.udos = {}
         elif node.op in self.udos:
@@ -262,7 +262,6 @@ class InterpreterAnalyzer(ASTTemplate):
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
-
         # Rule names are optional, if not provided, they are generated.
         # If provided, all must be provided
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
@@ -358,7 +357,6 @@ class InterpreterAnalyzer(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> Any:
-
         is_from_if = False
         if (
             not self.is_from_condition
@@ -369,8 +367,12 @@ class InterpreterAnalyzer(ASTTemplate):
             is_from_if = self.is_from_if
             self.is_from_if = False
 
-        if (self.is_from_join and node.op in [MEMBERSHIP, AGGREGATE] and
-                hasattr(node.left, "value") and hasattr(node.right, "value")):
+        if (
+            self.is_from_join
+            and node.op in [MEMBERSHIP, AGGREGATE]
+            and hasattr(node.left, "value")
+            and hasattr(node.right, "value")
+        ):
             if self.udo_params is not None and node.right.value in self.udo_params[-1]:
                 comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
             else:
@@ -744,8 +746,12 @@ class InterpreterAnalyzer(ASTTemplate):
                         is_partial_present = 0
                         found_comp = None
                         for comp_name in self.regular_aggregation_dataset.get_components_names():
-                            if ("#" in comp_name and comp_name.split("#")[1] == node.value or "#"
-                                    in node.value and node.value.split("#")[1] == comp_name):
+                            if (
+                                "#" in comp_name
+                                and comp_name.split("#")[1] == node.value
+                                or "#" in node.value
+                                and node.value.split("#")[1] == comp_name
+                            ):
                                 is_partial_present += 1
                                 found_comp = comp_name
                         if is_partial_present == 0:
@@ -938,7 +944,6 @@ class InterpreterAnalyzer(ASTTemplate):
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
 
     def visit_If(self, node: AST.If) -> Dataset:
-
         self.is_from_condition = True
         condition = self.visit(node.condition)
         self.is_from_condition = False
@@ -1396,10 +1401,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     left_operand.data = pd.DataFrame({measure_name: []})
                 if right_operand.data is None:
                     right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(left_operand.data[left_operand.data[
-                    measure_name].isnull()].index)
-                right_null_indexes = set(right_operand.data[right_operand.data[
-                    measure_name].isnull()].index)
+                left_null_indexes = set(
+                    left_operand.data[left_operand.data[measure_name].isnull()].index
+                )
+                right_null_indexes = set(
+                    right_operand.data[right_operand.data[measure_name].isnull()].index
+                )
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
@@ -1415,7 +1422,6 @@ class InterpreterAnalyzer(ASTTemplate):
         return HR_UNARY_MAPPING[node.op].analyze(operand)
 
     def visit_Validation(self, node: AST.Validation) -> Dataset:
-
         validation_element = self.visit(node.validation)
         if not isinstance(validation_element, Dataset):
             raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
@@ -1737,9 +1743,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = node.params[
-                                i
-                            ].value  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = node.params[i].value  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):

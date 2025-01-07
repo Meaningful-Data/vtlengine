@@ -77,6 +77,7 @@ class Cast(Operator.Unary):
         """
 
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
+
     #
     # @classmethod
     # def cast_date_to_string(cls, value: Any, mask: str) -> Any:

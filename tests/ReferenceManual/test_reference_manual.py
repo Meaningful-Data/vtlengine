@@ -110,7 +110,7 @@ params = itertools.chain(
     validation_operators,
     conditional_operators,
     clause_operators,
-    new_operators
+    new_operators,
 )
 
 params = [x for x in list(params) if x not in exceptions_tests]

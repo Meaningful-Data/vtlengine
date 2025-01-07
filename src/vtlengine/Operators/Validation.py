@@ -103,7 +103,6 @@ class Check(Operator):
 
 # noinspection PyTypeChecker
 class Validation(Operator):
-
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
         rule_list_df = []
@@ -171,7 +170,6 @@ class Validation(Operator):
         elif output == "all":
             result.data = result.data[result.get_identifiers_names() + validation_measures]
         else:  # output == 'all_measures'
-
             result.data = result.data[
                 result.get_identifiers_names()
                 + dataset_element.get_measures_names()

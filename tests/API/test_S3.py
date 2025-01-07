@@ -104,4 +104,3 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
     save_datapoints(None, dataset, output_path=output_path)
     result = pd.read_csv(output_path / f"{dataset.name}.csv")
     pd.testing.assert_frame_equal(result, dataset.data)
-

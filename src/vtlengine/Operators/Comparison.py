@@ -74,10 +74,9 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(cls,
-                     x: Optional[Union[int, float, str, bool]],
-                     y: Optional[Union[int, float, str, bool]]
-                     ) -> Any:
+    def _cast_values(
+        cls, x: Optional[Union[int, float, str, bool]], y: Optional[Union[int, float, str, bool]]
+    ) -> Any:
         # Cast values to compatible types for comparison
         try:
             if isinstance(x, str) and isinstance(y, bool):
@@ -247,9 +246,7 @@ class Between(Operator.Operator):
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
         return (
-            None
-            if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z))
-            else y <= x <= z  # type: ignore[operator]
+            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
         )
 
     @classmethod
@@ -369,7 +366,6 @@ class Between(Operator.Operator):
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both
-
             if isinstance(from_data, pd.Series):
                 series = pd.Series(operand.value, index=from_data.index, dtype=object)
             elif isinstance(to_data, pd.Series):

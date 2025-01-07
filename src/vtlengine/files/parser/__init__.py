@@ -73,8 +73,11 @@ def _sanitize_pandas_columns(
     components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
 ) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
-    if ("DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW" and
-            "DATAFLOW" not in components):
+    if (
+        "DATAFLOW" in data.columns
+        and data.columns[0] == "DATAFLOW"
+        and "DATAFLOW" not in components
+    ):
         data.drop(columns=["DATAFLOW"], inplace=True)
     if "STRUCTURE" in data.columns and data.columns[0] == "STRUCTURE":
         if "STRUCTURE" not in components:
@@ -165,7 +168,6 @@ def _validate_pandas(
     comp_name = ""
     comp = None
     try:
-
         for comp_name, comp in components.items():
             if comp.data_type in (Date, TimePeriod, TimeInterval):
                 data[comp_name] = data[comp_name].map(

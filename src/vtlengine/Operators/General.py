@@ -128,7 +128,6 @@ class Eval(Unary):
         external_routine: ExternalRoutine,
         output: Dataset,
     ) -> Dataset:
-
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
