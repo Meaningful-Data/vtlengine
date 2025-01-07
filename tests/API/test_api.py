@@ -762,7 +762,7 @@ def test_load_data_structure_with_new_schema(data_structure):
                 name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
             ),
             "Me_1": Component(
-                name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=False
+                name="Me_1", data_type=DataTypes.Number, role=Role.MEASURE, nullable=True
             ),
         },
         data=None,

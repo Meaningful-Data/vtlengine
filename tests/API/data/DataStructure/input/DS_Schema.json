@@ -6,17 +6,20 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "data_type": "Integer"
+          "data_type": "Integer",
+          "nullable": false
         },
         {
           "name": "Id_2",
           "role": "Identifier",
-          "data_type": "String"
+          "data_type": "String",
+          "nullable": false
         },
         {
           "name": "Me_1",
           "role": "Measure",
-          "data_type": "Number"
+          "data_type": "Number",
+          "nullable": true
         }
       ]
     }

@@ -48,7 +48,8 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                     components[component["name"]] = Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["data_type"]],
-                        role=Role(component["role"])
+                        role=Role(component["role"]),
+                        nullable=component["nullable"]
                     )
 
             if "DataStructure" in dataset_json:
@@ -398,3 +399,4 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
+
