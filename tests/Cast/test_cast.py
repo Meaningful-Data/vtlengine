@@ -217,7 +217,8 @@ def test_errors_validate_cast_scalar(text, type_of_error, exception_message):
 
 
 @pytest.mark.parametrize(
-    "value, provided_type, to_type, mask, type_of_error, exception_message", cast_error_params
+    "value, provided_type, to_type, mask, type_of_error, exception_message",
+    cast_error_params,
 )
 def test_errors_cast_scalar(value, provided_type, to_type, mask, type_of_error, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)

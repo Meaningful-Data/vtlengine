@@ -339,7 +339,12 @@ REGULAR_AGGREGATION_MAPPING = {
     APPLY: Apply,
 }
 
-SET_MAPPING = {UNION: Union, INTERSECT: Intersection, SYMDIFF: Symdiff, SETDIFF: Setdiff}
+SET_MAPPING = {
+    UNION: Union,
+    INTERSECT: Intersection,
+    SYMDIFF: Symdiff,
+    SETDIFF: Setdiff,
+}
 
 AGGREGATION_MAPPING = {
     MAX: Max,

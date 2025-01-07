@@ -180,7 +180,10 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_cast(
-        cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: Optional[str]
+        cls,
+        from_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: Optional[str],
     ) -> None:
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
@@ -244,7 +247,11 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_value(
-        cls, value: Any, provided_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
+        cls,
+        value: Any,
+        provided_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: str,
     ) -> Any:
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
@@ -319,7 +326,10 @@ class Cast(Operator.Unary):
         else:
             measure_name = measure.name
         result_components[measure_name] = Component(
-            name=measure_name, data_type=to_type, role=Role.MEASURE, nullable=measure.nullable
+            name=measure_name,
+            data_type=to_type,
+            role=Role.MEASURE,
+            nullable=measure.nullable,
         )
         return Dataset(name="result", components=result_components, data=None)
 

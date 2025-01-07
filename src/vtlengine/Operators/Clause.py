@@ -208,11 +208,17 @@ class Rename(Operator):
         for operand in operands:
             if operand.old_name not in dataset.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=operand.old_name, dataset_name=dataset.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=operand.old_name,
+                    dataset_name=dataset.name,
                 )
             if operand.new_name in dataset.components:
                 raise SemanticError(
-                    "1-1-6-8", op=cls.op, comp_name=operand.new_name, dataset_name=dataset.name
+                    "1-1-6-8",
+                    op=cls.op,
+                    comp_name=operand.new_name,
+                    dataset_name=dataset.name,
                 )
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
@@ -305,11 +311,17 @@ class Sub(Operator):
         for operand in operands:
             if operand.name not in dataset.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=operand.name, dataset_name=dataset.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=operand.name,
+                    dataset_name=dataset.name,
                 )
             if operand.role != Role.IDENTIFIER:
                 raise SemanticError(
-                    "1-1-6-10", op=cls.op, operand=operand.name, dataset_name=dataset.name
+                    "1-1-6-10",
+                    op=cls.op,
+                    operand=operand.name,
+                    dataset_name=dataset.name,
                 )
             if isinstance(operand, Scalar):
                 raise SemanticError("1-1-6-5", op=cls.op, name=operand.name)

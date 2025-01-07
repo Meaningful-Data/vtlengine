@@ -31,7 +31,8 @@ class ExprComp(VtlVisitor):
 
                                 ExprComponent Definition.
 
-    _______________________________________________________________________________________"""
+    _______________________________________________________________________________________
+    """
 
     def visitExprComponent(self, ctx: Parser.ExprComponentContext):
         """
@@ -686,7 +687,11 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.17
             raise SemanticError("1-4-2-2")
         return TimeAggregation(
-            op=op, operand=operand_node, period_to=period_to, period_from=period_from, conf=conf
+            op=op,
+            operand=operand_node,
+            period_to=period_to,
+            period_from=period_from,
+            conf=conf,
         )
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
@@ -862,7 +867,11 @@ class ExprComp(VtlVisitor):
                 raise NotImplementedError
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=params,
         )
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
@@ -892,7 +901,11 @@ class ExprComp(VtlVisitor):
                 continue
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            params=params,
         )
 
     def visitRankAnComponent(self, ctx: Parser.RankAnComponentContext):
@@ -912,7 +925,11 @@ class ExprComp(VtlVisitor):
                 continue
 
         return Analytic(
-            op=op_node, operand=None, partition_by=partition_by, order_by=order_by, window=None
+            op=op_node,
+            operand=None,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=None,
         )
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
@@ -927,5 +944,9 @@ class ExprComp(VtlVisitor):
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=params,
         )

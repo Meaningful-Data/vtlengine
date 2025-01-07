@@ -17,10 +17,16 @@ params = [
             name="test_dataset",
             components={
                 "Id_1": Component(
-                    name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
                 "Id_2": Component(
-                    name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
                 ),
             },
             data=pd.DataFrame(columns=["Id_1", "Id_2"]),
@@ -36,10 +42,16 @@ def test_save_datapoints_without_data_mock(mock_csv):
         name="test_dataset",
         components={
             "Id_1": Component(
-                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                name="Id_1",
+                data_type=DataTypes.Integer,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Id_2": Component(
-                name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                name="Id_2",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
         },
         data=None,
@@ -59,10 +71,16 @@ def test_save_datapoints_with_data_mock(mock_csv):
         name="test_dataset",
         components={
             "Id_1": Component(
-                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                name="Id_1",
+                data_type=DataTypes.Integer,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Id_2": Component(
-                name="Id_2", data_type=DataTypes.String, role=Role.IDENTIFIER, nullable=False
+                name="Id_2",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
         },
         data=mock_data,
@@ -82,10 +100,16 @@ def test_save_datapoints_with_data_and_time_period_representation_mock(mock_csv)
         name="test_dataset",
         components={
             "Id_1": Component(
-                name="Id_1", data_type=DataTypes.Integer, role=Role.IDENTIFIER, nullable=False
+                name="Id_1",
+                data_type=DataTypes.Integer,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
             "Id_2": Component(
-                name="Id_2", data_type=DataTypes.TimePeriod, role=Role.IDENTIFIER, nullable=False
+                name="Id_2",
+                data_type=DataTypes.TimePeriod,
+                role=Role.IDENTIFIER,
+                nullable=False,
             ),
         },
         data=mock_data,

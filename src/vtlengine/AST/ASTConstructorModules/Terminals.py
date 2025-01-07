@@ -126,7 +126,10 @@ class Terminals(VtlVisitor):
         valueDomainID: IDENTIFIER ;
         """
         return Collection(
-            name=ctx.children[0].getSymbol().text, children=[], kind="ValueDomain", type=""
+            name=ctx.children[0].getSymbol().text,
+            children=[],
+            kind="ValueDomain",
+            type="",
         )
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
@@ -708,7 +711,8 @@ class Terminals(VtlVisitor):
             return OrderBy(component=self.visitComponentID(ctx_list[0]).value, order="asc")
 
         return OrderBy(
-            component=self.visitComponentID(ctx_list[0]).value, order=ctx_list[1].getSymbol().text
+            component=self.visitComponentID(ctx_list[0]).value,
+            order=ctx_list[1].getSymbol().text,
         )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
@@ -737,5 +741,9 @@ def create_windowing(win_mode, values, modes):
             values[e] = "CURRENT ROW"
 
     return Windowing(
-        type_=win_mode, start=values[0], stop=values[1], start_mode=modes[0], stop_mode=modes[1]
+        type_=win_mode,
+        start=values[0],
+        stop=values[1],
+        start_mode=modes[0],
+        stop_mode=modes[1],
     )

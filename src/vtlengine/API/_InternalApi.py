@@ -56,7 +56,9 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
         for scalar_json in structures["scalars"]:
             scalar_name = scalar_json["name"]
             scalar = Scalar(
-                name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+                name=scalar_name,
+                data_type=SCALAR_TYPES[scalar_json["type"]],
+                value=None,
             )
             datasets[scalar_name] = scalar  # type: ignore[assignment]
     return datasets

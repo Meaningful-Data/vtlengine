@@ -8,7 +8,20 @@ from typing import Any, Optional, Union
 #     import pandas as pd
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import AND, CEIL, EQ, FLOOR, GT, GTE, LT, LTE, NEQ, OR, ROUND, XOR
+from vtlengine.AST.Grammar.tokens import (
+    AND,
+    CEIL,
+    EQ,
+    FLOOR,
+    GT,
+    GTE,
+    LT,
+    LTE,
+    NEQ,
+    OR,
+    ROUND,
+    XOR,
+)
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -288,7 +301,10 @@ class Binary(Operator):
 
         if left_measures_names != right_measures_names:
             raise SemanticError(
-                "1-1-14-1", op=cls.op, left=left_measures_names, right=right_measures_names
+                "1-1-14-1",
+                op=cls.op,
+                left=left_measures_names,
+                right=right_measures_names,
             )
         elif len(left_measures) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=left_operand.name)
@@ -618,7 +634,7 @@ class Binary(Operator):
         )
         right_data = cls.cast_time_types(
             right_operand.data_type,
-            right_operand.data.copy() if right_operand.data is not None else pd.Series(),
+            (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
@@ -665,7 +681,8 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(
-            component.data.copy() if component.data is not None else pd.Series(), scalar_set
+            component.data.copy() if component.data is not None else pd.Series(),
+            scalar_set,
         )
         return result_component
 

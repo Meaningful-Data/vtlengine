@@ -2,7 +2,11 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
 
-from vtlengine.DataTypes.TimeHandling import check_max_date, date_to_period_str, str_period_to_date
+from vtlengine.DataTypes.TimeHandling import (
+    check_max_date,
+    date_to_period_str,
+    str_period_to_date,
+)
 from vtlengine.Exceptions import SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
@@ -548,7 +552,17 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     TimePeriod: {TimeInterval, TimePeriod},
     Duration: {Duration},
     Boolean: {String, Boolean},
-    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null},
+    Null: {
+        String,
+        Number,
+        Integer,
+        TimeInterval,
+        Date,
+        TimePeriod,
+        Duration,
+        Boolean,
+        Null,
+    },
 }
 
 # TODO: Implicit are valid as cast without mask
@@ -563,7 +577,17 @@ EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     TimePeriod: {TimePeriod, String},
     Duration: {Duration, String},
     Boolean: {Integer, Number, String, Boolean},
-    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null},
+    Null: {
+        String,
+        Number,
+        Integer,
+        TimeInterval,
+        Date,
+        TimePeriod,
+        Duration,
+        Boolean,
+        Null,
+    },
 }
 
 EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -575,7 +599,17 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     TimePeriod: {Date},
     Duration: {String},
     Boolean: {},
-    Null: {String, Number, Integer, TimeInterval, Date, TimePeriod, Duration, Boolean, Null},
+    Null: {
+        String,
+        Number,
+        Integer,
+        TimeInterval,
+        Date,
+        TimePeriod,
+        Duration,
+        Boolean,
+        Null,
+    },
 }
 
 
@@ -633,7 +667,10 @@ def binary_implicit_promotion(
 
 
 def check_binary_implicit_promotion(
-    left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
+    left: Type[ScalarType],
+    right: Any,
+    type_to_check: Any = None,
+    return_type: Any = None,
 ) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
