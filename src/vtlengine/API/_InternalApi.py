@@ -4,12 +4,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-from jsonschema import validate, exceptions
+from jsonschema import exceptions, validate
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
     Dataset,
@@ -19,11 +20,10 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 base_path = Path(__file__).parent
-schema_path = base_path / 'data' / 'schema'
-with open(schema_path / 'json_schema_2.1.json', 'r') as file:
+schema_path = base_path / "data" / "schema"
+with open(schema_path / "json_schema_2.1.json", "r") as file:
     schema = json.load(file)
 
 
@@ -40,8 +40,9 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
             if "components" in dataset_json:
                 try:
                     validate(instance=dataset_json["components"], schema=schema)
-                except:
-                    raise exceptions.ValidationError(f"dataset {dataset_name} does not fit with schema")
+                except exceptions.ValidationError as e:
+                    raise ValueError(f"Error in validation {e.message}")
+
                 for component in dataset_json["components"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
                     check_key("role", Role_keys, component["role"])
@@ -49,7 +50,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["data_type"]],
                         role=Role(component["role"]),
-                        nullable=component["nullable"]
+                        nullable=component["nullable"],
                     )
 
             if "DataStructure" in dataset_json:
@@ -127,7 +128,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-        datapoints: Union[Path, str, List[Union[str, Path]]]
+    datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -168,7 +169,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-        data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -344,7 +345,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-        datasets: Dict[str, Dataset], ast: Start
+    datasets: Dict[str, Dataset], ast: Start
 ) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
@@ -399,4 +400,3 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
-

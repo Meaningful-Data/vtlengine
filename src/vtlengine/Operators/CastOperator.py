@@ -142,7 +142,6 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
-
         if mask_value not in ["START", "END"]:
             raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
 
@@ -182,7 +181,6 @@ class Cast(Operator.Unary):
     def check_cast(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: Optional[str]
     ) -> None:
-
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         else:
@@ -192,7 +190,6 @@ class Cast(Operator.Unary):
     def check_with_mask(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> None:
-
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
@@ -207,7 +204,6 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
-
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
@@ -242,7 +238,6 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_mask_component(cls, data: Any, from_type: Any, to_type: Any, mask: str) -> Any:
-
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
         return result
 
@@ -250,7 +245,6 @@ class Cast(Operator.Unary):
     def cast_value(
         cls, value: Any, provided_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> Any:
-
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
         if provided_type == String and to_type == Date:
@@ -285,7 +279,6 @@ class Cast(Operator.Unary):
         scalarType: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Any:
-
         if mask is not None and not isinstance(mask, str):
             raise Exception(f"{cls.op} mask must be a string")
 
@@ -366,7 +359,6 @@ class Cast(Operator.Unary):
         scalarType: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Any:
-
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, scalarType, mask)
         if isinstance(operand, Scalar):
@@ -381,7 +373,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Dataset:
-
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
@@ -410,7 +401,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Scalar:
-
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
         if pd.isna(operand.value):
@@ -431,7 +421,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> DataComponent:
-
         from_type = operand.data_type
         result_component = cls.component_validation(operand, to_type, mask)
         if mask:

@@ -11,7 +11,6 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    _load_dataset_from_structure
 )
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
@@ -253,9 +252,7 @@ params_run = [
     )
 ]
 
-params_schema = [
-    (filepath_json / 'DS_Schema.json')
-]
+params_schema = [(filepath_json / "DS_Schema.json")]
 
 
 @pytest.mark.parametrize("input", ext_params_OK)
@@ -749,7 +746,7 @@ def test_mandatory_me_error():
     assert result
 
 
-@pytest.mark.parametrize('data_structure', params_schema)
+@pytest.mark.parametrize("data_structure", params_schema)
 def test_load_data_structure_with_new_schema(data_structure):
     result = load_datasets(data_structure)
     reference = Dataset(

@@ -238,14 +238,10 @@ class Dataset:
                 type_ = "int64" if type_name == "Integer" else "float32"
                 # We use here a number to avoid errors on equality on empty strings
                 self.data[comp.name] = (
-                    self.data[comp.name]
-                    .replace("", -1234997)
-                    .astype(type_)  # type: ignore[call-overload]
+                    self.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
                 )
                 other.data[comp.name] = (
-                    other.data[comp.name]
-                    .replace("", -1234997)
-                    .astype(type_)  # type: ignore[call-overload]
+                    other.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
                 )
         try:
             assert_frame_equal(
