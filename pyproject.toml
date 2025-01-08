@@ -49,7 +49,7 @@ pandas-stubs = "^2.2.3.241009"
 stubs = "^1.0.0"
 toml = "^0.10.2"
 ruff = "^0.7.1"
-
+types-jsonschema = "4.23.0.20241208"
 [tool.ruff]
 line-length = 100
 lint.mccabe.max-complexity = 20
