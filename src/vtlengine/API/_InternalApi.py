@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import jsonschema
 import pandas as pd
-from jsonschema import exceptions, validate
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
@@ -39,8 +39,8 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
             components = {}
             if "components" in dataset_json:
                 try:
-                    validate(instance=dataset_json["components"], schema=schema)
-                except exceptions.ValidationError as e:
+                    jsonschema.validate(instance=dataset_json["components"], schema=schema)
+                except jsonschema.exceptions.ValidationError as e:
                     raise InputValidationException(code="0-3-1-1", message=e.message)
 
                 for component in dataset_json["components"]:
