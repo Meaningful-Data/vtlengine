@@ -5,7 +5,4 @@ define operator Test183 (y component)
          when y > 10 then 10
          else 100
 end operator;
-DS_r := DS_1 [calc Me_2 := Test183 when Me_1 <= 1 then 0
-                             when Me_1 > 1 and Me_1 <= 10 then 1
-                             when Me_1 > 10 then 10
-                             else 100];
+DS_r := DS_1 [calc Me_2 := Test183(Me_1)];
