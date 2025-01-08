@@ -1,0 +1,5 @@
+define operator Test180 (y component)
+    returns component is
+    daytoyear(y)
+end operator;
+DS_r := DS_1[calc Me_2 := Test180(Me_1)];

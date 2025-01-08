@@ -1,0 +1,5 @@
+define operator Test178 (y component, s scalar)
+    returns component is
+    dateadd(y, s, "M")
+end operator;
+DS_r := DS_1[calc Me_2 := Test178(Me_1, 2, "M")];
