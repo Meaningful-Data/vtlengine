@@ -66,7 +66,7 @@ analytic_operators = list(range(151, 157))
 validation_operators = list(range(157, 161))
 conditional_operators = list(range(161, 163))
 clause_operators = list(range(163, 177))
-new_operators = list(range(177, 190))
+new_operators = list(range(177, 186))
 
 # Remove tests because Reference Manual is wrong (Pivot)
 clause_operators.remove(172)

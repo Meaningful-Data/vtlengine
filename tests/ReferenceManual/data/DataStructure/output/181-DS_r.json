@@ -11,13 +11,13 @@
         },
         {
           "name": "Me_1",
-          "type": "Date",
+          "type": "Integer",
           "role": "Measure",
           "nullable": true
         },
         {
           "name": "Me_2",
-          "type": "Integer",
+          "type": "String",
           "role": "Measure",
           "nullable": true
         }

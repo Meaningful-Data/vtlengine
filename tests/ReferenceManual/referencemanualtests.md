@@ -97,8 +97,8 @@ Test number     | VTL expresion         | Test result
 70    | DS_r := DS_1 [ calc Me_1 := log (Me_1, 2) ];          | WIP 
 71    | DS_r := sqrt(DS_1);                                   | WIP
 72    | DS_r := DS_1 [ calc Me_1 := sqrt ( Me_1 ) ];          | WIP
-188   | DS_r := random(DS_1, 5);                              |
-189   | DS_r := DS_1 [ calc Me_2 := random( Me_1, 8 ) ];      |
+184   | DS_r := random(DS_1, 5);                              |
+185   | DS_r := DS_1 [ calc Me_2 := random( Me_1, 8 ) ];      |
 >>>
 
 ## 5. Comparison Operators.
@@ -176,13 +176,9 @@ Test number     | VTL expresion                                                 
 177   | DS_r := DS_1 [calc Me2 := datediff(Id_2, Me_1)];                        |
 178   | DS_r := DS_1[ calc Me_2 := dateadd( Me_1, 2, "M" ) ];                   |
 179   | DS_r := DS_1[ calc Me_2 := month (Me_1) ];                              |
-180   | DS_r := DS_1[ calc Me_2 := year (Me_1) ];                               |
-181   | DS_r := DS_1[ calc Me_2 := dayofmonth (Me_1) ];                         |
-182   | DS_r := DS_1[ calc Me_2 := dayofyear (Me_1) ];                          |
-183   | DS_r := DS_1[ calc Me_2 := daytoyear (Me_1) ];                          |
-184   | DS_r := DS_1[ calc Me_2 := daytomonth (Me_1) ];                         |
-185   | DS_r := DS_1[ calc Me_2 := yeartoday (Me_1) ];                          |
-186   | DS_r := DS_1[ calc Me_2 := monthtoday (Me_1) ];                         |
+180   | DS_r := DS_1[ calc Me_2 := daytoyear (Me_1) ];                          |
+181   | DS_r := DS_1[ calc Me_2 := daytomonth (Me_1) ];                         |
+182   | DS_r := DS_1[ calc Me_2 := yeartoday (Me_1) ];                          |
 >>>
 
 ## 8. Set Operators.
@@ -263,7 +259,7 @@ Test number     | VTL expresion     | Test result
 :------------:  | :-------------    |:-------------:
 161      | DS_r := if ( DS_cond#Id_4 = ""F"" ) then DS_1 else DS_2;    | WIP
 162      | DS_r := nvl ( DS_1, 0 );                                    | WIP 
-187      |DS_r := DS_1 [calc Me_2 := case when Me_1 <= 1 then 0        |
+183      |DS_r := DS_1 [calc Me_2 := case when Me_1 <= 1 then 0        |
          |                   when Me_1 > 1 and Me_1 <= 10 then 1       |
          |                   when Me_1 > 10 then 10                    |
          |                   else 100];                                |

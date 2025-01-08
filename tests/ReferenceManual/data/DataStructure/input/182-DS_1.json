@@ -11,7 +11,7 @@
         },
         {
           "name": "Me_1",
-          "type": "Date",
+          "type": "String",
           "role": "Measure",
           "nullable": true
         }
