@@ -2,6 +2,7 @@ from copy import copy
 from typing import Any, List, Union
 
 import numpy as np
+
 # if os.environ.get("SPARK", False):
 #     import pyspark.pandas as pd
 # else:
@@ -52,7 +53,7 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(
-            cls, condition: DataComponent, true_branch: Any, false_branch: Any
+        cls, condition: DataComponent, true_branch: Any, false_branch: Any
     ) -> Any:
         result = None
         if condition.data is not None:
@@ -69,7 +70,7 @@ class If(Operator):
 
     @classmethod
     def dataset_level_evaluation(
-            cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
+        cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
     ) -> Dataset:
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
@@ -128,14 +129,14 @@ class If(Operator):
 
     @classmethod
     def validate(  # noqa: C901
-            cls, condition: Any, true_branch: Any, false_branch: Any
+        cls, condition: Any, true_branch: Any, false_branch: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         nullable = False
         left = true_branch
         right = false_branch
         if true_branch.__class__ != false_branch.__class__:
             if (isinstance(true_branch, DataComponent) and isinstance(false_branch, Dataset)) or (
-                    isinstance(true_branch, Dataset) and isinstance(false_branch, DataComponent)
+                isinstance(true_branch, Dataset) and isinstance(false_branch, DataComponent)
             ):
                 raise ValueError(
                     "If then and else operands cannot be dataset and component respectively"
@@ -302,7 +303,7 @@ class Nvl(Binary):
 class Case(Operator):
     @classmethod
     def evaluate(
-            cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
 
@@ -369,7 +370,7 @@ class Case(Operator):
 
     @classmethod
     def validate(
-            cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
