@@ -10,6 +10,7 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
     Dataset,
@@ -19,7 +20,6 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -53,9 +53,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                     if "nullable" not in dataset_json["components"]:
                         if Role(component["role"]) == Role.IDENTIFIER:
                             component["nullable"] = False
-                        elif Role(component["role"]) == Role.MEASURE:
-                            component["nullable"] = True
-                        elif Role(component["role"]) == Role.ATTRIBUTE:
+                        elif Role(component["role"]) in (Role.MEASURE, Role.ATTRIBUTE):
                             component["nullable"] = True
                         else:
                             component["nullable"] = False
