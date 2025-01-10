@@ -1,12 +1,12 @@
 {
   "datasets": [
     {
-      "name": "DS_1",
+      "name": "DS_Schema",
       "components": [
         {
           "name": "Id_1",
           "role": "Identifier",
-          "data_type": "Time_Period"
+          "data_type": "String"
         },
         {
           "name": "Id_2",
@@ -14,22 +14,16 @@
           "data_type": "String"
         },
         {
-          "name": "Id_3",
-          "role": "Identifier",
-          "data_type": "String"
-        },
-        {
           "name": "Me_1",
-          "role": "Measure",
+          "role": "BBBBB",
           "data_type": "Integer"
         },
-      {
+        {
           "name": "At_1",
-          "role": "ViralAttribute",
+          "role": "Attribute",
           "data_type": "String"
-      }
+        }
       ]
     }
   ]
 }
-

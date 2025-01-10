@@ -20,7 +20,7 @@
         },
         {
           "name": "At_1",
-          "role": "Attribute",
+          "role": "ViralAttribute",
           "data_type": "String"
         }
       ]
