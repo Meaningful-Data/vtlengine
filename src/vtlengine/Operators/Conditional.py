@@ -318,10 +318,10 @@ class Case(Operator):
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data,
-                    value,
-                    result.data,  # type: ignore[call-overload]
+                result.data = np.where(  # type: ignore[call-overload]
+                    condition.data.notna(),
+                    np.where(condition.data, value, result.data),  # type: ignore[call-overload]
+                    result.data,
                 )
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
@@ -408,6 +408,7 @@ class Case(Operator):
                 (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
                 for thenOp in ops
             )
+            nullable |= any(condition.nullable for condition in conditions)
 
             data_type = ops[0].data_type
             for op in ops[1:]:
