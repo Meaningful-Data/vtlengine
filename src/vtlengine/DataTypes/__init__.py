@@ -144,8 +144,8 @@ class Number(ScalarType):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            self.__class__.__name__ == other.__class__.__name__
-            or other.__class__.__name__ == Integer.__name__
+                self.__class__.__name__ == other.__class__.__name__
+                or other.__class__.__name__ == Integer.__name__
         )
 
     def __ne__(self, other: Any) -> bool:
@@ -202,8 +202,8 @@ class Integer(Number):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            self.__class__.__name__ == other.__class__.__name__
-            or other.__class__.__name__ == Number.__name__
+                self.__class__.__name__ == other.__class__.__name__
+                or other.__class__.__name__ == Number.__name__
         )
 
     def __ne__(self, other: Any) -> bool:
@@ -397,31 +397,73 @@ class TimePeriod(TimeInterval):
 
 
 class Duration(ScalarType):
+    def __init__(self, value):
+        if isinstance(value, str):
+            self.days = self.parse_mask(value)
+        elif isinstance(value, int):
+            self.days = value
+        else:
+            raise ValueError("Must be string")
 
-    @classmethod
-    def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {Duration, String}:
-            return value
+    def parse_mask(self, mask):
+        if not mask.startswith("P"):
+            raise ValueError("Mask must start with a P")
 
-        raise SemanticError(
-            "2-1-5-1",
-            value=value,
-            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-        )
+        years, months, days = 0, 0, 0
 
-    @classmethod
-    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
-            return value
+        if "Y" in mask:
+            years, mask = mask[1:].split("Y", 1)
+            years = int(years)
+        if "M" in mask:
+            months, mask = mask.split("M", 1)
+            months = int(months)
+        if "D" in mask:
+            days = int(mask[:-1])
 
-        raise SemanticError(
-            "2-1-5-1",
-            value=value,
-            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-        )
+        return years * 365 + months * 30 + days
 
+    def to_mask(self, unit="years"):
+        if unit == "years":
+            years = self.days // 365
+            remaining_days = self.days % 365
+            return f"P{years}Y{remaining_days}D"
+        elif unit == "months":
+            months = self.days // 30
+            remaining_days = self.days % 30
+            return f"P{months}M{remaining_days}D"
+        else:
+            raise ValueError("Not valid input")
+
+    def to_days(self):
+        return self.days
+
+
+# class Duration(ScalarType):
+#
+#     @classmethod
+#     def implicit_cast(cls, value: Any, from_type: Any) -> str:
+#         if from_type in {Duration, String}:
+#             return value
+#
+#         raise SemanticError(
+#             "2-1-5-1",
+#             value=value,
+#             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+#             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+#         )
+#
+#     @classmethod
+#     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
+#         if from_type == String:
+#             return value
+#
+#         raise SemanticError(
+#             "2-1-5-1",
+#             value=value,
+#             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+#             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+#         )
+#
 
 class Boolean(ScalarType):
     """ """
@@ -581,10 +623,10 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 
 
 def binary_implicit_promotion(
-    left_type: Type[ScalarType],
-    right_type: Type[ScalarType],
-    type_to_check: Optional[Type[ScalarType]] = None,
-    return_type: Optional[Type[ScalarType]] = None,
+        left_type: Type[ScalarType],
+        right_type: Type[ScalarType],
+        type_to_check: Optional[Type[ScalarType]] = None,
+        return_type: Optional[Type[ScalarType]] = None,
 ) -> Type[ScalarType]:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -618,7 +660,7 @@ def binary_implicit_promotion(
         # {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (
-        left_type.is_included(right_implicities) or right_type.is_included(left_implicities)
+            left_type.is_included(right_implicities) or right_type.is_included(left_implicities)
     ):
         return return_type
     if left_type.is_included(right_implicities):
@@ -634,7 +676,7 @@ def binary_implicit_promotion(
 
 
 def check_binary_implicit_promotion(
-    left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
+        left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -654,9 +696,9 @@ def check_binary_implicit_promotion(
 
 
 def unary_implicit_promotion(
-    operand_type: Type[ScalarType],
-    type_to_check: Optional[Type[ScalarType]] = None,
-    return_type: Optional[Type[ScalarType]] = None,
+        operand_type: Type[ScalarType],
+        type_to_check: Optional[Type[ScalarType]] = None,
+        return_type: Optional[Type[ScalarType]] = None,
 ) -> Type[ScalarType]:
     """
     Validates the compatibility between the type of the operand and the operator
@@ -675,16 +717,16 @@ def unary_implicit_promotion(
     if return_type:
         return return_type
     if (
-        type_to_check
-        and not issubclass(operand_type, type_to_check)
-        and not issubclass(type_to_check, operand_type)
+            type_to_check
+            and not issubclass(operand_type, type_to_check)
+            and not issubclass(type_to_check, operand_type)
     ):
         return type_to_check
     return operand_type
 
 
 def check_unary_implicit_promotion(
-    operand_type: Type[ScalarType], type_to_check: Any = None, return_type: Any = None
+        operand_type: Type[ScalarType], type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator

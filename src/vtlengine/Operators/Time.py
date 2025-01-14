@@ -830,7 +830,7 @@ class SimpleBinaryTime(Operators.Binary):
         if left == TimePeriod and right == Date:
             return False
 
-        return  not (left == TimePeriod and right == Date)
+        return not (left == TimePeriod and right == Date)
 
     @classmethod
     def validate(
@@ -979,7 +979,7 @@ class SimpleUnaryTime(Operators.Unary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
         # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check)
-        if operand.data_type == TimeInterval or operand.data_type not in (Date, TimePeriod):
+        if operand.data_type == TimeInterval or operand.data_type not in (Date, TimePeriod, Duration):
             raise SemanticError("1-1-19-10", op=cls.op)
 
         return super().validate(operand)
@@ -1047,7 +1047,7 @@ class Day_of_Year(SimpleUnaryTime):
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
-    return_type = String
+    return_type = Duration
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1082,11 +1082,12 @@ class Year_to_Day(Operators.Unary):
     return_type = Integer
 
     @classmethod
-    def py_op(cls, value: str) -> int:
+    def py_op(cls, value: Duration) -> int:
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
-        if "Y" not in value:
+        if "Y" not in value or "P" not in value:
             raise SemanticError("2-1-19-15", op=cls.op)
+        value = str(value)
         index_y = value.index("Y")
         years = int(value[1:index_y])
         days = int(value[(index_y + 1): -1])
@@ -1098,11 +1099,12 @@ class Month_to_Day(Operators.Unary):
     return_type = Integer
 
     @classmethod
-    def py_op(cls, value: str) -> int:
+    def py_op(cls, value: Duration) -> int:
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
-        if "M" not in value:
+        if "M" not in value or "P" not in value:
             raise SemanticError("2-1-19-16", op=cls.op)
+        value = str(value)
         index_m = value.index("M")
         months = int(value[1:index_m])
         days = int(value[(index_m + 1): -1])
