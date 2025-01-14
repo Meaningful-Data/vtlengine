@@ -243,7 +243,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_1(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2);
@@ -259,7 +259,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_2(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= DS_1#Me_2];
@@ -277,7 +277,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_3(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -293,7 +293,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_4(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join ( DS_2, DS_1 filter Id_2 ="B" calc Me_4 := Me_2 keep Me_4, DS_1#Me_2);
@@ -311,7 +311,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_5(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_2 drop d2#Me_2);
@@ -327,7 +327,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_6(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1 drop d2#Me_2);
@@ -343,7 +343,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_7(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 drop d2#Me_2);
@@ -359,7 +359,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_8(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + d2#Me_2 drop d2#Me_2);
@@ -375,7 +375,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_9(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1 + d2#Me_2 drop d2#Me_2);
@@ -391,7 +391,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_10(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d2#Me_2 drop d2#Me_2);
@@ -407,7 +407,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_11(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_2 drop d2#Me_2);
@@ -425,7 +425,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_12(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1A drop d2#Me_2);
@@ -442,7 +442,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_13(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + Me_2 + d2#Me_1A drop d2#Me_2);
@@ -460,7 +460,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_14(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + Me_3 drop d2#Me_2);
@@ -478,7 +478,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_15(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d1#Me_1+ d2#Me_2 + Me_2 drop d2#Me_2);
@@ -496,7 +496,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_16(self):
         """
-        left join
+        Left join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := left_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d1#Me_1+ d2#Me_2 + d1#Me_2 drop d2#Me_2);
@@ -512,7 +512,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_17(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2);
@@ -528,7 +528,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_18(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= DS_1#Me_2];
@@ -546,7 +546,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_19(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: BUG
         Expression: DS_r := full_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -563,7 +563,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_20(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join ( DS_2, DS_1 filter Id_2 ="B" calc Me_4 := Me_2 keep Me_4, DS_1#Me_2);
@@ -581,7 +581,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_21(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_2 drop d2#Me_2);
@@ -597,7 +597,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_22(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1 drop d2#Me_2);
@@ -613,7 +613,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_23(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 drop d2#Me_2);
@@ -629,7 +629,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_24(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + d2#Me_2 drop d2#Me_2);
@@ -645,7 +645,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_25(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1 + d2#Me_2 drop d2#Me_2);
@@ -661,7 +661,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_26(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d2#Me_2 drop d2#Me_2);
@@ -677,7 +677,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_27(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_2 drop d2#Me_2);
@@ -695,7 +695,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_28(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1A drop d2#Me_2);
@@ -712,7 +712,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_29(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + Me_2 + d2#Me_1A drop d2#Me_2);
@@ -730,7 +730,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_30(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + Me_3 drop d2#Me_2);
@@ -748,7 +748,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_31(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d1#Me_1+ d2#Me_2 + Me_2 drop d2#Me_2);
@@ -766,7 +766,7 @@ class CalcInsideJoinTests(JoinHelper):
 
     def test_GL_300_32(self):
         """
-        full join
+        Full join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d1#Me_1+ d2#Me_2 + d1#Me_2 drop d2#Me_2);

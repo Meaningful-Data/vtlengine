@@ -41,7 +41,7 @@ class TimePeriodTest(TimePeriodHelper):
 
     def test_GL_417_1(self):
         """
-        test := avg (BE2_DF_NICP group all time_agg ("Q", "M", TIME_PERIOD));
+        Test := avg (BE2_DF_NICP group all time_agg ("Q", "M", TIME_PERIOD));
         """
         code = "GL_417_1"
         number_inputs = 1
@@ -51,7 +51,7 @@ class TimePeriodTest(TimePeriodHelper):
 
     def test_GL_417_2(self):
         """
-        test := avg (BE2_DF_NICP group all time_agg ("A", "M", TIME_PERIOD));
+        Test := avg (BE2_DF_NICP group all time_agg ("A", "M", TIME_PERIOD));
         """
         code = "GL_417_2"
         number_inputs = 1
@@ -73,7 +73,7 @@ class TimePeriodTest(TimePeriodHelper):
         self,
     ):  # TODO: Check periodIndFrom is not the same as in data, in data is "M", should we allow this?
         """
-        test := avg (BE2_DF_NICP group all time_agg ("A", "Q", TIME_PERIOD));
+        Test := avg (BE2_DF_NICP group all time_agg ("A", "Q", TIME_PERIOD));
         """
         code = "GL_417_4"
         number_inputs = 1

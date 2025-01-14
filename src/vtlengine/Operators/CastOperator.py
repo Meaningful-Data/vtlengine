@@ -231,7 +231,7 @@ class Cast(Operator.Unary):
         cls, data: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]
     ) -> Any:
         """
-        cast the component to the type to_type without mask
+        Cast the component to the type to_type without mask
         """
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):

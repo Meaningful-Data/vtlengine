@@ -221,7 +221,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_1(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression:DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2);
@@ -237,7 +237,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_2(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= DS_1#Me_2];
@@ -255,7 +255,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_3(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -271,7 +271,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_4(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_2, DS_1 filter Id_2 ="B" calc Me_4 := Me_2 keep Me_4, DS_1#Me_2);
@@ -289,7 +289,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_5(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -305,7 +305,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_6(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -321,7 +321,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_7(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -337,7 +337,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_8(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join ( DS_1, DS_2 filter Id_2 ="B" calc Me_4 := DS_2#Me_2 keep Me_4, DS_1#Me_2)[calc me_5:= Me_2];
@@ -353,7 +353,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_9(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d1#Me_1 + d2#Me_2 drop d2#Me_2);
@@ -369,7 +369,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_10(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d2#Me_2 drop d2#Me_2);
@@ -385,7 +385,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_11(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_2 drop d2#Me_2);
@@ -403,7 +403,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_12(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_2 drop d2#Me_2);
@@ -420,7 +420,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_13(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + Me_2 + d2#Me_1A drop d2#Me_2);
@@ -438,7 +438,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_14(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + Me_3 drop d2#Me_2);
@@ -456,7 +456,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_15(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := Me_1 + Me_2 + d2#Me_1A drop d2#Me_2);
@@ -474,7 +474,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_300_16(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression: DS_r := inner_join (DS_1 as d1, DS_2 as d2 calc Me_4 := d2#Me_1A + d1#Me_1+ d2#Me_2 + d1#Me_2 drop d2#Me_2);
@@ -490,7 +490,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_310_1(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression:
@@ -506,7 +506,7 @@ class CalcOperatorTest(TestCalcHelper):
 
     def test_GL_310_2(self):
         """
-        inner join
+        Inner join
         Dataset --> Dataset
         Status: OK
         Expression:

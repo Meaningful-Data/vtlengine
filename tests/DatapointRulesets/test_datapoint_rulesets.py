@@ -23,7 +23,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_1(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -54,7 +54,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_2(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -85,7 +85,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_3(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -116,7 +116,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_4(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -147,7 +147,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_5(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -178,7 +178,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_6(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -209,7 +209,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_7(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -240,7 +240,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_8(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -272,7 +272,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_9(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -303,7 +303,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_10(self):
         """
-            define datapoint ruleset
+            Define datapoint ruleset
             Dataset --> Dataset
             Status: OK
 
@@ -335,7 +335,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
     # with value domains
     def test_11(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -362,7 +362,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
     # If rule, then name has to be equal to variable rule is siganture
     def test_12(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -383,7 +383,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
     # Value domain
     def test_13(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -403,7 +403,7 @@ class DatapointRulesetTests(TestDataPointRuleset):
 
     def test_14(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
