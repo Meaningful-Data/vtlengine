@@ -46,7 +46,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                         structure_json = s
 
                 try:
-                    jsonschema.validate(instance=structure_json["components"], schema=schema)
+                    jsonschema.validate(instance=structure_json, schema=schema)
                 except jsonschema.exceptions.ValidationError as e:
                     raise InputValidationException(code="0-3-1-1", message=e.message)
 
@@ -428,7 +428,7 @@ if __name__ == '__main__':
         "datasets": [
             {
                 "name": "DS_Schema",
-                "structure": "structure_1"
+                "structure": "Structure_1"
             }
         ],
         "structures": [
@@ -452,7 +452,7 @@ if __name__ == '__main__':
                     },
                     {
                         "name": "At_1",
-                        "role": "Viral Attribute",
+                        "role": "ViralAttribute",
                         "data_type": "String"
                     }
                 ]
