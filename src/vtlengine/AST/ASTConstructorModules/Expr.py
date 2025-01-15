@@ -346,7 +346,7 @@ class Expr(VtlVisitor):
 
     def visitJoinClause(self, ctx: Parser.JoinClauseContext):
         """
-        joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
+        JoinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
         """
         ctx_list = list(ctx.getChildren())
 

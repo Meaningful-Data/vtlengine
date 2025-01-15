@@ -6622,7 +6622,7 @@ class ScalarDatasetTypeChecking(TestScalarDatasetTypeChecking):
 
     def test_374(self):
         """
-        number power duration --> number
+        Number power duration --> number
         Status: OK
         Expression: DS_r := power(1.0 , DS_1) ;
         Description: Forbid implicit cast number to duration in power operator.

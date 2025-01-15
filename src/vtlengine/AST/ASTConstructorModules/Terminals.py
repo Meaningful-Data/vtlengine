@@ -594,7 +594,7 @@ class Terminals(VtlVisitor):
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind="ComponentID"):
         """
-        varID (AS alias)?
+        VarID (AS alias)?
         """
 
         ctx_list = list(ctx.getChildren())
