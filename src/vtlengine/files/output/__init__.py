@@ -15,7 +15,6 @@ def save_datapoints(
     dataset: Dataset,
     output_path: Union[str, Path],
 ) -> None:
-
     if dataset.data is None:
         dataset.data = pd.DataFrame()
     if time_period_representation is not None:

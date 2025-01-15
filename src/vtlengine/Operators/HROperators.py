@@ -24,7 +24,6 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 
 class HRComparison(Operators.Binary):
-
     @classmethod
     def imbalance_func(cls, x: Any, y: Any) -> Any:
         return None if pd.isnull(x) or pd.isnull(y) else x - y
@@ -42,8 +41,8 @@ class HRComparison(Operators.Binary):
             result[mask_remove] = "REMOVE_VALUE"
             result[mask_null] = None
         elif hr_mode == "non_null":
-                mask_remove = left_series.isnull() | right_series.isnull()
-                result[mask_remove] = "REMOVE_VALUE"
+            mask_remove = left_series.isnull() | right_series.isnull()
+            result[mask_remove] = "REMOVE_VALUE"
         elif hr_mode == "non_zero":
             mask_remove = (left_series == 0) & (right_series == 0)
             result[mask_remove] = "REMOVE_VALUE"
@@ -64,11 +63,7 @@ class HRComparison(Operators.Binary):
         return result
 
     @classmethod
-    def validate(cls,
-                 left_operand: Dataset,
-                 right_operand: DataComponent,
-                 hr_mode: str
-                 ) -> Dataset:
+    def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in left_operand.components.items()
@@ -134,7 +129,6 @@ class HRLessEqual(HRComparison):
 
 
 class HRBinNumeric(Operators.Binary):
-
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         if not pd.isnull(x) and x == "REMOVE_VALUE":
@@ -164,7 +158,6 @@ class HRBinMinus(HRBinNumeric):
 
 
 class HRUnNumeric(Operators.Unary):
-
     @classmethod
     def evaluate(cls, operand: DataComponent) -> DataComponent:  # type: ignore[override]
         result_data = cls.apply_operation_component(operand.data)
@@ -188,7 +181,6 @@ class HRUnMinus(HRUnNumeric):
 
 
 class HAAssignment(Operators.Binary):
-
     @classmethod
     def validate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}

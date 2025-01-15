@@ -397,7 +397,6 @@ class TimePeriod(TimeInterval):
 
 
 class Duration(ScalarType):
-
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
         if from_type in {Duration, String}:

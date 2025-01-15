@@ -39,7 +39,7 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
-    """ # noqa E501
+    """  # noqa E501
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
@@ -219,7 +219,7 @@ class Nvl(Binary):
         Validate: Class method that validates if the operation at scalar,
         datacomponent or dataset level can be performed.
         Evaluate: Evaluates the actual operation, returning the result.
-    """ # noqa E501
+    """  # noqa E501
 
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
@@ -290,12 +290,10 @@ class Nvl(Binary):
 
 
 class Case(Operator):
-
     @classmethod
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-
         result = cls.validate(conditions, thenOps, elseOp)
 
         if isinstance(result, Scalar):
@@ -310,7 +308,9 @@ class Case(Operator):
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
                 result.data = np.where(
-                    condition.data, value, result.data  # type: ignore[call-overload]
+                    condition.data,
+                    value,
+                    result.data,  # type: ignore[call-overload]
                 )
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
@@ -361,7 +361,6 @@ class Case(Operator):
     def validate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
 

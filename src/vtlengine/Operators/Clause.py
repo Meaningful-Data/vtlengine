@@ -22,12 +22,10 @@ class Calc(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
         result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
 
         for operand in operands:
-
             if operand.name in result_dataset.components:
                 if result_dataset.components[operand.name].role == Role.IDENTIFIER:
                     raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
@@ -72,7 +70,6 @@ class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-
         result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
 
         for operand in operands:
@@ -121,7 +118,6 @@ class Aggregate(Operator):
 
 
 class Filter(Operator):
-
     @classmethod
     def validate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         if condition.data_type != Boolean:
@@ -242,7 +238,6 @@ class Rename(Operator):
 
 
 class Pivot(Operator):
-
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         raise NotImplementedError
@@ -253,7 +248,6 @@ class Pivot(Operator):
 
 
 class Unpivot(Operator):
-
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         if len(operands) != 2:

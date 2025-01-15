@@ -13,7 +13,6 @@ from vtlengine.Operators import Operator
 
 
 class Set(Operator):
-
     @classmethod
     def check_same_structure(cls, dataset_1: Dataset, dataset_2: Dataset) -> None:
         if len(dataset_1.components) != len(dataset_2.components):
@@ -36,7 +35,6 @@ class Set(Operator):
 
     @classmethod
     def validate(cls, operands: List[Dataset]) -> Dataset:
-
         base_operand = operands[0]
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
@@ -70,7 +68,6 @@ class Union(Set):
 
 
 class Intersection(Set):
-
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -97,7 +94,6 @@ class Intersection(Set):
 
 
 class Symdiff(Set):
-
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -140,7 +136,6 @@ class Symdiff(Set):
 
 
 class Setdiff(Set):
-
     @staticmethod
     def has_null(row: Any) -> bool:
         return row.isnull().any()
