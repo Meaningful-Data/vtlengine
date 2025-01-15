@@ -12,11 +12,11 @@ pytestmark = mark.input_path(Path(__file__).parent / "data")
 
 ds_param = [
     ("1", 'DS_r := DSD_EXR[filter TIME_PERIOD = cast("2002M1", time_period)];'),
-    ("2", 'DS_r := DSD_EXR[filter TIME_PERIOD <> cast("2002M1", time_period)];'),
-    ("3", 'DS_r := DSD_EXR[filter TIME_PERIOD < cast("2002M1", time_period)];'),
+    ("2", 'DS_r := DSD_EXR[filter TIME_PERIOD <> cast("2002Q1", time_period)];'),
+    ("3", 'DS_r := DSD_EXR[filter TIME_PERIOD < cast("2002S2", time_period)];'),
     ("4", 'DS_r := DSD_EXR[filter TIME_PERIOD > cast("2002M1", time_period)];'),
-    ("5", 'DS_r := DSD_EXR[filter TIME_PERIOD <= cast("2002M1", time_period)];'),
-    ("6", 'DS_r := DSD_EXR[filter TIME_PERIOD >= cast("2002M1", time_period)];'),
+    ("5", 'DS_r := DSD_EXR[filter TIME_PERIOD <= cast("2002Q3", time_period)];'),
+    ("6", 'DS_r := DSD_EXR[filter TIME_PERIOD >= cast("2002W26", time_period)];'),
     ("GL_416", 'test2_1 := BE2_DF_NICP[filter FREQ = "M" and TIME_PERIOD = cast("2020-01", time_period)];'),
     ("GL_417_1", 'test := avg (BE2_DF_NICP group all time_agg ("Q", "M", TIME_PERIOD));'),
     ("GL_417_2", 'test := avg (BE2_DF_NICP group all time_agg ("A", "M", TIME_PERIOD));'),

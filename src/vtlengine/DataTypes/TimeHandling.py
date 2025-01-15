@@ -203,6 +203,10 @@ class TimePeriodHandler:
         self._period_indicator = value
 
     @property
+    def period_magnitude(self) -> int:
+        return DURATION_MAPPING[self.period_indicator]
+
+    @property
     def period_number(self) -> int:
         return self._period_number
 
@@ -229,23 +233,43 @@ class TimePeriodHandler:
                     # raise ValueError(f'Invalid day {value} for year {self.year}.')
         self._period_number = value
 
+    @property
+    def period_dates(self) -> tuple[date, date]:
+        return (
+            period_to_date(self.year, self.period_indicator, self.period_number, start=True),
+            period_to_date(self.year, self.period_indicator, self.period_number, start=False),
+        )
+
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
         if pd.isnull(other):
             return None
+
+        if py_op in (operator.eq, operator.ne):
+            return py_op(str(self), str(other))
+
+        if py_op in (operator.ge, operator.le) and str(self) == str(other):
+            return True
+
         if isinstance(other, str):
-            if len(other) == 0:
-                return False
             other = TimePeriodHandler(other)
 
-        if DURATION_MAPPING[self.period_indicator] != DURATION_MAPPING[other.period_indicator]:
-            return False
-        if not py_op(self.year, other.year):
-            if py_op.__name__ in ["lt", "gt"] and self.year == other.year:
-                return py_op(self.period_number, other.period_number)
-            return False
-        if py_op.__name__ in ["eq", "ne"] or self.year == other.year:
-            return py_op(self.period_number, other.period_number)
-        return True
+        self_lapse = self.period_dates
+        other_lapse = other.period_dates
+
+        if py_op in [operator.lt, operator.le]:
+            if self_lapse[0] < other_lapse[0]:
+                return True
+            if self_lapse[0] == other_lapse[0] and self.period_magnitude != other.period_magnitude:
+                return self.period_magnitude < other.period_magnitude
+
+        if py_op in [operator.gt, operator.ge]:
+            if self_lapse[1] > other_lapse[1]:
+                return True
+            if self_lapse[1] == other_lapse[1] and self.period_magnitude != other.period_magnitude:
+                return self.period_magnitude > other.period_magnitude
+
+        return False
+
 
     def start_date(self, as_date: bool = False) -> Union[date, str]:
         """
