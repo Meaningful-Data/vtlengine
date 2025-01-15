@@ -32,11 +32,9 @@ def date_to_period(date_value: date, period_indicator: str) -> Any:
         return TimePeriodHandler(f"{date_value.year}D{date_value.timetuple().tm_yday}")
 
 
-def period_to_date(year: int,
-                   period_indicator: str,
-                   period_number: int,
-                   start: bool = False
-                   ) -> date:
+def period_to_date(
+    year: int, period_indicator: str, period_number: int, start: bool = False
+) -> date:
     if period_indicator == "A":
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
@@ -260,9 +258,17 @@ class TimePeriodHandler:
         if is_lt_or_le or is_gt_or_ge:
             idx = 0 if is_lt_or_le else 1
             if self_lapse[idx] != other_lapse[idx]:
-                return self_lapse[idx] < other_lapse[idx] if is_lt_or_le else self_lapse[idx] > other_lapse[idx]
+                return (
+                    self_lapse[idx] < other_lapse[idx]
+                    if is_lt_or_le
+                    else self_lapse[idx] > other_lapse[idx]
+                )
             if self.period_magnitude != other.period_magnitude:
-                return self.period_magnitude < other.period_magnitude if is_lt_or_le else self.period_magnitude > other.period_magnitude
+                return (
+                    self.period_magnitude < other.period_magnitude
+                    if is_lt_or_le
+                    else self.period_magnitude > other.period_magnitude
+                )
 
         return False
 
