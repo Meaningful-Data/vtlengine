@@ -888,7 +888,7 @@ class Date_Add(Parametrized):
         for i, param in enumerate(param_list):
             error = (
                 12
-                if not isinstance(param, Scalar) # type: ignore[redundant-expr]
+                if not isinstance(param, Scalar)  # type: ignore[redundant-expr]
                 else 13
                 if (param.data_type != expected_types[i])
                 else None
