@@ -253,23 +253,18 @@ class TimePeriodHandler:
         if isinstance(other, str):
             other = TimePeriodHandler(other)
 
-        self_lapse = self.period_dates
-        other_lapse = other.period_dates
+        self_lapse, other_lapse = self.period_dates, other.period_dates
+        is_lt_or_le = py_op in [operator.lt, operator.le]
+        is_gt_or_ge = py_op in [operator.gt, operator.ge]
 
-        if py_op in [operator.lt, operator.le]:
-            if self_lapse[0] < other_lapse[0]:
-                return True
-            if self_lapse[0] == other_lapse[0] and self.period_magnitude != other.period_magnitude:
-                return self.period_magnitude < other.period_magnitude
-
-        if py_op in [operator.gt, operator.ge]:
-            if self_lapse[1] > other_lapse[1]:
-                return True
-            if self_lapse[1] == other_lapse[1] and self.period_magnitude != other.period_magnitude:
-                return self.period_magnitude > other.period_magnitude
+        if is_lt_or_le or is_gt_or_ge:
+            idx = 0 if is_lt_or_le else 1
+            if self_lapse[idx] != other_lapse[idx]:
+                return self_lapse[idx] < other_lapse[idx] if is_lt_or_le else self_lapse[idx] > other_lapse[idx]
+            if self.period_magnitude != other.period_magnitude:
+                return self.period_magnitude < other.period_magnitude if is_lt_or_le else self.period_magnitude > other.period_magnitude
 
         return False
-
 
     def start_date(self, as_date: bool = False) -> Union[date, str]:
         """
