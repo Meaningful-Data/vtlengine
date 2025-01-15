@@ -330,7 +330,7 @@ class Case(Operator):
                 np.where(condition_mask_else, else_value, result.data),
                 index=conditions[0].data.index,
             )
-
+            result.data = result.data.fillna(elseOp.value)
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
