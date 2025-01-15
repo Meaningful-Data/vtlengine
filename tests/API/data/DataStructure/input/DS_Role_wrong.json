@@ -2,6 +2,12 @@
   "datasets": [
     {
       "name": "DS_Schema",
+      "structure": "Structure_1"
+    }
+  ],
+  "structures": [
+    {
+      "name": "Structure_1",
       "components": [
         {
           "name": "Id_1",
@@ -15,15 +21,17 @@
         },
         {
           "name": "Me_1",
-          "role": "BBBBB",
+          "role": "BBBB",
           "data_type": "Integer"
         },
         {
           "name": "At_1",
-          "role": "Attribute",
+          "role": "ViralAttribute",
           "data_type": "String"
         }
       ]
     }
-  ]
+  ],
+  "variables": [],
+  "domains": []
 }

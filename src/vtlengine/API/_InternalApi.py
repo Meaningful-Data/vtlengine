@@ -10,6 +10,7 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
     Dataset,
@@ -19,7 +20,6 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -44,7 +44,8 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 for s in structures["structures"]:
                     if s["name"] == structure_name:
                         structure_json = s
-
+                if structure_json is None:
+                    raise InputValidationException(code="0-3-1-1", message="Structure not found.")
                 try:
                     jsonschema.validate(instance=structure_json, schema=schema)
                 except jsonschema.exceptions.ValidationError as e:
@@ -149,7 +150,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-        datapoints: Union[Path, str, List[Union[str, Path]]],
+    datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -190,7 +191,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-        data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -366,7 +367,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-        datasets: Dict[str, Dataset], ast: Start
+    datasets: Dict[str, Dataset], ast: Start
 ) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
@@ -421,43 +422,3 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
-
-
-if __name__ == '__main__':
-    print(_load_dataset_from_structure({
-        "datasets": [
-            {
-                "name": "DS_Schema",
-                "structure": "Structure_1"
-            }
-        ],
-        "structures": [
-            {
-                "name": "Structure_1",
-                "components": [
-                    {
-                        "name": "Id_1",
-                        "role": "Identifier",
-                        "data_type": "String"
-                    },
-                    {
-                        "name": "Id_2",
-                        "role": "Identifier",
-                        "data_type": "String"
-                    },
-                    {
-                        "name": "Me_1",
-                        "role": "Measure",
-                        "data_type": "Integer"
-                    },
-                    {
-                        "name": "At_1",
-                        "role": "ViralAttribute",
-                        "data_type": "String"
-                    }
-                ]
-            }
-        ],
-        "variables": [],
-        "domains": []
-    }))

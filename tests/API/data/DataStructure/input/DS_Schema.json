@@ -2,7 +2,7 @@
   "datasets": [
     {
       "name": "DS_Schema",
-      "structure": "structure_1"
+      "structure": "Structure_1"
     }
   ],
   "structures": [
