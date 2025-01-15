@@ -66,7 +66,8 @@ class If(Operator):
             else:
                 false_data = false_branch.data.reindex(condition.data.index)
             result = np.where(condition.data, true_data, false_data)
-        return pd.Series(result, index=condition.data.index)
+        if condition.data is not None:
+            return pd.Series(result, index=condition.data.index)
 
     @classmethod
     def dataset_level_evaluation(
@@ -349,7 +350,7 @@ class Case(Operator):
                 ]
             )
 
-            result.data.loc[condition_mask_else, columns] = (
+            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index]
                 elseOp.value
                 if isinstance(elseOp, Scalar)
                 else elseOp.data.loc[condition_mask_else, columns]
