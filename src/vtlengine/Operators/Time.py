@@ -911,7 +911,9 @@ class Date_Add(Parametrized):
             error = (
                 12
                 if not isinstance(param, Scalar)  # type: ignore[redundant-expr]
-                else (13 if (param.data_type != expected_types[i]) else None)
+                else 13
+                if (param.data_type != expected_types[i])
+                else None
             )
             if error is not None:
                 raise SemanticError(

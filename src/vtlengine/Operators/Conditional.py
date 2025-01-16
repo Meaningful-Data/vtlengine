@@ -306,6 +306,11 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
+        for condition in conditions:
+            if isinstance(condition, (DataComponent, Dataset)):
+                condition.data.fillna(False, inplace=True)  # type: ignore[union-attr]
+            elif isinstance(condition, Scalar) and condition.value is None:
+                condition.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
@@ -408,6 +413,7 @@ class Case(Operator):
                 (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
                 for thenOp in ops
             )
+            nullable |= any(condition.nullable for condition in conditions)
 
             data_type = ops[0].data_type
             for op in ops[1:]:
