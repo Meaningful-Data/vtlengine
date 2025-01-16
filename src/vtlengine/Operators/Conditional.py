@@ -306,6 +306,11 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
+        for condition in conditions:
+            if isinstance(condition, (DataComponent, Dataset)):
+                condition.data.fillna(False, inplace=True)  # type: ignore[union-attr]
+            elif isinstance(condition, Scalar) and condition.value is None:
+                condition.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
@@ -330,7 +335,7 @@ class Case(Operator):
                 np.where(condition_mask_else, else_value, result.data),
                 index=conditions[0].data.index,
             )
-            result.data = result.data.fillna(elseOp.value)
+
         if isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
             columns = [col for col in result.get_components_names() if col not in identifiers]
