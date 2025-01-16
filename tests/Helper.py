@@ -82,7 +82,9 @@ class TestHelper(TestCase):
             for scalar_json in structures["scalars"]:
                 scalar_name = scalar_json["name"]
                 scalar = Scalar(
-                    name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+                    name=scalar_name,
+                    data_type=SCALAR_TYPES[scalar_json["type"]],
+                    value=None,
                 )
                 datasets[scalar_name] = scalar
         return datasets
@@ -237,7 +239,9 @@ class TestHelper(TestCase):
                 input_datasets[scalar_name].value = scalar_value
 
         interpreter = InterpreterAnalyzer(
-            input_datasets, value_domains=value_domains, external_routines=external_routines
+            input_datasets,
+            value_domains=value_domains,
+            external_routines=external_routines,
         )
         with pytest.raises(SemanticError) as context:
             ast = create_ast(text)
@@ -250,14 +254,14 @@ class TestHelper(TestCase):
 
     @classmethod
     def SemanticExceptionTest(
-            cls,
-            code: str,
-            number_inputs: int,
-            exception_code: str,
-            vd_names: List[str] = None,
-            sql_names: List[str] = None,
-            text: Optional[str] = None,
-            scalars: Dict[str, Any] = None,
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_code: str,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        text: Optional[str] = None,
+        scalars: Dict[str, Any] = None,
     ):
         # Data Loading.--------------------------------------------------------
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -282,7 +286,9 @@ class TestHelper(TestCase):
                 input_datasets[scalar_name].value = scalar_value
 
         interpreter = InterpreterAnalyzer(
-            input_datasets, value_domains=value_domains, external_routines=external_routines
+            input_datasets,
+            value_domains=value_domains,
+            external_routines=external_routines,
         )
         with pytest.raises(SemanticError) as context:
             ast = create_ast(text)

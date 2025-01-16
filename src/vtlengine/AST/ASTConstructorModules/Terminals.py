@@ -70,7 +70,6 @@ class Terminals(VtlVisitor):
         return var_id_node
 
     def visitVarIdExpr(self, ctx: Parser.VarIdExprContext):
-
         if isinstance(ctx.children[0], Parser.VarIDContext):
             return self.visitVarID(ctx.children[0])
 
@@ -127,7 +126,10 @@ class Terminals(VtlVisitor):
         valueDomainID: IDENTIFIER ;
         """
         return Collection(
-            name=ctx.children[0].getSymbol().text, children=[], kind="ValueDomain", type=""
+            name=ctx.children[0].getSymbol().text,
+            children=[],
+            kind="ValueDomain",
+            type="",
         )
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
@@ -381,7 +383,7 @@ class Terminals(VtlVisitor):
             | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
             | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
         ;
-        """ # noqa E501
+        """  # noqa E501
         # AST_ASTCONSTRUCTOR.54
         raise NotImplementedError
 
@@ -391,7 +393,7 @@ class Terminals(VtlVisitor):
             | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
             | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
         ;
-        """ # noqa E501
+        """  # noqa E501
         # AST_ASTCONSTRUCTOR.55
         raise NotImplementedError
 
@@ -483,7 +485,6 @@ class Terminals(VtlVisitor):
             raise NotImplementedError
 
     def visitScalarItem(self, ctx: Parser.ScalarItemContext):
-
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -497,7 +498,7 @@ class Terminals(VtlVisitor):
     def visitScalarWithCast(self, ctx: Parser.ScalarWithCastContext):
         """
         |  CAST LPAREN constant COMMA (basicScalarType) (COMMA STRING_CONSTANT)? RPAREN    #scalarWithCast  # noqa E501
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -593,7 +594,7 @@ class Terminals(VtlVisitor):
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind="ComponentID"):
         """
-        varID (AS alias)?
+        VarID (AS alias)?
         """
 
         ctx_list = list(ctx.getChildren())
@@ -672,8 +673,12 @@ class Terminals(VtlVisitor):
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
-        if (mode_2 == "preceding" and mode_1 == "preceding" and num_rows_1 == -1
-                and num_rows_2 == -1):  # preceding and preceding (error)
+        if (
+            mode_2 == "preceding"
+            and mode_1 == "preceding"
+            and num_rows_1 == -1
+            and num_rows_2 == -1
+        ):  # preceding and preceding (error)
             raise Exception(
                 f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
                 f"line {ctx_list[3].start.line}"
@@ -706,7 +711,8 @@ class Terminals(VtlVisitor):
             return OrderBy(component=self.visitComponentID(ctx_list[0]).value, order="asc")
 
         return OrderBy(
-            component=self.visitComponentID(ctx_list[0]).value, order=ctx_list[1].getSymbol().text
+            component=self.visitComponentID(ctx_list[0]).value,
+            order=ctx_list[1].getSymbol().text,
         )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
@@ -735,5 +741,9 @@ def create_windowing(win_mode, values, modes):
             values[e] = "CURRENT ROW"
 
     return Windowing(
-        type_=win_mode, start=values[0], stop=values[1], start_mode=modes[0], stop_mode=modes[1]
+        type_=win_mode,
+        start=values[0],
+        stop=values[1],
+        start_mode=modes[0],
+        stop_mode=modes[1],
     )

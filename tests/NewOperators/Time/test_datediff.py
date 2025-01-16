@@ -12,15 +12,15 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
 ds_param = [
-    ("21", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
-    ("22", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
-    ("23", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
-    ("24", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];'),
+    ("21", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
+    ("22", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
+    ("23", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
+    ("24", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];"),
 ]
 
 error_param = [
-    ("25", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
-    ("26", 'DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];', "1-1-1-2"),
+    ("25", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];", "1-1-1-2"),
+    ("26", "DS_r := DS_1[calc Me_3 := datediff(Me_1, Me_2)];", "1-1-1-2"),
 ]
 
 scalar_time_params = [
@@ -37,6 +37,7 @@ scalar_time_error_params = [
     ('datediff(cast("2022Q2",time_period),cast("2023-06-30",date))', "1-1-1-2"),
 ]
 
+
 @pytest.mark.parametrize("code, expression", ds_param)
 def test_case_ds(load_input, load_reference, code, expression):
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -44,6 +45,7 @@ def test_case_ds(load_input, load_reference, code, expression):
     interpreter = InterpreterAnalyzer(load_input)
     result = interpreter.visit(ast)
     assert result == load_reference
+
 
 @pytest.mark.parametrize("text, reference", scalar_time_params)
 def test_unary_time_scalar(text, reference):
@@ -68,6 +70,7 @@ def test_errors(load_input, code, expression, error_code):
     if result is False:
         print(f"\n{error_code} != {context.value.args[1]}")
     assert result
+
 
 @pytest.mark.parametrize("text, exception_message", scalar_time_error_params)
 def test_errors_time_scalar(text, exception_message):

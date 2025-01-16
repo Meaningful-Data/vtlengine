@@ -29,7 +29,12 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Integer, Number, unary_implicit_promotion
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    Integer,
+    Number,
+    unary_implicit_promotion,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
@@ -66,7 +71,10 @@ class Analytic(Operator.Unary):
         for comp_name in partitioning:
             if comp_name not in operand.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=comp_name,
+                    dataset_name=operand.name,
                 )
             if comp_name not in identifier_names:
                 raise SemanticError(
@@ -78,7 +86,10 @@ class Analytic(Operator.Unary):
         for comp_name in order_components:
             if comp_name not in operand.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=comp_name,
+                    dataset_name=operand.name,
                 )
         if component_name is not None:
             if cls.type_to_check is not None:

@@ -39,7 +39,7 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
-    """ # noqa E501
+    """  # noqa E501
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
@@ -66,7 +66,7 @@ class If(Operator):
             else:
                 false_data = false_branch.data.reindex(condition.data.index)
             result = np.where(condition.data, true_data, false_data)
-        return pd.Series(result, index=condition.data.index)
+        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
 
     @classmethod
     def dataset_level_evaluation(
@@ -80,7 +80,11 @@ class If(Operator):
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
                 true_data = pd.merge(
-                    true_data, true_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                    true_data,
+                    true_branch.data,
+                    on=ids,
+                    how="right",
+                    suffixes=("_condition", ""),
                 )
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
@@ -91,7 +95,11 @@ class If(Operator):
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0 and false_branch.data is not None:
                 false_data = pd.merge(
-                    false_data, false_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                    false_data,
+                    false_branch.data,
+                    on=ids,
+                    how="right",
+                    suffixes=("_condition", ""),
                 )
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
@@ -141,7 +149,9 @@ class If(Operator):
         if isinstance(condition, DataComponent):
             if not condition.data_type == Boolean:
                 raise SemanticError(
-                    "1-1-9-11", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
+                    "1-1-9-11",
+                    op=cls.op,
+                    type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
             if not isinstance(left, Scalar) or not isinstance(right, Scalar):
                 nullable = condition.nullable
@@ -191,7 +201,8 @@ class If(Operator):
                 if component.data_type != right.components[component.name].data_type:
                     component.data_type = right.components[component.name].data_type = (
                         binary_implicit_promotion(
-                            component.data_type, right.components[component.name].data_type
+                            component.data_type,
+                            right.components[component.name].data_type,
                         )
                     )
         if isinstance(condition, Dataset):
@@ -219,7 +230,7 @@ class Nvl(Binary):
         Validate: Class method that validates if the operation at scalar,
         datacomponent or dataset level can be performed.
         Evaluate: Evaluates the actual operation, returning the result.
-    """ # noqa E501
+    """  # noqa E501
 
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
@@ -290,13 +301,16 @@ class Nvl(Binary):
 
 
 class Case(Operator):
-
     @classmethod
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-
         result = cls.validate(conditions, thenOps, elseOp)
+        for condition in conditions:
+            if isinstance(condition, (DataComponent, Dataset)):
+                condition.data.fillna(False, inplace=True)  # type: ignore[union-attr]
+            elif isinstance(condition, Scalar) and condition.value is None:
+                condition.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
@@ -309,8 +323,10 @@ class Case(Operator):
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data, value, result.data  # type: ignore[call-overload]
+                result.data = np.where(  # type: ignore[call-overload]
+                    condition.data.notna(),
+                    np.where(condition.data, value, result.data),  # type: ignore[call-overload]
+                    result.data,
                 )
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
@@ -349,7 +365,7 @@ class Case(Operator):
                 ]
             )
 
-            result.data.loc[condition_mask_else, columns] = (
+            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index]
                 elseOp.value
                 if isinstance(elseOp, Scalar)
                 else elseOp.data.loc[condition_mask_else, columns]
@@ -361,7 +377,6 @@ class Case(Operator):
     def validate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
 
@@ -395,9 +410,10 @@ class Case(Operator):
                     raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
 
             nullable = any(
-                thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
+                (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
                 for thenOp in ops
             )
+            nullable |= any(condition.nullable for condition in conditions)
 
             data_type = ops[0].data_type
             for op in ops[1:]:

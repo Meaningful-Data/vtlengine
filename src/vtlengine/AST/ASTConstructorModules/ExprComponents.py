@@ -31,7 +31,8 @@ class ExprComp(VtlVisitor):
 
                                 ExprComponent Definition.
 
-    _______________________________________________________________________________________"""
+    _______________________________________________________________________________________
+    """
 
     def visitExprComponent(self, ctx: Parser.ExprComponentContext):
         """
@@ -49,7 +50,7 @@ class ExprComp(VtlVisitor):
             | constant                                                                                              # constantExprComp
             | componentID                                                                                           # compId
         ;
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -280,7 +281,7 @@ class ExprComp(VtlVisitor):
     def visitCallComponent(self, ctx: Parser.CallComponentContext):
         """
         callFunction: operatorID LPAREN (parameterComponent (COMMA parameterComponent)*)? RPAREN    # callComponent
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -296,7 +297,7 @@ class ExprComp(VtlVisitor):
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
         | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
 
         routine_name = Terminals().visitRoutineName(ctx_list[2])
@@ -347,7 +348,7 @@ class ExprComp(VtlVisitor):
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
         """
         | CAST LPAREN exprComponent COMMA (basicScalarType|valueDomainName) (COMMA STRING_CONSTANT)? RPAREN         # castExprComponent
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -391,7 +392,6 @@ class ExprComp(VtlVisitor):
             raise NotImplementedError
 
     def visitParameterComponent(self, ctx: Parser.ParameterComponentContext):
-
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -582,16 +582,19 @@ class ExprComp(VtlVisitor):
             return self.visitDateDiffAtomComponent(ctx)
         elif isinstance(ctx, Parser.DateAddAtomComponentContext):
             return self.visitDateAddAtomComponentContext(ctx)
-        elif (isinstance(ctx, (
-            Parser.YearAtomComponentContext,
-            Parser.MonthAtomComponentContext,
-            Parser.DayOfMonthAtomComponentContext,
-            Parser.DayOfYearAtomComponentContext,
-            Parser.DayToYearAtomComponentContext,
-            Parser.DayToMonthAtomComponentContext,
-            Parser.YearToDayAtomComponentContext,
-            Parser.MonthToDayAtomComponentContext
-        ))):
+        elif isinstance(
+            ctx,
+            (
+                Parser.YearAtomComponentContext,
+                Parser.MonthAtomComponentContext,
+                Parser.DayOfMonthAtomComponentContext,
+                Parser.DayOfYearAtomComponentContext,
+                Parser.DayToYearAtomComponentContext,
+                Parser.DayToMonthAtomComponentContext,
+                Parser.YearToDayAtomComponentContext,
+                Parser.MonthToDayAtomComponentContext,
+            ),
+        ):
             return self.visitTimeUnaryAtomComponent(ctx)
         else:
             raise NotImplementedError
@@ -650,7 +653,7 @@ class ExprComp(VtlVisitor):
         """
         TIME_AGG LPAREN periodIndTo=STRING_CONSTANT (COMMA periodIndFrom=(STRING_CONSTANT| OPTIONAL ))?
         (COMMA op=optionalExprComponent)? (COMMA (FIRST|LAST))? RPAREN    # timeAggAtomComponent;
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
 
@@ -684,7 +687,11 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.17
             raise SemanticError("1-4-2-2")
         return TimeAggregation(
-            op=op, operand=operand_node, period_to=period_to, period_from=period_from, conf=conf
+            op=op,
+            operand=operand_node,
+            period_to=period_to,
+            period_from=period_from,
+            conf=conf,
         )
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
@@ -825,7 +832,6 @@ class ExprComp(VtlVisitor):
     """
 
     def visitAnalyticFunctionsComponents(self, ctx: Parser.AnalyticFunctionsComponentsContext):
-
         if isinstance(ctx, Parser.AnSimpleFunctionComponentContext):
             return self.visitAnSimpleFunctionComponent(ctx)
         elif isinstance(ctx, Parser.LagOrLeadAnComponentContext):
@@ -861,7 +867,11 @@ class ExprComp(VtlVisitor):
                 raise NotImplementedError
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=params,
         )
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
@@ -891,7 +901,11 @@ class ExprComp(VtlVisitor):
                 continue
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            params=params,
         )
 
     def visitRankAnComponent(self, ctx: Parser.RankAnComponentContext):
@@ -911,7 +925,11 @@ class ExprComp(VtlVisitor):
                 continue
 
         return Analytic(
-            op=op_node, operand=None, partition_by=partition_by, order_by=order_by, window=None
+            op=op_node,
+            operand=None,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=None,
         )
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
@@ -926,5 +944,9 @@ class ExprComp(VtlVisitor):
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=params,
         )

@@ -74,10 +74,11 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(cls,
-                     x: Optional[Union[int, float, str, bool]],
-                     y: Optional[Union[int, float, str, bool]]
-                     ) -> Any:
+    def _cast_values(
+        cls,
+        x: Optional[Union[int, float, str, bool]],
+        y: Optional[Union[int, float, str, bool]],
+    ) -> Any:
         # Cast values to compatible types for comparison
         try:
             if isinstance(x, str) and isinstance(y, bool):
@@ -247,9 +248,7 @@ class Between(Operator.Operator):
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
         return (
-            None
-            if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z))
-            else y <= x <= z  # type: ignore[operator]
+            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
         )
 
     @classmethod
@@ -264,7 +263,8 @@ class Between(Operator.Operator):
                 to_data = pd.Series(to_data, index=series.index)
             df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
             return df.apply(
-                lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]), axis=1
+                lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
+                axis=1,
             )
 
         return series.map(lambda x: cls.op_func(x, from_data, to_data))
@@ -310,13 +310,19 @@ class Between(Operator.Operator):
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(
-                name=operand.name, data=None, data_type=cls.return_type, role=operand.role
+                name=operand.name,
+                data=None,
+                data_type=cls.return_type,
+                role=operand.role,
             )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
         else:  # From or To is a DataComponent, or both
             result = DataComponent(
-                name=operand.name, data=None, data_type=cls.return_type, role=Role.MEASURE
+                name=operand.name,
+                data=None,
+                data_type=cls.return_type,
+                role=Role.MEASURE,
             )
 
         if isinstance(operand, Dataset):
@@ -369,14 +375,16 @@ class Between(Operator.Operator):
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both
-
             if isinstance(from_data, pd.Series):
                 series = pd.Series(operand.value, index=from_data.index, dtype=object)
             elif isinstance(to_data, pd.Series):
                 series = pd.Series(operand.value, index=to_data.index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
-                name=operand.name, data=result_series, data_type=cls.return_type, role=Role.MEASURE
+                name=operand.name,
+                data=result_series,
+                data_type=cls.return_type,
+                role=Role.MEASURE,
             )
         return result
 

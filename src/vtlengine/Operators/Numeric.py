@@ -73,7 +73,7 @@ class Binary(Operator.Binary):
 class UnPlus(Unary):
     """
     `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = PLUS
     py_op = operator.pos
@@ -86,7 +86,7 @@ class UnPlus(Unary):
 class UnMinus(Unary):
     """
     `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = MINUS
     py_op = operator.neg
@@ -95,7 +95,7 @@ class UnMinus(Unary):
 class AbsoluteValue(Unary):
     """
     `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = ABS
     py_op = operator.abs
@@ -104,7 +104,7 @@ class AbsoluteValue(Unary):
 class Exponential(Unary):
     """
     `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = EXP
     py_op = math.exp
@@ -115,7 +115,7 @@ class NaturalLogarithm(Unary):
     """
     `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_
     unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = LN
     py_op = math.log
@@ -126,7 +126,7 @@ class SquareRoot(Unary):
     """
     `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_
     unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = SQRT
     py_op = math.sqrt
@@ -136,7 +136,7 @@ class SquareRoot(Unary):
 class Ceil(Unary):
     """
     `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = CEIL
     py_op = math.ceil
@@ -146,7 +146,7 @@ class Ceil(Unary):
 class Floor(Unary):
     """
     `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = FLOOR
     py_op = math.floor
@@ -156,7 +156,7 @@ class Floor(Unary):
 class BinPlus(Binary):
     """
     `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = PLUS
     py_op = operator.add
@@ -166,7 +166,7 @@ class BinPlus(Binary):
 class BinMinus(Binary):
     """
     `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = MINUS
     py_op = operator.sub
@@ -177,7 +177,7 @@ class Mult(Binary):
     """
     `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_
     binary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = MULT
     py_op = operator.mul
@@ -187,7 +187,7 @@ class Div(Binary):
     """
     `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_
     binary operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = DIV
     py_op = operator.truediv
@@ -197,7 +197,7 @@ class Div(Binary):
 class Logarithm(Binary):
     """
     `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = LOG
     return_type = Number
@@ -215,7 +215,7 @@ class Logarithm(Binary):
 class Modulo(Binary):
     """
     `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = MOD
     py_op = operator.mod
@@ -224,7 +224,7 @@ class Modulo(Binary):
 class Power(Binary):
     """
     `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = POWER
     return_type = Number
@@ -248,14 +248,15 @@ class Parameterized(Unary):
         operand: Operator.ALL_MODEL_DATA_TYPES,
         param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> Any:
-
         if param is not None:
             if isinstance(param, Dataset):
                 raise SemanticError("1-1-15-8", op=cls.op, comp_type="Dataset")
             if isinstance(param, DataComponent):
                 if isinstance(operand, Scalar):
                     raise SemanticError(
-                        "1-1-15-8", op=cls.op, comp_type="DataComponent and an Scalar operand"
+                        "1-1-15-8",
+                        op=cls.op,
+                        comp_type="DataComponent and an Scalar operand",
                     )
                 cls.validate_type_compatibility(param.data_type)
             else:
@@ -298,14 +299,19 @@ class Parameterized(Unary):
                     )
             except ValueError:
                 raise SemanticError(
-                    "2-1-15-1", op=cls.op, comp_name=measure_name, dataset_name=operand.name
+                    "2-1-15-1",
+                    op=cls.op,
+                    comp_name=measure_name,
+                    dataset_name=operand.name,
                 ) from None
         result.data = result.data[result.get_components_names()]
         return result
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, param: Optional[Union[DataComponent, Scalar]] = None
+        cls,
+        operand: DataComponent,
+        param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> DataComponent:
         result = cls.validate(operand, param)
         if operand.data is None:
@@ -327,7 +333,9 @@ class Parameterized(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: ALL_MODEL_DATA_TYPES, param: Optional[Union[DataComponent, Scalar]] = None
+        cls,
+        operand: ALL_MODEL_DATA_TYPES,
+        param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param)
@@ -340,7 +348,7 @@ class Parameterized(Unary):
 class Round(Parameterized):
     """
     `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator
-    """ # noqa E501
+    """  # noqa E501
 
     op = ROUND
     return_type = Integer
@@ -365,7 +373,7 @@ class Round(Parameterized):
 class Trunc(Parameterized):
     """
     `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator.
-    """ # noqa E501
+    """  # noqa E501
 
     op = TRUNC
 
@@ -384,14 +392,12 @@ class Trunc(Parameterized):
 
 
 class PseudoRandom(_random.Random):
-
     def __init__(self, seed: Union[int, float]) -> None:
         super().__init__()
         self.seed(seed)
 
 
 class Random(Parameterized):
-
     op = RANDOM
     return_type = Number
 

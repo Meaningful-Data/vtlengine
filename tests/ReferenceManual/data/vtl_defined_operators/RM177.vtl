@@ -1,0 +1,5 @@
+define operator Test177 (y component, z component)
+    returns component is
+    datediff(y, z)
+end operator;
+DS_r := DS_1[calc Me_2 := Test177( Id_2, Me_1 )];

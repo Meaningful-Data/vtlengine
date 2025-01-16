@@ -140,7 +140,10 @@ class JoinBugs(BugHelper):
 
         # HUH!!!!!!!!!
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message, vd_names=vd_names
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            vd_names=vd_names,
         )
 
     def test_GL_133_2(self):
@@ -196,7 +199,10 @@ class JoinBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(
-            text=None, code=code, number_inputs=number_inputs, references_names=references_names
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_GL_47_4(self):

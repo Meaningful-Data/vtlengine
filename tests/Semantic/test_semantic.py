@@ -1971,7 +1971,11 @@ class ScalarTests(SemanticHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="Vtl Script contains Cycles, no DAG established"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_6(self):
         """

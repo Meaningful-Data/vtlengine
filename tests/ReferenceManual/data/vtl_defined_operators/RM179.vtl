@@ -1,0 +1,5 @@
+define operator Test179 (y component)
+    returns component is
+    month(y)
+end operator;
+DS_r := DS_1[calc Me_2 := Test179(Me_1)];

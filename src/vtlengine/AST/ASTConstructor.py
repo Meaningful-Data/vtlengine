@@ -382,7 +382,8 @@ class ASTVisitor(VtlVisitor):
         if conditions:
             identifiers_list = [
                 DefIdentifier(
-                    value=elto.alias if getattr(elto, "alias", None) else elto.value, kind=kind
+                    value=elto.alias if getattr(elto, "alias", None) else elto.value,
+                    kind=kind,
                 )
                 for elto in conditions[0]
             ]
@@ -395,7 +396,7 @@ class ASTVisitor(VtlVisitor):
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):
         """
         valueDomainSignature: CONDITION IDENTIFIER (AS IDENTIFIER)? (',' IDENTIFIER (AS IDENTIFIER)?)* ;
-        """ # noqa E501
+        """  # noqa E501
         # AST_ASTCONSTRUCTOR.7
         ctx_list = list(ctx.getChildren())
         component_nodes = [
@@ -459,7 +460,7 @@ class ASTVisitor(VtlVisitor):
         codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ;
                         ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
 
-        """ # noqa E501
+        """  # noqa E501
 
         ctx_list = list(ctx.getChildren())
 
@@ -512,7 +513,7 @@ class ASTVisitor(VtlVisitor):
     def visitCodeItemRelationClause(self, ctx: Parser.CodeItemRelationClauseContext):
         """
         (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )?
-        """ # noqa E501
+        """  # noqa E501
         ctx_list = list(ctx.getChildren())
 
         expr = [expr for expr in ctx_list if isinstance(expr, Parser.ExprContext)]

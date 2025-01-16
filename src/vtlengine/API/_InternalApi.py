@@ -56,7 +56,9 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
         for scalar_json in structures["scalars"]:
             scalar_name = scalar_json["name"]
             scalar = Scalar(
-                name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+                name=scalar_name,
+                data_type=SCALAR_TYPES[scalar_json["type"]],
+                value=None,
             )
             datasets[scalar_name] = scalar  # type: ignore[assignment]
     return datasets
@@ -115,7 +117,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]]
+    datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -156,7 +158,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.

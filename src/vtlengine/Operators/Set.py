@@ -13,12 +13,14 @@ from vtlengine.Operators import Operator
 
 
 class Set(Operator):
-
     @classmethod
     def check_same_structure(cls, dataset_1: Dataset, dataset_2: Dataset) -> None:
         if len(dataset_1.components) != len(dataset_2.components):
             raise SemanticError(
-                "1-1-17-1", op=cls.op, dataset_1=dataset_1.name, dataset_2=dataset_2.name
+                "1-1-17-1",
+                op=cls.op,
+                dataset_1=dataset_1.name,
+                dataset_2=dataset_2.name,
             )
 
         for comp in dataset_1.components.values():
@@ -26,7 +28,10 @@ class Set(Operator):
                 raise Exception(f"Component {comp.name} not found in dataset {dataset_2.name}")
             second_comp = dataset_2.components[comp.name]
             binary_implicit_promotion(
-                comp.data_type, second_comp.data_type, cls.type_to_check, cls.return_type
+                comp.data_type,
+                second_comp.data_type,
+                cls.type_to_check,
+                cls.return_type,
             )
             if comp.role != second_comp.role:
                 raise Exception(
@@ -36,7 +41,6 @@ class Set(Operator):
 
     @classmethod
     def validate(cls, operands: List[Dataset]) -> Dataset:
-
         base_operand = operands[0]
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
@@ -70,7 +74,6 @@ class Union(Set):
 
 
 class Intersection(Set):
-
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -97,7 +100,6 @@ class Intersection(Set):
 
 
 class Symdiff(Set):
-
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
@@ -110,7 +112,10 @@ class Symdiff(Set):
             else:
                 # Realiza la operación equivalente en pyspark.pandas
                 result.data = result.data.merge(
-                    data, how="outer", on=result.get_identifiers_names(), suffixes=("_x", "_y")
+                    data,
+                    how="outer",
+                    on=result.get_identifiers_names(),
+                    suffixes=("_x", "_y"),
                 )
 
                 for measure in result.get_measures_names():
@@ -140,7 +145,6 @@ class Symdiff(Set):
 
 
 class Setdiff(Set):
-
     @staticmethod
     def has_null(row: Any) -> bool:
         return row.isnull().any()

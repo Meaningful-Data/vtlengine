@@ -4,7 +4,13 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
-from vtlengine.DataTypes import Boolean, Integer, Number, String, check_unary_implicit_promotion
+from vtlengine.DataTypes import (
+    Boolean,
+    Integer,
+    Number,
+    String,
+    check_unary_implicit_promotion,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
@@ -103,7 +109,6 @@ class Check(Operator):
 
 # noinspection PyTypeChecker
 class Validation(Operator):
-
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
         rule_list_df = []
@@ -171,7 +176,6 @@ class Validation(Operator):
         elif output == "all":
             result.data = result.data[result.get_identifiers_names() + validation_measures]
         else:  # output == 'all_measures'
-
             result.data = result.data[
                 result.get_identifiers_names()
                 + dataset_element.get_measures_names()
@@ -230,7 +234,9 @@ class Check_Hierarchy(Validation):
             )
         if dataset.components[component_name].role != Role.IDENTIFIER:
             raise SemanticError(
-                "1-3-20", name=component_name, role=dataset.components[component_name].role.value
+                "1-3-20",
+                name=component_name,
+                role=dataset.components[component_name].role.value,
             )
         # Remove attributes from dataset
         if len(dataset.get_attributes()) > 0:

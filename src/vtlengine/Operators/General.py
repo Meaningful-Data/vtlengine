@@ -23,7 +23,10 @@ class Membership(Binary):
     def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
         if right_operand not in left_operand.components:
             raise SemanticError(
-                "1-1-1-10", op=cls.op, comp_name=right_operand, dataset_name=left_operand.name
+                "1-1-1-10",
+                op=cls.op,
+                comp_name=right_operand,
+                dataset_name=left_operand.name,
             )
 
         component = left_operand.components[right_operand]
@@ -48,7 +51,10 @@ class Membership(Binary):
 
     @classmethod
     def evaluate(
-        cls, left_operand: Dataset, right_operand: str, is_from_component_assignment: bool = False
+        cls,
+        left_operand: Dataset,
+        right_operand: str,
+        is_from_component_assignment: bool = False,
     ) -> Union[DataComponent, Dataset]:
         result_dataset = cls.validate(left_operand, right_operand)
         if left_operand.data is not None:
@@ -128,7 +134,6 @@ class Eval(Unary):
         external_routine: ExternalRoutine,
         output: Dataset,
     ) -> Dataset:
-
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
