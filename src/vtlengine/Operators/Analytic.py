@@ -117,7 +117,7 @@ class Analytic(Operator.Unary):
                 isNumber = False
                 for measure in measures:
                     isNumber |= isinstance(measure.data_type, Number)
-                cls.return_integer = ~isNumber
+                cls.return_integer = not isNumber
 
             if cls.type_to_check is not None:
                 for measure in measures:
