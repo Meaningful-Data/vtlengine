@@ -973,7 +973,6 @@ def serializedATN():
 
 
 class Parser(Parser):
-
     grammarFileName = "Vtl.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
@@ -2003,7 +2002,6 @@ class Parser(Parser):
                 listener.exitStart(self)
 
     def start(self) -> StartContext:
-
         localctx = Parser.StartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_start)
         self._la = 0  # Token type
@@ -2045,7 +2043,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class DefineExpressionContext(StatementContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2062,7 +2059,6 @@ class Parser(Parser):
                 listener.exitDefineExpression(self)
 
     class TemporaryAssignmentContext(StatementContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2085,7 +2081,6 @@ class Parser(Parser):
                 listener.exitTemporaryAssignment(self)
 
     class PersistAssignmentContext(StatementContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.StatementContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2108,7 +2103,6 @@ class Parser(Parser):
                 listener.exitPersistAssignment(self)
 
     def statement(self):
-
         localctx = Parser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_statement)
         try:
@@ -2166,7 +2160,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class VarIdExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2183,7 +2176,6 @@ class Parser(Parser):
                 listener.exitVarIdExpr(self)
 
     class MembershipExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2206,7 +2198,6 @@ class Parser(Parser):
                 listener.exitMembershipExpr(self)
 
     class InNotInExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
@@ -2237,7 +2228,6 @@ class Parser(Parser):
                 listener.exitInNotInExpr(self)
 
     class BooleanExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
@@ -2269,7 +2259,6 @@ class Parser(Parser):
                 listener.exitBooleanExpr(self)
 
     class ComparisonExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
@@ -2295,7 +2284,6 @@ class Parser(Parser):
                 listener.exitComparisonExpr(self)
 
     class UnaryExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.op = None  # Token
@@ -2323,7 +2311,6 @@ class Parser(Parser):
                 listener.exitUnaryExpr(self)
 
     class FunctionsExpressionContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2340,7 +2327,6 @@ class Parser(Parser):
                 listener.exitFunctionsExpression(self)
 
     class IfExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.conditionalExpr = None  # ExprContext
@@ -2372,7 +2358,6 @@ class Parser(Parser):
                 listener.exitIfExpr(self)
 
     class ClauseExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.dataset = None  # ExprContext
@@ -2400,7 +2385,6 @@ class Parser(Parser):
                 listener.exitClauseExpr(self)
 
     class CaseExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2438,7 +2422,6 @@ class Parser(Parser):
                 listener.exitCaseExpr(self)
 
     class ArithmeticExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
@@ -2467,7 +2450,6 @@ class Parser(Parser):
                 listener.exitArithmeticExpr(self)
 
     class ParenthesisExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2490,7 +2472,6 @@ class Parser(Parser):
                 listener.exitParenthesisExpr(self)
 
     class ConstantExprContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -2507,7 +2488,6 @@ class Parser(Parser):
                 listener.exitConstantExpr(self)
 
     class ArithmeticExprOrConcatContext(ExprContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.ExprContext
             super().__init__(parser)
             self.left = None  # ExprContext
@@ -2580,14 +2560,11 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        ((_la) & ~0x3F) == 0
-                        and (
-                            (1 << _la)
-                            & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
-                        )
-                        != 0
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -2872,7 +2849,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class ArithmeticExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -2903,7 +2879,6 @@ class Parser(Parser):
                 listener.exitArithmeticExprComp(self)
 
     class IfExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -2937,7 +2912,6 @@ class Parser(Parser):
                 listener.exitIfExprComp(self)
 
     class ComparisonExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -2964,7 +2938,6 @@ class Parser(Parser):
                 listener.exitComparisonExprComp(self)
 
     class FunctionsExpressionCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -2983,7 +2956,6 @@ class Parser(Parser):
                 listener.exitFunctionsExpressionComp(self)
 
     class CompIdContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3002,7 +2974,6 @@ class Parser(Parser):
                 listener.exitCompId(self)
 
     class ConstantExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3021,7 +2992,6 @@ class Parser(Parser):
                 listener.exitConstantExprComp(self)
 
     class ArithmeticExprOrConcatCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3055,7 +3025,6 @@ class Parser(Parser):
                 listener.exitArithmeticExprOrConcatComp(self)
 
     class ParenthesisExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3080,7 +3049,6 @@ class Parser(Parser):
                 listener.exitParenthesisExprComp(self)
 
     class InNotInExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3113,7 +3081,6 @@ class Parser(Parser):
                 listener.exitInNotInExprComp(self)
 
     class UnaryExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3143,7 +3110,6 @@ class Parser(Parser):
                 listener.exitUnaryExprComp(self)
 
     class CaseExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3183,7 +3149,6 @@ class Parser(Parser):
                 listener.exitCaseExprComp(self)
 
     class BooleanExprCompContext(ExprComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ExprComponentContext
@@ -3258,14 +3223,11 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        ((_la) & ~0x3F) == 0
-                        and (
-                            (1 << _la)
-                            & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
-                        )
-                        != 0
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la) & ((1 << Parser.PLUS) | (1 << Parser.MINUS) | (1 << Parser.NOT))
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -3353,7 +3315,8 @@ class Parser(Parser):
                     la_ = self._interp.adaptivePredict(self._input, 10, self._ctx)
                     if la_ == 1:
                         localctx = Parser.ArithmeticExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3376,7 +3339,8 @@ class Parser(Parser):
 
                     elif la_ == 2:
                         localctx = Parser.ArithmeticExprOrConcatCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3399,7 +3363,8 @@ class Parser(Parser):
 
                     elif la_ == 3:
                         localctx = Parser.ComparisonExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3416,7 +3381,8 @@ class Parser(Parser):
 
                     elif la_ == 4:
                         localctx = Parser.BooleanExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3433,7 +3399,8 @@ class Parser(Parser):
 
                     elif la_ == 5:
                         localctx = Parser.BooleanExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3456,7 +3423,8 @@ class Parser(Parser):
 
                     elif la_ == 6:
                         localctx = Parser.InNotInExprCompContext(
-                            self, Parser.ExprComponentContext(self, _parentctx, _parentState)
+                            self,
+                            Parser.ExprComponentContext(self, _parentctx, _parentState),
                         )
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_exprComponent)
@@ -3515,7 +3483,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class NumericFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3534,7 +3501,6 @@ class Parser(Parser):
                 listener.exitNumericFunctionsComponents(self)
 
     class StringFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3553,7 +3519,6 @@ class Parser(Parser):
                 listener.exitStringFunctionsComponents(self)
 
     class ComparisonFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3572,7 +3537,6 @@ class Parser(Parser):
                 listener.exitComparisonFunctionsComponents(self)
 
     class TimeFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3591,7 +3555,6 @@ class Parser(Parser):
                 listener.exitTimeFunctionsComponents(self)
 
     class GenericFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3610,7 +3573,6 @@ class Parser(Parser):
                 listener.exitGenericFunctionsComponents(self)
 
     class AnalyticFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3629,7 +3591,6 @@ class Parser(Parser):
                 listener.exitAnalyticFunctionsComponents(self)
 
     class ConditionalFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3648,7 +3609,6 @@ class Parser(Parser):
                 listener.exitConditionalFunctionsComponents(self)
 
     class AggregateFunctionsComponentsContext(FunctionsComponentsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.FunctionsComponentsContext
@@ -3667,7 +3627,6 @@ class Parser(Parser):
                 listener.exitAggregateFunctionsComponents(self)
 
     def functionsComponents(self):
-
         localctx = Parser.FunctionsComponentsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_functionsComponents)
         try:
@@ -3752,7 +3711,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class HierarchyFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3769,7 +3727,6 @@ class Parser(Parser):
                 listener.exitHierarchyFunctions(self)
 
     class StringFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3786,7 +3743,6 @@ class Parser(Parser):
                 listener.exitStringFunctions(self)
 
     class ValidationFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3803,7 +3759,6 @@ class Parser(Parser):
                 listener.exitValidationFunctions(self)
 
     class GenericFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3820,7 +3775,6 @@ class Parser(Parser):
                 listener.exitGenericFunctions(self)
 
     class ConditionalFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3837,7 +3791,6 @@ class Parser(Parser):
                 listener.exitConditionalFunctions(self)
 
     class AggregateFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3854,7 +3807,6 @@ class Parser(Parser):
                 listener.exitAggregateFunctions(self)
 
     class JoinFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3871,7 +3823,6 @@ class Parser(Parser):
                 listener.exitJoinFunctions(self)
 
     class ComparisonFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3888,7 +3839,6 @@ class Parser(Parser):
                 listener.exitComparisonFunctions(self)
 
     class NumericFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3905,7 +3855,6 @@ class Parser(Parser):
                 listener.exitNumericFunctions(self)
 
     class TimeFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3922,7 +3871,6 @@ class Parser(Parser):
                 listener.exitTimeFunctions(self)
 
     class SetFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3939,7 +3887,6 @@ class Parser(Parser):
                 listener.exitSetFunctions(self)
 
     class AnalyticFunctionsContext(FunctionsContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.FunctionsContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -3956,7 +3903,6 @@ class Parser(Parser):
                 listener.exitAnalyticFunctions(self)
 
     def functions(self):
-
         localctx = Parser.FunctionsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_functions)
         try:
@@ -4095,7 +4041,6 @@ class Parser(Parser):
                 listener.exitDatasetClause(self)
 
     def datasetClause(self):
-
         localctx = Parser.DatasetClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_datasetClause)
         try:
@@ -4182,7 +4127,6 @@ class Parser(Parser):
                 listener.exitRenameClause(self)
 
     def renameClause(self):
-
         localctx = Parser.RenameClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_renameClause)
         self._la = 0  # Token type
@@ -4243,7 +4187,6 @@ class Parser(Parser):
                 listener.exitAggrClause(self)
 
     def aggrClause(self):
-
         localctx = Parser.AggrClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_aggrClause)
         self._la = 0  # Token type
@@ -4299,7 +4242,6 @@ class Parser(Parser):
                 listener.exitFilterClause(self)
 
     def filterClause(self):
-
         localctx = Parser.FilterClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_filterClause)
         try:
@@ -4350,7 +4292,6 @@ class Parser(Parser):
                 listener.exitCalcClause(self)
 
     def calcClause(self):
-
         localctx = Parser.CalcClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_calcClause)
         self._la = 0  # Token type
@@ -4418,7 +4359,6 @@ class Parser(Parser):
                 listener.exitKeepOrDropClause(self)
 
     def keepOrDropClause(self):
-
         localctx = Parser.KeepOrDropClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_keepOrDropClause)
         self._la = 0  # Token type
@@ -4491,7 +4431,6 @@ class Parser(Parser):
                 listener.exitPivotOrUnpivotClause(self)
 
     def pivotOrUnpivotClause(self):
-
         localctx = Parser.PivotOrUnpivotClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_pivotOrUnpivotClause)
         self._la = 0  # Token type
@@ -4564,7 +4503,6 @@ class Parser(Parser):
                 listener.exitCustomPivotClause(self)
 
     def customPivotClause(self):
-
         localctx = Parser.CustomPivotClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_customPivotClause)
         self._la = 0  # Token type
@@ -4636,7 +4574,6 @@ class Parser(Parser):
                 listener.exitSubspaceClause(self)
 
     def subspaceClause(self):
-
         localctx = Parser.SubspaceClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_subspaceClause)
         self._la = 0  # Token type
@@ -4680,7 +4617,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class JoinExprContext(JoinOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.JoinOperatorsContext
@@ -4724,7 +4660,6 @@ class Parser(Parser):
                 listener.exitJoinExpr(self)
 
     def joinOperators(self):
-
         localctx = Parser.JoinOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_joinOperators)
         self._la = 0  # Token type
@@ -4797,7 +4732,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class DefOperatorContext(DefOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.DefOperatorsContext
@@ -4858,7 +4792,6 @@ class Parser(Parser):
                 listener.exitDefOperator(self)
 
     class DefHierarchicalContext(DefOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.DefOperatorsContext
@@ -4910,7 +4843,6 @@ class Parser(Parser):
                 listener.exitDefHierarchical(self)
 
     class DefDatapointRulesetContext(DefOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.DefOperatorsContext
@@ -4962,7 +4894,6 @@ class Parser(Parser):
                 listener.exitDefDatapointRuleset(self)
 
     def defOperators(self):
-
         localctx = Parser.DefOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_defOperators)
         self._la = 0  # Token type
@@ -5101,7 +5032,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class EvalAtomContext(GenericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsContext
@@ -5165,7 +5095,6 @@ class Parser(Parser):
                 listener.exitEvalAtom(self)
 
     class CastExprDatasetContext(GenericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsContext
@@ -5208,7 +5137,6 @@ class Parser(Parser):
                 listener.exitCastExprDataset(self)
 
     class CallDatasetContext(GenericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsContext
@@ -5245,7 +5173,6 @@ class Parser(Parser):
                 listener.exitCallDataset(self)
 
     def genericOperators(self):
-
         localctx = Parser.GenericOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_genericOperators)
         self._la = 0  # Token type
@@ -5299,7 +5226,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 66)) & ~0x3F) == 0
+                        ((_la - 66) & ~0x3F) == 0
                         and (
                             (1 << (_la - 66))
                             & (
@@ -5333,7 +5260,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 131)) & ~0x3F) == 0
+                        ((_la - 131) & ~0x3F) == 0
                         and (
                             (1 << (_la - 131))
                             & (
@@ -5365,7 +5292,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 195)) & ~0x3F) == 0
+                        ((_la - 195) & ~0x3F) == 0
                         and (
                             (1 << (_la - 195))
                             & (
@@ -5562,7 +5489,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class EvalAtomComponentContext(GenericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsComponentContext
@@ -5626,7 +5552,6 @@ class Parser(Parser):
                 listener.exitEvalAtomComponent(self)
 
     class CastExprComponentContext(GenericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsComponentContext
@@ -5669,7 +5594,6 @@ class Parser(Parser):
                 listener.exitCastExprComponent(self)
 
     class CallComponentContext(GenericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GenericOperatorsComponentContext
@@ -5706,7 +5630,6 @@ class Parser(Parser):
                 listener.exitCallComponent(self)
 
     def genericOperatorsComponent(self):
-
         localctx = Parser.GenericOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_genericOperatorsComponent)
         self._la = 0  # Token type
@@ -5757,7 +5680,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 77)) & ~0x3F) == 0
+                        ((_la - 77) & ~0x3F) == 0
                         and (
                             (1 << (_la - 77))
                             & (
@@ -5797,7 +5720,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 141)) & ~0x3F) == 0
+                        ((_la - 141) & ~0x3F) == 0
                         and (
                             (1 << (_la - 141))
                             & (
@@ -5818,7 +5741,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 208)) & ~0x3F) == 0
+                        ((_la - 208) & ~0x3F) == 0
                         and (
                             (1 << (_la - 208))
                             & (
@@ -6022,7 +5945,6 @@ class Parser(Parser):
                 listener.exitParameterComponent(self)
 
     def parameterComponent(self):
-
         localctx = Parser.ParameterComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_parameterComponent)
         try:
@@ -6148,7 +6070,6 @@ class Parser(Parser):
                 listener.exitParameter(self)
 
     def parameter(self):
-
         localctx = Parser.ParameterContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_parameter)
         try:
@@ -6275,7 +6196,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class InstrAtomContext(StringOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsContext
@@ -6321,7 +6241,6 @@ class Parser(Parser):
                 listener.exitInstrAtom(self)
 
     class UnaryStringFunctionContext(StringOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsContext
@@ -6365,7 +6284,6 @@ class Parser(Parser):
                 listener.exitUnaryStringFunction(self)
 
     class SubstrAtomContext(StringOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsContext
@@ -6407,7 +6325,6 @@ class Parser(Parser):
                 listener.exitSubstrAtom(self)
 
     class ReplaceAtomContext(StringOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsContext
@@ -6448,7 +6365,6 @@ class Parser(Parser):
                 listener.exitReplaceAtom(self)
 
     def stringOperators(self):
-
         localctx = Parser.StringOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_stringOperators)
         self._la = 0  # Token type
@@ -6470,21 +6386,19 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 93)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 93))
-                            & (
-                                (1 << (Parser.LEN - 93))
-                                | (1 << (Parser.TRIM - 93))
-                                | (1 << (Parser.UCASE - 93))
-                                | (1 << (Parser.LCASE - 93))
-                                | (1 << (Parser.LTRIM - 93))
-                                | (1 << (Parser.RTRIM - 93))
-                            )
+                    ((_la - 93) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 93))
+                        & (
+                            (1 << (Parser.LEN - 93))
+                            | (1 << (Parser.TRIM - 93))
+                            | (1 << (Parser.UCASE - 93))
+                            | (1 << (Parser.LCASE - 93))
+                            | (1 << (Parser.LTRIM - 93))
+                            | (1 << (Parser.RTRIM - 93))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -6620,7 +6534,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class ReplaceAtomComponentContext(StringOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsComponentContext
@@ -6661,7 +6574,6 @@ class Parser(Parser):
                 listener.exitReplaceAtomComponent(self)
 
     class UnaryStringFunctionComponentContext(StringOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsComponentContext
@@ -6705,7 +6617,6 @@ class Parser(Parser):
                 listener.exitUnaryStringFunctionComponent(self)
 
     class SubstrAtomComponentContext(StringOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsComponentContext
@@ -6747,7 +6658,6 @@ class Parser(Parser):
                 listener.exitSubstrAtomComponent(self)
 
     class InstrAtomComponentContext(StringOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.StringOperatorsComponentContext
@@ -6793,7 +6703,6 @@ class Parser(Parser):
                 listener.exitInstrAtomComponent(self)
 
     def stringOperatorsComponent(self):
-
         localctx = Parser.StringOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_stringOperatorsComponent)
         self._la = 0  # Token type
@@ -6815,21 +6724,19 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 93)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 93))
-                            & (
-                                (1 << (Parser.LEN - 93))
-                                | (1 << (Parser.TRIM - 93))
-                                | (1 << (Parser.UCASE - 93))
-                                | (1 << (Parser.LCASE - 93))
-                                | (1 << (Parser.LTRIM - 93))
-                                | (1 << (Parser.RTRIM - 93))
-                            )
+                    ((_la - 93) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 93))
+                        & (
+                            (1 << (Parser.LEN - 93))
+                            | (1 << (Parser.TRIM - 93))
+                            | (1 << (Parser.UCASE - 93))
+                            | (1 << (Parser.LCASE - 93))
+                            | (1 << (Parser.LTRIM - 93))
+                            | (1 << (Parser.RTRIM - 93))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -6965,7 +6872,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class UnaryNumericContext(NumericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsContext
@@ -7009,7 +6915,6 @@ class Parser(Parser):
                 listener.exitUnaryNumeric(self)
 
     class UnaryWithOptionalNumericContext(NumericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsContext
@@ -7047,7 +6952,6 @@ class Parser(Parser):
                 listener.exitUnaryWithOptionalNumeric(self)
 
     class BinaryNumericContext(NumericOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsContext
@@ -7093,7 +6997,6 @@ class Parser(Parser):
                 listener.exitBinaryNumeric(self)
 
     def numericOperators(self):
-
         localctx = Parser.NumericOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_numericOperators)
         self._la = 0  # Token type
@@ -7101,28 +7004,33 @@ class Parser(Parser):
             self.state = 778
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.ABS, Parser.LN, Parser.EXP, Parser.CEIL, Parser.FLOOR, Parser.SQRT]:
+            if token in [
+                Parser.ABS,
+                Parser.LN,
+                Parser.EXP,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+            ]:
                 localctx = Parser.UnaryNumericContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 757
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 85)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 85))
-                            & (
-                                (1 << (Parser.ABS - 85))
-                                | (1 << (Parser.LN - 85))
-                                | (1 << (Parser.EXP - 85))
-                                | (1 << (Parser.CEIL - 85))
-                                | (1 << (Parser.FLOOR - 85))
-                                | (1 << (Parser.SQRT - 85))
-                            )
+                    ((_la - 85) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 85))
+                        & (
+                            (1 << (Parser.ABS - 85))
+                            | (1 << (Parser.LN - 85))
+                            | (1 << (Parser.EXP - 85))
+                            | (1 << (Parser.CEIL - 85))
+                            | (1 << (Parser.FLOOR - 85))
+                            | (1 << (Parser.SQRT - 85))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -7169,19 +7077,17 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 61)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 61))
-                            & (
-                                (1 << (Parser.RANDOM - 61))
-                                | (1 << (Parser.LOG - 61))
-                                | (1 << (Parser.POWER - 61))
-                                | (1 << (Parser.MOD - 61))
-                            )
+                    ((_la - 61) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 61))
+                        & (
+                            (1 << (Parser.RANDOM - 61))
+                            | (1 << (Parser.LOG - 61))
+                            | (1 << (Parser.POWER - 61))
+                            | (1 << (Parser.MOD - 61))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -7223,7 +7129,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class UnaryNumericComponentContext(NumericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsComponentContext
@@ -7267,7 +7172,6 @@ class Parser(Parser):
                 listener.exitUnaryNumericComponent(self)
 
     class BinaryNumericComponentContext(NumericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsComponentContext
@@ -7313,7 +7217,6 @@ class Parser(Parser):
                 listener.exitBinaryNumericComponent(self)
 
     class UnaryWithOptionalNumericComponentContext(NumericOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.NumericOperatorsComponentContext
@@ -7351,7 +7254,6 @@ class Parser(Parser):
                 listener.exitUnaryWithOptionalNumericComponent(self)
 
     def numericOperatorsComponent(self):
-
         localctx = Parser.NumericOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_numericOperatorsComponent)
         self._la = 0  # Token type
@@ -7359,28 +7261,33 @@ class Parser(Parser):
             self.state = 801
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [Parser.ABS, Parser.LN, Parser.EXP, Parser.CEIL, Parser.FLOOR, Parser.SQRT]:
+            if token in [
+                Parser.ABS,
+                Parser.LN,
+                Parser.EXP,
+                Parser.CEIL,
+                Parser.FLOOR,
+                Parser.SQRT,
+            ]:
                 localctx = Parser.UnaryNumericComponentContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 780
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 85)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 85))
-                            & (
-                                (1 << (Parser.ABS - 85))
-                                | (1 << (Parser.LN - 85))
-                                | (1 << (Parser.EXP - 85))
-                                | (1 << (Parser.CEIL - 85))
-                                | (1 << (Parser.FLOOR - 85))
-                                | (1 << (Parser.SQRT - 85))
-                            )
+                    ((_la - 85) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 85))
+                        & (
+                            (1 << (Parser.ABS - 85))
+                            | (1 << (Parser.LN - 85))
+                            | (1 << (Parser.EXP - 85))
+                            | (1 << (Parser.CEIL - 85))
+                            | (1 << (Parser.FLOOR - 85))
+                            | (1 << (Parser.SQRT - 85))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -7427,19 +7334,17 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 61)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 61))
-                            & (
-                                (1 << (Parser.RANDOM - 61))
-                                | (1 << (Parser.LOG - 61))
-                                | (1 << (Parser.POWER - 61))
-                                | (1 << (Parser.MOD - 61))
-                            )
+                    ((_la - 61) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 61))
+                        & (
+                            (1 << (Parser.RANDOM - 61))
+                            | (1 << (Parser.LOG - 61))
+                            | (1 << (Parser.POWER - 61))
+                            | (1 << (Parser.MOD - 61))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -7481,7 +7386,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class BetweenAtomContext(ComparisonOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsContext
@@ -7521,7 +7425,6 @@ class Parser(Parser):
                 listener.exitBetweenAtom(self)
 
     class CharsetMatchAtomContext(ComparisonOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsContext
@@ -7557,7 +7460,6 @@ class Parser(Parser):
                 listener.exitCharsetMatchAtom(self)
 
     class IsNullAtomContext(ComparisonOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsContext
@@ -7585,7 +7487,6 @@ class Parser(Parser):
                 listener.exitIsNullAtom(self)
 
     class ExistInAtomContext(ComparisonOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsContext
@@ -7627,7 +7528,6 @@ class Parser(Parser):
                 listener.exitExistInAtom(self)
 
     def comparisonOperators(self):
-
         localctx = Parser.ComparisonOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_comparisonOperators)
         self._la = 0  # Token type
@@ -7733,7 +7633,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class IsNullAtomComponentContext(ComparisonOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsComponentContext
@@ -7761,7 +7660,6 @@ class Parser(Parser):
                 listener.exitIsNullAtomComponent(self)
 
     class CharsetMatchAtomComponentContext(ComparisonOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsComponentContext
@@ -7797,7 +7695,6 @@ class Parser(Parser):
                 listener.exitCharsetMatchAtomComponent(self)
 
     class BetweenAtomComponentContext(ComparisonOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ComparisonOperatorsComponentContext
@@ -7837,7 +7734,6 @@ class Parser(Parser):
                 listener.exitBetweenAtomComponent(self)
 
     def comparisonOperatorsComponent(self):
-
         localctx = Parser.ComparisonOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_comparisonOperatorsComponent)
         try:
@@ -7917,7 +7813,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class DayToYearAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -7945,7 +7840,6 @@ class Parser(Parser):
                 listener.exitDayToYearAtom(self)
 
     class YearAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -7973,7 +7867,6 @@ class Parser(Parser):
                 listener.exitYearAtom(self)
 
     class YearTodayAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8001,7 +7894,6 @@ class Parser(Parser):
                 listener.exitYearTodayAtom(self)
 
     class DayToMonthAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8029,7 +7921,6 @@ class Parser(Parser):
                 listener.exitDayToMonthAtom(self)
 
     class DayOfYearAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8057,7 +7948,6 @@ class Parser(Parser):
                 listener.exitDatOfYearAtom(self)
 
     class PeriodAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8085,7 +7975,6 @@ class Parser(Parser):
                 listener.exitPeriodAtom(self)
 
     class MonthTodayAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8113,7 +8002,6 @@ class Parser(Parser):
                 listener.exitMonthTodayAtom(self)
 
     class FillTimeAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8150,7 +8038,6 @@ class Parser(Parser):
                 listener.exitFillTimeAtom(self)
 
     class MonthAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8178,7 +8065,6 @@ class Parser(Parser):
                 listener.exitMonthAtom(self)
 
     class FlowAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8210,7 +8096,6 @@ class Parser(Parser):
                 listener.exitFlowAtom(self)
 
     class TimeShiftAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8244,7 +8129,6 @@ class Parser(Parser):
                 listener.exitTimeShiftAtom(self)
 
     class TimeAggAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8296,7 +8180,6 @@ class Parser(Parser):
                 listener.exitTimeAggAtom(self)
 
     class DateDiffAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8332,7 +8215,6 @@ class Parser(Parser):
                 listener.exitDateDiffAtom(self)
 
     class DateAddAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8372,7 +8254,6 @@ class Parser(Parser):
                 listener.exitDateAddAtom(self)
 
     class DayOfMonthAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8400,7 +8281,6 @@ class Parser(Parser):
                 listener.exitDayOfMonthAtom(self)
 
     class CurrentDateAtomContext(TimeOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsContext
@@ -8425,7 +8305,6 @@ class Parser(Parser):
                 listener.exitCurrentDateAtom(self)
 
     def timeOperators(self):
-
         localctx = Parser.TimeOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_timeOperators)
         self._la = 0  # Token type
@@ -8479,7 +8358,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 66)) & ~0x3F) == 0
+                        ((_la - 66) & ~0x3F) == 0
                         and (
                             (1 << (_la - 66))
                             & (
@@ -8512,7 +8391,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 131)) & ~0x3F) == 0
+                        ((_la - 131) & ~0x3F) == 0
                         and (
                             (1 << (_la - 131))
                             & (
@@ -8544,7 +8423,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 195)) & ~0x3F) == 0
+                        ((_la - 195) & ~0x3F) == 0
                         and (
                             (1 << (_la - 195))
                             & (
@@ -8848,7 +8727,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class PeriodAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -8876,7 +8754,6 @@ class Parser(Parser):
                 listener.exitPeriodAtomComponent(self)
 
     class TimeShiftAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -8910,7 +8787,6 @@ class Parser(Parser):
                 listener.exitTimeShiftAtomComponent(self)
 
     class MonthToDayAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -8938,7 +8814,6 @@ class Parser(Parser):
                 listener.exitMonthTodayAtomComponent(self)
 
     class TimeAggAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -8990,7 +8865,6 @@ class Parser(Parser):
                 listener.exitTimeAggAtomComponent(self)
 
     class DayToMonthAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9018,7 +8892,6 @@ class Parser(Parser):
                 listener.exitDayToMonthAtomComponent(self)
 
     class DateAddAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9058,7 +8931,6 @@ class Parser(Parser):
                 listener.exitDateAddAtomComponent(self)
 
     class YearToDayAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9086,7 +8958,6 @@ class Parser(Parser):
                 listener.exitYearTodayAtomComponent(self)
 
     class DayOfMonthAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9114,7 +8985,6 @@ class Parser(Parser):
                 listener.exitDayOfMonthAtomComponent(self)
 
     class MonthAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9142,7 +9012,6 @@ class Parser(Parser):
                 listener.exitMonthAtomComponent(self)
 
     class FillTimeAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9179,7 +9048,6 @@ class Parser(Parser):
                 listener.exitFillTimeAtomComponent(self)
 
     class DayOfYearAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9207,7 +9075,6 @@ class Parser(Parser):
                 listener.exitDatOfYearAtomComponent(self)
 
     class DayToYearAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9235,7 +9102,6 @@ class Parser(Parser):
                 listener.exitDayToYearAtomComponent(self)
 
     class CurrentDateAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9260,7 +9126,6 @@ class Parser(Parser):
                 listener.exitCurrentDateAtomComponent(self)
 
     class FlowAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9292,7 +9157,6 @@ class Parser(Parser):
                 listener.exitFlowAtomComponent(self)
 
     class DateDiffAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9328,7 +9192,6 @@ class Parser(Parser):
                 listener.exitDateDiffAtomComponent(self)
 
     class YearAtomComponentContext(TimeOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.TimeOperatorsComponentContext
@@ -9356,7 +9219,6 @@ class Parser(Parser):
                 listener.exitYearAtomComponent(self)
 
     def timeOperatorsComponent(self):
-
         localctx = Parser.TimeOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_timeOperatorsComponent)
         self._la = 0  # Token type
@@ -9407,7 +9269,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 77)) & ~0x3F) == 0
+                        ((_la - 77) & ~0x3F) == 0
                         and (
                             (1 << (_la - 77))
                             & (
@@ -9446,7 +9308,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 141)) & ~0x3F) == 0
+                        ((_la - 141) & ~0x3F) == 0
                         and (
                             (1 << (_la - 141))
                             & (
@@ -9467,7 +9329,7 @@ class Parser(Parser):
                         != 0
                     )
                     or (
-                        (((_la - 208)) & ~0x3F) == 0
+                        ((_la - 208) & ~0x3F) == 0
                         and (
                             (1 << (_la - 208))
                             & (
@@ -9767,7 +9629,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class SetOrSYmDiffAtomContext(SetOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.SetOperatorsContext
@@ -9807,7 +9668,6 @@ class Parser(Parser):
                 listener.exitSetOrSYmDiffAtom(self)
 
     class IntersectAtomContext(SetOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.SetOperatorsContext
@@ -9845,7 +9705,6 @@ class Parser(Parser):
                 listener.exitIntersectAtom(self)
 
     class UnionAtomContext(SetOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.SetOperatorsContext
@@ -9883,7 +9742,6 @@ class Parser(Parser):
                 listener.exitUnionAtom(self)
 
     def setOperators(self):
-
         localctx = Parser.SetOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_setOperators)
         self._la = 0  # Token type
@@ -10034,7 +9892,6 @@ class Parser(Parser):
                 listener.exitHierarchyOperators(self)
 
     def hierarchyOperators(self):
-
         localctx = Parser.HierarchyOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_hierarchyOperators)
         self._la = 0  # Token type
@@ -10069,7 +9926,7 @@ class Parser(Parser):
             self.state = 1112
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la - 225)) & ~0x3F) == 0 and (
+            if ((_la - 225) & ~0x3F) == 0 and (
                 (1 << (_la - 225))
                 & (
                     (1 << (Parser.NON_NULL - 225))
@@ -10121,7 +9978,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class ValidateHRrulesetContext(ValidationOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ValidationOperatorsContext
@@ -10175,7 +10031,6 @@ class Parser(Parser):
                 listener.exitValidateHRruleset(self)
 
     class ValidateDPrulesetContext(ValidationOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ValidationOperatorsContext
@@ -10226,7 +10081,6 @@ class Parser(Parser):
                 listener.exitValidateDPruleset(self)
 
     class ValidationSimpleContext(ValidationOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ValidationOperatorsContext
@@ -10273,7 +10127,6 @@ class Parser(Parser):
                 listener.exitValidationSimple(self)
 
     def validationOperators(self):
-
         localctx = Parser.ValidationOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_validationOperators)
         self._la = 0  # Token type
@@ -10356,7 +10209,7 @@ class Parser(Parser):
                 self.state = 1156
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la - 225)) & ~0x3F) == 0 and (
+                if ((_la - 225) & ~0x3F) == 0 and (
                     (1 << (_la - 225))
                     & (
                         (1 << (Parser.NON_NULL - 225))
@@ -10458,7 +10311,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class NvlAtomContext(ConditionalOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ConditionalOperatorsContext
@@ -10494,7 +10346,6 @@ class Parser(Parser):
                 listener.exitNvlAtom(self)
 
     def conditionalOperators(self):
-
         localctx = Parser.ConditionalOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 64, self.RULE_conditionalOperators)
         try:
@@ -10534,7 +10385,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class NvlAtomComponentContext(ConditionalOperatorsComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ConditionalOperatorsComponentContext
@@ -10570,7 +10420,6 @@ class Parser(Parser):
                 listener.exitNvlAtomComponent(self)
 
     def conditionalOperatorsComponent(self):
-
         localctx = Parser.ConditionalOperatorsComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_conditionalOperatorsComponent)
         try:
@@ -10610,7 +10459,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class AggrCompContext(AggrOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AggrOperatorsContext
@@ -10666,7 +10514,6 @@ class Parser(Parser):
                 listener.exitAggrComp(self)
 
     class CountAggrCompContext(AggrOperatorsContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AggrOperatorsContext
@@ -10691,7 +10538,6 @@ class Parser(Parser):
                 listener.exitCountAggrComp(self)
 
     def aggrOperators(self):
-
         localctx = Parser.AggrOperatorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 68, self.RULE_aggrOperators)
         self._la = 0  # Token type
@@ -10706,25 +10552,23 @@ class Parser(Parser):
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not (
-                    (
-                        (((_la - 80)) & ~0x3F) == 0
-                        and (
-                            (1 << (_la - 80))
-                            & (
-                                (1 << (Parser.MIN - 80))
-                                | (1 << (Parser.MAX - 80))
-                                | (1 << (Parser.SUM - 80))
-                                | (1 << (Parser.AVG - 80))
-                                | (1 << (Parser.MEDIAN - 80))
-                                | (1 << (Parser.COUNT - 80))
-                                | (1 << (Parser.STDDEV_POP - 80))
-                                | (1 << (Parser.STDDEV_SAMP - 80))
-                                | (1 << (Parser.VAR_POP - 80))
-                                | (1 << (Parser.VAR_SAMP - 80))
-                            )
+                    ((_la - 80) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 80))
+                        & (
+                            (1 << (Parser.MIN - 80))
+                            | (1 << (Parser.MAX - 80))
+                            | (1 << (Parser.SUM - 80))
+                            | (1 << (Parser.AVG - 80))
+                            | (1 << (Parser.MEDIAN - 80))
+                            | (1 << (Parser.COUNT - 80))
+                            | (1 << (Parser.STDDEV_POP - 80))
+                            | (1 << (Parser.STDDEV_SAMP - 80))
+                            | (1 << (Parser.VAR_POP - 80))
+                            | (1 << (Parser.VAR_SAMP - 80))
                         )
-                        != 0
                     )
+                    != 0
                 ):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
@@ -10771,7 +10615,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class AggrDatasetContext(AggrOperatorsGroupingContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AggrOperatorsGroupingContext
@@ -10833,7 +10676,6 @@ class Parser(Parser):
                 listener.exitAggrDataset(self)
 
     def aggrOperatorsGrouping(self):
-
         localctx = Parser.AggrOperatorsGroupingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_aggrOperatorsGrouping)
         self._la = 0  # Token type
@@ -10844,25 +10686,23 @@ class Parser(Parser):
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
             if not (
-                (
-                    (((_la - 80)) & ~0x3F) == 0
-                    and (
-                        (1 << (_la - 80))
-                        & (
-                            (1 << (Parser.MIN - 80))
-                            | (1 << (Parser.MAX - 80))
-                            | (1 << (Parser.SUM - 80))
-                            | (1 << (Parser.AVG - 80))
-                            | (1 << (Parser.MEDIAN - 80))
-                            | (1 << (Parser.COUNT - 80))
-                            | (1 << (Parser.STDDEV_POP - 80))
-                            | (1 << (Parser.STDDEV_SAMP - 80))
-                            | (1 << (Parser.VAR_POP - 80))
-                            | (1 << (Parser.VAR_SAMP - 80))
-                        )
+                ((_la - 80) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 80))
+                    & (
+                        (1 << (Parser.MIN - 80))
+                        | (1 << (Parser.MAX - 80))
+                        | (1 << (Parser.SUM - 80))
+                        | (1 << (Parser.AVG - 80))
+                        | (1 << (Parser.MEDIAN - 80))
+                        | (1 << (Parser.COUNT - 80))
+                        | (1 << (Parser.STDDEV_POP - 80))
+                        | (1 << (Parser.STDDEV_SAMP - 80))
+                        | (1 << (Parser.VAR_POP - 80))
+                        | (1 << (Parser.VAR_SAMP - 80))
                     )
-                    != 0
                 )
+                != 0
             ):
                 localctx.op = self._errHandler.recoverInline(self)
             else:
@@ -10909,7 +10749,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class LagOrLeadAnContext(AnFunctionContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionContext
@@ -10972,7 +10811,6 @@ class Parser(Parser):
                 listener.exitLagOrLeadAn(self)
 
     class RatioToReportAnContext(AnFunctionContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionContext
@@ -11014,7 +10852,6 @@ class Parser(Parser):
                 listener.exitRatioToReportAn(self)
 
     class AnSimpleFunctionContext(AnFunctionContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionContext
@@ -11097,7 +10934,6 @@ class Parser(Parser):
                 listener.exitAnSimpleFunction(self)
 
     def anFunction(self):
-
         localctx = Parser.AnFunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_anFunction)
         self._la = 0  # Token type
@@ -11126,7 +10962,7 @@ class Parser(Parser):
                 _la = self._input.LA(1)
                 if not (
                     (
-                        (((_la - 80)) & ~0x3F) == 0
+                        ((_la - 80) & ~0x3F) == 0
                         and (
                             (1 << (_la - 80))
                             & (
@@ -11283,7 +11119,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class AnSimpleFunctionComponentContext(AnFunctionComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionComponentContext
@@ -11366,7 +11201,6 @@ class Parser(Parser):
                 listener.exitAnSimpleFunctionComponent(self)
 
     class LagOrLeadAnComponentContext(AnFunctionComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionComponentContext
@@ -11426,7 +11260,6 @@ class Parser(Parser):
                 listener.exitLagOrLeadAnComponent(self)
 
     class RankAnComponentContext(AnFunctionComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionComponentContext
@@ -11469,7 +11302,6 @@ class Parser(Parser):
                 listener.exitRankAnComponent(self)
 
     class RatioToReportAnComponentContext(AnFunctionComponentContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.AnFunctionComponentContext
@@ -11511,7 +11343,6 @@ class Parser(Parser):
                 listener.exitRatioToReportAnComponent(self)
 
     def anFunctionComponent(self):
-
         localctx = Parser.AnFunctionComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_anFunctionComponent)
         self._la = 0  # Token type
@@ -11540,7 +11371,7 @@ class Parser(Parser):
                 _la = self._input.LA(1)
                 if not (
                     (
-                        (((_la - 80)) & ~0x3F) == 0
+                        ((_la - 80) & ~0x3F) == 0
                         and (
                             (1 << (_la - 80))
                             & (
@@ -11627,7 +11458,7 @@ class Parser(Parser):
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if _la == Parser.NULL_CONSTANT or (
-                        (((_la - 218)) & ~0x3F) == 0
+                        ((_la - 218) & ~0x3F) == 0
                         and (
                             (1 << (_la - 218))
                             & (
@@ -11750,7 +11581,6 @@ class Parser(Parser):
                 listener.exitRenameClauseItem(self)
 
     def renameClauseItem(self):
-
         localctx = Parser.RenameClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_renameClauseItem)
         try:
@@ -11800,7 +11630,6 @@ class Parser(Parser):
                 listener.exitAggregateClause(self)
 
     def aggregateClause(self):
-
         localctx = Parser.AggregateClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_aggregateClause)
         self._la = 0  # Token type
@@ -11859,7 +11688,6 @@ class Parser(Parser):
                 listener.exitAggrFunctionClause(self)
 
     def aggrFunctionClause(self):
-
         localctx = Parser.AggrFunctionClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_aggrFunctionClause)
         self._la = 0  # Token type
@@ -11869,7 +11697,7 @@ class Parser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (
-                (((_la - 103)) & ~0x3F) == 0
+                ((_la - 103) & ~0x3F) == 0
                 and (
                     (1 << (_la - 103))
                     & (
@@ -11929,7 +11757,6 @@ class Parser(Parser):
                 listener.exitCalcClauseItem(self)
 
     def calcClauseItem(self):
-
         localctx = Parser.CalcClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_calcClauseItem)
         self._la = 0  # Token type
@@ -11939,7 +11766,7 @@ class Parser(Parser):
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (
-                (((_la - 103)) & ~0x3F) == 0
+                ((_la - 103) & ~0x3F) == 0
                 and (
                     (1 << (_la - 103))
                     & (
@@ -11996,7 +11823,6 @@ class Parser(Parser):
                 listener.exitSubspaceClauseItem(self)
 
     def subspaceClauseItem(self):
-
         localctx = Parser.SubspaceClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_subspaceClauseItem)
         try:
@@ -12029,7 +11855,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class ScalarWithCastContext(ScalarItemContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ScalarItemContext
@@ -12069,7 +11894,6 @@ class Parser(Parser):
                 listener.exitScalarWithCast(self)
 
     class SimpleScalarContext(ScalarItemContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ScalarItemContext
@@ -12088,7 +11912,6 @@ class Parser(Parser):
                 listener.exitSimpleScalar(self)
 
     def scalarItem(self):
-
         localctx = Parser.ScalarItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_scalarItem)
         self._la = 0  # Token type
@@ -12176,7 +11999,6 @@ class Parser(Parser):
                 listener.exitJoinClauseWithoutUsing(self)
 
     def joinClauseWithoutUsing(self):
-
         localctx = Parser.JoinClauseWithoutUsingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_joinClauseWithoutUsing)
         self._la = 0  # Token type
@@ -12244,7 +12066,6 @@ class Parser(Parser):
                 listener.exitJoinClause(self)
 
     def joinClause(self):
-
         localctx = Parser.JoinClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_joinClause)
         self._la = 0  # Token type
@@ -12320,7 +12141,6 @@ class Parser(Parser):
                 listener.exitJoinClauseItem(self)
 
     def joinClauseItem(self):
-
         localctx = Parser.JoinClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_joinClauseItem)
         self._la = 0  # Token type
@@ -12382,7 +12202,6 @@ class Parser(Parser):
                 listener.exitJoinBody(self)
 
     def joinBody(self):
-
         localctx = Parser.JoinBodyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_joinBody)
         self._la = 0  # Token type
@@ -12461,7 +12280,6 @@ class Parser(Parser):
                 listener.exitJoinApplyClause(self)
 
     def joinApplyClause(self):
-
         localctx = Parser.JoinApplyClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_joinApplyClause)
         try:
@@ -12515,7 +12333,6 @@ class Parser(Parser):
                 listener.exitPartitionByClause(self)
 
     def partitionByClause(self):
-
         localctx = Parser.PartitionByClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_partitionByClause)
         self._la = 0  # Token type
@@ -12584,7 +12401,6 @@ class Parser(Parser):
                 listener.exitOrderByClause(self)
 
     def orderByClause(self):
-
         localctx = Parser.OrderByClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_orderByClause)
         self._la = 0  # Token type
@@ -12644,7 +12460,6 @@ class Parser(Parser):
                 listener.exitOrderByItem(self)
 
     def orderByItem(self):
-
         localctx = Parser.OrderByItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_orderByItem)
         self._la = 0  # Token type
@@ -12714,7 +12529,6 @@ class Parser(Parser):
                 listener.exitWindowingClause(self)
 
     def windowingClause(self):
-
         localctx = Parser.WindowingClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_windowingClause)
         try:
@@ -12773,7 +12587,6 @@ class Parser(Parser):
                 listener.exitSignedInteger(self)
 
     def signedInteger(self):
-
         localctx = Parser.SignedIntegerContext(self, self._ctx, self.state)
         self.enterRule(localctx, 106, self.RULE_signedInteger)
         try:
@@ -12828,7 +12641,6 @@ class Parser(Parser):
                 listener.exitLimitClauseItem(self)
 
     def limitClauseItem(self):
-
         localctx = Parser.LimitClauseItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 108, self.RULE_limitClauseItem)
         try:
@@ -12899,7 +12711,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class GroupAllContext(GroupingClauseContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GroupingClauseContext
@@ -12924,7 +12735,6 @@ class Parser(Parser):
                 listener.exitGroupAll(self)
 
     class GroupByOrExceptContext(GroupingClauseContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.GroupingClauseContext
@@ -12962,7 +12772,6 @@ class Parser(Parser):
                 listener.exitGroupByOrExcept(self)
 
     def groupingClause(self):
-
         localctx = Parser.GroupingClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 110, self.RULE_groupingClause)
         self._la = 0  # Token type
@@ -13043,7 +12852,6 @@ class Parser(Parser):
                 listener.exitHavingClause(self)
 
     def havingClause(self):
-
         localctx = Parser.HavingClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 112, self.RULE_havingClause)
         try:
@@ -13091,7 +12899,6 @@ class Parser(Parser):
                 listener.exitParameterItem(self)
 
     def parameterItem(self):
-
         localctx = Parser.ParameterItemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_parameterItem)
         self._la = 0  # Token type
@@ -13146,7 +12953,6 @@ class Parser(Parser):
                 listener.exitOutputParameterType(self)
 
     def outputParameterType(self):
-
         localctx = Parser.OutputParameterTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 116, self.RULE_outputParameterType)
         try:
@@ -13221,7 +13027,6 @@ class Parser(Parser):
                 listener.exitOutputParameterTypeComponent(self)
 
     def outputParameterTypeComponent(self):
-
         localctx = Parser.OutputParameterTypeComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 118, self.RULE_outputParameterTypeComponent)
         try:
@@ -13300,7 +13105,6 @@ class Parser(Parser):
                 listener.exitInputParameterType(self)
 
     def inputParameterType(self):
-
         localctx = Parser.InputParameterTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 120, self.RULE_inputParameterType)
         try:
@@ -13396,7 +13200,6 @@ class Parser(Parser):
                 listener.exitRulesetType(self)
 
     def rulesetType(self):
-
         localctx = Parser.RulesetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 122, self.RULE_rulesetType)
         try:
@@ -13408,7 +13211,11 @@ class Parser(Parser):
                 self.state = 1511
                 self.match(Parser.RULESET)
                 pass
-            elif token in [Parser.DATAPOINT, Parser.DATAPOINT_ON_VD, Parser.DATAPOINT_ON_VAR]:
+            elif token in [
+                Parser.DATAPOINT,
+                Parser.DATAPOINT_ON_VD,
+                Parser.DATAPOINT_ON_VAR,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1512
                 self.dpRuleset()
@@ -13467,7 +13274,6 @@ class Parser(Parser):
                 listener.exitScalarType(self)
 
     def scalarType(self):
-
         localctx = Parser.ScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 124, self.RULE_scalarType)
         self._la = 0  # Token type
@@ -13557,7 +13363,6 @@ class Parser(Parser):
                 listener.exitComponentType(self)
 
     def componentType(self):
-
         localctx = Parser.ComponentTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 126, self.RULE_componentType)
         self._la = 0  # Token type
@@ -13624,7 +13429,6 @@ class Parser(Parser):
                 listener.exitDatasetType(self)
 
     def datasetType(self):
-
         localctx = Parser.DatasetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 128, self.RULE_datasetType)
         self._la = 0  # Token type
@@ -13688,7 +13492,6 @@ class Parser(Parser):
                 listener.exitEvalDatasetType(self)
 
     def evalDatasetType(self):
-
         localctx = Parser.EvalDatasetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 130, self.RULE_evalDatasetType)
         try:
@@ -13758,7 +13561,6 @@ class Parser(Parser):
                 listener.exitScalarSetType(self)
 
     def scalarSetType(self):
-
         localctx = Parser.ScalarSetTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 132, self.RULE_scalarSetType)
         self._la = 0  # Token type
@@ -13799,7 +13601,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class DataPointVdContext(DpRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -13834,7 +13635,6 @@ class Parser(Parser):
                 listener.exitDataPointVd(self)
 
     class DataPointVarContext(DpRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -13869,7 +13669,6 @@ class Parser(Parser):
                 listener.exitDataPointVar(self)
 
     class DataPointContext(DpRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.DpRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -13886,7 +13685,6 @@ class Parser(Parser):
                 listener.exitDataPoint(self)
 
     def dpRuleset(self):
-
         localctx = Parser.DpRulesetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 134, self.RULE_dpRuleset)
         self._la = 0  # Token type
@@ -13983,7 +13781,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class HrRulesetVdTypeContext(HrRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.HrRulesetContext
             super().__init__(parser)
             self.vdName = None  # Token
@@ -14028,7 +13825,6 @@ class Parser(Parser):
                 listener.exitHrRulesetVdType(self)
 
     class HrRulesetVarTypeContext(HrRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.HrRulesetContext
             super().__init__(parser)
             self.varName = None  # VarIDContext
@@ -14070,7 +13866,6 @@ class Parser(Parser):
                 listener.exitHrRulesetVarType(self)
 
     class HrRulesetTypeContext(HrRulesetContext):
-
         def __init__(self, parser, ctx: ParserRuleContext):  # actually a VtlParser.HrRulesetContext
             super().__init__(parser)
             self.copyFrom(ctx)
@@ -14087,7 +13882,6 @@ class Parser(Parser):
                 listener.exitHrRulesetType(self)
 
     def hrRuleset(self):
-
         localctx = Parser.HrRulesetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 136, self.RULE_hrRuleset)
         self._la = 0  # Token type
@@ -14214,7 +14008,6 @@ class Parser(Parser):
                 listener.exitValueDomainName(self)
 
     def valueDomainName(self):
-
         localctx = Parser.ValueDomainNameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 138, self.RULE_valueDomainName)
         try:
@@ -14251,7 +14044,6 @@ class Parser(Parser):
                 listener.exitRulesetID(self)
 
     def rulesetID(self):
-
         localctx = Parser.RulesetIDContext(self, self._ctx, self.state)
         self.enterRule(localctx, 140, self.RULE_rulesetID)
         try:
@@ -14303,7 +14095,6 @@ class Parser(Parser):
                 listener.exitRulesetSignature(self)
 
     def rulesetSignature(self):
-
         localctx = Parser.RulesetSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 142, self.RULE_rulesetSignature)
         self._la = 0  # Token type
@@ -14366,7 +14157,6 @@ class Parser(Parser):
                 listener.exitSignature(self)
 
     def signature(self):
-
         localctx = Parser.SignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 144, self.RULE_signature)
         self._la = 0  # Token type
@@ -14422,7 +14212,6 @@ class Parser(Parser):
                 listener.exitRuleClauseDatapoint(self)
 
     def ruleClauseDatapoint(self):
-
         localctx = Parser.RuleClauseDatapointContext(self, self._ctx, self.state)
         self.enterRule(localctx, 146, self.RULE_ruleClauseDatapoint)
         self._la = 0  # Token type
@@ -14496,7 +14285,6 @@ class Parser(Parser):
                 listener.exitRuleItemDatapoint(self)
 
     def ruleItemDatapoint(self):
-
         localctx = Parser.RuleItemDatapointContext(self, self._ctx, self.state)
         self.enterRule(localctx, 148, self.RULE_ruleItemDatapoint)
         self._la = 0  # Token type
@@ -14577,7 +14365,6 @@ class Parser(Parser):
                 listener.exitRuleClauseHierarchical(self)
 
     def ruleClauseHierarchical(self):
-
         localctx = Parser.RuleClauseHierarchicalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 150, self.RULE_ruleClauseHierarchical)
         self._la = 0  # Token type
@@ -14640,7 +14427,6 @@ class Parser(Parser):
                 listener.exitRuleItemHierarchical(self)
 
     def ruleItemHierarchical(self):
-
         localctx = Parser.RuleItemHierarchicalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 152, self.RULE_ruleItemHierarchical)
         self._la = 0  # Token type
@@ -14716,7 +14502,6 @@ class Parser(Parser):
                 listener.exitHierRuleSignature(self)
 
     def hierRuleSignature(self):
-
         localctx = Parser.HierRuleSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 154, self.RULE_hierRuleSignature)
         self._la = 0  # Token type
@@ -14781,7 +14566,6 @@ class Parser(Parser):
                 listener.exitValueDomainSignature(self)
 
     def valueDomainSignature(self):
-
         localctx = Parser.ValueDomainSignatureContext(self, self._ctx, self.state)
         self.enterRule(localctx, 156, self.RULE_valueDomainSignature)
         self._la = 0  # Token type
@@ -14850,7 +14634,6 @@ class Parser(Parser):
                 listener.exitCodeItemRelation(self)
 
     def codeItemRelation(self):
-
         localctx = Parser.CodeItemRelationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 158, self.RULE_codeItemRelation)
         self._la = 0  # Token type
@@ -14895,7 +14678,7 @@ class Parser(Parser):
                 _la == Parser.PLUS
                 or _la == Parser.MINUS
                 or (
-                    (((_la - 241)) & ~0x3F) == 0
+                    ((_la - 241) & ~0x3F) == 0
                     and (
                         (1 << (_la - 241))
                         & (
@@ -14961,7 +14744,6 @@ class Parser(Parser):
                 listener.exitCodeItemRelationClause(self)
 
     def codeItemRelationClause(self):
-
         localctx = Parser.CodeItemRelationClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 160, self.RULE_codeItemRelationClause)
         self._la = 0  # Token type
@@ -15029,7 +14811,6 @@ class Parser(Parser):
                 listener.exitValueDomainValue(self)
 
     def valueDomainValue(self):
-
         localctx = Parser.ValueDomainValueContext(self, self._ctx, self.state)
         self.enterRule(localctx, 162, self.RULE_valueDomainValue)
         self._la = 0  # Token type
@@ -15038,18 +14819,16 @@ class Parser(Parser):
             self.state = 1739
             _la = self._input.LA(1)
             if not (
-                (
-                    (((_la - 241)) & ~0x3F) == 0
-                    and (
-                        (1 << (_la - 241))
-                        & (
-                            (1 << (Parser.INTEGER_CONSTANT - 241))
-                            | (1 << (Parser.NUMBER_CONSTANT - 241))
-                            | (1 << (Parser.IDENTIFIER - 241))
-                        )
+                ((_la - 241) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 241))
+                    & (
+                        (1 << (Parser.INTEGER_CONSTANT - 241))
+                        | (1 << (Parser.NUMBER_CONSTANT - 241))
+                        | (1 << (Parser.IDENTIFIER - 241))
                     )
-                    != 0
                 )
+                != 0
             ):
                 self._errHandler.recoverInline(self)
             else:
@@ -15077,7 +14856,6 @@ class Parser(Parser):
             super().copyFrom(ctx)
 
     class RangeConstraintContext(ScalarTypeConstraintContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ScalarTypeConstraintContext
@@ -15111,7 +14889,6 @@ class Parser(Parser):
                 listener.exitRangeConstraint(self)
 
     class ConditionConstraintContext(ScalarTypeConstraintContext):
-
         def __init__(
             self, parser, ctx: ParserRuleContext
         ):  # actually a VtlParser.ScalarTypeConstraintContext
@@ -15136,7 +14913,6 @@ class Parser(Parser):
                 listener.exitConditionConstraint(self)
 
     def scalarTypeConstraint(self):
-
         localctx = Parser.ScalarTypeConstraintContext(self, self._ctx, self.state)
         self.enterRule(localctx, 164, self.RULE_scalarTypeConstraint)
         self._la = 0  # Token type
@@ -15215,7 +14991,6 @@ class Parser(Parser):
                 listener.exitCompConstraint(self)
 
     def compConstraint(self):
-
         localctx = Parser.CompConstraintContext(self, self._ctx, self.state)
         self.enterRule(localctx, 166, self.RULE_compConstraint)
         try:
@@ -15272,7 +15047,6 @@ class Parser(Parser):
                 listener.exitMultModifier(self)
 
     def multModifier(self):
-
         localctx = Parser.MultModifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 168, self.RULE_multModifier)
         self._la = 0  # Token type
@@ -15328,7 +15102,6 @@ class Parser(Parser):
                 listener.exitValidationOutput(self)
 
     def validationOutput(self):
-
         localctx = Parser.ValidationOutputContext(self, self._ctx, self.state)
         self.enterRule(localctx, 170, self.RULE_validationOutput)
         self._la = 0  # Token type
@@ -15386,7 +15159,6 @@ class Parser(Parser):
                 listener.exitValidationMode(self)
 
     def validationMode(self):
-
         localctx = Parser.ValidationModeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 172, self.RULE_validationMode)
         self._la = 0  # Token type
@@ -15395,21 +15167,19 @@ class Parser(Parser):
             self.state = 1769
             _la = self._input.LA(1)
             if not (
-                (
-                    (((_la - 225)) & ~0x3F) == 0
-                    and (
-                        (1 << (_la - 225))
-                        & (
-                            (1 << (Parser.NON_NULL - 225))
-                            | (1 << (Parser.NON_ZERO - 225))
-                            | (1 << (Parser.PARTIAL_NULL - 225))
-                            | (1 << (Parser.PARTIAL_ZERO - 225))
-                            | (1 << (Parser.ALWAYS_NULL - 225))
-                            | (1 << (Parser.ALWAYS_ZERO - 225))
-                        )
+                ((_la - 225) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 225))
+                    & (
+                        (1 << (Parser.NON_NULL - 225))
+                        | (1 << (Parser.NON_ZERO - 225))
+                        | (1 << (Parser.PARTIAL_NULL - 225))
+                        | (1 << (Parser.PARTIAL_ZERO - 225))
+                        | (1 << (Parser.ALWAYS_NULL - 225))
+                        | (1 << (Parser.ALWAYS_ZERO - 225))
                     )
-                    != 0
                 )
+                != 0
             ):
                 self._errHandler.recoverInline(self)
             else:
@@ -15457,7 +15227,6 @@ class Parser(Parser):
                 listener.exitConditionClause(self)
 
     def conditionClause(self):
-
         localctx = Parser.ConditionClauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 174, self.RULE_conditionClause)
         self._la = 0  # Token type
@@ -15512,7 +15281,6 @@ class Parser(Parser):
                 listener.exitInputMode(self)
 
     def inputMode(self):
-
         localctx = Parser.InputModeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 176, self.RULE_inputMode)
         self._la = 0  # Token type
@@ -15558,7 +15326,6 @@ class Parser(Parser):
                 listener.exitImbalanceExpr(self)
 
     def imbalanceExpr(self):
-
         localctx = Parser.ImbalanceExprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 178, self.RULE_imbalanceExpr)
         try:
@@ -15603,7 +15370,6 @@ class Parser(Parser):
                 listener.exitInputModeHierarchy(self)
 
     def inputModeHierarchy(self):
-
         localctx = Parser.InputModeHierarchyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 180, self.RULE_inputModeHierarchy)
         self._la = 0  # Token type
@@ -15649,7 +15415,6 @@ class Parser(Parser):
                 listener.exitOutputModeHierarchy(self)
 
     def outputModeHierarchy(self):
-
         localctx = Parser.OutputModeHierarchyContext(self, self._ctx, self.state)
         self.enterRule(localctx, 182, self.RULE_outputModeHierarchy)
         self._la = 0  # Token type
@@ -15692,7 +15457,6 @@ class Parser(Parser):
                 listener.exitAlias(self)
 
     def alias(self):
-
         localctx = Parser.AliasContext(self, self._ctx, self.state)
         self.enterRule(localctx, 184, self.RULE_alias)
         try:
@@ -15729,7 +15493,6 @@ class Parser(Parser):
                 listener.exitVarID(self)
 
     def varID(self):
-
         localctx = Parser.VarIDContext(self, self._ctx, self.state)
         self.enterRule(localctx, 186, self.RULE_varID)
         try:
@@ -15766,7 +15529,6 @@ class Parser(Parser):
                 listener.exitSimpleComponentId(self)
 
     def simpleComponentId(self):
-
         localctx = Parser.SimpleComponentIdContext(self, self._ctx, self.state)
         self.enterRule(localctx, 188, self.RULE_simpleComponentId)
         try:
@@ -15809,7 +15571,6 @@ class Parser(Parser):
                 listener.exitComponentID(self)
 
     def componentID(self):
-
         localctx = Parser.ComponentIDContext(self, self._ctx, self.state)
         self.enterRule(localctx, 190, self.RULE_componentID)
         try:
@@ -15870,7 +15631,6 @@ class Parser(Parser):
                 listener.exitLists(self)
 
     def lists(self):
-
         localctx = Parser.ListsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 192, self.RULE_lists)
         self._la = 0  # Token type
@@ -15927,7 +15687,6 @@ class Parser(Parser):
                 listener.exitErCode(self)
 
     def erCode(self):
-
         localctx = Parser.ErCodeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 194, self.RULE_erCode)
         try:
@@ -15969,7 +15728,6 @@ class Parser(Parser):
                 listener.exitErLevel(self)
 
     def erLevel(self):
-
         localctx = Parser.ErLevelContext(self, self._ctx, self.state)
         self.enterRule(localctx, 196, self.RULE_erLevel)
         try:
@@ -16023,7 +15781,6 @@ class Parser(Parser):
                 listener.exitComparisonOperand(self)
 
     def comparisonOperand(self):
-
         localctx = Parser.ComparisonOperandContext(self, self._ctx, self.state)
         self.enterRule(localctx, 198, self.RULE_comparisonOperand)
         self._la = 0  # Token type
@@ -16032,21 +15789,19 @@ class Parser(Parser):
             self.state = 1817
             _la = self._input.LA(1)
             if not (
-                (
-                    ((_la) & ~0x3F) == 0
-                    and (
-                        (1 << _la)
-                        & (
-                            (1 << Parser.EQ)
-                            | (1 << Parser.LT)
-                            | (1 << Parser.MT)
-                            | (1 << Parser.ME)
-                            | (1 << Parser.NEQ)
-                            | (1 << Parser.LE)
-                        )
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << Parser.EQ)
+                        | (1 << Parser.LT)
+                        | (1 << Parser.MT)
+                        | (1 << Parser.ME)
+                        | (1 << Parser.NEQ)
+                        | (1 << Parser.LE)
                     )
-                    != 0
                 )
+                != 0
             ):
                 self._errHandler.recoverInline(self)
             else:
@@ -16085,7 +15840,6 @@ class Parser(Parser):
                 listener.exitOptionalExpr(self)
 
     def optionalExpr(self):
-
         localctx = Parser.OptionalExprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 200, self.RULE_optionalExpr)
         try:
@@ -16223,7 +15977,6 @@ class Parser(Parser):
                 listener.exitOptionalExprComponent(self)
 
     def optionalExprComponent(self):
-
         localctx = Parser.OptionalExprComponentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 202, self.RULE_optionalExprComponent)
         try:
@@ -16358,7 +16111,6 @@ class Parser(Parser):
                 listener.exitComponentRole(self)
 
     def componentRole(self):
-
         localctx = Parser.ComponentRoleContext(self, self._ctx, self.state)
         self.enterRule(localctx, 204, self.RULE_componentRole)
         try:
@@ -16426,7 +16178,6 @@ class Parser(Parser):
                 listener.exitViralAttribute(self)
 
     def viralAttribute(self):
-
         localctx = Parser.ViralAttributeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 206, self.RULE_viralAttribute)
         try:
@@ -16465,7 +16216,6 @@ class Parser(Parser):
                 listener.exitValueDomainID(self)
 
     def valueDomainID(self):
-
         localctx = Parser.ValueDomainIDContext(self, self._ctx, self.state)
         self.enterRule(localctx, 208, self.RULE_valueDomainID)
         try:
@@ -16502,7 +16252,6 @@ class Parser(Parser):
                 listener.exitOperatorID(self)
 
     def operatorID(self):
-
         localctx = Parser.OperatorIDContext(self, self._ctx, self.state)
         self.enterRule(localctx, 210, self.RULE_operatorID)
         try:
@@ -16539,7 +16288,6 @@ class Parser(Parser):
                 listener.exitRoutineName(self)
 
     def routineName(self):
-
         localctx = Parser.RoutineNameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 212, self.RULE_routineName)
         try:
@@ -16588,7 +16336,6 @@ class Parser(Parser):
                 listener.exitConstant(self)
 
     def constant(self):
-
         localctx = Parser.ConstantContext(self, self._ctx, self.state)
         self.enterRule(localctx, 214, self.RULE_constant)
         self._la = 0  # Token type
@@ -16599,7 +16346,7 @@ class Parser(Parser):
             if not (
                 _la == Parser.NULL_CONSTANT
                 or (
-                    (((_la - 241)) & ~0x3F) == 0
+                    ((_la - 241) & ~0x3F) == 0
                     and (
                         (1 << (_la - 241))
                         & (
@@ -16670,7 +16417,6 @@ class Parser(Parser):
                 listener.exitBasicScalarType(self)
 
     def basicScalarType(self):
-
         localctx = Parser.BasicScalarTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 216, self.RULE_basicScalarType)
         self._la = 0  # Token type
@@ -16680,7 +16426,7 @@ class Parser(Parser):
             _la = self._input.LA(1)
             if not (
                 (
-                    (((_la - 168)) & ~0x3F) == 0
+                    ((_la - 168) & ~0x3F) == 0
                     and (
                         (1 << (_la - 168))
                         & (
@@ -16735,7 +16481,6 @@ class Parser(Parser):
                 listener.exitRetainType(self)
 
     def retainType(self):
-
         localctx = Parser.RetainTypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 218, self.RULE_retainType)
         self._la = 0  # Token type

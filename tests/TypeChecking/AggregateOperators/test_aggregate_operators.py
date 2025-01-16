@@ -43,7 +43,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_2(self):
         """
-        test 1 plus nulls.
+        Test 1 plus nulls.
         Status: OK
         Expression: DS_r := avg ( DS_1 group by Id_1);
         Description: The nulls are ignored in the average.
@@ -151,7 +151,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_9(self):
         """
-        average with time again
+        Average with time again
         Status: OK
         Expression: DS_r := avg ( DS_1 group by Id_1);
         Description: Average with time.
@@ -169,7 +169,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_10(self):
         """
-        count with integer and number
+        Count with integer and number
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: There are measures int and num without nulls.
@@ -187,7 +187,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_11(self):
         """
-        count one measure
+        Count one measure
         Status: OK
         Expression: DS_r := count ( Me_1 group by Id_1);
         Description: Special case of count with a component, should ignore nulls.
@@ -205,7 +205,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_12(self):
         """
-        count with string
+        Count with string
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: There isnt fail because take the null as empty string.
@@ -220,7 +220,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_13(self):
         """
-        count with time
+        Count with time
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Measure Time with null, counts the null
@@ -235,7 +235,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_14(self):
         """
-        count with date
+        Count with date
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Measure Date with null, doesn't count the null, we think that should.
@@ -250,7 +250,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_15(self):
         """
-        count with time period
+        Count with time period
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Measure Time Period with null, doesn't count the null, we think that should.
@@ -265,7 +265,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_16(self):
         """
-        count with duration
+        Count with duration
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Measure Duration with null, doesn't count the null, we think that should.
@@ -280,7 +280,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_17(self):
         """
-        count with boolean
+        Count with boolean
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Measure Boolean with null, doesn't count the null, we think that should.
@@ -295,7 +295,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_18(self):
         """
-        count with number and integer
+        Count with number and integer
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: There are measures int and num with nulls.
@@ -310,7 +310,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_19(self):
         """
-        count with number and integer
+        Count with number and integer
         Status: OK
         Expression: DS_r := count ( DS_1 group by Id_1);
         Description: Example that takes the most left measure.
@@ -340,7 +340,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
     # max operator
     def test_21(self):
         """
-        max for integers
+        Max for integers
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: All the measures Integers are involved and the results should be type Integer.
@@ -358,7 +358,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_22(self):
         """
-        max for integers and numbers
+        Max for integers and numbers
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: All the measures Integers and Numbers are involved and the results should be the parent type.
@@ -373,7 +373,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_23(self):
         """
-        max for integers and string
+        Max for integers and string
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max for string is ok on a lexicographic order.
@@ -388,7 +388,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_24(self):
         """
-        max for integers and time
+        Max for integers and time
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max for time takes the the mayor number but not the mayor time,
@@ -404,7 +404,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_25(self):
         """
-        max for integers and date
+        Max for integers and date
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max for date and nulls.
@@ -419,7 +419,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_26(self):
         """
-        max for integers and time period
+        Max for integers and time period
         Status: OK.
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max doesnt work with nulls and diferent time_period in the same id (2012Q2,2012M12).
@@ -434,7 +434,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_27(self):
         """
-        max for integers and duration
+        Max for integers and duration
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max doesnt work with nulls and take the max duration in a lexicographic order.
@@ -449,7 +449,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
 
     def test_28(self):
         """
-        max for integers and boolean
+        Max for integers and boolean
         Status: OK
         Expression: DS_r := max ( DS_1 group by Id_1);
         Description: Max for booleans takes True as max.

@@ -300,7 +300,6 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.right)
 
     def visit_RegularAggregation(self, node: RegularAggregation) -> None:
-
         self.visit(node.dataset)
         for child in node.children:
             self.isFromRegularAggregation = True
@@ -329,7 +328,6 @@ class DAGAnalyzer(ASTTemplate):
             self.inputs.append(node.value)
 
     def visit_ParamOp(self, node: ParamOp) -> None:
-
         if self.udos and node.op in self.udos:
             DO_AST: Operator = self.udos[node.op]
 
@@ -426,7 +424,6 @@ class HRDAGAnalyzer(DAGAnalyzer):
         # def visit_Identifier(self, node: Identifier) -> None:
         if node.kind == "CodeItemID":  # and node.value not in self.alias:
             if self.isFirstAssignment:
-
                 self.isFirstAssignment = False
                 self.outputs.append(node.value)
             else:

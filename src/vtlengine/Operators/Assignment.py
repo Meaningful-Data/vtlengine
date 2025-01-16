@@ -8,7 +8,6 @@ ALL_MODEL_TYPES = Union[DataComponent, Dataset]
 
 
 class Assignment(Binary):
-
     @classmethod
     def validate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
         if (

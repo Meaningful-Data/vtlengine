@@ -70,7 +70,9 @@ class Join(Operator):
                     comp.role = (
                         Role.IDENTIFIER
                         if is_identifier
-                        else Role.MEASURE if comp.role == Role.IDENTIFIER else comp.role
+                        else Role.MEASURE
+                        if comp.role == Role.IDENTIFIER
+                        else comp.role
                     )
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)
@@ -107,7 +109,8 @@ class Join(Operator):
                 else:
                     if component_name in using and component_name in merged_components:
                         data_type = binary_implicit_promotion(
-                            merged_components[component_name].data_type, component.data_type
+                            merged_components[component_name].data_type,
+                            component.data_type,
                         )
                         component.data_type = data_type
                     merged_components[component_name] = component
@@ -216,7 +219,6 @@ class Join(Operator):
 
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]]) -> None:
-
         # (Case A)
         info = {op.name: op.get_identifiers_names() for op in operands}
         for op_name, identifiers in info.items():
@@ -224,11 +226,12 @@ class Join(Operator):
                 raise SemanticError("1-1-13-14", op=cls.op, name=op_name)
 
         for op_name, identifiers in info.items():
-            if (using is None and op_name != cls.reference_dataset.name and not
-            set(identifiers).issubset(set(info[cls.reference_dataset.name]))):
-                missing_components = list(
-                    set(identifiers) - set(info[cls.reference_dataset.name])
-                )
+            if (
+                using is None
+                and op_name != cls.reference_dataset.name
+                and not set(identifiers).issubset(set(info[cls.reference_dataset.name]))
+            ):
+                missing_components = list(set(identifiers) - set(info[cls.reference_dataset.name]))
                 raise SemanticError(
                     "1-1-13-11",
                     op=cls.op,
@@ -277,7 +280,6 @@ class InnerJoin(Join):
     def generate_result_components(
         cls, operands: List[Dataset], using: Optional[List[str]] = None
     ) -> Dict[str, Component]:
-
         if using is None:
             return super().generate_result_components(operands, using)
 
@@ -334,7 +336,9 @@ class CrossJoin(Join):
             else:
                 if result.data is not None:
                     result.data = pd.merge(
-                        result.data, op.data, how=cls.how  # type: ignore[arg-type]
+                        result.data,
+                        op.data,
+                        how=cls.how,  # type: ignore[arg-type]
                     )
             if result.data is not None:
                 result.data = result.data.rename(
@@ -357,7 +361,6 @@ class CrossJoin(Join):
 
 
 class Apply(Operator):
-
     @classmethod
     def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
         for child in expression:
@@ -424,9 +427,7 @@ class Apply(Operator):
         return Dataset(name=name, components=components, data=data)
 
     @classmethod
-    def get_common_components(
-        cls, left: Dataset, right: Dataset
-    ) -> (Dataset, Dataset):  # type: ignore[syntax]
+    def get_common_components(cls, left: Dataset, right: Dataset) -> (Dataset, Dataset):  # type: ignore[syntax]
         common = set(left.get_components_names()) & set(right.get_components_names())
         left.components = {
             comp.name: comp for comp in left.components.values() if comp.name in common

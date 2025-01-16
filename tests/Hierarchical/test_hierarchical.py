@@ -1082,7 +1082,11 @@ class HierarchicalRulsetOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_GL_397_7(self):
         """
@@ -2365,7 +2369,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_GL_397_8(self):
         """
@@ -2407,7 +2415,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_GL_397_12(self):
         """
@@ -2428,7 +2440,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_GL_397_14(self):
         """
@@ -2449,7 +2465,11 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         with pytest.raises(Exception, match="condComp and ruleComp must be the same"):
-            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+            self.BaseTest(
+                code=code,
+                number_inputs=number_inputs,
+                references_names=references_names,
+            )
 
     def test_GL_397_16(self):
         """

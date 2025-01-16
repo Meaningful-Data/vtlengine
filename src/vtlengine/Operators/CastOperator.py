@@ -34,43 +34,43 @@ class Cast(Operator.Unary):
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
-    def cast_string_to_number(cls, *args: Any) -> Any:
+    def cast_string_to_number(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_date(cls, *args: Any) -> Any:
+    def cast_string_to_date(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_duration(cls, *args: Any) -> Any:
+    def cast_string_to_duration(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a duration, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time_period(cls, *args: Any) -> Any:
+    def cast_string_to_time_period(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a time period, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, *args: Any) -> Any:
+    def cast_string_to_time(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a time, according to the mask.
 
@@ -78,20 +78,21 @@ class Cast(Operator.Unary):
 
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
-    @classmethod
-    def cast_date_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_duration_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_time_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_date_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_time_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
@@ -142,7 +143,6 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_mask_value_from_time_period_to_date(cls, mask_value: str) -> None:
-
         if mask_value not in ["START", "END"]:
             raise SemanticError("1-1-5-4", op=cls.op, type_1="Time_Period", type_2="Date")
 
@@ -180,9 +180,11 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_cast(
-        cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: Optional[str]
+        cls,
+        from_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: Optional[str],
     ) -> None:
-
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         else:
@@ -192,7 +194,6 @@ class Cast(Operator.Unary):
     def check_with_mask(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> None:
-
         explicit_promotion = EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING[from_type]
         if to_type.is_included(explicit_promotion):
             return cls.check_mask_value(from_type, to_type, mask_value)
@@ -207,7 +208,6 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
-
         explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
         if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
@@ -231,7 +231,7 @@ class Cast(Operator.Unary):
         cls, data: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]
     ) -> Any:
         """
-        cast the component to the type to_type without mask
+        Cast the component to the type to_type without mask
         """
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
@@ -242,15 +242,17 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_mask_component(cls, data: Any, from_type: Any, to_type: Any, mask: str) -> Any:
-
         result = data.map(lambda x: cls.cast_value(x, from_type, to_type, mask), na_action="ignore")
         return result
 
     @classmethod
     def cast_value(
-        cls, value: Any, provided_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
+        cls,
+        value: Any,
+        provided_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: str,
     ) -> Any:
-
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
         if provided_type == String and to_type == Date:
@@ -261,12 +263,12 @@ class Cast(Operator.Unary):
             return cls.cast_string_to_time_period(value, mask_value)
         if provided_type == String and to_type == TimeInterval:
             return cls.cast_string_to_time(value, mask_value)
-        if provided_type == Date and to_type == String:
-            return cls.cast_date_to_string(value, mask_value)
-        if provided_type == Duration and to_type == String:
-            return cls.cast_duration_to_string(value, mask_value)
-        if provided_type == TimeInterval and to_type == String:
-            return cls.cast_time_to_string(value, mask_value)
+        # if provided_type == Date and to_type == String:
+        #     return cls.cast_date_to_string(value, mask_value)
+        # if provided_type == Duration and to_type == String:
+        #     return cls.cast_duration_to_string(value, mask_value)
+        # if provided_type == TimeInterval and to_type == String:
+        #     return cls.cast_time_to_string(value, mask_value)
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
 
@@ -285,7 +287,6 @@ class Cast(Operator.Unary):
         scalarType: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Any:
-
         if mask is not None and not isinstance(mask, str):
             raise Exception(f"{cls.op} mask must be a string")
 
@@ -325,7 +326,10 @@ class Cast(Operator.Unary):
         else:
             measure_name = measure.name
         result_components[measure_name] = Component(
-            name=measure_name, data_type=to_type, role=Role.MEASURE, nullable=measure.nullable
+            name=measure_name,
+            data_type=to_type,
+            role=Role.MEASURE,
+            nullable=measure.nullable,
         )
         return Dataset(name="result", components=result_components, data=None)
 
@@ -366,7 +370,6 @@ class Cast(Operator.Unary):
         scalarType: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Any:
-
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, scalarType, mask)
         if isinstance(operand, Scalar):
@@ -381,7 +384,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Dataset:
-
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
@@ -410,7 +412,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Scalar:
-
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
         if pd.isna(operand.value):
@@ -431,7 +432,6 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> DataComponent:
-
         from_type = operand.data_type
         result_component = cls.component_validation(operand, to_type, mask)
         if mask:

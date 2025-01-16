@@ -57,7 +57,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_2(self):
@@ -70,7 +73,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_3(self):
@@ -83,7 +89,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_4(self):
@@ -96,7 +105,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_5(self):
@@ -109,7 +121,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_6(self):
@@ -122,7 +137,10 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )
 
     def test_7(self):
@@ -135,5 +153,8 @@ class ThreeValueTests(ThreeValueHelper):
         references_names = ["DS_r"]
 
         self.BaseTest(
-            text=text, code=code, number_inputs=number_inputs, references_names=references_names
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
         )

@@ -31,7 +31,6 @@ class Unary(Operator.Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-
         x = "" if pd.isnull(x) else str(x)
         return cls.py_op(x)
 
@@ -116,7 +115,6 @@ class Concatenate(Binary):
 
 
 class Parameterized(Unary):
-
     @classmethod
     def validate(cls, *args: Any) -> Any:
         operand: Operator.ALL_MODEL_DATA_TYPES
@@ -353,7 +351,6 @@ class Instr(Parameterized):
         param2: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
         param3: Optional[Operator.ALL_MODEL_DATA_TYPES] = None,
     ) -> Any:
-
         if (
             isinstance(param1, Dataset)
             or isinstance(param2, Dataset)
@@ -395,7 +392,10 @@ class Instr(Parameterized):
         else:
             if not check_unary_implicit_promotion(data_type, Integer):
                 raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                    "1-1-18-4",
+                    op=cls.op,
+                    param_type="Occurrence",
+                    correct_type="Integer",
                 )
         if isinstance(param, DataComponent):
             if param.data is not None:
@@ -408,9 +408,7 @@ class Instr(Parameterized):
         if position == 2 and not pd.isnull(param) and param < 1:
             raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
         elif position == 3 and not pd.isnull(param) and param < 1:
-            raise SemanticError(
-                "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1"
-            )
+            raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(
@@ -529,7 +527,6 @@ class Instr(Parameterized):
         param2: Optional[Any],
         param3: Optional[Any],
     ) -> Any:
-
         if pd.isnull(x):
             return None
         return cls.py_op(x, param1, param2, param3)
@@ -560,7 +557,10 @@ class Instr(Parameterized):
             else:
                 # OPERATORS_STRINGOPERATORS.93
                 raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                    "1-1-18-4",
+                    op=cls.op,
+                    param_type="Occurrence",
+                    correct_type="Integer",
                 )
         else:
             occurrence = 0

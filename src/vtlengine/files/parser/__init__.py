@@ -20,7 +20,11 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import check_date, check_time, check_time_period
+from vtlengine.files.parser._time_checking import (
+    check_date,
+    check_time,
+    check_time_period,
+)
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -73,8 +77,11 @@ def _sanitize_pandas_columns(
     components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
 ) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
-    if ("DATAFLOW" in data.columns and data.columns[0] == "DATAFLOW" and
-            "DATAFLOW" not in components):
+    if (
+        "DATAFLOW" in data.columns
+        and data.columns[0] == "DATAFLOW"
+        and "DATAFLOW" not in components
+    ):
         data.drop(columns=["DATAFLOW"], inplace=True)
     if "STRUCTURE" in data.columns and data.columns[0] == "STRUCTURE":
         if "STRUCTURE" not in components:
@@ -107,7 +114,11 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
 
     try:
         data = pd.read_csv(
-            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            keep_default_na=False,
+            na_values=[""],
         )
     except UnicodeDecodeError:
         raise InputValidationException(code="0-1-2-5", file=csv_path.name)
@@ -121,7 +132,11 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
     # start = time()
     try:
         data = pd.read_csv(
-            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            keep_default_na=False,
+            na_values=[""],
         )
 
     except UnicodeDecodeError:
@@ -165,7 +180,6 @@ def _validate_pandas(
     comp_name = ""
     comp = None
     try:
-
         for comp_name, comp in components.items():
             if comp.data_type in (Date, TimePeriod, TimeInterval):
                 data[comp_name] = data[comp_name].map(
@@ -184,7 +198,10 @@ def _validate_pandas(
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
-                    .map(lambda x: x.replace(" ", "") in DURATION_MAPPING, na_action="ignore")
+                    .map(
+                        lambda x: x.replace(" ", "") in DURATION_MAPPING,
+                        na_action="ignore",
+                    )
                     .all()
                 )
                 if not values_correct:
@@ -202,7 +219,9 @@ def _validate_pandas(
 
 
 def load_datapoints(
-    components: Dict[str, Component], dataset_name: str, csv_path: Optional[Union[Path, str]] = None
+    components: Dict[str, Component],
+    dataset_name: str,
+    csv_path: Optional[Union[Path, str]] = None,
 ) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
