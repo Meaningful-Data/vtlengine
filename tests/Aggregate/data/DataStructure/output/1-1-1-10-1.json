@@ -6,7 +6,7 @@
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {
