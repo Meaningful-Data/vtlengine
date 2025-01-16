@@ -48,6 +48,7 @@ class Analytic(Operator.Unary):
         Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
     """
 
+    return_integer = None
     sql_op: Optional[str] = None
 
     @classmethod
@@ -82,15 +83,15 @@ class Analytic(Operator.Unary):
                     "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
                 )
         if component_name is not None:
-            if cls.type_to_check is None and cls.op in return_integer_operators:
-                cls.type_to_check = operand.components[component_name].data_type
             if cls.type_to_check is not None:
                 unary_implicit_promotion(
                     operand.components[component_name].data_type, cls.type_to_check
                 )
-            if cls.return_type is None and cls.op in return_integer_operators:
-                cls.return_type = operand.components[component_name].data_type
-            if cls.return_type is not None:
+
+            if cls.op in return_integer_operators:
+                cls.return_integer = isinstance(cls.return_type, Integer)
+
+            elif cls.return_type is not None:
                 result_components[component_name] = Component(
                     name=component_name,
                     data_type=cls.return_type,
@@ -112,18 +113,22 @@ class Analytic(Operator.Unary):
             if len(measures) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
 
-            if cls.type_to_check is None and cls.op in return_integer_operators:
-                is_Number = False
+            if cls.op in return_integer_operators:
+                isNumber = False
                 for measure in measures:
-                    is_Number |= isinstance(measure.data_type, Number)
-                cls.type_to_check = Number if is_Number else Integer
+                    isNumber |= isinstance(measure.data_type, Number)
+                cls.return_integer = ~isNumber
+
             if cls.type_to_check is not None:
                 for measure in measures:
                     unary_implicit_promotion(measure.data_type, cls.type_to_check)
 
-            if cls.return_type is None and cls.op in return_integer_operators:
-                cls.return_type = cls.type_to_check
-            if cls.return_type is not None:
+            if cls.op in return_integer_operators:
+                for measure in measures:
+                    new_measure = copy(measure)
+                    new_measure.data_type = Integer if cls.return_integer else Number
+                    result_components[measure.name] = new_measure
+            elif cls.return_type is not None:
                 for measure in measures:
                     new_measure = copy(measure)
                     new_measure.data_type = cls.return_type
@@ -214,7 +219,7 @@ class Analytic(Operator.Unary):
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
                 measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
-            elif cls.op in return_integer_operators and cls.return_type == Integer:
+            elif cls.op in return_integer_operators and cls.return_integer:
                 measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
             else:
                 measure_query += f" {analytic_str} as {measure}"
@@ -276,6 +281,7 @@ class Max(Analytic):
 
     op = MAX
     sql_op = "MAX"
+    return_integer = False
 
 
 class Min(Analytic):
@@ -285,6 +291,7 @@ class Min(Analytic):
 
     op = MIN
     sql_op = "MIN"
+    return_integer = False
 
 
 class Sum(Analytic):
@@ -294,6 +301,7 @@ class Sum(Analytic):
 
     op = SUM
     sql_op = "SUM"
+    return_integer = False
 
 
 class Count(Analytic):
