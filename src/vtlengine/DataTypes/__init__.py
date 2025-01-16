@@ -311,7 +311,8 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-
+        if from_type == String:
+            return value  # check_time(value). TODO: resolve this to avoid a circular import.
         raise SemanticError(
             "2-1-5-1",
             value=value,
@@ -329,7 +330,7 @@ class Date(TimeInterval):
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type in {Date, String}:
-            return value
+            return check_max_date(value)
 
         raise SemanticError(
             "2-1-5-1",
@@ -342,7 +343,7 @@ class Date(TimeInterval):
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
         if from_type == String:
-            return value
+            return check_max_date(value)
 
         raise SemanticError(
             "2-1-5-1",
@@ -385,7 +386,7 @@ class TimePeriod(TimeInterval):
             return period_str
         # TODO: Remove String, only for compatibility with previous engine
         elif from_type == String:
-            return value
+            return value  # check_time_period(value) TODO: resolve this to avoid a circular import.
 
         raise SemanticError(
             "2-1-5-1",
@@ -465,7 +466,7 @@ class Boolean(ScalarType):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> bool:
         if from_type in {Number, Integer}:
-            return value not in {0, 0.0}
+            return value not in {0}
 
         raise SemanticError(
             "2-1-5-1",

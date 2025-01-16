@@ -32,31 +32,45 @@ class HRComparison(Operators.Binary):
         return x - y
 
     @staticmethod
-    def hr_func(x: Any, y: Any, hr_mode: str, func: Any) -> Any:
-        # In comments, it is specified the condition for evaluating the rule,
-        # so we delete the cases that does not satisfy the condition
-        # (line 6509 of the reference manual)
-        if hr_mode in ("partial_null", "partial_zero") and not pd.isnull(y) and y == "REMOVE_VALUE":
-            if (hr_mode == "partial_null" and pd.isnull(x) or hr_mode == "partial_zero"
-                    and not pd.isnull(x) and x == 0):
-                return "REMOVE_VALUE"
-            return None
-        if hr_mode == "non_null":
-            # If all the involved Data Points are not NULL
-            if pd.isnull(x) or pd.isnull(y):
-                return "REMOVE_VALUE"
-        elif hr_mode == "non_zero" and not (pd.isnull(x) and pd.isnull(y)) and (x == 0 and y == 0):
-            # If at least one of the involved Data Points is <> zero
-            return "REMOVE_VALUE"
+    def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
+        result = pd.Series(True, index=left_series.index)
 
-        return func(x, y)
+        if hr_mode in ("partial_null", "partial_zero"):
+            mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
+            if hr_mode == "partial_null":
+                mask_null = mask_remove & left_series.notnull()
+            else:
+                mask_null = mask_remove & (left_series != 0)
+            result[mask_remove] = "REMOVE_VALUE"
+            result[mask_null] = None
+        elif hr_mode == "non_null":
+                mask_remove = left_series.isnull() | right_series.isnull()
+                result[mask_remove] = "REMOVE_VALUE"
+        elif hr_mode == "non_zero":
+            mask_remove = (left_series == 0) & (right_series == 0)
+            result[mask_remove] = "REMOVE_VALUE"
+
+        return result
 
     @classmethod
     def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
-        return left_series.combine(right_series, lambda x, y: cls.hr_func(x, y, hr_mode, func))
+        # In order not to apply the function to the whole series, we align the series
+        # and apply the function only to the valid values based on a validation mask.
+        # The function is applied to the aligned series and the result is combined with the
+        # original series.
+        left_series, right_series = left_series.align(right_series)
+        remove_result = cls.hr_func(left_series, right_series, hr_mode)
+        mask_valid = remove_result == True
+        result = pd.Series(remove_result, index=left_series.index)
+        result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
+        return result
 
     @classmethod
-    def validate(cls, left_operand: Dataset, right_operand: DataComponent, hr_mode: str) -> Dataset:
+    def validate(cls,
+                 left_operand: Dataset,
+                 right_operand: DataComponent,
+                 hr_mode: str
+                 ) -> Dataset:
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in left_operand.components.items()
@@ -75,12 +89,11 @@ class HRComparison(Operators.Binary):
         )
 
     @classmethod
-    def evaluate(  # type: ignore[override]
-        cls, left: Dataset, right: DataComponent, hr_mode: str
-    ) -> Dataset:
+    def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
+
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, cls.op_func
@@ -88,6 +101,7 @@ class HRComparison(Operators.Binary):
             result.data["imbalance"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, cls.imbalance_func
             )
+
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)

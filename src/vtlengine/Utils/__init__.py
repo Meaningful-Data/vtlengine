@@ -15,7 +15,7 @@ from vtlengine.AST.Grammar.tokens import (
     COUNT,
     CROSS_JOIN,
     DATE_ADD,
-    DATE_DIFF,
+    DATEDIFF,
     DAYOFMONTH,
     DAYOFYEAR,
     DAYTOMONTH,
@@ -269,7 +269,7 @@ BINARY_MAPPING: Dict[Any, Any] = {
     # Time
     TIMESHIFT: Time_Shift,
     CHARSET_MATCH: Match,
-    DATE_DIFF: Date_Diff,
+    DATEDIFF: Date_Diff,
 }
 
 UNARY_MAPPING = {

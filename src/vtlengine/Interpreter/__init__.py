@@ -23,6 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     COUNT,
     CURRENT_DATE,
+    DATE_ADD,
     DROP,
     EQ,
     EXISTS_IN,
@@ -70,7 +71,7 @@ from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import HAAssignment, Hierarchy, get_measure_from_dataset
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import Instr, Replace, Substr
-from vtlengine.Operators.Time import Current_Date, Fill_time_series, Time_Aggregation
+from vtlengine.Operators.Time import Current_Date, Date_Add, Fill_time_series, Time_Aggregation
 from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -1100,6 +1101,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else "all"
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
+        elif node.op == DATE_ADD:
+            params = [self.visit(node.params[0]), self.visit(node.params[1])]
+            return Date_Add.analyze(self.visit(node.children[0]), params)
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             scalar_type = node.children[1]
@@ -1494,8 +1498,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 indexes = merge_df.data[merge_df.data.columns[-1]]
             else:
-                indexes = data.index
-            data = data.fillna(False)
+                indexes = data[data.notnull()].index
 
             if isinstance(condition, Dataset):
                 filtered_data = data.iloc[indexes]
@@ -1620,8 +1623,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Getting Dataset elements
         result_components = {
             comp_name: copy(comp)
-            for comp_name, comp in
-            self.ruleset_dataset.components.items()  # type: ignore[union-attr]
+            for comp_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
@@ -1735,8 +1737,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
-                            signature_values[param["name"]] = (
-                                node.params[i].value)  # type: ignore[attr-defined]
+                            signature_values[param["name"]] = node.params[
+                                i
+                            ].value  # type: ignore[attr-defined]
                         else:
                             param_element = self.visit(node.params[i])
                             if isinstance(param_element, Dataset):
