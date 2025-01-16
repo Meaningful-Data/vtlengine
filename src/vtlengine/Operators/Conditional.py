@@ -307,8 +307,8 @@ class Case(Operator):
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
         for condition in conditions:
-            if isinstance(condition, (DataComponent, Dataset)):
-                condition.data.fillna(False, inplace=True)  # type: ignore[union-attr]
+            if isinstance(condition, (DataComponent, Dataset)) and condition.data is not None:
+                condition.data.fillna(False, inplace=True)
             elif isinstance(condition, Scalar) and condition.value is None:
                 condition.value = False
 
