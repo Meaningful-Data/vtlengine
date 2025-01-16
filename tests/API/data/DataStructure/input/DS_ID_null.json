@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_Schema",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Me_1",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "At_1",
+          "role": "ViralAttribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

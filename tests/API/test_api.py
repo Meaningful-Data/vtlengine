@@ -269,6 +269,16 @@ params_run = [
     )
 ]
 
+params_schema = [(filepath_json / "DS_Schema.json")]
+
+param_id_null = [((filepath_json / "DS_ID_null.json"), "Identifier Id_1 cannot be nullable")]
+
+param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
+
+param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
+
+param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
+
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -960,3 +970,58 @@ def test_mandatory_me_error():
     if result is False:
         print(f"\n{exception_code} != {context.value.args[1]}")
     assert result
+
+
+@pytest.mark.parametrize("data_structure", params_schema)
+def test_load_data_structure_with_new_schema(data_structure):
+    result = load_datasets(data_structure)
+    reference = Dataset(
+        name="DS_Schema",
+        components={
+            "Id_1": Component(
+                name="Id_1",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
+            ),
+            "Id_2": Component(
+                name="Id_2",
+                data_type=DataTypes.String,
+                role=Role.IDENTIFIER,
+                nullable=False,
+            ),
+            "Me_1": Component(
+                name="Me_1",
+                data_type=DataTypes.Integer,
+                role=Role.MEASURE,
+                nullable=True,
+            ),
+            "At_1": Component(
+                name="At_1",
+                data_type=DataTypes.String,
+                role=Role.ATTRIBUTE,
+                nullable=True,
+            ),
+        },
+        data=None,
+    )
+    assert "DS_Schema" in result
+    assert result["DS_Schema"] == reference
+
+
+@pytest.mark.parametrize("ds_r, error_message", param_id_null)
+def test_load_data_structure_with_null_id(ds_r, error_message):
+    with pytest.raises(ValueError, match=error_message):
+        load_datasets(ds_r)
+
+
+@pytest.mark.parametrize("ds_r, error_code", param_wrong_role)
+def test_load_data_structure_with_wrong_role(ds_r, error_code):
+    with pytest.raises(SemanticError, match=error_code):
+        load_datasets(ds_r)
+
+
+@pytest.mark.parametrize("ds_r, error_code", param_wrong_data_type)
+def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
+    with pytest.raises(SemanticError, match=error_code):
+        load_datasets(ds_r)

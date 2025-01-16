@@ -1,0 +1,37 @@
+{
+  "datasets": [
+    {
+      "name": "DS_Schema",
+      "structure": "Structure_1"
+    }
+  ],
+  "structures": [
+    {
+      "name": "Structure_1",
+      "components": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "data_type": "String"
+        },
+        {
+          "name": "Id_2",
+          "role": "Identifier",
+          "data_type": "String"
+        },
+        {
+          "name": "Me_1",
+          "role": "BBBB",
+          "data_type": "Integer"
+        },
+        {
+          "name": "At_1",
+          "role": "ViralAttribute",
+          "data_type": "String"
+        }
+      ]
+    }
+  ],
+  "variables": [],
+  "domains": []
+}
