@@ -29,6 +29,7 @@ python = "^3.10"
 duckdb = "^1.1.1"
 #numba = "^0.60.0"
 s3fs = "^2024.9.0"
+jsonschema = "4.23.0"
 
 # APT dependencies
 antlr4-python3-runtime = "4.9.2"
@@ -48,7 +49,8 @@ mypy = "^1.14.1"
 pandas-stubs = "^2.2.3.241009"
 stubs = "^1.0.0"
 toml = "^0.10.2"
-ruff = "^0.7.4"
+ruff = "^0.8.3"
+types-jsonschema = "4.23.0.20241208"
 
 [tool.ruff]
 line-length = 100

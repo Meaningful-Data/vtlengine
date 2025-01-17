@@ -68,10 +68,19 @@ from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Comparison import Between, ExistIn
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
-from vtlengine.Operators.HROperators import HAAssignment, Hierarchy, get_measure_from_dataset
+from vtlengine.Operators.HROperators import (
+    HAAssignment,
+    Hierarchy,
+    get_measure_from_dataset,
+)
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import Instr, Replace, Substr
-from vtlengine.Operators.Time import Current_Date, Date_Add, Fill_time_series, Time_Aggregation
+from vtlengine.Operators.Time import (
+    Current_Date,
+    Date_Add,
+    Fill_time_series,
+    Time_Aggregation,
+)
 from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -153,7 +162,9 @@ class InterpreterAnalyzer(ASTTemplate):
         for ds_name in self.ds_analysis[INSERT][statement_num]:
             if ds_name in self.datapoints_paths:
                 self.datasets[ds_name].data = load_datapoints(
-                    self.datasets[ds_name].components, ds_name, self.datapoints_paths[ds_name]
+                    self.datasets[ds_name].components,
+                    ds_name,
+                    self.datapoints_paths[ds_name],
                 )
             elif ds_name in self.datasets and self.datasets[ds_name].data is None:
                 _fill_dataset_empty_data(self.datasets[ds_name])
@@ -180,7 +191,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Saving only datasets, no scalars
             save_datapoints(
-                self.time_period_representation, self.datasets[ds_name], self.output_path
+                self.time_period_representation,
+                self.datasets[ds_name],
+                self.output_path,
             )
             self.datasets[ds_name].data = None
 
@@ -423,7 +436,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.operand is not None and operand is not None:
                 op_comp: DataComponent = self.visit(node.operand)
                 comps_to_keep = {}
-                for comp_name, comp in self.regular_aggregation_dataset.components.items():
+                for (
+                    comp_name,
+                    comp,
+                ) in self.regular_aggregation_dataset.components.items():
                     if comp.role == Role.IDENTIFIER:
                         comps_to_keep[comp_name] = copy(comp)
                 comps_to_keep[op_comp.name] = Component(
@@ -789,7 +805,9 @@ class InterpreterAnalyzer(ASTTemplate):
             comp_name = self.ruleset_signature[node.value]
             if comp_name not in self.ruleset_dataset.components:
                 raise SemanticError(
-                    "1-1-1-10", comp_name=node.value, dataset_name=self.ruleset_dataset.name
+                    "1-1-1-10",
+                    comp_name=node.value,
+                    dataset_name=self.ruleset_dataset.name,
                 )
             data = None if self.rule_data is None else self.rule_data[comp_name]
             return DataComponent(
@@ -953,7 +971,10 @@ class InterpreterAnalyzer(ASTTemplate):
             elseValue = self.visit(node.elseOp)
             if not isinstance(thenValue, Scalar) or not isinstance(elseValue, Scalar):
                 raise SemanticError(
-                    "1-1-9-3", op="If_op", then_name=thenValue.name, else_name=elseValue.name
+                    "1-1-9-3",
+                    op="If_op",
+                    then_name=thenValue.name,
+                    else_name=elseValue.name,
                 )
             if condition.value:
                 return self.visit(node.thenOp)
@@ -1029,7 +1050,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Constant(self, node: AST.Constant) -> Any:
         return Scalar(
-            name=str(node.value), value=node.value, data_type=BASIC_TYPES[type(node.value)]
+            name=str(node.value),
+            value=node.value,
+            data_type=BASIC_TYPES[type(node.value)],
         )
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
@@ -1135,7 +1158,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 for comp_name in node.children[2:]:
                     if comp_name.__str__() not in dataset_element.components:
                         raise SemanticError(
-                            "1-1-1-10", comp_name=comp_name, dataset_name=dataset_element.name
+                            "1-1-1-10",
+                            comp_name=comp_name,
+                            dataset_name=dataset_element.name,
                         )
                 if dpr_info is not None and dpr_info["signature_type"] == "variable":
                     for i, comp_name in enumerate(node.children[2:]):
@@ -1169,7 +1194,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Datapoint Ruleset final evaluation
             return Check_Datapoint.analyze(
-                dataset_element=dataset_element, rule_info=rule_output_values, output=output
+                dataset_element=dataset_element,
+                rule_info=rule_output_values,
+                output=output,
             )
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             if len(node.children) == 3:
@@ -1208,7 +1235,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     and hr_info["signature"] != component
                 ):
                     raise SemanticError(
-                        "1-1-10-3", op=node.op, found=component, expected=hr_info["signature"]
+                        "1-1-10-3",
+                        op=node.op,
+                        found=component,
+                        expected=hr_info["signature"],
                     )
                 elif hr_info["node"].signature_type == "valuedomain" and component is None:
                     raise SemanticError("1-1-10-4", op=node.op)
@@ -1220,7 +1250,10 @@ class InterpreterAnalyzer(ASTTemplate):
                         and cond_components[i] != cond_comp
                     ):
                         raise SemanticError(
-                            "1-1-10-6", op=node.op, expected=cond_comp, found=cond_components[i]
+                            "1-1-10-6",
+                            op=node.op,
+                            expected=cond_comp,
+                            found=cond_components[i],
                         )
                     cond_info[cond_comp] = cond_components[i]
 
@@ -1275,7 +1308,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 # Final evaluation
                 if node.op == CHECK_HIERARCHY:
                     result = Check_Hierarchy.analyze(
-                        dataset_element=dataset, rule_info=rule_output_values, output=output
+                        dataset_element=dataset,
+                        rule_info=rule_output_values,
+                        output=output,
                     )
                     del rule_output_values
                 else:
@@ -1538,7 +1573,10 @@ class InterpreterAnalyzer(ASTTemplate):
         components.update(
             {
                 name: Component(
-                    name=name, data_type=BASIC_TYPES[int], role=Role.MEASURE, nullable=True
+                    name=name,
+                    data_type=BASIC_TYPES[int],
+                    role=Role.MEASURE,
+                    nullable=True,
                 )
             }
         )
@@ -1838,5 +1876,8 @@ class InterpreterAnalyzer(ASTTemplate):
         operand = self.visit(node.operand)
 
         return Time_Aggregation.analyze(
-            operand=operand, period_from=node.period_from, period_to=node.period_to, conf=node.conf
+            operand=operand,
+            period_from=node.period_from,
+            period_to=node.period_to,
+            conf=node.conf,
         )

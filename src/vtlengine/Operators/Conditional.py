@@ -66,8 +66,8 @@ class If(Operator):
             else:
                 false_data = false_branch.data.reindex(condition.data.index)
             result = np.where(condition.data, true_data, false_data)
-        if condition.data is not None:
-            return pd.Series(result, index=condition.data.index)
+
+        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
 
     @classmethod
     def dataset_level_evaluation(
@@ -81,7 +81,11 @@ class If(Operator):
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
                 true_data = pd.merge(
-                    true_data, true_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                    true_data,
+                    true_branch.data,
+                    on=ids,
+                    how="right",
+                    suffixes=("_condition", ""),
                 )
             else:
                 true_data = pd.DataFrame(columns=true_branch.get_components_names())
@@ -92,7 +96,11 @@ class If(Operator):
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0 and false_branch.data is not None:
                 false_data = pd.merge(
-                    false_data, false_branch.data, on=ids, how="right", suffixes=("_condition", "")
+                    false_data,
+                    false_branch.data,
+                    on=ids,
+                    how="right",
+                    suffixes=("_condition", ""),
                 )
             else:
                 false_data = pd.DataFrame(columns=false_branch.get_components_names())
@@ -142,7 +150,9 @@ class If(Operator):
         if isinstance(condition, DataComponent):
             if not condition.data_type == Boolean:
                 raise SemanticError(
-                    "1-1-9-11", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
+                    "1-1-9-11",
+                    op=cls.op,
+                    type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
             if not isinstance(left, Scalar) or not isinstance(right, Scalar):
                 nullable = condition.nullable
@@ -192,7 +202,8 @@ class If(Operator):
                 if component.data_type != right.components[component.name].data_type:
                     component.data_type = right.components[component.name].data_type = (
                         binary_implicit_promotion(
-                            component.data_type, right.components[component.name].data_type
+                            component.data_type,
+                            right.components[component.name].data_type,
                         )
                     )
         if isinstance(condition, Dataset):
@@ -296,6 +307,11 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
+        for condition in conditions:
+            if isinstance(condition, (DataComponent, Dataset)) and condition.data is not None:
+                condition.data.fillna(False, inplace=True)
+            elif isinstance(condition, Scalar) and condition.value is None:
+                condition.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
@@ -308,10 +324,10 @@ class Case(Operator):
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data,
-                    value,
-                    result.data,  # type: ignore[call-overload]
+                result.data = np.where(  # type: ignore[call-overload]
+                    condition.data.notna(),
+                    np.where(condition.data, value, result.data),  # type: ignore[call-overload]
+                    result.data,
                 )
 
             condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
@@ -395,9 +411,10 @@ class Case(Operator):
                     raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
 
             nullable = any(
-                thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null
+                (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
                 for thenOp in ops
             )
+            nullable |= any(condition.nullable for condition in conditions)
 
             data_type = ops[0].data_type
             for op in ops[1:]:

@@ -194,7 +194,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_7(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -225,7 +225,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_8(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -256,7 +256,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_9(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -287,7 +287,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_10(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -304,7 +304,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_11(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -322,7 +322,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_12(self):
         """
-        define datapoint ruleset
+        Define datapoint ruleset
         Dataset --> Dataset
         Status: OK
 
@@ -368,7 +368,7 @@ class ValidationOperatorsTests(ValidationHelper):
 
     def test_GL_cs_22(self):
         """
-        eschaped characters in the hierarchical ruleset have to be replaced by the corresponding character
+        Eschaped characters in the hierarchical ruleset have to be replaced by the corresponding character
         '_T' -> 'T'
 
         Uses SDMX-CSV 1.0

@@ -98,7 +98,8 @@ class Time(Operators.Operator):
         months_deltas = differences.apply(lambda x: x.days // 30)
         days_deltas = differences.apply(lambda x: x.days)
         min_months = min(
-            (diff for diff in months_deltas if diff > 0 and diff % 12 != 0), default=None
+            (diff for diff in months_deltas if diff > 0 and diff % 12 != 0),
+            default=None,
         )
         min_days = min(
             (diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0),
@@ -189,7 +190,10 @@ class Period_indicator(Unary):
                 if comp.role == Role.IDENTIFIER
             }
             result_components["duration_var"] = Component(
-                name="duration_var", data_type=Duration, role=Role.MEASURE, nullable=True
+                name="duration_var",
+                data_type=Duration,
+                role=Role.MEASURE,
+                nullable=True,
             )
             return Dataset(name="result", components=result_components, data=None)
         # DataComponent and Scalar validation
@@ -364,7 +368,10 @@ class Fill_time_series(Binary):
                 else:
                     if period in period_limits["min"] and period in period_limits["max"]:
                         vals = list(
-                            range(period_limits["min"][period], period_limits["max"][period] + 1)
+                            range(
+                                period_limits["min"][period],
+                                period_limits["max"][period] + 1,
+                            )
                         )
                         filled_data.extend(
                             cls.fill_periods_rows(group_df, period, years, vals=vals)
@@ -380,7 +387,11 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods_rows(
-        cls, group_df: Any, period: str, years: List[int], vals: Optional[List[int]] = None
+        cls,
+        group_df: Any,
+        period: str,
+        years: List[int],
+        vals: Optional[List[int]] = None,
     ) -> List[Any]:
         rows = []
         for year in years:
@@ -654,7 +665,10 @@ class Time_Aggregation(Time):
                 count_time_types += 1
         if count_time_types != 1:
             raise SemanticError(
-                "1-1-19-9", op=cls.op, comp_type="dataset", param="single time identifier"
+                "1-1-19-9",
+                op=cls.op,
+                comp_type="dataset",
+                param="single time identifier",
             )
 
         if count_time_types != 1:
@@ -672,7 +686,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls,
+        operand: DataComponent,
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -731,7 +749,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-        cls, operand: DataComponent, period_from: Optional[str], period_to: str, conf: str
+        cls,
+        operand: DataComponent,
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -897,7 +919,7 @@ class Date_Add(Parametrized):
                 raise SemanticError(
                     f"2-1-19-{error}",
                     op=cls.op,
-                    type=param.__class__.__name__ if error == 12 else param.data_type.__name__,
+                    type=(param.__class__.__name__ if error == 12 else param.data_type.__name__),
                     name="shiftNumber" if error == 12 else "periodInd",
                     expected="Scalar" if error == 12 else expected_types[i].__name__,
                 )
@@ -983,7 +1005,10 @@ class SimpleUnaryTime(Operators.Unary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
         # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check)
-        if operand.data_type == TimeInterval or operand.data_type not in (Date, TimePeriod):
+        if operand.data_type == TimeInterval or operand.data_type not in (
+            Date,
+            TimePeriod,
+        ):
             raise SemanticError("1-1-19-10", op=cls.op)
 
         return super().validate(operand)

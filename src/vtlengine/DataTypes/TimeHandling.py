@@ -38,7 +38,10 @@ def period_to_date(
     if period_indicator == "A":
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
-        "S": [(date(year, 1, 1), date(year, 6, 30)), (date(year, 7, 1), date(year, 12, 31))],
+        "S": [
+            (date(year, 1, 1), date(year, 6, 30)),
+            (date(year, 7, 1), date(year, 12, 31)),
+        ],
         "Q": [
             (date(year, 1, 1), date(year, 3, 31)),
             (date(year, 4, 1), date(year, 6, 30)),

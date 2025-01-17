@@ -29,10 +29,16 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Integer, Number, unary_implicit_promotion
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    Integer,
+    Number,
+    unary_implicit_promotion,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 
+return_integer_operators = [MAX, MIN, SUM]
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
@@ -47,10 +53,11 @@ class Analytic(Operator.Unary):
         Evaluate: Ensures the type of data is the correct one to perform the Analytic operators.
     """
 
+    return_integer = None
     sql_op: Optional[str] = None
 
     @classmethod
-    def validate(  # type: ignore[override]
+    def validate(  # type: ignore[override]  # noqa: C901
         cls,
         operand: Dataset,
         partitioning: List[str],
@@ -66,7 +73,10 @@ class Analytic(Operator.Unary):
         for comp_name in partitioning:
             if comp_name not in operand.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=comp_name,
+                    dataset_name=operand.name,
                 )
             if comp_name not in identifier_names:
                 raise SemanticError(
@@ -78,14 +88,21 @@ class Analytic(Operator.Unary):
         for comp_name in order_components:
             if comp_name not in operand.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                    "1-1-1-10",
+                    op=cls.op,
+                    comp_name=comp_name,
+                    dataset_name=operand.name,
                 )
         if component_name is not None:
             if cls.type_to_check is not None:
                 unary_implicit_promotion(
                     operand.components[component_name].data_type, cls.type_to_check
                 )
-            if cls.return_type is not None:
+
+            if cls.op in return_integer_operators:
+                cls.return_integer = isinstance(cls.return_type, Integer)
+
+            elif cls.return_type is not None:
                 result_components[component_name] = Component(
                     name=component_name,
                     data_type=cls.return_type,
@@ -106,14 +123,28 @@ class Analytic(Operator.Unary):
             measures = operand.get_measures()
             if len(measures) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
+
+            if cls.op in return_integer_operators:
+                isNumber = False
+                for measure in measures:
+                    isNumber |= isinstance(measure.data_type, Number)
+                cls.return_integer = not isNumber
+
             if cls.type_to_check is not None:
                 for measure in measures:
                     unary_implicit_promotion(measure.data_type, cls.type_to_check)
-            if cls.return_type is not None:
+
+            if cls.op in return_integer_operators:
+                for measure in measures:
+                    new_measure = copy(measure)
+                    new_measure.data_type = Integer if cls.return_integer else Number
+                    result_components[measure.name] = new_measure
+            elif cls.return_type is not None:
                 for measure in measures:
                     new_measure = copy(measure)
                     new_measure.data_type = cls.return_type
                     result_components[measure.name] = new_measure
+
             if cls.op == COUNT and len(measures) <= 1:
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
                 nullable = False if len(measures) == 0 else measures[0].nullable
@@ -199,6 +230,8 @@ class Analytic(Operator.Unary):
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
                 measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+            elif cls.op in return_integer_operators and cls.return_integer:
+                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
             else:
                 measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
@@ -245,6 +278,10 @@ class Analytic(Operator.Unary):
             window=window,
             params=params,
         )
+
+        # if cls.return_type == Integer:
+        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
+
         return result
 
 
@@ -255,6 +292,7 @@ class Max(Analytic):
 
     op = MAX
     sql_op = "MAX"
+    return_integer = False
 
 
 class Min(Analytic):
@@ -264,6 +302,7 @@ class Min(Analytic):
 
     op = MIN
     sql_op = "MIN"
+    return_integer = False
 
 
 class Sum(Analytic):
@@ -272,9 +311,8 @@ class Sum(Analytic):
     """
 
     op = SUM
-    type_to_check = Number
-    return_type = Number
     sql_op = "SUM"
+    return_integer = False
 
 
 class Count(Analytic):

@@ -45,7 +45,8 @@ class Expr(VtlVisitor):
 
                                 Expr Definition.
 
-    _______________________________________________________________________________________"""
+    _______________________________________________________________________________________
+    """
 
     def visitExpr(self, ctx: Parser.ExprContext):
         """
@@ -345,7 +346,7 @@ class Expr(VtlVisitor):
 
     def visitJoinClause(self, ctx: Parser.JoinClauseContext):
         """
-        joinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
+        JoinClauseItem (COMMA joinClauseItem)* (USING componentID (COMMA componentID)*)?
         """
         ctx_list = list(ctx.getChildren())
 
@@ -893,7 +894,11 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.17
             raise Exception("Optional as expression node is not allowed in Time Aggregation")
         return TimeAggregation(
-            op=op, operand=operand_node, period_to=period_to, period_from=period_from, conf=conf
+            op=op,
+            operand=operand_node,
+            period_to=period_to,
+            period_from=period_from,
+            conf=conf,
         )
 
     def visitFlowAtom(self, ctx: Parser.FlowAtomContext):
@@ -1313,11 +1318,19 @@ class Expr(VtlVisitor):
 
         if window is None:
             window = Windowing(
-                type_="data", start=-1, stop=0, start_mode="preceding", stop_mode="current"
+                type_="data",
+                start=-1,
+                stop=0,
+                start_mode="preceding",
+                stop_mode="current",
             )
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=window
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=window,
         )
 
     def visitLagOrLeadAn(self, ctx: Parser.LagOrLeadAnContext):
@@ -1351,7 +1364,11 @@ class Expr(VtlVisitor):
             raise Exception(f"{op_node} requires an offset parameter.")
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            params=params,
         )
 
     def visitRatioToReportAn(self, ctx: Parser.RatioToReportAnContext):

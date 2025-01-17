@@ -54,13 +54,13 @@
         {
           "name": "THRD_PRTY_PRRTY_CLMS",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {
           "name": "MX_3PPC",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {

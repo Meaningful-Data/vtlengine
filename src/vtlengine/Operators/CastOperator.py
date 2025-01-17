@@ -34,43 +34,43 @@ class Cast(Operator.Unary):
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
-    def cast_string_to_number(cls, *args: Any) -> Any:
+    def cast_string_to_number(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_date(cls, *args: Any) -> Any:
+    def cast_string_to_date(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a number, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_duration(cls, *args: Any) -> Any:
+    def cast_string_to_duration(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a duration, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time_period(cls, *args: Any) -> Any:
+    def cast_string_to_time_period(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a time period, according to the mask.
 
         """
 
-        raise NotImplementedError("How this cast should be implemented is not yet defined.")
+        raise NotImplementedError("How this mask should be implemented is not yet defined.")
 
     @classmethod
-    def cast_string_to_time(cls, *args: Any) -> Any:
+    def cast_string_to_time(cls, value: Any, mask: str) -> Any:
         """
         This method casts a string to a time, according to the mask.
 
@@ -78,20 +78,21 @@ class Cast(Operator.Unary):
 
         raise NotImplementedError("How this cast should be implemented is not yet defined.")
 
-    @classmethod
-    def cast_date_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_duration_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
-
-    @classmethod
-    def cast_time_to_string(cls, *args: Any) -> Any:
-        """ """
-        return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_date_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_duration_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
+    #
+    # @classmethod
+    # def cast_time_to_string(cls, value: Any, mask: str) -> Any:
+    #     """ """
+    #     return NotImplementedError("How this cast should be implemented is not yet defined.")
 
     @classmethod
     def cast_time_period_to_date(cls, value: Any, mask_value: str) -> Any:
@@ -179,7 +180,10 @@ class Cast(Operator.Unary):
 
     @classmethod
     def check_cast(
-        cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: Optional[str]
+        cls,
+        from_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: Optional[str],
     ) -> None:
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
@@ -227,7 +231,7 @@ class Cast(Operator.Unary):
         cls, data: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]
     ) -> Any:
         """
-        cast the component to the type to_type without mask
+        Cast the component to the type to_type without mask
         """
 
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
@@ -243,7 +247,11 @@ class Cast(Operator.Unary):
 
     @classmethod
     def cast_value(
-        cls, value: Any, provided_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
+        cls,
+        value: Any,
+        provided_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask_value: str,
     ) -> Any:
         if provided_type == String and to_type == Number:
             return cls.cast_string_to_number(value, mask_value)
@@ -255,12 +263,12 @@ class Cast(Operator.Unary):
             return cls.cast_string_to_time_period(value, mask_value)
         if provided_type == String and to_type == TimeInterval:
             return cls.cast_string_to_time(value, mask_value)
-        if provided_type == Date and to_type == String:
-            return cls.cast_date_to_string(value, mask_value)
-        if provided_type == Duration and to_type == String:
-            return cls.cast_duration_to_string(value, mask_value)
-        if provided_type == TimeInterval and to_type == String:
-            return cls.cast_time_to_string(value, mask_value)
+        # if provided_type == Date and to_type == String:
+        #     return cls.cast_date_to_string(value, mask_value)
+        # if provided_type == Duration and to_type == String:
+        #     return cls.cast_duration_to_string(value, mask_value)
+        # if provided_type == TimeInterval and to_type == String:
+        #     return cls.cast_time_to_string(value, mask_value)
         if provided_type == TimePeriod and to_type == Date:
             return cls.cast_time_period_to_date(value, mask_value)
 
@@ -318,7 +326,10 @@ class Cast(Operator.Unary):
         else:
             measure_name = measure.name
         result_components[measure_name] = Component(
-            name=measure_name, data_type=to_type, role=Role.MEASURE, nullable=measure.nullable
+            name=measure_name,
+            data_type=to_type,
+            role=Role.MEASURE,
+            nullable=measure.nullable,
         )
         return Dataset(name="result", components=result_components, data=None)
 

@@ -160,7 +160,11 @@ class CSeries(AnamartHelper):
         """ """
         code = "C02"
         number_inputs = 2
-        references_names = ["INSTRMNT_INFO", "INSTRMNT_INFO_K", "ANAMART_PRTCTN_INSTRMNT"]
+        references_names = [
+            "INSTRMNT_INFO",
+            "INSTRMNT_INFO_K",
+            "ANAMART_PRTCTN_INSTRMNT",
+        ]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
