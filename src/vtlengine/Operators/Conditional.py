@@ -66,6 +66,7 @@ class If(Operator):
             else:
                 false_data = false_branch.data.reindex(condition.data.index)
             result = np.where(condition.data, true_data, false_data)
+
         return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
 
     @classmethod

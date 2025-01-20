@@ -828,26 +828,6 @@ class Expr(VtlVisitor):
 
         return UnaryOp(op=op, operand=operand_node[0])
 
-    # def visitPeriodAtom(self, ctx: Parser.PeriodAtomContext):
-    #     """
-    #     periodExpr: PERIOD_INDICATOR '(' expr? ')' ;
-    #     """
-    #     ctx_list = list(ctx.getChildren())
-    #     c = ctx_list[0]
-    #
-    #     op = c.getSymbol().text
-    #     operand_node = [
-    #         self.visitExpr(operand)
-    #         for operand in ctx_list
-    #         if isinstance(operand, Parser.ExprContext)
-    #     ]
-    #
-    #     if len(operand_node) == 0:
-    #         # AST_ASTCONSTRUCTOR.15
-    #         raise NotImplementedError
-    #
-    #     return UnaryOp(op=op, operand=operand_node[0])
-
     def visitTimeShiftAtom(self, ctx: Parser.TimeShiftAtomContext):
         """
         timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
