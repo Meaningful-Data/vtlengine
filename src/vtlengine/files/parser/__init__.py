@@ -17,7 +17,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
+from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import check_date, check_time, check_time_period
@@ -184,7 +184,7 @@ def _validate_pandas(
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
-                    .map(lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING, na_action="ignore")
+                    .map(lambda x: x.replace(" ", "") in DURATION_MAPPING, na_action="ignore")
                     .all()
                 )
                 if not values_correct:

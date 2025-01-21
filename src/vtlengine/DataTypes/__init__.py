@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
@@ -398,40 +397,73 @@ class TimePeriod(TimeInterval):
 
 
 class Duration(ScalarType):
-    iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
+    def __init__(self, value):
+        if isinstance(value, str):
+            self.days = self.parse_mask(value)
+        elif isinstance(value, int):
+            self.days = value
+        else:
+            raise ValueError("Must be string")
 
-    @classmethod
-    def validate_duration(cls, duration_str: str) -> bool:
-        """
-        Valida si la cadena de texto cumple con el formato ISO 8601 de duración.
-        """
-        match = re.match(cls.iso8601_duration_pattern, duration_str)
-        return bool(match)
+    def parse_mask(self, mask):
+        if not mask.startswith("P"):
+            raise ValueError("Mask must start with a P")
 
-    @classmethod
-    def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {Duration, String}:
-            return value
+        years, months, days = 0, 0, 0
 
-        raise SemanticError(
-            "2-1-5-1",
-            value=value,
-            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-        )
+        if "Y" in mask:
+            years, mask = mask[1:].split("Y", 1)
+            years = int(years)
+        if "M" in mask:
+            months, mask = mask.split("M", 1)
+            months = int(months)
+        if "D" in mask:
+            days = int(mask[:-1])
 
-    @classmethod
-    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
-            return value
+        return years * 365 + months * 30 + days
 
-        raise SemanticError(
-            "2-1-5-1",
-            value=value,
-            type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-        )
+    def to_mask(self, unit="years"):
+        if unit == "years":
+            years = self.days // 365
+            remaining_days = self.days % 365
+            return f"P{years}Y{remaining_days}D"
+        elif unit == "months":
+            months = self.days // 30
+            remaining_days = self.days % 30
+            return f"P{months}M{remaining_days}D"
+        else:
+            raise ValueError("Not valid input")
 
+    def to_days(self):
+        return self.days
+
+
+# class Duration(ScalarType):
+#
+#     @classmethod
+#     def implicit_cast(cls, value: Any, from_type: Any) -> str:
+#         if from_type in {Duration, String}:
+#             return value
+#
+#         raise SemanticError(
+#             "2-1-5-1",
+#             value=value,
+#             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+#             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+#         )
+#
+#     @classmethod
+#     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
+#         if from_type == String:
+#             return value
+#
+#         raise SemanticError(
+#             "2-1-5-1",
+#             value=value,
+#             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+#             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+#         )
+#
 
 class Boolean(ScalarType):
     """ """

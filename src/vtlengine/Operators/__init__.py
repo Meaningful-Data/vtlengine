@@ -18,7 +18,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
-    PERIOD_IND_MAPPING,
+    DURATION_MAPPING,
     TimeIntervalHandler,
     TimePeriodHandler,
 )
@@ -64,7 +64,7 @@ class Operator:
         elif data_type.__name__ == "TimePeriod":
             series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
         elif data_type.__name__ == "Duration":
-            series = series.map(lambda x: PERIOD_IND_MAPPING[x], na_action="ignore")
+            series = series.map(lambda x: DURATION_MAPPING[x], na_action="ignore")
         return series
 
     @classmethod
@@ -76,9 +76,9 @@ class Operator:
         elif data_type.__name__ == "TimePeriod":
             return TimePeriodHandler(value)
         elif data_type.__name__ == "Duration":
-            if value not in PERIOD_IND_MAPPING:
+            if value not in DURATION_MAPPING:
                 raise Exception(f"Duration {value} is not valid")
-            return PERIOD_IND_MAPPING[value]
+            return DURATION_MAPPING[value]
         return value
 
     @classmethod
@@ -608,7 +608,7 @@ class Binary(Operator):
             if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
                     scalar_value, int
             ):
-                scalar_value = PERIOD_IND_MAPPING[scalar_value]
+                scalar_value = DURATION_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
             )
@@ -650,7 +650,7 @@ class Binary(Operator):
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
                 scalar_value, int
         ):
-            scalar_value = PERIOD_IND_MAPPING[scalar_value]
+            scalar_value = DURATION_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
         )
