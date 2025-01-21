@@ -33,7 +33,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
-    DURATION_MAPPING,
+    PERIOD_IND_MAPPING,
     TimePeriodHandler,
     date_to_period,
     period_to_date,
@@ -628,7 +628,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _check_duration(cls, value: str) -> None:
-        if value not in DURATION_MAPPING:
+        if value not in PERIOD_IND_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
@@ -636,7 +636,7 @@ class Time_Aggregation(Time):
         cls._check_duration(period_to)
         if period_from is not None:
             cls._check_duration(period_from)
-            if DURATION_MAPPING[period_to] <= DURATION_MAPPING[period_from]:
+            if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
                 # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
