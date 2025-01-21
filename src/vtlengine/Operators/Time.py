@@ -1077,7 +1077,7 @@ class Day_to_Month(Operators.Unary):
         return f"P{int(months)}M{int(days_remaining)}D"
 
 
-class Year_to_Day(Operators.Unary):
+class Year_to_Day(Duration, Operators.Unary):
     op = YEARTODAY
     return_type = Integer
 
@@ -1086,15 +1086,15 @@ class Year_to_Day(Operators.Unary):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         if "Y" not in value or "P" not in value:
-            raise SemanticError("2-1-19-15", op=cls.op)
-        value = str(value)
-        index_y = value.index("Y")
-        years = int(value[1:index_y])
-        days = int(value[(index_y + 1): -1])
-        return years * 365 + days
+            raise SemanticError("2-1-19-16", op=cls.op)
+        try:
+            days = Duration.to_days(value)
+        except Exception:
+            raise Exception("Must be valid")
+        return days
 
 
-class Month_to_Day(Operators.Unary):
+class Month_to_Day(Duration, Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
 
@@ -1104,8 +1104,8 @@ class Month_to_Day(Operators.Unary):
             raise SemanticError("2-1-19-11", op=cls.op)
         if "M" not in value or "P" not in value:
             raise SemanticError("2-1-19-16", op=cls.op)
-        value = str(value)
-        index_m = value.index("M")
-        months = int(value[1:index_m])
-        days = int(value[(index_m + 1): -1])
-        return months * 30 + days
+        try:
+            days = Duration.to_days(value)
+        except Exception:
+            raise Exception("Must be valid")
+        return days
