@@ -9,9 +9,9 @@ import pandas as pd
 
 from vtlengine.Exceptions import SemanticError
 
-DURATION_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
+PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
-DURATION_MAPPING_REVERSED = {6: "A", 5: "S", 4: "Q", 3: "M", 2: "W", 1: "D"}
+PERIOD_IND_MAPPING_REVERSE = {6: "A", 5: "S", 4: "Q", 3: "M", 2: "W", 1: "D"}
 
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
 
@@ -237,7 +237,7 @@ class TimePeriodHandler:
                 return False
             other = TimePeriodHandler(other)
         return py_op(
-            DURATION_MAPPING[self.period_indicator], DURATION_MAPPING[other.period_indicator]
+            PERIOD_IND_MAPPING[self.period_indicator], PERIOD_IND_MAPPING[other.period_indicator]
         )
 
     def start_date(self, as_date: bool = False) -> Union[date, str]:
@@ -453,7 +453,7 @@ def shift_period(x: TimePeriodHandler, shift_param: int) -> TimePeriodHandler:
 def sort_time_period(series: Any) -> Any:
     values_sorted = sorted(
         series.to_list(),
-        key=lambda s: (s.year, DURATION_MAPPING[s.period_indicator], s.period_number),
+        key=lambda s: (s.year, PERIOD_IND_MAPPING[s.period_indicator], s.period_number),
     )
     return pd.Series(values_sorted, name=series.name)
 
