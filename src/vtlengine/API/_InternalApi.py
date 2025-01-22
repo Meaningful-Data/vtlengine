@@ -115,7 +115,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]]
+    datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -156,7 +156,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.

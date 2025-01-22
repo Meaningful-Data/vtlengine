@@ -976,7 +976,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_3(self):
         """
-        equal to reference manual test but this at DS_1 contains nulls.
+        Equal to reference manual test but this at DS_1 contains nulls.
         """
         text = """DS_r := exists_in (DS_1, DS_2, all);"""
         code = "5-3"
@@ -989,7 +989,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_4(self):
         """
-        equal to reference manual test but this at DS_1 contains nulls.
+        Equal to reference manual test but this at DS_1 contains nulls.
         """
         text = """DS_r := exists_in (DS_1, DS_2, true);"""
         code = "5-4"
@@ -1002,7 +1002,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_5(self):
         """
-        equal to reference manual test but this at DS_1 contains nulls.
+        Equal to reference manual test but this at DS_1 contains nulls.
         """
         text = """DS_r := exists_in (DS_1, DS_2, false);"""
         code = "5-5"
@@ -1015,7 +1015,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_6(self):
         """
-        equal to test 2 but this at DS_1 contains nulls.
+        Equal to test 2 but this at DS_1 contains nulls.
         """
         text = """DS_r := exists_in (DS_1, DS_2);"""
         code = "5-6"
@@ -1028,7 +1028,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_7(self):
         """
-        equal to reference manual test but this with reverse order.
+        Equal to reference manual test but this with reverse order.
         """
         text = """DS_r := exists_in (DS_2, DS_1, all);"""
         code = "5-7"
@@ -1041,7 +1041,7 @@ class ComparisonOperatorsTest(AdditionalHelper):
 
     def test_9(self):
         """
-        equal to reference manual test but at this one DS_2 have no Id_4 (different number of Ids).
+        Equal to reference manual test but at this one DS_2 have no Id_4 (different number of Ids).
         """
         text = """DS_r := exists_in (DS_2, DS_1, all);"""
         code = "5-9"
@@ -1950,7 +1950,7 @@ class JoinOperatorsTest(AdditionalHelper):
 
     def test_13(self):
         """
-        reverse order of test 10.
+        Reverse order of test 10.
         """
         # text = """DS_r := inner_join ( DS_2, DS_1 using  Id_1, Me_2);"""
         # code = "2-10"

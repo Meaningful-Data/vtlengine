@@ -145,8 +145,8 @@ class Number(ScalarType):
 
     def __eq__(self, other: Any) -> bool:
         return (
-                self.__class__.__name__ == other.__class__.__name__
-                or other.__class__.__name__ == Integer.__name__
+            self.__class__.__name__ == other.__class__.__name__
+            or other.__class__.__name__ == Integer.__name__
         )
 
     def __ne__(self, other: Any) -> bool:
@@ -203,8 +203,8 @@ class Integer(Number):
 
     def __eq__(self, other: Any) -> bool:
         return (
-                self.__class__.__name__ == other.__class__.__name__
-                or other.__class__.__name__ == Number.__name__
+            self.__class__.__name__ == other.__class__.__name__
+            or other.__class__.__name__ == Number.__name__
         )
 
     def __ne__(self, other: Any) -> bool:
@@ -406,8 +406,7 @@ class Duration(ScalarType):
             match = re.match(cls.iso8601_duration_pattern, value)
             return bool(match)
         except Exception:
-            pass
-        return False
+            raise Exception("Must be valid")
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
@@ -434,10 +433,11 @@ class Duration(ScalarType):
         )
 
     @classmethod
-    def to_days(cls, value: Any) -> int:
-
+    def to_days(cls, value: Any) -> int:  # type: ignore[return]
         if not cls.validate_duration(value):
-            raise SemanticError("2-1-19-15", "{op} can only be applied according to the iso 8601 format mask")
+            raise SemanticError(
+                "2-1-19-15", "{op} can only be applied according to the iso 8601 format mask"
+            )
 
         match = re.match(cls.iso8601_duration_pattern, value)
 
@@ -617,10 +617,10 @@ EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 
 
 def binary_implicit_promotion(
-        left_type: Type[ScalarType],
-        right_type: Type[ScalarType],
-        type_to_check: Optional[Type[ScalarType]] = None,
-        return_type: Optional[Type[ScalarType]] = None,
+    left_type: Type[ScalarType],
+    right_type: Type[ScalarType],
+    type_to_check: Optional[Type[ScalarType]] = None,
+    return_type: Optional[Type[ScalarType]] = None,
 ) -> Type[ScalarType]:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -654,7 +654,7 @@ def binary_implicit_promotion(
         # {left_type} and {right_type} to {type_to_check}")
 
     if return_type and (
-            left_type.is_included(right_implicities) or right_type.is_included(left_implicities)
+        left_type.is_included(right_implicities) or right_type.is_included(left_implicities)
     ):
         return return_type
     if left_type.is_included(right_implicities):
@@ -670,7 +670,7 @@ def binary_implicit_promotion(
 
 
 def check_binary_implicit_promotion(
-        left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
+    left: Type[ScalarType], right: Any, type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the types of the operands and the operator
@@ -690,9 +690,9 @@ def check_binary_implicit_promotion(
 
 
 def unary_implicit_promotion(
-        operand_type: Type[ScalarType],
-        type_to_check: Optional[Type[ScalarType]] = None,
-        return_type: Optional[Type[ScalarType]] = None,
+    operand_type: Type[ScalarType],
+    type_to_check: Optional[Type[ScalarType]] = None,
+    return_type: Optional[Type[ScalarType]] = None,
 ) -> Type[ScalarType]:
     """
     Validates the compatibility between the type of the operand and the operator
@@ -711,16 +711,16 @@ def unary_implicit_promotion(
     if return_type:
         return return_type
     if (
-            type_to_check
-            and not issubclass(operand_type, type_to_check)
-            and not issubclass(type_to_check, operand_type)
+        type_to_check
+        and not issubclass(operand_type, type_to_check)
+        and not issubclass(type_to_check, operand_type)
     ):
         return type_to_check
     return operand_type
 
 
 def check_unary_implicit_promotion(
-        operand_type: Type[ScalarType], type_to_check: Any = None, return_type: Any = None
+    operand_type: Type[ScalarType], type_to_check: Any = None, return_type: Any = None
 ) -> bool:
     """
     Validates the compatibility between the type of the operand and the operator

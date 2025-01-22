@@ -250,14 +250,14 @@ class TestHelper(TestCase):
 
     @classmethod
     def SemanticExceptionTest(
-            cls,
-            code: str,
-            number_inputs: int,
-            exception_code: str,
-            vd_names: List[str] = None,
-            sql_names: List[str] = None,
-            text: Optional[str] = None,
-            scalars: Dict[str, Any] = None,
+        cls,
+        code: str,
+        number_inputs: int,
+        exception_code: str,
+        vd_names: List[str] = None,
+        sql_names: List[str] = None,
+        text: Optional[str] = None,
+        scalars: Dict[str, Any] = None,
     ):
         # Data Loading.--------------------------------------------------------
         warnings.filterwarnings("ignore", category=FutureWarning)

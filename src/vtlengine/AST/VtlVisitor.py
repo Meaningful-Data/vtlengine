@@ -6,7 +6,6 @@ from vtlengine.AST.Grammar.parser import Parser
 
 
 class VtlVisitor(ParseTreeVisitor):
-
     # Visit a parse tree produced by Parser#start.
     def visitStart(self, ctx: Parser.StartContext):
         return self.visitChildren(ctx)

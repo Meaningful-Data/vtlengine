@@ -9,34 +9,25 @@ def main():
     """
 
     data_structures = {
-        'datasets': [
-            {'name': 'DS_1',
-             'DataStructure': [
-                 {'name': 'Id_1',
-                  'type':
-                      'Integer',
-                  'role': 'Identifier',
-                  'nullable': False},
-                 {'name': 'Me_1',
-                  'type': 'Number',
-                  'role': 'Measure',
-                  'nullable': True}
-             ]
-             }
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
         ]
     }
 
-    data_df = pd.DataFrame(
-        {"Id_1": [1, 2, 3],
-         "Me_1": [10, 20, 30]})
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures,
-                     datapoints=datapoints)
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
 
     print(run_result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
