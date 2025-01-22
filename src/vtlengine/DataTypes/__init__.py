@@ -402,8 +402,12 @@ class Duration(ScalarType):
 
     @classmethod
     def validate_duration(cls, value: Any) -> bool:
-        match = re.match(cls.iso8601_duration_pattern, value)
-        return bool(match)
+        try:
+            match = re.match(cls.iso8601_duration_pattern, value)
+            return bool(match)
+        except Exception:
+            pass
+        return False
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
@@ -433,7 +437,7 @@ class Duration(ScalarType):
     def to_days(cls, value: Any) -> int:
 
         if not cls.validate_duration(value):
-            raise Exception("Must be valid")
+            raise SemanticError("2-1-19-15", "{op} can only be applied according to the iso 8601 format mask")
 
         match = re.match(cls.iso8601_duration_pattern, value)
 
