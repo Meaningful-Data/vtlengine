@@ -1063,7 +1063,7 @@ class Day_to_Year(Operators.Unary):
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
-    return_type = String
+    return_type = Duration
 
     @classmethod
     def py_op(cls, value: int) -> str:
