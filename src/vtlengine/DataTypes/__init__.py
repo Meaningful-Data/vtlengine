@@ -407,7 +407,7 @@ class Duration(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {Duration, String}:
+        if from_type == String and cls.validate_duration(value):
             return value
 
         raise SemanticError(
@@ -419,7 +419,7 @@ class Duration(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
+        if from_type == String and cls.validate_duration(value):
             return value
 
         raise SemanticError(

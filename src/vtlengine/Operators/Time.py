@@ -1086,7 +1086,7 @@ class Year_to_Day(Duration, Operators.Unary):
         if "/" in value:
             raise SemanticError("2-1-19-11", op=cls.op)
         if "Y" not in value or "P" not in value:
-            raise SemanticError("2-1-19-16", op=cls.op)
+            raise SemanticError("2-1-19-15", op=cls.op)
         try:
             days = Duration.to_days(value)
         except Exception:

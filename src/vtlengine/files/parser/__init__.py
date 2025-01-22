@@ -184,7 +184,7 @@ def _validate_pandas(
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
-                    .map(lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING, na_action="ignore")
+                    .map(lambda x: Duration.validate_duration(x), na_action="ignore")
                     .all()
                 )
                 if not values_correct:
