@@ -15,8 +15,9 @@ from vtlengine.DataTypes import (
     Number,
     ScalarType,
     TimeInterval,
-    TimePeriod,
+    TimePeriod, DurationValue,
 )
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import check_date, check_time, check_time_period
@@ -186,6 +187,14 @@ def _validate_pandas(
                 values_correct = (
                     data[comp_name]
                     .map(lambda x: Duration.validate_duration(x), na_action="ignore")
+                    .all()
+                )
+                if not values_correct:
+                    raise ValueError(f"Duration values are not correct in column {comp_name}")
+            elif comp.data_type == DurationValue:
+                values_correct = (
+                    data[comp_name]
+                    .map(lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING, na_action="ignore")
                     .all()
                 )
                 if not values_correct:
