@@ -24,7 +24,7 @@
         {
           "name": "duration_var",
           "role": "Measure",
-          "type": "DurationValue",
+          "type": "Duration",
           "nullable": true
         }
       ]

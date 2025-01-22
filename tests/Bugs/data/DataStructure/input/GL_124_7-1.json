@@ -6,13 +6,13 @@
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "DurationValue",
+          "type": "Duration",
           "nullable": true
         },
         {
           "name": "Me_2",
           "role": "Measure",
-          "type": "DurationValue",
+          "type": "Duration",
           "nullable": true
         },
         {
