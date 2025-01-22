@@ -30,7 +30,7 @@ from vtlengine.DataTypes import (
     String,
     TimeInterval,
     TimePeriod,
-    unary_implicit_promotion,
+    unary_implicit_promotion, DurationValue,
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
@@ -189,15 +189,15 @@ class Period_indicator(Unary):
                 if comp.role == Role.IDENTIFIER
             }
             result_components["duration_var"] = Component(
-                name="duration_var", data_type=Duration, role=Role.MEASURE, nullable=True
+                name="duration_var", data_type=DurationValue, role=Role.MEASURE, nullable=True
             )
             return Dataset(name="result", components=result_components, data=None)
         # DataComponent and Scalar validation
         if operand.data_type != TimePeriod:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period component")
         if isinstance(operand, DataComponent):
-            return DataComponent(name=operand.name, data_type=Duration, data=None)
-        return Scalar(name=operand.name, data_type=Duration, value=None)
+            return DataComponent(name=operand.name, data_type=DurationValue, data=None)
+        return Scalar(name=operand.name, data_type=DurationValue, value=None)
 
     @classmethod
     def evaluate(
