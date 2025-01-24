@@ -200,7 +200,9 @@ def _validate_pandas(
                             .all()
                         )
                         if not values_correct:
-                            raise ValueError(f"Duration values are not correct in column {comp_name}")
+                            raise ValueError(
+                                f"Duration values are not correct in column {comp_name}"
+                            )
                     except ValueError:
                         raise ValueError(f"Duration values are not correct in column {comp_name}")
                     else:
