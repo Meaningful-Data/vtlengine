@@ -3,12 +3,13 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import jsonschema
 import pandas as pd
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import check_key
+from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
@@ -21,13 +22,9 @@ from vtlengine.Model import (
 )
 
 base_path = Path(__file__).parent
-filepath_VTL = base_path / "data" / "vtl"
-filepath_ValueDomains = base_path / "data" / "ValueDomain"
-filepath_sql = base_path / "data" / "sql"
-filepath_json = base_path / "data" / "DataStructure" / "input"
-filepath_csv = base_path / "data" / "DataSet" / "input"
-filepath_out_json = base_path / "data" / "DataStructure" / "output"
-filepath_out_csv = base_path / "data" / "DataSet" / "output"
+schema_path = base_path / "data" / "schema"
+with open(schema_path / "json_schema_2.1.json", "r") as file:
+    schema = json.load(file)
 
 
 def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,22 +38,60 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
             dataset_name = dataset_json["name"]
             components = {}
 
-            for component in dataset_json["DataStructure"]:
-                check_key("data_type", SCALAR_TYPES.keys(), component["type"])
-                check_key("role", Role_keys, component["role"])
-                components[component["name"]] = Component(
-                    name=component["name"],
-                    data_type=SCALAR_TYPES[component["type"]],
-                    role=Role(component["role"]),
-                    nullable=component["nullable"],
-                )
+            if "structure" in dataset_json:
+                structure_name = dataset_json["structure"]
+                structure_json = None
+                for s in structures["structures"]:
+                    if s["name"] == structure_name:
+                        structure_json = s
+                if structure_json is None:
+                    raise InputValidationException(code="0-3-1-1", message="Structure not found.")
+                try:
+                    jsonschema.validate(instance=structure_json, schema=schema)
+                except jsonschema.exceptions.ValidationError as e:
+                    raise InputValidationException(code="0-3-1-1", message=e.message)
+
+                for component in structure_json["components"]:
+                    check_key("data_type", SCALAR_TYPES.keys(), component["data_type"])
+                    if component["role"] == "ViralAttribute":
+                        component["role"] = "Attribute"
+
+                    check_key("role", Role_keys, component["role"])
+
+                    if "nullable" not in component:
+                        if Role(component["role"]) == Role.IDENTIFIER:
+                            component["nullable"] = False
+                        elif Role(component["role"]) in (Role.MEASURE, Role.ATTRIBUTE):
+                            component["nullable"] = True
+                        else:
+                            component["nullable"] = False
+
+                    components[component["name"]] = Component(
+                        name=component["name"],
+                        data_type=SCALAR_TYPES[component["data_type"]],
+                        role=Role(component["role"]),
+                        nullable=component["nullable"],
+                    )
+
+            if "DataStructure" in dataset_json:
+                for component in dataset_json["DataStructure"]:
+                    check_key("data_type", SCALAR_TYPES.keys(), component["type"])
+                    check_key("role", Role_keys, component["role"])
+                    components[component["name"]] = Component(
+                        name=component["name"],
+                        data_type=SCALAR_TYPES[component["type"]],
+                        role=Role(component["role"]),
+                        nullable=component["nullable"],
+                    )
 
             datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if "scalars" in structures:
         for scalar_json in structures["scalars"]:
             scalar_name = scalar_json["name"]
             scalar = Scalar(
-                name=scalar_name, data_type=SCALAR_TYPES[scalar_json["type"]], value=None
+                name=scalar_name,
+                data_type=SCALAR_TYPES[scalar_json["type"]],
+                value=None,
             )
             datasets[scalar_name] = scalar  # type: ignore[assignment]
     return datasets

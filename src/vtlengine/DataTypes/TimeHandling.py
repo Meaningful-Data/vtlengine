@@ -38,7 +38,10 @@ def period_to_date(
     if period_indicator == "A":
         return date(year, 1, 1) if start else date(year, 12, 31)
     periods = {
-        "S": [(date(year, 1, 1), date(year, 6, 30)), (date(year, 7, 1), date(year, 12, 31))],
+        "S": [
+            (date(year, 1, 1), date(year, 6, 30)),
+            (date(year, 7, 1), date(year, 12, 31)),
+        ],
         "Q": [
             (date(year, 1, 1), date(year, 3, 31)),
             (date(year, 4, 1), date(year, 6, 30)),
@@ -201,6 +204,10 @@ class TimePeriodHandler:
         self._period_indicator = value
 
     @property
+    def period_magnitude(self) -> int:
+        return DURATION_MAPPING[self.period_indicator]
+
+    @property
     def period_number(self) -> int:
         return self._period_number
 
@@ -227,16 +234,49 @@ class TimePeriodHandler:
                     # raise ValueError(f'Invalid day {value} for year {self.year}.')
         self._period_number = value
 
+    @property
+    def period_dates(self) -> tuple[date, date]:
+        return (
+            period_to_date(self.year, self.period_indicator, self.period_number, start=True),
+            period_to_date(self.year, self.period_indicator, self.period_number, start=False),
+        )
+
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
         if pd.isnull(other):
             return None
+
+        if py_op in (operator.eq, operator.ne):
+            return py_op(str(self), str(other))
+
+        if py_op in (operator.ge, operator.le) and str(self) == str(other):
+            return True
+
         if isinstance(other, str):
-            if len(other) == 0:
-                return False
             other = TimePeriodHandler(other)
         return py_op(
             PERIOD_IND_MAPPING[self.period_indicator], PERIOD_IND_MAPPING[other.period_indicator]
         )
+
+        self_lapse, other_lapse = self.period_dates, other.period_dates
+        is_lt_or_le = py_op in [operator.lt, operator.le]
+        is_gt_or_ge = py_op in [operator.gt, operator.ge]
+
+        if is_lt_or_le or is_gt_or_ge:
+            idx = 0 if is_lt_or_le else 1
+            if self_lapse[idx] != other_lapse[idx]:
+                return (
+                    self_lapse[idx] < other_lapse[idx]
+                    if is_lt_or_le
+                    else self_lapse[idx] > other_lapse[idx]
+                )
+            if self.period_magnitude != other.period_magnitude:
+                return (
+                    self.period_magnitude < other.period_magnitude
+                    if is_lt_or_le
+                    else self.period_magnitude > other.period_magnitude
+                )
+
+        return False
 
     def start_date(self, as_date: bool = False) -> Union[date, str]:
         """

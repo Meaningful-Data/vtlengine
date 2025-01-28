@@ -70,7 +70,8 @@ class SQLliteEval(TestEval):
         references_names = ["DS_r"]
         sql_names = ["SQL_DS_NOT_FOUND"]
         with pytest.raises(
-            ValueError, match="External Routine dataset DS_X is not present in Eval operands"
+            ValueError,
+            match="External Routine dataset DS_X is not present in Eval operands",
         ):
             self.BaseTest(
                 code=code,

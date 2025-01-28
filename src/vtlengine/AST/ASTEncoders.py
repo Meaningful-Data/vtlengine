@@ -1,6 +1,6 @@
 import json
 
-import AST
+from vtlengine import AST
 
 
 class ComplexEncoder(json.JSONEncoder):

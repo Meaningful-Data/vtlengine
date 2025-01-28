@@ -45,7 +45,8 @@ class Expr(VtlVisitor):
 
                                 Expr Definition.
 
-    _______________________________________________________________________________________"""
+    _______________________________________________________________________________________
+    """
 
     def visitExpr(self, ctx: Parser.ExprContext):
         """
@@ -827,26 +828,6 @@ class Expr(VtlVisitor):
 
         return UnaryOp(op=op, operand=operand_node[0])
 
-    # def visitPeriodAtom(self, ctx: Parser.PeriodAtomContext):
-    #     """
-    #     periodExpr: PERIOD_INDICATOR '(' expr? ')' ;
-    #     """
-    #     ctx_list = list(ctx.getChildren())
-    #     c = ctx_list[0]
-    #
-    #     op = c.getSymbol().text
-    #     operand_node = [
-    #         self.visitExpr(operand)
-    #         for operand in ctx_list
-    #         if isinstance(operand, Parser.ExprContext)
-    #     ]
-    #
-    #     if len(operand_node) == 0:
-    #         # AST_ASTCONSTRUCTOR.15
-    #         raise NotImplementedError
-    #
-    #     return UnaryOp(op=op, operand=operand_node[0])
-
     def visitTimeShiftAtom(self, ctx: Parser.TimeShiftAtomContext):
         """
         timeShiftExpr: TIMESHIFT '(' expr ',' INTEGER_CONSTANT ')' ;
@@ -913,7 +894,11 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.17
             raise Exception("Optional as expression node is not allowed in Time Aggregation")
         return TimeAggregation(
-            op=op, operand=operand_node, period_to=period_to, period_from=period_from, conf=conf
+            op=op,
+            operand=operand_node,
+            period_to=period_to,
+            period_from=period_from,
+            conf=conf,
         )
 
     def visitFlowAtom(self, ctx: Parser.FlowAtomContext):
@@ -1333,11 +1318,19 @@ class Expr(VtlVisitor):
 
         if window is None:
             window = Windowing(
-                type_="data", start=-1, stop=0, start_mode="preceding", stop_mode="current"
+                type_="data",
+                start=-1,
+                stop=0,
+                start_mode="preceding",
+                stop_mode="current",
             )
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, window=window
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            window=window,
         )
 
     def visitLagOrLeadAn(self, ctx: Parser.LagOrLeadAnContext):
@@ -1371,7 +1364,11 @@ class Expr(VtlVisitor):
             raise Exception(f"{op_node} requires an offset parameter.")
 
         return Analytic(
-            op=op_node, operand=operand, partition_by=partition_by, order_by=order_by, params=params
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            params=params,
         )
 
     def visitRatioToReportAn(self, ctx: Parser.RatioToReportAnContext):

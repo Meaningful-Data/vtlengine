@@ -392,7 +392,10 @@ class Instr(Parameterized):
         else:
             if not check_unary_implicit_promotion(data_type, Integer):
                 raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                    "1-1-18-4",
+                    op=cls.op,
+                    param_type="Occurrence",
+                    correct_type="Integer",
                 )
         if isinstance(param, DataComponent):
             if param.data is not None:
@@ -554,7 +557,10 @@ class Instr(Parameterized):
             else:
                 # OPERATORS_STRINGOPERATORS.93
                 raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Occurrence", correct_type="Integer"
+                    "1-1-18-4",
+                    op=cls.op,
+                    param_type="Occurrence",
+                    correct_type="Integer",
                 )
         else:
             occurrence = 0

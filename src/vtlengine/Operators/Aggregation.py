@@ -89,7 +89,10 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = (
                         data[measure.name]
                         .astype(object)
-                        .map(lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore")
+                        .map(
+                            lambda x: TimeIntervalHandler.from_iso_format(x),
+                            na_action="ignore",
+                        )
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
@@ -128,7 +131,10 @@ class Aggregation(Operator.Unary):
             for comp_name in grouping_columns:
                 if comp_name not in operand.components:
                     raise SemanticError(
-                        "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=operand.name
+                        "1-1-1-10",
+                        op=cls.op,
+                        comp_name=comp_name,
+                        dataset_name=operand.name,
                     )
                 if operand.components[comp_name].role != Role.IDENTIFIER:
                     raise SemanticError(

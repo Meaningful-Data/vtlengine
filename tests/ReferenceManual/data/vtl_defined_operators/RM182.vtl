@@ -1,0 +1,5 @@
+define operator Test182 (y component)
+    returns component is
+    yeartoday(y)
+end operator;
+DS_r := DS_1[calc Me_2 := Test182(Me_1)];

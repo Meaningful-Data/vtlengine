@@ -17,6 +17,7 @@ centralised_messages = {
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
     # "0-1-2-5": "The library item {li}, used in this module {mdl}, is not found.",
     # JSON Schema validations
+    "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
     # "0-1-1-1": "A csv file or a dataframe is required.",
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",

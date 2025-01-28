@@ -20,7 +20,11 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import check_date, check_time, check_time_period
+from vtlengine.files.parser._time_checking import (
+    check_date,
+    check_time,
+    check_time_period,
+)
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
@@ -110,7 +114,11 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
 
     try:
         data = pd.read_csv(
-            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            keep_default_na=False,
+            na_values=[""],
         )
     except UnicodeDecodeError:
         raise InputValidationException(code="0-1-2-5", file=csv_path.name)
@@ -124,7 +132,11 @@ def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.D
     # start = time()
     try:
         data = pd.read_csv(
-            csv_path, dtype=obj_dtypes, engine="c", keep_default_na=False, na_values=[""]
+            csv_path,
+            dtype=obj_dtypes,
+            engine="c",
+            keep_default_na=False,
+            na_values=[""],
         )
 
     except UnicodeDecodeError:
@@ -186,7 +198,10 @@ def _validate_pandas(
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
-                    .map(lambda x: Duration.validate_duration(x), na_action="ignore")
+                    .map(
+                        lambda x: Duration.validate_duration(x),
+                        na_action="ignore",
+                    )
                     .all()
                 )
                 if not values_correct:
@@ -220,7 +235,9 @@ def _validate_pandas(
 
 
 def load_datapoints(
-    components: Dict[str, Component], dataset_name: str, csv_path: Optional[Union[Path, str]] = None
+    components: Dict[str, Component],
+    dataset_name: str,
+    csv_path: Optional[Union[Path, str]] = None,
 ) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))

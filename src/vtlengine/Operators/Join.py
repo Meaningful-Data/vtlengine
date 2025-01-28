@@ -109,7 +109,8 @@ class Join(Operator):
                 else:
                     if component_name in using and component_name in merged_components:
                         data_type = binary_implicit_promotion(
-                            merged_components[component_name].data_type, component.data_type
+                            merged_components[component_name].data_type,
+                            component.data_type,
                         )
                         component.data_type = data_type
                     merged_components[component_name] = component
