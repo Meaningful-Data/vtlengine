@@ -205,7 +205,7 @@ class TimePeriodHandler:
 
     @property
     def period_magnitude(self) -> int:
-        return DURATION_MAPPING[self.period_indicator]
+        return PERIOD_IND_MAPPING[self.period_indicator]
 
     @property
     def period_number(self) -> int:
@@ -253,9 +253,6 @@ class TimePeriodHandler:
 
         if isinstance(other, str):
             other = TimePeriodHandler(other)
-        return py_op(
-            PERIOD_IND_MAPPING[self.period_indicator], PERIOD_IND_MAPPING[other.period_indicator]
-        )
 
         self_lapse, other_lapse = self.period_dates, other.period_dates
         is_lt_or_le = py_op in [operator.lt, operator.le]
