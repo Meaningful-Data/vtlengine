@@ -225,8 +225,12 @@ def _validate_pandas(
                             lambda x: str(x).replace('"', ""), na_action="ignore"
                         )
                     data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
-                else:
-                    data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+            else:
+                data[comp_name] = data[comp_name].map(
+                    lambda x: str(x).replace('"', ""), na_action="ignore"
+                )
+            data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+
     except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)

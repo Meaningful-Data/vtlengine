@@ -1109,7 +1109,7 @@ class Day_to_Month(Operators.Unary):
         return f"P{int(months)}M{int(days_remaining)}D"
 
 
-class Year_to_Day(Duration, Operators.Unary):
+class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
 
@@ -1119,12 +1119,12 @@ class Year_to_Day(Duration, Operators.Unary):
             raise SemanticError("2-1-19-11", op=cls.op)
         try:
             days = Duration.to_days(value)
-        except Exception:
-            raise Exception("Must be valid")
+        except SemanticError:
+            raise SemanticError("2-1-19-15", op=cls.op)
         return days
 
 
-class Month_to_Day(Duration, Operators.Unary):
+class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
 
@@ -1134,6 +1134,6 @@ class Month_to_Day(Duration, Operators.Unary):
             raise SemanticError("2-1-19-11", op=cls.op)
         try:
             days = Duration.to_days(value)
-        except Exception:
-            raise Exception("Must be valid")
+        except SemanticError:
+            raise SemanticError("2-1-19-15", op=cls.op)
         return days
