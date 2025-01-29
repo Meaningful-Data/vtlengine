@@ -738,6 +738,32 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_48(self):
+        """
+        Status: OK
+        Description: Loading iso 8601 masks to perform the new duration type with 'month to day' op.
+        Git Branch: 55-check-duration-type
+        Goal: Check Result
+        """
+        code = "DataLoad-11"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_49(self):
+        """
+        Status: OK
+        Description: Loading iso 8601 masks to perform the new duration type with 'year to day' op.
+        Git Branch: 55-check-duration-type
+        Goal: Check Result
+        """
+        code = "DataLoad-12"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_483_1(self):
         """
         Status: OK

@@ -1120,7 +1120,7 @@ class Year_to_Day(Operators.Unary):
         try:
             days = Duration.to_days(value)
         except SemanticError:
-            raise SemanticError("2-1-19-15", op=cls.op)
+            raise SemanticError("0-1-1-12", op=cls.op)
         return days
 
 
@@ -1135,5 +1135,5 @@ class Month_to_Day(Operators.Unary):
         try:
             days = Duration.to_days(value)
         except SemanticError:
-            raise SemanticError("2-1-19-15", op=cls.op)
+            raise SemanticError("0-1-1-12", op=cls.op)
         return days
