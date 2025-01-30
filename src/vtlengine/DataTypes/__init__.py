@@ -437,7 +437,7 @@ class Duration(ScalarType):
         )
 
     @classmethod
-    def to_days(cls, value: Any) -> int:  # type: ignore[return]
+    def to_days(cls, value: Any) -> int:
         if not cls.validate_duration(value):
             raise SemanticError(
                 "2-1-19-15", "{op} can only be applied according to the iso 8601 format mask"
@@ -461,6 +461,8 @@ class Duration(ScalarType):
                 days = int(days_str[:-1])
             total_days = years * 365 + months * 30 + days
             return int(total_days)
+        if not match:
+            return None  # type: ignore[return-value]
 
 
 class Boolean(ScalarType):

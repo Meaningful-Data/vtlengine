@@ -1115,12 +1115,7 @@ class Year_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: Duration) -> int:
-        if "/" in value:  # type: ignore[operator]
-            raise SemanticError("2-1-19-11", op=cls.op)
-        try:
-            days = Duration.to_days(value)
-        except SemanticError:
-            raise SemanticError("0-1-1-12", op=cls.op)
+        days = Duration.to_days(value)
         return days
 
 
@@ -1130,10 +1125,5 @@ class Month_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: Duration) -> int:
-        if "/" in value:  # type: ignore[operator]
-            raise SemanticError("2-1-19-11", op=cls.op)
-        try:
-            days = Duration.to_days(value)
-        except SemanticError:
-            raise SemanticError("0-1-1-12", op=cls.op)
+        days = Duration.to_days(value)
         return days
