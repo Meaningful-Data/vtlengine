@@ -1114,9 +1114,9 @@ class Year_to_Day(Operators.Unary):
     return_type = Integer
 
     @classmethod
-    def py_op(cls, value: Duration) -> str:
+    def py_op(cls, value: str) -> int:
         days = Duration.to_days(value)
-        return days  # type: ignore[return-value]
+        return days
 
 
 class Month_to_Day(Operators.Unary):
@@ -1124,6 +1124,6 @@ class Month_to_Day(Operators.Unary):
     return_type = Integer
 
     @classmethod
-    def py_op(cls, value: Duration) -> str:
+    def py_op(cls, value: str) -> int:
         days = Duration.to_days(value)
-        return days  # type: ignore[return-value]
+        return days
