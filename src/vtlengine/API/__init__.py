@@ -1,7 +1,12 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Sequence
 
 import pandas as pd
+
+from pysdmx.io.pd import PandasDataset
+from pysdmx.io import read_sdmx, get_datasets
+from pysdmx.model.dataflow import DataStructureDefinition
+from pysdmx.model import Component, Role
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 
@@ -19,11 +24,11 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
-from vtlengine.Interpreter import InterpreterAnalyzer
 
 pd.options.mode.chained_assignment = None
 
@@ -32,13 +37,13 @@ class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
     def syntaxError(
-        self,
-        recognizer: Any,
-        offendingSymbol: str,
-        line: str,
-        column: str,
-        msg: str,
-        e: Any,
+            self,
+            recognizer: Any,
+            offendingSymbol: str,
+            line: str,
+            column: str,
+            msg: str,
+            e: Any,
     ) -> None:
         raise Exception(
             f"Not valid VTL Syntax \n "
@@ -90,10 +95,10 @@ def create_ast(text: str) -> Start:
 
 
 def semantic_analysis(
-    script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+        script: Union[str, Path],
+        data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+        external_routines: Optional[Union[Dict[str, Any], Path]] = None,
 ) -> Any:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
@@ -167,14 +172,14 @@ def semantic_analysis(
 
 
 def run(
-    script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
-    time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
-    output_folder: Optional[Union[str, Path]] = None,
+        script: Union[str, Path],
+        data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+        datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
+        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+        external_routines: Optional[Union[str, Path]] = None,
+        time_period_output_format: str = "vtl",
+        return_only_persistent: bool = False,
+        output_folder: Optional[Union[str, Path]] = None,
 ) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
@@ -316,3 +321,7 @@ def run(
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
     return result
+
+
+def run_sdmx(script: str, datasets: Sequence[PandasDataset]):
+    pass

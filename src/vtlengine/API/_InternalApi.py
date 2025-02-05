@@ -5,12 +5,13 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
+from pysdmx.model import Component, Role
+from pysdmx.model.dataflow import DataStructureDefinition
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
     Component,
     Dataset,
@@ -20,9 +21,12 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
+sdmx_csv_path = base_path / "data" / "sdmx_csv"
 with open(schema_path / "json_schema_2.1.json", "r") as file:
     schema = json.load(file)
 
@@ -150,7 +154,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]],
+        datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -191,7 +195,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+        data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -367,7 +371,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-    datasets: Dict[str, Dataset], ast: Start
+        datasets: Dict[str, Dataset], ast: Start
 ) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
@@ -422,3 +426,44 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
+
+
+def to_vtl_json(
+        dsd: DataStructureDefinition, path: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Formats the DataStructureDefinition as a VTL DataStructure."""
+    dataset_name = dsd.id
+    components = []
+    NAME = "name"
+    ROLE = "role"
+    TYPE = "type"
+    NULLABLE = "nullable"
+
+    _components: List[Component] = []
+    _components.extend(dsd.components.dimensions)
+    _components.extend(dsd.components.measures)
+    _components.extend(dsd.components.attributes)
+
+    for c in _components:
+        _type = VTL_DTYPES_MAPPING[c.dtype]
+        _nullability = c.role != Role.DIMENSION
+        _role = VTL_ROLE_MAPPING[c.role]
+
+        component = {
+            NAME: c.id,
+            ROLE: _role,
+            TYPE: _type,
+            NULLABLE: _nullability,
+        }
+
+        components.append(component)
+
+    result = {
+        "datasets": [{"name": dataset_name, "DataStructure": components}]
+    }
+    if path is not None:
+        with open(path, "w") as fp:
+            json.dump(result, fp, indent=2)
+        return None
+
+    return result
