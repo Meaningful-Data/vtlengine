@@ -1,14 +1,11 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Sequence
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-
-from pysdmx.io.pd import PandasDataset
-from pysdmx.io import read_sdmx, get_datasets
-from pysdmx.model.dataflow import DataStructureDefinition
-from pysdmx.model import Component, Role
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
+from pysdmx.io import read_sdmx
+from pysdmx.io.pd import PandasDataset
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -17,7 +14,7 @@ from vtlengine.API._InternalApi import (
     load_datasets_with_data,
     load_external_routines,
     load_value_domains,
-    load_vtl,
+    load_vtl, to_vtl_json,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
@@ -31,6 +28,11 @@ from vtlengine.files.output._time_period_representation import (
 )
 
 pd.options.mode.chained_assignment = None
+
+base_path = Path(__file__).parent
+schema_path = base_path / "data" / "schema"
+sdmx_csv_path = base_path / "data" / "sdmx_csv"
+sdmx_xml_path = base_path / "data" / "sdmx_csv"
 
 
 class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
@@ -323,5 +325,27 @@ def run(
     return result
 
 
-def run_sdmx(script: str, datasets: Sequence[PandasDataset]):
-    pass
+def run_sdmx(script: str, data_file, structure_file, definition: str):
+    # Reading sdmx file
+    data_msg = read_sdmx(data_file)
+
+    # Getting the structure
+    str_msg = read_sdmx(structure_file)
+
+    data_structure = str_msg.get_data_structure_definition(definition)
+    # Load the dataset
+    datasets = PandasDataset(data=data_msg.get_datasets(), structure=data_structure)
+
+    # Generate data_structure from VTL
+    vtl_structure = to_vtl_json(data_structure)
+
+    # Run the VTL script
+    result = run(script, data_structures=vtl_structure, datapoints={definition: datasets.data})
+    return result
+
+
+# if __name__ == '__main__':
+#     print(run_sdmx("DS_r := DS_1 * 2;", sdmx_csv_path / "data_v1.csv", sdmx_xml_path / "metadata.xml",
+#                    "DataStructure=BIS:BIS_DER(1.0)"))
+#     # leer = read_sdmx(sdmx_xml_path / "str_all.xml")
+#     # print(leer.get_dataset("DataStructure=BIS:BIS_DER(1.0)").structure)
