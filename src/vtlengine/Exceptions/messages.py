@@ -15,11 +15,9 @@ centralised_messages = {
     "0-1-2-3": "Component {component} is duplicated.",
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
-    # "0-1-2-5": "The library item {li}, used in this module {mdl}, is not found.",
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
-    # "0-1-1-1": "A csv file or a dataframe is required.",
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-3": "Can not infer data structure: {errors}.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
@@ -39,50 +37,23 @@ centralised_messages = {
     "0-1-0-1": " Trying to redefine input datasets {dataset}.",  # Semantic Error
     # ------------Operators-------------
     # General Semantic errors
-    # "1-1-1-1": "At op {op}. Unable to validate types.",
     "1-1-1-1": "Invalid implicit cast from {type_1} to {type_2}.",
     "1-1-1-2": "Invalid implicit cast from {type_1} and {type_2} to {type_check}.",
     "1-1-1-3": "At op {op}: {entity} {name} cannot be promoted to {target_type}.",
-    # "1-1-1-2": "At op {op}: Component {comp_name} type must be '{type_1}', found '{type_2}'.",
-    # "1-1-1-3": "At op {op}: Invalid data type for Component {comp_name} and Scalar
-    # {scalar_name}.",
     "1-1-1-4": "At op {op}: Operation not allowed for multimeasure datasets.",
-    # "1-1-1-5": "At op {op}: Invalid data type {type} for Scalar {scalar_name}.",
-    # TODO: Deprecated not in use, delete this.
-    # "1-1-1-6": "At op {op}: Internal error: Not same parents.",
-    # "1-1-1-7": "At op {op}: Invalid data type {type} for Component {name}.",
     "1-1-1-8": "At op {op}: Invalid Dataset {name}, no measures defined.",
     "1-1-1-9": "At op {op}: Invalid Dataset {name}, all measures must have the same type: {type}.",
     "1-1-1-10": "Component {comp_name} not found in Dataset {dataset_name}.",
-    # "1-1-1-11": "At op {op}: Identifier {name} is specified more than once.",
-    # "1-1-1-12": "At op {op}: Different scalar types for component {comp_name} and set
-    # {set_name}.",
     "1-1-1-13": "At op {op}: Component {comp_name} role must be '{role_1}', found '{role_2}'.",
-    # "1-1-1-14": "At op {op}: Dataset {name} type must be '{type_1}'.",
     "1-1-1-15": "At op {op}: Datasets {name_1} and {name_2} does not contain the same number of "
     "{type}.",
     "1-1-1-16": "Found structure not nullable and null values.",
-    # "1-1-1-17": "At op {op}: Problem with nullability for this components {name_1} and {name_2}.",
-    # "1-1-1-18": "No {type} {value} found.",
-    # "1-1-1-19": "At op {op}: Invalid data type for Scalar {scalar_name_1} and Scalar
-    # {scalar_name_2}.",
     "1-1-1-20": "At op {op}: Only applies to datasets, instead of this a Scalar was provided.",
-    # General Interpreter errors
-    # "2-1-1-1": "At op {op}: Unable to evaluate.",
-    # "2-1-1-2": "At op {op}: Dataset {name} is empty.",
-    # TODO: Review this message, for unpivot for example we can't raise this error,
-    #  because we can have a empty dataset
-    # "2-1-1-3": "At op {op}: No rules have results.",
     # Aggregate errors
-    # TODO: Use error message 1-1-1-8
-    # "1-1-2-1": "At op {op}: No measures found to aggregate.",
     "1-1-2-2": "At op {op}: Only Identifiers are allowed for grouping, "
     "found {id_name} - {id_type}.",
     "1-1-2-3": "Having component output type must be boolean, found {type}.",
-    # "1-1-2-4": "At op {op}: Component {id_name} not found in dataset",
     # Analytic errors
-    # TODO: Use error message 1-1-1-8
-    # "1-1-3-1": "At op {op}: No measures found to analyse.",
     "1-1-3-2": "At op {op}: Only Identifiers are allowed for partitioning, "
     "found {id_name} - {id_type}.",
     # Cast errors
@@ -93,12 +64,8 @@ centralised_messages = {
     "{mask_value}.",
     "2-1-5-1": "Impossible to cast {value} from type {type_1} to {type_2}.",
     # Clause errors
-    # "1-1-6-1": "At op {op}: Component {comp_name} not found in dataset {dataset_name}.",
     "1-1-6-2": "At op {op}: The identifier {name} in dataset {dataset} could not be included "
     "in the {op} op.",
-    # TODO: This is not possible at all, as calc clause adds a new column and
-    #  identifiers are still unique
-    # "1-1-6-3": "Found duplicated values on identifiers after Calc clause.",
     "1-1-6-4": "At op {op}: Alias symbol cannot have the name of a component symbol: "
     "{symbol_name} - {comp_name}.",
     "1-1-6-5": "At op {op}: Scalar values are not allowed at sub operator, found {name}.",
@@ -114,7 +81,6 @@ centralised_messages = {
     # it is the same as the one that appears in joins, but are differents kinds of failures
     "1-1-6-12": "At op {op}: Not allowed to drop the last element.",
     "1-1-6-13": "At op {op}: Not allowed to overwrite an identifier: {comp_name}",
-    # "1-1-6-15": "At op {op}: Component {comp_name} already exists in dataset {dataset_name}",
     # Comparison errors
     "1-1-7-1": "At op {op}: Value in {left_name} of type {left_type} is not comparable to value "
     "{right_name} of type {right_type}.",
@@ -158,10 +124,8 @@ centralised_messages = {
     "1-1-10-9": "Invalid signature for the ruleset {ruleset}. On variables, condComp and "
     "ruleComp must be the same",
     # General Operators
-    # "1-1-12-1": "At op {op}: You could not recalculate the identifier {name} on dataset "
-    # "{dataset}.",
-    # "2-1-12-1": "At op {op}: Create a null measure without a scalar type is not allowed. "
-    # "Please use cast operator.",
+    "2-1-12-1": "At op {op}: Create a null measure without a scalar type is not allowed."
+    "Please use cast operator.",
     # Join Operators
     "1-1-13-1": "At op {op}: Duplicated alias {duplicates}.",
     "1-1-13-2": "At op {op}: Missing mandatory aliasing.",
@@ -219,7 +183,7 @@ centralised_messages = {
     "1-1-17-1": "At op {op}: Datasets {dataset_1} and {dataset_2} have different number of "
     "components",
     # String Operators
-    # "1-1-18-1": "At op {op}: Invalid Dataset {name}. Dataset with one measure expected.",
+    "1-1-18-1": "At op {op}: Invalid Dataset {name}. Dataset with one measure expected.",
     "1-1-18-2": "At op {op}: Composition of DataSet and Component is not allowed.",
     "1-1-18-3": "At op {op}: Invalid parameter position: {pos}.",
     "1-1-18-4": "At op {op}: {param_type} parameter should be {correct_type}.",
@@ -268,13 +232,12 @@ centralised_messages = {
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
-    # "2-3-3": "Internal error: Not able to categorize {value}.",
     "2-3-4": "{op} operator must have a {comp}",
     "2-3-5": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}",
     "2-3-6": "Dataset {dataset_name} not found, please check input datastructures",
     "2-3-9": "{comp_type} {comp_name} not found in {param}.",
     "2-3-10": "No {comp_type} have been defined.",
-    # "2-3-11": "{pos} operand must be a dataset.",
+    "2-3-11": "{pos} operand must be a dataset.",
     # ---------Semantic Analyzer Common----
     "1-3-1": "Please don't use twice {alias} like var_to.",
     "1-3-3": "Overwriting a dataset/variable is not allowed, trying it with {varId_value}.",
@@ -285,7 +248,6 @@ centralised_messages = {
     "1-3-10": "Not valid set declaration, mixed scalar types {scalar_1} and {scalar_2}.",
     "1-3-12": "Default arguments cannot be followed by non-default arguments.",
     "1-3-15": "Missing datastructure definition for required input Dataset {input}.",
-    # "1-3-16": "Component {name} not found.",
     "1-3-17": "Operations without output assigned are not available.",
     "1-3-19": "No {node_type} {node_value} found.",
     "1-3-20": "RuleComp of Hierarchical Ruleset can only be an identifier, {name} is a {role}.",
@@ -331,5 +293,4 @@ centralised_messages = {
     "1-4-2-6": "At op {op}: Window must be provided.",
     "1-4-2-7": "At op {op}: Partition by or order by clause must be provided for Analytic "
     "operators.",
-    # Not Implemented Error
 }

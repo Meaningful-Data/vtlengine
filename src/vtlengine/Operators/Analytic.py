@@ -40,6 +40,7 @@ from vtlengine.Model import Component, Dataset, Role
 
 return_integer_operators = [MAX, MIN, SUM]
 
+
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
     """
