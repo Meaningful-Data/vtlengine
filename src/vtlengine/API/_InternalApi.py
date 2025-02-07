@@ -5,15 +5,19 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
-from pysdmx.model import Component, Role
-from pysdmx.model.dataflow import DataStructureDefinition
+from pysdmx.model import Component
+from pysdmx.model import Role as SDMX_Role
+from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
-    Component,
+    Component as VTL_Component,
+)
+from vtlengine.Model import (
     Dataset,
     ExternalRoutine,
     Role,
@@ -22,7 +26,6 @@ from vtlengine.Model import (
     ValueDomain,
 )
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -70,7 +73,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                         else:
                             component["nullable"] = False
 
-                    components[component["name"]] = Component(
+                    components[component["name"]] = VTL_Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["data_type"]],
                         role=Role(component["role"]),
@@ -81,7 +84,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 for component in dataset_json["DataStructure"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["type"])
                     check_key("role", Role_keys, component["role"])
-                    components[component["name"]] = Component(
+                    components[component["name"]] = VTL_Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["type"]],
                         role=Role(component["role"]),
@@ -154,7 +157,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-        datapoints: Union[Path, str, List[Union[str, Path]]],
+    datapoints: Union[Path, str, List[Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
@@ -195,7 +198,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-        data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -371,7 +374,7 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-        datasets: Dict[str, Dataset], ast: Start
+    datasets: Dict[str, Dataset], ast: Start
 ) -> Dict[str, Dataset]:
     """
     Returns only the datasets with a persistent assignment.
@@ -429,7 +432,7 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
 
 
 def to_vtl_json(
-        dsd: DataStructureDefinition, path: Optional[str] = None
+    dsd: Union[DataStructureDefinition, Schema], path: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Formats the DataStructureDefinition as a VTL DataStructure."""
     dataset_name = dsd.id
@@ -446,7 +449,7 @@ def to_vtl_json(
 
     for c in _components:
         _type = VTL_DTYPES_MAPPING[c.dtype]
-        _nullability = c.role != Role.DIMENSION
+        _nullability = c.role != SDMX_Role.DIMENSION
         _role = VTL_ROLE_MAPPING[c.role]
 
         component = {
@@ -458,9 +461,7 @@ def to_vtl_json(
 
         components.append(component)
 
-    result = {
-        "datasets": [{"name": dataset_name, "DataStructure": components}]
-    }
+    result = {"datasets": [{"name": dataset_name, "DataStructure": components}]}
     if path is not None:
         with open(path, "w") as fp:
             json.dump(result, fp, indent=2)

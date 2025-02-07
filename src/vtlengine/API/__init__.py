@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
-from pysdmx.io import read_sdmx
 from pysdmx.io.pd import PandasDataset
 
 from vtlengine.API._InternalApi import (
@@ -14,18 +13,19 @@ from vtlengine.API._InternalApi import (
     load_datasets_with_data,
     load_external_routines,
     load_value_domains,
-    load_vtl, to_vtl_json,
+    load_vtl,
+    to_vtl_json,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
+from vtlengine.Interpreter import InterpreterAnalyzer
 
 pd.options.mode.chained_assignment = None
 
@@ -39,13 +39,13 @@ class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
     def syntaxError(
-            self,
-            recognizer: Any,
-            offendingSymbol: str,
-            line: str,
-            column: str,
-            msg: str,
-            e: Any,
+        self,
+        recognizer: Any,
+        offendingSymbol: str,
+        line: str,
+        column: str,
+        msg: str,
+        e: Any,
     ) -> None:
         raise Exception(
             f"Not valid VTL Syntax \n "
@@ -97,10 +97,10 @@ def create_ast(text: str) -> Start:
 
 
 def semantic_analysis(
-        script: Union[str, Path],
-        data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-        external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+    script: Union[str, Path],
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
 ) -> Any:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
@@ -174,14 +174,14 @@ def semantic_analysis(
 
 
 def run(
-        script: Union[str, Path],
-        data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-        datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
-        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-        external_routines: Optional[Union[str, Path]] = None,
-        time_period_output_format: str = "vtl",
-        return_only_persistent: bool = False,
-        output_folder: Optional[Union[str, Path]] = None,
+    script: Union[str, Path],
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Union[str, Path]]],
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[str, Path]] = None,
+    time_period_output_format: str = "vtl",
+    return_only_persistent: bool = False,
+    output_folder: Optional[Union[str, Path]] = None,
 ) -> Any:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
@@ -325,27 +325,16 @@ def run(
     return result
 
 
-def run_sdmx(script: str, data_file, structure_file, definition: str):
-    # Reading sdmx file
-    data_msg = read_sdmx(data_file)
-
-    # Getting the structure
-    str_msg = read_sdmx(structure_file)
-
-    data_structure = str_msg.get_data_structure_definition(definition)
-    # Load the dataset
-    datasets = PandasDataset(data=data_msg.get_datasets(), structure=data_structure)
-
-    # Generate data_structure from VTL
-    vtl_structure = to_vtl_json(data_structure)
+def run_sdmx(script: str, datasets: Sequence[PandasDataset]):  # type: ignore[no-untyped-def]
+    datapoints = {}
+    data_structures = []
+    for dataset in datasets:
+        schema = dataset.structure
+        vtl_structure = to_vtl_json(schema)  # type: ignore[arg-type]
+        data_structures.append(vtl_structure)
+        data = dataset.data
+        datapoints[dataset.structure.id] = data  # type: ignore[union-attr]
 
     # Run the VTL script
-    result = run(script, data_structures=vtl_structure, datapoints={definition: datasets.data})
+    result = run(script, data_structures=data_structures, datapoints=datapoints)  # type: ignore[arg-type]
     return result
-
-
-# if __name__ == '__main__':
-#     print(run_sdmx("DS_r := DS_1 * 2;", sdmx_csv_path / "data_v1.csv", sdmx_xml_path / "metadata.xml",
-#                    "DataStructure=BIS:BIS_DER(1.0)"))
-#     # leer = read_sdmx(sdmx_xml_path / "str_all.xml")
-#     # print(leer.get_dataset("DataStructure=BIS:BIS_DER(1.0)").structure)
