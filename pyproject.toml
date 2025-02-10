@@ -84,6 +84,12 @@ enable_error_code = [
 ]
 warn_return_any = false
 
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+markers = [
+    "input_path: directory where tests data files are stored"
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
