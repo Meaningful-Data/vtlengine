@@ -257,7 +257,7 @@ centralised_messages = {
     "2-1-19-9": "Invalid day {day} for year {year}.",
     "2-1-19-10": "Invalid year {year}, must be between 1900 and 9999.",
     "2-1-19-11": "{op} operator is not compatible with time values",
-    "2-1-19-12": "At op {op}: Invalid param type {type} for param {name}, " "expected {expected}.",
+    "2-1-19-12": "At op {op}: Invalid param type {type} for param {name}, expected {expected}.",
     "2-1-19-13": "At op {op}: Invalid param data_type {type} for param {name}, "
     "expected {expected}.",
     "2-1-19-14": "At op {op}: Invalid dataset {name}, requires at least one Date/Time_Period "
@@ -310,7 +310,7 @@ centralised_messages = {
     "1-4-1-1": "At op {op}: User defined {option} declared as {type_1}, found {type_2}.",
     "1-4-1-2": "Using variable {value}, not defined at {op} definition.",
     "1-4-1-3": "At op {op}: using variable {value}, not defined as an argument.",
-    "1-4-1-4": "Found duplicates at arguments naming, please review {type} " "definition {op}.",
+    "1-4-1-4": "Found duplicates at arguments naming, please review {type} definition {op}.",
     "1-4-1-5": "Found duplicates at rule naming: {names}. Please review {type} "
     "{ruleset_name} definition.",
     "1-4-1-6": "At op {op}: Arguments incoherence, {defined} defined {passed} passed.",
