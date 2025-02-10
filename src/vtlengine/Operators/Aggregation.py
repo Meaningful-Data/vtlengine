@@ -114,7 +114,7 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: Boolean().cast(x), na_action="ignore"
                     )
-                    data[measure.name] = data[measure.name].astype(object)
+            data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
     def validate(  # type: ignore[override]
