@@ -380,7 +380,7 @@ class Trunc(Parameterized):
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
-        if not pd.isnull(param):
+        if not pd.isnull(param) and param is not None:
             multiplier = 10**param
 
         truncated_value = int(x * multiplier) / multiplier
