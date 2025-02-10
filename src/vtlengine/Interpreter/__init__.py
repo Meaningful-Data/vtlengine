@@ -1599,7 +1599,7 @@ class InterpreterAnalyzer(ASTTemplate):
         )
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
-        if isinstance(left_operand, Dataset | DataComponent):
+        if isinstance(left_operand, (Dataset, DataComponent)):
             if left_operand.data is None:
                 return left_operand, right_operand
             if isinstance(left_operand, Dataset):
@@ -1615,7 +1615,7 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
-        if isinstance(right_operand, Dataset | DataComponent):
+        if isinstance(right_operand, (Dataset, DataComponent)):
             if right_operand.data is None:
                 return left_operand, right_operand
             if isinstance(right_operand, Dataset):
