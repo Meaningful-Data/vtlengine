@@ -1,7 +1,7 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Type
 
 import pandas as pd
 
@@ -248,9 +248,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op in self.udos:
             raise ValueError(f"User Defined Operator {node.op} already exists")
 
-        param_info = []
+        param_info: List[Dict[str, Union[str, Type[ScalarType], AST.AST]]] = []
         for param in node.parameters:
-            if param.name in param_info:
+            if param.name in [x["name"] for x in param_info]:
                 raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
             # We use a string for model types, but the data type class for basic types
             # (Integer, Number, String, Boolean, ...)
