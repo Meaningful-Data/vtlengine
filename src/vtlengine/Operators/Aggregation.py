@@ -114,7 +114,7 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = data[measure.name].map(
                         lambda x: Boolean().cast(x), na_action="ignore"
                     )
-            data[measure.name] = data[measure.name].astype(object)
+                    data[measure.name] = data[measure.name].astype(object)
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -229,7 +229,7 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df()
+            return duckdb.query(query).to_df().astype(object)
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
