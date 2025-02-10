@@ -513,7 +513,7 @@ def generate_period_range(
 
 
 def check_max_date(str_: Optional[str]) -> Optional[str]:
-    if pd.isnull(str_) or str_ == "nan" or str_ == "NaT":
+    if pd.isnull(str_) or str_ == "nan" or str_ == "NaT" or str_ is None:
         return None
 
     if len(str_) == 9 and str_[7] == "-":
