@@ -250,7 +250,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         param_info = []
         for param in node.parameters:
-            if param.name in param_info:
+            if param.name in param_info:  # type: ignore[comparison-overlap]
                 raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
             # We use a string for model types, but the data type class for basic types
             # (Integer, Number, String, Boolean, ...)

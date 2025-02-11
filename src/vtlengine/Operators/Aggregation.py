@@ -78,7 +78,7 @@ class Aggregation(Operator.Unary):
                     data[measure.name] = (
                         data[measure.name]
                         .astype(object)
-                        .map(lambda x: TimePeriodHandler(x), na_action="ignore")
+                        .map(lambda x: TimePeriodHandler(x), na_action="ignore")  # type: ignore[arg-type]
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
@@ -90,7 +90,7 @@ class Aggregation(Operator.Unary):
                         data[measure.name]
                         .astype(object)
                         .map(
-                            lambda x: TimeIntervalHandler.from_iso_format(x),
+                            lambda x: TimeIntervalHandler.from_iso_format(x),  # type: ignore[arg-type]
                             na_action="ignore",
                         )
                     )
@@ -103,11 +103,13 @@ class Aggregation(Operator.Unary):
             elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
-                        lambda x: DURATION_MAPPING[x], na_action="ignore"
+                        lambda x: DURATION_MAPPING[x],  # type: ignore[index]
+                        na_action="ignore",
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
-                        lambda x: DURATION_MAPPING_REVERSED[x], na_action="ignore"
+                        lambda x: DURATION_MAPPING_REVERSED[x],  # type: ignore[index]
+                        na_action="ignore",
                     )
             elif measure.data_type == Boolean:
                 if mode == "result":
