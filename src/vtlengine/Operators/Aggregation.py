@@ -29,8 +29,8 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
-    PERIOD_IND_MAPPING,
-    PERIOD_IND_MAPPING_REVERSE,
+    DURATION_MAPPING,
+    DURATION_MAPPING_REVERSED,
     TimeIntervalHandler,
     TimePeriodHandler,
 )
@@ -103,11 +103,11 @@ class Aggregation(Operator.Unary):
             elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING[x], na_action="ignore"
+                        lambda x: DURATION_MAPPING[x], na_action="ignore"
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING_REVERSE[x], na_action="ignore"
+                        lambda x: DURATION_MAPPING_REVERSED[x], na_action="ignore"
                     )
             elif measure.data_type == Boolean:
                 if mode == "result":
@@ -229,7 +229,7 @@ class Aggregation(Operator.Unary):
             )
 
         try:
-            return duckdb.query(query).to_df().astype(object)
+            return duckdb.query(query).to_df()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])

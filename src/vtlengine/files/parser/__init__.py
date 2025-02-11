@@ -187,19 +187,21 @@ def _validate_pandas(
                 )
             elif comp.data_type == Integer:
                 data[comp_name] = data[comp_name].map(
-                    lambda x: Integer.cast(float(x)), na_action="ignore"
+                    lambda x: Integer.cast(float(x)),  # type: ignore[arg-type]
+                    na_action="ignore",
                 )
             elif comp.data_type == Number:
-                data[comp_name] = data[comp_name].map(lambda x: float(x), na_action="ignore")
+                data[comp_name] = data[comp_name].map(lambda x: float(x), na_action="ignore")  # type: ignore[arg-type]
             elif comp.data_type == Boolean:
                 data[comp_name] = data[comp_name].map(
-                    lambda x: _parse_boolean(x), na_action="ignore"
+                    lambda x: _parse_boolean(x),  # type: ignore[arg-type]
+                    na_action="ignore",
                 )
             elif comp.data_type == Duration:
                 values_correct = (
                     data[comp_name]
                     .map(
-                        lambda x: Duration.validate_duration(x),
+                        lambda x: Duration.validate_duration(x),  # type: ignore[union-attr]
                         na_action="ignore",
                     )
                     .all()
