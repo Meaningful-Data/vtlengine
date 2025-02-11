@@ -1,7 +1,7 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
@@ -248,9 +248,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op in self.udos:
             raise ValueError(f"User Defined Operator {node.op} already exists")
 
-        param_info = []
+        param_info: List[Dict[str, Union[str, Type[ScalarType], AST.AST]]] = []
         for param in node.parameters:
-            if param.name in param_info:  # type: ignore[comparison-overlap]
+            if param.name in [x["name"] for x in param_info]:  # type: ignore[comparison-overlap]
                 raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
             # We use a string for model types, but the data type class for basic types
             # (Integer, Number, String, Boolean, ...)
@@ -1599,7 +1599,7 @@ class InterpreterAnalyzer(ASTTemplate):
         )
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
-        if isinstance(left_operand, Dataset | DataComponent):
+        if isinstance(left_operand, (Dataset, DataComponent)):
             if left_operand.data is None:
                 return left_operand, right_operand
             if isinstance(left_operand, Dataset):
@@ -1615,7 +1615,7 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 left = left_operand.data
                 left_operand.data = left.reindex(merge_index, fill_value=None)
-        if isinstance(right_operand, Dataset | DataComponent):
+        if isinstance(right_operand, (Dataset, DataComponent)):
             if right_operand.data is None:
                 return left_operand, right_operand
             if isinstance(right_operand, Dataset):

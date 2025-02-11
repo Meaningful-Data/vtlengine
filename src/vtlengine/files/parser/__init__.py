@@ -17,7 +17,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import DURATION_MAPPING
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
@@ -201,18 +201,33 @@ def _validate_pandas(
                 values_correct = (
                     data[comp_name]
                     .map(
-                        lambda x: x.replace(" ", "") in DURATION_MAPPING,  # type: ignore[union-attr]
+                        lambda x: Duration.validate_duration(x),  # type: ignore[union-attr]
                         na_action="ignore",
                     )
                     .all()
                 )
                 if not values_correct:
-                    raise ValueError(f"Duration values are not correct in column {comp_name}")
+                    try:
+                        values_correct = (
+                            data[comp_name]
+                            .map(
+                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,
+                                na_action="ignore",
+                            )
+                            .all()
+                        )
+                        if not values_correct:
+                            raise ValueError(
+                                f"Duration values are not correct in column {comp_name}"
+                            )
+                    except ValueError:
+                        raise ValueError(f"Duration values are not correct in column {comp_name}")
             else:
                 data[comp_name] = data[comp_name].map(
                     lambda x: str(x).replace('"', ""), na_action="ignore"
                 )
             data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+
     except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)

@@ -18,7 +18,7 @@
         {
           "name": "Me_2",
           "role": "Measure",
-          "type": "String",
+          "type": "Duration",
           "nullable": true
         }
       ]
