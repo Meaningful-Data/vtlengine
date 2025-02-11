@@ -369,7 +369,7 @@ class Case(Operator):
             result.data.loc[condition_mask_else, columns] = (
                 elseOp.value
                 if isinstance(elseOp, Scalar)
-                else elseOp.data.loc[condition_mask_else, columns]
+                else elseOp.data.loc[condition_mask_else, columns]  # type: ignore[index]
             )
 
         return result
