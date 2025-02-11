@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Union
 
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
@@ -23,7 +24,7 @@ def _format_vtl_representation(value: str) -> str:
 
 
 def format_time_period_external_representation(
-    dataset: Dataset | Scalar, mode: TimePeriodRepresentation
+    dataset: Union[Dataset, Scalar], mode: TimePeriodRepresentation
 ) -> None:
     """
     From SDMX time period representation to standard VTL representation (no hyphen).

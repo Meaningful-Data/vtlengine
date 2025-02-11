@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
@@ -401,9 +402,19 @@ class TimePeriod(TimeInterval):
 
 
 class Duration(ScalarType):
+    iso8601_duration_pattern = r"^P((\d+Y)?(\d+M)?(\d+D)?)$"
+
+    @classmethod
+    def validate_duration(cls, value: Any) -> bool:
+        try:
+            match = re.match(cls.iso8601_duration_pattern, value)
+            return bool(match)
+        except Exception:
+            raise Exception("Must be valid")
+
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        if from_type in {Duration, String}:
+        if from_type == String and cls.validate_duration(value):
             return value
 
         raise SemanticError(
@@ -415,7 +426,7 @@ class Duration(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
+        if from_type == String and cls.validate_duration(value):
             return value
 
         raise SemanticError(
@@ -424,6 +435,31 @@ class Duration(ScalarType):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def to_days(cls, value: Any) -> int:
+        if not cls.validate_duration(value):
+            raise SemanticError(
+                "2-1-19-15", "{op} can only be applied according to the iso 8601 format mask"
+            )
+
+        match = re.match(cls.iso8601_duration_pattern, value)
+
+        years = 0
+        months = 0
+        days = 0
+
+        years_str = match.group(2)  # type: ignore[union-attr]
+        months_str = match.group(3)  # type: ignore[union-attr]
+        days_str = match.group(4)  # type: ignore[union-attr]
+        if years_str:
+            years = int(years_str[:-1])
+        if months_str:
+            months = int(months_str[:-1])
+        if days_str:
+            days = int(days_str[:-1])
+        total_days = years * 365 + months * 30 + days
+        return int(total_days)
 
 
 class Boolean(ScalarType):

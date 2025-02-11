@@ -21,16 +21,16 @@ def check_date(value: str) -> str:
             raise InputValidationException(f"Date {value} is out of range for the month.")
         if "month must be in 1..12" in str(e):
             raise InputValidationException(
-                f"Date {value} is invalid. " f"Month must be between 1 and 12."
+                f"Date {value} is invalid. Month must be between 1 and 12."
             )
         raise InputValidationException(
-            f"Date {value} is not in the correct format. " f"Use YYYY-MM-DD."
+            f"Date {value} is not in the correct format. Use YYYY-MM-DD."
         )
 
     # Check date is between 1900 and 9999
     if not 1800 <= date_value.year <= 9999:
         raise InputValidationException(
-            f"Date {value} is invalid. " f"Year must be between 1900 and 9999."
+            f"Date {value} is invalid. Year must be between 1900 and 9999."
         )
 
     return date_value.isoformat()
@@ -68,7 +68,7 @@ def check_time(value: str) -> str:
             raise ValueError("Start date is greater than end date.")
         return value
     raise ValueError(
-        "Time is not in the correct format. " "Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM."
+        "Time is not in the correct format. Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM."
     )
 
 

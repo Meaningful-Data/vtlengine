@@ -380,7 +380,7 @@ class Trunc(Parameterized):
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
-        if not pd.isnull(param):
+        if not pd.isnull(param) and param is not None:
             multiplier = 10**param
 
         truncated_value = int(x * multiplier) / multiplier
@@ -409,7 +409,7 @@ class Random(Parameterized):
             raise SemanticError("2-1-15-2", op=cls.op, value=index)
         if index.value > 10000:
             warnings.warn(
-                "Random: The value of 'index' is very big. This can affect " "performance.",
+                "Random: The value of 'index' is very big. This can affect performance.",
                 UserWarning,
             )
         return super().validate(seed, index)
