@@ -1,0 +1,167 @@
+{
+  "name": "DS_r",
+  "components": {
+    "AVAILABILITY": {
+      "name": "AVAILABILITY",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "COLLECTION": {
+      "name": "COLLECTION",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "DECIMALS": {
+      "name": "DECIMALS",
+      "data_type": "Integer",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "DER_BASIS": {
+      "name": "DER_BASIS",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_CPC": {
+      "name": "DER_CPC",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_CURR_LEG1": {
+      "name": "DER_CURR_LEG1",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_CURR_LEG2": {
+      "name": "DER_CURR_LEG2",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_EX_METHOD": {
+      "name": "DER_EX_METHOD",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_INSTR": {
+      "name": "DER_INSTR",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_ISSUE_MAT": {
+      "name": "DER_ISSUE_MAT",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_RATING": {
+      "name": "DER_RATING",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_REP_CTY": {
+      "name": "DER_REP_CTY",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_RISK": {
+      "name": "DER_RISK",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_SECTOR_CPY": {
+      "name": "DER_SECTOR_CPY",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_SECTOR_UDL": {
+      "name": "DER_SECTOR_UDL",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "DER_TYPE": {
+      "name": "DER_TYPE",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "FREQ": {
+      "name": "FREQ",
+      "data_type": "String",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "Me_4": {
+      "name": "Me_4",
+      "data_type": "String",
+      "role": "Measure",
+      "nullable": true
+    },
+    "OBS_CONF": {
+      "name": "OBS_CONF",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "OBS_PRE_BREAK": {
+      "name": "OBS_PRE_BREAK",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "OBS_STATUS": {
+      "name": "OBS_STATUS",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "OBS_VALUE": {
+      "name": "OBS_VALUE",
+      "data_type": "String",
+      "role": "Measure",
+      "nullable": true
+    },
+    "TIME_FORMAT": {
+      "name": "TIME_FORMAT",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "TIME_PERIOD": {
+      "name": "TIME_PERIOD",
+      "data_type": "Time_Period",
+      "role": "Identifier",
+      "nullable": false
+    },
+    "TITLE_TS": {
+      "name": "TITLE_TS",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "UNIT_MEASURE": {
+      "name": "UNIT_MEASURE",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    },
+    "UNIT_MULT": {
+      "name": "UNIT_MULT",
+      "data_type": "String",
+      "role": "Attribute",
+      "nullable": true
+    }
+  }
+}

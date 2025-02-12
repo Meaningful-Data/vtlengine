@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from pysdmx.io import get_datasets
 
 import vtlengine.DataTypes as DataTypes
-from pysdmx.io import get_datasets
 from vtlengine.API import run, semantic_analysis, run_sdmx
 from vtlengine.API._InternalApi import (
     load_datasets,
@@ -26,6 +26,8 @@ filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
 filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
+filepath_sdmx_input = base_path / "data" / "SDMX" / "input"
+filepath_sdmx_output = base_path / "data" / "SDMX" / "output"
 
 input_vtl_params_OK = [
     (filepath_VTL / "2.vtl", "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;"),
@@ -279,6 +281,10 @@ param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
 param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
 
 param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
+
+params_run_sdmx = [("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", (filepath_sdmx_input / "str_all.xml"),
+                    (filepath_sdmx_input / "metadata.xml"), (filepath_sdmx_output / "reference_str_all.csv"),
+                    filepath_sdmx_output / "str_all_reference.json")]
 
 
 @pytest.mark.parametrize("input", ext_params_OK)
@@ -1027,6 +1033,11 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
     with pytest.raises(SemanticError, match=error_code):
         load_datasets(ds_r)
 
-@pytest.mark.parametrize("script, data, structure, reference", params_run_sdmx)
-def test_run_sdmx_function(script, data, structure, reference):
-    pass
+
+@pytest.mark.parametrize("script, data, structure, reference_data, reference_structure", params_run_sdmx)
+def test_run_sdmx_function(script, data, structure, reference_data, reference_structure):
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets)
+    assert result["DS_r"].data == reference_data
+    assert result["DS_r"].data == reference_structure
+

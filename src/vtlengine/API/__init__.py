@@ -1,6 +1,8 @@
 from pathlib import Path
+from pprint import pprint
+import tempfile
 from typing import Any, Dict, List, Optional, Sequence, Union
-
+import os
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
@@ -340,7 +342,12 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]):  # type: ignore[no
     return result
 
 if __name__ == '__main__':
-    datasets = get_datasets(sdmx_csv_path / "data_v1.csv", sdmx_xml_path / "metadata.xml")
-    loading = run_sdmx("DS_r := WEBSTATS_DER_DATAFLOW [calc Me_4 := OBS_VALUE];", datasets)
-    print(loading)
-
+    datasets = get_datasets(sdmx_csv_path / "gen_all.xml", sdmx_xml_path / "metadata.xml")
+    loading = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    # print(loading)
+    pprint(loading)
+    # dataframe = loading["DS_r"].data
+    # temp_dir = tempfile.gettempdir()
+    # ruta_temp = os.path.join(temp_dir, "reference_str_all.csv")
+    # dataframe.to_csv(ruta_temp, index=False, encoding="utf-8")
+    # print(ruta_temp)
