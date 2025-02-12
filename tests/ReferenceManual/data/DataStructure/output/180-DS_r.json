@@ -17,7 +17,7 @@
         },
         {
           "name": "Me_2",
-          "type": "String",
+          "type": "Duration",
           "role": "Measure",
           "nullable": true
         }

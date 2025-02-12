@@ -33,7 +33,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
-    DURATION_MAPPING,
+    PERIOD_IND_MAPPING,
     TimePeriodHandler,
     date_to_period,
     period_to_date,
@@ -632,7 +632,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _check_duration(cls, value: str) -> None:
-        if value not in DURATION_MAPPING:
+        if value not in PERIOD_IND_MAPPING:
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
@@ -640,7 +640,7 @@ class Time_Aggregation(Time):
         cls._check_duration(period_to)
         if period_from is not None:
             cls._check_duration(period_from)
-            if DURATION_MAPPING[period_to] <= DURATION_MAPPING[period_from]:
+            if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
                 # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
@@ -1008,6 +1008,7 @@ class SimpleUnaryTime(Operators.Unary):
         if operand.data_type == TimeInterval or operand.data_type not in (
             Date,
             TimePeriod,
+            Duration,
         ):
             raise SemanticError("1-1-19-10", op=cls.op)
 
@@ -1078,12 +1079,12 @@ class Day_of_Year(SimpleUnaryTime):
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
-    return_type = String
+    return_type = Duration
 
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-17", op=cls.op)
+            raise SemanticError("2-1-19-16", op=cls.op)
         years = 0
         days_remaining = value
         if value >= 365:
@@ -1094,12 +1095,12 @@ class Day_to_Year(Operators.Unary):
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
-    return_type = String
+    return_type = Duration
 
     @classmethod
     def py_op(cls, value: int) -> str:
         if value < 0:
-            raise SemanticError("2-1-19-17", op=cls.op)
+            raise SemanticError("2-1-19-16", op=cls.op)
         months = 0
         days_remaining = value
         if value >= 30:
@@ -1114,14 +1115,8 @@ class Year_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
-        if "Y" not in value:
-            raise SemanticError("2-1-19-15", op=cls.op)
-        index_y = value.index("Y")
-        years = int(value[1:index_y])
-        days = int(value[(index_y + 1) : -1])
-        return years * 365 + days
+        days = Duration.to_days(value)
+        return days
 
 
 class Month_to_Day(Operators.Unary):
@@ -1130,11 +1125,5 @@ class Month_to_Day(Operators.Unary):
 
     @classmethod
     def py_op(cls, value: str) -> int:
-        if "/" in value:
-            raise SemanticError("2-1-19-11", op=cls.op)
-        if "M" not in value:
-            raise SemanticError("2-1-19-16", op=cls.op)
-        index_m = value.index("M")
-        months = int(value[1:index_m])
-        days = int(value[(index_m + 1) : -1])
-        return months * 30 + days
+        days = Duration.to_days(value)
+        return days

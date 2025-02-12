@@ -41,14 +41,14 @@ evaluate_params = [
     (
         Scalar("2023-01-12", String, "2023-01-12"),
         Date,
-        "\PY\YDDD\D",
+        "\\PY\\YDDD\\D",
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
     (
         Scalar("2000Q1", String, "2000Q1"),
         TimePeriod,
-        "YYYY\QQ",
+        "YYYY\\QQ",
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
@@ -110,7 +110,7 @@ cast_error_params = [
         "2023-01-12",
         String,
         Date,
-        "\PY\YDDD\D",
+        "\\PY\\YDDD\\D",
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
@@ -118,7 +118,7 @@ cast_error_params = [
         "2000Q1",
         String,
         TimePeriod,
-        "YYYY\QQ",
+        "YYYY\\QQ",
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
@@ -144,7 +144,8 @@ cast_error_params = [
         String,
         "DD.DDD",
         SemanticError,
-        "('Impossible to cast 40.000 from type Number to String. Please check transformation with output dataset DS_r', '2-1-5-1')",
+        "('Impossible to cast 40.000 from type Number to String. Please check transformation with "
+        "output dataset DS_r', '2-1-5-1')",
     ),
 ]
 test_params = [
@@ -159,12 +160,12 @@ test_params = [
         "How this mask should be implemented is not yet defined.",
     ),
     (
-        r'cast("2023-01-12", date, "\PY\YDDD\D")',
+        r'cast("2023-01-12", date, "\\PY\\YDDD\\D")',
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
     (
-        r'cast ("2000Q1", time_period, "YYYY\QQ")',
+        r'cast ("2000Q1", time_period, "YYYY\\QQ")',
         NotImplementedError,
         "How this mask should be implemented is not yet defined.",
     ),
@@ -176,17 +177,20 @@ test_params = [
     (
         'cast("2021-12-21", string, "YYYY-MM-DD hh:mm:ss")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
     ),
     (
         'cast("P0Y240D", string, "YYYY-MM-DD hh:mm:ss")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
     ),
     (
         'cast ("2022-05-21/2023-05-21", string, "YYYY-MM-DD/YYYY-MM-DD")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: YYYY-MM-DD/YYYY-MM-DD. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD/YYYY-MM-DD. Please check transformation with output dataset DS_r\", '1-1-5-5')",
     ),
 ]
 

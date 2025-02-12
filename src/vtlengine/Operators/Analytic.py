@@ -249,7 +249,7 @@ class Analytic(Operator.Unary):
             df[measure_names] = df[measure_names].fillna(-1)
         # if os.getenv("SPARK", False):
         #     df = df.to_pandas()
-        return duckdb.query(query).to_df()
+        return duckdb.query(query).to_df().astype(object)
 
     @classmethod
     def evaluate(  # type: ignore[override]
