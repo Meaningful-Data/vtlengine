@@ -4,7 +4,8 @@ import pandas as pd
 import pytest
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.API import run, semantic_analysis
+from pysdmx.io import get_datasets
+from vtlengine.API import run, semantic_analysis, run_sdmx
 from vtlengine.API._InternalApi import (
     load_datasets,
     load_datasets_with_data,
@@ -1025,3 +1026,7 @@ def test_load_data_structure_with_wrong_role(ds_r, error_code):
 def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
     with pytest.raises(SemanticError, match=error_code):
         load_datasets(ds_r)
+
+@pytest.mark.parametrize("script, data, structure, reference", params_run_sdmx)
+def test_run_sdmx_function(script, data, structure, reference):
+    pass

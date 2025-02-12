@@ -5,7 +5,7 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
-
+from pysdmx.io import get_datasets
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _return_only_persistent_datasets,
@@ -338,3 +338,9 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]):  # type: ignore[no
     # Run the VTL script
     result = run(script, data_structures=data_structures, datapoints=datapoints)  # type: ignore[arg-type]
     return result
+
+if __name__ == '__main__':
+    datasets = get_datasets(sdmx_csv_path / "data_v1.csv", sdmx_xml_path / "metadata.xml")
+    loading = run_sdmx("DS_r := WEBSTATS_DER_DATAFLOW [calc Me_4 := OBS_VALUE];", datasets)
+    print(loading)
+
