@@ -56,11 +56,11 @@ def test_save_datapoints_without_data_mock(mock_csv):
         },
         data=None,
     )
-    output_path = "path/to/output"
+    output_path = "s3://path/to/output"
 
     save_datapoints(None, dataset, output_path)
 
-    expected_path = "path/to/output/test_dataset.csv"
+    expected_path = "s3://path/to/output/test_dataset.csv"
     mock_csv.assert_called_once_with(expected_path, index=False)
 
 
@@ -85,11 +85,11 @@ def test_save_datapoints_with_data_mock(mock_csv):
         },
         data=mock_data,
     )
-    output_path = "path/to/output/"
+    output_path = "s3://path/to/output/"
 
     save_datapoints(None, dataset, output_path)
 
-    expected_path = "path/to/output/test_dataset.csv"
+    expected_path = "s3://path/to/output/test_dataset.csv"
     mock_csv.assert_called_once_with(expected_path, index=False)
 
 
@@ -114,11 +114,11 @@ def test_save_datapoints_with_data_and_time_period_representation_mock(mock_csv)
         },
         data=mock_data,
     )
-    output_path = "path/to/output/"
+    output_path = "s3://path/to/output/"
 
     save_datapoints(TimePeriodRepresentation.VTL, dataset, output_path)
 
-    expected_path = "path/to/output/test_dataset.csv"
+    expected_path = "s3://path/to/output/test_dataset.csv"
     mock_csv.assert_called_once_with(expected_path, index=False)
 
 

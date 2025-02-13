@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import numpy as np
 import pandas as pd
 
+from vtlengine.config import INPUT_STORAGE_OPTIONS
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -126,26 +127,6 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
     return _sanitize_pandas_columns(components, csv_path, data)
 
 
-def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.DataFrame:
-    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
-
-    # start = time()
-    try:
-        data = pd.read_csv(
-            csv_path,
-            dtype=obj_dtypes,
-            engine="c",
-            keep_default_na=False,
-            na_values=[""],
-        )
-
-    except UnicodeDecodeError:
-        raise InputValidationException(code="0-1-2-5", file=csv_path)
-    except Exception as e:
-        raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
-    return _sanitize_pandas_columns(components, csv_path, data)
-
-
 def _parse_boolean(value: str) -> bool:
     if isinstance(value, bool):
         return value
@@ -240,10 +221,9 @@ def load_datapoints(
 ) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
-    elif isinstance(csv_path, str):
-        data = _pandas_load_s3_csv(components, csv_path)
-    elif isinstance(csv_path, Path):
-        _validate_csv_path(components, csv_path)
+    elif isinstance(csv_path, (str, Path)):
+        if isinstance(csv_path, Path):
+            _validate_csv_path(components, csv_path)
         data = _pandas_load_csv(components, csv_path)
     else:
         raise Exception("Invalid csv_path type")

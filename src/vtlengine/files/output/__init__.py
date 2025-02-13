@@ -3,6 +3,7 @@ from typing import Optional, Union
 
 import pandas as pd
 
+from vtlengine.config import OUTPUT_STORAGE_OPTIONS
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
