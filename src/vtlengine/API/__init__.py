@@ -1,13 +1,11 @@
 from pathlib import Path
-from pprint import pprint
-import tempfile
 from typing import Any, Dict, List, Optional, Sequence, Union
-import os
+
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
-from pysdmx.io import get_datasets
+from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _return_only_persistent_datasets,
@@ -28,6 +26,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Dataset
 
 pd.options.mode.chained_assignment = None
 
@@ -103,7 +102,7 @@ def semantic_analysis(
     data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[Dict[str, Any], Path]] = None,
-) -> Any:
+) -> Dict[str, Dataset]:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.
@@ -184,7 +183,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = False,
     output_folder: Optional[Union[str, Path]] = None,
-) -> Any:
+) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.
@@ -327,12 +326,14 @@ def run(
     return result
 
 
-def run_sdmx(script: str, datasets: Sequence[PandasDataset]):  # type: ignore[no-untyped-def]
+def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Dataset]:
     datapoints = {}
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
-        vtl_structure = to_vtl_json(schema)  # type: ignore[arg-type]
+        if not isinstance(schema, Union[DataStructureDefinition, Schema]):
+            raise ValueError("Schema must be a DataStructureDefinition or a Schema")
+        vtl_structure = to_vtl_json(schema)
         data_structures.append(vtl_structure)
         data = dataset.data
         datapoints[dataset.structure.id] = data  # type: ignore[union-attr]
@@ -341,13 +342,3 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]):  # type: ignore[no
     result = run(script, data_structures=data_structures, datapoints=datapoints)  # type: ignore[arg-type]
     return result
 
-if __name__ == '__main__':
-    datasets = get_datasets(sdmx_csv_path / "gen_all.xml", sdmx_xml_path / "metadata.xml")
-    loading = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-    # print(loading)
-    pprint(loading)
-    # dataframe = loading["DS_r"].data
-    # temp_dir = tempfile.gettempdir()
-    # ruta_temp = os.path.join(temp_dir, "reference_str_all.csv")
-    # dataframe.to_csv(ruta_temp, index=False, encoding="utf-8")
-    # print(ruta_temp)

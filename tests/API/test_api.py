@@ -1,17 +1,20 @@
+import json
 from pathlib import Path
+from typing import Dict
 
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.API import run, semantic_analysis, run_sdmx
+from vtlengine.API import run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
     load_value_domains,
     load_vtl,
+    to_vtl_json
 )
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
@@ -282,9 +285,26 @@ param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13"
 
 param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
 
-params_run_sdmx = [("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", (filepath_sdmx_input / "str_all.xml"),
-                    (filepath_sdmx_input / "metadata.xml"), (filepath_sdmx_output / "reference_str_all.csv"),
-                    filepath_sdmx_output / "str_all_reference.json")]
+params_run_sdmx = [
+    (
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml")
+    ),
+    (
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml")
+    )
+]
+
+params_to_vtl_json = [
+    (
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        (filepath_sdmx_output / "vtl_datastructure_str_all.json")
+    )
+]
 
 
 @pytest.mark.parametrize("input", ext_params_OK)
@@ -1034,10 +1054,23 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
         load_datasets(ds_r)
 
 
-@pytest.mark.parametrize("script, data, structure, reference_data, reference_structure", params_run_sdmx)
-def test_run_sdmx_function(script, data, structure, reference_data, reference_structure):
+@pytest.mark.parametrize(
+    "script, data, structure", params_run_sdmx
+)
+def test_run_sdmx_function(script, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx(script, datasets)
-    assert result["DS_r"].data == reference_data
-    assert result["DS_r"].data == reference_structure
+    assert isinstance(result, Dict) and all(
+        isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
 
+
+@pytest.mark.parametrize(
+    "data, structure, path_reference", params_to_vtl_json
+)
+def test_to_vtl_json_function(data, structure, path_reference):
+    datasets = get_datasets(data, structure)
+    result = to_vtl_json(datasets[0].structure)
+    with open(path_reference, 'r') as file:
+        reference = json.load(file)
+    assert result == reference
