@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
 from typing import Dict
-from pandas.testing import assert_frame_equal
+
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 from pysdmx.io import get_datasets
 
 import vtlengine.DataTypes as DataTypes
@@ -14,7 +15,7 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    to_vtl_json
+    to_vtl_json,
 )
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
@@ -289,20 +290,20 @@ params_run_sdmx = [
     (
         "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
         (filepath_sdmx_input / "gen_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml")
+        (filepath_sdmx_input / "metadata_minimal.xml"),
     ),
     (
         "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
         (filepath_sdmx_input / "str_all_minimal.xml"),
-        (filepath_sdmx_input / "metadata_minimal.xml")
-    )
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+    ),
 ]
 
 params_to_vtl_json = [
     (
         (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
-        (filepath_sdmx_output / "vtl_datastructure_str_all.json")
+        (filepath_sdmx_output / "vtl_datastructure_str_all.json"),
     )
 ]
 
@@ -311,7 +312,7 @@ params_2_1_str_sp = [
         (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
         (filepath_sdmx_output / "reference_str_all.csv"),
-        (filepath_sdmx_output / "str_all_components.json")
+        (filepath_sdmx_output / "str_all_components.json"),
     )
 ]
 
@@ -320,7 +321,7 @@ params_2_1_gen_str = [
         (filepath_sdmx_input / "gen_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
         (filepath_sdmx_output / "reference_gen_all.csv"),
-        (filepath_sdmx_output / "gen_all_components.json")
+        (filepath_sdmx_output / "gen_all_components.json"),
     )
 ]
 
@@ -1072,24 +1073,20 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
         load_datasets(ds_r)
 
 
-@pytest.mark.parametrize(
-    "script, data, structure", params_run_sdmx
-)
+@pytest.mark.parametrize("script, data, structure", params_run_sdmx)
 def test_run_sdmx_function(script, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx(script, datasets)
-    assert isinstance(result, Dict) and all(
-        isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result, Dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
 
 
-@pytest.mark.parametrize(
-    "data, structure, path_reference", params_to_vtl_json
-)
+@pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)
 def test_to_vtl_json_function(data, structure, path_reference):
     datasets = get_datasets(data, structure)
     result = to_vtl_json(datasets[0].structure)
-    with open(path_reference, 'r') as file:
+    with open(path_reference, "r") as file:
         reference = json.load(file)
     assert result == reference
 
@@ -1100,9 +1097,9 @@ def test_to_vtl_json_function(data, structure, path_reference):
 def test_run_sdmx_2_1_str_sp(data, structure, path_reference_data, path_reference_components):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-    with open(path_reference_data, 'r') as file_data:
+    with open(path_reference_data, "r") as file_data:
         reference_data = pd.read_csv(file_data)
-    with open(path_reference_components, 'r') as file_comp:
+    with open(path_reference_components, "r") as file_comp:
         reference_comp = json.load(file_comp)
     result_df = result["DS_r"].data
     reference_df = reference_data
@@ -1119,9 +1116,9 @@ def test_run_sdmx_2_1_str_sp(data, structure, path_reference_data, path_referenc
 def test_run_sdmx_2_1_gen_str(data, structure, path_reference_data, path_reference_components):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-    with open(path_reference_data, 'r') as file_data:
+    with open(path_reference_data, "r") as file_data:
         reference_data = pd.read_csv(file_data)
-    with open(path_reference_components, 'r') as file_comp:
+    with open(path_reference_components, "r") as file_comp:
         reference_comp = json.load(file_comp)
     result_df = result["DS_r"].data
     reference_df = reference_data
