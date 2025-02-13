@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Dict
-
+from pandas.testing import assert_frame_equal
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
@@ -303,6 +303,24 @@ params_to_vtl_json = [
         (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
         (filepath_sdmx_output / "vtl_datastructure_str_all.json")
+    )
+]
+
+params_2_1_str_sp = [
+    (
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        (filepath_sdmx_output / "reference_str_all.csv"),
+        (filepath_sdmx_output / "str_all_components.json")
+    )
+]
+
+params_2_1_gen_str = [
+    (
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        (filepath_sdmx_output / "reference_gen_all.csv"),
+        (filepath_sdmx_output / "gen_all_components.json")
     )
 ]
 
@@ -1074,3 +1092,41 @@ def test_to_vtl_json_function(data, structure, path_reference):
     with open(path_reference, 'r') as file:
         reference = json.load(file)
     assert result == reference
+
+
+@pytest.mark.parametrize(
+    "data, structure, path_reference_data, path_reference_components", params_2_1_str_sp
+)
+def test_run_sdmx_2_1_str_sp(data, structure, path_reference_data, path_reference_components):
+    datasets = get_datasets(data, structure)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    with open(path_reference_data, 'r') as file_data:
+        reference_data = pd.read_csv(file_data)
+    with open(path_reference_components, 'r') as file_comp:
+        reference_comp = json.load(file_comp)
+    result_df = result["DS_r"].data
+    reference_df = reference_data
+    result_df = result_df.fillna("").astype(str)
+    reference_df = reference_df.fillna("").astype(str)
+    result_comp = result["DS_r"].components.keys()
+    assert_frame_equal(result_df, reference_df)
+    assert result_comp == reference_comp.keys()
+
+
+@pytest.mark.parametrize(
+    "data, structure, path_reference_data, path_reference_components", params_2_1_gen_str
+)
+def test_run_sdmx_2_1_gen_str(data, structure, path_reference_data, path_reference_components):
+    datasets = get_datasets(data, structure)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    with open(path_reference_data, 'r') as file_data:
+        reference_data = pd.read_csv(file_data)
+    with open(path_reference_components, 'r') as file_comp:
+        reference_comp = json.load(file_comp)
+    result_df = result["DS_r"].data
+    reference_df = reference_data
+    result_df = result_df.fillna("").astype(str)
+    reference_df = reference_df.fillna("").astype(str)
+    result_comp = result["DS_r"].components.keys()
+    assert_frame_equal(result_df, reference_df)
+    assert result_comp == reference_comp.keys()
