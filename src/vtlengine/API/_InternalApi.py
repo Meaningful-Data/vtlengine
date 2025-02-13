@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 import jsonschema
 import pandas as pd
 
+from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
@@ -104,7 +105,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            # TODO: Add check on s3 extra
+            __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
@@ -113,7 +114,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         except Exception:
             raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
     if datapoint.is_dir():
-        datapoints = {}
+        datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
             if f.suffix != ".csv":
                 continue
@@ -376,14 +377,19 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     Check if the output folder exists. If not, it will create it.
     """
     if isinstance(output_folder, str):
+        if "s3://" in output_folder:
+            __check_s3_extra()
+            if not output_folder.endswith("/"):
+                raise ValueError("Output folder must be a Path or S3 URI to a directory")
+            return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
 
     if not isinstance(output_folder, Path):
-        raise Exception("Output folder must be a Path or S3 URI to a directory")
+        raise ValueError("Output folder must be a Path or S3 URI to a directory")
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)

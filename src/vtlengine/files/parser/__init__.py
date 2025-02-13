@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Type, Union
 import numpy as np
 import pandas as pd
 
-from vtlengine.config import INPUT_STORAGE_OPTIONS
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -110,7 +109,7 @@ def _sanitize_pandas_columns(
     return data
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
+def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
     try:
@@ -122,7 +121,10 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.Dat
             na_values=[""],
         )
     except UnicodeDecodeError:
-        raise InputValidationException(code="0-1-2-5", file=csv_path.name)
+        if isinstance(csv_path, Path):
+            raise InputValidationException(code="0-1-2-5", file=csv_path.name)
+        else:
+            raise InputValidationException(code="0-1-2-5", file=csv_path)
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
