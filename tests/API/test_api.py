@@ -1098,9 +1098,7 @@ def test_to_vtl_json_function(data, structure, path_reference):
     assert result == reference
 
 
-@pytest.mark.parametrize(
-    "code, data, structure", params_2_1_str_sp
-)
+@pytest.mark.parametrize("code, data, structure", params_2_1_str_sp)
 def test_run_sdmx_2_1_str_sp(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
@@ -1108,9 +1106,7 @@ def test_run_sdmx_2_1_str_sp(code, data, structure):
     assert result == reference
 
 
-@pytest.mark.parametrize(
-    "code, data, structure", params_2_1_gen_str
-)
+@pytest.mark.parametrize("code, data, structure", params_2_1_gen_str)
 def test_run_sdmx_2_1_gen_all(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)

@@ -431,9 +431,7 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         os.mkdir(output_folder)
 
 
-def to_vtl_json(
-    dsd: Union[DataStructureDefinition, Schema]
-) -> Dict[str, Any]:
+def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
     """Formats the DataStructureDefinition as a VTL DataStructure."""
     dataset_name = dsd.id
     components = []

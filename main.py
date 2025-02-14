@@ -2,6 +2,7 @@ import pandas as pd
 
 from vtlengine import run
 
+
 def main():
     script = """
         DS_A := DS_1 * 10;
