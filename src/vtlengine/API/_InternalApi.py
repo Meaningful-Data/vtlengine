@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
-from pysdmx.model import Component
+from pysdmx.model import Component as SDMXComponent
 from pysdmx.model import Role as SDMX_Role
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
@@ -198,7 +198,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    data_structure: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -432,8 +432,8 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
 
 
 def to_vtl_json(
-    dsd: Union[DataStructureDefinition, Schema], path: Optional[str] = None
-) -> Optional[Dict[str, Any]]:
+    dsd: Union[DataStructureDefinition, Schema]
+) -> Dict[str, Any]:
     """Formats the DataStructureDefinition as a VTL DataStructure."""
     dataset_name = dsd.id
     components = []
@@ -442,7 +442,7 @@ def to_vtl_json(
     TYPE = "type"
     NULLABLE = "nullable"
 
-    _components: List[Component] = []
+    _components: List[SDMXComponent] = []
     _components.extend(dsd.components.dimensions)
     _components.extend(dsd.components.measures)
     _components.extend(dsd.components.attributes)
@@ -462,9 +462,5 @@ def to_vtl_json(
         components.append(component)
 
     result = {"datasets": [{"name": dataset_name, "DataStructure": components}]}
-    if path is not None:
-        with open(path, "w") as fp:
-            json.dump(result, fp, indent=2)
-        return None
 
     return result

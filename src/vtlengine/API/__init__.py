@@ -5,7 +5,7 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model.dataflow import DataStructureDefinition, Schema
+from pysdmx.model.dataflow import Schema
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -23,12 +23,12 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Dataset
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
-from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset
 
 pd.options.mode.chained_assignment = None
 
@@ -42,13 +42,13 @@ class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """
 
     def syntaxError(
-        self,
-        recognizer: Any,
-        offendingSymbol: str,
-        line: str,
-        column: str,
-        msg: str,
-        e: Any,
+            self,
+            recognizer: Any,
+            offendingSymbol: str,
+            line: str,
+            column: str,
+            msg: str,
+            e: Any,
     ) -> None:
         raise Exception(
             f"Not valid VTL Syntax \n "
@@ -100,10 +100,10 @@ def create_ast(text: str) -> Start:
 
 
 def semantic_analysis(
-    script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+        script: Union[str, Path],
+        data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+        external_routines: Optional[Union[Dict[str, Any], Path]] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
@@ -177,14 +177,14 @@ def semantic_analysis(
 
 
 def run(
-    script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Union[str, Path]]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
-    time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
-    output_folder: Optional[Union[str, Path]] = None,
+        script: Union[str, Path],
+        data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+        datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
+        value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+        external_routines: Optional[Union[str, Path]] = None,
+        time_period_output_format: str = "vtl",
+        return_only_persistent: bool = False,
+        output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
@@ -333,12 +333,11 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
-        vtl_structure = to_vtl_json(schema)  # type: ignore[arg-type]
-        if not isinstance(schema, Union[DataStructureDefinition, Schema]):  # type: ignore[arg-type]
-            raise SemanticError("0-3-1-2", f"Schema {schema} has no type DSD or Schema")
+        if not isinstance(schema, Schema):
+            raise SemanticError("0-3-1-2", schema=schema)
+        vtl_structure = to_vtl_json(schema)
         data_structures.append(vtl_structure)
-        data = dataset.data
-        datapoints[dataset.structure.id] = data  # type: ignore[union-attr]
+        datapoints[schema.id] = dataset.data
 
-    result = run(script, data_structures=data_structures, datapoints=datapoints)  # type: ignore[arg-type]
+    result = run(script, data_structures=data_structures, datapoints=datapoints)
     return result

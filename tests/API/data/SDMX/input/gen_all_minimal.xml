@@ -41,12 +41,7 @@
                 <generic:Value id="TIME_PERIOD" value="2002"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -67,12 +62,7 @@
                 <generic:Value id="TIME_PERIOD" value="2003"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -93,12 +83,7 @@
                 <generic:Value id="TIME_PERIOD" value="2004"/>
             </generic:ObsKey>
             <generic:ObsValue value="14206.490766"/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="A"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -119,12 +104,7 @@
                 <generic:Value id="TIME_PERIOD" value="2005"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -145,12 +125,7 @@
                 <generic:Value id="TIME_PERIOD" value="2006"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -171,12 +146,7 @@
                 <generic:Value id="TIME_PERIOD" value="2007"/>
             </generic:ObsKey>
             <generic:ObsValue value="29929.036014"/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="A"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -197,12 +167,7 @@
                 <generic:Value id="TIME_PERIOD" value="2008"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -223,12 +188,7 @@
                 <generic:Value id="TIME_PERIOD" value="2009"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -249,12 +209,7 @@
                 <generic:Value id="TIME_PERIOD" value="2010"/>
             </generic:ObsKey>
             <generic:ObsValue value="31040.395041"/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="A"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
         <generic:Obs>
             <generic:ObsKey>
@@ -275,12 +230,7 @@
                 <generic:Value id="TIME_PERIOD" value="2011"/>
             </generic:ObsKey>
             <generic:ObsValue value=""/>
-            <generic:Attributes>
-                <generic:Value id="AVAILABILITY" value="K"/>
-                <generic:Value id="COLLECTION" value="S"/>
-                <generic:Value id="OBS_STATUS" value="M"/>
-                <generic:Value id="OBS_CONF" value="F"/>
-            </generic:Attributes>
+
         </generic:Obs>
     </message:DataSet>
 </message:GenericData>

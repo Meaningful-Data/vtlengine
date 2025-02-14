@@ -1,13 +1,13 @@
 import json
+import warnings
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
 from pysdmx.io import get_datasets
 
 import vtlengine.DataTypes as DataTypes
+from tests.Helper import TestHelper
 from vtlengine.API import run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     load_datasets,
@@ -32,6 +32,16 @@ filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
 filepath_sdmx_input = base_path / "data" / "SDMX" / "input"
 filepath_sdmx_output = base_path / "data" / "SDMX" / "output"
+
+
+class SDMXTestsOutput(TestHelper):
+    filepath_out_json = base_path / "data" / "DataStructure" / "output"
+    filepath_out_csv = base_path / "data" / "DataSet" / "output"
+
+    ds_input_prefix = "DS_"
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 input_vtl_params_OK = [
     (filepath_VTL / "2.vtl", "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;"),
@@ -288,12 +298,10 @@ param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
 
 params_run_sdmx = [
     (
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
         (filepath_sdmx_input / "gen_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
     ),
     (
-        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];",
         (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
     ),
@@ -309,19 +317,17 @@ params_to_vtl_json = [
 
 params_2_1_str_sp = [
     (
+        "1-1",
         (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
-        (filepath_sdmx_output / "reference_str_all.csv"),
-        (filepath_sdmx_output / "str_all_components.json"),
     )
 ]
 
 params_2_1_gen_str = [
     (
-        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        "1-2",
+        (filepath_sdmx_input / "str_all_minimal.xml"),
         (filepath_sdmx_input / "metadata_minimal.xml"),
-        (filepath_sdmx_output / "reference_gen_all.csv"),
-        (filepath_sdmx_output / "gen_all_components.json"),
     )
 ]
 
@@ -1073,11 +1079,12 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
         load_datasets(ds_r)
 
 
-@pytest.mark.parametrize("script, data, structure", params_run_sdmx)
-def test_run_sdmx_function(script, data, structure):
+@pytest.mark.parametrize("data, structure", params_run_sdmx)
+def test_run_sdmx_function(data, structure):
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
     result = run_sdmx(script, datasets)
-    assert isinstance(result, Dict)
+    assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
 
@@ -1092,38 +1099,20 @@ def test_to_vtl_json_function(data, structure, path_reference):
 
 
 @pytest.mark.parametrize(
-    "data, structure, path_reference_data, path_reference_components", params_2_1_str_sp
+    "code, data, structure", params_2_1_str_sp
 )
-def test_run_sdmx_2_1_str_sp(data, structure, path_reference_data, path_reference_components):
+def test_run_sdmx_2_1_str_sp(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-    with open(path_reference_data, "r") as file_data:
-        reference_data = pd.read_csv(file_data)
-    with open(path_reference_components, "r") as file_comp:
-        reference_comp = json.load(file_comp)
-    result_df = result["DS_r"].data
-    reference_df = reference_data
-    result_df = result_df.fillna("").astype(str)
-    reference_df = reference_df.fillna("").astype(str)
-    result_comp = result["DS_r"].components.keys()
-    assert_frame_equal(result_df, reference_df)
-    assert result_comp == reference_comp.keys()
+    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
+    assert result == reference
 
 
 @pytest.mark.parametrize(
-    "data, structure, path_reference_data, path_reference_components", params_2_1_gen_str
+    "code, data, structure", params_2_1_gen_str
 )
-def test_run_sdmx_2_1_gen_str(data, structure, path_reference_data, path_reference_components):
+def test_run_sdmx_2_1_gen_all(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
-    with open(path_reference_data, "r") as file_data:
-        reference_data = pd.read_csv(file_data)
-    with open(path_reference_components, "r") as file_comp:
-        reference_comp = json.load(file_comp)
-    result_df = result["DS_r"].data
-    reference_df = reference_data
-    result_df = result_df.fillna("").astype(str)
-    reference_df = reference_df.fillna("").astype(str)
-    result_comp = result["DS_r"].components.keys()
-    assert_frame_equal(result_df, reference_df)
-    assert result_comp == reference_comp.keys()
+    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
+    assert result == reference

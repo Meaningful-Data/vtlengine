@@ -18,7 +18,7 @@ centralised_messages = {
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # SDMX Schema validation
-    "0-3-1-2": "Schema {schema} has no type DSD or Schema",
+    "0-3-1-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
     # Infer Data Structure errors
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-3": "Can not infer data structure: {errors}.",
