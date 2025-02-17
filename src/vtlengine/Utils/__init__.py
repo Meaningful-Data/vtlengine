@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from pysdmx.model import Role
+
 from vtlengine.AST.Grammar.tokens import (
     ABS,
     AGGREGATE,
@@ -427,4 +429,51 @@ HA_UNARY_MAPPING = {
     # Numeric
     PLUS: HRUnPlus,
     MINUS: HRUnMinus,
+}
+VTL_DTYPES_MAPPING = {
+    "String": "String",
+    "Alpha": "String",
+    "AlphaNumeric": "String",
+    "Numeric": "String",
+    "BigInteger": "Integer",
+    "Integer": "Integer",
+    "Long": "Integer",
+    "Short": "Integer",
+    "Decimal": "Number",
+    "Float": "Number",
+    "Double": "Number",
+    "Boolean": "Boolean",
+    "URI": "String",
+    "Count": "Integer",
+    "InclusiveValueRange": "Number",
+    "ExclusiveValueRange": "Number",
+    "Incremental": "Number",
+    "ObservationalTimePeriod": "Time_Period",
+    "StandardTimePeriod": "Time_Period",
+    "BasicTimePeriod": "Date",
+    "GregorianTimePeriod": "Date",
+    "GregorianYear": "Date",
+    "GregorianYearMonth": "Date",
+    "GregorianMonth": "Date",
+    "GregorianDay": "Date",
+    "ReportingTimePeriod": "Time_Period",
+    "ReportingYear": "Time_Period",
+    "ReportingSemester": "Time_Period",
+    "ReportingTrimester": "Time_Period",
+    "ReportingQuarter": "Time_Period",
+    "ReportingMonth": "Time_Period",
+    "ReportingWeek": "Time_Period",
+    "ReportingDay": "Time_Period",
+    "DateTime": "Date",
+    "TimeRange": "Time",
+    "Month": "String",
+    "MonthDay": "String",
+    "Day": "String",
+    "Time": "String",
+    "Duration": "Duration",
+}
+VTL_ROLE_MAPPING = {
+    Role.DIMENSION: "Identifier",
+    Role.MEASURE: "Measure",
+    Role.ATTRIBUTE: "Attribute",
 }

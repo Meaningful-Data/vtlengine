@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
+from pysdmx.model import Component as SDMXComponent
+from pysdmx.model import Role as SDMX_Role
+from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine.AST import PersistentAssignment, Start
@@ -12,7 +15,9 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
 from vtlengine.Model import (
-    Component,
+    Component as VTL_Component,
+)
+from vtlengine.Model import (
     Dataset,
     ExternalRoutine,
     Role,
@@ -20,9 +25,11 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
+sdmx_csv_path = base_path / "data" / "sdmx_csv"
 with open(schema_path / "json_schema_2.1.json", "r") as file:
     schema = json.load(file)
 
@@ -66,7 +73,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                         else:
                             component["nullable"] = False
 
-                    components[component["name"]] = Component(
+                    components[component["name"]] = VTL_Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["data_type"]],
                         role=Role(component["role"]),
@@ -77,7 +84,7 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 for component in dataset_json["DataStructure"]:
                     check_key("data_type", SCALAR_TYPES.keys(), component["type"])
                     check_key("role", Role_keys, component["role"])
-                    components[component["name"]] = Component(
+                    components[component["name"]] = VTL_Component(
                         name=component["name"],
                         data_type=SCALAR_TYPES[component["type"]],
                         role=Role(component["role"]),
@@ -191,7 +198,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 
 def load_datasets(
-    data_structure: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    data_structure: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
 ) -> Dict[str, Dataset]:
     """
     Loads multiple datasets.
@@ -422,3 +429,36 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if output_folder.suffix != "":
             raise Exception("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
+
+
+def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
+    """Formats the DataStructureDefinition as a VTL DataStructure."""
+    dataset_name = dsd.id
+    components = []
+    NAME = "name"
+    ROLE = "role"
+    TYPE = "type"
+    NULLABLE = "nullable"
+
+    _components: List[SDMXComponent] = []
+    _components.extend(dsd.components.dimensions)
+    _components.extend(dsd.components.measures)
+    _components.extend(dsd.components.attributes)
+
+    for c in _components:
+        _type = VTL_DTYPES_MAPPING[c.dtype]
+        _nullability = c.role != SDMX_Role.DIMENSION
+        _role = VTL_ROLE_MAPPING[c.role]
+
+        component = {
+            NAME: c.id,
+            ROLE: _role,
+            TYPE: _type,
+            NULLABLE: _nullability,
+        }
+
+        components.append(component)
+
+    result = {"datasets": [{"name": dataset_name, "DataStructure": components}]}
+
+    return result

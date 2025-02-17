@@ -1,16 +1,21 @@
+import json
+import warnings
 from pathlib import Path
 
 import pandas as pd
 import pytest
+from pysdmx.io import get_datasets
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.API import run, semantic_analysis
+from tests.Helper import TestHelper
+from vtlengine.API import run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
     load_value_domains,
     load_vtl,
+    to_vtl_json,
 )
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
@@ -25,6 +30,18 @@ filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "DataSet" / "input"
 filepath_out_json = base_path / "data" / "DataStructure" / "output"
 filepath_out_csv = base_path / "data" / "DataSet" / "output"
+filepath_sdmx_input = base_path / "data" / "SDMX" / "input"
+filepath_sdmx_output = base_path / "data" / "SDMX" / "output"
+
+
+class SDMXTestsOutput(TestHelper):
+    filepath_out_json = base_path / "data" / "DataStructure" / "output"
+    filepath_out_csv = base_path / "data" / "DataSet" / "output"
+
+    ds_input_prefix = "DS_"
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 input_vtl_params_OK = [
     (filepath_VTL / "2.vtl", "DS_r := DS_1 + DS_2; DS_r2 <- DS_1 + DS_r;"),
@@ -278,6 +295,43 @@ param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
 param_wrong_data_type = [((filepath_json / "DS_wrong_datatype.json"), "0-1-1-13")]
 
 param_viral_attr = [((filepath_json / "DS_Viral_attr.json"), "0-1-1-13")]
+
+params_run_sdmx = [
+    (
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+    ),
+]
+
+params_to_vtl_json = [
+    (
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        (filepath_sdmx_output / "vtl_datastructure_str_all.json"),
+    )
+]
+
+params_2_1_str_sp = [
+    (
+        "1-1",
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+    )
+]
+
+params_2_1_gen_str = [
+    (
+        "1-2",
+        (filepath_sdmx_input / "str_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+    )
+]
+
+params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-3-1-2")]
 
 
 @pytest.mark.parametrize("input", ext_params_OK)
@@ -1025,3 +1079,45 @@ def test_load_data_structure_with_wrong_role(ds_r, error_code):
 def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
     with pytest.raises(SemanticError, match=error_code):
         load_datasets(ds_r)
+
+
+@pytest.mark.parametrize("data, structure", params_run_sdmx)
+def test_run_sdmx_function(data, structure):
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets)
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+@pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)
+def test_to_vtl_json_function(data, structure, path_reference):
+    datasets = get_datasets(data, structure)
+    result = to_vtl_json(datasets[0].structure)
+    with open(path_reference, "r") as file:
+        reference = json.load(file)
+    assert result == reference
+
+
+@pytest.mark.parametrize("code, data, structure", params_2_1_str_sp)
+def test_run_sdmx_2_1_str_sp(code, data, structure):
+    datasets = get_datasets(data, structure)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
+    assert result == reference
+
+
+@pytest.mark.parametrize("code, data, structure", params_2_1_gen_str)
+def test_run_sdmx_2_1_gen_all(code, data, structure):
+    datasets = get_datasets(data, structure)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
+    assert result == reference
+
+
+@pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
+def test_to_vtl_json_exception(data, error_code):
+    datasets = get_datasets(data)
+    with pytest.raises(SemanticError, match=error_code):
+        run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)

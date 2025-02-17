@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "FREQ",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "DER_TYPE",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "DER_INSTR",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "DER_RISK",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "DER_REP_CTY",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "type": "Time_Period",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "Me_4",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
