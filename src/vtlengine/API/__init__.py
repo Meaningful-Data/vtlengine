@@ -32,11 +32,6 @@ from vtlengine.Model import Dataset
 
 pd.options.mode.chained_assignment = None
 
-base_path = Path(__file__).parent
-schema_path = base_path / "data" / "schema"
-sdmx_csv_path = base_path / "data" / "sdmx_csv"
-sdmx_xml_path = base_path / "data" / "sdmx_csv"
-
 
 class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]
     """ """

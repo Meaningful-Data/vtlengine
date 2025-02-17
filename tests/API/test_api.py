@@ -331,6 +331,8 @@ params_2_1_gen_str = [
     )
 ]
 
+params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-3-1-2")]
+
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -1112,3 +1114,10 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     assert result == reference
+
+
+@pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
+def test_to_vtl_json_exception(data, error_code):
+    datasets = get_datasets(data)
+    with pytest.raises(SemanticError, match=error_code):
+        run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
