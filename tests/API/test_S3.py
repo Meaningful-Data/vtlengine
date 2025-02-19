@@ -1,15 +1,20 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from vtlengine import DataTypes
+from vtlengine import DataTypes, run
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
+from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"
+filepath_datastructure = base_path / "data" / "DataStructure" / "input"
 
 params = [
     (
@@ -128,3 +133,31 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
     save_datapoints(None, dataset, output_path=output_path)
     result = pd.read_csv(output_path / f"{dataset.name}.csv")
     pd.testing.assert_frame_equal(result, dataset.data)
+
+
+@patch("pandas.read_csv")
+def test_load_datapoints_s3(mock_read_csv):
+    input_path = "s3://path/to/input/dataset.csv"
+    load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
+    mock_read_csv.assert_called_once_with(input_path,
+                                          dtype={},
+                                          engine="c",
+                                          keep_default_na=False,
+                                          na_values=[""], )
+
+
+@patch("pandas.read_csv")
+def test_run_s3(mock_read_csv):
+    with open(filepath_datastructure / "DS_1.json") as f:
+        data_structures = json.load(f)
+
+    input_path = "s3://path/to/input/DS_1.csv"
+    with pytest.raises(InputValidationException):
+        run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
+
+    dtypes = {comp["name"]: np.object_ for comp in data_structures["datasets"][0]["DataStructure"]}
+    mock_read_csv.assert_called_once_with(input_path,
+                                          dtype=dtypes,
+                                          engine="c",
+                                          keep_default_na=False,
+                                          na_values=[""], )
