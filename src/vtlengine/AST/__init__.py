@@ -85,7 +85,7 @@ class VarID(AST):
     Could be: DATASET or a COMPONENT.
     """
 
-    value: Any
+    value: str
 
 
 @dataclass
@@ -497,8 +497,8 @@ class HRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[Constant]
-    erLevel: Optional[Constant]
+    erCode: Optional[str]
+    erLevel: Optional[int]
 
 
 @dataclass
@@ -509,8 +509,8 @@ class DPRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[Constant]
-    erLevel: Optional[Constant]
+    erCode: Optional[str]
+    erLevel: Optional[int]
 
 
 # TODO: Unify HRuleset and DPRuleset?

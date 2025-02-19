@@ -1,3 +1,4 @@
+import inspect
 import json
 from collections import Counter
 from dataclasses import dataclass
@@ -128,10 +129,13 @@ class Component:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        data_type = self.data_type
+        if not inspect.isclass(self.data_type):
+            data_type = self.data_type.__class__
         return {
             "name": self.name,
-            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.data_type],
-            "role": self.role.value,
+            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "role": self.role.value if self.role is not None else None,
             "nullable": self.nullable,
         }
 
