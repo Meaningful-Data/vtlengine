@@ -13,7 +13,7 @@ dataset_output_path = base_path / "DataSet" / "output"
 datastructure_input_path = base_path / "DataStructure" / "input"
 datastructure_output_path = base_path / "DataStructure" / "output"
 sql_path = base_path / "SQL"
-vtl_path = base_path / "VTL"
+vtl_path = base_path / "vtl"
 
 def test_grammar():
     script_name = "test_grammar.vtl"
