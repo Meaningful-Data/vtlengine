@@ -1,0 +1,3598 @@
+{
+    "datasets": [
+        {
+            "name": "sum_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "avg_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "min_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "max_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "count_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "median_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "stddev_pop_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "stddev_samp_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "var_pop_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "var_samp_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "first_value_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "last_value_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lag_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lead_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "rank_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_rank",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ratio_to_report_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "max_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "min_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "sum_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "count_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "avg_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "median_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "stddev_pop_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "stddev_samp_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "var_pop_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "var_samp_analytic_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "persistent_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "persistent_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_ds1",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_ds2",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "cast_ds_int_str",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str_from_int",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "eq_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "neq_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lt_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lte_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "gt_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "gte_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "eq_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "neq_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lt_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lte_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "gt_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "gte_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "bool_var",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "DS_cond",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "str_var",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "name": "DS_then",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "DS_else",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "if_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_int_from_if",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "nvl_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "name": "case_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_int_from_case",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "nvl_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "name": "DR_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "ruleid",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "errorcode",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "errorlevel",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ds_from_membership",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ds_as_alias",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "HR_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "ruleid",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "errorcode",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "errorlevel",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "imbalance",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "inner_join_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "left_join_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "full_join_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "cross_join_ds",
+            "DataStructure": [
+                {
+                    "name": "alias_1#Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_1#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_1#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_2#Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_2#Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "alias_2#Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "alias_2#Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "unplus_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "unminus_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "abs_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "exp_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ln_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "sqrt_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ceil_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "floor_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "binplus_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "binminus_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "mult_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "div_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "log_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "mod_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "power_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "round_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "trunc_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "random_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "identifier_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Id_4",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "name": "measure_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_new",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "attribute_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "At_new",
+                    "type": "String",
+                    "role": "Attribute",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "name": "concat_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "length_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "substring_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "instr_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "int_var",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "replace_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "lower_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "upper_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "trim_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "ltrim_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "rtrim_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "UDO_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_num",
+                    "type": "Number",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_str",
+                    "type": "String",
+                    "role": "Measure",
+                    "nullable": true
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_and_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_or_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_not_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_xor_ds_sc",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_and_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_or_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "boolean_xor_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_bool",
+                    "type": "Boolean",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "if_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "case_ds_ds",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_2",
+                    "type": "String",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_3",
+                    "type": "Integer",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_int",
+                    "type": "Integer",
+                    "role": "Measure",
+                    "nullable": true
+                }
+            ]
+        }
+    ],
+    "scalars": [
+        {
+            "name": "assignment_sc",
+            "data_type": "Integer",
+            "value": 1
+        },
+        {
+            "name": "persistent_sc",
+            "data_type": "Integer",
+            "value": 2
+        },
+        {
+            "name": "boolean_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "boolean_and_sc",
+            "data_type": "Boolean",
+            "value": false
+        },
+        {
+            "name": "boolean_or_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "boolean_not_sc",
+            "data_type": "Boolean",
+            "value": false
+        },
+        {
+            "name": "boolean_xor_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "cast_sc_int_str",
+            "data_type": "String",
+            "value": "1"
+        },
+        {
+            "name": "cast_sc_str_int",
+            "data_type": "Integer",
+            "value": 2
+        },
+        {
+            "name": "cast_sc_num_str",
+            "data_type": "String",
+            "value": "3.0"
+        },
+        {
+            "name": "cast_sc_str_num",
+            "data_type": "Number",
+            "value": 4.0
+        },
+        {
+            "name": "cast_sc_bool_str",
+            "data_type": "String",
+            "value": "True"
+        },
+        {
+            "name": "cast_sc_int_num",
+            "data_type": "Number",
+            "value": 5.0
+        },
+        {
+            "name": "cast_sc_num_int",
+            "data_type": "Integer",
+            "value": 6
+        },
+        {
+            "name": "cast_sc_str_date",
+            "data_type": "Date",
+            "value": "2020-01-01"
+        },
+        {
+            "name": "cast_sc_str_time_period",
+            "data_type": "TimePeriod",
+            "value": "2020-M01"
+        },
+        {
+            "name": "eq_sc",
+            "data_type": "Boolean",
+            "value": false
+        },
+        {
+            "name": "neq_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "lt_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "lte_sc",
+            "data_type": "Boolean",
+            "value": true
+        },
+        {
+            "name": "gt_sc",
+            "data_type": "Boolean",
+            "value": false
+        },
+        {
+            "name": "gte_sc",
+            "data_type": "Boolean",
+            "value": false
+        },
+        {
+            "name": "if_sc",
+            "data_type": "Integer",
+            "value": 1
+        },
+        {
+            "name": "nvl_sc",
+            "data_type": "Null",
+            "value": 3
+        },
+        {
+            "name": "unplus_sc",
+            "data_type": "Integer",
+            "value": 1
+        },
+        {
+            "name": "unminus_sc",
+            "data_type": "Integer",
+            "value": -2
+        },
+        {
+            "name": "abs_sc",
+            "data_type": "Integer",
+            "value": 3
+        },
+        {
+            "name": "exp_sc",
+            "data_type": "Number",
+            "value": 54.598150033144236
+        },
+        {
+            "name": "ln_sc",
+            "data_type": "Number",
+            "value": 1.6094379124341003
+        },
+        {
+            "name": "sqrt_sc",
+            "data_type": "Number",
+            "value": 2.449489742783178
+        },
+        {
+            "name": "ceil_sc",
+            "data_type": "Integer",
+            "value": 8
+        },
+        {
+            "name": "floor_sc",
+            "data_type": "Integer",
+            "value": 8
+        },
+        {
+            "name": "binplus_sc",
+            "data_type": "Integer",
+            "value": 3
+        },
+        {
+            "name": "binminus_sc",
+            "data_type": "Integer",
+            "value": -1
+        },
+        {
+            "name": "mult_sc",
+            "data_type": "Integer",
+            "value": 30
+        },
+        {
+            "name": "div_sc",
+            "data_type": "Number",
+            "value": 0.875
+        },
+        {
+            "name": "log_sc",
+            "data_type": "Number",
+            "value": 0.9542425094393249
+        },
+        {
+            "name": "mod_sc",
+            "data_type": "Integer",
+            "value": 11
+        },
+        {
+            "name": "power_sc",
+            "data_type": "Number",
+            "value": 3937376386000000
+        },
+        {
+            "name": "round_sc",
+            "data_type": "Number",
+            "value": 15.6
+        },
+        {
+            "name": "trunc_sc",
+            "data_type": "Number",
+            "value": 16.567
+        },
+        {
+            "name": "random_sc",
+            "data_type": "Number",
+            "value": 0.062193
+        },
+        {
+            "name": "concat_sc",
+            "data_type": "String",
+            "value": "ab"
+        },
+        {
+            "name": "length_sc",
+            "data_type": "Integer",
+            "value": 3
+        },
+        {
+            "name": "substring_sc",
+            "data_type": "String",
+            "value": "ab"
+        },
+        {
+            "name": "instr_sc",
+            "data_type": "Integer",
+            "value": 2
+        },
+        {
+            "name": "replace_sc",
+            "data_type": "String",
+            "value": "adc"
+        },
+        {
+            "name": "lower_sc",
+            "data_type": "String",
+            "value": "abc"
+        },
+        {
+            "name": "upper_sc",
+            "data_type": "String",
+            "value": "ABC"
+        },
+        {
+            "name": "trim_sc",
+            "data_type": "String",
+            "value": "abc"
+        },
+        {
+            "name": "ltrim_sc",
+            "data_type": "String",
+            "value": "abc "
+        },
+        {
+            "name": "rtrim_sc",
+            "data_type": "String",
+            "value": " abc"
+        },
+        {
+            "name": "case_sc",
+            "data_type": "Integer",
+            "value": 10
+        }
+    ]
+}

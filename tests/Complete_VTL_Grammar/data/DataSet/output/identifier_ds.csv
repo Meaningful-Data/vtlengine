@@ -1,0 +1,11 @@
+Id_1,Id_2,Id_3,Me_int,Me_num,Me_str,Me_bool,Id_4
+1,A,1,1.0,1.1,hello,True,1.0
+2,A,2,2.0,2.2,world,,2.0
+3,A,3,3.0,3.3,abc,True,3.0
+1,B,4,4.0,4.4,,False,4.0
+2,B,5,5.0,5.5,,True,5.0
+3,B,6,6.0,6.6,jKl,False,6.0
+1,C,7,7.0,7.7,Mno,True,7.0
+2,C,8,8.0,8.8,,,8.0
+3,C,9,9.0,9.9,STU,True,9.0
+4,D,10,,10.0,z,False,0

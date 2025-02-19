@@ -238,7 +238,7 @@ class Nvl(Binary):
         result = cls.validate(left, right)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
-            if pd.isnull(left):  # type: ignore[call-overload]
+            if left.data_type is Null:
                 result.value = right.value
             else:
                 result.value = left.value
