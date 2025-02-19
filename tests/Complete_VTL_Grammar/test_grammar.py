@@ -1,8 +1,9 @@
 import json
+from pathlib import Path
 
 import pandas as pd
-from pathlib import Path
-from vtlengine import run, API, DataTypes
+
+from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
 
@@ -59,7 +60,7 @@ def load_input_data(dataset_name):
     return data_structures, datapoints
 
 def load_reference_data():
-    with open(datastructure_output_path / f"reference.json", "r") as file:
+    with open(datastructure_output_path / "reference.json", "r") as file:
         structures = json.load(file)
 
     datasets = {}
