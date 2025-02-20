@@ -224,6 +224,14 @@ measure_ds := DS_1[calc measure Me_new := Me_num * 5];
 attribute_ds := DS_1[calc attribute At_new := "new"];
 
 /*************************************************
+SET
+*************************************************/
+union_ds := union(DS_1, DS_1);
+intersect_ds := intersect(DS_1, DS_1);
+setdiff_ds := setdiff(DS_1, DS_1);
+symdiff_ds := symdiff(DS_1, DS_1);
+
+/*************************************************
 STRING
 *************************************************/
 concat_sc := "a" || "b";
