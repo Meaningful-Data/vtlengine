@@ -515,6 +515,12 @@ class ASTTemplate(NodeVisitor):
         for child in node.operands:
             self.visit(child)
 
+    def visit_ParFunction(self, node: AST.ParFunction) -> None:
+        """
+        ParFunction: (operand)
+        """
+        self.visit(node.operand)
+
     def visit_NoOp(self, node: AST.NoOp) -> None:  # pylint: disable=unused-argument
         """
         NoOp: ()

@@ -369,6 +369,9 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
 
+    def visit_ParFunction(self, node: AST.ParFunction) -> Any:
+        return self.visit(node.operand)
+
     def visit_BinOp(self, node: AST.BinOp) -> Any:
         is_from_if = False
         if (

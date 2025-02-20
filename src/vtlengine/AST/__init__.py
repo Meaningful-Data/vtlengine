@@ -156,7 +156,7 @@ class JoinOp(AST):
 
     op: str
     clauses: List[AST]
-    using: Optional[List[AST]]
+    using: Optional[List[str]]
     isLast: bool = False
 
 
@@ -556,3 +556,12 @@ class NoOp(AST):
     """
 
     pass
+
+
+@dataclass
+class ParFunction(AST):
+    """
+    ParFunction: (operand)
+    """
+
+    operand: AST

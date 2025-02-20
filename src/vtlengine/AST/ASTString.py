@@ -205,8 +205,10 @@ class ASTString(ASTTemplate):
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
         if node.op in [PLUS, MINUS]:
             return f"{node.op}{self.visit(node.operand)}"
-        elif node.op in [IDENTIFIER, MEASURE, ATTRIBUTE, VIRAL_ATTRIBUTE]:
+        elif node.op in [IDENTIFIER, ATTRIBUTE, VIRAL_ATTRIBUTE]:
             return f"{node.op} {self.visit(node.operand)}"
+        elif node.op == MEASURE:
+            return self.visit(node.operand)
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
@@ -308,20 +310,36 @@ class ASTString(ASTTemplate):
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
         child_sep = ", " if len(node.children) > 1 else ""
         body = child_sep.join([self.visit(x) for x in node.children])
-        dataset = self.visit(node.dataset)
+        if isinstance(node.dataset, AST.JoinOp):
+            dataset = f"{self.visit(node.dataset)}"
+            return f"{dataset[:-1]} {node.op} {body})"
+        else:
+            dataset = self.visit(node.dataset)
         return f"{dataset}[{node.op} {body}]"
+
+    def visit_RenameNode(self, node: AST.RenameNode) -> str:
+        return f"{node.old_name} to {node.new_name}"
 
     def visit_If(self, node: AST.If) -> str:
         else_str = f" else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
         return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)}{else_str}"
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:
-        return "CHECK_JOIN"
+        sep = ", " if len(node.clauses) > 1 else ""
+        clauses = sep.join([self.visit(x) for x in node.clauses])
+        using = ""
+        if node.using is not None:
+            using_sep = ", " if len(node.using) > 1 else ""
+            using = f" using {using_sep.join(node.using)}"
+        return f"{node.op}({clauses}{using})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
         params = params_sep.join([self.visit(x) for x in node.params])
         return f"{node.op}({params})"
+
+    def visit_ParFunction(self, node: AST.ParFunction) -> str:
+        return f"({self.visit(node.operand)})"
 
     # ---------------------- Constants and IDs ----------------------
 
