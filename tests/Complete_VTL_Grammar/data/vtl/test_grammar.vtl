@@ -83,6 +83,8 @@ lt_sc := 1 < 2;
 lte_sc := 1 <= 2;
 gt_sc := 1 > 2;
 gte_sc := 1 >= 2;
+between_sc := between(2, 1, 3);
+match_characters_sc := match_characters("abc", "[:alpha:]{2}[:digit:]{3}");
 
 eq_ds_sc := DS_1#Me_int = 2;
 neq_ds_sc := DS_1#Me_int <> 2;
@@ -90,6 +92,8 @@ lt_ds_sc := DS_1#Me_int < 2;
 lte_ds_sc := DS_1#Me_int <= 2;
 gt_ds_sc := DS_1#Me_int > 2;
 gte_ds_sc := DS_1#Me_int >= 2;
+between_ds_sc := between(DS_1#Me_int, 1, 5);
+match_characters_ds := match_characters(DS_1#Me_str, "[:alpha:]{2}[:digit:]{3}");
 
 eq_ds_ds := DS_1#Me_int = DS_1#Me_int;
 neq_ds_ds := DS_1#Me_int <> DS_1#Me_int;
@@ -97,6 +101,7 @@ lt_ds_ds := DS_1#Me_int < DS_1#Me_int;
 lte_ds_ds := DS_1#Me_int <= DS_1#Me_int;
 gt_ds_ds := DS_1#Me_int > DS_1#Me_int;
 gte_ds_ds := DS_1#Me_int >= DS_1#Me_int;
+exists_in_ds_ds := exists_in(DS_1, DS_1, all);
 
 
 /*************************************************
