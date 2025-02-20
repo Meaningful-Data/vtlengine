@@ -336,3 +336,12 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
 
     result = run(script, data_structures=data_structures, datapoints=datapoints)
     return result
+
+
+def generate_sdmx(  # type: ignore[no-untyped-def]
+    script: str,
+    agency_id: str,
+    version: str = "1.0",
+    output_path: Optional[Union[str, Path]] = None,
+):
+    pass

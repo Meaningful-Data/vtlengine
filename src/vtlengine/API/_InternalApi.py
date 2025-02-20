@@ -8,9 +8,11 @@ import pandas as pd
 from pysdmx.model import Component as SDMXComponent
 from pysdmx.model import Role as SDMX_Role
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
+from pysdmx.model.vtl import Ruleset, Transformation, UserDefinedOperator
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
-from vtlengine.AST import PersistentAssignment, Start
+from vtlengine import AST as AST
+from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
@@ -462,3 +464,48 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
     result = {"datasets": [{"name": dataset_name, "DataStructure": components}]}
 
     return result
+
+
+def __generate_transformation(
+    child: Union[Assignment, PersistentAssignment], is_persistent: bool, count: int
+) -> Transformation:
+    expression = "EXPRESSION"  # TODO: Add here Stringify function for child.right
+    result = child.left.value  # type: ignore[attr-defined]
+    return Transformation(
+        id=f"T{count}", expression=expression, is_persistent=is_persistent, result=result
+    )
+
+
+def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
+    operator_definition = str(child.op)
+    return UserDefinedOperator(id=f"UDO{count}", operator_definition=operator_definition)
+
+
+def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
+    return Ruleset(id=f"RS{count}", ruleset_definition=str(child))
+
+
+def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str = "1.0"):  # type: ignore[no-untyped-def]
+    list_transformation = []
+    list_udos = []
+    list_rulesets = []
+    count_transformation = 0
+    count_udo = 0
+    count_ruleset = 0
+
+    for child in ast.children:
+        if isinstance(child, PersistentAssignment):
+            count_transformation += 1
+            list_transformation.append(__generate_transformation(child, True, count_transformation))
+        elif isinstance(child, Assignment):
+            count_transformation += 1
+            list_transformation.append(
+                __generate_transformation(child, False, count_transformation)
+            )
+        elif isinstance(child, Union[DPRuleset, HRuleset]):  # type: ignore[arg-type]
+            count_ruleset += 1
+            list_rulesets.append(__generate_ruleset(child, count_ruleset))  # type: ignore[arg-type]
+        elif isinstance(child, Operator):
+            count_udo += 1
+            list_udos.append(__generate_udo(child, count_udo))
+    print(list_rulesets)

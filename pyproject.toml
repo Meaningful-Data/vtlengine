@@ -30,13 +30,13 @@ duckdb = "^1.1"
 #numba = "^0.60.0"
 s3fs = "^2025.2.0"
 jsonschema = "^4.23.0"
-pysdmx = {version = "^1.0.0", extras = ["all"]}
+pysdmx = "^1.1.0"
 
 # APT dependencies
 antlr4-python3-runtime = "4.9.2"
 networkx = "^2.8.8"
 numexpr = "^2.9.0"
-pandas = "^2.1.4"
+pandas = "^2.2.3"
 sqlglot = "^22.2.0"
 
 [tool.poetry.group.dev.dependencies]
