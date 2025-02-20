@@ -5,7 +5,7 @@ import pandas as pd
 
 from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, Scalar, ValueDomain
 
 base_path = Path(__file__).parent / "data"
 dataset_input_path = base_path / "DataSet" / "input"
@@ -13,6 +13,7 @@ dataset_output_path = base_path / "DataSet" / "output"
 datastructure_input_path = base_path / "DataStructure" / "input"
 datastructure_output_path = base_path / "DataStructure" / "output"
 sql_path = base_path / "SQL"
+vd_path = base_path / "ValueDomain"
 vtl_path = base_path / "vtl"
 
 def test_grammar():
@@ -23,14 +24,19 @@ def test_grammar():
     sql_name = "SQL1.sql"
     external_routines = sql_path / sql_name
 
+    vd_name = "countries"
+    value_domains = vd_path / f"{vd_name}.json"
+
     data_structures, datapoints = load_input_data("DS_1")
     reference_datasets, reference_scalars = load_reference_data()
 
-    run_result = run(script=script, data_structures=data_structures,
-                     datapoints=datapoints, external_routines=external_routines)
+    run_result = run(script=script,
+                     data_structures=data_structures,
+                     datapoints=datapoints,
+                     external_routines=external_routines,
+                     value_domains=value_domains)
 
-    # check_results(run_result, reference_datasets, reference_scalars)
-
+    check_results(run_result, reference_datasets, reference_scalars)
 
 def check_results(run_result, reference_datasets, reference_scalars):
     for result in run_result.values():

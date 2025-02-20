@@ -297,3 +297,10 @@ define operator drop_identifier (ds dataset, comp component)
 end operator;
 
 UDO_ds := drop_identifier(DS_1, Id_3);
+
+/*************************************************
+VALUE DOMAIN
+*************************************************/
+value_domain_sc := "ES" in countries;
+
+value_domain_ds := DS_1#Me_str in countries;
