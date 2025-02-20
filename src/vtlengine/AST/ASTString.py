@@ -7,13 +7,17 @@ from vtlengine import AST
 from vtlengine.AST import DPRuleset, HRuleset, Operator, Start
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.tokens import (
+    ATTRIBUTE,
     CAST,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
     HAVING,
     HIERARCHY,
+    IDENTIFIER,
     INSTR,
+    INTERSECT,
     LOG,
+    MEASURE,
     MEMBERSHIP,
     MINUS,
     MOD,
@@ -23,8 +27,12 @@ from vtlengine.AST.Grammar.tokens import (
     RANDOM,
     REPLACE,
     ROUND,
+    SETDIFF,
     SUBSTR,
+    SYMDIFF,
     TRUNC,
+    UNION,
+    VIRAL_ATTRIBUTE,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
 from vtlengine.Model import Component, Dataset
@@ -197,6 +205,8 @@ class ASTString(ASTTemplate):
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
         if node.op in [PLUS, MINUS]:
             return f"{node.op}{self.visit(node.operand)}"
+        elif node.op in [IDENTIFIER, MEASURE, ATTRIBUTE, VIRAL_ATTRIBUTE]:
+            return f"{node.op} {self.visit(node.operand)}"
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
@@ -207,13 +217,7 @@ class ASTString(ASTTemplate):
     def visit_ParamOp(self, node: AST.ParamOp) -> str:
         if node.op == HAVING:
             return f"{node.op} {self.visit(node.params)}"
-        elif node.op in [
-            SUBSTR,
-            INSTR,
-            REPLACE,
-            ROUND,
-            TRUNC,
-        ]:
+        elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC, UNION, SETDIFF, SYMDIFF, INTERSECT]:
             params_sep = ", " if len(node.params) > 1 else ""
             return (
                 f"{node.op}({self.visit(node.children[0])}, "
@@ -268,7 +272,21 @@ class ASTString(ASTTemplate):
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
-        return "CHECK_ANALYTIC"
+        operand = "" if node.operand is None else self.visit(node.operand)
+        partition = ""
+        if node.partition_by:
+            partition_sep = ", " if len(node.partition_by) > 1 else ""
+            partition = f" partition by {partition_sep.join(node.partition_by)}"
+        order = ""
+        if node.order_by:
+            order_sep = ", " if len(node.order_by) > 1 else ""
+            order = f" order by {order_sep.join([self.visit(x) for x in node.order_by])}"
+        window = f" {self.visit(node.window)}" if node.window is not None else ""
+        params = ""
+        if node.params:
+            params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+
+        return f"{node.op}({operand}{params} over ({partition}{order}{window}))"
 
     def visit_Case(self, node: AST.Case) -> str:
         else_str = f"else {self.visit(node.elseOp)}"
@@ -324,4 +342,29 @@ class ASTString(ASTTemplate):
         return _handle_literal(node.value)
 
     def visit_Collection(self, node: AST.Collection) -> str:
-        return f"[{', '.join([self.visit(x) for x in node.children])}]"
+        sep = ", " if len(node.children) > 1 else ""
+        return f"{{{sep.join([self.visit(x) for x in node.children])}}}"
+
+    def visit_Windowing(self, node: AST.Windowing) -> str:
+        if (
+            node.type_ == "data"
+            and node.start == -1
+            and node.start_mode == "preceding"
+            and node.stop == 0
+            and node.stop_mode == "current"
+        ):
+            return ""
+        if node.start == -1:
+            start = f"unbounded {node.start_mode}"
+        else:
+            start = f"{node.start} {node.start_mode}"
+        stop = f"{node.stop} {node.stop_mode}"
+        if node.stop_mode == "current":
+            stop = "current data point"
+        mode = "data points" if node.type_ == "data" else "range"
+        return f"{mode} between {start} and {stop}"
+
+    def visit_OrderBy(self, node: AST.OrderBy) -> str:
+        if node.order == "asc":
+            return f"{node.component}"
+        return f"{node.component} {node.order}"

@@ -536,3 +536,8 @@ class ASTTemplate(NodeVisitor):
         """
         for param in node.params:
             self.visit(param)
+
+    def visit_Windowing(self, node: AST.Windowing) -> None:
+        """
+        Windowing: (type_, start, start_mode, stop, stop_mode)
+        """

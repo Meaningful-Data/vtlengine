@@ -234,7 +234,7 @@ class Windowing(AST):
     """
 
     type_: str
-    start: str
+    start: Union[int, str]
     start_mode: str
     stop: Union[int, str]
     stop_mode: str

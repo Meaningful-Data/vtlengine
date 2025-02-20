@@ -718,7 +718,7 @@ class Terminals(VtlVisitor):
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
-        if c.getSymbol().text == "unbounded":
+        if c.getSymbol().text.lower() == "unbounded":
             result = -1
         elif c.getSymbol().text == "current":
             result = 0
@@ -736,9 +736,9 @@ class Terminals(VtlVisitor):
 def create_windowing(win_mode, values, modes):
     for e in range(0, 2):
         if values[e] == -1:
-            values[e] = "UNBOUNDED"
+            values[e] = "unbounded"
         elif values[e] == 0:
-            values[e] = "CURRENT ROW"
+            values[e] = "current row"
 
     return Windowing(
         type_=win_mode,
