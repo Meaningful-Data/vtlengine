@@ -5,7 +5,7 @@ import pandas as pd
 
 from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null
-from vtlengine.Model import Dataset, Scalar, ValueDomain
+from vtlengine.Model import Dataset, Scalar
 
 base_path = Path(__file__).parent / "data"
 dataset_input_path = base_path / "DataSet" / "input"
