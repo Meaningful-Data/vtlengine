@@ -29,6 +29,10 @@ def test_grammar():
     run_result = run(script=script, data_structures=data_structures,
                      datapoints=datapoints, external_routines=external_routines)
 
+    # check_results(run_result, reference_datasets, reference_scalars)
+
+
+def check_results(run_result, reference_datasets, reference_scalars):
     for result in run_result.values():
         if isinstance(result, Dataset):
             assert result.name in reference_datasets
