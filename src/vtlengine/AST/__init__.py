@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Model import Role
+from vtlengine.Model import Dataset, Role
 
 
 @dataclass
@@ -343,13 +343,10 @@ class If(AST):
     elseOp: AST
 
 
+@dataclass
 class CaseObj:
     condition: AST
     thenOp: AST
-
-    def __init__(self, condition: AST, thenOp: AST):
-        self.condition = condition
-        self.thenOp = thenOp
 
 
 @dataclass
@@ -548,7 +545,7 @@ class EvalOp(AST):
 
     name: str
     operands: List[AST]
-    output: Optional[str]
+    output: Optional[Dataset]
     language: Optional[str]
 
 

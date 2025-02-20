@@ -7,7 +7,11 @@ from vtlengine import AST
 from vtlengine.AST import DPRuleset, HRuleset, Operator, Start
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.tokens import (
+    CAST,
+    CHECK_DATAPOINT,
+    CHECK_HIERARCHY,
     HAVING,
+    HIERARCHY,
     INSTR,
     LOG,
     MEMBERSHIP,
@@ -22,12 +26,15 @@ from vtlengine.AST.Grammar.tokens import (
     SUBSTR,
     TRUNC,
 )
+from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
 from vtlengine.Model import Component, Dataset
 
 
 def _handle_literal(value: Union[str, int, float, bool]):
     if isinstance(value, str):
-        return f'\"{value}\"'
+        if '"' in value:
+            return value
+        return f'"{value}"'
     elif isinstance(value, bool):
         return "true" if value else "false"
     elif isinstance(value, float):
@@ -39,11 +46,22 @@ def _handle_literal(value: Union[str, int, float, bool]):
     return str(value)
 
 
+def _format_dataset_eval(dataset: Dataset) -> str:
+    def __format_component(component: Component) -> str:
+        return (
+            f"{component.role.value.lower()}"
+            f"<{SCALAR_TYPES_CLASS_REVERSE[component.data_type].lower()}> "
+            f"{component.name}"
+        )
+
+    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} }}"
+
+
 def _format_reserved_word(value: str):
     tokens_dict = vtlengine.AST.Grammar.tokens.__dict__
     tokens_dict = {k: v for k, v in tokens_dict.items() if not k.startswith("__")}
     if value in tokens_dict.values():
-        return f"\'{value}\'"
+        return f"'{value}'"
     return value
 
 
@@ -62,8 +80,9 @@ class ASTString(ASTTemplate):
         datapoints = [x for x in node.children if isinstance(x, DPRuleset)]
         udos = [x for x in node.children if isinstance(x, Operator)]
         definitions = datapoints + hierarchies + udos
-        transformations = [x for x in node.children if
-                           not isinstance(x, (HRuleset, DPRuleset, Operator))]
+        transformations = [
+            x for x in node.children if not isinstance(x, (HRuleset, DPRuleset, Operator))
+        ]
         for child in definitions:
             self.visit(child)
             self.vtl_script += "\n"
@@ -78,8 +97,10 @@ class ASTString(ASTTemplate):
         rules_sep = "; " if len(node.rules) > 1 else ""
         signature = f"{node.signature_type} rule {node.element.value}"
         rules = rules_sep.join([self.visit(x) for x in node.rules])
-        self.vtl_script += (f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
-                            f"end hierarchical ruleset;")
+        self.vtl_script += (
+            f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
+            f"end hierarchical ruleset;"
+        )
 
     def visit_HRule(self, node: AST.HRule) -> str:
         vtl_script = ""
@@ -123,12 +144,13 @@ class ASTString(ASTTemplate):
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
         rules_sep = "; " if len(node.rules) > 1 else ""
         signature_sep = ", " if len(node.params) > 1 else ""
-        signature = (f"{node.signature_type} "
-                     f"{signature_sep.join([self.visit(x) for x in node.params])}")
+        signature = (
+            f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
+        )
         rules = rules_sep.join([self.visit(x) for x in node.rules])
         self.vtl_script += (
-            f"define datapoint ruleset {node.name} ({signature}) is {rules} "
-            f"end datapoint ruleset;")
+            f"define datapoint ruleset {node.name} ({signature}) is {rules} end datapoint ruleset;"
+        )
 
     # ---------------------- User Defined Operators ----------------------
 
@@ -152,7 +174,7 @@ class ASTString(ASTTemplate):
         body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
         self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
-    # ---------------------- Operators ----------------------
+    # ---------------------- Basic Operators ----------------------
     def visit_Assignment(self, node: AST.Assignment) -> Optional[str]:
         return_element = not copy.deepcopy(self.is_first_assignment)
         if self.is_first_assignment:
@@ -178,31 +200,110 @@ class ASTString(ASTTemplate):
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
-        return "CHECK_MUL_OP"
+        sep = ", " if len(node.children) > 1 else ""
+        body = sep.join([self.visit(x) for x in node.children])
+        return f"{node.op}({body})"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:
         if node.op == HAVING:
             return f"{node.op} {self.visit(node.params)}"
-        elif node.op in [SUBSTR, INSTR, REPLACE, ROUND, TRUNC]:
+        elif node.op in [
+            SUBSTR,
+            INSTR,
+            REPLACE,
+            ROUND,
+            TRUNC,
+        ]:
             params_sep = ", " if len(node.params) > 1 else ""
-            return (f"{node.op}({self.visit(node.children[0])}, "
-                    f"{params_sep.join([self.visit(x) for x in node.params])})")
-        return "CHECK_PARAM_OP"
+            return (
+                f"{node.op}({self.visit(node.children[0])}, "
+                f"{params_sep.join([self.visit(x) for x in node.params])})"
+            )
+        elif node.op in (CHECK_HIERARCHY, HIERARCHY):
+            operand = self.visit(node.children[0])
+            component_name = self.visit(node.children[1])
+            rule_name = self.visit(node.children[2])
+            param_mode_value = node.params[0].value
+            param_input_value = node.params[1].value
+            param_output_value = node.params[2].value
+
+            default_value_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
+            default_value_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
+
+            param_mode = f" {param_mode_value}" if param_mode_value != "non_null" else ""
+            param_input = (
+                f" {param_input_value}" if param_input_value != default_value_input else ""
+            )
+            param_output = (
+                f" {param_output_value}" if param_output_value != default_value_output else ""
+            )
+            return (
+                f"{node.op}({operand}, {rule_name} rule {component_name}"
+                f"{param_mode}{param_input}{param_output})"
+            )
+
+        elif node.op == CHECK_DATAPOINT:
+            operand = self.visit(node.children[0])
+            rule_name = node.children[1]
+            output = ""
+            if len(node.params) == 1 and node.params[0] != "invalid":
+                output = f" {node.params[0]}"
+            return f"{node.op}({operand}, {rule_name}{output})"
+        elif node.op == CAST:
+            operand = self.visit(node.children[0])
+            data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
+            mask = ""
+            if len(node.params) == 1:
+                mask = f", {self.visit(node.params[0])}"
+            return f"{node.op}({operand}, {data_type}{mask})"
+
+    # ---------------------- Individual operators ----------------------
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:
         grouping = ""
         if node.grouping is not None:
             grouping_sep = ", " if len(node.grouping) > 1 else ""
             grouping = f" {node.grouping_op} {grouping_sep.join([x.value for x in node.grouping])}"
-        having = (f" {self.visit(node.having_clause)}"
-                  if node.having_clause is not None else "")
+        having = f" {self.visit(node.having_clause)}" if node.having_clause is not None else ""
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
+
+    def visit_Analytic(self, node: AST.Analytic) -> str:
+        return "CHECK_ANALYTIC"
+
+    def visit_Case(self, node: AST.Case) -> str:
+        else_str = f"else {self.visit(node.elseOp)}"
+        body_sep = " " if len(node.cases) > 1 else ""
+        body = body_sep.join([self.visit(x) for x in node.cases])
+        return f"case {body} {else_str}"
+
+    def visit_CaseObj(self, node: AST.CaseObj) -> str:
+        return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
+
+    def visit_EvalOp(self, node: AST.EvalOp) -> str:
+        operand_sep = ", " if len(node.operands) > 1 else ""
+        operands = operand_sep.join([self.visit(x) for x in node.operands])
+        ext_routine = f"{node.name}({operands})"
+        language = f"language {_handle_literal(node.language)}"
+        output = f"returns dataset {_format_dataset_eval(node.output)}"
+        return f"eval({ext_routine} {language} {output})"
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
         child_sep = ", " if len(node.children) > 1 else ""
         body = child_sep.join([self.visit(x) for x in node.children])
         dataset = self.visit(node.dataset)
         return f"{dataset}[{node.op} {body}]"
+
+    def visit_If(self, node: AST.If) -> str:
+        else_str = f" else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
+        return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)}{else_str}"
+
+    def visit_JoinOp(self, node: AST.JoinOp) -> str:
+        return "CHECK_JOIN"
+
+    def visit_UDOCall(self, node: AST.UDOCall) -> str:
+        params_sep = ", " if len(node.params) > 1 else ""
+        params = params_sep.join([self.visit(x) for x in node.params])
+        return f"{node.op}({params})"
 
     # ---------------------- Constants and IDs ----------------------
 
@@ -216,3 +317,11 @@ class ASTString(ASTTemplate):
         if node.value is None:
             return "null"
         return _handle_literal(node.value)
+
+    def visit_ParamConstant(self, node: AST.ParamConstant) -> Any:
+        if node.value is None:
+            return "null"
+        return _handle_literal(node.value)
+
+    def visit_Collection(self, node: AST.Collection) -> str:
+        return f"[{', '.join([self.visit(x) for x in node.children])}]"
