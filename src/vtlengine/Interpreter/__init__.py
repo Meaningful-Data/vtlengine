@@ -1581,7 +1581,7 @@ class InterpreterAnalyzer(ASTTemplate):
             }
         )
 
-        if len(self.condition_stack) > 0:
+        if self.condition_stack and len(self.condition_stack) > 0:
             last_condition_dataset = (
                 self.then_condition_dataset[-1]
                 if self.condition_stack[-1] == THEN_ELSE["then"]
