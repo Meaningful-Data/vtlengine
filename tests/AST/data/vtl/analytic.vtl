@@ -1,0 +1,18 @@
+first_value_ds := first_value(DS_1#Me_num over (partition by Id_1, Id_2 order by Id_3 data points between 1 preceding and 1 following));
+last_value_ds := first_value(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 data points between unbounded preceding and unbounded following));
+last_value_ds_all_preceding := first_value(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 data points between unbounded preceding and 1 preceding));
+lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1, Id_2 order by Id_3 ));
+lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
+rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
+ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2 ));
+max_analytic_ds := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 range between unbounded preceding and current data point));
+max_analytic_ds_follow := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 range between current data point and unbounded following));
+min_analytic_ds := min(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+sum_analytic_ds := sum(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+count_analytic_ds := count(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+avg_analytic_ds := avg(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+median_analytic_ds := median(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+stddev_pop_analytic_ds := stddev_pop(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+stddev_samp_analytic_ds := stddev_samp(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+var_pop_analytic_ds := var_pop(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+var_samp_analytic_ds := var_samp(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
