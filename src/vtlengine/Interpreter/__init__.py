@@ -1583,8 +1583,20 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             }
         )
+
+        if self.condition_stack and len(self.condition_stack) > 0:
+            last_condition_dataset = (
+                self.then_condition_dataset[-1]
+                if self.condition_stack[-1] == THEN_ELSE["then"]
+                else (self.else_condition_dataset[-1])
+            )
+            measure_name = last_condition_dataset.get_measures_names()[0]
+            then_data = then_data[then_data[name].isin(last_condition_dataset.data[measure_name])]
+            else_data = else_data[else_data[name].isin(last_condition_dataset.data[measure_name])]
         then_dataset = Dataset(name=name, components=components, data=then_data)
         else_dataset = Dataset(name=name, components=components, data=else_data)
+
+
         self.then_condition_dataset.append(then_dataset)
         self.else_condition_dataset.append(else_dataset)
 
@@ -1595,11 +1607,13 @@ class InterpreterAnalyzer(ASTTemplate):
             or self.condition_stack is None
         ):
             return left_operand, right_operand
+
         merge_dataset = (
             self.then_condition_dataset.pop()
             if self.condition_stack.pop() == THEN_ELSE["then"]
             else (self.else_condition_dataset.pop())
         )
+
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, (Dataset, DataComponent)):
