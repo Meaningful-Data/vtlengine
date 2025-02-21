@@ -781,7 +781,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             )
                         elif is_partial_present == 2:
                             raise SemanticError("1-1-13-9", comp_name=node.value)
-                        node.value = found_comp
+                        node.value = found_comp  # type:ignore[assignment]
                     if node.value not in self.regular_aggregation_dataset.components:
                         raise SemanticError(
                             "1-1-1-10",
@@ -1595,7 +1595,6 @@ class InterpreterAnalyzer(ASTTemplate):
             else_data = else_data[else_data[name].isin(last_condition_dataset.data[measure_name])]
         then_dataset = Dataset(name=name, components=components, data=then_data)
         else_dataset = Dataset(name=name, components=components, data=else_data)
-
 
         self.then_condition_dataset.append(then_dataset)
         self.else_condition_dataset.append(else_dataset)

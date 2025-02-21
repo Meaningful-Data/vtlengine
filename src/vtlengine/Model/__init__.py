@@ -131,11 +131,12 @@ class Component:
     def to_dict(self) -> Dict[str, Any]:
         data_type = self.data_type
         if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__
+            data_type = self.data_type.__class__  # type: ignore[assignment]
         return {
             "name": self.name,
             "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
-            "role": self.role.value if self.role is not None else None,
+            # Need to check here for NoneType as UDO argument has it
+            "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
         }
 

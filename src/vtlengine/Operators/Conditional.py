@@ -312,9 +312,16 @@ class Case(Operator):
                 condition.data.fillna(False, inplace=True)
                 condition_measure = condition.get_measures_names()[0]
                 if condition.data[condition_measure].dtype != bool:
-                    condition.data[condition_measure] = (condition.data[condition_measure].
-                                                         astype(bool))
-            elif isinstance(condition, DataComponent,) and condition.data is not None:
+                    condition.data[condition_measure] = condition.data[condition_measure].astype(
+                        bool
+                    )
+            elif (
+                isinstance(
+                    condition,
+                    DataComponent,
+                )
+                and condition.data is not None
+            ):
                 condition.data.fillna(False, inplace=True)
                 if condition.data.dtype != bool:
                     condition.data = condition.data.astype(bool)
