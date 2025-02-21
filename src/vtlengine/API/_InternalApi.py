@@ -508,9 +508,9 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str):  # type: ignore[n
             list_transformation.append(
                 __generate_transformation(child, False, count_transformation)
             )
-        elif isinstance(child, (DPRuleset, HRuleset)):  # type: ignore[arg-type]
+        elif isinstance(child, (DPRuleset, HRuleset)):
             count_ruleset += 1
-            list_rulesets.append(__generate_ruleset(child, count_ruleset))  # type: ignore[arg-type]
+            list_rulesets.append(__generate_ruleset(child, count_ruleset))
         elif isinstance(child, Operator):
             count_udo += 1
             list_udos.append(__generate_udo(child, count_udo))
