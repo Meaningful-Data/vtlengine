@@ -44,6 +44,24 @@
                     "type": "Boolean",
                     "role": "Measure",
                     "nullable": true
+                },
+                {
+                    "name": "Id_date",
+                    "type": "Date",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Id_period",
+                    "type": "Time_Period",
+                    "role": "Identifier",
+                    "nullable": false
+                },
+                {
+                    "name": "Me_interval",
+                    "type": "Time",
+                    "role": "Measure",
+                    "nullable": true
                 }
             ]
         }

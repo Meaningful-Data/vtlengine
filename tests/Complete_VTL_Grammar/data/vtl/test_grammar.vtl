@@ -12,6 +12,15 @@ stddev_samp_ds := stddev_samp(DS_1#Me_int group by Id_1, Id_2);
 var_pop_ds := var_pop(DS_1#Me_int group by Id_1, Id_2);
 var_samp_ds := var_samp(DS_1#Me_int group by Id_1, Id_2);
 
+aggr_ds := DS_1[aggr Me_sum := sum(Me_int), Me_max := max(Me_int) group by Id_1, Id_2 having avg(Me_int) > 2];
+apply_ds := inner_join (DS_1#Me_str as d1, DS_1#Me_str as d2 apply d1 || d2);
+drop_ds := DS_1 [drop Me_bool];
+filter_ds := DS_1[filter Id_1 = 1 and Me_int < 5];
+group_by_ds := DS_1[aggr Me_sum := sum(Me_int) group by Id_1, Id_2];
+keep_ds := full_join(DS_1 as d1, DS_1 as d2 keep d1#Me_int, d2#Me_num, d1#Me_str, d2#Me_bool);
+rename_ds := DS_1 [rename Me_int to Me_renamed];
+sub_ds := DS_1 [sub Id_1 = 1, Id_2 = "A"];
+
 /*************************************************
 ANALYTIC
 *************************************************/
@@ -83,6 +92,8 @@ lt_sc := 1 < 2;
 lte_sc := 1 <= 2;
 gt_sc := 1 > 2;
 gte_sc := 1 >= 2;
+between_sc := between(2, 1, 3);
+match_characters_sc := match_characters("abc", "[:alpha:]{2}[:digit:]{3}");
 
 eq_ds_sc := DS_1#Me_int = 2;
 neq_ds_sc := DS_1#Me_int <> 2;
@@ -90,6 +101,8 @@ lt_ds_sc := DS_1#Me_int < 2;
 lte_ds_sc := DS_1#Me_int <= 2;
 gt_ds_sc := DS_1#Me_int > 2;
 gte_ds_sc := DS_1#Me_int >= 2;
+between_ds_sc := between(DS_1#Me_int, 1, 5);
+match_characters_ds := match_characters(DS_1#Me_str, "[:alpha:]{2}[:digit:]{3}");
 
 eq_ds_ds := DS_1#Me_int = DS_1#Me_int;
 neq_ds_ds := DS_1#Me_int <> DS_1#Me_int;
@@ -97,6 +110,7 @@ lt_ds_ds := DS_1#Me_int < DS_1#Me_int;
 lte_ds_ds := DS_1#Me_int <= DS_1#Me_int;
 gt_ds_ds := DS_1#Me_int > DS_1#Me_int;
 gte_ds_ds := DS_1#Me_int >= DS_1#Me_int;
+exists_in_ds_ds := exists_in(DS_1, DS_1, all);
 
 
 /*************************************************
@@ -224,6 +238,14 @@ measure_ds := DS_1[calc measure Me_new := Me_num * 5];
 attribute_ds := DS_1[calc attribute At_new := "new"];
 
 /*************************************************
+SET
+*************************************************/
+union_ds := union(DS_1, DS_1);
+intersect_ds := intersect(DS_1, DS_1);
+setdiff_ds := setdiff(DS_1, DS_1);
+symdiff_ds := symdiff(DS_1, DS_1);
+
+/*************************************************
 STRING
 *************************************************/
 concat_sc := "a" || "b";
@@ -249,6 +271,33 @@ ltrim_ds := ltrim(DS_1#Me_str);
 rtrim_ds := rtrim(DS_1#Me_str);
 
 /*************************************************
+TIME
+*************************************************/
+current_date_sc := current_date();
+year_sc := year(cast("2000-01-01", date));
+month_sc := month(cast("2012-12-25", date));
+dayofyear_sc := dayofyear(cast("2020-12-31", date));
+dayofmonth_sc := dayofmonth(cast("2025-03-07", date));
+daytoyear_sc := daytoyear(730);
+daytomonth_sc := daytomonth(183);
+yeartoday_sc := yeartoday("P1Y6M15D");
+monthtoday_sc := monthtoday("P2Y9M21D");
+
+period_indicator_ds := period_indicator(drop_identifier(DS_1, Id_date));
+flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1, Id_date));
+stock_to_flow_period_ds := flow_to_stock(drop_identifier(DS_1, Id_period));
+
+fill_time_series_date_single_ds := fill_time_series(drop_identifier(DS_1, Id_period), single);
+fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1, Id_date), all);
+timeshift_date_ds := timeshift(drop_identifier(DS_1, Id_period), 1);
+timeshift_period_ds := timeshift(drop_identifier(DS_1, Id_date), -2);
+datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
+date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
+
+time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A", _, Id_date));
+time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M", _, Id_period));
+
+/*************************************************
 USER DEFINE OPERATOR
 *************************************************/
 define operator drop_identifier (ds dataset, comp component)
@@ -257,3 +306,15 @@ define operator drop_identifier (ds dataset, comp component)
 end operator;
 
 UDO_ds := drop_identifier(DS_1, Id_3);
+
+/*************************************************
+VALIDATION
+*************************************************/
+check_ds := check ( DS_1#Me_num > DS_1#Me_num errorcode "errorcode" errorlevel 1 imbalance DS_1#Me_num - DS_1#Me_num invalid );
+
+/*************************************************
+VALUE DOMAIN
+*************************************************/
+value_domain_sc := "ES" in countries;
+
+value_domain_ds := DS_1#Me_str in countries;
