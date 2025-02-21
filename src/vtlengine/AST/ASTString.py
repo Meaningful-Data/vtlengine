@@ -1,16 +1,20 @@
 import copy
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 import vtlengine.AST.Grammar.tokens
 from vtlengine import AST
-from vtlengine.AST import DPRuleset, HRuleset, Operator, Start
+from vtlengine.AST import DPRuleset, HRuleset, Operator, Start, TimeAggregation
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.tokens import (
+    AGGREGATE,
     ATTRIBUTE,
     CAST,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
+    DATE_ADD,
+    DATEDIFF,
+    FILL_TIME_SERIES,
     HAVING,
     HIERARCHY,
     IDENTIFIER,
@@ -30,6 +34,7 @@ from vtlengine.AST.Grammar.tokens import (
     SETDIFF,
     SUBSTR,
     SYMDIFF,
+    TIMESHIFT,
     TRUNC,
     UNION,
     VIRAL_ATTRIBUTE,
@@ -78,6 +83,7 @@ class ASTString(ASTTemplate):
     vtl_script: str = ""
     pretty: bool = False
     is_first_assignment: bool = False
+    is_from_agg: bool = False  # Handler to write grouping at aggr level
 
     def render(self, ast: Start):
         self.visit(ast)
@@ -196,7 +202,7 @@ class ASTString(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> str:
-        if node.op in [NVL, LOG, MOD, POWER, RANDOM]:
+        if node.op in [NVL, LOG, MOD, POWER, RANDOM, TIMESHIFT, DATEDIFF]:
             return f"{node.op}({self.visit(node.left)}, {self.visit(node.right)})"
         elif node.op == MEMBERSHIP:
             return f"{self.visit(node.left)}{node.op}{self.visit(node.right)}"
@@ -262,15 +268,36 @@ class ASTString(ASTTemplate):
             if len(node.params) == 1:
                 mask = f", {self.visit(node.params[0])}"
             return f"{node.op}({operand}, {data_type}{mask})"
+        elif node.op == FILL_TIME_SERIES:
+            operand = self.visit(node.children[0])
+            param = node.params[0].value if node.params else "all"
+            return f"{node.op}({operand}, {param})"
+        elif node.op == DATE_ADD:
+            operand = self.visit(node.children[0])
+            shift_number = self.visit(node.params[0])
+            period_indicator = self.visit(node.params[1])
+            return f"{node.op}({operand}, {shift_number}, {period_indicator})"
 
     # ---------------------- Individual operators ----------------------
 
-    def visit_Aggregation(self, node: AST.Aggregation) -> str:
+    def _handle_grouping_having(self, node: AST) -> Tuple[str, str]:
+        if self.is_from_agg:
+            return "", ""
         grouping = ""
         if node.grouping is not None:
             grouping_sep = ", " if len(node.grouping) > 1 else ""
-            grouping = f" {node.grouping_op} {grouping_sep.join([x.value for x in node.grouping])}"
+            grouping_values = []
+            for grouping_value in node.grouping:
+                if isinstance(grouping_value, TimeAggregation):
+                    grouping_values.append(self.visit(grouping_value))
+                else:
+                    grouping_values.append(grouping_value.value)
+            grouping = f" {node.grouping_op} {grouping_sep.join(grouping_values)}"
         having = f" {self.visit(node.having_clause)}" if node.having_clause is not None else ""
+        return grouping, having
+
+    def visit_Aggregation(self, node: AST.Aggregation) -> str:
+        grouping, having = self._handle_grouping_having(node)
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
@@ -307,19 +334,6 @@ class ASTString(ASTTemplate):
         output = f"returns dataset {_format_dataset_eval(node.output)}"
         return f"eval({ext_routine} {language} {output})"
 
-    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
-        child_sep = ", " if len(node.children) > 1 else ""
-        body = child_sep.join([self.visit(x) for x in node.children])
-        if isinstance(node.dataset, AST.JoinOp):
-            dataset = f"{self.visit(node.dataset)}"
-            return f"{dataset[:-1]} {node.op} {body})"
-        else:
-            dataset = self.visit(node.dataset)
-        return f"{dataset}[{node.op} {body}]"
-
-    def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{node.old_name} to {node.new_name}"
-
     def visit_If(self, node: AST.If) -> str:
         else_str = f" else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
         return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)}{else_str}"
@@ -333,13 +347,49 @@ class ASTString(ASTTemplate):
             using = f" using {using_sep.join(node.using)}"
         return f"{node.op}({clauses}{using})"
 
+    def visit_ParFunction(self, node: AST.ParFunction) -> str:
+        return f"({self.visit(node.operand)})"
+
+    def visit_RegularAggregation(self, node: AST.RegularAggregation) -> str:
+        child_sep = ", " if len(node.children) > 1 else ""
+        if node.op == AGGREGATE:
+            self.is_from_agg = True
+            body = child_sep.join([self.visit(x) for x in node.children])
+            self.is_from_agg = False
+            grouping, having = self._handle_grouping_having(node.children[0].right)
+            body = f"{body}{grouping}{having}"
+        else:
+            body = child_sep.join([self.visit(x) for x in node.children])
+        if isinstance(node.dataset, AST.JoinOp):
+            dataset = f"{self.visit(node.dataset)}"
+            return f"{dataset[:-1]} {node.op} {body})"
+        else:
+            dataset = self.visit(node.dataset)
+        return f"{dataset}[{node.op} {body}]"
+
+    def visit_RenameNode(self, node: AST.RenameNode) -> str:
+        return f"{node.old_name} to {node.new_name}"
+
+    def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
+        operand = self.visit(node.operand)
+        period_from = "_" if node.period_from is None else node.period_from
+        period_to = _handle_literal(node.period_to)
+        return f"{node.op}({period_to}, {period_from}, {operand})"
+
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
         params = params_sep.join([self.visit(x) for x in node.params])
         return f"{node.op}({params})"
 
-    def visit_ParFunction(self, node: AST.ParFunction) -> str:
-        return f"({self.visit(node.operand)})"
+    def visit_Validation(self, node: AST.Validation) -> str:
+        operand = self.visit(node.validation)
+        imbalance = f" imbalance {self.visit(node.imbalance)}" if node.imbalance is not None else ""
+        error_code = (
+            f" errorcode {_handle_literal(node.error_code)}" if node.error_code is not None else ""
+        )
+        error_level = f" errorlevel {node.error_level}" if node.error_level is not None else ""
+        invalid = " invalid" if node.invalid else " all"
+        return f"{node.op}({operand}{error_code}{error_level}{imbalance}{invalid})"
 
     # ---------------------- Constants and IDs ----------------------
 
@@ -360,6 +410,8 @@ class ASTString(ASTTemplate):
         return _handle_literal(node.value)
 
     def visit_Collection(self, node: AST.Collection) -> str:
+        if node.kind == "ValueDomain":
+            return node.name
         sep = ", " if len(node.children) > 1 else ""
         return f"{{{sep.join([self.visit(x) for x in node.children])}}}"
 

@@ -565,7 +565,7 @@ class Terminals(VtlVisitor):
         return ctx.children[0].getSymbol().text
 
     def visitSignedInteger(self, ctx: Parser.SignedIntegerContext):
-        return ctx.children[0].getSymbol().text
+        return int(ctx.children[0].getSymbol().text)
 
     def visitComparisonOperand(self, ctx: Parser.ComparisonOperandContext):
         return ctx.children[0].getSymbol().text
