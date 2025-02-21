@@ -491,7 +491,7 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
     return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
 
 
-def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str):  # type: ignore[no-untyped-def]
+def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
     list_transformation = []
     list_udos = []
     list_rulesets = []

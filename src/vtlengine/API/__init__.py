@@ -4,9 +4,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
-from pysdmx.io.format import Format
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Schema
 
 from vtlengine.API._InternalApi import (
@@ -340,11 +338,12 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
     return result
 
 
-def generate_sdmx(
-    script: str,
-    agency_id: str,
-    format: Format.STRUCTURE_SDMX_ML_2_1,  # type: ignore[valid-type]
-    version: str = "2.1",
-    output_path: Optional[Union[str, Path]] = None,
-) -> Optional[TransformationScheme]:
-    pass
+# def generate_sdmx(
+#     script: str,
+#     agency_id: str,
+#     format: Format.STRUCTURE_SDMX_ML_2_1,  # type: ignore[valid-type]
+#     version: str = "2.1",
+#     output_path: Optional[Union[str, Path]] = None,
+# ) -> Optional[TransformationScheme]:
+#     ast = create_ast(script)
+#     transformation = ast_to_sdmx(ast, agency_id, version)
