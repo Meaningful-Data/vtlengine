@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
 
-from vtlengine.API import ast_to_sdmx, create_ast, load_vtl
+from vtlengine.API import create_ast, load_vtl
+from vtlengine.API._InternalApi import ast_to_sdmx
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
 
 base_path = Path(__file__).parent
