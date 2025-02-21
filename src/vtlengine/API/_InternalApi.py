@@ -7,6 +7,7 @@ import jsonschema
 import pandas as pd
 from pysdmx.model import Component as SDMXComponent
 from pysdmx.model import Role as SDMX_Role
+from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.vtl import Ruleset, Transformation, UserDefinedOperator
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
@@ -482,10 +483,15 @@ def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
-    return Ruleset(id=f"RS{count}", ruleset_definition=str(child))
+    ruleset_type = ""
+    if isinstance(child, DPRuleset):
+        ruleset_type = "DataPoint"
+    elif isinstance(child, HRuleset):
+        ruleset_type = "Hierarchical"
+    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
 
 
-def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str = "1.0"):  # type: ignore[no-untyped-def]
+def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str):  # type: ignore[no-untyped-def]
     list_transformation = []
     list_udos = []
     list_rulesets = []
@@ -502,10 +508,25 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str = "1.0"):  # type: 
             list_transformation.append(
                 __generate_transformation(child, False, count_transformation)
             )
-        elif isinstance(child, Union[DPRuleset, HRuleset]):  # type: ignore[arg-type]
+        elif isinstance(child, (DPRuleset, HRuleset)):  # type: ignore[arg-type]
             count_ruleset += 1
             list_rulesets.append(__generate_ruleset(child, count_ruleset))  # type: ignore[arg-type]
         elif isinstance(child, Operator):
             count_udo += 1
             list_udos.append(__generate_udo(child, count_udo))
-    print(list_rulesets)
+
+    transformation_scheme = TransformationScheme(
+        items=list_transformation,
+        id=f"{agency_id}_TransformationScheme",
+        vtl_version=version,
+        ruleset_schemes=[
+            RulesetScheme(items=list_rulesets, id=f"{agency_id}_RulesetScheme", vtl_version=version)
+        ],
+        user_defined_operator_schemes=[
+            UserDefinedOperatorScheme(
+                items=list_udos, id=f"{agency_id}_UDOScheme", vtl_version=version
+            )
+        ],
+    )
+
+    return transformation_scheme
