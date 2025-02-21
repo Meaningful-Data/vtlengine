@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Model import Role
+from vtlengine.Model import Dataset, Role
 
 
 @dataclass
@@ -85,7 +85,7 @@ class VarID(AST):
     Could be: DATASET or a COMPONENT.
     """
 
-    value: Any
+    value: str
 
 
 @dataclass
@@ -156,7 +156,7 @@ class JoinOp(AST):
 
     op: str
     clauses: List[AST]
-    using: Optional[List[AST]]
+    using: Optional[List[str]]
     isLast: bool = False
 
 
@@ -234,7 +234,7 @@ class Windowing(AST):
     """
 
     type_: str
-    start: str
+    start: Union[int, str]
     start_mode: str
     stop: Union[int, str]
     stop_mode: str
@@ -343,13 +343,10 @@ class If(AST):
     elseOp: AST
 
 
+@dataclass
 class CaseObj:
     condition: AST
     thenOp: AST
-
-    def __init__(self, condition: AST, thenOp: AST):
-        self.condition = condition
-        self.thenOp = thenOp
 
 
 @dataclass
@@ -497,8 +494,8 @@ class HRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[Constant]
-    erLevel: Optional[Constant]
+    erCode: Optional[str]
+    erLevel: Optional[int]
 
 
 @dataclass
@@ -509,8 +506,8 @@ class DPRule(AST):
 
     name: Optional[str]
     rule: HRBinOp
-    erCode: Optional[Constant]
-    erLevel: Optional[Constant]
+    erCode: Optional[str]
+    erLevel: Optional[int]
 
 
 # TODO: Unify HRuleset and DPRuleset?
@@ -548,7 +545,7 @@ class EvalOp(AST):
 
     name: str
     operands: List[AST]
-    output: Optional[str]
+    output: Optional[Dataset]
     language: Optional[str]
 
 
@@ -559,3 +556,12 @@ class NoOp(AST):
     """
 
     pass
+
+
+@dataclass
+class ParFunction(AST):
+    """
+    ParFunction: (operand)
+    """
+
+    operand: AST

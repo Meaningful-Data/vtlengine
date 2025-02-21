@@ -16,6 +16,7 @@ sql_path = base_path / "SQL"
 vd_path = base_path / "ValueDomain"
 vtl_path = base_path / "vtl"
 
+
 def test_grammar():
     refactor_results = False
     script_name = "test_grammar.vtl"
@@ -30,11 +31,13 @@ def test_grammar():
 
     data_structures, datapoints = load_input_data("DS_1")
 
-    run_result = run(script=script,
-                     data_structures=data_structures,
-                     datapoints=datapoints,
-                     external_routines=external_routines,
-                     value_domains=value_domains)
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        external_routines=external_routines,
+        value_domains=value_domains,
+    )
 
     if refactor_results:
         store_results(run_result)
@@ -43,27 +46,31 @@ def test_grammar():
 
 
 def store_results(run_result):
-    reference_json = {'datasets': [], 'scalars': []}
+    reference_json = {"datasets": [], "scalars": []}
     for result in run_result.values():
         if isinstance(result, Dataset):
             result.data.to_csv(dataset_output_path / f"{result.name}.csv", index=False)
             structure = result.to_dict()
-            components = structure.pop('components')
-            structured_components = [{'name': c['name'],
-                                      'type': c['data_type'],
-                                      'role': c['role'],
-                                      'nullable': c['nullable'],
-                                      } for c in components.values()]
-            structure['DataStructure'] = structured_components
-            structure.pop('data')
-            reference_json['datasets'].append(structure)
+            components = structure.pop("components")
+            structured_components = [
+                {
+                    "name": c["name"],
+                    "type": c["data_type"],
+                    "role": c["role"],
+                    "nullable": c["nullable"],
+                }
+                for c in components.values()
+            ]
+            structure["DataStructure"] = structured_components
+            structure.pop("data")
+            reference_json["datasets"].append(structure)
         else:
             scalar = {
-                'name': result.name,
-                'data_type': result.data_type.__name__,
-                'value': result.value
+                "name": result.name,
+                "data_type": result.data_type.__name__,
+                "value": result.value,
             }
-            reference_json['scalars'].append(scalar)
+            reference_json["scalars"].append(scalar)
 
     with open(datastructure_output_path / "reference.json", "w") as file:
         json.dump(reference_json, file)
@@ -103,6 +110,7 @@ def load_input_data(dataset_name):
 
     return data_structures, datapoints
 
+
 def load_reference_data():
     with open(datastructure_output_path / "reference.json", "r") as file:
         structures = json.load(file)
@@ -115,17 +123,17 @@ def load_reference_data():
             datasets[dataset_name] = data
 
     scalars = {}
-    for scalar in structures['scalars']:
+    for scalar in structures["scalars"]:
         d_type = Null
-        if scalar['data_type'] == 'TimePeriod':
-            scalar['data_type'] = 'Time_Period'
-        if scalar['data_type'] != 'Null':
-            d_type = DataTypes.SCALAR_TYPES[scalar['data_type']]
+        if scalar["data_type"] == "TimePeriod":
+            scalar["data_type"] = "Time_Period"
+        if scalar["data_type"] != "Null":
+            d_type = DataTypes.SCALAR_TYPES[scalar["data_type"]]
 
-        scalars[scalar['name']] = Scalar(name=scalar['name'],
-                                         data_type=d_type,
-                                         value=scalar['value'])
+        scalars[scalar["name"]] = Scalar(
+            name=scalar["name"], data_type=d_type, value=scalar["value"]
+        )
 
-    datasets = API.load_datasets_with_data({'datasets': structures['datasets']}, datasets)[0]
+    datasets = API.load_datasets_with_data({"datasets": structures["datasets"]}, datasets)[0]
 
     return datasets, scalars
