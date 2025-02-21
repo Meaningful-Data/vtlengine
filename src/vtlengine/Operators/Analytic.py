@@ -189,21 +189,26 @@ class Analytic(Operator.Unary):
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = (
-                window.start_mode
-                if window.start_mode != "current" and window.start != "CURRENT ROW"
+                window.start_mode.upper()
+                if (isinstance(window.start, int) and window.start != 0)
+                or (isinstance(window.start, str) and window.start == "unbounded")
                 else ""
             )
             stop_mode = (
-                window.stop_mode
-                if window.stop_mode != "current" and window.stop != "CURRENT ROW"
+                window.stop_mode.upper()
+                if (isinstance(window.stop, int) and window.stop != 0)
+                or (isinstance(window.stop, str) and window.stop == "unbounded")
                 else ""
             )
-            if isinstance(window.start, int) and window.start == -1:
-                window.start = "UNBOUNDED"
-
-            if stop_mode == "" and window.stop == 0:
-                window.stop = "CURRENT ROW"
-            window_str = f"{mode} BETWEEN {window.start} {start_mode} AND {window.stop} {stop_mode}"
+            start = (
+                "UNBOUNDED"
+                if window.start == "unbounded" or window.start == -1
+                else str(window.start)
+            )
+            stop = (
+                "CURRENT ROW" if window.stop == "current" or window.stop == 0 else str(window.stop)
+            )
+            window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
 
         # Partitioning
         partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
