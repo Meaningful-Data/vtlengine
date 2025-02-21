@@ -17,6 +17,7 @@ vd_path = base_path / "ValueDomain"
 vtl_path = base_path / "vtl"
 
 def test_grammar():
+    refactor_results = False
     script_name = "test_grammar.vtl"
     with open(vtl_path / script_name, "r") as file:
         script = file.read()
@@ -28,7 +29,6 @@ def test_grammar():
     value_domains = vd_path / f"{vd_name}.json"
 
     data_structures, datapoints = load_input_data("DS_1")
-    reference_datasets, reference_scalars = load_reference_data()
 
     run_result = run(script=script,
                      data_structures=data_structures,
@@ -36,10 +36,43 @@ def test_grammar():
                      external_routines=external_routines,
                      value_domains=value_domains)
 
+    if refactor_results:
+        store_results(run_result)
+    reference_datasets, reference_scalars = load_reference_data()
     check_results(run_result, reference_datasets, reference_scalars)
+
+
+def store_results(run_result):
+    reference_json = {'datasets': [], 'scalars': []}
+    for result in run_result.values():
+        if isinstance(result, Dataset):
+            result.data.to_csv(dataset_output_path / f"{result.name}.csv", index=False)
+            structure = result.to_dict()
+            components = structure.pop('components')
+            structured_components = [{'name': c['name'],
+                                      'type': c['data_type'],
+                                      'role': c['role'],
+                                      'nullable': c['nullable'],
+                                      } for c in components.values()]
+            structure['DataStructure'] = structured_components
+            structure.pop('data')
+            reference_json['datasets'].append(structure)
+        else:
+            scalar = {
+                'name': result.name,
+                'data_type': result.data_type.__name__,
+                'value': result.value
+            }
+            reference_json['scalars'].append(scalar)
+
+    with open(datastructure_output_path / "reference.json", "w") as file:
+        json.dump(reference_json, file)
+
 
 def check_results(run_result, reference_datasets, reference_scalars):
     for result in run_result.values():
+        if result.name == "current_date_sc":
+            continue
         if isinstance(result, Dataset):
             assert result.name in reference_datasets
             reference = reference_datasets[result.name]
