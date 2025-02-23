@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
-from pysdmx.model import Component as SDMXComponent
-from pysdmx.model import Role as SDMX_Role
+from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
+from pysdmx.model.dataflow import Role as SDMX_Role
 
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import PersistentAssignment, Start
