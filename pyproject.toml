@@ -25,7 +25,7 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 dependencies = [
     # PyPi dependencies
     "duckdb>=1.1,<1.2",
-
+    "pysdmx[xml]>=1.1,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
@@ -45,6 +45,9 @@ MeaningfulData = 'https://www.meaningfuldata.eu/'
 IssueTracker = 'https://github.com/Meaningful-Data/vtlengine/issues'
 Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
 pytest-cov = "^6.0.0"
@@ -58,6 +61,8 @@ types-jsonschema = "4.23.0.20241208"
 sphinx = "^7.4.7"
 sphinx-rtd-theme = "^3.0.2"
 toml = "^0.10.2"
+
+
 
 [tool.ruff]
 line-length = 100
@@ -92,11 +97,6 @@ enable_error_code = [
     "truthy-bool",
 ]
 warn_return_any = false
-
-[[tool.mypy.overrides]]
-module = ["pysdmx.*"]
-follow_untyped_imports = true
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
