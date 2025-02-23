@@ -25,6 +25,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"

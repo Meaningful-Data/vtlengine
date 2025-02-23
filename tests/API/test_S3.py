@@ -139,11 +139,13 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
 def test_load_datapoints_s3(mock_read_csv):
     input_path = "s3://path/to/input/dataset.csv"
     load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
-    mock_read_csv.assert_called_once_with(input_path,
-                                          dtype={},
-                                          engine="c",
-                                          keep_default_na=False,
-                                          na_values=[""], )
+    mock_read_csv.assert_called_once_with(
+        input_path,
+        dtype={},
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+    )
 
 
 @patch("pandas.read_csv")
@@ -156,8 +158,10 @@ def test_run_s3(mock_read_csv):
         run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
 
     dtypes = {comp["name"]: np.object_ for comp in data_structures["datasets"][0]["DataStructure"]}
-    mock_read_csv.assert_called_once_with(input_path,
-                                          dtype=dtypes,
-                                          engine="c",
-                                          keep_default_na=False,
-                                          na_values=[""], )
+    mock_read_csv.assert_called_once_with(
+        input_path,
+        dtype=dtypes,
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+    )
