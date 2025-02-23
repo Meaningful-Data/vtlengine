@@ -4,7 +4,7 @@ version = "1.1rc2"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.9"
 authors = [
     {name = "MeaningfulData", email = "info@meaningfuldata.eu"},
 ]
