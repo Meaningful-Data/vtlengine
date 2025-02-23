@@ -186,8 +186,6 @@ class ASTTemplate(NodeVisitor):
 
             return node.value
         """
-        if node.value in self.datasets:
-            return self.datasets[node.value]
         return node.value
 
     def visit_Optional(self, node: AST.Optional) -> AST.AST:
@@ -328,6 +326,18 @@ class ASTTemplate(NodeVisitor):
             self.visit(case.condition)
             self.visit(case.thenOp)
         self.visit(node.elseOp)
+
+    def visit_CaseObj(self, node: AST.CaseObj) -> Any:
+        """
+        CaseObj: (condition, thenOp)
+
+        Basic usage:
+
+            self.visit(node.condition)
+            self.visit(node.thenOp)
+        """
+        self.visit(node.condition)
+        self.visit(node.thenOp)
 
     def visit_Validation(self, node: AST.Validation) -> Any:
         """
@@ -505,6 +515,12 @@ class ASTTemplate(NodeVisitor):
         for child in node.operands:
             self.visit(child)
 
+    def visit_ParFunction(self, node: AST.ParFunction) -> None:
+        """
+        ParFunction: (operand)
+        """
+        self.visit(node.operand)
+
     def visit_NoOp(self, node: AST.NoOp) -> None:  # pylint: disable=unused-argument
         """
         NoOp: ()
@@ -526,3 +542,8 @@ class ASTTemplate(NodeVisitor):
         """
         for param in node.params:
             self.visit(param)
+
+    def visit_Windowing(self, node: AST.Windowing) -> None:
+        """
+        Windowing: (type_, start, start_mode, stop, stop_mode)
+        """

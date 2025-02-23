@@ -1,0 +1,17 @@
+DS_B1_1 := inner_join(DS_1 as ds1, DS_2 as ds2
+              using Id_1, Id_2, Id_3
+              rename ds1#Me_1 to Me_11, ds2#Me_1 to Me_12);
+test2_result <-
+    inner_join(
+        test2_1
+            [rename OBS_VALUE to CURRENT] as C,
+        test2_2
+            [rename OBS_VALUE to PREVIOUS] as P
+        calc GROWTH :=(CURRENT - PREVIOUS) / PREVIOUS * 100,
+        identifier DERIVATION := "GROWTH_RATE’"
+    );
+apply_join_ds := inner_join (DS_1 as d1, DS_2 as d2 apply d1 || d2);
+union_ds := union(DS_1, DS_1);
+intersect_ds := intersect(DS_1, DS_1);
+setdiff_ds := setdiff(DS_1, DS_1);
+symdiff_ds := symdiff(DS_1, DS_1);

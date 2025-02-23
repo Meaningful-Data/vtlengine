@@ -1,9 +1,11 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
+from pysdmx.io.pd import PandasDataset
+from pysdmx.model.dataflow import Schema
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -13,17 +15,20 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
+    to_vtl_json,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Dataset
 
 pd.options.mode.chained_assignment = None
 
@@ -91,10 +96,10 @@ def create_ast(text: str) -> Start:
 
 def semantic_analysis(
     script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[Dict[str, Any], Path]] = None,
-) -> Any:
+) -> Dict[str, Dataset]:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
     given and also reviews if the data structure given can fit with it.
@@ -167,14 +172,14 @@ def semantic_analysis(
 
 def run(
     script: Union[str, Path],
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    datapoints: Union[Dict[str, Any], str, Path, List[Union[str, Path]]],
+    data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = False,
     output_folder: Optional[Union[str, Path]] = None,
-) -> Any:
+) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.
@@ -313,4 +318,19 @@ def run(
     # Returning only persistent datasets
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
+    return result
+
+
+def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Dataset]:
+    datapoints = {}
+    data_structures = []
+    for dataset in datasets:
+        schema = dataset.structure
+        if not isinstance(schema, Schema):
+            raise SemanticError("0-3-1-2", schema=schema)
+        vtl_structure = to_vtl_json(schema)
+        data_structures.append(vtl_structure)
+        datapoints[schema.id] = dataset.data
+
+    result = run(script, data_structures=data_structures, datapoints=datapoints)
     return result

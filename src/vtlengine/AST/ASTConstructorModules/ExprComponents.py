@@ -14,6 +14,7 @@ from vtlengine.AST import (
     MulOp,
     ParamConstant,
     ParamOp,
+    ParFunction,
     TimeAggregation,
     UDOCall,
     UnaryOp,
@@ -156,7 +157,8 @@ class ExprComp(VtlVisitor):
         return self.bin_op_creator_comp(ctx)
 
     def visitParenthesisExprComp(self, ctx: Parser.ParenthesisExprContext):
-        return self.visitExprComponent(list(ctx.getChildren())[1])
+        operand = self.visitExprComponent(list(ctx.getChildren())[1])
+        return ParFunction(operand)
 
     def visitUnaryExprComp(self, ctx: Parser.UnaryExprContext):
         c_list = list(ctx.getChildren())
