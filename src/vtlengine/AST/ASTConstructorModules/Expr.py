@@ -20,6 +20,7 @@ from vtlengine.AST import (
     MulOp,
     ParamConstant,
     ParamOp,
+    ParFunction,
     RegularAggregation,
     RenameNode,
     TimeAggregation,
@@ -192,7 +193,8 @@ class Expr(VtlVisitor):
         return self.bin_op_creator(ctx)
 
     def visitParenthesisExpr(self, ctx: Parser.ParenthesisExprContext):
-        return self.visitExpr(list(ctx.getChildren())[1])
+        operand = self.visitExpr(list(ctx.getChildren())[1])
+        return ParFunction(operand)
 
     def visitUnaryExpr(self, ctx: Parser.UnaryExprContext):
         c_list = list(ctx.getChildren())

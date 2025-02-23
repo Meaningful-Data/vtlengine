@@ -1,0 +1,36 @@
+define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+    B = C - D errorcode "Balance(credit-debit)" errorlevel 4;
+    N = A - L errorcode "Net(assets-liabilities)" errorlevel 4
+end hierarchical ruleset;
+define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+            FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+    sign1c: when AE = "C" and IAI = "G" then O > 0;
+    sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1;
+    sign3c: when AE = "C" and IAI = "S" then O > 0 errorcode "sign3c";
+    sign4c: when AE = "C" and IAI = "IN1" then O > 0 errorcode "sign4c";
+    sign9: when IAI = "D4Q" and FC = "D" and IA = "FL" then O > 0 errorcode "sign9" errorlevel 3;
+    sign10: when IAI = "D45" and FC = "P" and IA = "F" then O > 0 errorlevel 4
+
+end datapoint ruleset;
+define operator count_by_measure(ds dataset, 'measure' component, Me1 component, default_value string default "N/A")
+    returns dataset
+    is
+        count(
+            ds
+                [calc identifier 'measure' := nvl('measure', default_value)][drop Me1]
+            group by Me1 having count(Me1) > 0)
+end operator;
+eval_ds := eval(SQL1(DS_1) language "sqlite"
+          returns dataset {
+            identifier<integer> Id_1,
+            identifier<string> Id_2,
+            identifier<integer> Id_3,
+            measure<integer> Me_int,
+            measure<integer> Me_str
+          }
+        );
+HR_hie := hierarchy(DS_1, accountingEntry rule ACCOUNTING_ENTRY partial_null all);
+HR_ds := check_hierarchy(DS_1, accountingEntry rule ACCOUNTING_ENTRY partial_null all);
+DR_ds := check_datapoint(DS_1, dr_test);
+UDO_ds := drop_identifier(DS_1, Id_3);
+value_domain_sc := "ES" in countries;
