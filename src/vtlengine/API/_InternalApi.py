@@ -517,13 +517,18 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
 
     transformation_scheme = TransformationScheme(
         items=list_transformation,
-        id=f"TS{agency_id}",
+        agency=agency_id,
+        id=str(count_transformation),
         vtl_version=version,
         ruleset_schemes=[
-            RulesetScheme(items=list_rulesets, id=f"RS{agency_id}", vtl_version=version)
+            RulesetScheme(
+                items=list_rulesets, agency=agency_id, id=str(count_ruleset), vtl_version=version
+            )
         ],
         user_defined_operator_schemes=[
-            UserDefinedOperatorScheme(items=list_udos, id=f"UDO{agency_id}", vtl_version=version)
+            UserDefinedOperatorScheme(
+                items=list_udos, agency=agency_id, id=str(count_udo), vtl_version=version
+            )
         ],
     )
 

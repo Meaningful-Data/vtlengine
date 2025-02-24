@@ -74,11 +74,9 @@ def test_ast_to_sdmx(script, agency_id, version):
     ast = create_ast(script)
     result = ast_to_sdmx(ast, agency_id, version)
     assert isinstance(result, TransformationScheme)
-    assert result.id == f"TS{agency_id}"
+    assert result.agency == agency_id
     assert result.vtl_version == version
     assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-    assert result.ruleset_schemes[0].id == f"RS{agency_id}"
     assert result.ruleset_schemes[0].vtl_version == version
     assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-    assert result.user_defined_operator_schemes[0].id == f"UDO{agency_id}"
     assert result.user_defined_operator_schemes[0].vtl_version == version
