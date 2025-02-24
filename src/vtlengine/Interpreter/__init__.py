@@ -369,6 +369,9 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
 
+    def visit_ParFunction(self, node: AST.ParFunction) -> Any:
+        return self.visit(node.operand)
+
     def visit_BinOp(self, node: AST.BinOp) -> Any:
         is_from_if = False
         if (
@@ -778,7 +781,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             )
                         elif is_partial_present == 2:
                             raise SemanticError("1-1-13-9", comp_name=node.value)
-                        node.value = found_comp
+                        node.value = found_comp  # type:ignore[assignment]
                     if node.value not in self.regular_aggregation_dataset.components:
                         raise SemanticError(
                             "1-1-1-10",
@@ -1580,8 +1583,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             }
         )
+
+        if self.condition_stack and len(self.condition_stack) > 0:
+            last_condition_dataset = (
+                self.then_condition_dataset[-1]
+                if self.condition_stack[-1] == THEN_ELSE["then"]
+                else (self.else_condition_dataset[-1])
+            )
+            measure_name = last_condition_dataset.get_measures_names()[0]
+            then_data = then_data[then_data[name].isin(last_condition_dataset.data[measure_name])]
+            else_data = else_data[else_data[name].isin(last_condition_dataset.data[measure_name])]
         then_dataset = Dataset(name=name, components=components, data=then_data)
         else_dataset = Dataset(name=name, components=components, data=else_data)
+
         self.then_condition_dataset.append(then_dataset)
         self.else_condition_dataset.append(else_dataset)
 
@@ -1592,11 +1606,13 @@ class InterpreterAnalyzer(ASTTemplate):
             or self.condition_stack is None
         ):
             return left_operand, right_operand
+
         merge_dataset = (
             self.then_condition_dataset.pop()
             if self.condition_stack.pop() == THEN_ELSE["then"]
             else (self.else_condition_dataset.pop())
         )
+
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
         if isinstance(left_operand, (Dataset, DataComponent)):

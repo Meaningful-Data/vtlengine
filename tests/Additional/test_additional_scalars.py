@@ -138,6 +138,7 @@ numeric_params = [
     ("log(null, 1)", None),
     ("log(1, null)", None),
     ("log(0.5, 6)", -0.3868528072345416),
+    ("(1 + 2) / 3", 1.0),
 ]
 
 boolean_params = [

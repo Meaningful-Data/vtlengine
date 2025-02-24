@@ -1,0 +1,16 @@
+cast_sc_int_str := cast(1, string, "0-9");
+if_sc := if true then 1 else 2;
+nvl_sc := nvl(null, 3);
+case_sc := case when sc_1 = 1 then 10 when sc_2 = 2 then 20 else 0;
+btw_sc := between(sc_1, cast("1973-01-01", date), cast("1980-12-31", date));
+exists_ds := exists_in(DS_1,DS_2,false) ;
+cast_date_sc :=cast ( current_date(), string, "YYYY.MM.DD" );
+in_sc := sc_1 in {1, 2, 3};
+identifier_ds := DS_1[calc identifier Id_4 := nvl(Me_int, 0)];
+measure_ds := DS_1[calc measure Me_new := Me_num * 5];
+attribute_ds := DS_1[calc attribute At_new := "new"];
+check_ds := check ( DS1 > DS2 errorcode "errorcode" errorlevel 1 imbalance DS1 - DS2 invalid );
+aggr_ds := DS_1 [ aggr Me_1:= sum( Me_1 ), Me_2 := max( Me_1 ) group by Id_1 , Id_2 having avg(Me_1 ) > 2 ];
+aggr_group_except_ds := DS_1 [ aggr M1 := min ( Me_1 ) group except Id_1, Id_2 ];
+pivot_ds := DS_1 [ pivot Id_2, Me_1 ];
+sub_ds := DS_1 [ sub Id_2 = "A", Id_5 = 1 ];
