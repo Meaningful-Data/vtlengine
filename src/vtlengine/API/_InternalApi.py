@@ -14,6 +14,7 @@ from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine import AST as AST
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
+from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
@@ -470,7 +471,7 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
 def __generate_transformation(
     child: Union[Assignment, PersistentAssignment], is_persistent: bool, count: int
 ) -> Transformation:
-    expression = "EXPRESSION"  # TODO: Add here Stringify function for child.right
+    expression = ASTString().render(ast=child.right)  # type: ignore[arg-type]
     result = child.left.value  # type: ignore[attr-defined]
     return Transformation(
         id=f"T{count}", expression=expression, is_persistent=is_persistent, result=result
@@ -483,7 +484,7 @@ def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
-    ruleset_type = ""
+    ruleset_type = ASTString().render(ast=child)  # type: ignore[arg-type]
     if isinstance(child, DPRuleset):
         ruleset_type = "DataPoint"
     elif isinstance(child, HRuleset):
