@@ -14,8 +14,8 @@ filepath = base_path / "data" / "encode"
 param = ["DS_r := DS_1 + DS_2;"]
 
 params_to_sdmx = [
-    ("DS_r := DS_1 + DS_2;", "MD", "2.1"),
-    ("DS_r <- DS_1 + 1;", "MD", "2.1"),
+    ("DS_r := DS_1 + DS_2;", "MD", "1.0"),
+    ("DS_r <- DS_1 + 1;", "MD", "1.0"),
     (
         """
     define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
@@ -25,7 +25,7 @@ params_to_sdmx = [
         end datapoint ruleset;
     """,
         "MD",
-        "2.1",
+        "1.0",
     ),
     (
         """
@@ -35,7 +35,7 @@ params_to_sdmx = [
                     end hierarchical ruleset;
         """,
         "MD",
-        "2.1",
+        "1.0",
     ),
     (
         """
@@ -45,7 +45,7 @@ params_to_sdmx = [
         end operator;
     """,
         "MD",
-        "2.1",
+        "1.0",
     ),
 ]
 
@@ -75,8 +75,16 @@ def test_ast_to_sdmx(script, agency_id, version):
     result = ast_to_sdmx(ast, agency_id, version)
     assert isinstance(result, TransformationScheme)
     assert result.agency == agency_id
-    assert result.vtl_version == version
+    assert result.id == "TS1"
+    assert result.version == version
+    assert result.vtl_version == "2.1"
     assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-    assert result.ruleset_schemes[0].vtl_version == version
+    assert result.ruleset_schemes[0].id == "RS1"
+    assert result.ruleset_schemes[0].agency == agency_id
+    assert result.ruleset_schemes[0].version == version
+    assert result.ruleset_schemes[0].vtl_version == "2.1"
     assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-    assert result.user_defined_operator_schemes[0].vtl_version == version
+    assert result.user_defined_operator_schemes[0].id == "UDS1"
+    assert result.user_defined_operator_schemes[0].agency == agency_id
+    assert result.user_defined_operator_schemes[0].version == version
+    assert result.user_defined_operator_schemes[0].vtl_version == "2.1"

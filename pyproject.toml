@@ -30,7 +30,7 @@ duckdb = "^1.1"
 #numba = "^0.60.0"
 s3fs = "^2025.2.0"
 jsonschema = "^4.23.0"
-pysdmx = "^1.1.0"
+pysdmx = {version="^1.1", extras=["xml"]}
 
 # APT dependencies
 antlr4-python3-runtime = "4.9.2"
