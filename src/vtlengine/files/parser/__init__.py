@@ -42,14 +42,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise Exception(f"Path {csv_path} is not a file.")
     register_rfc()
     try:
-        with open(csv_path, "r") as f:
+        with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
             reader = DictReader(f, dialect="rfc")
             csv_columns = reader.fieldnames
-
-    except UnicodeDecodeError as error:
-        # https://coderwall.com/p/stzy9w/raising-unicodeencodeerror-and-unicodedecodeerror-
-        # manually-for-testing-purposes
-        raise InputValidationException("0-1-2-5", file=csv_path.name) from error
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
     except Exception as e:
