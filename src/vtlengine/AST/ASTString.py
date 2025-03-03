@@ -118,8 +118,8 @@ class ASTString(ASTTemplate):
 
     def visit_HRule(self, node: AST.HRule) -> str:
         vtl_script = ""
-        # if node.name is not None:
-        #     vtl_script += f"{node.name}: "
+        if node.name is not None:
+            vtl_script += f"{node.name}: "
         vtl_script += f"{self.visit(node.rule)}"
         if node.erCode is not None:
             vtl_script += f" errorcode {_handle_literal(node.erCode)}"
@@ -258,8 +258,8 @@ class ASTString(ASTTemplate):
             operand = self.visit(node.children[0])
             rule_name = node.children[1]
             output = ""
-            # if len(node.params) == 1 and node.params[0] != "invalid":
-            #     output = f" {node.params[0]}"
+            if len(node.params) == 1 and node.params[0] != "invalid":
+                output = f" {node.params[0]}"
             return f"{node.op}({operand}, {rule_name}{output})"
         elif node.op == CAST:
             operand = self.visit(node.children[0])
@@ -405,8 +405,8 @@ class ASTString(ASTTemplate):
         return _handle_literal(node.value)
 
     def visit_ParamConstant(self, node: AST.ParamConstant) -> Any:
-        # if node.value is None:
-        #     return "null"
+        if node.value is None:
+            return "null"
         return _handle_literal(node.value)
 
     def visit_Collection(self, node: AST.Collection) -> str:
@@ -424,8 +424,8 @@ class ASTString(ASTTemplate):
             and node.stop_mode == "current"
         ):
             return ""
-        # if node.start == -1:
-        #     start = f"unbounded {node.start_mode}"
+        if node.start == -1:
+            start = f"unbounded {node.start_mode}"
         if node.start_mode == "current":
             start = "current data point"
         else:
