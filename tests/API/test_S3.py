@@ -145,6 +145,7 @@ def test_load_datapoints_s3(mock_read_csv):
         engine="c",
         keep_default_na=False,
         na_values=[""],
+        encoding_errors="replace",
     )
 
 
@@ -164,4 +165,5 @@ def test_run_s3(mock_read_csv):
         engine="c",
         keep_default_na=False,
         na_values=[""],
+        encoding_errors="replace",
     )

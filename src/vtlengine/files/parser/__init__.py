@@ -107,19 +107,14 @@ def _sanitize_pandas_columns(
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
-    try:
-        data = pd.read_csv(
-            csv_path,
-            dtype=obj_dtypes,
-            engine="c",
-            keep_default_na=False,
-            na_values=[""],
-        )
-    except UnicodeDecodeError:
-        if isinstance(csv_path, Path):
-            raise InputValidationException(code="0-1-2-5", file=csv_path.name)
-        else:
-            raise InputValidationException(code="0-1-2-5", file=csv_path)
+    data = pd.read_csv(
+        csv_path,
+        dtype=obj_dtypes,
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+        encoding_errors="replace",
+    )
 
     return _sanitize_pandas_columns(components, csv_path, data)
 
