@@ -371,12 +371,6 @@ params_generate_sdmx = [
     ),
 ]
 
-params_generate_sdmx_errors = [
-    ("DS_r := DS_1 + DS_2;", 25, "1.0", "1-4-2-8"),
-    ("DS_r <- DS_1 + 1;", "BIS", 1, "1-4-2-9"),
-    ("DS_r <- DS_1 + 1;", "BIS", "2.1", "1-4-2-10"),
-]
-
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -1185,9 +1179,3 @@ def test_generate_sdmx(script, agency_id, version):
     assert result.user_defined_operator_schemes[0].agency == agency_id
     assert result.user_defined_operator_schemes[0].version == version
     assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
-
-
-@pytest.mark.parametrize("script, agency_id, version, code", params_generate_sdmx_errors)
-def test_generate_sdmx_errors(script, agency_id, version, code):
-    with pytest.raises(SemanticError, match=code):
-        generate_sdmx(script, agency_id, version)

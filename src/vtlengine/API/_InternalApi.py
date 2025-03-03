@@ -7,9 +7,15 @@ import jsonschema
 import pandas as pd
 from pysdmx.model import Component as SDMXComponent
 from pysdmx.model import Role as SDMX_Role
-from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
-from pysdmx.model.vtl import Ruleset, Transformation, UserDefinedOperator
+from pysdmx.model.vtl import (
+    Ruleset,
+    RulesetScheme,
+    Transformation,
+    TransformationScheme,
+    UserDefinedOperator,
+    UserDefinedOperatorScheme,
+)
 from s3fs import S3FileSystem  # type: ignore[import-untyped]
 
 from vtlengine import AST as AST
@@ -471,7 +477,7 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
 def __generate_transformation(
     child: Union[Assignment, PersistentAssignment], is_persistent: bool, count: int
 ) -> Transformation:
-    expression = ASTString().render(ast=child.right)  # type: ignore[arg-type]
+    expression = ASTString().render(ast=child.right)
     result = child.left.value  # type: ignore[attr-defined]
     return Transformation(
         id=f"T{count}", expression=expression, is_persistent=is_persistent, result=result
@@ -479,16 +485,16 @@ def __generate_transformation(
 
 
 def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
-    operator_definition = str(child.op)
+    operator_definition = ASTString().render(ast=child)
     return UserDefinedOperator(id=f"UDO{count}", operator_definition=operator_definition)
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
-    ruleset_type = ASTString().render(ast=child)  # type: ignore[arg-type]
+    ruleset_type = ASTString().render(ast=child)
     if isinstance(child, DPRuleset):
-        ruleset_type = "DataPoint"
+        ruleset_type = "dataPoint"
     elif isinstance(child, HRuleset):
-        ruleset_type = "Hierarchical"
+        ruleset_type = "hierarchical"
     return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
 
 
@@ -503,18 +509,26 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
     for child in ast.children:
         if isinstance(child, PersistentAssignment):
             count_transformation += 1
-            list_transformation.append(__generate_transformation(child, True, count_transformation))
+            list_transformation.append(
+                __generate_transformation(
+                    child,
+                    **{"is_persistent": True, "count": count_transformation},  # type: ignore[arg-type]
+                )
+            )
         elif isinstance(child, Assignment):
             count_transformation += 1
             list_transformation.append(
-                __generate_transformation(child, False, count_transformation)
+                __generate_transformation(
+                    child,
+                    **{"is_persistent": False, "count": count_transformation},  # type: ignore[arg-type]
+                )
             )
         elif isinstance(child, (DPRuleset, HRuleset)):
             count_ruleset += 1
-            list_rulesets.append(__generate_ruleset(child, count_ruleset))
+            list_rulesets.append(__generate_ruleset(child, **{"count": count_ruleset}))
         elif isinstance(child, Operator):
             count_udo += 1
-            list_udos.append(__generate_udo(child, count_udo))
+            list_udos.append(__generate_udo(child, **{"count": count_udo}))
 
     transformation_scheme = TransformationScheme(
         items=list_transformation,

@@ -339,14 +339,17 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
 
 
 def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> TransformationScheme:
-    if not isinstance(agency_id, str):
-        raise SemanticError("1-4-2-8", agency_id=agency_id)
+    """
+    Function that generates a TransformationScheme object from a VTL expression
+    to generate a SDMX file.
+    Args:
+        script: A string with the VTL expression.
+        agency_id: The id string of the agency that will be used in the SDMX.
+        version: The string version of the SDMX file that will be generated. (default: "1.0")
 
-    if not isinstance(version, str):
-        raise SemanticError("1-4-2-9", version=version)
-
-    if version != "1.0":
-        raise SemanticError("1-4-2-10", version=version)
+    Returns:
+        This function will return a TransformationScheme object.
+    """
     ast = create_ast(script)
     result = ast_to_sdmx(ast, agency_id, version)
     return result
