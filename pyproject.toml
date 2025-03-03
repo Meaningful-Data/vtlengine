@@ -36,7 +36,7 @@ pysdmx = {version="^1.1", extras=["xml"]}
 antlr4-python3-runtime = "4.9.2"
 networkx = "^2.8.8"
 numexpr = "^2.9.0"
-pandas = "^2.2.3"
+pandas = "^2.1.4"
 sqlglot = "^22.2.0"
 
 [tool.poetry.group.dev.dependencies]
