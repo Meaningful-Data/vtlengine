@@ -492,7 +492,7 @@ def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
     ruleset_type = ASTString().render(ast=child)
     if isinstance(child, DPRuleset):
-        ruleset_type = "dataPoint"
+        ruleset_type = "datapoint"
     elif isinstance(child, HRuleset):
         ruleset_type = "hierarchical"
     return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
