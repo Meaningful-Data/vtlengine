@@ -5,10 +5,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
+from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
-from vtlengine.API import run, run_sdmx, semantic_analysis
+from vtlengine.API import generate_sdmx, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     load_datasets,
     load_datasets_with_data,
@@ -332,6 +333,43 @@ params_2_1_gen_str = [
 ]
 
 params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-3-1-2")]
+
+
+params_generate_sdmx = [
+    ("DS_r := DS_1 + DS_2;", "MD", "1.0"),
+    ("DS_r <- DS_1 + 1;", "MD", "1.0"),
+    (
+        """
+    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
+        end datapoint ruleset;
+    """,
+        "MD",
+        "1.0",
+    ),
+    (
+        """
+        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+        """,
+        "MD",
+        "1.0",
+    ),
+    (
+        """
+        define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+        end operator;
+    """,
+        "MD",
+        "1.0",
+    ),
+]
 
 
 @pytest.mark.parametrize("input", ext_params_OK)
@@ -1121,3 +1159,23 @@ def test_to_vtl_json_exception(data, error_code):
     datasets = get_datasets(data)
     with pytest.raises(SemanticError, match=error_code):
         run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+
+
+@pytest.mark.parametrize("script, agency_id, version", params_generate_sdmx)
+def test_generate_sdmx(script, agency_id, version):
+    result = generate_sdmx(script, agency_id, version)
+    assert isinstance(result, TransformationScheme)
+    assert result.agency == agency_id
+    assert result.id == "TS1"
+    assert result.version == version
+    assert result.vtl_version == "2.1"
+    assert isinstance(result.ruleset_schemes[0], RulesetScheme)
+    assert result.ruleset_schemes[0].id == "RS1"
+    assert result.ruleset_schemes[0].agency == agency_id
+    assert result.ruleset_schemes[0].version == version
+    assert result.ruleset_schemes[0].vtl_version == "2.1"
+    assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
+    assert result.user_defined_operator_schemes[0].id == "UDS1"
+    assert result.user_defined_operator_schemes[0].agency == agency_id
+    assert result.user_defined_operator_schemes[0].version == version
+    assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
