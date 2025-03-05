@@ -482,24 +482,22 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
             count_transformation += 1
             list_transformation.append(
                 __generate_transformation(
-                    child,
-                    **{"is_persistent": True, "count": count_transformation},  # type: ignore[arg-type]
+                    child=child, is_persistent=True, count=count_transformation
                 )
             )
         elif isinstance(child, Assignment):
             count_transformation += 1
             list_transformation.append(
                 __generate_transformation(
-                    child,
-                    **{"is_persistent": False, "count": count_transformation},  # type: ignore[arg-type]
+                    child=child, is_persistent=False, count=count_transformation
                 )
             )
         elif isinstance(child, (DPRuleset, HRuleset)):
             count_ruleset += 1
-            list_rulesets.append(__generate_ruleset(child, **{"count": count_ruleset}))
+            list_rulesets.append(__generate_ruleset(child=child, count=count_ruleset))
         elif isinstance(child, Operator):
             count_udo += 1
-            list_udos.append(__generate_udo(child, **{"count": count_udo}))
+            list_udos.append(__generate_udo(child=child, count=count_udo))
 
     transformation_scheme = TransformationScheme(
         items=list_transformation,
