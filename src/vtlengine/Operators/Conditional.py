@@ -381,7 +381,7 @@ class Case(Operator):
                 ]
             )
 
-            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index]
+            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index, unused-ignore]
                 elseOp.value
                 if isinstance(elseOp, Scalar)
                 else elseOp.data.loc[condition_mask_else, columns]
