@@ -23,11 +23,11 @@ pyproject_toml_file = Path(__file__).parent.parent / "pyproject.toml"
 if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
     with open(pyproject_toml_file, "r") as f:
         data = toml_load(f)
-    project = str(data["tool"]["poetry"]["name"])
-    version = str(data["tool"]["poetry"]["version"])
-    description = str(data["tool"]["poetry"]["description"])
+    project = str(data["project"]["name"])
+    version = str(data["project"]["version"])
+    description = str(data["project"]["description"])
 
-copyright = "2024 MeaningfulData"
+copyright = "2025 MeaningfulData"
 
 
 # -- General configuration ---------------------------------------------------

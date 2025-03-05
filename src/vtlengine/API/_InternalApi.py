@@ -5,11 +5,11 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
-from pysdmx.model import Component as SDMXComponent
-from pysdmx.model import Role as SDMX_Role
+from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
-from s3fs import S3FileSystem  # type: ignore[import-untyped]
+from pysdmx.model.dataflow import Role as SDMX_Role
 
+from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import PersistentAssignment, Start
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
@@ -112,38 +112,16 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            # Handling S3 URI
-            s3fs_obj = S3FileSystem()
-
-            # Check if the S3 URI is valid
-            if not s3fs_obj.exists(datapoint):
-                raise Exception(
-                    f"Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}"
-                )
-
-            # Check if the S3 URI is a directory
-            if s3fs_obj.isdir(datapoint):
-                datapoints: Dict[str, Any] = {}
-                for f in s3fs_obj.ls(datapoint):
-                    if f.endswith(".csv"):
-                        dataset_name = f.split("/")[-1].removesuffix(".csv")
-                        dict_data = {dataset_name: f"s3://{f}"}
-                        datapoints = {**datapoints, **dict_data}
-                return datapoints
-
-            # Check if the S3 URI is a csv file
-            if s3fs_obj.isfile(datapoint) and not datapoint.endswith(".csv"):
-                raise Exception(f"Invalid datapoint. S3 URI must refer to a csv file: {datapoint}")
+            __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
-
         try:
             datapoint = Path(datapoint)
         except Exception:
             raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
     if datapoint.is_dir():
-        datapoints = {}
+        datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
             if f.suffix != ".csv":
                 continue
@@ -407,27 +385,20 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
-            s3fs_obj = S3FileSystem()
-            # Check if the S3 URI is valid
-            if not s3fs_obj.exists(output_folder):
-                try:
-                    s3fs_obj.mkdir(output_folder)
-                except Exception:
-                    raise Exception(
-                        f"Invalid output folder. S3 URI is invalid or "
-                        f"it is not accessible: {output_folder}"
-                    )
+            __check_s3_extra()
+            if not output_folder.endswith("/"):
+                raise ValueError("Output folder must be a Path or S3 URI to a directory")
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
 
     if not isinstance(output_folder, Path):
-        raise Exception("Output folder must be a Path or S3 URI to a directory")
+        raise ValueError("Output folder must be a Path or S3 URI to a directory")
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
 
 
