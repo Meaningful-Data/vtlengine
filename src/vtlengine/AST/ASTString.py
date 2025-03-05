@@ -426,7 +426,7 @@ class ASTString(ASTTemplate):
             return ""
         if node.start == -1:
             start = f"unbounded {node.start_mode}"
-        if node.start_mode == "current":
+        elif node.start_mode == "current":
             start = "current data point"
         else:
             start = f"{node.start} {node.start_mode}"
