@@ -1893,8 +1893,10 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.operand is not None:
             operand = self.visit(node.operand)
         else:
-            component_name = Time_Aggregation._get_time_id(self.aggregation_dataset)  # type: ignore[attr-type]
-            ast_operand = VarID(component_name)  # type: ignore[attr-type]
+            if self.aggregation_dataset is None:
+                raise SemanticError("1-1-19-11")
+            component_name = Time_Aggregation._get_time_id(self.aggregation_dataset)
+            ast_operand = VarID(component_name)
             operand = self.visit(ast_operand)
         return Time_Aggregation.analyze(
             operand=operand,
