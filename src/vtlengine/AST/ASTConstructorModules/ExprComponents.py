@@ -685,9 +685,6 @@ class ExprComp(VtlVisitor):
         else:
             operand_node = None
 
-        if operand_node is None:
-            # AST_ASTCONSTRUCTOR.17
-            raise SemanticError("1-4-2-2")
         return TimeAggregation(
             op=op,
             operand=operand_node,
