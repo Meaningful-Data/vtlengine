@@ -8,6 +8,7 @@ import pandas as pd
 import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators
+from vtlengine.AST import VarID
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT
@@ -1889,8 +1890,23 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
-        operand = self.visit(node.operand)
+        """
 
+        Args:
+            node: node operand used to perform the time aggregation
+
+        Returns:
+            Analysis of whether the operation can be performed or not.
+
+        """
+        if node.operand is not None:
+            operand = self.visit(node.operand)
+        else:
+            if self.aggregation_dataset is None:
+                raise SemanticError("1-1-19-11")
+            component_name = Time_Aggregation._get_time_id(self.aggregation_dataset)
+            ast_operand = VarID(component_name)
+            operand = self.visit(ast_operand)
         return Time_Aggregation.analyze(
             operand=operand,
             period_from=node.period_from,

@@ -57,14 +57,17 @@ class Time(Operators.Operator):
     op = FLOW_TO_STOCK
 
     @classmethod
-    def _get_time_id(cls, operand: Dataset) -> Optional[str]:
+    def _get_time_id(cls, operand: Dataset) -> str:
         reference_id = None
+        identifiers = operand.get_identifiers()
+        if len(identifiers) == 0:
+            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         for id in operand.get_identifiers():
             if id.data_type in cls.TIME_DATA_TYPES:
                 if reference_id is not None:
                     raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
                 reference_id = id.name
-        return reference_id
+        return str(reference_id)
 
     @classmethod
     def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
@@ -182,7 +185,7 @@ class Period_indicator(Unary):
     def validate(cls, operand: Any) -> Any:
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
-            if time_id is None or operand.components[time_id].data_type != TimePeriod:
+            if operand.components[time_id].data_type != TimePeriod:
                 raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period dataset")
             result_components = {
                 comp.name: comp
@@ -223,7 +226,7 @@ class Period_indicator(Unary):
             if (operand.data is not None)
             else pd.Series()
         )
-        period_series: Any = result.data[cls.time_id].map(cls._get_period)  # type: ignore[index]
+        period_series: Any = result.data[cls.time_id].map(cls._get_period)
         result.data["duration_var"] = period_series
         return result
 
@@ -544,9 +547,7 @@ class Time_Shift(Binary):
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
 
-        data_type: Any = (
-            result.components[cls.time_id].data_type if isinstance(cls.time_id, str) else None
-        )
+        data_type: Any = result.components[cls.time_id].data_type
 
         if data_type == Date:
             freq = cls.find_min_frequency(
