@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from pysdmx.model import Role
+from pysdmx.model.dataflow import Role
 
 from vtlengine.AST.Grammar.tokens import (
     ABS,

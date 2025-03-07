@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple, Union
 
 import vtlengine.AST.Grammar.tokens
 from vtlengine import AST
-from vtlengine.AST import DPRuleset, HRuleset, Operator, Start, TimeAggregation
+from vtlengine.AST import DPRuleset, HRuleset, Operator, TimeAggregation
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
@@ -85,7 +85,7 @@ class ASTString(ASTTemplate):
     is_first_assignment: bool = False
     is_from_agg: bool = False  # Handler to write grouping at aggr level
 
-    def render(self, ast: Start):
+    def render(self, ast: AST.AST) -> str:
         self.visit(ast)
         return self.vtl_script
 

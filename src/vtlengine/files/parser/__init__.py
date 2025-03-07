@@ -42,14 +42,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise Exception(f"Path {csv_path} is not a file.")
     register_rfc()
     try:
-        with open(csv_path, "r") as f:
+        with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
             reader = DictReader(f, dialect="rfc")
             csv_columns = reader.fieldnames
-
-    except UnicodeDecodeError as error:
-        # https://coderwall.com/p/stzy9w/raising-unicodeencodeerror-and-unicodedecodeerror-
-        # manually-for-testing-purposes
-        raise InputValidationException("0-1-2-5", file=csv_path.name) from error
     except InputValidationException as ie:
         raise InputValidationException("{}".format(str(ie))) from None
     except Exception as e:
@@ -109,40 +104,18 @@ def _sanitize_pandas_columns(
     return data
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Path) -> pd.DataFrame:
+def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
-    try:
-        data = pd.read_csv(
-            csv_path,
-            dtype=obj_dtypes,
-            engine="c",
-            keep_default_na=False,
-            na_values=[""],
-        )
-    except UnicodeDecodeError:
-        raise InputValidationException(code="0-1-2-5", file=csv_path.name)
+    data = pd.read_csv(
+        csv_path,
+        dtype=obj_dtypes,
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+        encoding_errors="replace",
+    )
 
-    return _sanitize_pandas_columns(components, csv_path, data)
-
-
-def _pandas_load_s3_csv(components: Dict[str, Component], csv_path: str) -> pd.DataFrame:
-    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
-
-    # start = time()
-    try:
-        data = pd.read_csv(
-            csv_path,
-            dtype=obj_dtypes,
-            engine="c",
-            keep_default_na=False,
-            na_values=[""],
-        )
-
-    except UnicodeDecodeError:
-        raise InputValidationException(code="0-1-2-5", file=csv_path)
-    except Exception as e:
-        raise InputValidationException(f"ERROR: {str(e)}, review file {str(csv_path)}")
     return _sanitize_pandas_columns(components, csv_path, data)
 
 
@@ -240,10 +213,9 @@ def load_datapoints(
 ) -> pd.DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return pd.DataFrame(columns=list(components.keys()))
-    elif isinstance(csv_path, str):
-        data = _pandas_load_s3_csv(components, csv_path)
-    elif isinstance(csv_path, Path):
-        _validate_csv_path(components, csv_path)
+    elif isinstance(csv_path, (str, Path)):
+        if isinstance(csv_path, Path):
+            _validate_csv_path(components, csv_path)
         data = _pandas_load_csv(components, csv_path)
     else:
         raise Exception("Invalid csv_path type")

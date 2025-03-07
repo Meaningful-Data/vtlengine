@@ -5,11 +5,13 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
+from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Schema
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _return_only_persistent_datasets,
+    ast_to_sdmx,
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
@@ -333,4 +335,21 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
         datapoints[schema.id] = dataset.data
 
     result = run(script, data_structures=data_structures, datapoints=datapoints)
+    return result
+
+
+def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> TransformationScheme:
+    """
+    Function that generates a TransformationScheme object from a VTL expression
+    to generate a SDMX file.
+    Args:
+        script: A string with the VTL expression.
+        agency_id: The id string of the agency that will be used in the SDMX.
+        version: The string version of the SDMX file that will be generated. (default: "1.0")
+
+    Returns:
+        This function will return a TransformationScheme object.
+    """
+    ast = create_ast(script)
+    result = ast_to_sdmx(ast, agency_id, version)
     return result

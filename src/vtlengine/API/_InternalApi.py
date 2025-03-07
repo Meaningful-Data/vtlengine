@@ -5,12 +5,22 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
 import pandas as pd
-from pysdmx.model import Component as SDMXComponent
-from pysdmx.model import Role as SDMX_Role
+from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
-from s3fs import S3FileSystem  # type: ignore[import-untyped]
+from pysdmx.model.dataflow import Role as SDMX_Role
+from pysdmx.model.vtl import (
+    Ruleset,
+    RulesetScheme,
+    Transformation,
+    TransformationScheme,
+    UserDefinedOperator,
+    UserDefinedOperatorScheme,
+)
 
-from vtlengine.AST import PersistentAssignment, Start
+from vtlengine import AST as AST
+from vtlengine.__extras_check import __check_s3_extra
+from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
+from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
@@ -112,38 +122,16 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
-            # Handling S3 URI
-            s3fs_obj = S3FileSystem()
-
-            # Check if the S3 URI is valid
-            if not s3fs_obj.exists(datapoint):
-                raise Exception(
-                    f"Invalid datapoint. S3 URI does not exist or it is not accessible: {datapoint}"
-                )
-
-            # Check if the S3 URI is a directory
-            if s3fs_obj.isdir(datapoint):
-                datapoints: Dict[str, Any] = {}
-                for f in s3fs_obj.ls(datapoint):
-                    if f.endswith(".csv"):
-                        dataset_name = f.split("/")[-1].removesuffix(".csv")
-                        dict_data = {dataset_name: f"s3://{f}"}
-                        datapoints = {**datapoints, **dict_data}
-                return datapoints
-
-            # Check if the S3 URI is a csv file
-            if s3fs_obj.isfile(datapoint) and not datapoint.endswith(".csv"):
-                raise Exception(f"Invalid datapoint. S3 URI must refer to a csv file: {datapoint}")
+            __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
-
         try:
             datapoint = Path(datapoint)
         except Exception:
             raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
     if datapoint.is_dir():
-        datapoints = {}
+        datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
             if f.suffix != ".csv":
                 continue
@@ -407,27 +395,20 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
-            s3fs_obj = S3FileSystem()
-            # Check if the S3 URI is valid
-            if not s3fs_obj.exists(output_folder):
-                try:
-                    s3fs_obj.mkdir(output_folder)
-                except Exception:
-                    raise Exception(
-                        f"Invalid output folder. S3 URI is invalid or "
-                        f"it is not accessible: {output_folder}"
-                    )
+            __check_s3_extra()
+            if not output_folder.endswith("/"):
+                raise ValueError("Output folder must be a Path or S3 URI to a directory")
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
 
     if not isinstance(output_folder, Path):
-        raise Exception("Output folder must be a Path or S3 URI to a directory")
+        raise ValueError("Output folder must be a Path or S3 URI to a directory")
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise Exception("Output folder must be a Path or S3 URI to a directory")
+            raise ValueError("Output folder must be a Path or S3 URI to a directory")
         os.mkdir(output_folder)
 
 
@@ -462,3 +443,78 @@ def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
     result = {"datasets": [{"name": dataset_name, "DataStructure": components}]}
 
     return result
+
+
+def __generate_transformation(
+    child: Union[Assignment, PersistentAssignment], is_persistent: bool, count: int
+) -> Transformation:
+    expression = ASTString().render(ast=child.right)
+    result = child.left.value  # type: ignore[attr-defined]
+    return Transformation(
+        id=f"T{count}", expression=expression, is_persistent=is_persistent, result=result
+    )
+
+
+def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
+    operator_definition = ASTString().render(ast=child)
+    return UserDefinedOperator(id=f"UDO{count}", operator_definition=operator_definition)
+
+
+def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
+    ruleset_type = ASTString().render(ast=child)
+    if isinstance(child, DPRuleset):
+        ruleset_type = "datapoint"
+    elif isinstance(child, HRuleset):
+        ruleset_type = "hierarchical"
+    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
+
+
+def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
+    list_transformation = []
+    list_udos = []
+    list_rulesets = []
+    count_transformation = 0
+    count_udo = 0
+    count_ruleset = 0
+
+    for child in ast.children:
+        if isinstance(child, PersistentAssignment):
+            count_transformation += 1
+            list_transformation.append(
+                __generate_transformation(
+                    child=child, is_persistent=True, count=count_transformation
+                )
+            )
+        elif isinstance(child, Assignment):
+            count_transformation += 1
+            list_transformation.append(
+                __generate_transformation(
+                    child=child, is_persistent=False, count=count_transformation
+                )
+            )
+        elif isinstance(child, (DPRuleset, HRuleset)):
+            count_ruleset += 1
+            list_rulesets.append(__generate_ruleset(child=child, count=count_ruleset))
+        elif isinstance(child, Operator):
+            count_udo += 1
+            list_udos.append(__generate_udo(child=child, count=count_udo))
+
+    transformation_scheme = TransformationScheme(
+        items=list_transformation,
+        agency=agency_id,
+        id="TS1",
+        vtl_version="2.1",
+        version=version,
+        ruleset_schemes=[
+            RulesetScheme(
+                items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
+            )
+        ],
+        user_defined_operator_schemes=[
+            UserDefinedOperatorScheme(
+                items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
+            )
+        ],
+    )
+
+    return transformation_scheme
