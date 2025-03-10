@@ -3837,6 +3837,22 @@ class TimeOperatorsTest(AdditionalHelper):
             text=None, code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_28(self):
+        """
+        Testing time_aggr operation without an operand
+        """
+        text = """DS_r := sum (DS_1 group all time_agg("A"));"""
+        code = "7-28"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=text,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
 
 class EmptyDatasetsTest(AdditionalHelper):
     """

@@ -6,7 +6,10 @@ from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperato
 
 from vtlengine.API import create_ast, load_vtl
 from vtlengine.API._InternalApi import ast_to_sdmx
+from vtlengine.AST import TimeAggregation
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
 
 base_path = Path(__file__).parent
 filepath = base_path / "data" / "encode"
@@ -88,3 +91,11 @@ def test_ast_to_sdmx(script, agency_id, version):
     assert result.user_defined_operator_schemes[0].agency == agency_id
     assert result.user_defined_operator_schemes[0].version == version
     assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+
+
+def test_visit_TimeAggregation_error():
+    interpreter = InterpreterAnalyzer(datasets={})
+    node = TimeAggregation(op="time_agg", period_to="A", period_from=None, operand=None, conf=None)
+
+    with pytest.raises(SemanticError, match="1-1-19-11"):
+        interpreter.visit_TimeAggregation(node)

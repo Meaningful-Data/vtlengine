@@ -5,7 +5,11 @@ import pytest
 from pytest import mark
 
 from vtlengine.API import create_ast
+from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Operators.Time import Time
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
@@ -65,3 +69,20 @@ def test_errors(load_error, code, expression, error_code):
     if result is False:
         print(f"\n{error_code} != {load_error}")
     assert result
+
+
+def test_get_time_id_error_len_identifiers():
+    dataset = Dataset(name="test_dataset", components={}, data=None)
+    with pytest.raises(SemanticError, match="1-1-19-8"):
+        Time._get_time_id(dataset)
+
+
+def test_get_time_id_error_reference_id():
+    components = {
+        "Id_1": Component(name="Id_1", data_type=Date, role=Role.IDENTIFIER, nullable=False),
+        "Id_2": Component(name="Id_2", data_type=TimePeriod, role=Role.IDENTIFIER, nullable=False),
+    }
+    dataset = Dataset(name="test_dataset", components=components, data=None)
+
+    with pytest.raises(SemanticError, match="1-1-19-8"):
+        Time._get_time_id(dataset)
