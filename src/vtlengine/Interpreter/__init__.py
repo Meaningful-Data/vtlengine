@@ -1890,15 +1890,6 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
-        """
-
-        Args:
-            node: node operand used to perform the time aggregation
-
-        Returns:
-            Analysis of whether the operation can be performed or not.
-
-        """
         if node.operand is not None:
             operand = self.visit(node.operand)
         else:
