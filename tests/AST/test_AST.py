@@ -6,8 +6,9 @@ from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperato
 
 from vtlengine.API import create_ast, load_vtl
 from vtlengine.API._InternalApi import ast_to_sdmx
-from vtlengine.AST import TimeAggregation
+from vtlengine.AST import Assignment, PersistentAssignment, Start, TimeAggregation, VarID
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
+from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
@@ -99,3 +100,36 @@ def test_visit_TimeAggregation_error():
 
     with pytest.raises(SemanticError, match="1-1-19-11"):
         interpreter.visit_TimeAggregation(node)
+
+
+def test_visit_Start():
+    visitor = ASTTemplate()
+    child1 = VarID(value="child1")
+    child2 = VarID(value="child2")
+    node = Start(children=[child1, child2])
+
+    visitor.visit_Start(node)
+
+    assert True
+
+
+def test_visit_Assignment():
+    visitor = ASTTemplate()
+    node_left = VarID(value="left")
+    node_right = VarID(value="right")
+    node = Assignment(left=node_left, op=":=", right=node_right)
+
+    visitor.visit_Assignment(node)
+
+    assert True
+
+
+def test_visit_PersistentAssignment():
+    visitor = ASTTemplate()
+    node_left = VarID(value="left")
+    node_right = VarID(value="right")
+    node = PersistentAssignment(left=node_left, op="<-", right=node_right)
+
+    visitor.visit_PersistentAssignment(node)
+
+    assert True
