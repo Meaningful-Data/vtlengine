@@ -4,10 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
@@ -246,7 +244,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
             )
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:
-                datasets[dataset_name].data = pd.DataFrame(
+                datasets[dataset_name].data = DataFrame(
                     columns=list(datasets[dataset_name].components.keys())
                 )
         return datasets, None

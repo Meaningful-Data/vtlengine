@@ -3,10 +3,8 @@ import os
 from copy import copy
 from typing import Any, Dict
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
@@ -30,11 +28,11 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 class HRComparison(Operators.Binary):
     @classmethod
     def imbalance_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else x - y
+        return None if isnull(x) or isnull(y) else x - y
 
     @staticmethod
     def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        result = pd.Series(True, index=left_series.index)
+        result = Series(True, index=left_series.index)
 
         if hr_mode in ("partial_null", "partial_zero"):
             mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
@@ -62,7 +60,7 @@ class HRComparison(Operators.Binary):
         left_series, right_series = left_series.align(right_series)
         remove_result = cls.hr_func(left_series, right_series, hr_mode)
         mask_valid = remove_result == True
-        result = pd.Series(remove_result, index=left_series.index)
+        result = Series(remove_result, index=left_series.index)
         result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
         return result
 
@@ -88,7 +86,7 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data.copy() if left.data is not None else DataFrame()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
@@ -135,7 +133,7 @@ class HRLessEqual(HRComparison):
 class HRBinNumeric(Operators.Binary):
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
+        if not isnull(x) and x == "REMOVE_VALUE":
             return "REMOVE_VALUE"
         return super().op_func(x, y)
 
@@ -196,7 +194,7 @@ class HAAssignment(Operators.Binary):
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data.copy() if left.data is not None else DataFrame()
         if right.data is not None:
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
         result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
@@ -204,9 +202,9 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
+        if not isnull(x) and x == "REMOVE_VALUE":
             return "REMOVE_VALUE"
-        if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
+        if hr_mode == "non_null" and isnull(x) or hr_mode == "non_zero" and x == 0:
             return "REMOVE_VALUE"
         return x
 
@@ -236,7 +234,7 @@ class Hierarchy(Operators.Operator):
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         if len(computed_dict) == 0:
-            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+            computed_data = DataFrame(columns=dataset.get_components_names())
         else:
             computed_data = cls.generate_computed_data(computed_dict)
         if output == "computed":

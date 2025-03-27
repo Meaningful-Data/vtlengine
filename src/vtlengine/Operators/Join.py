@@ -3,10 +3,8 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
@@ -189,7 +187,7 @@ class Join(Operator):
                         on=merge_join_keys,
                     )
                 else:
-                    result.data = pd.DataFrame()
+                    result.data = DataFrame()
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result
@@ -330,7 +328,7 @@ class CrossJoin(Join):
 
         for op in operands:
             if op.data is None:
-                op.data = pd.DataFrame(columns=op.get_components_names())
+                op.data = DataFrame(columns=op.get_components_names())
             if op is operands[0]:
                 result.data = op.data
             else:
@@ -407,7 +405,7 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
+        data = dataset.data[list(components.keys())] if dataset.data is not None else DataFrame()
 
         for component in components.values():
             component.name = (
@@ -435,6 +433,6 @@ class Apply(Operator):
         right.components = {
             comp.name: comp for comp in right.components.values() if comp.name in common
         }
-        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
-        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
+        left.data = left.data[list(common)] if left.data is not None else DataFrame()
+        right.data = right.data[list(common)] if right.data is not None else DataFrame()
         return left, right

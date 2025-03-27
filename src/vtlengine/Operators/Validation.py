@@ -2,10 +2,8 @@ import os
 from copy import copy
 from typing import Any, Dict, Optional
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -90,7 +88,7 @@ class Check(Operator):
             validation_element, imbalance_element, error_code, error_level, invalid
         )
         if validation_element.data is None:
-            validation_element.data = pd.DataFrame()
+            validation_element.data = DataFrame()
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
@@ -114,7 +112,7 @@ class Check(Operator):
 # noinspection PyTypeChecker
 class Validation(Operator):
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DataFrame:
         rule_list_df = []
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
@@ -198,8 +196,8 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = pd.DataFrame()
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DataFrame:
+        df = DataFrame()
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
             rule_df["ruleid"] = rule_name
@@ -207,7 +205,7 @@ class Check_Hierarchy(Validation):
             rule_df["errorlevel"] = rule_data["errorlevel"]
             df = pd.concat([df, rule_df], ignore_index=True)
         if df is None:
-            df = pd.DataFrame()
+            df = DataFrame()
         return df
 
     @classmethod

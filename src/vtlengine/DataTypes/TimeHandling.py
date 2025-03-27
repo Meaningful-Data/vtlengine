@@ -6,10 +6,10 @@ from datetime import date
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+import pandas as pd
+
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.Exceptions import SemanticError
 
@@ -246,7 +246,7 @@ class TimePeriodHandler:
         )
 
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
-        if pd.isnull(other):
+        if isnull(other):
             return None
 
         if py_op in (operator.eq, operator.ne):
@@ -402,7 +402,7 @@ class TimeIntervalHandler:
     __repr__ = __str__
 
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
-        if pd.isnull(other):
+        if isnull(other):
             return None
         if isinstance(other, str):
             if len(other) == 0:
@@ -436,8 +436,8 @@ class TimeIntervalHandler:
 
 
 def sort_dataframe_by_period_column(
-    data: pd.DataFrame, name: str, identifiers_names: list[str]
-) -> pd.DataFrame:
+    data: DataFrame, name: str, identifiers_names: list[str]
+) -> DataFrame:
     """
     Sorts dataframe by TimePeriod period_indicator and period_number.
     Assuming all values are present (only for identifiers)
@@ -494,7 +494,7 @@ def sort_time_period(series: Any) -> Any:
         series.to_list(),
         key=lambda s: (s.year, PERIOD_IND_MAPPING[s.period_indicator], s.period_number),
     )
-    return pd.Series(values_sorted, name=series.name)
+    return Series(values_sorted, name=series.name)
 
 
 def generate_period_range(
@@ -517,7 +517,7 @@ def generate_period_range(
 
 
 def check_max_date(str_: Optional[str]) -> Optional[str]:
-    if pd.isnull(str_) or str_ == "nan" or str_ == "NaT" or str_ is None:
+    if isnull(str_) or str_ == "nan" or str_ == "NaT" or str_ is None:
         return None
 
     if len(str_) == 9 and str_[7] == "-":

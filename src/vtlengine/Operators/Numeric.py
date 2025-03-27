@@ -6,10 +6,8 @@ import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -53,7 +51,7 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
@@ -208,7 +206,7 @@ class Logarithm(Binary):
 
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
+        if isnull(param):
             return None
         if param <= 0:
             raise SemanticError("2-1-15-3", op=cls.op, value=param)
@@ -235,7 +233,7 @@ class Power(Binary):
 
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
+        if isnull(param):
             return None
         return x**param
 
@@ -274,7 +272,7 @@ class Parameterized(Unary):
 
     @classmethod
     def op_func(cls, x: Any, param: Optional[Any]) -> Any:
-        return None if pd.isnull(x) else cls.py_op(x, param)
+        return None if isnull(x) else cls.py_op(x, param)
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
@@ -289,7 +287,7 @@ class Parameterized(Unary):
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         for measure_name in result.get_measures_names():
             try:
                 if isinstance(param, DataComponent):
@@ -319,7 +317,7 @@ class Parameterized(Unary):
     ) -> DataComponent:
         result = cls.validate(operand, param)
         if operand.data is None:
-            operand.data = pd.Series()
+            operand.data = Series()
         result.data = operand.data.copy()
         if isinstance(param, DataComponent):
             result.data = cls.apply_operation_two_series(operand.data, param.data)
@@ -360,7 +358,7 @@ class Round(Parameterized):
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
         multiplier = 1.0
-        if not pd.isnull(param):
+        if not isnull(param):
             multiplier = 10**param
 
         if x >= 0.0:
@@ -384,12 +382,12 @@ class Trunc(Parameterized):
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
         multiplier = 1.0
-        if not pd.isnull(param) and param is not None:
+        if not isnull(param) and param is not None:
             multiplier = 10**param
 
         truncated_value = int(x * multiplier) / multiplier
 
-        if not pd.isnull(param):
+        if not isnull(param):
             return truncated_value
 
         return int(truncated_value)

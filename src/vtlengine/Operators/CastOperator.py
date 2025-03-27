@@ -2,10 +2,8 @@ import os
 from copy import copy
 from typing import Any, Optional, Type, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
@@ -392,7 +390,7 @@ class Cast(Operator.Unary):
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
         new_measure = result_dataset.get_measures()[0]
-        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result_dataset.data = operand.data.copy() if operand.data is not None else DataFrame()
 
         if original_measure.name != new_measure.name:
             result_dataset.data.rename(

@@ -1,10 +1,8 @@
 import os
 from typing import Any, Dict, List
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
@@ -83,7 +81,7 @@ class Intersection(Set):
                 result.data = data
             else:
                 if data is None:
-                    result.data = pd.DataFrame(columns=result.get_identifiers_names())
+                    result.data = DataFrame(columns=result.get_identifiers_names())
                     break
                 result.data = result.data.merge(
                     data, how="inner", on=result.get_identifiers_names()
@@ -106,7 +104,7 @@ class Symdiff(Set):
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
             if data is None:
-                data = pd.DataFrame(columns=result.get_identifiers_names())
+                data = DataFrame(columns=result.get_identifiers_names())
             if result.data is None:
                 result.data = data
             else:
@@ -122,8 +120,8 @@ class Symdiff(Set):
                     result.data["_merge"] = result.data.apply(
                         lambda row: (
                             "left_only"
-                            if pd.isnull(row[f"{measure}_y"])
-                            else ("right_only" if pd.isnull(row[f"{measure}_x"]) else "both")
+                            if isnull(row[f"{measure}_y"])
+                            else ("right_only" if isnull(row[f"{measure}_x"]) else "both")
                         ),
                         axis=1,
                     )
@@ -158,7 +156,7 @@ class Setdiff(Set):
                 result.data = data
             else:
                 if data is None:
-                    data = pd.DataFrame(columns=result.get_identifiers_names())
+                    data = DataFrame(columns=result.get_identifiers_names())
                 result.data = result.data.merge(data, how="left", on=result.get_identifiers_names())
                 if len(result.data) > 0:
                     result.data = result.data[result.data.apply(cls.has_null, axis=1)]

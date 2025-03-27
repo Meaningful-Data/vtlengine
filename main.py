@@ -1,9 +1,7 @@
 import os
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine import run
 
@@ -25,7 +23,7 @@ def main():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    data_df = DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
 
     datapoints = {"DS_1": data_df}
 

@@ -3,10 +3,9 @@ import os
 import warnings
 from pathlib import Path
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
+import polars as pl
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
@@ -149,7 +148,7 @@ load_datasets_with_data_without_dp_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
+                    data=DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             None,
@@ -541,7 +540,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Id_2", "Me_1"],
                 index=[0, 1],
                 data=[(1, "A", 2), (1, "B", 4)],
@@ -569,7 +568,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Id_2", "Me_1"],
                 index=[0, 1],
                 data=[(1, "A", 3), (1, "B", 6)],
@@ -615,7 +614,7 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Id_2", "Me_1"],
                 index=[0, 1],
                 data=[(1, "A", 3), (1, "B", 6)],
@@ -653,7 +652,7 @@ def test_readme_example():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    data_df = DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
 
     datapoints = {"DS_1": data_df}
 
@@ -676,7 +675,7 @@ def test_readme_example():
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Me_1"],
                 index=[0, 1, 2],
                 data=[(1, 100), (2, 200), (3, 300)],
@@ -712,7 +711,7 @@ def test_readme_run():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    data_df = DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
 
     datapoints = {"DS_1": data_df}
 
@@ -735,7 +734,7 @@ def test_readme_run():
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Me_1"],
                 index=[0, 1, 2],
                 data=[(1, 100), (2, 200), (3, 300)],
@@ -821,7 +820,7 @@ def test_non_mandatory_fill_at():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
+    data_df = DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -856,10 +855,10 @@ def test_non_mandatory_fill_at():
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Id_2", "Me_1", "At_1"],
                 index=[0, 1, 2],
-                data=pd.DataFrame(
+                data=DataFrame(
                     {
                         "Id_1": [1, 1, 2],
                         "Id_2": ["A", "B", "A"],
@@ -911,7 +910,7 @@ def test_non_mandatory_fill_me():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
+    data_df = DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -946,10 +945,10 @@ def test_non_mandatory_fill_me():
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
+            data=DataFrame(
                 columns=["Id_1", "Id_2", "Me_1", "At_1"],
                 index=[0, 1, 2],
-                data=pd.DataFrame(
+                data=DataFrame(
                     {
                         "Id_1": [1, 1, 2],
                         "Id_2": ["A", "B", "A"],
@@ -1003,7 +1002,7 @@ def test_mandatory_at_error():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
+    data_df = DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "Me_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -1056,7 +1055,7 @@ def test_mandatory_me_error():
         ]
     }
 
-    data_df = pd.DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
+    data_df = DataFrame({"Id_1": [1, 1, 2], "Id_2": ["A", "B", "A"], "At_1": ["N", "N", "O"]})
 
     datapoints = {"DS_1": data_df}
 
@@ -1130,7 +1129,7 @@ def test_run_sdmx_function(data, structure):
     result = run_sdmx(script, datasets)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
-    assert isinstance(result["DS_r"].data, pd.DataFrame)
+    assert isinstance(result["DS_r"].data, (pd.DataFrame, pl.DataFrame))
 
 
 @pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)

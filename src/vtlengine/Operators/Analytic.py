@@ -4,10 +4,8 @@ from typing import List, Optional
 
 import duckdb
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -163,14 +161,14 @@ class Analytic(Operator.Unary):
     @classmethod
     def analyticfunc(
         cls,
-        df: pd.DataFrame,
+        df: DataFrame,
         partitioning: List[str],
         identifier_names: List[str],
         measure_names: List[str],
         ordering: List[OrderBy],
         window: Optional[Windowing],
         params: Optional[List[int]] = None,
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         """Annotation class
 
         It is used to analyze the attributes specified bellow
@@ -267,7 +265,7 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        df = operand.data.copy() if operand.data is not None else DataFrame()
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:

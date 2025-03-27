@@ -2,10 +2,8 @@ import os
 import sqlite3
 from typing import Any, Dict, List, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
@@ -110,8 +108,8 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
-    ) -> pd.DataFrame:
+        query: str, dataset_names: List[str], data: Dict[str, DataFrame]
+    ) -> DataFrame:
         try:
             conn = sqlite3.connect(":memory:")
             try:
@@ -144,7 +142,7 @@ class Eval(Unary):
                 raise ValueError(
                     f"External Routine dataset {ds_name} is not present in Eval operands"
                 )
-            empty_data = pd.DataFrame(
+            empty_data = DataFrame(
                 columns=[comp.name for comp in operands[ds_name].components.values()]
             )
             empty_data_dict[ds_name] = empty_data

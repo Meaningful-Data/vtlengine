@@ -1,26 +1,21 @@
 import inspect
 import json
-import os
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import sqlglot
 import sqlglot.expressions as exp
-from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
+
+import pandas as pd
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
-
-# from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
 
 @dataclass
@@ -41,8 +36,8 @@ class Scalar:
     def __eq__(self, other: Any) -> bool:
         same_name = self.name == other.name
         same_type = self.data_type == other.data_type
-        x = None if not pd.isnull(self.value) else self.value
-        y = None if not pd.isnull(other.value) else other.value
+        x = None if not isnull(self.value) else self.value
+        y = None if not isnull(other.value) else other.value
         same_value = x == y
         return same_name and same_type and same_value
 
@@ -69,7 +64,6 @@ class DataComponent:
     """A component of a dataset with data"""
 
     name: str
-    # data: Optional[Union[PandasSeries, SparkSeries]]
     data: Optional[Any]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
@@ -160,8 +154,7 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
-    data: Optional[PandasDataFrame] = None
+    data: Optional[DataFrame] = None
 
     def __post_init__(self) -> None:
         if self.data is not None:
@@ -335,7 +328,7 @@ class Dataset:
     @classmethod
     def from_json(cls, json_str: Any) -> "Dataset":
         components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
-        return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
+        return cls(json_str["name"], components, DataFrame(json_str["data"]))
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -4,10 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 import pytest
 
 from vtlengine import DataTypes, run
@@ -38,8 +36,7 @@ params = [
                     nullable=False,
                 ),
             },
-
-            data=pd.DataFrame(columns=["Id_1", "Id_2"]),
+            data=DataFrame(columns=["Id_1", "Id_2"]),
         ),
         filepath_output / "test_dataset.csv",
     ),
@@ -76,7 +73,7 @@ def test_save_datapoints_without_data_mock(mock_csv):
 
 @patch("pandas.DataFrame.to_csv")
 def test_save_datapoints_with_data_mock(mock_csv):
-    mock_data = pd.DataFrame(columns=["Id_1", "Id_2"])
+    mock_data = DataFrame(columns=["Id_1", "Id_2"])
     dataset = Dataset(
         name="test_dataset",
         components={
@@ -105,7 +102,7 @@ def test_save_datapoints_with_data_mock(mock_csv):
 
 @patch("pandas.DataFrame.to_csv")
 def test_save_datapoints_with_data_and_time_period_representation_mock(mock_csv):
-    mock_data = pd.DataFrame(columns=["Id_1", "Id_2"])
+    mock_data = DataFrame(columns=["Id_1", "Id_2"])
     dataset = Dataset(
         name="test_dataset",
         components={

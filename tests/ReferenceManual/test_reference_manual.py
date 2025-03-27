@@ -4,10 +4,8 @@ import os
 import warnings
 from pathlib import Path
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 import pytest
 
 from vtlengine.API import create_ast
@@ -163,7 +161,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                 for component in dataset_json["DataStructure"]
             }
             if dataset_name not in dataPoints:
-                data = pd.DataFrame(columns=components.keys())
+                data = DataFrame(columns=components.keys())
             else:
                 data = load_datapoints(
                     components=components,

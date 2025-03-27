@@ -1,10 +1,10 @@
 import os
 from typing import Any, Optional
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+import pandas as pd
+
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
@@ -40,7 +40,7 @@ class Binary(Operator.Binary):
 
 class And(Binary):
     op = AND
-    comp_op = pd.Series.__and__
+    comp_op = Series.__and__
 
     @staticmethod
     # @numba.njit
@@ -52,13 +52,13 @@ class And(Binary):
         return x and y
 
     # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    # def spark_op(cls, x: Series, y: Series) -> Series:
     #     return x & y
 
 
 class Or(Binary):
     op = OR
-    comp_op = pd.Series.__or__
+    comp_op = Series.__or__
 
     @staticmethod
     # @numba.njit
@@ -70,22 +70,22 @@ class Or(Binary):
         return x or y
 
     # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    # def spark_op(cls, x: Series, y: Series) -> Series:
     #     return x | y
 
 
 class Xor(Binary):
     op = XOR
-    comp_op = pd.Series.__xor__
+    comp_op = Series.__xor__
 
     @classmethod
     def py_op(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         return (x and not y) or (not x and y)
 
     # @classmethod
-    # def spark_op(cls, x: pd.Series, y: pd.Series) -> pd.Series:
+    # def spark_op(cls, x: Series, y: Series) -> Series:
     #     return x ^ y
 
 
@@ -98,7 +98,7 @@ class Not(Unary):
         return None if x is None else not x
 
     # @classmethod
-    # def spark_op(cls, series: pd.Series) -> pd.Series:
+    # def spark_op(cls, series: Series) -> Series:
     #     return ~series
 
     @classmethod

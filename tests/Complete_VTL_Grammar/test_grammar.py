@@ -2,10 +2,8 @@ import json
 import os
 from pathlib import Path
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null

@@ -2,10 +2,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
@@ -179,7 +177,7 @@ def semantic_analysis(
 def run(
     script: Union[str, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
+    datapoints: Union[Dict[str, DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",

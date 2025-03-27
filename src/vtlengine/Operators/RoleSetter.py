@@ -2,10 +2,8 @@ import os
 from copy import copy
 from typing import Any, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
@@ -44,7 +42,7 @@ class RoleSetter(Unary):
             raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
-            result.data = pd.Series([operand.value] * data_size, dtype=object)
+            result.data = Series([operand.value] * data_size, dtype=object)
         else:
             result.data = operand.data
         return result

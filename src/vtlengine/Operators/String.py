@@ -3,10 +3,8 @@ import os
 import re
 from typing import Any, Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -31,7 +29,7 @@ class Unary(Operator.Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
+        x = "" if isnull(x) else str(x)
         return cls.py_op(x)
 
     @classmethod
@@ -58,7 +56,7 @@ class Length(Unary):
     @classmethod
     def op_func(cls, x: Any) -> Any:
         result = super().op_func(x)
-        if pd.isnull(result):
+        if isnull(result):
             return 0
         return result
 
@@ -103,8 +101,8 @@ class Binary(Operator.Binary):
 
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        x = "" if pd.isnull(x) else str(x)
-        y = "" if pd.isnull(y) else str(y)
+        x = "" if isnull(x) else str(x)
+        y = "" if isnull(y) else str(y)
         return cls.py_op(x, y)
 
 
@@ -135,7 +133,7 @@ class Parameterized(Unary):
         param2: Optional[Any]
         x, param1, param2 = (args + (None, None))[:3]
 
-        x = "" if pd.isnull(x) else x
+        x = "" if isnull(x) else x
         return cls.py_op(x, param1, param2)
 
     @classmethod
@@ -158,7 +156,7 @@ class Parameterized(Unary):
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
                 result.data[measure_name] = cls.apply_operation_series(
@@ -184,7 +182,7 @@ class Parameterized(Unary):
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        result.data = operand.data.copy() if operand.data is not None else Series()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
             result.data = cls.apply_operation_series(result.data, param1, param2)
         else:
@@ -238,9 +236,9 @@ class Parameterized(Unary):
             length = args[0]
 
         if param is None:
-            return pd.Series(index=range(length), dtype=object)
+            return Series(index=range(length), dtype=object)
         if isinstance(param, Scalar):
-            return pd.Series(data=[param.value], index=range(length))
+            return Series(data=[param.value], index=range(length))
         return param.data
 
     @classmethod
@@ -251,7 +249,7 @@ class Parameterized(Unary):
 
         param1_data = cls.generate_series_from_param(param1, len(data))
         param2_data = cls.generate_series_from_param(param2, len(data))
-        df = pd.DataFrame([data, param1_data, param2_data]).T
+        df = DataFrame([data, param1_data, param2_data]).T
         n1, n2, n3 = df.columns
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3]), axis=1)
 
@@ -268,8 +266,8 @@ class Substr(Parameterized):
     @classmethod
     def py_op(cls, x: str, param1: Any, param2: Any) -> Any:
         x = str(x)
-        param1 = None if pd.isnull(param1) else int(param1)
-        param2 = None if pd.isnull(param2) else int(param2)
+        param1 = None if isnull(param1) else int(param1)
+        param2 = None if isnull(param2) else int(param2)
         if param1 is None and param2 is None:
             return x
         if param1 is None:
@@ -301,9 +299,9 @@ class Substr(Parameterized):
     @classmethod
     def check_param_value(cls, param: Optional[Any], position: int) -> None:
         if param is not None:
-            if not pd.isnull(param) and not param >= 1 and position == 1:
+            if not isnull(param) and not param >= 1 and position == 1:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-            elif not pd.isnull(param) and not param >= 0 and position == 2:
+            elif not isnull(param) and not param >= 0 and position == 2:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 
@@ -313,9 +311,9 @@ class Replace(Parameterized):
 
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
-        if pd.isnull(param1):
+        if isnull(param1):
             return ""
-        elif pd.isnull(param2):
+        elif isnull(param2):
             param2 = ""
         x = str(x)
         if param1 is not None and param2 is not None:
@@ -405,9 +403,9 @@ class Instr(Parameterized):
 
     @classmethod
     def check_param_value(cls, param: Any, position: int) -> None:
-        if position == 2 and not pd.isnull(param) and param < 1:
+        if position == 2 and not isnull(param) and param < 1:
             raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif position == 3 and not pd.isnull(param) and param < 1:
+        elif position == 3 and not isnull(param) and param < 1:
             raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1")
 
     @classmethod
@@ -428,7 +426,7 @@ class Instr(Parameterized):
         param2_data = cls.generate_series_from_param(param2, len(data))
         param3_data = cls.generate_series_from_param(param3, len(data))
 
-        df = pd.DataFrame([data, param1_data, param2_data, param3_data]).T
+        df = DataFrame([data, param1_data, param2_data, param3_data]).T
         n1, n2, n3, n4 = df.columns
         return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3], x[n4]), axis=1)
 
@@ -441,7 +439,7 @@ class Instr(Parameterized):
         param3: Optional[Union[DataComponent, Scalar]],
     ) -> Dataset:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         for measure_name in operand.get_measures_names():
             if (
                 isinstance(param1, DataComponent)
@@ -473,7 +471,7 @@ class Instr(Parameterized):
         param3: Optional[Union[DataComponent, Scalar]],
     ) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        result.data = operand.data.copy() if operand.data is not None else Series()
         if (
             isinstance(param1, DataComponent)
             or isinstance(param2, DataComponent)
@@ -527,7 +525,7 @@ class Instr(Parameterized):
         param2: Optional[Any],
         param3: Optional[Any],
     ) -> Any:
-        if pd.isnull(x):
+        if isnull(x):
             return None
         return cls.py_op(x, param1, param2, param3)
 
@@ -540,7 +538,7 @@ class Instr(Parameterized):
         occurrence: Optional[int],
     ) -> Any:
         str_value = str(str_value)
-        if not pd.isnull(start):
+        if not isnull(start):
             if isinstance(start, (int, float)):
                 start = int(start - 1)
             else:
@@ -551,7 +549,7 @@ class Instr(Parameterized):
         else:
             start = 0
 
-        if not pd.isnull(occurrence):
+        if not isnull(occurrence):
             if isinstance(occurrence, (int, float)):
                 occurrence = int(occurrence - 1)
             else:
@@ -564,7 +562,7 @@ class Instr(Parameterized):
                 )
         else:
             occurrence = 0
-        if pd.isnull(str_to_find):
+        if isnull(str_to_find):
             return 0
         else:
             str_to_find = str(str_to_find)

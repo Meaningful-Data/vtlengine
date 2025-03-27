@@ -5,10 +5,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
@@ -73,8 +71,8 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
 
 
 def _sanitize_pandas_columns(
-    components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
-) -> pd.DataFrame:
+    components: Dict[str, Component], csv_path: Union[str, Path], data: DataFrame
+) -> DataFrame:
     # Fast loading from SDMX-CSV
     if (
         "DATAFLOW" in data.columns
@@ -108,7 +106,7 @@ def _sanitize_pandas_columns(
     return data
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
+def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
     data = pd.read_csv(
@@ -131,8 +129,8 @@ def _parse_boolean(value: str) -> bool:
 
 
 def _validate_pandas(
-    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
-) -> pd.DataFrame:
+    components: Dict[str, Component], data: DataFrame, dataset_name: str
+) -> DataFrame:
     warnings.filterwarnings("ignore", category=FutureWarning)
     # Identifier checking
 
@@ -214,9 +212,9 @@ def load_datapoints(
     components: Dict[str, Component],
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
-) -> pd.DataFrame:
+) -> DataFrame:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
-        return pd.DataFrame(columns=list(components.keys()))
+        return DataFrame(columns=list(components.keys()))
     elif isinstance(csv_path, (str, Path)):
         if isinstance(csv_path, Path):
             _validate_csv_path(components, csv_path)
@@ -229,4 +227,4 @@ def load_datapoints(
 
 
 def _fill_dataset_empty_data(dataset: Dataset) -> None:
-    dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))
+    dataset.data = DataFrame(columns=list(dataset.components.keys()))

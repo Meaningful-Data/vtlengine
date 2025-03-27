@@ -2,10 +2,8 @@ import os
 from copy import copy
 from typing import List, Type, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
@@ -60,7 +58,7 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data.copy() if dataset.data is not None else DataFrame()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -109,7 +107,7 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = copy(dataset.data) if dataset.data is not None else DataFrame()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -131,7 +129,7 @@ class Filter(Operator):
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data.copy() if dataset.data is not None else DataFrame()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             true_indexes = condition.data[condition.data == True].index
             result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
@@ -340,7 +338,7 @@ class Sub(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = copy(dataset.data) if dataset.data is not None else DataFrame()
         operand_names = [operand.name for operand in operands]
         if dataset.data is not None and len(dataset.data) > 0:
             # Filter the Dataframe

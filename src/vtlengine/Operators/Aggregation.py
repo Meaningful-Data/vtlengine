@@ -3,10 +3,8 @@ from copy import copy
 from typing import Any, List, Optional
 
 import duckdb
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -56,7 +54,7 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Operator.Unary):
     @classmethod
-    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
+    def _handle_data_types(cls, data: DataFrame, measures: List[Component], mode: str) -> None:
         to_replace: List[Optional[str]]
         new_value: List[Optional[str]]
         if cls.op == COUNT:
@@ -180,11 +178,11 @@ class Aggregation(Operator.Unary):
     @classmethod
     def _agg_func(
         cls,
-        df: pd.DataFrame,
+        df: DataFrame,
         grouping_keys: Optional[List[str]],
         measure_names: Optional[List[str]],
         having_expression: Optional[str],
-    ) -> pd.DataFrame:
+    ) -> DataFrame:
         grouping_names = (
             [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
         )
@@ -251,7 +249,7 @@ class Aggregation(Operator.Unary):
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result_df = operand.data.copy() if operand.data is not None else DataFrame()
         measure_names = operand.get_measures_names()
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
@@ -264,7 +262,7 @@ class Aggregation(Operator.Unary):
         aux_df = (
             operand.data[grouping_keys].drop_duplicates()
             if operand.data is not None
-            else pd.DataFrame()
+            else DataFrame()
         )
         if len(grouping_keys) == 0:
             aux_df = result_df
@@ -272,7 +270,7 @@ class Aggregation(Operator.Unary):
             if cls.op == COUNT and len(result_df) == 0:
                 aux_df["int_var"] = 0
         elif len(aux_df) == 0:
-            aux_df = pd.DataFrame(columns=result.get_components_names())
+            aux_df = DataFrame(columns=result.get_components_names())
         else:
             aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:

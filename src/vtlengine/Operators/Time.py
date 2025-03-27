@@ -3,10 +3,8 @@ import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
@@ -74,7 +72,7 @@ class Time(Operators.Operator):
         return str(reference_id)
 
     @classmethod
-    def sort_by_time(cls, operand: Dataset) -> Optional[pd.DataFrame]:
+    def sort_by_time(cls, operand: Dataset) -> Optional[DataFrame]:
         time_id = cls._get_time_id(operand)
         if time_id is None:
             return None
@@ -138,7 +136,7 @@ class Unary(Time):
     @classmethod
     def evaluate(cls, operand: Any) -> Any:
         result = cls.validate(operand)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         if len(operand.data) < 2:
             return result
 
@@ -162,7 +160,7 @@ class Unary(Time):
         return result
 
     @classmethod
-    def _period_accumulation(cls, data: pd.DataFrame, measure_names: List[str]) -> pd.DataFrame:
+    def _period_accumulation(cls, data: DataFrame, measure_names: List[str]) -> DataFrame:
         data = data.copy()
         data["Period_group_col"] = (
             data[cls.time_id].apply(cls._get_period).apply(lambda x: cls.PERIOD_ORDER[x])
@@ -228,7 +226,7 @@ class Period_indicator(Unary):
         result.data = (
             operand.data.copy()[result.get_identifiers_names()]
             if (operand.data is not None)
-            else pd.Series()
+            else Series()
         )
         period_series: Any = result.data[cls.time_id].map(cls._get_period)
         result.data["duration_var"] = period_series
@@ -264,7 +262,7 @@ class Fill_time_series(Binary):
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
         if operand.data is None:
-            operand.data = pd.DataFrame()
+            operand.data = DataFrame()
         result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
@@ -305,7 +303,7 @@ class Fill_time_series(Binary):
         return Dataset(name="result", components=operand.components.copy(), data=None)
 
     @classmethod
-    def max_min_from_period(cls, data: pd.DataFrame, mode: str = "all") -> Dict[str, Any]:
+    def max_min_from_period(cls, data: DataFrame, mode: str = "all") -> Dict[str, Any]:
         result_dict: Dict[Any, Any] = {}
         data = data.assign(
             Periods_col=data[cls.time_id].apply(cls._get_period),
@@ -347,14 +345,14 @@ class Fill_time_series(Binary):
         return result_dict
 
     @classmethod
-    def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
+    def fill_periods(cls, data: DataFrame, fill_type: str) -> DataFrame:
         result_data = cls.period_filler(data, single=(fill_type != "all"))
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def period_filler(cls, data: pd.DataFrame, single: bool = False) -> pd.DataFrame:
+    def period_filler(cls, data: DataFrame, single: bool = False) -> DataFrame:
         filled_data = []
         MAX_MIN = cls.max_min_from_period(data, mode="single" if single else "all")
         cls.periods = (
@@ -419,7 +417,7 @@ class Fill_time_series(Binary):
         return row.to_frame().T
 
     @classmethod
-    def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
+    def max_min_from_date(cls, data: DataFrame, fill_type: str = "all") -> Dict[str, Any]:
         def compute_min_max(group: Any) -> Dict[str, Any]:
             min_date = cls.parse_date(group.min())
             max_date = cls.parse_date(group.max())
@@ -437,21 +435,21 @@ class Fill_time_series(Binary):
         return result_dict
 
     @classmethod
-    def fill_dates(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
+    def fill_dates(cls, data: DataFrame, fill_type: str, min_frequency: str) -> DataFrame:
         result_data = cls.date_filler(data, fill_type, min_frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def date_filler(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
+    def date_filler(cls, data: DataFrame, fill_type: str, min_frequency: str) -> DataFrame:
         MAX_MIN = cls.max_min_from_date(data, fill_type)
         date_format = None
         filled_data = []
 
-        def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (pd.DataFrame, str):  # type: ignore[syntax]
+        def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (DataFrame, str):  # type: ignore[syntax]
             date_range = pd.date_range(start=min_max["min"], end=min_max["max"], freq=min_frequency)
-            date_df = pd.DataFrame(date_range, columns=[cls.time_id])
+            date_df = DataFrame(date_range, columns=[cls.time_id])
             date_df[cls.other_ids] = group.iloc[0][cls.other_ids]
             date_df[cls.measures] = None
             return date_df, min_max["date_format"]
@@ -468,7 +466,7 @@ class Fill_time_series(Binary):
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
-    def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
+    def max_min_from_time(cls, data: DataFrame, fill_type: str = "all") -> Dict[str, Any]:
         data = data.applymap(str).sort_values(  # type: ignore[operator]
             by=cls.other_ids + [cls.time_id]
         )
@@ -490,19 +488,17 @@ class Fill_time_series(Binary):
             }
 
     @classmethod
-    def fill_time_intervals(
-        cls, data: pd.DataFrame, fill_type: str, frequency: str
-    ) -> pd.DataFrame:
+    def fill_time_intervals(cls, data: DataFrame, fill_type: str, frequency: str) -> DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
         return result_data[~duplicated | not_na]
 
     @classmethod
-    def time_filler(cls, data: pd.DataFrame, fill_type: str, frequency: str) -> pd.DataFrame:
+    def time_filler(cls, data: DataFrame, fill_type: str, frequency: str) -> DataFrame:
         MAX_MIN = cls.max_min_from_time(data, fill_type)
 
-        def fill_group(group_df: pd.DataFrame) -> pd.DataFrame:
+        def fill_group(group_df: DataFrame) -> DataFrame:
             group_key = group_df.iloc[0][cls.other_ids].values
             if fill_type != "all":
                 group_key = group_key[0] if len(group_key) == 1 else tuple(group_key)
@@ -547,7 +543,7 @@ class Time_Shift(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Any) -> Dataset:
         result = cls.validate(operand, shift_value)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
 
@@ -741,7 +737,7 @@ class Time_Aggregation(Time):
         cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data.copy() if operand.data is not None else DataFrame()
         time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(

@@ -4,10 +4,9 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
+import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -42,7 +41,7 @@ class IsNull(Unary):
     """
 
     op = ISNULL
-    py_op = pd.isnull
+    py_op = isnull
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -50,7 +49,7 @@ class IsNull(Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        return pd.isnull(x)
+        return isnull(x)
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
@@ -98,15 +97,15 @@ class Binary(Operator.Binary):
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         x, y = cls._cast_values(x, y)
         return cls.py_op(x, y)
 
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if pd.isnull(scalar):
-            return pd.Series(None, index=series.index)
+        if isnull(scalar):
+            return Series(None, index=series.index)
 
         first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
         if first_non_null is not None:
@@ -188,7 +187,7 @@ class In(Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
         if right_series.data_type == Null:
-            return pd.Series(None, index=left_series.index)
+            return Series(None, index=left_series.index)
 
         return left_series.map(lambda x: x in right_series, na_action="ignore")
 
@@ -218,9 +217,9 @@ class Match(Binary):
 
     @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
-        if isinstance(x, pd.Series):
+        if isinstance(x, Series):
             return x.str.fullmatch(y)
         return bool(re.fullmatch(str(y), str(x)))
 
@@ -248,20 +247,20 @@ class Between(Operator.Operator):
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
         return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
+            None if (isnull(x) or isnull(y) or isnull(z)) else y <= x <= z  # type: ignore[operator]
         )
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
-        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(
-            to_data, pd.Series
+        control_any_series_from_to = isinstance(from_data, Series) or isinstance(
+            to_data, Series
         )
         if control_any_series_from_to:
-            if not isinstance(from_data, pd.Series):
-                from_data = pd.Series(from_data, index=series.index, dtype=object)
-            if not isinstance(to_data, pd.Series):
-                to_data = pd.Series(to_data, index=series.index)
-            df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
+            if not isinstance(from_data, Series):
+                from_data = Series(from_data, index=series.index, dtype=object)
+            if not isinstance(to_data, Series):
+                to_data = Series(to_data, index=series.index)
+            df = DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
             return df.apply(
                 lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
                 axis=1,
@@ -349,8 +348,8 @@ class Between(Operator.Operator):
         to_data = to.data if isinstance(to, DataComponent) else to.value
 
         if (
-            isinstance(from_data, pd.Series)
-            and isinstance(to_data, pd.Series)
+            isinstance(from_data, Series)
+            and isinstance(to_data, Series)
             and len(from_data) != len(to_data)
         ):
             raise ValueError("From and To must have the same length")
@@ -373,12 +372,12 @@ class Between(Operator.Operator):
             else:
                 result.value = from_data <= operand.value <= to_data
         elif isinstance(operand, Scalar) and (
-            isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
+            isinstance(from_data, Series) or isinstance(to_data, Series)
         ):  # From or To is a DataComponent, or both
-            if isinstance(from_data, pd.Series):
-                series = pd.Series(operand.value, index=from_data.index, dtype=object)
-            elif isinstance(to_data, pd.Series):
-                series = pd.Series(operand.value, index=to_data.index, dtype=object)
+            if isinstance(from_data, Series):
+                series = Series(operand.value, index=from_data.index, dtype=object)
+            elif isinstance(to_data, Series):
+                series = Series(operand.value, index=to_data.index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
                 name=operand.name,
@@ -446,7 +445,7 @@ class ExistIn(Operator.Operator):
             )
             true_results = true_results[reference_identifiers_names]
         else:
-            true_results = pd.DataFrame(columns=reference_identifiers_names)
+            true_results = DataFrame(columns=reference_identifiers_names)
 
         # Check for empty values
         if true_results.empty:
@@ -454,7 +453,7 @@ class ExistIn(Operator.Operator):
         else:
             true_results["bool_var"] = True
         if dataset_1.data is None:
-            dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
+            dataset_1.data = DataFrame(columns=reference_identifiers_names)
         final_result = pd.merge(
             dataset_1.data,
             true_results,

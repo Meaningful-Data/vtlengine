@@ -4,10 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -139,10 +137,10 @@ class InterpreterAnalyzer(ASTTemplate):
     then_condition_dataset: Optional[List[Any]] = None
     else_condition_dataset: Optional[List[Any]] = None
     ruleset_dataset: Optional[Dataset] = None
-    rule_data: Optional[pd.DataFrame] = None
+    rule_data: Optional[DataFrame] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
-    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
+    hr_agg_rules_computed: Optional[Dict[str, DataFrame]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
@@ -503,7 +501,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset = Dataset(
                     name=operand.name,
                     components=deepcopy(operand.components),
-                    data=pd.DataFrame(columns=operand.get_components_names()),
+                    data=DataFrame(columns=operand.get_components_names()),
                 )
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(), node.grouping_op, groupings
@@ -1441,9 +1439,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ):
                 measure_name = left_operand.get_measures_names()[0]
                 if left_operand.data is None:
-                    left_operand.data = pd.DataFrame({measure_name: []})
+                    left_operand.data = DataFrame({measure_name: []})
                 if right_operand.data is None:
-                    right_operand.data = pd.DataFrame({measure_name: []})
+                    right_operand.data = DataFrame({measure_name: []})
                 left_null_indexes = set(
                     left_operand.data[left_operand.data[measure_name].isnull()].index
                 )
@@ -1573,11 +1571,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 filtered_data = data.iloc[indexes]
                 then_indexes = list(filtered_data[filtered_data == True].index)
                 else_indexes = list(set(indexes) - set(then_indexes))
-                then_data = pd.DataFrame({name: then_indexes})
-                else_data = pd.DataFrame({name: else_indexes})
+                then_data = DataFrame({name: then_indexes})
+                else_data = DataFrame({name: else_indexes})
         else:
-            then_data = pd.DataFrame({name: []})
-            else_data = pd.DataFrame({name: []})
+            then_data = DataFrame({name: []})
+            else_data = DataFrame({name: []})
         components.update(
             {
                 name: Component(

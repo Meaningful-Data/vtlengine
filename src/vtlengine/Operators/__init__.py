@@ -2,10 +2,8 @@ import os
 from copy import copy
 from typing import Any, Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -179,13 +177,13 @@ def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
     join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
+    left_data: Optional[DataFrame] = None,
+    right_data: Optional[DataFrame] = None,
 ) -> None:
     if left_data is None:
-        left_data = pd.DataFrame()
+        left_data = DataFrame()
     if right_data is None:
-        right_data = pd.DataFrame()
+        right_data = DataFrame()
 
     left_type_name: str = str(c_left.data_type.__name__)
     right_type_name: str = str(c_right.data_type.__name__)
@@ -224,7 +222,7 @@ class Binary(Operator):
     def op_func(cls, *args: Any) -> Any:
         x, y = args
 
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         return cls.py_op(x, y)
 
@@ -239,7 +237,7 @@ class Binary(Operator):
             result.loc[nulls] = None
             return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
+        return Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
@@ -249,7 +247,7 @@ class Binary(Operator):
         series_left: bool,
     ) -> Any:
         if scalar is None:
-            return pd.Series(None, index=series.index)
+            return Series(None, index=series.index)
         if series_left:
             return series.map(lambda x: cls.py_op(x, scalar), na_action="ignore")
         else:
@@ -543,7 +541,7 @@ class Binary(Operator):
         try:
             # Merge the data
             if base_operand_data is None or other_operand_data is None:
-                result_data: pd.DataFrame = pd.DataFrame()
+                result_data: DataFrame = DataFrame()
             else:
                 result_data = pd.merge(
                     base_operand_data,
@@ -601,7 +599,7 @@ class Binary(Operator):
         cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
     ) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_data = dataset.data.copy() if dataset.data is not None else DataFrame()
         result_dataset.data = result_data
 
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
@@ -629,11 +627,11 @@ class Binary(Operator):
         result_component = cls.component_validation(left_operand, right_operand)
         left_data = cls.cast_time_types(
             left_operand.data_type,
-            left_operand.data.copy() if left_operand.data is not None else pd.Series(),
+            left_operand.data.copy() if left_operand.data is not None else Series(),
         )
         right_data = cls.cast_time_types(
             right_operand.data_type,
-            (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
+            (right_operand.data.copy() if right_operand.data is not None else Series()),
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         return result_component
@@ -645,7 +643,7 @@ class Binary(Operator):
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = cls.cast_time_types(
             component.data_type,
-            component.data.copy() if component.data is not None else pd.Series(),
+            component.data.copy() if component.data is not None else Series(),
         )
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
@@ -660,7 +658,7 @@ class Binary(Operator):
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_data = dataset.data.copy() if dataset.data is not None else DataFrame()
 
         for measure_name in dataset.get_measures_names():
             if dataset.data is not None:
@@ -680,7 +678,7 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(
-            component.data.copy() if component.data is not None else pd.Series(),
+            component.data.copy() if component.data is not None else Series(),
             scalar_set,
         )
         return result_component
@@ -729,7 +727,7 @@ class Unary(Operator):
     def op_func(cls, *args: Any) -> Any:
         x = args[0]
 
-        return None if pd.isnull(x) else cls.py_op(x)
+        return None if isnull(x) else cls.py_op(x)
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -860,7 +858,7 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result_data = operand.data.copy() if operand.data is not None else DataFrame()
         for measure_name in operand.get_measures_names():
             result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
@@ -881,6 +879,6 @@ class Unary(Operator):
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_component.data = cls.apply_operation_component(
-            operand.data.copy() if operand.data is not None else pd.Series()
+            operand.data.copy() if operand.data is not None else Series()
         )
         return result_component

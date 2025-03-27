@@ -2,10 +2,8 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-if os.getenv("POLARS", False):
-    import polars as pd
-else:
-    import pandas as pd
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.files.output._time_period_representation import (
@@ -21,7 +19,7 @@ def save_datapoints(
     output_path: Union[str, Path],
 ) -> None:
     if dataset.data is None:
-        dataset.data = pd.DataFrame()
+        dataset.data = DataFrame()
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
     if isinstance(output_path, str):
