@@ -10,18 +10,18 @@ POLARS_STR = ["polars", "pl"]
 backend_df = "pl" if os.getenv("BACKEND_DF", "").lower() in POLARS_STR else "pd"
 
 if backend_df == "pd":
+
     class DataFrame(pd.DataFrame):
         pass
 
-
     class Series(pd.Series):
         pass
-
 
     # isnull = pd.isnull
 
 
 elif backend_df == "pl":
+
     class DataFrame(pl.DataFrame):
         def __init__(self, data=None, columns=None):
             if isinstance(data, dict):
@@ -63,6 +63,7 @@ elif backend_df == "pl":
 
         def rename(self, columns, strict: bool = True) -> DataFrame:
             return pl.DataFrame.rename(self=self, mapping=columns, strict=strict)
+
         def to_csv(self, path):
             self.write_csv(path)
 
@@ -72,7 +73,6 @@ elif backend_df == "pl":
         @property
         def T(self):
             return self.transpose()
-
 
     # class Series(pl.Series):
     #     type = pl.Series
@@ -105,7 +105,6 @@ elif backend_df == "pl":
     #     @property
     #     def values(self):
     #         return self.to_numpy()
-
 
     class Series(pd.Series):
         pass

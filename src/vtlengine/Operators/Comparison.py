@@ -252,9 +252,7 @@ class Between(Operator.Operator):
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
-        control_any_series_from_to = isinstance(from_data, Series) or isinstance(
-            to_data, Series
-        )
+        control_any_series_from_to = isinstance(from_data, Series) or isinstance(to_data, Series)
         if control_any_series_from_to:
             if not isinstance(from_data, Series):
                 from_data = Series(from_data, index=series.index, dtype=object)
