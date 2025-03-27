@@ -1,17 +1,12 @@
 import calendar
 import copy
 import operator
-import os
 from datetime import date
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
-import pandas as pd
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
-
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 

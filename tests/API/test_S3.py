@@ -1,10 +1,8 @@
 import json
-import os
 from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 import pytest
 
@@ -13,6 +11,7 @@ from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"

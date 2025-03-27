@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
@@ -33,6 +32,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 # pd.options.mode.chained_assignment = None
 

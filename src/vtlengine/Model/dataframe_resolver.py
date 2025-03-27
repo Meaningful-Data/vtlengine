@@ -1,5 +1,4 @@
 import os
-from typing import Callable
 
 import pandas as pd
 import polars as pl

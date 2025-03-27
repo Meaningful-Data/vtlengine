@@ -1,8 +1,6 @@
-import os
 from copy import copy
 from typing import Any, Dict, Optional
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
@@ -15,6 +13,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 from vtlengine.Operators import Operator
 
 

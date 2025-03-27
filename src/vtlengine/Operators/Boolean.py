@@ -1,14 +1,11 @@
-import os
 from typing import Any, Optional
 
-import pandas as pd
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
 from vtlengine.DataTypes import Boolean
+from vtlengine.Model.dataframe_resolver import Series, isnull
 
 
 class Unary(Operator.Unary):

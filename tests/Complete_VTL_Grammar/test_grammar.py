@@ -1,8 +1,6 @@
 import json
-import os
 from pathlib import Path
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine import API, DataTypes, run

@@ -1,9 +1,7 @@
-import os
 from copy import copy
 from typing import Any, List, Optional
 
 import duckdb
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -38,6 +36,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 
 def extract_grouping_identifiers(

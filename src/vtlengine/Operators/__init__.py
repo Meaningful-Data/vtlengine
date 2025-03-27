@@ -2,7 +2,6 @@ import os
 from copy import copy
 from typing import Any, Optional, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
@@ -34,6 +33,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 

@@ -1,9 +1,7 @@
-import os
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 import vtlengine.Operators as Operators
@@ -42,6 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model.dataframe_resolver import DataFrame, Series
 
 
 class Time(Operators.Operator):

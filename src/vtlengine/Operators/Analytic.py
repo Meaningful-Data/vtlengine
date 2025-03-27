@@ -1,11 +1,7 @@
-import os
 from copy import copy
 from typing import List, Optional
 
 import duckdb
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -35,6 +31,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 return_integer_operators = [MAX, MIN, SUM]
 

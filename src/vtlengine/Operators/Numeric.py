@@ -1,13 +1,9 @@
 import _random
 import math
 import operator
-import os
 import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -31,6 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 

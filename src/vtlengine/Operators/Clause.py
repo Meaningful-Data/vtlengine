@@ -1,9 +1,5 @@
-import os
 from copy import copy
 from typing import List, Type, Union
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
@@ -16,6 +12,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model.dataframe_resolver import DataFrame
 from vtlengine.Operators import Operator
 
 

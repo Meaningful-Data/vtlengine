@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -28,6 +27,7 @@ from vtlengine.files.parser._time_checking import (
     check_time_period,
 )
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,

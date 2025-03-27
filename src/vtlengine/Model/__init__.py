@@ -5,17 +5,16 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from pandas._testing import assert_frame_equal
-
-import pandas as pd
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 
 @dataclass

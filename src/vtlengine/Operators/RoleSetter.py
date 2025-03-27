@@ -1,12 +1,9 @@
-import os
 from copy import copy
 from typing import Any, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
-
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
+from vtlengine.Model.dataframe_resolver import Series
 from vtlengine.Operators import Unary
 
 ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]

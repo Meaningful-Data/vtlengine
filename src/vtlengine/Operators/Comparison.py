@@ -1,11 +1,8 @@
 import operator
-import os
 import re
 from copy import copy
 from typing import Any, Optional, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -24,6 +21,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 
 
 class Unary(Operator.Unary):

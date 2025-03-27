@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 import vtlengine.AST as AST
@@ -65,6 +64,7 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
+from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast

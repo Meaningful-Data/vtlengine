@@ -1,13 +1,12 @@
-import os
 import sqlite3
 from typing import Any, Dict, List, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 from vtlengine.Operators import Binary, Unary
 
 

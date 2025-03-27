@@ -4,8 +4,6 @@ import os
 import warnings
 from pathlib import Path
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 import pytest
 
 from vtlengine.API import create_ast
@@ -13,6 +11,7 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"

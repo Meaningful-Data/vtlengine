@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
-import pandas as pd
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
@@ -36,6 +34,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Model.dataframe_resolver import DataFrame
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
 base_path = Path(__file__).parent

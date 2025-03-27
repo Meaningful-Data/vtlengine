@@ -1,9 +1,7 @@
 import json
-import os
 import warnings
 from pathlib import Path
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 import polars as pl
 import pytest
@@ -24,6 +22,7 @@ from vtlengine.API._InternalApi import (
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 # Path selection
 base_path = Path(__file__).parent

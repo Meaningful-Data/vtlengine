@@ -1,10 +1,7 @@
-import os
 from copy import copy
 from typing import Any, List, Union
 
 import numpy as np
-
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.DataTypes import (
@@ -16,6 +13,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Model.dataframe_resolver import DataFrame, Series
 from vtlengine.Operators import Binary, Operator
 
 

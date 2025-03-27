@@ -1,7 +1,6 @@
 import json
 import os
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 import pytest
 

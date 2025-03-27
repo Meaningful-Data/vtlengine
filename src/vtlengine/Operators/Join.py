@@ -1,15 +1,14 @@
-import os
 from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model.dataframe_resolver import DataFrame
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 
 

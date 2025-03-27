@@ -1,8 +1,6 @@
-import os
 from copy import copy
 from typing import Any, Optional, Type, Union
 
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -24,6 +22,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model.dataframe_resolver import DataFrame
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
