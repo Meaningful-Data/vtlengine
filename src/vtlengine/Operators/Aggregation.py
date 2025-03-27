@@ -208,7 +208,7 @@ class Aggregation(Operator.Unary):
                 e = f'"{e}"'
                 if cls.type_to_check is not None and cls.op != COUNT:
                     functions += (
-                        f"{cls.py_op}(CAST({e} AS REAL)) AS {e}, "  # Count can only be one here
+                        f"{cls.py_op}(CAST({e} AS DOUBLE)) AS {e}, "  # Count can only be one here
                     )
                 elif cls.op == COUNT:
                     functions += f"{cls.py_op}({e}) AS int_var, "

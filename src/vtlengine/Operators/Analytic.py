@@ -229,7 +229,7 @@ class Analytic(Operator.Unary):
             if cls.op == RANK:
                 measure_query = f"{cls.sql_op}()"
             elif cls.op == RATIO_TO_REPORT:
-                measure_query = f"CAST({measure} AS REAL) / SUM(CAST({measure} AS REAL))"
+                measure_query = f"CAST({measure} AS DOUBLE) / SUM(CAST({measure} AS DOUBLE))"
             elif cls.op in [LAG, LEAD]:
                 measure_query = f"{cls.sql_op}({measure}, {','.join(map(str, params or []))})"
             else:
