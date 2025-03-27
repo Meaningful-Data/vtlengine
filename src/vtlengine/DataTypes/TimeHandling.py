@@ -1,11 +1,15 @@
 import calendar
 import copy
 import operator
+import os
 from datetime import date
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.Exceptions import SemanticError
 

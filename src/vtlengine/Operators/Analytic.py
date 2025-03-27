@@ -1,9 +1,13 @@
+import os
 from copy import copy
 from typing import List, Optional
 
 import duckdb
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing

@@ -1,8 +1,12 @@
+import os
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (

@@ -1,9 +1,13 @@
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 import pytest
 
 from vtlengine import DataTypes, run
@@ -34,6 +38,7 @@ params = [
                     nullable=False,
                 ),
             },
+
             data=pd.DataFrame(columns=["Id_1", "Id_2"]),
         ),
         filepath_output / "test_dataset.csv",

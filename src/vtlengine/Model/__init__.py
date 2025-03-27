@@ -1,11 +1,15 @@
 import inspect
 import json
+import os
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from pandas import DataFrame as PandasDataFrame

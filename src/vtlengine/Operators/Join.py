@@ -1,8 +1,12 @@
+import os
 from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion

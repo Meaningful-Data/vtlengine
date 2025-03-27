@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import jsonschema
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role

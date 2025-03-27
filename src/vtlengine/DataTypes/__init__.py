@@ -1,7 +1,11 @@
+import os
 import re
 from typing import Any, Dict, Optional, Set, Type, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.DataTypes.TimeHandling import (
     check_max_date,

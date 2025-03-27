@@ -1,4 +1,9 @@
-import pandas as pd
+import os
+
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine import run
 

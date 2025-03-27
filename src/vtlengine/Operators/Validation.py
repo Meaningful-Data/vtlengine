@@ -1,7 +1,11 @@
+import os
 from copy import copy
 from typing import Any, Dict, Optional
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (

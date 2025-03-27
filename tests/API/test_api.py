@@ -1,8 +1,12 @@
 import json
+import os
 import warnings
 from pathlib import Path
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme

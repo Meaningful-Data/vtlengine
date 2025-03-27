@@ -1,11 +1,15 @@
 import _random
 import math
 import operator
+import os
 import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (

@@ -1,7 +1,11 @@
+import os
 from pathlib import Path
 from typing import Optional, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.files.output._time_period_representation import (

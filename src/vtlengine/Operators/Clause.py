@@ -1,7 +1,11 @@
+import os
 from copy import copy
 from typing import List, Type, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE

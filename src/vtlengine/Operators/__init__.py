@@ -2,7 +2,10 @@ import os
 from copy import copy
 from typing import Any, Optional, Union
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
     AND,

@@ -1,9 +1,13 @@
+import os
 from copy import copy
 from typing import Any, List, Union
 
 import numpy as np
 
-import pandas as pd
+if os.getenv("POLARS", False):
+    import polars as pd
+else:
+    import pandas as pd
 
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
