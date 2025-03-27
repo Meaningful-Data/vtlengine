@@ -2971,3 +2971,17 @@ class CastBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+    def test_GL_90_2(self):
+        """
+        Status: OK
+        Description: aggr and analytic ops ceil instead of round.
+        Git Branch: cr-90
+        Goal: Check Result.
+        """
+        code = "GL_90_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
