@@ -1,7 +1,3 @@
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 from typing import Any, Optional
 
 import pandas as pd

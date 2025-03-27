@@ -1,9 +1,5 @@
 from typing import Any, Dict, List
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 from vtlengine.DataTypes import binary_implicit_promotion

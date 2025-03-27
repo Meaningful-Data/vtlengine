@@ -3,10 +3,6 @@ from typing import List, Optional
 
 import duckdb
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 import vtlengine.Operators as Operator
