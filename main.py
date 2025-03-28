@@ -1,4 +1,3 @@
-
 from vtlengine import run
 from vtlengine.DataFrame import DataFrame
 

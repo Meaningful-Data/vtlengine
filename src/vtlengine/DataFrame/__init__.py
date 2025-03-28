@@ -78,6 +78,7 @@ elif backend_df == "pl":
         def __init__(self, data, name=None, *args, **kwargs):
             # We use the *args, **kwargs construction to ignore arguments incompatible with the Pandas signature
             super().__init__(name=name, values=data)
+
     #
     #
     #     def __repr__(self):
@@ -107,7 +108,6 @@ elif backend_df == "pl":
 
     class Series(pd.Series):
         pass
-
 
     isnull = pd.isnull
 
