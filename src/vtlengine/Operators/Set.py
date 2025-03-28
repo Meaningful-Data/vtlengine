@@ -5,7 +5,7 @@ import pandas as pd
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
-from vtlengine.Model.dataframe_resolver import DataFrame, isnull
+from vtlengine.DataFrame import DataFrame, isnull
 from vtlengine.Operators import Operator
 
 

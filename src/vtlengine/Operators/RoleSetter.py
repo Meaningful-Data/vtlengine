@@ -3,7 +3,7 @@ from typing import Any, Union
 
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
-from vtlengine.Model.dataframe_resolver import Series
+from vtlengine.DataFrame import Series
 from vtlengine.Operators import Unary
 
 ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]

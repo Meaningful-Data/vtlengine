@@ -1,8 +1,5 @@
-import os
 import re
 from typing import Any, Dict, Optional, Set, Type, Union
-
-import pandas as pd
 
 from vtlengine.DataTypes.TimeHandling import (
     check_max_date,
@@ -10,7 +7,7 @@ from vtlengine.DataTypes.TimeHandling import (
     str_period_to_date,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import isnull
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",

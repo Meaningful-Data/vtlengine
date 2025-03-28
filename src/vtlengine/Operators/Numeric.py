@@ -27,7 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 

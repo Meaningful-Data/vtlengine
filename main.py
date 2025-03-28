@@ -1,6 +1,6 @@
 
 from vtlengine import run
-from vtlengine.Model.dataframe_resolver import DataFrame
+from vtlengine.DataFrame import DataFrame
 
 
 def main():

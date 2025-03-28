@@ -32,7 +32,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 # pd.options.mode.chained_assignment = None
 

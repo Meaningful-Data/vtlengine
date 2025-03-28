@@ -13,7 +13,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
-from vtlengine.Model.dataframe_resolver import DataFrame, Series
+from vtlengine.DataFrame import DataFrame, Series
 from vtlengine.Operators import Binary, Operator
 
 

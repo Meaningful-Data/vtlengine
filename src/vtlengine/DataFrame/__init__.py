@@ -16,7 +16,7 @@ if backend_df == "pd":
     class Series(pd.Series):
         pass
 
-    # isnull = pd.isnull
+    isnull = pd.isnull
 
 
 elif backend_df == "pl":
@@ -73,11 +73,11 @@ elif backend_df == "pl":
         def T(self):
             return self.transpose()
 
-    # class Series(pl.Series):
-    #     type = pl.Series
-    #     def __init__(self, data, name=None, *args, **kwargs):
-    #         # We use the *args, **kwargs construction to ignore arguments incompatible with the Pandas signature
-    #         super().__init__(name=name, values=data)
+    class Series(pl.Series):
+        # type = pl.Series
+        def __init__(self, data, name=None, *args, **kwargs):
+            # We use the *args, **kwargs construction to ignore arguments incompatible with the Pandas signature
+            super().__init__(name=name, values=data)
     #
     #
     #     def __repr__(self):
@@ -109,8 +109,8 @@ elif backend_df == "pl":
         pass
 
 
+    isnull = pd.isnull
+
+
 else:
     raise ValueError("Invalid value for BACKEND_DF environment variable. Use 'pd' or 'pl'.")
-
-
-isnull = pd.isnull

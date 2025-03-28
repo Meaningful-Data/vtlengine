@@ -22,7 +22,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Model.dataframe_resolver import DataFrame
+from vtlengine.DataFrame import DataFrame
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 

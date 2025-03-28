@@ -40,7 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Model.dataframe_resolver import DataFrame, Series
+from vtlengine.DataFrame import DataFrame, Series
 
 
 class Time(Operators.Operator):

@@ -33,7 +33,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 

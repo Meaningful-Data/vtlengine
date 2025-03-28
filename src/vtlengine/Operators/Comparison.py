@@ -21,7 +21,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 class Unary(Operator.Unary):

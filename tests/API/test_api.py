@@ -22,7 +22,7 @@ from vtlengine.API._InternalApi import (
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
-from vtlengine.Model.dataframe_resolver import DataFrame
+from vtlengine.DataFrame import DataFrame
 
 # Path selection
 base_path = Path(__file__).parent

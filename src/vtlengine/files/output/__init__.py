@@ -10,7 +10,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Model import Dataset
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 def save_datapoints(

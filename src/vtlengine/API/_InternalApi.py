@@ -34,7 +34,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.Model.dataframe_resolver import DataFrame
+from vtlengine.DataFrame import DataFrame
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
 base_path = Path(__file__).parent

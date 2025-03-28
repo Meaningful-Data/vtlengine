@@ -10,11 +10,10 @@ import sqlglot
 import sqlglot.expressions as exp
 from pandas._testing import assert_frame_equal
 
-import vtlengine.DataTypes as DataTypes
-from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes import ScalarType, SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler as TPHandler
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 @dataclass
@@ -131,7 +130,7 @@ class Component:
             data_type = self.data_type.__class__  # type: ignore[assignment]
         return {
             "name": self.name,
-            "data_type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "data_type": SCALAR_TYPES_CLASS_REVERSE[data_type],
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
@@ -230,11 +229,11 @@ class Dataset:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    lambda x: str(TPHandler(x)) if x != "" else "",
                     na_action="ignore",
                 )
                 other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    lambda x: str(TPHandler(x)) if x != "" else "",
                     na_action="ignore",
                 )
             elif type_name in ["Integer", "Number"]:
@@ -369,7 +368,7 @@ class ScalarSet:
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
             item = int(item)
-        if self.data_type == DataTypes.Null:
+        if self.data_type == Null:
             return None
         value = self.data_type.cast(item)
         return value in self.values

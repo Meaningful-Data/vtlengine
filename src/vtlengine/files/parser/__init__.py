@@ -27,7 +27,7 @@ from vtlengine.files.parser._time_checking import (
     check_time_period,
 )
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Model.dataframe_resolver import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
