@@ -1,4 +1,3 @@
-import os
 import warnings
 from csv import DictReader
 from pathlib import Path
@@ -7,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import numpy as np
 import pandas as pd
 
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,

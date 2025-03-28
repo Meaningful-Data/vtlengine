@@ -1,8 +1,6 @@
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
@@ -25,7 +23,7 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,

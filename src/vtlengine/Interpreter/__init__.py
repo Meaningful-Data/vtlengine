@@ -1,4 +1,3 @@
-import os
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,7 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,

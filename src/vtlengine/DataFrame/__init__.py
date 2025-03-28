@@ -106,9 +106,6 @@ elif backend_df == "pl":
     #     def values(self):
     #         return self.to_numpy()
 
-    class Series(pd.Series):
-        pass
-
     isnull = pd.isnull
 
 
