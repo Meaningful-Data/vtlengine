@@ -7,9 +7,9 @@ from pandas import DataFrame
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:

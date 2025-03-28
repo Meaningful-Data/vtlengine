@@ -3,10 +3,10 @@ from typing import Any, Dict, List, Union
 
 import pandas as pd
 
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
-from vtlengine.DataFrame import DataFrame
 from vtlengine.Operators import Binary, Unary
 
 

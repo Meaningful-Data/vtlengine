@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 from vtlengine.API import create_ast
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
-from vtlengine.DataFrame import DataFrame
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"

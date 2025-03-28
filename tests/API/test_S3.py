@@ -7,11 +7,11 @@ import pandas as pd
 import pytest
 
 from vtlengine import DataTypes, run
+from vtlengine.DataFrame import DataFrame
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.DataFrame import DataFrame
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"

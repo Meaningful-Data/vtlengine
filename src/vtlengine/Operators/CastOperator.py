@@ -5,6 +5,7 @@ import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
@@ -22,7 +23,6 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.DataFrame import DataFrame
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 

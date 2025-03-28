@@ -20,6 +20,7 @@ from vtlengine import AST as AST
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
@@ -34,7 +35,6 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
-from vtlengine.DataFrame import DataFrame
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
 
 base_path = Path(__file__).parent

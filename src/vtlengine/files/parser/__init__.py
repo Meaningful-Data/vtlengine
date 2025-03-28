@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import numpy as np
 import pandas as pd
 
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -27,7 +28,6 @@ from vtlengine.files.parser._time_checking import (
     check_time_period,
 )
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,

@@ -10,10 +10,10 @@ import sqlglot
 import sqlglot.expressions as exp
 from pandas._testing import assert_frame_equal
 
-from vtlengine.DataTypes import ScalarType, SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null
+from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataTypes import SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler as TPHandler
 from vtlengine.Exceptions import SemanticError
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 @dataclass

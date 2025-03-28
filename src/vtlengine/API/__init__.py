@@ -25,6 +25,7 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -32,7 +33,6 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 # pd.options.mode.chained_assignment = None
 

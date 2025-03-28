@@ -18,10 +18,10 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 
 class Unary(Operator.Unary):

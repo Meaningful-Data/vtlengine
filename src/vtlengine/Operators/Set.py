@@ -2,10 +2,10 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
+from vtlengine.DataFrame import DataFrame, isnull
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
-from vtlengine.DataFrame import DataFrame, isnull
 from vtlengine.Operators import Operator
 
 

@@ -23,6 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,
@@ -31,7 +32,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.DataFrame import DataFrame
 
 return_integer_operators = [MAX, MIN, SUM]
 

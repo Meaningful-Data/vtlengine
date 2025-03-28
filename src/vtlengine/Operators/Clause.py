@@ -3,6 +3,7 @@ from typing import List, Type, Union
 
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import (
     Boolean,
     ScalarType,
@@ -12,7 +13,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.DataFrame import DataFrame
 from vtlengine.Operators import Operator
 
 

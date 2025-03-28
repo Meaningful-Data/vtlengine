@@ -43,6 +43,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -64,7 +65,6 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast

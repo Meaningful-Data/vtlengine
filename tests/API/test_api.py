@@ -19,10 +19,10 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
+from vtlengine.DataFrame import DataFrame
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
-from vtlengine.DataFrame import DataFrame
 
 # Path selection
 base_path = Path(__file__).parent

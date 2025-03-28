@@ -18,6 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
+from vtlengine.DataFrame import DataFrame, Series, isnull
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -33,7 +34,6 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.DataFrame import DataFrame, Series, isnull
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
