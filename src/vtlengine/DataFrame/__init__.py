@@ -42,41 +42,43 @@ elif backend_df == "pl":
 
 
     class PolarsDataFrame(pl.DataFrame):
+        _series: Dict[str, pl.Series]
+        
         def __init__(self, data=None, columns=None):
             super().__init__(data)
-            self._series = {}
+            self.series = {}
             if data is None:
                 if columns is not None:
                     for col in columns:
-                        self._series[col] = PolarsSeries([], name=col)
+                        self.series[col] = PolarsSeries([], name=col)
             elif isinstance(data, dict):
                 for col, values in data.items():
                     if not isinstance(values, PolarsSeries):
-                        self._series[col] = PolarsSeries(values, name=col)
+                        self.series[col] = PolarsSeries(values, name=col)
                     else:
-                        self._series[col] = values
+                        self.series[col] = values
             elif isinstance(data, list):
                 if columns is None:
                     columns = [f"col{i}" for i in range(len(data))]
                 for col_name, col_data in zip(columns, data):
-                    self._series[col_name] = PolarsSeries(col_data, name=col_name)
+                    self.series[col_name] = PolarsSeries(col_data, name=col_name)
             elif isinstance(data, pl.DataFrame):
                 for col in data.columns:
-                    self._series[col] = PolarsSeries(data[col].to_list(), name=col)
+                    self.series[col] = PolarsSeries(data[col].to_list(), name=col)
             else:
                 raise ValueError("Unsupported data type for creating PolarsDataFrame.")
             self._build_df()
 
         def _build_df(self):
-            d = {col: series.to_list() for col, series in self._series.items()}
+            d = {col: series.to_list() for col, series in self.series.items()}
             self._df = pl.DataFrame(d)
-            # self.dtypes = {col: series.dtype for col, series in self._series.items()}
+            # self.dtypes = {col: series.dtype for col, series in self.series.items()}
 
         def __getitem__(self, key):
             if isinstance(key, str):
-                return self._series[key]
+                return self.series[key]
             elif isinstance(key, list):
-                new_data = {col: self._series[col].to_list() for col in key if col in self._series}
+                new_data = {col: self.series[col].to_list() for col in key if col in self.series}
                 return PolarsDataFrame(new_data)
             else:
                 raise KeyError("Unsupported index type.")
@@ -84,7 +86,7 @@ elif backend_df == "pl":
         def __setitem__(self, key, value):
             if not isinstance(value, PolarsSeries):
                 value = PolarsSeries(value, name=key)
-            self._series[key] = value
+            self.series[key] = value
             self._build_df()
 
         def __repr__(self):
@@ -144,6 +146,14 @@ elif backend_df == "pl":
             return super().plot
 
         @property
+        def series(self):
+            return self._series
+
+        @series.setter
+        def series(self, series):
+            self._series = series
+
+        @property
         def shape(self) -> tuple[int, int]:
             return super().shape
 
@@ -160,16 +170,16 @@ elif backend_df == "pl":
             return super().width
 
         def copy(self):
-            return self.clone()
+            return PolarsDataFrame(self.series)
 
         def drop(self, columns=None, inplace=False):
             if columns is None:
                 return self
             if isinstance(columns, str):
                 columns = [columns]
-            new_series = {col: series for col, series in self._series.items() if col not in columns}
+            new_series = {col: series for col, series in self.series.items() if col not in columns}
             if inplace:
-                self._series = new_series
+                self.series = new_series
                 self._build_df()
                 return None
             else:
@@ -178,7 +188,7 @@ elif backend_df == "pl":
         def fillna(self, value, *args, **kwargs):
             new_series = {}
             if isinstance(value, dict):
-                for col, series in self._series.items():
+                for col, series in self.series.items():
                     if col in value:
                         new_data = [value[col] if x is None else x for x in series.to_list()]
                     else:
@@ -186,16 +196,45 @@ elif backend_df == "pl":
                     new_data = [None if x != x else x for x in new_data]
                     new_series[col] = PolarsSeries(new_data, name=col)
             else:
-                for col, series in self._series.items():
+                for col, series in self.series.items():
                     new_data = [value if x is None else x for x in series.to_list()]
                     new_data = [None if x != x else x for x in new_data]
                     new_series[col] = PolarsSeries(new_data, name=col)
             return PolarsDataFrame(new_series)
 
-        def rename(self, columns: dict, inplace: bool = False):
-            new_series = {columns.get(col, col): series for col, series in self._series.items()}
+        def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
+            if axis not in [0, 1]:
+                raise ValueError("`axis` must be 0 (rows) or 1 (columns)")
+
+            if axis == 0:
+                if index is None:
+                    return self.copy() if copy else self
+
+                new_data = {}
+                for col in self.columns.tolist():
+                    series = self.series[col].to_list()
+                    new_series = [fill_value] * len(index)
+                    for i, idx in enumerate(index):
+                        if idx < len(series):
+                            new_series[i] = series[idx]
+                    new_data[col] = new_series
+
+                return PolarsDataFrame(new_data)
+            else:
+                if index is None:
+                    return self.copy() if copy else self
+
+                new_series = {col: self.series[col] for col in index if col in self.series}
+                for col in index:
+                    if col not in new_series:
+                        new_series[col] = PolarsSeries([fill_value] * self.height, name=col)
+
+                return PolarsDataFrame(new_series)
+
+        def rename(self, columns: dict, inplace: bool = False, *args, **kwargs):
+            new_series = {columns.get(col, col): series for col, series in self.series.items()}
             if inplace:
-                self._series = new_series
+                self.series = new_series
                 self._build_df()
                 return None
             else:
@@ -209,7 +248,7 @@ elif backend_df == "pl":
                 return df_temp
             new_data = {}
             for col in self.columns.tolist():
-                series = self._series[col].to_list()
+                series = self.series[col].to_list()
                 new_series = [
                     value if (x == to_replace or (to_replace is np.nan and (x != x)) or (
                             to_replace is None and x is None)) else x
@@ -218,16 +257,29 @@ elif backend_df == "pl":
                 new_data[col] = new_series
             return PolarsDataFrame(new_data)
 
+        def reset_index(self, drop: bool = False, inplace: bool = False):
+            if drop:
+                new_df = self._df.with_row_count(name="row_nr")
+            else:
+                new_df = self._df.with_row_count(name="index")
+
+            if inplace:
+                self._df = new_df
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(new_df)
+
         def sort_values(self, by: str, ascending: bool = True):
-            sorted_df = self._df.sort(by, reverse=not ascending)
+            sorted_df = self._df.sort(by, descending=not ascending)
             return PolarsDataFrame(sorted_df)
 
         def view(self):
             print(self._df)
 
         def view_series(self, column_name: str):
-            if column_name in self._series:
-                print(self._series[column_name])
+            if column_name in self.series:
+                print(self.series[column_name])
             else:
                 raise KeyError(f"Column '{column_name}' does not exist in the DataFrame.")
 
@@ -256,13 +308,13 @@ elif backend_df == "pl":
                     return self
 
         def copy(self):
-            return self.clone()
+            return PolarsSeries(self.to_list(), name=self.name)
 
         def dropna(self):
             return PolarsSeries(self.drop_nulls(), name=self.name)
 
         def isnull(self):
-            return self.is_null()
+            return PolarsSeries(self.is_null(), name=self.name)
 
         def map(self, func, na_action=None):
             if na_action == "ignore":
