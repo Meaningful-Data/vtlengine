@@ -54,11 +54,9 @@ elif backend_df == "pl":
         np.timedelta64: pl.Duration,
     }
 
-
     def handle_dtype(dtype: Any) -> Any:
         """Convert numpy dtype to Polars dtype using a mapping dictionary."""
         return polars_dtype_mapping.get(dtype, dtype)
-
 
     class PolarsDataFrame(pl.DataFrame):
         _df: pl.DataFrame()
@@ -299,8 +297,13 @@ elif backend_df == "pl":
             for col in self.columns.tolist():
                 series = self.series[col].to_list()
                 new_series = [
-                    value if (x == to_replace or (to_replace is np.nan and (x != x)) or (
-                            to_replace is None and x is None)) else x
+                    value
+                    if (
+                        x == to_replace
+                        or (to_replace is np.nan and (x != x))
+                        or (to_replace is None and x is None)
+                    )
+                    else x
                     for x in series
                 ]
                 new_data[col] = new_series
@@ -331,7 +334,6 @@ elif backend_df == "pl":
                 print(self.series[column_name])
             else:
                 raise KeyError(f"Column '{column_name}' does not exist in the DataFrame.")
-
 
     class PolarsSeries(pl.Series):
         def __init__(self, data, name=None, *args, **kwargs):
@@ -388,7 +390,9 @@ elif backend_df == "pl":
 
         def map(self, func, na_action=None):
             if na_action == "ignore":
-                return PolarsSeries([func(x) if x is not None else x for x in self.to_list()], name=self.name)
+                return PolarsSeries(
+                    [func(x) if x is not None else x for x in self.to_list()], name=self.name
+                )
             else:
                 return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
 
@@ -406,8 +410,9 @@ elif backend_df == "pl":
             """Display the Series in a tabular format for debugging."""
             print(self)
 
-
-    def _assert_frame_equal(left: PolarsDataFrame, right: PolarsDataFrame, check_dtype: bool = True, **kwargs):
+    def _assert_frame_equal(
+        left: PolarsDataFrame, right: PolarsDataFrame, check_dtype: bool = True, **kwargs
+    ):
         return polars_assert_frame_equal(left.df, right.df, check_dtype=check_dtype)
 
     def _concat(objs, *args, **kwargs):
@@ -423,12 +428,11 @@ elif backend_df == "pl":
     def _merge(left, right, *args, **kwargs):
         return left.join(right, *args, **kwargs)
 
-
     def _read_csv(
-            source: str | Path | IO[str] | IO[bytes] | bytes,
-            dtype: dict[str, Any] | None = None,
-            na_values: list[str] | None = None,
-            **kwargs
+        source: str | Path | IO[str] | IO[bytes] | bytes,
+        dtype: dict[str, Any] | None = None,
+        na_values: list[str] | None = None,
+        **kwargs,
     ) -> PolarsDataFrame:
         # Convert dtype to schema_overrides for Polars
         # schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
@@ -438,17 +442,15 @@ elif backend_df == "pl":
             source,
             schema=None,
             # schema_overrides=schema_overrides,
-            null_values=na_values
+            null_values=na_values,
         )
         return PolarsDataFrame(df)
-
 
     _DataFrame = PolarsDataFrame
     _Series = PolarsSeries
 
 else:
     raise ValueError("Invalid value for BACKEND_DF environment variable. Use 'pd' or 'pl'.")
-
 
 
 DataFrame = _DataFrame

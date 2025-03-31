@@ -105,9 +105,7 @@ class If(Operator):
             )
 
         result.data = (
-            concat([true_data, false_data], ignore_index=True)
-            .drop_duplicates()
-            .sort_values(by=ids)
+            concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         )
         if isinstance(result, Dataset):
             drop_columns = [
