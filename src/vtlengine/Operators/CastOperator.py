@@ -5,7 +5,7 @@ import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, isna
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
@@ -415,7 +415,7 @@ class Cast(Operator.Unary):
     ) -> Scalar:
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
-        if pd.isna(operand.value):
+        if isna(operand.value):
             return Scalar(name=result_scalar.name, data_type=to_type, value=None)
         if mask:
             casted_data = cls.cast_value(operand.value, operand.data_type, to_type, mask)

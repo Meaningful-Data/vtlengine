@@ -18,7 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull, merge
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -543,7 +543,7 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: DataFrame = DataFrame()
             else:
-                result_data = pd.merge(
+                result_data = merge(
                     base_operand_data,
                     other_operand_data,
                     how="inner",

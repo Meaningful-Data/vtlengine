@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from vtlengine.DataFrame import DataFrame, isnull
+from vtlengine.DataFrame import DataFrame, isnull, concat
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
@@ -63,7 +63,7 @@ class Union(Set):
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
-        result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
+        result.data = concat(all_datapoints, sort=True, ignore_index=True)
         identifiers_names = result.get_identifiers_names()
         result.data = result.data.drop_duplicates(subset=identifiers_names, keep="first")
         result.data.reset_index(drop=True, inplace=True)

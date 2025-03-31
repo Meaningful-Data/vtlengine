@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from vtlengine import API, DataTypes, run
+from vtlengine.DataFrame import read_csv
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
 
@@ -104,7 +105,7 @@ def load_input_data(dataset_name):
     with open(datastructure_input_path / f"{dataset_name}.json", "r") as file:
         data_structures = json.load(file)
 
-    data = pd.read_csv(dataset_input_path / f"{dataset_name}.csv")
+    data = read_csv(dataset_input_path / f"{dataset_name}.csv")
 
     datapoints = {dataset_name: data}
 
@@ -118,7 +119,7 @@ def load_reference_data():
     datasets = {}
     for file in dataset_output_path.iterdir():
         if file.suffix == ".csv":
-            data = pd.read_csv(file)
+            data = read_csv(file)
             dataset_name = file.stem
             datasets[dataset_name] = data
 

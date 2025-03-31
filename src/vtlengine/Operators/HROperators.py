@@ -7,7 +7,7 @@ from pandas import DataFrame
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.DataFrame import DataFrame, Series, isnull, concat
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 
@@ -214,7 +214,7 @@ class Hierarchy(Operators.Operator):
     @staticmethod
     def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
         list_data = list(computed_dict.values())
-        df = pd.concat(list_data, axis=0)
+        df = concat(list_data, axis=0)
         df.reset_index(drop=True, inplace=True)
         return df
 
@@ -242,7 +242,7 @@ class Hierarchy(Operators.Operator):
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
+        result.data = concat([dataset.data, computed_data], axis=0, ignore_index=True)
         result.data.drop_duplicates(
             subset=dataset.get_identifiers_names(), keep="last", inplace=True
         )

@@ -109,7 +109,7 @@ class String(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        # if pd.isna(value):
+        # if isna(value):
         #     return cls.default
         if from_type in {
             Number,
@@ -157,7 +157,7 @@ class Number(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
-        # if pd.isna(value):
+        # if isna(value):
         #     return cls.default
         if from_type in {Integer, Number}:
             return float(value)

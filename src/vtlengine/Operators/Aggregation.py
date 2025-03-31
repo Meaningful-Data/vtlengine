@@ -17,7 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, merge
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -271,7 +271,7 @@ class Aggregation(Operator.Unary):
         elif len(aux_df) == 0:
             aux_df = DataFrame(columns=result.get_components_names())
         else:
-            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
+            aux_df = merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
         result.data = aux_df

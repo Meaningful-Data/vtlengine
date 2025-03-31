@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from vtlengine.AST import BinOp
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, merge
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -179,7 +179,7 @@ class Join(Operator):
                         op.data,
                     )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge(
                         result.data,
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]
@@ -332,7 +332,7 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 if result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge(
                         result.data,
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]

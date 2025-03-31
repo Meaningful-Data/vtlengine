@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import numpy as np
 import pandas as pd
 
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, read_csv
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -108,7 +108,7 @@ def _sanitize_pandas_columns(
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
-    data = pd.read_csv(
+    data = read_csv(
         csv_path,
         dtype=obj_dtypes,
         engine="c",

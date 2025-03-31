@@ -10,7 +10,7 @@ import sqlglot
 import sqlglot.expressions as exp
 from pandas._testing import assert_frame_equal
 
-from vtlengine.DataFrame import DataFrame, isnull
+from vtlengine.DataFrame import DataFrame, isnull, concat
 from vtlengine.DataTypes import SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler as TPHandler
 from vtlengine.Exceptions import SemanticError
@@ -262,7 +262,7 @@ class Dataset:
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
-            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            diff = concat([self.data, other.data]).drop_duplicates(keep=False)
             if len(diff) == 0:
                 return True
             # To display actual null values instead of -1234997

@@ -22,7 +22,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.DataFrame import DataFrame, Series
+from vtlengine.DataFrame import DataFrame, Series, concat
 from vtlengine.DataTypes import (
     Date,
     Duration,
@@ -381,8 +381,8 @@ class Fill_time_series(Binary):
                             cls.fill_periods_rows(group_df, period, years, vals=vals)
                         )
 
-        filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
+        filled_data = concat(filled_data, ignore_index=True)
+        combined_data = concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
         if len(cls.periods) == 1 and cls.periods[0] == "A":
             combined_data[cls.time_id] = combined_data[cls.time_id].astype(int)
         else:
@@ -458,9 +458,9 @@ class Fill_time_series(Binary):
             filled_dates, date_format = create_filled_dates(group, min_max)
             filled_data.append(filled_dates)
 
-        filled_data = pd.concat(filled_data, ignore_index=True)
+        filled_data = concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
+        combined_data = concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
@@ -530,7 +530,7 @@ class Fill_time_series(Binary):
 
         filled_data = [fill_group(group_df) for _, group_df in data.groupby(cls.other_ids)]
         return (
-            pd.concat(filled_data, ignore_index=True)
+            concat(filled_data, ignore_index=True)
             .sort_values(by=cls.other_ids + [cls.time_id])
             .drop_duplicates()
         )

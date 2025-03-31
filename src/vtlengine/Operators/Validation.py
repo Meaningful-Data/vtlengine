@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, concat
 from vtlengine.DataTypes import (
     Boolean,
     Integer,
@@ -122,7 +122,7 @@ class Validation(Operator):
 
         if len(rule_list_df) == 1:
             return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
+        df = concat(rule_list_df, ignore_index=True, copy=False)
         return df
 
     @classmethod
@@ -202,7 +202,7 @@ class Check_Hierarchy(Validation):
             rule_df["ruleid"] = rule_name
             rule_df["errorcode"] = rule_data["errorcode"]
             rule_df["errorlevel"] = rule_data["errorlevel"]
-            df = pd.concat([df, rule_df], ignore_index=True)
+            df = concat([df, rule_df], ignore_index=True)
         if df is None:
             df = DataFrame()
         return df

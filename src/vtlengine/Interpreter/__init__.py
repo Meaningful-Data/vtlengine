@@ -42,7 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, merge
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -647,7 +647,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = pd.merge(
+                joined_result = merge(
                     self.regular_aggregation_dataset.data[id_columns],
                     result.data,
                     on=id_columns,

@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import DataTypes, run
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, read_csv
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
@@ -132,7 +132,7 @@ def test_save_datapoints_with_data_and_time_period_representation_mock(mock_csv)
 def test_save_datapoints(dataset, reference, tmp_path_factory):
     output_path = tmp_path_factory.mktemp("test")
     save_datapoints(None, dataset, output_path=output_path)
-    result = pd.read_csv(output_path / f"{dataset.name}.csv")
+    result = read_csv(output_path / f"{dataset.name}.csv")
     pd.testing.assert_frame_equal(result, dataset.data)
 
 

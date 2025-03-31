@@ -4,7 +4,7 @@ from typing import Any, List, Union
 import numpy as np
 import pandas as pd
 
-from vtlengine.DataFrame import DataFrame, Series
+from vtlengine.DataFrame import DataFrame, Series, concat, merge
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -76,7 +76,7 @@ class If(Operator):
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(
+                true_data = merge(
                     true_data,
                     true_branch.data,
                     on=ids,
@@ -91,7 +91,7 @@ class If(Operator):
             )
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(
+                false_data = merge(
                     false_data,
                     false_branch.data,
                     on=ids,
@@ -106,7 +106,7 @@ class If(Operator):
             )
 
         result.data = (
-            pd.concat([true_data, false_data], ignore_index=True)
+            concat([true_data, false_data], ignore_index=True)
             .drop_duplicates()
             .sort_values(by=ids)
         )
