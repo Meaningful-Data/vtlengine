@@ -178,10 +178,6 @@ elif backend_df == "pl":
             return self.height * self.width
 
         @property
-        def values(self):
-            return self.to_list()
-
-        @property
         def width(self) -> int:
             return super().width
 
@@ -326,6 +322,18 @@ elif backend_df == "pl":
         def _repr_html_(self):
             return super()._repr_html_()
 
+        @property
+        def name(self):
+            return self._s.name()
+
+        @property
+        def dtype(self):
+            return self._s.dtype()
+
+        @property
+        def values(self):
+            return self.to_list()
+
         def apply(self, func, *args, **kwargs):
             return PolarsSeries([func(x, *args, **kwargs) for x in self.to_list()], name=self.name)
 
@@ -356,6 +364,9 @@ elif backend_df == "pl":
                 return PolarsSeries([func(x) if x is not None else x for x in self.to_list()], name=self.name)
             else:
                 return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
+
+        # def to_list(self):
+        #     return self.values.to_list()
 
         def view(self):
             """Display the Series in a tabular format for debugging."""
