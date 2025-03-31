@@ -1,8 +1,12 @@
 import os
+from pathlib import Path
+from typing import IO, Any
 
 import numpy as np
 import pandas as pd
 import polars as pl
+from polars.dependencies import polars_cloud
+from polars.interchange.utils import polars_dtype_to_dtype
 
 POLARS_STR = ["polars", "pl"]
 
@@ -19,6 +23,21 @@ if backend_df == "pd":
     _read_csv = pd.read_csv
 
 elif backend_df == "pl":
+
+    polars_dtype_mapping = {
+        np.object_: pl.Utf8,
+        np.int64: pl.Int64,
+        np.float64: pl.Float64,
+        np.bool_: pl.Boolean,
+        np.datetime64: pl.Datetime,
+        np.timedelta64: pl.Duration,
+    }
+
+
+    def handle_dtype(dtype: Any) -> Any:
+        """Convert numpy dtype to Polars dtype using a mapping dictionary."""
+        return polars_dtype_mapping.get(dtype, dtype)
+
 
     class PolarsDataFrame(pl.DataFrame):
         """Override of polars.DataFrame with pandas-like methods"""
@@ -72,6 +91,19 @@ elif backend_df == "pl":
         def __repr__(self):
             return repr(self)
 
+        def drop(self, columns=None, inplace=False):
+            if columns is None:
+                return self
+            if isinstance(columns, str):
+                columns = [columns]
+            new_series = {col: series for col, series in self._series.items() if col not in columns}
+            if inplace:
+                self._series = new_series
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(new_series)
+
         class _ColumnsWrapper:
             def __init__(self, columns):
                 self._columns = columns
@@ -124,7 +156,7 @@ elif backend_df == "pl":
                 series = self._series[col].to_list()
                 new_series = [
                     value if (x == to_replace or (to_replace is np.nan and (x != x)) or (
-                                to_replace is None and x is None)) else x
+                            to_replace is None and x is None)) else x
                     for x in series
                 ]
                 new_data[col] = new_series
@@ -139,15 +171,34 @@ elif backend_df == "pl":
         def __repr__(self):
             return repr(self)
 
+        def astype(self, dtype, errors="raise"):
+            try:
+                # Handle numpy to polars type conversion
+                if dtype in polars_dtype_mapping:
+                    dtype = polars_dtype_mapping[dtype]
+                return self.cast(dtype)
+
+            except Exception as e:
+                if errors == "raise":
+                    raise e
+                else:
+                    return self
+
         def isnull(self):
             return self.is_null()
+
+        def map(self, func, na_action=None):
+            if na_action == "ignore":
+                return PolarsSeries([func(x) if x is not None else x for x in self.to_list()], name=self.name)
+            else:
+                return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
 
 
     def _concat(objs, *args, **kwargs):
         return pl.concat(objs, *args, **kwargs)
 
     def _isnull(obj):
-        return obj.isnull()
+        pd.isnull(obj)
 
     def _isna(obj):
         return obj.isnull()
@@ -155,18 +206,27 @@ elif backend_df == "pl":
     def _merge(left, right, *args, **kwargs):
         return left.join(right, *args, **kwargs)
 
-    def _read_csv(filepath, *args, **kwargs):
-        return PolarsDataFrame(pl.read_csv(filepath))
+
+    def _read_csv(
+            source: str | Path | IO[str] | IO[bytes] | bytes,
+            dtype: dict[str, Any] | None = None,
+            na_values: list[str] | None = None,
+            **kwargs
+    ) -> PolarsDataFrame:
+        # Convert dtype to schema_overrides for Polars
+        schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
+
+        # Read the CSV file with Polars
+        df = pl.read_csv(
+            source,
+            schema_overrides=schema_overrides,
+            null_values=na_values
+        )
+        return PolarsDataFrame(df)
 
 
     _DataFrame = PolarsDataFrame
     _Series = PolarsSeries
-
-    concat = _concat
-    isnull = _isnull
-    isna = _isna
-    merge = _merge
-    read_csv = _read_csv
 
 else:
     raise ValueError("Invalid value for BACKEND_DF environment variable. Use 'pd' or 'pl'.")
