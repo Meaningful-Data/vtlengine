@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, Any, Dict
 
 import numpy as np
 import pandas as pd
 import polars as pl
 from polars.dependencies import polars_cloud
 from polars.interchange.utils import polars_dtype_to_dtype
+from polars.polars import PyDataFrame
 
 POLARS_STR = ["polars", "pl"]
 
@@ -41,7 +42,8 @@ elif backend_df == "pl":
 
     class PolarsDataFrame(pl.DataFrame):
         """Override of polars.DataFrame with pandas-like methods"""
-        _series = {}
+        _df: PyDataFrame
+        _series: Dict[str, pl.Series]
         dtypes = {}
         plot = None
         schema = None
@@ -107,7 +109,7 @@ elif backend_df == "pl":
             self._build_df()
 
         def __repr__(self):
-            return repr(self)
+            return super().__repr__()
 
         class _ColumnsWrapper:
             def __init__(self, columns):
@@ -184,13 +186,24 @@ elif backend_df == "pl":
 
             return PolarsDataFrame(new_data)
 
+        def view(self):
+            """Display the DataFrame in a tabular format for debugging."""
+            print(self._df)
+
+        def view_series(self, column_name: str):
+            """Display a specific series (column) in a tabular format for debugging."""
+            if column_name in self._series:
+                print(self._series[column_name])
+            else:
+                raise KeyError(f"Column '{column_name}' does not exist in the DataFrame.")
+
 
     class PolarsSeries(pl.Series):
         def __init__(self, data, name=None, *args, **kwargs):
             super().__init__(name=name, values=data)
 
         def __repr__(self):
-            return repr(self)
+            return super().__repr__()
 
         def astype(self, dtype, errors="raise"):
             try:
@@ -216,6 +229,10 @@ elif backend_df == "pl":
                 return PolarsSeries([func(x) if x is not None else x for x in self.to_list()], name=self.name)
             else:
                 return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
+
+        def view(self):
+            """Display the Series in a tabular format for debugging."""
+            print(self)
 
 
     def _concat(objs, *args, **kwargs):
