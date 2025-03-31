@@ -42,7 +42,15 @@ elif backend_df == "pl":
     class PolarsDataFrame(pl.DataFrame):
         """Override of polars.DataFrame with pandas-like methods"""
         _series = {}
+        dtypes = {}
+        plot = None
+        schema = None
+        style = None
 
+        height = 0
+        width = 0
+        size = 0
+        shape = (0, 0)
 
         def __init__(self, data=None, columns=None):
             super().__init__(data)
@@ -74,6 +82,14 @@ elif backend_df == "pl":
         def _build_df(self):
             d = {col: series.to_list() for col, series in self._series.items()}
             self._df = pl.DataFrame(d)
+
+            self.height = len(self._df)
+            self.width = len(self._df.columns)
+            self.shape = self._df.shape
+            self.size = self._df.shape[0] * self._df.shape[1]
+
+            self.dtypes = {col: series.dtype for col, series in self._series.items()}
+            self.plot = self
 
         def __getitem__(self, key):
             if isinstance(key, str):
@@ -206,7 +222,7 @@ elif backend_df == "pl":
         return pl.concat(objs, *args, **kwargs)
 
     def _isnull(obj):
-        pd.isnull(obj)
+        return pd.isnull(obj)
 
     def _isna(obj):
         return obj.isnull()
