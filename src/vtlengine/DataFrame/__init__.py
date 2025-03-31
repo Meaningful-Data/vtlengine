@@ -357,6 +357,27 @@ elif backend_df == "pl":
         def _repr_html_(self):
             return super()._repr_html_()
 
+        class iLocIndexer:
+            def __init__(self, series):
+                self.series = series
+
+            def __getitem__(self, index):
+                return self.series.to_list()[index]
+
+        class LocIndexer:
+            def __init__(self, series):
+                self.series = series
+
+            def __getitem__(self, index):
+                if isinstance(index, int):
+                    return self.series.to_list()[index]
+                elif isinstance(index, slice):
+                    return self.series.to_list()[index]
+                elif isinstance(index, list):
+                    return [self.series.to_list()[i] for i in index]
+                else:
+                    raise TypeError("Invalid index type for loc")
+
         @property
         def name(self):
             return self._s.name()
@@ -368,6 +389,14 @@ elif backend_df == "pl":
         @property
         def empty(self):
             return self.__len__() == 0
+
+        @property
+        def iloc(self) -> iLocIndexer:
+            return self.iLocIndexer(self)
+
+        @property
+        def loc(self) -> LocIndexer:
+            return self.LocIndexer(self)
 
         @property
         def plot(self) -> SeriesPlot:
