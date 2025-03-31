@@ -42,6 +42,7 @@ elif backend_df == "pl":
 
 
     class PolarsDataFrame(pl.DataFrame):
+        _df: pl.DataFrame()
         _series: Dict[str, pl.Series]
         
         def __init__(self, data=None, columns=None):
@@ -71,8 +72,15 @@ elif backend_df == "pl":
 
         def _build_df(self):
             d = {col: series.to_list() for col, series in self.series.items()}
-            self._df = pl.DataFrame(d)
+            self.df = pl.DataFrame(d)
             # self.dtypes = {col: series.dtype for col, series in self.series.items()}
+
+        def __delitem__(self, key):
+            if key in self.series:
+                del self.series[key]
+                self._build_df()
+            else:
+                raise KeyError(f"Column '{key}' does not exist in the DataFrame.")
 
         def __getitem__(self, key):
             if isinstance(key, str):
@@ -122,15 +130,23 @@ elif backend_df == "pl":
 
         @property
         def columns(self):
-            return self._ColumnsWrapper(self._df.columns)
+            return self._ColumnsWrapper(self.df.columns)
+
+        @property
+        def df(self):
+            return self._df
+
+        @df.setter
+        def df(self, df: pl.DataFrame):
+            self._df = df
 
         @property
         def dtypes(self):
-            return self._df.dtypes
+            return self.df.dtypes
 
         # @dtypes.setter
         # def dtypes(self, value):
-        #     self._df.dtypes = value
+        #     self.df.dtypes = value
 
         @property
         def empty(self):
@@ -138,7 +154,7 @@ elif backend_df == "pl":
 
         @property
         def height(self) -> int:
-            return self._df.height
+            return self.df.height
 
         @property
         @unstable()
@@ -150,7 +166,7 @@ elif backend_df == "pl":
             return self._series
 
         @series.setter
-        def series(self, series):
+        def series(self, series: Dict[str, Union["PolarsSeries", pl.Series]]):
             self._series = series
 
         @property
@@ -184,6 +200,22 @@ elif backend_df == "pl":
                 return None
             else:
                 return PolarsDataFrame(new_series)
+
+        def drop_duplicates(self, subset=None, keep="first", inplace=False):
+            if subset is None:
+                df = self.unique(keep=keep)
+            else:
+                df = self.unique(subset=subset, keep=keep)
+
+            if inplace:
+                self.df = df
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(df)
+
+        def dropna(self, subset, **kwargs):
+            return PolarsDataFrame(self.df.drop_nans(subset=subset))
 
         def fillna(self, value, *args, **kwargs):
             new_series = {}
@@ -259,23 +291,23 @@ elif backend_df == "pl":
 
         def reset_index(self, drop: bool = False, inplace: bool = False):
             if drop:
-                new_df = self._df.with_row_count(name="row_nr")
+                new_df = self.df.with_row_count(name="row_nr")
             else:
-                new_df = self._df.with_row_count(name="index")
+                new_df = self.df.with_row_count(name="index")
 
             if inplace:
-                self._df = new_df
+                self.df = new_df
                 self._build_df()
                 return None
             else:
                 return PolarsDataFrame(new_df)
 
         def sort_values(self, by: str, ascending: bool = True):
-            sorted_df = self._df.sort(by, descending=not ascending)
+            sorted_df = self.df.sort(by, descending=not ascending)
             return PolarsDataFrame(sorted_df)
 
         def view(self):
-            print(self._df)
+            print(self.df)
 
         def view_series(self, column_name: str):
             if column_name in self.series:
@@ -293,6 +325,9 @@ elif backend_df == "pl":
 
         def _repr_html_(self):
             return super()._repr_html_()
+
+        def apply(self, func, *args, **kwargs):
+            return PolarsSeries([func(x, *args, **kwargs) for x in self.to_list()], name=self.name)
 
         def astype(self, dtype, errors="raise"):
             try:
