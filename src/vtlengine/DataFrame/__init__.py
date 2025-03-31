@@ -41,6 +41,8 @@ elif backend_df == "pl":
 
     class PolarsDataFrame(pl.DataFrame):
         """Override of polars.DataFrame with pandas-like methods"""
+        _series = {}
+
 
         def __init__(self, data=None, columns=None):
             super().__init__(data)
@@ -91,19 +93,6 @@ elif backend_df == "pl":
         def __repr__(self):
             return repr(self)
 
-        def drop(self, columns=None, inplace=False):
-            if columns is None:
-                return self
-            if isinstance(columns, str):
-                columns = [columns]
-            new_series = {col: series for col, series in self._series.items() if col not in columns}
-            if inplace:
-                self._series = new_series
-                self._build_df()
-                return None
-            else:
-                return PolarsDataFrame(new_series)
-
         class _ColumnsWrapper:
             def __init__(self, columns):
                 self._columns = columns
@@ -126,6 +115,22 @@ elif backend_df == "pl":
         @property
         def columns(self):
             return self._ColumnsWrapper(self._df.columns)
+
+        def copy(self):
+            return self.clone()
+
+        def drop(self, columns=None, inplace=False):
+            if columns is None:
+                return self
+            if isinstance(columns, str):
+                columns = [columns]
+            new_series = {col: series for col, series in self._series.items() if col not in columns}
+            if inplace:
+                self._series = new_series
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(new_series)
 
         def fillna(self, value, *args, **kwargs):
             new_series = {}
@@ -183,6 +188,9 @@ elif backend_df == "pl":
                     raise e
                 else:
                     return self
+
+        def copy(self):
+            return self.clone()
 
         def isnull(self):
             return self.is_null()
