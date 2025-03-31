@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import IO, Any, Dict
+from typing import IO, Any, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ elif backend_df == "pl":
     class PolarsDataFrame(pl.DataFrame):
         """Override of polars.DataFrame with pandas-like methods"""
         _df: PyDataFrame
-        _series: Dict[str, pl.Series]
+        _series: Dict[str, Union["PolarsSeries", pl.Series]] = {}
         dtypes = {}
         plot = None
         schema = None
@@ -110,6 +110,9 @@ elif backend_df == "pl":
 
         def __repr__(self):
             return super().__repr__()
+
+        def _repr_html_(self, *args, **kwargs):
+            return super()._repr_html_(*args, **kwargs)
 
         class _ColumnsWrapper:
             def __init__(self, columns):
@@ -204,6 +207,9 @@ elif backend_df == "pl":
 
         def __repr__(self):
             return super().__repr__()
+
+        def _repr_html_(self):
+            return super()._repr_html_()
 
         def astype(self, dtype, errors="raise"):
             try:
