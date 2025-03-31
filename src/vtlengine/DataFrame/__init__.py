@@ -59,8 +59,8 @@ elif backend_df == "pl":
         return polars_dtype_mapping.get(dtype, dtype)
 
     class PolarsDataFrame(pl.DataFrame):
-        _df: pl.DataFrame()
-        _series: Dict[str, "PolarsSeries"]
+        _df: pl.DataFrame() = pl.DataFrame()
+        _series: Dict[str, "PolarsSeries"] = {}
 
         def __init__(self, data=None, columns=None):
             super().__init__(data)
@@ -176,7 +176,7 @@ elif backend_df == "pl":
         @property
         @unstable()
         def plot(self):
-            return super().plot
+            return self.df.plot
 
         @property
         def series(self):
@@ -188,7 +188,7 @@ elif backend_df == "pl":
 
         @property
         def shape(self) -> tuple[int, int]:
-            return super().shape
+            return self.df.shape
 
         @property
         def size(self) -> int:
@@ -196,12 +196,24 @@ elif backend_df == "pl":
 
         @property
         def width(self) -> int:
-            return super().width
+            return self.df.width
+
+        def assign(self, **kwargs):
+            new_series = self.series.copy()
+            for key, value in kwargs.items():
+                if not isinstance(value, PolarsSeries):
+                    value = PolarsSeries(value, name=key)
+                new_series[key] = value
+            return PolarsDataFrame(new_series)
+
+        def groupby(self, *args, **kwargs):
+            by = args[0] if args else kwargs.get("by")
+            return self.group_by(by)
 
         def copy(self):
             return PolarsDataFrame(self.series)
 
-        def drop(self, columns=None, inplace=False):
+        def drop(self, columns=None, inplace=False, **kwargs):
             if columns is None:
                 return self
             if isinstance(columns, str):
@@ -354,6 +366,10 @@ elif backend_df == "pl":
             return self._s.dtype()
 
         @property
+        def empty(self):
+            return self.__len__() == 0
+
+        @property
         def plot(self) -> SeriesPlot:
             return SeriesPlot(self)
 
@@ -425,8 +441,26 @@ elif backend_df == "pl":
     def _isna(obj):
         return obj.isnull()
 
-    def _merge(left, right, *args, **kwargs):
-        return left.join(right, *args, **kwargs)
+
+    def _merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
+        if not isinstance(right, PolarsDataFrame):
+            right = PolarsDataFrame(right)
+        if on is None:
+            raise ValueError("The 'on' parameter must be specified for merging.")
+
+        left_df = self.df
+        right_df = right.df
+
+        # Identify overlapping columns
+        overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on)
+
+        # Apply suffixes to overlapping columns
+        for col in overlap:
+            left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
+            right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
+
+        merged_df = left_df.join(right_df, on=on, how=how)
+        return PolarsDataFrame(merged_df)
 
     def _read_csv(
         source: str | Path | IO[str] | IO[bytes] | bytes,
