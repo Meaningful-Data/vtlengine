@@ -1,14 +1,15 @@
 import os
 from pathlib import Path
-from typing import IO, Any, Dict, Union
+from typing import IO, Any, Dict, Union, Sequence, Mapping, Self
 
 import numpy as np
 import pandas as pd
 import polars as pl
+from polars import Series
+from polars._typing import IntoExpr, PolarsDataType
+from polars._utils import NoDefault, no_default
 from polars._utils.unstable import unstable
-from polars.dependencies import polars_cloud
-from polars.interchange.utils import polars_dtype_to_dtype
-from polars.polars import PyDataFrame
+from polars.series.plotting import SeriesPlot
 
 POLARS_STR = ["polars", "pl"]
 
@@ -26,10 +27,20 @@ if backend_df == "pd":
 
 elif backend_df == "pl":
 
+    class PolarsObject(pl.DataType):
+        pass
+
     polars_dtype_mapping = {
+        "object": pl.Utf8,
+        object: pl.Utf8,
         np.object_: pl.Utf8,
+        "int64": pl.Int64,
+        "i64": pl.Int64,
         np.int64: pl.Int64,
+        "float64": pl.Float64,
+        "f64": pl.Float64,
         np.float64: pl.Float64,
+        "bool": pl.Boolean,
         np.bool_: pl.Boolean,
         np.datetime64: pl.Datetime,
         np.timedelta64: pl.Duration,
@@ -104,7 +115,7 @@ elif backend_df == "pl":
             return self.df._repr_html_(*args, **kwargs)
 
         def __str__(self):
-            return super().__str__()
+            return self.df.__str__()
 
         class _ColumnsWrapper:
             def __init__(self, columns):
@@ -198,10 +209,12 @@ elif backend_df == "pl":
                 return PolarsDataFrame(new_series)
 
         def drop_duplicates(self, subset=None, keep="first", inplace=False):
+            if isinstance(keep, bool):
+                keep = "first"
             if subset is None:
-                df = self.unique(keep=keep)
+                df = self.df.unique(keep=keep)
             else:
-                df = self.unique(subset=subset, keep=keep)
+                df = self.df.unique(subset=subset, keep=keep)
 
             if inplace:
                 self.df = df
@@ -331,6 +344,10 @@ elif backend_df == "pl":
             return self._s.dtype()
 
         @property
+        def plot(self) -> SeriesPlot:
+            return SeriesPlot(self)
+
+        @property
         def values(self):
             return self.to_list()
 
@@ -340,9 +357,11 @@ elif backend_df == "pl":
         def astype(self, dtype, errors="raise"):
             try:
                 # Handle numpy to polars type conversion
-                if dtype in polars_dtype_mapping:
-                    dtype = polars_dtype_mapping[dtype]
-                return self.cast(dtype)
+                if dtype != self.dtype and dtype != np.object_:
+                    if dtype in polars_dtype_mapping:
+                        dtype = polars_dtype_mapping[dtype]
+                    return self.cast(dtype)
+                return self
 
             except Exception as e:
                 if errors == "raise":
@@ -365,8 +384,15 @@ elif backend_df == "pl":
             else:
                 return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
 
-        # def to_list(self):
-        #     return self.values.to_list()
+        def replace(self, to_replace, value=None, **kwargs) -> "PolarsSeries":
+            if isinstance(to_replace, dict):
+                new_data = self.to_list()
+                for old, new in to_replace.items():
+                    new_data = [new if x == old else x for x in new_data]
+                return PolarsSeries(new_data, name=self.name)
+            else:
+                new_data = [value if x == to_replace else x for x in self.to_list()]
+                return PolarsSeries(new_data, name=self.name)
 
         def view(self):
             """Display the Series in a tabular format for debugging."""
@@ -374,7 +400,8 @@ elif backend_df == "pl":
 
 
     def _concat(objs, *args, **kwargs):
-        return pl.concat(objs, *args, **kwargs)
+        polars_objs = [obj.df if isinstance(obj, PolarsDataFrame) else obj for obj in objs]
+        return PolarsDataFrame(pl.concat(polars_objs, *args, **kwargs))
 
     def _isnull(obj):
         return pd.isnull(obj)
@@ -393,12 +420,13 @@ elif backend_df == "pl":
             **kwargs
     ) -> PolarsDataFrame:
         # Convert dtype to schema_overrides for Polars
-        schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
+        # schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
 
         # Read the CSV file with Polars
         df = pl.read_csv(
             source,
-            schema_overrides=schema_overrides,
+            schema=None,
+            # schema_overrides=schema_overrides,
             null_values=na_values
         )
         return PolarsDataFrame(df)
