@@ -2,7 +2,6 @@ from copy import copy
 from typing import Any, List, Union
 
 import numpy as np
-import pandas as pd
 
 from vtlengine.DataFrame import DataFrame, Series, concat, merge
 from vtlengine.DataTypes import (

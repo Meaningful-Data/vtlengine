@@ -2,12 +2,11 @@ import operator
 from copy import copy
 from typing import Any, Dict
 
-import pandas as pd
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
-from vtlengine.DataFrame import DataFrame, Series, isnull, concat
+from vtlengine.DataFrame import DataFrame, Series, concat, isnull
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 

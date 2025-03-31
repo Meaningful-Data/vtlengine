@@ -9,7 +9,7 @@ import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 
-from vtlengine.DataFrame import DataFrame, isnull, concat, assert_frame_equal
+from vtlengine.DataFrame import DataFrame, assert_frame_equal, concat, isnull
 from vtlengine.DataTypes import SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler as TPHandler
 from vtlengine.Exceptions import SemanticError

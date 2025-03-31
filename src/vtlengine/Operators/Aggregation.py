@@ -2,7 +2,6 @@ from copy import copy
 from typing import Any, List, Optional
 
 import duckdb
-import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (

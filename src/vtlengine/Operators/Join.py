@@ -2,8 +2,6 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-
 from vtlengine.AST import BinOp
 from vtlengine.DataFrame import DataFrame, merge
 from vtlengine.DataTypes import binary_implicit_promotion

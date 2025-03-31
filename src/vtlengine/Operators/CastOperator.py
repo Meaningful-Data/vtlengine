@@ -1,8 +1,6 @@
 from copy import copy
 from typing import Any, Optional, Type, Union
 
-import pandas as pd
-
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
 from vtlengine.DataFrame import DataFrame, isna

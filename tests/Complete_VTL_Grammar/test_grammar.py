@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import pandas as pd
-
 from vtlengine import API, DataTypes, run
 from vtlengine.DataFrame import read_csv
 from vtlengine.DataTypes import Null

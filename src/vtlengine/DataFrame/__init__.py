@@ -1,14 +1,14 @@
 import os
 from pathlib import Path
-from typing import IO, Any, Dict, Union, Sequence, Mapping, Self
+from typing import IO, Any, Dict, Mapping, Self, Sequence, Union
 
 import numpy as np
 import pandas as pd
 import polars as pl
 from pandas._testing import assert_frame_equal as pandas_assert_frame_equal
-from polars.testing import assert_frame_equal as polars_assert_frame_equal
 from polars._utils.unstable import unstable
 from polars.series.plotting import SeriesPlot
+from polars.testing import assert_frame_equal as polars_assert_frame_equal
 
 POLARS_STR = ["polars", "pl"]
 
@@ -63,7 +63,7 @@ elif backend_df == "pl":
     class PolarsDataFrame(pl.DataFrame):
         _df: pl.DataFrame()
         _series: Dict[str, "PolarsSeries"]
-        
+
         def __init__(self, data=None, columns=None):
             super().__init__(data)
             self.series = {}

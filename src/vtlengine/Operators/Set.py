@@ -1,8 +1,6 @@
 from typing import Any, Dict, List
 
-import pandas as pd
-
-from vtlengine.DataFrame import DataFrame, isnull, concat
+from vtlengine.DataFrame import DataFrame, concat, isnull
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
