@@ -5,9 +5,8 @@ from typing import IO, Any, Dict, Union, Sequence, Mapping, Self
 import numpy as np
 import pandas as pd
 import polars as pl
-from polars import Series
-from polars._typing import IntoExpr, PolarsDataType
-from polars._utils import NoDefault, no_default
+from pandas._testing import assert_frame_equal as pandas_assert_frame_equal
+from polars.testing import assert_frame_equal as polars_assert_frame_equal
 from polars._utils.unstable import unstable
 from polars.series.plotting import SeriesPlot
 
@@ -19,6 +18,7 @@ if backend_df == "pd":
     _DataFrame = pd.DataFrame
     _Series = pd.Series
 
+    _assert_frame_equal = pandas_assert_frame_equal
     _concat = pd.concat
     _isnull = pd.isnull
     _isna = pd.isna
@@ -34,11 +34,19 @@ elif backend_df == "pl":
         "object": pl.Utf8,
         object: pl.Utf8,
         np.object_: pl.Utf8,
+        "str": pl.Utf8,
+        "string": pl.Utf8,
         "int64": pl.Int64,
         "i64": pl.Int64,
         np.int64: pl.Int64,
+        "int32": pl.Int32,
+        "i32": pl.Int32,
+        np.int32: pl.Int32,
         "float64": pl.Float64,
         "f64": pl.Float64,
+        "float32": pl.Float32,
+        "f32": pl.Float32,
+        np.float32: pl.Float32,
         np.float64: pl.Float64,
         "bool": pl.Boolean,
         np.bool_: pl.Boolean,
@@ -54,7 +62,7 @@ elif backend_df == "pl":
 
     class PolarsDataFrame(pl.DataFrame):
         _df: pl.DataFrame()
-        _series: Dict[str, pl.Series]
+        _series: Dict[str, "PolarsSeries"]
         
         def __init__(self, data=None, columns=None):
             super().__init__(data)
@@ -399,6 +407,9 @@ elif backend_df == "pl":
             print(self)
 
 
+    def _assert_frame_equal(left: PolarsDataFrame, right: PolarsDataFrame, check_dtype: bool = True, **kwargs):
+        return polars_assert_frame_equal(left.df, right.df, check_dtype=check_dtype)
+
     def _concat(objs, *args, **kwargs):
         polars_objs = [obj.df if isinstance(obj, PolarsDataFrame) else obj for obj in objs]
         return PolarsDataFrame(pl.concat(polars_objs, *args, **kwargs))
@@ -443,6 +454,7 @@ else:
 DataFrame = _DataFrame
 Series = _Series
 
+assert_frame_equal = _assert_frame_equal
 concat = _concat
 isnull = _isnull
 isna = _isna
