@@ -164,6 +164,9 @@ class Dataset:
                 if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
+    def __repr__(self):
+        return self.data.__repr__()
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Dataset):
             return False

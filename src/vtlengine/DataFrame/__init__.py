@@ -98,10 +98,10 @@ elif backend_df == "pl":
             self._build_df()
 
         def __repr__(self):
-            return super().__repr__()
+            return self.df.__repr__()
 
         def _repr_html_(self, *args, **kwargs):
-            return super()._repr_html_(*args, **kwargs)
+            return self.df._repr_html_(*args, **kwargs)
 
         def __str__(self):
             return super().__str__()
