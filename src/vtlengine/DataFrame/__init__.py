@@ -206,10 +206,6 @@ elif backend_df == "pl":
                 new_series[key] = value
             return PolarsDataFrame(new_series)
 
-        def groupby(self, *args, **kwargs):
-            by = args[0] if args else kwargs.get("by")
-            return self.group_by(by)
-
         def copy(self):
             return PolarsDataFrame(self.series)
 
@@ -260,6 +256,17 @@ elif backend_df == "pl":
                     new_data = [None if x != x else x for x in new_data]
                     new_series[col] = PolarsSeries(new_data, name=col)
             return PolarsDataFrame(new_series)
+
+        def groupby(self, *args, **kwargs):
+            by = args[0] if args else kwargs.get("by")
+            return self.group_by(by)
+
+        def loc_by_mask(self, boolean_mask):
+            if len(boolean_mask) != len(self):
+                raise ValueError("Boolean mask length must match the length of the DataFrame")
+            filtered_data = {col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask] for col, series in
+                             self.series.items()}
+            return PolarsDataFrame(filtered_data)
 
         def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
             if axis not in [0, 1]:
@@ -351,6 +358,16 @@ elif backend_df == "pl":
         def __init__(self, data, name=None, *args, **kwargs):
             super().__init__(name=name, values=data)
 
+        def __getitem__(self, index):
+            if isinstance(index, (int, slice)):
+                return self.to_list()[index]
+            if isinstance(index, PolarsSeries):
+                index = index.to_list()
+            if isinstance(index, list) and all(isinstance(i, bool) for i in index):
+                return self.loc_by_mask(index)
+            else:
+                raise TypeError("Invalid index type for __getitem__")
+
         def __repr__(self):
             return super().__repr__()
 
@@ -385,6 +402,10 @@ elif backend_df == "pl":
         @property
         def dtype(self):
             return self._s.dtype()
+
+        @property
+        def index(self):
+            return range(len(self))
 
         @property
         def empty(self):
@@ -433,6 +454,11 @@ elif backend_df == "pl":
         def isnull(self):
             return PolarsSeries(self.is_null(), name=self.name)
 
+        def loc_by_mask(self, boolean_mask):
+            if len(boolean_mask) != len(self):
+                raise ValueError("Boolean mask length must match the length of the series")
+            return PolarsSeries([x for x, mask in zip(self.to_list(), boolean_mask) if mask], name=self.name)
+
         def map(self, func, na_action=None):
             if na_action == "ignore":
                 return PolarsSeries(
@@ -474,21 +500,32 @@ elif backend_df == "pl":
     def _merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
         if not isinstance(right, PolarsDataFrame):
             right = PolarsDataFrame(right)
-        if on is None:
-            raise ValueError("The 'on' parameter must be specified for merging.")
+        # if on is None:
+        #     raise ValueError("The 'on' parameter must be specified for merging.")
 
         left_df = self.df
         right_df = right.df
 
+        # TODO: check this with the left and right on
         # Identify overlapping columns
-        overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on)
+        if on is not None:
+            overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on)
 
-        # Apply suffixes to overlapping columns
-        for col in overlap:
-            left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
-            right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
+            # Apply suffixes to overlapping columns
+            for col in overlap:
+                left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
+                right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
-        merged_df = left_df.join(right_df, on=on, how=how)
+            merged_df = left_df.join(right_df, on=on, how=how)
+
+        else:
+            if left_df.width:
+                left_on = left_df.columns
+                merged_df = left_df.join(right_df, how=how, left_on=left_on)
+            else:
+                right_on = right_df.columns
+                merged_df = left_df.join(right_df, how=how, right_on=right_on)
+
         return PolarsDataFrame(merged_df)
 
     def _read_csv(
