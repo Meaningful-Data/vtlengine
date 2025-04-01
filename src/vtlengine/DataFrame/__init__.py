@@ -27,7 +27,6 @@ if backend_df == "pd":
     _read_csv = pd.read_csv
 
 elif backend_df == "pl":
-
     _DataFrame = PolarsDataFrame
     _Series = PolarsSeries
 

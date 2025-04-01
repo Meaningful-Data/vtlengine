@@ -123,7 +123,9 @@ class PolarsSeries(pl.Series):
     def loc_by_mask(self, boolean_mask):
         if len(boolean_mask) != len(self):
             raise ValueError("Boolean mask length must match the length of the series")
-        return PolarsSeries([x for x, mask in zip(self.to_list(), boolean_mask) if mask], name=self.name)
+        return PolarsSeries(
+            [x for x, mask in zip(self.to_list(), boolean_mask) if mask], name=self.name
+        )
 
     def map(self, func, na_action=None):
         if na_action == "ignore":

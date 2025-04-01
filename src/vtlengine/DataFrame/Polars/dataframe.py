@@ -170,13 +170,17 @@ class PolarsDataFrame(pl.DataFrame):
     def apply(self, func, axis=0, *args, **kwargs):
         if axis == 0:
             # Apply function to each column
-            new_series = {col: PolarsSeries(func(series, *args, **kwargs), name=col) for col, series in
-                          self.series.items()}
+            new_series = {
+                col: PolarsSeries(func(series, *args, **kwargs), name=col)
+                for col, series in self.series.items()
+            }
         elif axis == 1:
             # Apply function to each row
             new_data = [func(row, *args, **kwargs) for row in self.df.rows()]
-            new_series = {f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}") for i in
-                          range(len(new_data[0]))}
+            new_series = {
+                f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}")
+                for i in range(len(new_data[0]))
+            }
         else:
             raise ValueError("Axis must be 0 (columns) or 1 (rows)")
 
@@ -264,8 +268,10 @@ class PolarsDataFrame(pl.DataFrame):
     def loc_by_mask(self, boolean_mask):
         if len(boolean_mask) != len(self):
             raise ValueError("Boolean mask length must match the length of the DataFrame")
-        filtered_data = {col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask] for col, series in
-                         self.series.items()}
+        filtered_data = {
+            col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask]
+            for col, series in self.series.items()
+        }
         return PolarsDataFrame(filtered_data)
 
     def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
@@ -318,9 +324,9 @@ class PolarsDataFrame(pl.DataFrame):
             new_series = [
                 value
                 if (
-                        x == to_replace
-                        or (to_replace is np.nan and (x != x))
-                        or (to_replace is None and x is None)
+                    x == to_replace
+                    or (to_replace is np.nan and (x != x))
+                    or (to_replace is None and x is None)
                 )
                 else x
                 for x in series

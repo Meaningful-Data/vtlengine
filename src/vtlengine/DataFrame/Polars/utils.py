@@ -29,14 +29,18 @@ polars_dtype_mapping = {
     np.timedelta64: pl.Duration,
 }
 
+
 def handle_dtype(dtype: Any) -> Any:
     return polars_dtype_mapping.get(dtype, dtype)
+
 
 def _assert_frame_equal(left, right, check_dtype=True, **kwargs):
     return polars_assert_frame_equal(left.df, right.df, check_dtype=check_dtype)
 
+
 def _isnull(obj):
     return pd.isnull(obj)
+
 
 def _isna(obj):
     return pd.isna(obj)
