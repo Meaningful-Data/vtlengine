@@ -1,5 +1,9 @@
+from typing import Any
+
 import numpy as np
+import pandas as pd
 import polars as pl
+from polars.testing import assert_frame_equal as polars_assert_frame_equal
 
 # Mapping of common data types to Polars data types
 polars_dtype_mapping = {
@@ -34,14 +38,14 @@ def handle_dtype(dtype: Any) -> Any:
 
 def _assert_frame_equal(left, right, check_dtype=True, **kwargs):
     """Assert that two DataFrames are equal."""
-    return pl.testing.assert_frame_equal(left.df, right.df, check_dtype=check_dtype, **kwargs)
+    return polars_assert_frame_equal(left.df, right.df, check_dtype=check_dtype)
 
 
 def _isnull(obj):
     """Check for null values."""
-    return pl.Series(obj).is_null()
+    return pd.isnull(obj)
 
 
 def _isna(obj):
     """Check for NA values."""
-    return pl.Series(obj).is_null()
+    return pd.isna(obj)
