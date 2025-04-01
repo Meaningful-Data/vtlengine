@@ -3,8 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import pandas as pd
-
 import vtlengine.AST as AST
 import vtlengine.Exceptions
 import vtlengine.Operators as Operators

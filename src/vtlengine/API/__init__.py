@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset

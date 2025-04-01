@@ -36,6 +36,7 @@ class PolarsSeries(pl.Series):
             return self.series.to_list()[index]
 
     class LocIndexer:
+        """"""
         def __init__(self, series):
             self.series = series
 

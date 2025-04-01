@@ -3,12 +3,11 @@ from typing import IO, Dict, Union
 
 import numpy as np
 import polars as pl
-from numpy.ma.core import filled
 from polars import String
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
-from .utils import _isnull, Columns
+from .utils import Columns, _isnull
 
 
 class PolarsDataFrame(pl.DataFrame):
@@ -23,12 +22,19 @@ class PolarsDataFrame(pl.DataFrame):
         if data is None and columns is not None:
             self.series = {col: PolarsSeries([], name=col) for col in columns}
         elif isinstance(data, dict):
-            self.series = {col: PolarsSeries(values, name=col) if not isinstance(values, PolarsSeries) else values for
-                           col, values in data.items()}
+            self.series = {
+                col: PolarsSeries(values, name=col)
+                if not isinstance(values, PolarsSeries)
+                else values
+                for col, values in data.items()
+            }
         elif isinstance(data, list):
             if columns is None:
                 columns = [f"col{i}" for i in range(len(data))]
-            self.series = {col_name: PolarsSeries(col_data, name=col_name) for col_name, col_data in zip(columns, data)}
+            self.series = {
+                col_name: PolarsSeries(col_data, name=col_name)
+                for col_name, col_data in zip(columns, data)
+            }
         elif isinstance(data, pl.DataFrame):
             self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
         else:
@@ -232,7 +238,7 @@ class PolarsDataFrame(pl.DataFrame):
 
         else:
             for col, _series in self.series.items():
-                if value in ["", ''] and _series.dtype != String:
+                if value in ["", ""] and _series.dtype != String:
                     fill_value = -1234997
                 elif _series.dtype == pl.Boolean:
                     fill_value = True
