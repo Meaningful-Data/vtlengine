@@ -1,12 +1,12 @@
+from pathlib import Path
+from typing import IO, Any, Dict, Union
+
 import numpy as np
 import polars as pl
-from typing import Any, Dict, IO, Union
-from pathlib import Path
-
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
-from .utils import handle_dtype, _isnull
+from .utils import _isnull
 
 
 class PolarsDataFrame(pl.DataFrame):

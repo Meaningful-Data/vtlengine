@@ -1,10 +1,15 @@
 import os
-import pandas as pd
-from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype, _assert_frame_equal as polars_assert_frame_equal, \
-    _concat as polars_concat, _isnull as polars_isnull, _isna as polars_isna, _merge as polars_merge, \
-    _read_csv as polars_read_csv
 
+import pandas as pd
 from pandas._testing import assert_frame_equal as pandas_assert_frame_equal
+
+from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype
+from .Polars import _assert_frame_equal as polars_assert_frame_equal
+from .Polars import _concat as polars_concat
+from .Polars import _isna as polars_isna
+from .Polars import _isnull as polars_isnull
+from .Polars import _merge as polars_merge
+from .Polars import _read_csv as polars_read_csv
 
 POLARS_STR = ["polars", "pl"]
 

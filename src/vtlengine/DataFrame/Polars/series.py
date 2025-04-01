@@ -37,9 +37,7 @@ class PolarsSeries(pl.Series):
             self.series = series
 
         def __getitem__(self, index):
-            if isinstance(index, int):
-                return self.series.to_list()[index]
-            elif isinstance(index, slice):
+            if isinstance(index, int) or isinstance(index, slice):
                 return self.series.to_list()[index]
             elif isinstance(index, list):
                 return [self.series.to_list()[i] for i in index]
