@@ -251,7 +251,8 @@ class Flow_to_stock(Unary):
 class Stock_to_flow(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
-        return x.diff().fillna(x)
+        x = x.diff()
+        return x.fillna(x)
 
 
 class Fill_time_series(Binary):

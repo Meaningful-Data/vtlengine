@@ -219,7 +219,7 @@ elif backend_df == "pl":
         def apply(self, func, axis=0, *args, **kwargs):
             if axis == 0:
                 # Apply function to each column
-                new_series = {col: PolarsSeries(func(series.to_list(), *args, **kwargs), name=col) for col, series in
+                new_series = {col: PolarsSeries(func(series, *args, **kwargs), name=col) for col, series in
                               self.series.items()}
             elif axis == 1:
                 # Apply function to each row
@@ -388,6 +388,9 @@ elif backend_df == "pl":
             sorted_df = self.df.sort(by, descending=not ascending)
             return PolarsDataFrame(sorted_df)
 
+        def to_series(self, index: int = 0, *args, **kwargs) -> "PolarsSeries":
+            return PolarsSeries(self.df.to_series(index), name=self.columns[index])
+
         def view(self):
             print(self.df)
 
@@ -439,12 +442,16 @@ elif backend_df == "pl":
                     raise TypeError("Invalid index type for loc")
 
         @property
-        def name(self):
-            return self._s.name()
+        def s(self):
+            return self._s
+
+        @s.setter
+        def s(self, s):
+            self._s = s
 
         @property
         def dtype(self):
-            return self._s.dtype()
+            return self.s.dtype()
 
         @property
         def index(self):
@@ -463,6 +470,10 @@ elif backend_df == "pl":
             return self.LocIndexer(self)
 
         @property
+        def name(self):
+            return self.s.name()
+
+        @property
         def plot(self) -> SeriesPlot:
             return SeriesPlot(self)
 
@@ -471,7 +482,8 @@ elif backend_df == "pl":
             return self.to_list()
 
         def apply(self, func, *args, **kwargs):
-            return PolarsSeries([func(x, *args, **kwargs) for x in self.to_list()], name=self.name)
+            new_series = [func(x, *args, **kwargs) for x in self.to_list()]
+            return PolarsSeries(new_series, name=self.name)
 
         def astype(self, dtype, errors="raise"):
             try:
@@ -491,11 +503,19 @@ elif backend_df == "pl":
         def copy(self):
             return PolarsSeries(self.to_list(), name=self.name)
 
+        def diff(self, **kwargs) -> "PolarsSeries":
+            """Calculate the difference between consecutive elements in the series."""
+            diff_values = super().diff(**kwargs)
+            return PolarsSeries(diff_values, name=self.name)
+
         def dropna(self):
             return PolarsSeries(self.drop_nulls(), name=self.name)
 
         def isnull(self):
             return PolarsSeries(self.is_null(), name=self.name)
+
+        def fillna(self, value, *args, **kwargs):
+            return self.fill_null(value)
 
         def loc_by_mask(self, boolean_mask):
             if len(boolean_mask) != len(self):
