@@ -49,3 +49,28 @@ def _isnull(obj):
 def _isna(obj):
     """Check for NA values."""
     return pd.isna(obj)
+
+
+class Columns:
+    """Wrapper around a list of columns (used to add tolist method to columns)."""
+
+    def __init__(self, columns):
+        self._columns = columns
+
+    def tolist(self):
+        return self._columns
+
+    def __iter__(self):
+        return iter(self._columns)
+
+    def __len__(self):
+        return len(self._columns)
+
+    def __getitem__(self, index):
+        return self._columns[index]
+
+    def __repr__(self):
+        return repr(self._columns)
+
+    def __str__(self):
+        return str(self._columns)

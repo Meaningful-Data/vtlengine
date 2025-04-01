@@ -147,7 +147,3 @@ class PolarsSeries(pl.Series):
         else:
             new_data = [value if x == to_replace else x for x in self.to_list()]
             return PolarsSeries(new_data, name=self.name)
-
-    def view(self):
-        """Display the Series in a tabular format for debugging."""
-        print(self)

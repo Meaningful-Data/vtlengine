@@ -1,17 +1,18 @@
 from pathlib import Path
-from typing import IO, Any, Dict, Union
+from typing import IO, Dict, Union
 
 import numpy as np
 import polars as pl
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
-from .utils import _isnull
+from .utils import _isnull, Columns
 
 
 class PolarsDataFrame(pl.DataFrame):
     _df: pl.DataFrame() = pl.DataFrame()
     _series: Dict[str, "PolarsSeries"] = {}
+    _columns: "Columns" = []
 
     def __init__(self, data=None, columns=None, **kwargs):
         super().__init__(data)
@@ -37,11 +38,11 @@ class PolarsDataFrame(pl.DataFrame):
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
         self._build_df()
+        self.columns = self.df.columns
 
     def _build_df(self):
         d = {col: series.to_list() for col, series in self.series.items()}
         self.df = pl.DataFrame(d)
-        # self.dtypes = {col: series.dtype for col, series in self.series.items()}
 
     def __delitem__(self, key):
         if key in self.series:
@@ -53,19 +54,18 @@ class PolarsDataFrame(pl.DataFrame):
     def __getitem__(self, key):
         if isinstance(key, str):
             return self.series[key]
-        elif isinstance(key, tuple):
-            if len(key) == 2:
-                row, col = key
-                return PolarsDataFrame(self.df[row, col])
-            else:
-                raise KeyError("Unsupported index type for __getitem__")
+        elif isinstance(key, tuple) and len(key) == 2:
+            row, col = key
+            return PolarsDataFrame(self.df[row, col])
         elif isinstance(key, slice):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):
-            if all(isinstance(i, str) for i in key):
+            if all(isinstance(x, str) for x in key):
                 return PolarsDataFrame(self.df.select(key))
-            else:
-                raise KeyError("Unsupported index type for __getitem__")
+            elif all(isinstance(x, bool) for x in key):
+                return self.loc_by_mask(key)
+            elif all(isinstance(x, int) for x in key):
+                return PolarsDataFrame(self.df[key])
         else:
             raise KeyError("Unsupported index type for __getitem__")
 
@@ -84,31 +84,13 @@ class PolarsDataFrame(pl.DataFrame):
     def __str__(self):
         return self.df.__str__()
 
-    class _ColumnsWrapper:
-        def __init__(self, columns):
-            self._columns = columns
-
-        def tolist(self):
-            return self._columns
-
-        def __iter__(self):
-            return iter(self._columns)
-
-        def __len__(self):
-            return len(self._columns)
-
-        def __getitem__(self, index):
-            return self._columns[index]
-
-        def __repr__(self):
-            return repr(self._columns)
-
-        def __str__(self):
-            return str(self._columns)
-
     @property
     def columns(self):
-        return self._ColumnsWrapper(self.df.columns)
+        return self._columns
+
+    @columns.setter
+    def columns(self, columns):
+        self._columns = Columns(columns)
 
     @property
     def df(self):
@@ -121,10 +103,6 @@ class PolarsDataFrame(pl.DataFrame):
     @property
     def dtypes(self):
         return self.df.dtypes
-
-    # @dtypes.setter
-    # def dtypes(self, value):
-    #     self.df.dtypes = value
 
     @property
     def empty(self):
@@ -176,7 +154,7 @@ class PolarsDataFrame(pl.DataFrame):
             }
         elif axis == 1:
             # Apply function to each row
-            new_data = [func(row, *args, **kwargs) for row in self.df.rows()]
+            new_data = [func(PolarsSeries(row), *args, **kwargs) for row in self.df.rows()]
             new_series = {
                 f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}")
                 for i in range(len(new_data[0]))
@@ -273,6 +251,9 @@ class PolarsDataFrame(pl.DataFrame):
             for col, series in self.series.items()
         }
         return PolarsDataFrame(filtered_data)
+
+    def merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
+        return _merge(self, right, on=on, how=how, suffixes=suffixes)
 
     def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
         if axis not in [0, 1]:
@@ -375,50 +356,37 @@ def _concat(objs, *args, **kwargs):
 def _merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
     if not isinstance(right, PolarsDataFrame):
         right = PolarsDataFrame(right)
-    # if on is None:
-    #     raise ValueError("The 'on' parameter must be specified for merging.")
 
     left_df = self.df
     right_df = right.df
 
-    # TODO: check this with the left and right on
-    # Identify overlapping columns
     if on is not None:
         overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on)
 
-        # Apply suffixes to overlapping columns
         for col in overlap:
             left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
             right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
         merged_df = left_df.join(right_df, on=on, how=how)
-
     else:
         if left_df.width:
-            left_on = left_df.columns
-            merged_df = left_df.join(right_df, how=how, left_on=left_on)
+            merged_df = left_df.join(right_df, how=how, left_on=left_df.columns)
         else:
-            right_on = right_df.columns
-            merged_df = left_df.join(right_df, how=how, right_on=right_on)
+            merged_df = left_df.join(right_df, how=how, right_on=right_df.columns)
 
     return PolarsDataFrame(merged_df)
 
 
 def _read_csv(
     source: str | Path | IO[str] | IO[bytes] | bytes,
-    dtype: dict[str, Any] | None = None,
     na_values: list[str] | None = None,
-    **kwargs,
+    **kwargs,  # pandas args that do not exist in polars
 ) -> PolarsDataFrame:
-    # Convert dtype to schema_overrides for Polars
-    # schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
     if na_values is not None and "null" not in na_values:
         na_values.append("null")
 
-    # Read the CSV file with Polars
     df = pl.read_csv(
         source,
-        # schema_overrides=schema_overrides,
         null_values=na_values or ["null", "None"],
     )
     return PolarsDataFrame(df)
