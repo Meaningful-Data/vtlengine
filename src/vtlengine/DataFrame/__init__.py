@@ -102,11 +102,21 @@ elif backend_df == "pl":
         def __getitem__(self, key):
             if isinstance(key, str):
                 return self.series[key]
+            elif isinstance(key, tuple):
+                if len(key) == 2:
+                    row, col = key
+                    return PolarsDataFrame(self.df[row, col])
+                else:
+                    raise KeyError("Unsupported index type for __getitem__")
+            elif isinstance(key, slice):
+                return PolarsDataFrame(self.df[key])
             elif isinstance(key, list):
-                new_data = {col: self.series[col].to_list() for col in key if col in self.series}
-                return PolarsDataFrame(new_data)
+                if all(isinstance(i, str) for i in key):
+                    return PolarsDataFrame(self.df.select(key))
+                else:
+                    raise KeyError("Unsupported index type for __getitem__")
             else:
-                raise KeyError("Unsupported index type.")
+                raise KeyError("Unsupported index type for __getitem__")
 
         def __setitem__(self, key, value):
             if not isinstance(value, PolarsSeries):
@@ -174,6 +184,14 @@ elif backend_df == "pl":
             return self.df.height
 
         @property
+        def iloc(self):
+            return self
+
+        @property
+        def loc(self):
+            return self
+
+        @property
         @unstable()
         def plot(self):
             return self.df.plot
@@ -237,8 +255,18 @@ elif backend_df == "pl":
             else:
                 return PolarsDataFrame(df)
 
-        def dropna(self, subset, **kwargs):
-            return PolarsDataFrame(self.df.drop_nans(subset=subset))
+        def dropna(self, subset=None, inplace=False):
+            if subset is None:
+                df = self.df.drop_nulls()
+            else:
+                df = self.df.drop_nulls(subset=subset)
+
+            if inplace:
+                self.df = df
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(df)
 
         def fillna(self, value, *args, **kwargs):
             new_series = {}
@@ -467,6 +495,9 @@ elif backend_df == "pl":
             else:
                 return PolarsSeries([func(x) for x in self.to_list()], name=self.name)
 
+        def notnull(self):
+            return PolarsSeries(self.is_not_null(), name=self.name)
+
         def replace(self, to_replace, value=None, **kwargs) -> "PolarsSeries":
             if isinstance(to_replace, dict):
                 new_data = self.to_list()
@@ -488,7 +519,7 @@ elif backend_df == "pl":
 
     def _concat(objs, *args, **kwargs):
         polars_objs = [obj.df if isinstance(obj, PolarsDataFrame) else obj for obj in objs]
-        return PolarsDataFrame(pl.concat(polars_objs, *args, **kwargs))
+        return PolarsDataFrame(pl.concat(polars_objs))
 
     def _isnull(obj):
         return pd.isnull(obj)
