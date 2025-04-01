@@ -62,7 +62,7 @@ elif backend_df == "pl":
         _df: pl.DataFrame() = pl.DataFrame()
         _series: Dict[str, "PolarsSeries"] = {}
 
-        def __init__(self, data=None, columns=None):
+        def __init__(self, data=None, columns=None, **kwargs):
             super().__init__(data)
             self.series = {}
             if data is None:
@@ -283,7 +283,7 @@ elif backend_df == "pl":
             else:
                 return PolarsDataFrame(df)
 
-        def fillna(self, value, *args, **kwargs):
+        def fillna(self, value, inplace=False, *args, **kwargs):
             new_series = {}
             if isinstance(value, dict):
                 for col, series in self.series.items():
@@ -295,10 +295,16 @@ elif backend_df == "pl":
                     new_series[col] = PolarsSeries(new_data, name=col)
             else:
                 for col, series in self.series.items():
-                    new_data = [value if x is None else x for x in series.to_list()]
+                    new_data = [value if isnull(x) else x for x in series.to_list()]
                     new_data = [None if x != x else x for x in new_data]
                     new_series[col] = PolarsSeries(new_data, name=col)
-            return PolarsDataFrame(new_series)
+
+            if inplace:
+                self.series = new_series
+                self._build_df()
+                return None
+            else:
+                return PolarsDataFrame(new_series)
 
         def groupby(self, by, **kwargs):
             grouped_df = self.df.group_by(by).agg(pl.all())
@@ -388,6 +394,9 @@ elif backend_df == "pl":
             sorted_df = self.df.sort(by, descending=not ascending)
             return PolarsDataFrame(sorted_df)
 
+        def to_csv(self, file_path: str, **kwargs):
+            self.df.write_csv(file_path)
+
         def to_series(self, index: int = 0, *args, **kwargs) -> "PolarsSeries":
             return PolarsSeries(self.df.to_series(index), name=self.columns[index])
 
@@ -401,7 +410,7 @@ elif backend_df == "pl":
                 raise KeyError(f"Column '{column_name}' does not exist in the DataFrame.")
 
     class PolarsSeries(pl.Series):
-        def __init__(self, data, name=None, *args, **kwargs):
+        def __init__(self, data=None, name=None, **kwargs):
             super().__init__(name=name, values=data)
 
         def __getitem__(self, index):
@@ -560,7 +569,7 @@ elif backend_df == "pl":
         return pd.isnull(obj)
 
     def _isna(obj):
-        return obj.isnull()
+        return pd.isna(obj)
 
 
     def _merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
@@ -602,13 +611,14 @@ elif backend_df == "pl":
     ) -> PolarsDataFrame:
         # Convert dtype to schema_overrides for Polars
         # schema_overrides = {k: handle_dtype(v) for k, v in (dtype or {}).items()}
+        if na_values is not None and "null" not in na_values:
+            na_values.append("null")
 
         # Read the CSV file with Polars
         df = pl.read_csv(
             source,
-            schema=None,
             # schema_overrides=schema_overrides,
-            null_values=na_values,
+            null_values=na_values or ["null", "None"],
         )
         return PolarsDataFrame(df)
 
