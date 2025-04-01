@@ -216,6 +216,21 @@ elif backend_df == "pl":
         def width(self) -> int:
             return self.df.width
 
+        def apply(self, func, axis=0, *args, **kwargs):
+            if axis == 0:
+                # Apply function to each column
+                new_series = {col: PolarsSeries(func(series.to_list(), *args, **kwargs), name=col) for col, series in
+                              self.series.items()}
+            elif axis == 1:
+                # Apply function to each row
+                new_data = [func(row, *args, **kwargs) for row in self.df.rows()]
+                new_series = {f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}") for i in
+                              range(len(new_data[0]))}
+            else:
+                raise ValueError("Axis must be 0 (columns) or 1 (rows)")
+
+            return PolarsDataFrame(new_series)
+
         def assign(self, **kwargs):
             new_series = self.series.copy()
             for key, value in kwargs.items():
@@ -285,9 +300,9 @@ elif backend_df == "pl":
                     new_series[col] = PolarsSeries(new_data, name=col)
             return PolarsDataFrame(new_series)
 
-        def groupby(self, *args, **kwargs):
-            by = args[0] if args else kwargs.get("by")
-            return self.group_by(by)
+        def groupby(self, by, **kwargs):
+            grouped_df = self.df.group_by(by).agg(pl.all())
+            return PolarsDataFrame(grouped_df)
 
         def loc_by_mask(self, boolean_mask):
             if len(boolean_mask) != len(self):
