@@ -7,7 +7,10 @@ from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
 
 class PolarsSeries(pl.Series):
     def __init__(self, data=None, name=None, **kwargs):
-        super().__init__(name=name, values=data)
+        try:
+            super().__init__(name=name, values=data)
+        except Exception as e:
+            raise e
 
     def __getitem__(self, index):
         if isinstance(index, (int, slice)):

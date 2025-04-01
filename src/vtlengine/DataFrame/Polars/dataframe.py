@@ -3,6 +3,8 @@ from typing import IO, Dict, Union
 
 import numpy as np
 import polars as pl
+from numpy.ma.core import filled
+from polars import String
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
@@ -17,24 +19,18 @@ class PolarsDataFrame(pl.DataFrame):
     def __init__(self, data=None, columns=None, **kwargs):
         super().__init__(data)
         self.series = {}
-        if data is None:
-            if columns is not None:
-                for col in columns:
-                    self.series[col] = PolarsSeries([], name=col)
+
+        if data is None and columns is not None:
+            self.series = {col: PolarsSeries([], name=col) for col in columns}
         elif isinstance(data, dict):
-            for col, values in data.items():
-                if not isinstance(values, PolarsSeries):
-                    self.series[col] = PolarsSeries(values, name=col)
-                else:
-                    self.series[col] = values
+            self.series = {col: PolarsSeries(values, name=col) if not isinstance(values, PolarsSeries) else values for
+                           col, values in data.items()}
         elif isinstance(data, list):
             if columns is None:
                 columns = [f"col{i}" for i in range(len(data))]
-            for col_name, col_data in zip(columns, data):
-                self.series[col_name] = PolarsSeries(col_data, name=col_name)
+            self.series = {col_name: PolarsSeries(col_data, name=col_name) for col_name, col_data in zip(columns, data)}
         elif isinstance(data, pl.DataFrame):
-            for col in data.columns:
-                self.series[col] = PolarsSeries(data[col].to_list(), name=col)
+            self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
         self._build_df()
@@ -42,7 +38,11 @@ class PolarsDataFrame(pl.DataFrame):
 
     def _build_df(self):
         d = {col: series.to_list() for col, series in self.series.items()}
-        self.df = pl.DataFrame(d)
+        try:
+            self.df = pl.DataFrame(d)
+        except Exception as e:
+            print(e)
+            raise ValueError("Error creating DataFrame from series data")
 
     def __delitem__(self, key):
         if key in self.series:
@@ -72,6 +72,8 @@ class PolarsDataFrame(pl.DataFrame):
     def __setitem__(self, key, value):
         if not isinstance(value, PolarsSeries):
             value = PolarsSeries(value, name=key)
+        if len(value) != self.height:
+            value = PolarsSeries(value.to_list() + [None] * (self.height - len(value)), name=key)
         self.series[key] = value
         self._build_df()
 
@@ -218,6 +220,7 @@ class PolarsDataFrame(pl.DataFrame):
 
     def fillna(self, value, inplace=False, *args, **kwargs):
         new_series = {}
+
         if isinstance(value, dict):
             for col, series in self.series.items():
                 if col in value:
@@ -226,9 +229,17 @@ class PolarsDataFrame(pl.DataFrame):
                     new_data = series.to_list()
                 new_data = [None if x != x else x for x in new_data]
                 new_series[col] = PolarsSeries(new_data, name=col)
+
         else:
-            for col, series in self.series.items():
-                new_data = [value if _isnull(x) else x for x in series.to_list()]
+            for col, _series in self.series.items():
+                if value in ["", ''] and _series.dtype != String:
+                    fill_value = -1234997
+                elif _series.dtype == pl.Boolean:
+                    fill_value = True
+                else:
+                    fill_value = value
+
+                new_data = [fill_value if _isnull(x) else x for x in _series.to_list()]
                 new_data = [None if x != x else x for x in new_data]
                 new_series[col] = PolarsSeries(new_data, name=col)
 
