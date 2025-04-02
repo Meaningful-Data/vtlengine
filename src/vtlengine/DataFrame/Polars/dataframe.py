@@ -14,7 +14,7 @@ from .utils import Columns, _isnull
 
 
 class PolarsDataFrame(pl.DataFrame):
-    _df: pl.DataFrame() = pl.DataFrame()
+    _df: pl.DataFrame = pl.DataFrame()
     _series: Dict[str, "PolarsSeries"] = {}
     _columns: "Columns" = Columns()
 
@@ -33,6 +33,8 @@ class PolarsDataFrame(pl.DataFrame):
         elif isinstance(data, list):
             if columns is None:
                 columns = [f"col{i}" for i in range(len(data))]
+            if isinstance(data[0], tuple):
+                data = list(zip(*data))
             self.series = {
                 col_name: PolarsSeries(col_data, name=col_name)
                 for col_name, col_data in zip(columns, data)
@@ -142,6 +144,11 @@ class PolarsDataFrame(pl.DataFrame):
     @property
     def iloc(self):
         return self
+
+    # TODO: check this (unlike pandas, polars do not work with an intern index)
+    @property
+    def index(self):
+        return PolarsSeries("index", range(len(self.df)))
 
     @property
     def loc(self):
