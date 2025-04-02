@@ -397,19 +397,15 @@ def _merge(
     left_df = self.df
     right_df = right.df
 
-    overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on or [])
+    overlap = set(left_df.columns).intersection(right_df.columns)
+    if on or (left_on and right_on):
+        overlap.difference_update(on or (left_on and right_on))
 
     for col in overlap:
         left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
         right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
-    # if left_on == right_on and left_on is not None:
-    #     left_df = left_df.rename({left_on: f"{left_on}{suffixes[0]}"})
-    #     right_df = right_df.rename({right_on: f"{right_on}{suffixes[1]}"})
-    #
-
     merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how)
-
     return PolarsDataFrame(merged_df)
 
 
