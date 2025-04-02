@@ -1,6 +1,5 @@
 import numpy as np
 import polars as pl
-from pandas._libs.missing import NAType
 from polars.series.plotting import SeriesPlot
 
 from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
@@ -37,6 +36,7 @@ class PolarsSeries(pl.Series):
 
     class LocIndexer:
         """"""
+
         def __init__(self, series):
             self.series = series
 
