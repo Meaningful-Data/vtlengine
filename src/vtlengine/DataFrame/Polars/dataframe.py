@@ -285,8 +285,9 @@ class PolarsDataFrame(pl.DataFrame):
         var_name: str | None = None,
         value_name: str | None = None,
     ) -> DataFrame:
-        self.df.melt(id_vars, value_vars, var_name, value_name)
-        self._build_df()
+        self.df = self.df.melt(id_vars, value_vars, var_name, value_name)
+        self.columns = list(self.df.columns)
+        self.series = {col: PolarsSeries(self.df[col].to_list(), name=col) for col in self.columns}
         return self
 
     def merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
