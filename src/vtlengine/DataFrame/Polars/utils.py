@@ -24,6 +24,7 @@ polars_dtype_mapping = {
     "f32": pl.Float32,
     np.float32: pl.Float32,
     np.float64: pl.Float64,
+    "boolean": pl.Boolean,
     "bool": pl.Boolean,
     np.bool_: pl.Boolean,
     np.datetime64: pl.Datetime,
@@ -54,20 +55,27 @@ def _isna(obj):
 class Columns:
     """Wrapper around a list of columns (used to add tolist method to columns)."""
 
-    def __init__(self, columns):
+    _columns: list
+
+    def __init__(self, columns=None):
+        if columns is None:
+            columns = []
         self._columns = columns
 
     def tolist(self):
         return self._columns
+
+    def __delitem__(self, key):
+        self._columns.remove(key)
+
+    def __getitem__(self, index):
+        return self._columns[index]
 
     def __iter__(self):
         return iter(self._columns)
 
     def __len__(self):
         return len(self._columns)
-
-    def __getitem__(self, index):
-        return self._columns[index]
 
     def __repr__(self):
         return repr(self._columns)

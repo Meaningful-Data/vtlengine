@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-import pandas as pd
+import numpy as np
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
@@ -28,7 +28,7 @@ class Binary(Operator.Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = cls.comp_op(left_series.astype("boolean"), right_series.astype("boolean"))
-        return result.replace({pd.NA: None}).astype(object)
+        return result.replace({np.nan: None}).astype(object)
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:

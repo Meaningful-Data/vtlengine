@@ -3,7 +3,7 @@ from typing import IO, Dict, Union
 
 import numpy as np
 import polars as pl
-from polars import String
+from IPython.core.guarded_eval import dict_keys
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
@@ -13,10 +13,9 @@ from .utils import Columns, _isnull
 class PolarsDataFrame(pl.DataFrame):
     _df: pl.DataFrame() = pl.DataFrame()
     _series: Dict[str, "PolarsSeries"] = {}
-    _columns: "Columns" = []
+    _columns: "Columns" = Columns()
 
     def __init__(self, data=None, columns=None, **kwargs):
-        super().__init__(data)
         self.series = {}
 
         if data is None and columns is not None:
@@ -37,18 +36,24 @@ class PolarsDataFrame(pl.DataFrame):
             }
         elif isinstance(data, pl.DataFrame):
             self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
+        elif data is None:
+            self.series = {}
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
+
+        #TODO: Check this
+        # Ensure all columns have the same length by filling with None
+        max_length = max(len(series) for series in self.series.values())
+        for key, series in self.series.items():
+            if len(series) < max_length:
+                series[key] += pl.Series([None] * (max_length - len(series)))
+
         self._build_df()
-        self.columns = self.df.columns
 
     def _build_df(self):
         d = {col: series.to_list() for col, series in self.series.items()}
-        try:
-            self.df = pl.DataFrame(d)
-        except Exception as e:
-            print(e)
-            raise ValueError("Error creating DataFrame from series data")
+        self.columns = list(self.series.keys())
+        self.df = pl.DataFrame(d)
 
     def __delitem__(self, key):
         if key in self.series:
@@ -58,12 +63,15 @@ class PolarsDataFrame(pl.DataFrame):
             raise KeyError(f"Column '{key}' does not exist in the DataFrame.")
 
     def __getitem__(self, key):
+        if isinstance(key, dict_keys):
+            key = list(key)
+
         if isinstance(key, str):
             return self.series[key]
         elif isinstance(key, tuple) and len(key) == 2:
             row, col = key
             return PolarsDataFrame(self.df[row, col])
-        elif isinstance(key, slice):
+        elif isinstance(key, (slice, range)):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):
             if all(isinstance(x, str) for x in key):
@@ -150,6 +158,10 @@ class PolarsDataFrame(pl.DataFrame):
         return self.height * self.width
 
     @property
+    def T(self):
+        return PolarsDataFrame(self.df.transpose())
+
+    @property
     def width(self) -> int:
         return self.df.width
 
@@ -181,20 +193,14 @@ class PolarsDataFrame(pl.DataFrame):
         return PolarsDataFrame(new_series)
 
     def copy(self):
-        return PolarsDataFrame(self.series)
+        return PolarsDataFrame(self.df.clone())
 
-    def drop(self, columns=None, inplace=False, **kwargs):
-        if columns is None:
-            return self
-        if isinstance(columns, str):
-            columns = [columns]
-        new_series = {col: series for col, series in self.series.items() if col not in columns}
-        if inplace:
-            self.series = new_series
-            self._build_df()
-            return None
-        else:
-            return PolarsDataFrame(new_series)
+    def drop(self, columns=None, **kwargs):
+        self.df = self.df.drop(columns)
+        for col in columns if isinstance(columns, list) else [columns]:
+            del self.series[col]
+        self.columns = list(self.series.keys())
+        return self
 
     def drop_duplicates(self, subset=None, keep="first", inplace=False):
         if isinstance(keep, bool):
@@ -211,7 +217,7 @@ class PolarsDataFrame(pl.DataFrame):
         else:
             return PolarsDataFrame(df)
 
-    def dropna(self, subset=None, inplace=False):
+    def dropna(self, subset=None, inplace=False, **kwargs):
         if subset is None:
             df = self.df.drop_nulls()
         else:
@@ -220,7 +226,6 @@ class PolarsDataFrame(pl.DataFrame):
         if inplace:
             self.df = df
             self._build_df()
-            return None
         else:
             return PolarsDataFrame(df)
 
@@ -238,14 +243,7 @@ class PolarsDataFrame(pl.DataFrame):
 
         else:
             for col, _series in self.series.items():
-                if value in ["", ""] and _series.dtype != String:
-                    fill_value = -1234997
-                elif _series.dtype == pl.Boolean:
-                    fill_value = True
-                else:
-                    fill_value = value
-
-                new_data = [fill_value if _isnull(x) else x for x in _series.to_list()]
+                new_data = [value if _isnull(x) else x for x in _series.to_list()]
                 new_data = [None if x != x else x for x in new_data]
                 new_series[col] = PolarsSeries(new_data, name=col)
 
@@ -332,18 +330,9 @@ class PolarsDataFrame(pl.DataFrame):
             new_data[col] = new_series
         return PolarsDataFrame(new_data)
 
-    def reset_index(self, drop: bool = False, inplace: bool = False):
-        if drop:
-            new_df = self.df.with_row_count(name="row_nr")
-        else:
-            new_df = self.df.with_row_count(name="index")
+    def reset_index(self, **kwargs):
+        return self
 
-        if inplace:
-            self.df = new_df
-            self._build_df()
-            return None
-        else:
-            return PolarsDataFrame(new_df)
 
     def sort_values(self, by: str, ascending: bool = True):
         sorted_df = self.df.sort(by, descending=not ascending)
@@ -370,26 +359,25 @@ def _concat(objs, *args, **kwargs):
     return PolarsDataFrame(pl.concat(polars_objs))
 
 
-def _merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
+def _merge(self, right, on=None, left_on=None, right_on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
     if not isinstance(right, PolarsDataFrame):
         right = PolarsDataFrame(right)
 
     left_df = self.df
     right_df = right.df
 
-    if on is not None:
-        overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on)
+    overlap = set(left_df.columns).intersection(set(right_df.columns)) - set(on or [])
 
-        for col in overlap:
-            left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
-            right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
+    for col in overlap:
+        left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
+        right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
-        merged_df = left_df.join(right_df, on=on, how=how)
-    else:
-        if left_df.width:
-            merged_df = left_df.join(right_df, how=how, left_on=left_df.columns)
-        else:
-            merged_df = left_df.join(right_df, how=how, right_on=right_df.columns)
+    # if left_on == right_on and left_on is not None:
+    #     left_df = left_df.rename({left_on: f"{left_on}{suffixes[0]}"})
+    #     right_df = right_df.rename({right_on: f"{right_on}{suffixes[1]}"})
+    #
+
+    merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how)
 
     return PolarsDataFrame(merged_df)
 

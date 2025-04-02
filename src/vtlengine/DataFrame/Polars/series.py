@@ -1,5 +1,6 @@
 import numpy as np
 import polars as pl
+from pandas._libs.missing import NAType
 from polars.series.plotting import SeriesPlot
 
 from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
@@ -7,10 +8,9 @@ from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
 
 class PolarsSeries(pl.Series):
     def __init__(self, data=None, name=None, **kwargs):
-        try:
-            super().__init__(name=name, values=data)
-        except Exception as e:
-            raise e
+        if not isinstance(data, (list, np.ndarray, pl.Series)):
+            data = [data]
+        super().__init__(name=name, values=data, strict=False)
 
     def __getitem__(self, index):
         if isinstance(index, (int, slice)):
@@ -94,18 +94,14 @@ class PolarsSeries(pl.Series):
 
     def astype(self, dtype, errors="raise"):
         try:
-            # Handle numpy to polars type conversion
             if dtype != self.dtype and dtype != np.object_:
-                if dtype in polars_dtype_mapping:
-                    dtype = polars_dtype_mapping[dtype]
+                dtype = polars_dtype_mapping.get(dtype, dtype)
                 return self.cast(dtype)
             return self
-
         except Exception as e:
             if errors == "raise":
                 raise e
-            else:
-                return self
+            return self
 
     def copy(self):
         return PolarsSeries(self.to_list(), name=self.name)
