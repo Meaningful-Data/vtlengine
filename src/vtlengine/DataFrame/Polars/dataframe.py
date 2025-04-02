@@ -71,6 +71,8 @@ class PolarsDataFrame(pl.DataFrame):
     def __getitem__(self, key):
         if isinstance(key, dict_keys):
             key = list(key)
+        elif isinstance(key, PolarsSeries):
+            key = key.to_list()
 
         if isinstance(key, str):
             try:
@@ -175,25 +177,15 @@ class PolarsDataFrame(pl.DataFrame):
         return self.df.width
 
     def apply(self, func, axis=0, *args, **kwargs):
-        if axis == 0:
-            # Apply function to each column
-            new_series = {
-                col: PolarsSeries(func(series, *args, **kwargs), name=col)
-                for col, series in self.series.items()
-            }
-        elif axis == 1:
-            # Apply function to each row
-            new_data = [func(PolarsSeries(row), *args, **kwargs) for row in self.df.rows()]
-            if not isinstance(new_data[0], PolarsSeries):
-                return new_data
-            new_series = {
-                f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}")
-                for i in range(len(new_data[0]))
-            }
+        if axis == 1:
+            return PolarsSeries([func(row) for row in self.df.iter_rows(named=True)])
+
+        elif axis == 0:
+            return PolarsDataFrame({
+                col: self.df[col].map(func) for col in self.df.columns
+            })
         else:
             raise ValueError("Axis must be 0 (columns) or 1 (rows)")
-
-        return PolarsDataFrame(new_series)
 
     def assign(self, **kwargs):
         new_series = self.series.copy()
