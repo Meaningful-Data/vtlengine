@@ -58,6 +58,9 @@ class PolarsDataFrame(pl.DataFrame):
         self.columns = list(self.series.keys())
         self.df = pl.DataFrame(d)
 
+    def __copy__(self):
+        return PolarsDataFrame(self.df.clone())
+
     def __delitem__(self, key):
         if key in self.series:
             del self.series[key]
@@ -70,7 +73,10 @@ class PolarsDataFrame(pl.DataFrame):
             key = list(key)
 
         if isinstance(key, str):
-            return self.series[key]
+            try:
+                return self.series[key]
+            except KeyError:
+                raise KeyError(f"Column '{key}' does not exist in the DataFrame.")
         elif isinstance(key, tuple) and len(key) == 2:
             row, col = key
             return PolarsDataFrame(self.df[row, col])
