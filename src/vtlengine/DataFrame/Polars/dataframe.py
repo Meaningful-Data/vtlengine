@@ -59,7 +59,7 @@ class PolarsDataFrame(pl.DataFrame):
         self.df = pl.DataFrame(d)
 
     def __copy__(self):
-        return PolarsDataFrame(self.df.clone())
+        return self.copy()
 
     def __delitem__(self, key):
         if key in self.series:
