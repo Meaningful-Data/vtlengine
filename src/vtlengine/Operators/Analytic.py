@@ -253,7 +253,7 @@ class Analytic(Operator.Unary):
             # Setting the dataframe as the pl.Dataframe instance
             # and returning the query result as a pd.Dataframe instance
             df = df.df
-            return duckdb.query(query).pl()
+            return DataFrame(duckdb.query(query).to_df())
         return duckdb.query(query).to_df().astype(object)
 
     @classmethod

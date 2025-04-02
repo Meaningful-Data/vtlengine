@@ -1,5 +1,7 @@
 import numpy as np
 import polars as pl
+from polars import String
+from polars.datatypes import IntegerType as PolarsIntegerType
 from polars.series.plotting import SeriesPlot
 
 from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
@@ -7,8 +9,10 @@ from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
 
 class PolarsSeries(pl.Series):
     def __init__(self, data=None, name=None, **kwargs):
-        if not isinstance(data, (list, np.ndarray, pl.Series)):
+        if not isinstance(data, (list, tuple, np.ndarray, pl.Series)):
             data = [data]
+        if len(data) > 0 and isinstance(data[0], list):
+            data = data[0]
         super().__init__(name=name, values=data, strict=False)
 
     def __getitem__(self, index):
@@ -96,6 +100,8 @@ class PolarsSeries(pl.Series):
         try:
             if dtype != self.dtype and dtype != np.object_:
                 dtype = polars_dtype_mapping.get(dtype, dtype)
+                if issubclass(dtype, PolarsIntegerType) and self.dtype == String:
+                    return self.cast(pl.Float64).cast(dtype)
                 return self.cast(dtype)
             return self
         except Exception as e:
@@ -105,6 +111,10 @@ class PolarsSeries(pl.Series):
 
     def copy(self):
         return PolarsSeries(self.to_list(), name=self.name)
+
+    def cumsum(self, **kwargs) -> "PolarsSeries":
+        cumsum_values = super().cum_sum(**kwargs)
+        return PolarsSeries(cumsum_values, name=self.name)
 
     def diff(self, **kwargs) -> "PolarsSeries":
         """Calculate the difference between consecutive elements in the series."""

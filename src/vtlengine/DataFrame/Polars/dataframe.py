@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import IO, Dict, Union
+from typing import IO, Dict, Union, Sequence
 
 import numpy as np
 import pandas as pd
 import polars as pl
 from IPython.core.guarded_eval import dict_keys
+from polars import DataFrame
+from polars._typing import ColumnNameOrSelector
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
@@ -176,6 +178,8 @@ class PolarsDataFrame(pl.DataFrame):
         elif axis == 1:
             # Apply function to each row
             new_data = [func(PolarsSeries(row), *args, **kwargs) for row in self.df.rows()]
+            if not isinstance(new_data[0], PolarsSeries):
+                return new_data
             new_series = {
                 f"result_{i}": PolarsSeries([row[i] for row in new_data], name=f"result_{i}")
                 for i in range(len(new_data[0]))
@@ -267,6 +271,17 @@ class PolarsDataFrame(pl.DataFrame):
             for col, series in self.series.items()
         }
         return PolarsDataFrame(filtered_data)
+
+    def melt(
+        self,
+        id_vars: ColumnNameOrSelector | Sequence[ColumnNameOrSelector] | None = None,
+        value_vars: ColumnNameOrSelector | Sequence[ColumnNameOrSelector] | None = None,
+        var_name: str | None = None,
+        value_name: str | None = None,
+    ) -> DataFrame:
+        self.df.melt(id_vars, value_vars, var_name, value_name)
+        self._build_df()
+        return self
 
     def merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
         return _merge(self, right, on=on, how=how, suffixes=suffixes)
