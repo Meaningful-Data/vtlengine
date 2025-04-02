@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import IO, Dict, Union
 
 import numpy as np
+import pandas as pd
 import polars as pl
 from IPython.core.guarded_eval import dict_keys
 from polars._utils.unstable import unstable
@@ -34,7 +35,7 @@ class PolarsDataFrame(pl.DataFrame):
                 col_name: PolarsSeries(col_data, name=col_name)
                 for col_name, col_data in zip(columns, data)
             }
-        elif isinstance(data, pl.DataFrame):
+        elif isinstance(data, (pl.DataFrame, pd.DataFrame)):
             self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
         elif data is None:
             self.series = {}

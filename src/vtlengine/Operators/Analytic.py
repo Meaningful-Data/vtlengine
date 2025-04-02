@@ -1,7 +1,9 @@
+import os
 from copy import copy
 from typing import List, Optional
 
 import duckdb
+import polars as pl
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -23,7 +25,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, POLARS_STR
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,
@@ -247,8 +249,11 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        # if os.getenv("SPARK", False):
-        #     df = df.to_pandas()
+        if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+            # Setting the dataframe as the pl.Dataframe instance
+            # and returning the query result as a pd.Dataframe instance
+            df = df.df
+            return duckdb.query(query).pl()
         return duckdb.query(query).to_df().astype(object)
 
     @classmethod

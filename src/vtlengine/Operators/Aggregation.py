@@ -1,3 +1,4 @@
+import os
 from copy import copy
 from typing import Any, List, Optional
 
@@ -16,7 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import DataFrame, merge
+from vtlengine.DataFrame import DataFrame, merge, POLARS_STR
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -229,6 +230,11 @@ class Aggregation(Operator.Unary):
             )
 
         try:
+            if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+                # Setting the dataframe as the pl.Dataframe instance
+                # and returning the query result as a pd.Dataframe instance
+                df = df.df
+                return duckdb.query(query).pl()
             return duckdb.query(query).to_df().astype(object)
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
