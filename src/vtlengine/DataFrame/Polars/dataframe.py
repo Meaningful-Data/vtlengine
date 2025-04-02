@@ -46,7 +46,7 @@ class PolarsDataFrame(pl.DataFrame):
         max_length = max(len(series) for series in self.series.values())
         for key, series in self.series.items():
             if len(series) < max_length:
-                series[key] += pl.Series([None] * (max_length - len(series)))
+                self.series[key] += pl.Series([None] * (max_length - len(series)))
 
         self._build_df()
 
