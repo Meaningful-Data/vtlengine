@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import IO, Dict, Union, Sequence
+from typing import IO, Dict, Sequence, Union
 
 import numpy as np
 import pandas as pd

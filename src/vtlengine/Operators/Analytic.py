@@ -3,7 +3,6 @@ from copy import copy
 from typing import List, Optional
 
 import duckdb
-import polars as pl
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -25,7 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import DataFrame, POLARS_STR
+from vtlengine.DataFrame import POLARS_STR, DataFrame
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,
