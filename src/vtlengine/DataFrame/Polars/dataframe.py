@@ -41,7 +41,7 @@ class PolarsDataFrame(pl.DataFrame):
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
 
-        #TODO: Check this
+        # TODO: Check this
         # Ensure all columns have the same length by filling with None
         max_length = max(len(series) for series in self.series.values())
         for key, series in self.series.items():
@@ -333,7 +333,6 @@ class PolarsDataFrame(pl.DataFrame):
     def reset_index(self, **kwargs):
         return self
 
-
     def sort_values(self, by: str, ascending: bool = True):
         sorted_df = self.df.sort(by, descending=not ascending)
         return PolarsDataFrame(sorted_df)
@@ -359,7 +358,17 @@ def _concat(objs, *args, **kwargs):
     return PolarsDataFrame(pl.concat(polars_objs))
 
 
-def _merge(self, right, on=None, left_on=None, right_on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
+def _merge(
+    self,
+    right,
+    on=None,
+    left_on=None,
+    right_on=None,
+    how="inner",
+    suffixes=("_x", "_y"),
+    *args,
+    **kwargs,
+):
     if not isinstance(right, PolarsDataFrame):
         right = PolarsDataFrame(right)
 
