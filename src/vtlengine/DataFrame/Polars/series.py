@@ -109,6 +109,11 @@ class PolarsSeries(pl.Series):
                 raise e
             return self
 
+    def combine(self, other, func):
+        return PolarsSeries(
+            [func(x, y) for x, y in zip(self.to_list(), other.to_list())], name=self.name
+        )
+
     def copy(self):
         return PolarsSeries(self.to_list(), name=self.name)
 

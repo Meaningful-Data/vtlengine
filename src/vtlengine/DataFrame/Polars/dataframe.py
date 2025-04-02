@@ -44,16 +44,16 @@ class PolarsDataFrame(pl.DataFrame):
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
 
-        # TODO: Check this
-        # Ensure all columns have the same length by filling with None
-        max_length = max(len(series) for series in self.series.values())
-        for key, series in self.series.items():
-            if len(series) < max_length:
-                self.series[key] += pl.Series([None] * (max_length - len(series)))
-
         self._build_df()
 
     def _build_df(self):
+        # Ensure all columns have the same length by filling with None
+        max_length = max(map(len, self.series.values()))
+        for key, series in self.series.items():
+            pad_size = max_length - len(series)
+            if pad_size > 0:
+                self.series[key] = pl.concat([series, pl.Series([None] * pad_size)])
+
         d = {col: series.to_list() for col, series in self.series.items()}
         self.columns = list(self.series.keys())
         self.df = pl.DataFrame(d)
