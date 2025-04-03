@@ -396,6 +396,10 @@ class PolarsDataFrame(pl.DataFrame):
 
 def _concat(objs, *args, **kwargs):
     polars_objs = [obj.df if isinstance(obj, PolarsDataFrame) else obj for obj in objs]
+    base_columns = polars_objs[0].columns
+    for i, pobj in enumerate(polars_objs[1:]):
+        if pobj.columns != base_columns and sorted(base_columns) == sorted(pobj.columns):
+            polars_objs[i+1] = pobj.select(base_columns)
     return PolarsDataFrame(pl.concat(polars_objs))
 
 

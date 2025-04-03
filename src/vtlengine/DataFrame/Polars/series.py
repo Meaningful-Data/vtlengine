@@ -29,7 +29,7 @@ class PolarsSeries(pl.Series):
             index = list(index)
         if isinstance(index, (int, slice)):
             return self.to_list()[index]
-        if isinstance(index, PolarsSeries):
+        if isinstance(index, (PolarsSeries, Index)):
             index = index.to_list()
         if isinstance(index, list):
             # TODO: optimize this
@@ -42,7 +42,7 @@ class PolarsSeries(pl.Series):
                 return filtered_series
             return self.gather(index)
         else:
-            raise TypeError("Invalid index type for __getitem__")
+            raise TypeError(f"Invalid index type {type(index)} for __getitem__")
 
     def __repr__(self):
         return super().__repr__()
