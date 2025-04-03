@@ -1,4 +1,3 @@
-import os
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
@@ -23,7 +22,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.DataFrame import DataFrame, Series, concat, POLARS_STR, to_datetime
+from vtlengine.DataFrame import DataFrame, Series, concat, to_datetime
 from vtlengine.DataTypes import (
     Date,
     Duration,

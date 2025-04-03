@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import IO, Dict, Sequence, Union, Any
+from typing import IO, Any, Dict, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -389,8 +389,16 @@ def _concat(objs, *args, **kwargs):
     return PolarsDataFrame(pl.concat(polars_objs))
 
 
-def _merge(self, right, on=None, left_on=None, right_on=None,
-    how="inner", suffixes=("_x", "_y"), *args, **kwargs,
+def _merge(
+    self,
+    right,
+    on=None,
+    left_on=None,
+    right_on=None,
+    how="inner",
+    suffixes=("_x", "_y"),
+    *args,
+    **kwargs,
 ):
     if not isinstance(right, PolarsDataFrame):
         right = PolarsDataFrame(right)
