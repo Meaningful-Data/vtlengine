@@ -10,6 +10,7 @@ from .Polars import _isna as polars_isna
 from .Polars import _isnull as polars_isnull
 from .Polars import _merge as polars_merge
 from .Polars import _read_csv as polars_read_csv
+from .Polars import _to_datetime as polars_to_datetime
 
 POLARS_STR = ["polars", "pl"]
 
@@ -25,6 +26,7 @@ if backend_df == "pd":
     _isna = pd.isna
     _merge = pd.merge
     _read_csv = pd.read_csv
+    _to_datetime = pd.to_datetime
 
 elif backend_df == "pl":
     _DataFrame = PolarsDataFrame
@@ -36,7 +38,7 @@ elif backend_df == "pl":
     _isna = polars_isna
     _merge = polars_merge
     _read_csv = polars_read_csv
-
+    _to_datetime = polars_to_datetime
 
 else:
     raise ValueError("Invalid value for BACKEND_DF environment variable. Use 'pd' or 'pl'.")
@@ -50,3 +52,4 @@ isnull = _isnull
 isna = _isna
 merge = _merge
 read_csv = _read_csv
+to_datetime = _to_datetime

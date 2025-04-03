@@ -52,6 +52,11 @@ def _isna(obj):
     return pd.isna(obj)
 
 
+def _to_datetime(obj, **kwargs):
+    """Convert to datetime."""
+    return obj.cast(pl.Date)
+
+
 class Columns:
     """Wrapper around a list of columns (used to add tolist method to columns)."""
 

@@ -174,3 +174,6 @@ class PolarsSeries(pl.Series):
     def reset_index(self, value=None, **kwargs):
         self.index.reindex(value, **kwargs)
         return self
+
+    def sort_values(self, descending=True, **kwargs):
+        return PolarsSeries(self.sort(), name=self.name)

@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
@@ -22,7 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.DataFrame import DataFrame, Series, concat
+from vtlengine.DataFrame import DataFrame, Series, concat, POLARS_STR, to_datetime
 from vtlengine.DataTypes import (
     Date,
     Duration,
@@ -92,7 +93,7 @@ class Time(Operators.Operator):
 
     @classmethod
     def get_frequencies(cls, dates: Any) -> Any:
-        dates = pd.to_datetime(dates)
+        dates = to_datetime(dates)
         dates = dates.sort_values()
         deltas = dates.diff().dropna()
         return deltas
@@ -579,7 +580,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
-        dates = pd.to_datetime(dates)
+        dates = to_datetime(dates)
         if frequency == "D":
             return dates + pd.to_timedelta(shift_value, unit="D")
         elif frequency == "W":
