@@ -98,6 +98,10 @@ class Index:
     #     """Returns itself when accessed."""
     #     return self
 
+    def __iter__(self):
+        """Iterate over the index series."""
+        return iter(self.index)
+
     def __set__(self, instance, value):
         """Automatically updates the index series when set."""
         if isinstance(value, pl.Series):
