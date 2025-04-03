@@ -1,12 +1,12 @@
-from typing import Collection, Any
+from typing import Any, Collection
 
 import numpy as np
 import polars as pl
-from polars import String, Series
+from polars import String
 from polars.datatypes import IntegerType as PolarsIntegerType
 from polars.series.plotting import SeriesPlot
 
-from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping, Index
+from vtlengine.DataFrame.Polars.utils import Index, polars_dtype_mapping
 
 
 class PolarsSeries(pl.Series):
@@ -96,7 +96,7 @@ class PolarsSeries(pl.Series):
     def values(self):
         return self.to_list()
 
-    #TODO: check if this is the correct implementation
+    # TODO: check if this is the correct implementation
     def align(self, other):
         return self, other
 

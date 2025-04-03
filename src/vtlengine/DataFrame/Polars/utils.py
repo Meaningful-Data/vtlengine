@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -86,6 +86,7 @@ class Columns:
 
 class Index:
     """Handles index management for IndexedSeries and IndexedDataFrame."""
+
     _index: pl.Series = pl.Series("index", [])
     _max_index: int = -1
 

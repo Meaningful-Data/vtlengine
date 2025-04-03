@@ -3,11 +3,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from vtlengine import DataTypes, run
-from vtlengine.DataFrame import DataFrame, read_csv, assert_frame_equal
+from vtlengine.DataFrame import DataFrame, assert_frame_equal, read_csv
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints

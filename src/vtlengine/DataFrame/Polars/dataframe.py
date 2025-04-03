@@ -10,7 +10,7 @@ from polars._typing import ColumnNameOrSelector
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
-from .utils import Columns, _isnull, Index
+from .utils import Columns, Index, _isnull
 
 
 class PolarsDataFrame(pl.DataFrame):
@@ -197,9 +197,7 @@ class PolarsDataFrame(pl.DataFrame):
             return PolarsSeries([func(row) for row in self.df.iter_rows(named=True)])
 
         elif axis == 0:
-            return PolarsDataFrame({
-                col: self.df[col].map(func) for col in self.df.columns
-            })
+            return PolarsDataFrame({col: self.df[col].map(func) for col in self.df.columns})
         else:
             raise ValueError("Axis must be 0 (columns) or 1 (rows)")
 
@@ -277,7 +275,7 @@ class PolarsDataFrame(pl.DataFrame):
         grouped_df = self.df.group_by(by).agg(pl.all())
         return PolarsDataFrame(grouped_df)
 
-    #TODO: check this
+    # TODO: check this
     def loc_by_mask(self, boolean_mask):
         if len(boolean_mask) != len(self):
             raise ValueError("Boolean mask length must match the length of the DataFrame")
@@ -399,7 +397,7 @@ def _concat(objs, *args, **kwargs):
     base_columns = polars_objs[0].columns
     for i, pobj in enumerate(polars_objs[1:]):
         if pobj.columns != base_columns and sorted(base_columns) == sorted(pobj.columns):
-            polars_objs[i+1] = pobj.select(base_columns)
+            polars_objs[i + 1] = pobj.select(base_columns)
     return PolarsDataFrame(pl.concat(polars_objs))
 
 

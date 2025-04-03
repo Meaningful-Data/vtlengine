@@ -2,8 +2,6 @@ import operator
 from copy import copy
 from typing import Any, Dict
 
-from pandas import DataFrame
-
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataFrame import DataFrame, Series, concat, isnull
