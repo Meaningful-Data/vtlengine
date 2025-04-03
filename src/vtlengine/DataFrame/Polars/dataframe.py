@@ -10,16 +10,18 @@ from polars._typing import ColumnNameOrSelector
 from polars._utils.unstable import unstable
 
 from .series import PolarsSeries
-from .utils import Columns, _isnull
+from .utils import Columns, _isnull, Index
 
 
 class PolarsDataFrame(pl.DataFrame):
     _df: pl.DataFrame = pl.DataFrame()
-    _series: Dict[str, "PolarsSeries"] = {}
-    _columns: "Columns" = Columns()
+    _series: Dict[str, PolarsSeries] = {}
+    _columns: Columns = Columns()
+    _index: Index = Index()
 
     def __init__(self, data=None, columns=None, **kwargs):
         self.series = {}
+        self.index = Index()
 
         if data is None and columns is not None:
             self.series = {col: PolarsSeries([], name=col) for col in columns}
@@ -57,8 +59,9 @@ class PolarsDataFrame(pl.DataFrame):
                 self.series[key] = pl.concat([series, pl.Series([None] * pad_size)])
 
         d = {col: series.to_list() for col, series in self.series.items()}
-        self.columns = list(self.series.keys())
         self.df = pl.DataFrame(d)
+        self.columns = list(self.series.keys())
+        self.index.update(len(self.df))
 
     def __copy__(self):
         return self.copy()
@@ -73,7 +76,7 @@ class PolarsDataFrame(pl.DataFrame):
     def __getitem__(self, key):
         if isinstance(key, dict_keys):
             key = list(key)
-        elif isinstance(key, PolarsSeries):
+        elif isinstance(key, (Index, PolarsSeries)):
             key = key.to_list()
 
         if isinstance(key, str):
@@ -98,6 +101,8 @@ class PolarsDataFrame(pl.DataFrame):
 
     def __setitem__(self, key, value):
         if not isinstance(value, PolarsSeries):
+            if isinstance(value, (int, float, str, bool)) or value is None:
+                value = [value] * self.height
             value = PolarsSeries(value, name=key)
         if len(value) != self.height:
             value = PolarsSeries(value.to_list() + [None] * (self.height - len(value)), name=key)
@@ -148,7 +153,11 @@ class PolarsDataFrame(pl.DataFrame):
     # TODO: check this (unlike pandas, polars do not work with an intern index)
     @property
     def index(self):
-        return PolarsSeries("index", range(len(self.df)))
+        return self._index
+
+    @index.setter
+    def index(self, value):
+        self._index = value
 
     @property
     def loc(self):
@@ -177,7 +186,7 @@ class PolarsDataFrame(pl.DataFrame):
 
     @property
     def T(self):
-        return PolarsDataFrame(self.df.transpose())
+        return self
 
     @property
     def width(self) -> int:
@@ -268,6 +277,7 @@ class PolarsDataFrame(pl.DataFrame):
         grouped_df = self.df.group_by(by).agg(pl.all())
         return PolarsDataFrame(grouped_df)
 
+    #TODO: check this
     def loc_by_mask(self, boolean_mask):
         if len(boolean_mask) != len(self):
             raise ValueError("Boolean mask length must match the length of the DataFrame")
@@ -275,7 +285,11 @@ class PolarsDataFrame(pl.DataFrame):
             col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask]
             for col, series in self.series.items()
         }
-        return PolarsDataFrame(filtered_data)
+        filtered_index = [idx for idx, mask in zip(self.index.to_list(), boolean_mask) if mask]
+        result_df = PolarsDataFrame(filtered_data)
+        result_df.index = Index(len(filtered_index))
+        result_df.index.index = pl.Series("index", filtered_index)
+        return result_df
 
     def melt(
         self,
@@ -292,34 +306,34 @@ class PolarsDataFrame(pl.DataFrame):
     def merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
         return _merge(self, right, on=on, how=how, suffixes=suffixes)
 
-    def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
-        if axis not in [0, 1]:
-            raise ValueError("`axis` must be 0 (rows) or 1 (columns)")
-
-        if axis == 0:
-            if index is None:
-                return self.copy() if copy else self
-
-            new_data = {}
-            for col in self.columns.tolist():
-                series = self.series[col].to_list()
-                new_series = [fill_value] * len(index)
-                for i, idx in enumerate(index):
-                    if idx < len(series):
-                        new_series[i] = series[idx]
-                new_data[col] = new_series
-
-            return PolarsDataFrame(new_data)
-        else:
-            if index is None:
-                return self.copy() if copy else self
-
-            new_series = {col: self.series[col] for col in index if col in self.series}
-            for col in index:
-                if col not in new_series:
-                    new_series[col] = PolarsSeries([fill_value] * self.height, name=col)
-
-            return PolarsDataFrame(new_series)
+    # def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
+    #     if axis not in [0, 1]:
+    #         raise ValueError("`axis` must be 0 (rows) or 1 (columns)")
+    #
+    #     if axis == 0:
+    #         if index is None:
+    #             return self.copy() if copy else self
+    #
+    #         new_data = {}
+    #         for col in self.columns.tolist():
+    #             series = self.series[col].to_list()
+    #             new_series = [fill_value] * len(index)
+    #             for i, idx in enumerate(index):
+    #                 if idx < len(series):
+    #                     new_series[i] = series[idx]
+    #             new_data[col] = new_series
+    #
+    #         return PolarsDataFrame(new_data)
+    #     else:
+    #         if index is None:
+    #             return self.copy() if copy else self
+    #
+    #         new_series = {col: self.series[col] for col in index if col in self.series}
+    #         for col in index:
+    #             if col not in new_series:
+    #                 new_series[col] = PolarsSeries([fill_value] * self.height, name=col)
+    #
+    #         return PolarsDataFrame(new_series)
 
     def rename(self, columns: dict, inplace: bool = False, *args, **kwargs):
         new_series = {columns.get(col, col): series for col, series in self.series.items()}
@@ -352,7 +366,12 @@ class PolarsDataFrame(pl.DataFrame):
             new_data[col] = new_series
         return PolarsDataFrame(new_data)
 
-    def reset_index(self, **kwargs):
+    def reindex(self, value=None, **kwargs):
+        self.index.reindex(value, **kwargs)
+        return self
+
+    def reset_index(self, value=None, **kwargs):
+        self.index.reindex(value, **kwargs)
         return self
 
     def sort_values(self, by: str, ascending: bool = True):

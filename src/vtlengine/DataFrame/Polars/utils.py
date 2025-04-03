@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -82,3 +82,61 @@ class Columns:
 
     def __str__(self):
         return str(self._columns)
+
+
+class Index:
+    """Handles index management for IndexedSeries and IndexedDataFrame."""
+    _index: pl.Series = pl.Series("index", [])
+    _max_index: int = -1
+
+    def __init__(self, length=0):
+        self.index = pl.Series("index", range(length))  # Separate index series
+        self.max_index = length - 1  # Track max index globally
+
+    # def __get__(self, instance, owner):
+    #     """Returns itself when accessed."""
+    #     return self
+
+    def __set__(self, instance, value):
+        """Automatically updates the index series when set."""
+        if isinstance(value, pl.Series):
+            self.index = value
+            self.max_index = len(value) - 1
+        elif isinstance(value, Index):
+            self.index = value.index
+            self.max_index = value.max_index
+        elif isinstance(value, (list, range)):
+            self.index = pl.Series("index", value)
+            self.max_index = len(value) - 1
+        else:
+            raise ValueError("Index must be a pl.Series or another Index instance")
+
+    @property
+    def index(self):
+        return self._index
+
+    @index.setter
+    def index(self, value):
+        self._index = value
+
+    @property
+    def max_index(self):
+        return self._max_index
+
+    @max_index.setter
+    def max_index(self, value):
+        self._max_index = value
+
+    def update(self, length):
+        """Updates max_index when new data is added."""
+        self.max_index += length
+        new_indices = pl.Series(range(self.max_index - length + 1, self.max_index + 1))
+        self.index = pl.concat([self.index, new_indices], how="vertical")
+
+    def reindex(self, value, **kwargs):
+        """Resets the index to start from 0."""
+        self.index = pl.Series("index", range(len(self.index)))
+        self.max_index = len(self.index) - 1
+
+    def to_list(self):
+        return self.index.to_list()

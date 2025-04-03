@@ -1,27 +1,46 @@
+from typing import Collection, Any
+
 import numpy as np
 import polars as pl
-from polars import String
+from polars import String, Series
 from polars.datatypes import IntegerType as PolarsIntegerType
 from polars.series.plotting import SeriesPlot
 
-from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping
+from vtlengine.DataFrame.Polars.utils import polars_dtype_mapping, Index
 
 
 class PolarsSeries(pl.Series):
+    _index: Index = Index()
+
     def __init__(self, data=None, name=None, **kwargs):
+        if data is None:
+            data = []
+        if isinstance(data, range):
+            data = list(data)
         if not isinstance(data, (list, tuple, np.ndarray, pl.Series)):
             data = [data]
         if len(data) > 0 and isinstance(data[0], list):
             data = data[0]
+        self.index = Index(len(data))
         super().__init__(name=name, values=data, strict=False)
 
     def __getitem__(self, index):
+        if isinstance(index, range):
+            index = list(index)
         if isinstance(index, (int, slice)):
             return self.to_list()[index]
         if isinstance(index, PolarsSeries):
             index = index.to_list()
-        if isinstance(index, list) and all(isinstance(i, bool) for i in index):
-            return self.loc_by_mask(index)
+        if isinstance(index, list):
+            # TODO: optimize this
+            if len(index) and isinstance(index[0], bool):
+                # return self.filter(index)
+                filtered_series = self.filter(index)
+                filtered_index = [idx for idx, mask in zip(self.index.to_list(), index) if mask]
+                filtered_series.index = Index(len(filtered_index))
+                filtered_series.index.index = pl.Series("index", filtered_index)
+                return filtered_series
+            return self.gather(index)
         else:
             raise TypeError("Invalid index type for __getitem__")
 
@@ -30,27 +49,6 @@ class PolarsSeries(pl.Series):
 
     def _repr_html_(self):
         return super()._repr_html_()
-
-    class iLocIndexer:
-        def __init__(self, series):
-            self.series = series
-
-        def __getitem__(self, index):
-            return self.series.to_list()[index]
-
-    class LocIndexer:
-        """"""
-
-        def __init__(self, series):
-            self.series = series
-
-        def __getitem__(self, index):
-            if isinstance(index, int) or isinstance(index, slice):
-                return self.series.to_list()[index]
-            elif isinstance(index, list):
-                return [self.series.to_list()[i] for i in index]
-            else:
-                raise TypeError("Invalid index type for loc")
 
     @property
     def s(self):
@@ -66,19 +64,25 @@ class PolarsSeries(pl.Series):
 
     @property
     def index(self):
-        return range(len(self))
+        return self._index
+
+    @index.setter
+    def index(self, value):
+        self._index = value
 
     @property
     def empty(self):
         return self.__len__() == 0
 
     @property
-    def iloc(self) -> iLocIndexer:
-        return self.iLocIndexer(self)
+    def iloc(self):
+        # return self.iLocIndexer(self)
+        return self
 
     @property
-    def loc(self) -> LocIndexer:
-        return self.LocIndexer(self)
+    def loc(self):
+        # return self.LocIndexer(self)
+        return self
 
     @property
     def name(self):
@@ -91,6 +95,10 @@ class PolarsSeries(pl.Series):
     @property
     def values(self):
         return self.to_list()
+
+    #TODO: check if this is the correct implementation
+    def align(self, other):
+        return self, other
 
     def apply(self, func, *args, **kwargs):
         new_series = [func(x, *args, **kwargs) for x in self.to_list()]
@@ -129,18 +137,14 @@ class PolarsSeries(pl.Series):
     def dropna(self):
         return PolarsSeries(self.drop_nulls(), name=self.name)
 
+    def isin(self, other: Collection[Any], **kwargs) -> "PolarsSeries":
+        return PolarsSeries(self.is_in(other), name=self.name)
+
     def isnull(self):
         return PolarsSeries(self.is_null(), name=self.name)
 
     def fillna(self, value, *args, **kwargs):
         return self.fill_null(value)
-
-    def loc_by_mask(self, boolean_mask):
-        if len(boolean_mask) != len(self):
-            raise ValueError("Boolean mask length must match the length of the series")
-        return PolarsSeries(
-            [x for x, mask in zip(self.to_list(), boolean_mask) if mask], name=self.name
-        )
 
     def map(self, func, na_action=None):
         if na_action == "ignore":
@@ -162,3 +166,11 @@ class PolarsSeries(pl.Series):
         else:
             new_data = [value if x == to_replace else x for x in self.to_list()]
             return PolarsSeries(new_data, name=self.name)
+
+    def reindex(self, value=None, **kwargs):
+        self.index.reindex(value, **kwargs)
+        return self
+
+    def reset_index(self, value=None, **kwargs):
+        self.index.reindex(value, **kwargs)
+        return self
