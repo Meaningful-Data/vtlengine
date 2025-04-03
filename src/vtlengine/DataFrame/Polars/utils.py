@@ -99,13 +99,13 @@ class Index:
         self.index = pl.Series("index", range(length))  # Separate index series
         self.max_index = length - 1  # Track max index globally
 
-    # def __get__(self, instance, owner):
-    #     """Returns itself when accessed."""
-    #     return self
-
     def __iter__(self):
         """Iterate over the index series."""
         return iter(self.index)
+
+    def __len__(self):
+        """Return the length of the index series."""
+        return len(self.index)
 
     def __set__(self, instance, value):
         """Automatically updates the index series when set."""

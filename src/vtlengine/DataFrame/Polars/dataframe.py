@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import IO, Dict, Sequence, Union
+from typing import IO, Dict, Sequence, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -18,8 +18,9 @@ class PolarsDataFrame(pl.DataFrame):
     _series: Dict[str, PolarsSeries] = {}
     _columns: Columns = Columns()
     _index: Index = Index()
+    _groups: Dict[Any, Any] = {}
 
-    def __init__(self, data=None, columns=None, **kwargs):
+    def __init__(self, data=None, columns=None, index=None, **kwargs):
         self.series = {}
         self.index = Index()
 
@@ -48,9 +49,9 @@ class PolarsDataFrame(pl.DataFrame):
         else:
             raise ValueError("Unsupported data type for creating PolarsDataFrame.")
 
-        self._build_df()
+        self._build_df(index=index)
 
-    def _build_df(self):
+    def _build_df(self, index=None):
         # Ensure all columns have the same length by filling with None
         max_length = max(map(len, self.series.values()))
         for key, series in self.series.items():
@@ -61,7 +62,10 @@ class PolarsDataFrame(pl.DataFrame):
         d = {col: series.to_list() for col, series in self.series.items()}
         self.df = pl.DataFrame(d)
         self.columns = list(self.series.keys())
-        self.index.update(len(self.df))
+        if index is not None:
+            self.index = index
+        else:
+            self.index.update(self.height)
 
     def __copy__(self):
         return self.copy()
@@ -107,7 +111,7 @@ class PolarsDataFrame(pl.DataFrame):
         if len(value) != self.height:
             value = PolarsSeries(value.to_list() + [None] * (self.height - len(value)), name=key)
         self.series[key] = value
-        self._build_df()
+        self._build_df(index=value.index)
 
     def __repr__(self):
         return self.df.__repr__()
@@ -141,6 +145,20 @@ class PolarsDataFrame(pl.DataFrame):
     @property
     def empty(self):
         return self.__len__() == 0
+
+    @property
+    def groups(self):
+        return self._groups
+
+    @groups.setter
+    def groups(self, groups):
+        if isinstance(groups, pl.DataFrame):
+            key_columns = [col for col in groups.columns if col != "__temp_index__"]
+            key_expr = pl.struct(key_columns) if len(key_columns) > 1 else pl.col(key_columns[0])
+            df_exploded = groups.explode("__temp_index__").with_columns(key_expr.alias("key"))
+            df_grouped = df_exploded.group_by("key").agg(pl.col("__temp_index__"))
+            groups = {row[0]: row[1] for row in df_grouped.iter_rows()}
+        self._groups = groups
 
     @property
     def height(self) -> int:
@@ -222,10 +240,7 @@ class PolarsDataFrame(pl.DataFrame):
     def drop_duplicates(self, subset=None, keep="first", inplace=False):
         if isinstance(keep, bool):
             keep = "first"
-        if subset is None:
-            df = self.df.unique(keep=keep)
-        else:
-            df = self.df.unique(subset=subset, keep=keep)
+        df = self.df.unique(subset=subset, keep=keep)
 
         if inplace:
             self.df = df
@@ -266,14 +281,16 @@ class PolarsDataFrame(pl.DataFrame):
 
         if inplace:
             self.series = new_series
-            self._build_df()
+            self._build_df(index=self.index)
             return None
         else:
             return PolarsDataFrame(new_series)
 
     def groupby(self, by, **kwargs):
+        self.df = self.df.with_columns((self.index.index).alias("__temp_index__"))
         grouped_df = self.df.group_by(by).agg(pl.all())
-        return PolarsDataFrame(grouped_df)
+        self.groups = grouped_df.select(by + ["__temp_index__"])
+        return grouped_df.drop("__temp_index__")
 
     # TODO: check this
     def loc_by_mask(self, boolean_mask):
@@ -303,35 +320,6 @@ class PolarsDataFrame(pl.DataFrame):
 
     def merge(self, right, on=None, how="inner", suffixes=("_x", "_y"), *args, **kwargs):
         return _merge(self, right, on=on, how=how, suffixes=suffixes)
-
-    # def reindex(self, index=None, fill_value=None, copy=True, axis=0, *args, **kwargs):
-    #     if axis not in [0, 1]:
-    #         raise ValueError("`axis` must be 0 (rows) or 1 (columns)")
-    #
-    #     if axis == 0:
-    #         if index is None:
-    #             return self.copy() if copy else self
-    #
-    #         new_data = {}
-    #         for col in self.columns.tolist():
-    #             series = self.series[col].to_list()
-    #             new_series = [fill_value] * len(index)
-    #             for i, idx in enumerate(index):
-    #                 if idx < len(series):
-    #                     new_series[i] = series[idx]
-    #             new_data[col] = new_series
-    #
-    #         return PolarsDataFrame(new_data)
-    #     else:
-    #         if index is None:
-    #             return self.copy() if copy else self
-    #
-    #         new_series = {col: self.series[col] for col in index if col in self.series}
-    #         for col in index:
-    #             if col not in new_series:
-    #                 new_series[col] = PolarsSeries([fill_value] * self.height, name=col)
-    #
-    #         return PolarsDataFrame(new_series)
 
     def rename(self, columns: dict, inplace: bool = False, *args, **kwargs):
         new_series = {columns.get(col, col): series for col, series in self.series.items()}
@@ -401,16 +389,8 @@ def _concat(objs, *args, **kwargs):
     return PolarsDataFrame(pl.concat(polars_objs))
 
 
-def _merge(
-    self,
-    right,
-    on=None,
-    left_on=None,
-    right_on=None,
-    how="inner",
-    suffixes=("_x", "_y"),
-    *args,
-    **kwargs,
+def _merge(self, right, on=None, left_on=None, right_on=None,
+    how="inner", suffixes=("_x", "_y"), *args, **kwargs,
 ):
     if not isinstance(right, PolarsDataFrame):
         right = PolarsDataFrame(right)
@@ -437,9 +417,4 @@ def _read_csv(
 ) -> PolarsDataFrame:
     if na_values is not None and "null" not in na_values:
         na_values.append("null")
-
-    df = pl.read_csv(
-        source,
-        null_values=na_values or ["null", "None"],
-    )
-    return PolarsDataFrame(df)
+    return PolarsDataFrame(pl.read_csv(source, null_values=na_values or ["null", "None"]))
