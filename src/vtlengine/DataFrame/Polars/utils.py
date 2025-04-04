@@ -39,7 +39,15 @@ def handle_dtype(dtype: Any) -> Any:
 
 def _assert_frame_equal(left, right, check_dtype=True, **kwargs):
     """Assert that two DataFrames are equal."""
-    return polars_assert_frame_equal(left.df, right.df, check_dtype=check_dtype, check_column_order=False, check_exact=False, rtol=0.01, atol=0.01,)
+    return polars_assert_frame_equal(
+        left.df,
+        right.df,
+        check_dtype=check_dtype,
+        check_column_order=False,
+        check_exact=False,
+        rtol=0.01,
+        atol=0.01,
+    )
 
 
 def _isnull(obj):
