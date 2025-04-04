@@ -245,11 +245,8 @@ class PolarsDataFrame(pl.DataFrame):
         self.columns = list(self.series.keys())
         return self
 
-    def drop_duplicates(self, subset=None, keep="first", inplace=False):
-        if isinstance(keep, bool):
-            keep = "first"
-        df = self.df.unique(subset=subset, keep=keep)
-
+    def drop_duplicates(self, subset=None, keep="first", inplace=False, **kwargs):
+        df = self.df.unique(subset=subset, keep="none" if not keep else "any")
         if inplace:
             self.df = df
             self._build_df()
@@ -257,11 +254,7 @@ class PolarsDataFrame(pl.DataFrame):
             return PolarsDataFrame(df)
 
     def dropna(self, subset=None, inplace=False, **kwargs):
-        if subset is None:
-            df = self.df.drop_nulls()
-        else:
-            df = self.df.drop_nulls(subset=subset)
-
+        df = self.df.drop_nulls(subset=subset)
         if inplace:
             self.df = df
             self._build_df()
