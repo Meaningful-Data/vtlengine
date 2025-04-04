@@ -228,7 +228,7 @@ class PolarsDataFrame(pl.DataFrame):
         if axis == 1:
             return PolarsSeries([func(row) for row in self.df.iter_rows(named=True)])
         elif axis == 0:
-            return PolarsDataFrame({col: self[col].map(func) for col in self.df.columns})
+            return PolarsDataFrame({col: self.series[col].map(func) for col in self.df.columns})
         raise ValueError("Axis must be 0 (columns) or 1 (rows)")
 
     def assign(self, **kwargs):
@@ -294,6 +294,9 @@ class PolarsDataFrame(pl.DataFrame):
         grouped_df = self.df.group_by(by).agg(pl.all())
         self.groups = grouped_df.select(by + ["__temp_index__"])
         return PolarsDataFrame(grouped_df)
+
+    def isnull(self):
+        return PolarsDataFrame({col: self.series[col].isnull() for col in self.columns})
 
     def melt(
         self,

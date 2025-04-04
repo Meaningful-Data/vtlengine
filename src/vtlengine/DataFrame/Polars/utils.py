@@ -44,6 +44,9 @@ def _assert_frame_equal(left, right, check_dtype=True, **kwargs):
 
 def _isnull(obj):
     """Check for null values."""
+    if isinstance(obj, pl.Series):
+        series_is_null = obj.is_null().all()
+        return series_is_null
     return pd.isnull(obj)
 
 
