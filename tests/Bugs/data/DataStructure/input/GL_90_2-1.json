@@ -1,0 +1,153 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "FREQ",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "COUNTRY",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "TERRITORY",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "FLOW",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "CONCEPT",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "EXTTRADE_PRODUCT_HS",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "EXTTRADE_PRODUCT_SITC",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "INDEX_TYPE",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "DERIVATION",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "MOVEMENT",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "INDEX_BASE",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "EXTTRADE_UNIT",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "EXTTRADE_CLASS",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "ADJUSTMENT",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "TIME_PERIOD",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "QUALIFIER",
+          "type": "String",
+          "nullable": false,
+          "role": "Measure"
+        },
+        {
+          "name": "OBS_STATUS",
+          "type": "String",
+          "nullable": true,
+          "role": "Attribute"
+        },
+        {
+          "name": "CONF_STATUS",
+          "type": "String",
+          "nullable": true,
+          "role": "Attribute"
+        },
+        {
+          "name": "UNIT_MEASURE",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "UNIT_MULT",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "SOURCE_ORG",
+          "type": "String",
+          "nullable": false,
+          "role": "Attribute"
+        },
+        {
+          "name": "EMBARGO_TIME",
+          "type": "Date",
+          "nullable": true,
+          "role": "Attribute"
+        },
+        {
+          "name": "DECIMALS",
+          "role": "Attribute",
+          "type": "String",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
