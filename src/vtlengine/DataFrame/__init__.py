@@ -3,18 +3,16 @@ import os
 import pandas as pd
 from pandas._testing import assert_frame_equal as pandas_assert_frame_equal
 
-from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype
-from .Polars import _assert_frame_equal as polars_assert_frame_equal
-from .Polars import _concat as polars_concat
-from .Polars import _isna as polars_isna
-from .Polars import _isnull as polars_isnull
-from .Polars import _merge as polars_merge
-from .Polars import _read_csv as polars_read_csv
-from .Polars import _to_datetime as polars_to_datetime
+BACKENDS = {
+    "pandas": "pd",
+    "pd": "pd",
+    "polars": "pl",
+    "pl": "pl",
+}
 
 POLARS_STR = ["polars", "pl"]
 
-backend_df = "pl" if os.getenv("BACKEND_DF", "").lower() in POLARS_STR else "pd"
+backend_df = BACKENDS.get(os.getenv("BACKEND_DF", "").lower(), "pd")
 
 if backend_df == "pd":
     _DataFrame = pd.DataFrame
@@ -29,6 +27,20 @@ if backend_df == "pd":
     _to_datetime = pd.to_datetime
 
 elif backend_df == "pl":
+    try:
+        import polars as pl
+    except ImportError:
+        raise ImportError("Polars is not installed. Install it with `pip install polars`.")
+
+    from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype
+    from .Polars import _assert_frame_equal as polars_assert_frame_equal
+    from .Polars import _concat as polars_concat
+    from .Polars import _isna as polars_isna
+    from .Polars import _isnull as polars_isnull
+    from .Polars import _merge as polars_merge
+    from .Polars import _read_csv as polars_read_csv
+    from .Polars import _to_datetime as polars_to_datetime
+
     _DataFrame = PolarsDataFrame
     _Series = PolarsSeries
 
