@@ -96,7 +96,7 @@ class PolarsDataFrame(pl.DataFrame):
                 filtered_df = filtered_df.__getitem__(k)
             return filtered_df
         elif isinstance(key, str):
-            return self.series.get(key, PolarsSeries([], name=key))
+            return self.series.get(key, PolarsSeries([], name=key, index=self.index))
         elif isinstance(key, (slice, range, int)):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):

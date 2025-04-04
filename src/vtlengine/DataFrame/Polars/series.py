@@ -18,13 +18,11 @@ class PolarsSeries(pl.Series):
         if isinstance(data, range):
             data = list(data)
         if not isinstance(data, (list, tuple, np.ndarray, pl.Series)):
-            data = [data]
+            data = [data] * len(index) if index and len(index) else [data]
         if len(data) > 0 and isinstance(data[0], list):
             data = data[0]
-        if index is not None:
-            self.index = index
-        else:
-            self.index = Index(len(data))
+
+        self.index = index if index else Index(len(data))
         super().__init__(name=name, values=data, strict=False)
 
     def __getitem__(self, key):
