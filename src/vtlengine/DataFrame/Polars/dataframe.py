@@ -397,9 +397,9 @@ def _merge(
     right_df = right.df
 
     overlap = set(left_df.columns).intersection(right_df.columns)
-    if (how != 'outer' and on) or (left_on and right_on):
+    if (how != "outer" and on) or (left_on and right_on):
         overlap.difference_update(on or (left_on and right_on))
-    if how == 'outer' and on:
+    if how == "outer" and on:
         left_on = [f"{col}{suffixes[0]}" for col in on]
         right_on = [f"{col}{suffixes[1]}" for col in on]
         on = None
