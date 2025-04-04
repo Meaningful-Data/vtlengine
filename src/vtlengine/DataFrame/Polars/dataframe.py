@@ -102,13 +102,10 @@ class PolarsDataFrame(pl.DataFrame):
         elif isinstance(key, list):
             if len(key) == 0:
                 return PolarsDataFrame(columns=self.columns or [])
-            elif all(isinstance(x, str) for x in key):
-                return PolarsDataFrame(self.df.select(key))
-            elif all(isinstance(x, bool) for x in key):
+            elif isinstance(key[0], bool):
                 index_from_trues = [i for i, mask in enumerate(key) if mask]
                 return PolarsDataFrame(self.df.filter(key), index=index_from_trues)
-            elif all(isinstance(x, int) for x in key):
-                return PolarsDataFrame(self.df[key], index=self.index)
+            return PolarsDataFrame(self.df[key], index=self.index)
         raise KeyError("Unsupported index type for __getitem__")
 
     def __setitem__(self, key, value):
@@ -261,10 +258,7 @@ class PolarsDataFrame(pl.DataFrame):
             return PolarsDataFrame(df)
 
     def dropna(self, subset=None, inplace=False, **kwargs):
-        if not self.df.is_empty():
-            df = self.df.drop_nulls(subset=subset)
-        else:
-            df = self.df
+        df = self.df.drop_nulls(subset=subset) if not self.df.is_empty() else self.df
         if inplace:
             self.df = df
             self._build_df()
