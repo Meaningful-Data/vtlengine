@@ -113,6 +113,7 @@ class PolarsDataFrame(pl.DataFrame):
             result = self
             for k in key:
                 result = result.__getitem__(k)
+            key = key[-1]
 
         if not isinstance(value, PolarsSeries):
             if isinstance(value, (int, float, str, bool)) or value is None:

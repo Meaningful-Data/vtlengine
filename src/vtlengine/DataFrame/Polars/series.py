@@ -39,7 +39,7 @@ class PolarsSeries(pl.Series):
             if len(key) and isinstance(key[0], bool):
                 index_from_trues = [i for i, mask in enumerate(key) if mask]
                 return PolarsSeries(self.filter(key), index=index_from_trues)
-            return self.gather(key)
+            return PolarsSeries(self.gather(key))
         raise TypeError(f"Invalid index type {type(key)} for __getitem__")
 
     def __repr__(self):
