@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "COUNTRY",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBS_VALUE",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
