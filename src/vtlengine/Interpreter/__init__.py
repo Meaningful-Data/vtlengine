@@ -1339,7 +1339,8 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
-            validation_data = validation_data[validation_data["bool_var"] == False]
+            if not validation_data.empty:
+                validation_data = validation_data[validation_data["bool_var"] == False]
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1373,7 +1374,10 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
+            if not filter_comp.data.empty:
+                filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
+            else:
+                filtering_indexes = []
             nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
@@ -1566,7 +1570,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 else_data[name] = else_indexes
             else:
                 filtered_data = data.iloc[indexes]
-                then_indexes = list(filtered_data[filtered_data == True].index)
+                if not filtered_data.empty:
+                    then_indexes = list(filtered_data[filtered_data == True].index)
+                else:
+                    then_indexes = []
                 else_indexes = list(set(indexes) - set(then_indexes))
                 then_data = DataFrame({name: then_indexes})
                 else_data = DataFrame({name: else_indexes})

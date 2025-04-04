@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 from IPython.core.guarded_eval import dict_keys
+from pandas import DatetimeIndex
 from polars import DataFrame
 from polars._typing import ColumnNameOrSelector
 from polars._utils.unstable import unstable
@@ -44,6 +45,8 @@ class PolarsDataFrame(pl.DataFrame):
             }
         elif isinstance(data, (pl.DataFrame, pd.DataFrame)):
             self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
+        elif isinstance(data, DatetimeIndex):
+            self.series = {col: PolarsSeries(data.to_list(), name=col) for col in columns}
         elif data is None:
             self.series = {}
         else:
@@ -67,7 +70,7 @@ class PolarsDataFrame(pl.DataFrame):
         self.df = pl.DataFrame(d)
         self.columns = list(self.series.keys())
         if index is not None:
-            self.index = index
+            self.index = index if len(index) == len(self.df) else Index(len(self.df))
         else:
             self.index.update(self.height)
 
@@ -94,11 +97,11 @@ class PolarsDataFrame(pl.DataFrame):
             return filtered_df
         elif isinstance(key, str):
             return self.series.get(key, PolarsSeries([], name=key))
-        elif isinstance(key, (slice, range)):
+        elif isinstance(key, (slice, range, int)):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):
             if len(key) == 0:
-                return PolarsDataFrame()
+                return PolarsDataFrame(columns=self.columns or [])
             elif all(isinstance(x, str) for x in key):
                 return PolarsDataFrame(self.df.select(key))
             elif all(isinstance(x, bool) for x in key):
@@ -171,7 +174,7 @@ class PolarsDataFrame(pl.DataFrame):
             groups = {}
             for row in df_grouped.iter_rows():
                 g = tuple(row[0].values()) if isinstance(row[0], dict) else row[0]
-                groups[g] = row[1]
+                groups[g] = PolarsDataFrame(row[1])
         self._groups = groups
 
     @property
@@ -258,7 +261,10 @@ class PolarsDataFrame(pl.DataFrame):
             return PolarsDataFrame(df)
 
     def dropna(self, subset=None, inplace=False, **kwargs):
-        df = self.df.drop_nulls(subset=subset)
+        if not self.df.is_empty():
+            df = self.df.drop_nulls(subset=subset)
+        else:
+            df = self.df
         if inplace:
             self.df = df
             self._build_df()
@@ -290,10 +296,11 @@ class PolarsDataFrame(pl.DataFrame):
             return PolarsDataFrame(new_series)
 
     def groupby(self, by, **kwargs):
+        by = by if isinstance(by, list) else [by]
         self.df = self.df.with_columns((self.index.index).alias("__temp_index__"))
         grouped_df = self.df.group_by(by).agg(pl.all())
         self.groups = grouped_df.select(by + ["__temp_index__"])
-        return PolarsDataFrame(grouped_df)
+        return self.groups.items()
 
     def isnull(self):
         return PolarsDataFrame({col: self.series[col].isnull() for col in self.columns})
@@ -390,12 +397,18 @@ def _merge(
     right_df = right.df
 
     overlap = set(left_df.columns).intersection(right_df.columns)
-    if on or (left_on and right_on):
+    if (how != 'outer' and on) or (left_on and right_on):
         overlap.difference_update(on or (left_on and right_on))
+    if how == 'outer' and on:
+        left_on = [f"{col}{suffixes[0]}" for col in on]
+        right_on = [f"{col}{suffixes[1]}" for col in on]
+        on = None
 
     for col in overlap:
-        left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
-        right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
+        if f"{col}{suffixes[0]}" not in left_df.columns:
+            left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
+        if f"{col}{suffixes[1]}" not in right_df.columns:
+            right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
     merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how)
     return PolarsDataFrame(merged_df)

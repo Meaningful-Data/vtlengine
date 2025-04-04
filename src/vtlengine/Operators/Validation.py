@@ -101,7 +101,8 @@ class Check(Operator):
         if invalid:
             # TODO: Is this always bool_var?? In any case this does the trick for more use cases
             validation_measure_name = validation_element.get_measures_names()[0]
-            result.data = result.data[result.data[validation_measure_name] == False]
+            if not result.data.empty:
+                result.data = result.data[result.data[validation_measure_name] == False]
             result.data.reset_index(drop=True, inplace=True)
         return result
 
@@ -169,7 +170,8 @@ class Validation(Operator):
         if "imbalance" in result.components:
             validation_measures.append("imbalance")
         if output == "invalid":
-            result.data = result.data[result.data["bool_var"] == False]
+            if not result.data.empty:
+                result.data = result.data[result.data["bool_var"] == False]
             result.data = result.data.drop(columns=["bool_var"])
             result.data.reset_index(drop=True, inplace=True)
         elif output == "all":

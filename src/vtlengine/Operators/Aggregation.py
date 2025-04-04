@@ -201,6 +201,9 @@ class Aggregation(Operator.Unary):
                 )
             else:
                 query = f"SELECT COUNT() AS int_var from df {grouping}"
+            if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+                df = df.df
+                return DataFrame(duckdb.query(query).to_df())
             return duckdb.query(query).to_df()
 
         if measure_names is not None and len(measure_names) > 0:
