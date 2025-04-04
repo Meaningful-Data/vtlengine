@@ -84,24 +84,21 @@ class PolarsDataFrame(pl.DataFrame):
             key = key.to_list()
 
         if isinstance(key, str):
-            try:
-                return self.series[key]
-            except KeyError:
-                raise KeyError(f"Column '{key}' does not exist in the DataFrame.")
+            return self.series.get(key, KeyError(f"Column '{key}' does not exist in the DataFrame."))
         elif isinstance(key, tuple) and len(key) == 2:
-            row, col = key
-            return PolarsDataFrame(self.df[row, col])
+            filtered_df = self.df[key[0]]
+            return PolarsDataFrame(filtered_df[key[1]])
         elif isinstance(key, (slice, range)):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):
             if all(isinstance(x, str) for x in key):
                 return PolarsDataFrame(self.df.select(key))
             elif all(isinstance(x, bool) for x in key):
-                return self.loc_by_mask(key)
+                index_from_trues = [i for i, mask in enumerate(key) if mask]
+                return PolarsDataFrame(self.df.filter(key), index=index_from_trues)
             elif all(isinstance(x, int) for x in key):
-                return PolarsDataFrame(self.df[key])
-        else:
-            raise KeyError("Unsupported index type for __getitem__")
+                return PolarsDataFrame(self.df[key], index=self.index)
+        raise KeyError("Unsupported index type for __getitem__")
 
     def __setitem__(self, key, value):
         if not isinstance(value, PolarsSeries):
@@ -293,18 +290,18 @@ class PolarsDataFrame(pl.DataFrame):
         return grouped_df.drop("__temp_index__")
 
     # TODO: check this
-    def loc_by_mask(self, boolean_mask):
-        if len(boolean_mask) != len(self):
-            raise ValueError("Boolean mask length must match the length of the DataFrame")
-        filtered_data = {
-            col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask]
-            for col, series in self.series.items()
-        }
-        filtered_index = [idx for idx, mask in zip(self.index.to_list(), boolean_mask) if mask]
-        result_df = PolarsDataFrame(filtered_data)
-        result_df.index = Index(len(filtered_index))
-        result_df.index.index = pl.Series("index", filtered_index)
-        return result_df
+    # def loc_by_mask(self, boolean_mask):
+    #     if len(boolean_mask) != len(self):
+    #         raise ValueError("Boolean mask length must match the length of the DataFrame")
+    #     filtered_data = {
+    #         col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask]
+    #         for col, series in self.series.items()
+    #     }
+    #     filtered_index = [idx for idx, mask in zip(self.index.to_list(), boolean_mask) if mask]
+    #     result_df = PolarsDataFrame(filtered_data)
+    #     result_df.index = Index(len(filtered_index))
+    #     result_df.index.index = pl.Series("index", filtered_index)
+    #     return result_df
 
     def melt(
         self,

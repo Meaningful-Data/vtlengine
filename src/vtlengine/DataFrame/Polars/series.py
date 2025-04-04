@@ -12,7 +12,7 @@ from vtlengine.DataFrame.Polars.utils import Index, polars_dtype_mapping
 class PolarsSeries(pl.Series):
     _index: Index = Index()
 
-    def __init__(self, data=None, name=None, **kwargs):
+    def __init__(self, data=None, name=None, index=None, **kwargs):
         if data is None:
             data = []
         if isinstance(data, range):
@@ -21,28 +21,26 @@ class PolarsSeries(pl.Series):
             data = [data]
         if len(data) > 0 and isinstance(data[0], list):
             data = data[0]
-        self.index = Index(len(data))
+        if index is not None:
+            self.index = index
+        else:
+            self.index = Index(len(data))
         super().__init__(name=name, values=data, strict=False)
 
-    def __getitem__(self, index):
-        if isinstance(index, range):
-            index = list(index)
-        if isinstance(index, (int, slice)):
-            return self.to_list()[index]
-        if isinstance(index, (PolarsSeries, Index)):
-            index = index.to_list()
-        if isinstance(index, list):
-            # TODO: optimize this
-            if len(index) and isinstance(index[0], bool):
-                # return self.filter(index)
-                filtered_series = self.filter(index)
-                filtered_index = [idx for idx, mask in zip(self.index.to_list(), index) if mask]
-                filtered_series.index = Index(len(filtered_index))
-                filtered_series.index.index = pl.Series("index", filtered_index)
-                return filtered_series
-            return self.gather(index)
-        else:
-            raise TypeError(f"Invalid index type {type(index)} for __getitem__")
+    def __getitem__(self, key):
+        if isinstance(key, range):
+            key = list(key)
+        if isinstance(key, (PolarsSeries, Index)):
+            key = key.to_list()
+
+        if isinstance(key, (int, slice)):
+            return self.to_list()[key]
+        elif isinstance(key, list):
+            if len(key) and isinstance(key[0], bool):
+                index_from_trues = [i for i, mask in enumerate(key) if mask]
+                return PolarsSeries(self.filter(key), index=index_from_trues)
+            return self.gather(key)
+        raise TypeError(f"Invalid index type {type(key)} for __getitem__")
 
     def __repr__(self):
         return super().__repr__()

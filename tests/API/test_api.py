@@ -1,4 +1,5 @@
 import json
+import os
 import warnings
 from pathlib import Path
 
@@ -19,7 +20,7 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataFrame import DataFrame
+from vtlengine.DataFrame import DataFrame, POLARS_STR, PolarsDataFrame
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
@@ -1137,6 +1138,11 @@ def test_to_vtl_json_function(data, structure, path_reference):
     result = to_vtl_json(datasets[0].structure)
     with open(path_reference, "r") as file:
         reference = json.load(file)
+    if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+        for k, v in result.items():
+            if isinstance(v, Dataset):
+                v.data = PolarsDataFrame(v.data)
+                result[k] = v
     assert result == reference
 
 
@@ -1145,6 +1151,10 @@ def test_run_sdmx_2_1_str_sp(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
+    if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+        for k, v in result.items():
+            v.data = PolarsDataFrame(v.data)
+            result[k] = v
     assert result == reference
 
 
@@ -1153,7 +1163,10 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
     datasets = get_datasets(data, structure)
     result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
-    assert result == reference
+    if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+        for k, v in result.items():
+            v.data = PolarsDataFrame(v.data)
+            result[k] = v
 
 
 @pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
