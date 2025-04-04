@@ -20,7 +20,7 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataFrame import DataFrame, POLARS_STR, PolarsDataFrame
+from vtlengine.DataFrame import POLARS_STR, DataFrame, PolarsDataFrame
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
