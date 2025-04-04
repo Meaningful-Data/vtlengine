@@ -52,6 +52,10 @@ class PolarsDataFrame(pl.DataFrame):
         self._build_df(index=index)
 
     def _build_df(self, index=None):
+        if len(self.series) == 0:
+            self.df = pl.DataFrame()
+            return
+
         # Ensure all columns have the same length by filling with None
         max_length = max(map(len, self.series.values()))
         for key, series in self.series.items():
@@ -83,15 +87,19 @@ class PolarsDataFrame(pl.DataFrame):
         elif isinstance(key, (Index, PolarsSeries)):
             key = key.to_list()
 
-        if isinstance(key, str):
-            return self.series.get(key, KeyError(f"Column '{key}' does not exist in the DataFrame."))
-        elif isinstance(key, tuple) and len(key) == 2:
-            filtered_df = self.df[key[0]]
-            return PolarsDataFrame(filtered_df[key[1]])
+        if isinstance(key, tuple):
+            filtered_df = self
+            for k in key:
+                filtered_df = filtered_df.__getitem__(k)
+            return filtered_df
+        elif isinstance(key, str):
+            return self.series.get(key, PolarsSeries([], name=key))
         elif isinstance(key, (slice, range)):
             return PolarsDataFrame(self.df[key])
         elif isinstance(key, list):
-            if all(isinstance(x, str) for x in key):
+            if len(key) == 0:
+                return PolarsDataFrame()
+            elif all(isinstance(x, str) for x in key):
                 return PolarsDataFrame(self.df.select(key))
             elif all(isinstance(x, bool) for x in key):
                 index_from_trues = [i for i, mask in enumerate(key) if mask]
@@ -101,6 +109,11 @@ class PolarsDataFrame(pl.DataFrame):
         raise KeyError("Unsupported index type for __getitem__")
 
     def __setitem__(self, key, value):
+        if isinstance(key, tuple):
+            result = self
+            for k in key:
+                result = result.__getitem__(k)
+
         if not isinstance(value, PolarsSeries):
             if isinstance(value, (int, float, str, bool)) or value is None:
                 value = [value] * self.height
@@ -210,11 +223,9 @@ class PolarsDataFrame(pl.DataFrame):
     def apply(self, func, axis=0, *args, **kwargs):
         if axis == 1:
             return PolarsSeries([func(row) for row in self.df.iter_rows(named=True)])
-
         elif axis == 0:
             return PolarsDataFrame({col: self.df[col].map(func) for col in self.df.columns})
-        else:
-            raise ValueError("Axis must be 0 (columns) or 1 (rows)")
+        raise ValueError("Axis must be 0 (columns) or 1 (rows)")
 
     def assign(self, **kwargs):
         new_series = self.series.copy()
@@ -242,7 +253,6 @@ class PolarsDataFrame(pl.DataFrame):
         if inplace:
             self.df = df
             self._build_df()
-            return None
         else:
             return PolarsDataFrame(df)
 
@@ -279,7 +289,6 @@ class PolarsDataFrame(pl.DataFrame):
         if inplace:
             self.series = new_series
             self._build_df(index=self.index)
-            return None
         else:
             return PolarsDataFrame(new_series)
 
@@ -288,20 +297,6 @@ class PolarsDataFrame(pl.DataFrame):
         grouped_df = self.df.group_by(by).agg(pl.all())
         self.groups = grouped_df.select(by + ["__temp_index__"])
         return grouped_df.drop("__temp_index__")
-
-    # TODO: check this
-    # def loc_by_mask(self, boolean_mask):
-    #     if len(boolean_mask) != len(self):
-    #         raise ValueError("Boolean mask length must match the length of the DataFrame")
-    #     filtered_data = {
-    #         col: [x for x, mask in zip(series.to_list(), boolean_mask) if mask]
-    #         for col, series in self.series.items()
-    #     }
-    #     filtered_index = [idx for idx, mask in zip(self.index.to_list(), boolean_mask) if mask]
-    #     result_df = PolarsDataFrame(filtered_data)
-    #     result_df.index = Index(len(filtered_index))
-    #     result_df.index.index = pl.Series("index", filtered_index)
-    #     return result_df
 
     def melt(
         self,
@@ -366,15 +361,6 @@ class PolarsDataFrame(pl.DataFrame):
 
     def to_series(self, index: int = 0, *args, **kwargs) -> "PolarsSeries":
         return PolarsSeries(self.df.to_series(index), name=self.columns[index])
-
-    def view(self):
-        print(self.df)
-
-    def view_series(self, column_name: str):
-        if column_name in self.series:
-            print(self.series[column_name])
-        else:
-            raise KeyError(f"Column '{column_name}' does not exist in the DataFrame.")
 
 
 def _concat(objs, *args, **kwargs):
