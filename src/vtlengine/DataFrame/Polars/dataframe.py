@@ -168,7 +168,10 @@ class PolarsDataFrame(pl.DataFrame):
             key_expr = pl.struct(key_columns) if len(key_columns) > 1 else pl.col(key_columns[0])
             df_exploded = groups.explode("__temp_index__").with_columns(key_expr.alias("key"))
             df_grouped = df_exploded.group_by("key").agg(pl.col("__temp_index__"))
-            groups = {row[0]: row[1] for row in df_grouped.iter_rows()}
+            groups = {}
+            for row in df_grouped.iter_rows():
+                g = tuple(row[0].values()) if isinstance(row[0], dict) else row[0]
+                groups[g] = row[1]
         self._groups = groups
 
     @property
@@ -225,7 +228,7 @@ class PolarsDataFrame(pl.DataFrame):
         if axis == 1:
             return PolarsSeries([func(row) for row in self.df.iter_rows(named=True)])
         elif axis == 0:
-            return PolarsDataFrame({col: self.df[col].map(func) for col in self.df.columns})
+            return PolarsDataFrame({col: self[col].map(func) for col in self.df.columns})
         raise ValueError("Axis must be 0 (columns) or 1 (rows)")
 
     def assign(self, **kwargs):
@@ -290,7 +293,7 @@ class PolarsDataFrame(pl.DataFrame):
         self.df = self.df.with_columns((self.index.index).alias("__temp_index__"))
         grouped_df = self.df.group_by(by).agg(pl.all())
         self.groups = grouped_df.select(by + ["__temp_index__"])
-        return grouped_df.drop("__temp_index__")
+        return PolarsDataFrame(grouped_df)
 
     def melt(
         self,
