@@ -142,7 +142,7 @@ class PolarsSeries(pl.Series):
         return PolarsSeries(self.is_null(), name=self.name)
 
     def fillna(self, value, *args, **kwargs):
-        return self.fill_null(value)
+        return PolarsSeries(self.fill_null(value), name=self.name)
 
     def map(self, func, na_action=None):
         if na_action == "ignore":
