@@ -44,9 +44,14 @@ class PolarsDataFrame(pl.DataFrame):
                 for col_name, col_data in zip(columns, data)
             }
         elif isinstance(data, (pl.DataFrame, pd.DataFrame)):
-            self.series = {col: PolarsSeries(data[col].to_list(), name=col, index=index) for col in data.columns}
+            self.series = {
+                col: PolarsSeries(data[col].to_list(), name=col, index=index)
+                for col in data.columns
+            }
         elif isinstance(data, DatetimeIndex):
-            self.series = {col: PolarsSeries(data.to_list(), name=col, index=index) for col in columns}
+            self.series = {
+                col: PolarsSeries(data.to_list(), name=col, index=index) for col in columns
+            }
         elif data is None:
             self.series = {}
         else:
@@ -401,7 +406,9 @@ def _merge(
             if f"{col}{suffixes[1]}" not in right_df.columns:
                 right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
-    merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how, suffix=suffixes[1])
+    merged_df = left_df.join(
+        right_df, on=on, left_on=left_on, right_on=right_on, how=how, suffix=suffixes[1]
+    )
 
     if how == "outer" and on:
         for col in on:
