@@ -235,7 +235,7 @@ class Binary(Operator):
             result.loc[nulls] = None
             return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return Series(result, index=list(range(len(result))), dtype=object)
+        return Series(result, index=list(range(len(result))))
 
     @classmethod
     def apply_operation_series_scalar(

@@ -115,10 +115,16 @@ class PolarsDataFrame(pl.DataFrame):
 
     def __setitem__(self, key, value):
         if isinstance(key, tuple):
-            result = self
-            for k in key:
-                result = result.__getitem__(k)
-            key = key[-1]
+            row_selector, col_selector = key
+
+            if isinstance(col_selector, str):
+                col_data = self[col_selector]
+                for i in row_selector:
+                    col_data[i] = value
+
+                self.series[col_selector] = col_data
+                self._build_df(index=self.series[col_selector].index)
+                return
 
         if not isinstance(value, PolarsSeries):
             if isinstance(value, (int, float, str, bool)) or value is None:
