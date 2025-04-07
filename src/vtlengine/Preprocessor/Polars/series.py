@@ -6,7 +6,7 @@ from polars import String
 from polars.datatypes import IntegerType as PolarsIntegerType
 from polars.series.plotting import SeriesPlot
 
-from vtlengine.DataFrame.Polars.utils import Index, polars_dtype_mapping
+from vtlengine.Preprocessor.Polars.utils import Index, polars_dtype_mapping
 
 
 class PolarsSeries(pl.Series):
