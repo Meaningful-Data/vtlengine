@@ -5,8 +5,8 @@ from datetime import date
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
-from vtlengine.Preprocessor import DataFrame, Series, isnull
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import DataFrame, Series, isnull
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 

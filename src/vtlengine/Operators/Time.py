@@ -22,7 +22,6 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.Preprocessor import DataFrame, Series, concat, to_datetime
 from vtlengine.DataTypes import (
     Date,
     Duration,
@@ -41,6 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Preprocessor import DataFrame, Series, concat, to_datetime
 
 
 class Time(Operators.Operator):

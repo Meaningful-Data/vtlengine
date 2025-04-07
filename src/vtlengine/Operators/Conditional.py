@@ -3,7 +3,6 @@ from typing import Any, List, Union
 
 import numpy as np
 
-from vtlengine.Preprocessor import DataFrame, Series, concat, merge
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -14,6 +13,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
+from vtlengine.Preprocessor import DataFrame, Series, concat, merge
 
 
 class If(Operator):

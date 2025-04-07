@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 
-from vtlengine.Preprocessor import DataFrame, concat, isnull
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
+from vtlengine.Preprocessor import DataFrame, concat, isnull
 
 
 class Set(Operator):

@@ -40,7 +40,6 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.Preprocessor import DataFrame, merge
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -82,6 +81,7 @@ from vtlengine.Operators.Time import (
     Time_Aggregation,
 )
 from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
+from vtlengine.Preprocessor import DataFrame, merge
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
     ANALYTIC_MAPPING,

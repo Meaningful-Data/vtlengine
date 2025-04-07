@@ -3,7 +3,6 @@ from typing import Any, Optional, Type, Union
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
-from vtlengine.Preprocessor import DataFrame, isna
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
@@ -21,6 +20,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Preprocessor import DataFrame, isna
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 

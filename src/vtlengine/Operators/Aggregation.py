@@ -17,7 +17,6 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.Preprocessor import POLARS_STR, DataFrame, merge
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -37,6 +36,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import POLARS_STR, DataFrame, merge
 
 
 def extract_grouping_identifiers(

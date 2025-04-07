@@ -23,7 +23,6 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.Preprocessor import DataFrame
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -31,6 +30,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset
+from vtlengine.Preprocessor import DataFrame
 
 
 class __VTLSingleErrorListener(ErrorListener):  # type: ignore[misc]

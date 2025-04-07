@@ -4,8 +4,8 @@ import numpy as np
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
-from vtlengine.Preprocessor import Series, isnull
 from vtlengine.DataTypes import Boolean
+from vtlengine.Preprocessor import Series, isnull
 
 
 class Unary(Operator.Unary):

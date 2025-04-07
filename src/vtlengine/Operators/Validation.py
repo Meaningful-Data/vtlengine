@@ -2,7 +2,6 @@ from copy import copy
 from typing import Any, Dict, Optional
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
-from vtlengine.Preprocessor import DataFrame, concat
 from vtlengine.DataTypes import (
     Boolean,
     Integer,
@@ -13,6 +12,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
+from vtlengine.Preprocessor import DataFrame, concat
 
 
 # noinspection PyTypeChecker

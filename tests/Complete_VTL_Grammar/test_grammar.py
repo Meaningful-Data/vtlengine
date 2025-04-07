@@ -2,9 +2,9 @@ import json
 from pathlib import Path
 
 from vtlengine import API, DataTypes, run
-from vtlengine.Preprocessor import read_csv
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
+from vtlengine.Preprocessor import read_csv
 
 base_path = Path(__file__).parent / "data"
 dataset_input_path = base_path / "DataSet" / "input"

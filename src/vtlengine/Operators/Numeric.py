@@ -24,11 +24,11 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     TRUNC,
 )
-from vtlengine.Preprocessor import DataFrame, Series, isnull
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
+from vtlengine.Preprocessor import DataFrame, Series, isnull
 
 
 class Unary(Operator.Unary):

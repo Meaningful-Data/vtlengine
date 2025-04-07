@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Optional, Union
 
 from vtlengine.__extras_check import __check_s3_extra
-from vtlengine.Preprocessor import DataFrame
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.Model import Dataset
+from vtlengine.Preprocessor import DataFrame
 
 
 def save_datapoints(

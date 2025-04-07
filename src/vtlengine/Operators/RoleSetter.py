@@ -1,10 +1,10 @@
 from copy import copy
 from typing import Any, Union
 
-from vtlengine.Preprocessor import Series
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
+from vtlengine.Preprocessor import Series
 
 ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]
 
