@@ -56,7 +56,11 @@ class AST:
         if not isinstance(other, self.__class__):
             return False
         for k in self.__all_annotations():
-            if getattr(self, k) != getattr(other, k) and k not in AST.__annotations__:
+            if (
+                getattr(self, k) != getattr(other, k)
+                and k not in AST.__annotations__
+                and k != "children"  # We do not want to compare the children order here
+            ):
                 return False
         return True
 

@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple, Union
 
 import vtlengine.AST.Grammar.tokens
 from vtlengine import AST
-from vtlengine.AST import DPRuleset, HRuleset, Operator, TimeAggregation
+from vtlengine.AST import Comment, DPRuleset, HRuleset, Operator, TimeAggregation
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
@@ -94,8 +94,9 @@ class ASTString(ASTTemplate):
         datapoints = [x for x in node.children if isinstance(x, DPRuleset)]
         udos = [x for x in node.children if isinstance(x, Operator)]
         definitions = datapoints + hierarchies + udos
+        comments = [x for x in node.children if isinstance(x, AST.Comment)]
         transformations = [
-            x for x in node.children if not isinstance(x, (HRuleset, DPRuleset, Operator))
+            x for x in node.children if not isinstance(x, (HRuleset, DPRuleset, Operator, Comment))
         ]
         for child in definitions:
             self.visit(child)
@@ -104,9 +105,10 @@ class ASTString(ASTTemplate):
             self.is_first_assignment = True
             self.visit(child)
             self.vtl_script += "\n"
+        for child in comments:
+            self.vtl_script += f"{child.value}\n"
 
     # ---------------------- Rulesets ----------------------
-
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         rules_sep = "; " if len(node.rules) > 1 else ""
         signature = f"{node.signature_type} rule {node.element.value}"

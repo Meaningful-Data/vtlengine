@@ -2,7 +2,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.Token import CommonToken
 
 from vtlengine.API import create_ast
-from vtlengine.AST import Comment
+from vtlengine.AST import Comment, Start
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.Grammar.lexer import Lexer
 
@@ -24,7 +24,7 @@ def generate_ast_comment(token: CommonToken) -> Comment:
     return Comment(value=text, **token_info)
 
 
-def create_ast_with_comments(text: str):
+def create_ast_with_comments(text: str) -> Start:
     """
     Parses a VTL script and returns an AST with comments.
 
