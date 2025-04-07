@@ -20,6 +20,11 @@ class AST:
     AST: (children)
     """
 
+    line_start: int
+    column_start: int
+    line_stop: int
+    column_stop: int
+
     @classmethod
     def __all_annotations(cls) -> Dict[str, Any]:
         class_attributes = {}
@@ -344,7 +349,7 @@ class If(AST):
 
 
 @dataclass
-class CaseObj:
+class CaseObj(AST):
     condition: AST
     thenOp: AST
 
