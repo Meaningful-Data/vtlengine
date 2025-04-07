@@ -20,6 +20,7 @@ from vtlengine.AST import (
     HRuleset,
     HRUnOp,
     Operator,
+    PersistentAssignment,
     Start,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
@@ -118,7 +119,7 @@ class ASTVisitor(VtlVisitor):
         right_node = Expr().visitExpr(ctx_list[2])
 
         token_info = extract_token_info(ctx)
-        persistent_assignment_node = Assignment(
+        persistent_assignment_node = PersistentAssignment(
             left=left_node, op=op_node, right=right_node, **token_info
         )
         return persistent_assignment_node
