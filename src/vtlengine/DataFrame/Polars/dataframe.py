@@ -15,7 +15,7 @@ from .utils import Columns, Index, _isnull
 
 
 class PolarsDataFrame(pl.DataFrame):
-    _df: pl.DataFrame = pl.DataFrame()
+    _df: pl.DataFrame
     _series: Dict[str, PolarsSeries] = {}
     _columns: Columns = Columns()
     _index: Index = Index()
@@ -26,10 +26,10 @@ class PolarsDataFrame(pl.DataFrame):
         self.index = Index()
 
         if data is None and columns is not None:
-            self.series = {col: PolarsSeries([], name=col) for col in columns}
+            self.series = {col: PolarsSeries([], name=col, index=index) for col in columns}
         elif isinstance(data, dict):
             self.series = {
-                col: PolarsSeries(values, name=col)
+                col: PolarsSeries(values, name=col, index=index)
                 if not isinstance(values, PolarsSeries)
                 else values
                 for col, values in data.items()
@@ -40,13 +40,13 @@ class PolarsDataFrame(pl.DataFrame):
             if isinstance(data[0], tuple):
                 data = list(zip(*data))
             self.series = {
-                col_name: PolarsSeries(col_data, name=col_name)
+                col_name: PolarsSeries(col_data, name=col_name, index=index)
                 for col_name, col_data in zip(columns, data)
             }
         elif isinstance(data, (pl.DataFrame, pd.DataFrame)):
-            self.series = {col: PolarsSeries(data[col].to_list(), name=col) for col in data.columns}
+            self.series = {col: PolarsSeries(data[col].to_list(), name=col, index=index) for col in data.columns}
         elif isinstance(data, DatetimeIndex):
-            self.series = {col: PolarsSeries(data.to_list(), name=col) for col in columns}
+            self.series = {col: PolarsSeries(data.to_list(), name=col, index=index) for col in columns}
         elif data is None:
             self.series = {}
         else:
