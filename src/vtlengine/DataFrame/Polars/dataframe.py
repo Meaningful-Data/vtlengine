@@ -391,20 +391,29 @@ def _merge(
     right_df = right.df
 
     overlap = set(left_df.columns).intersection(right_df.columns)
-    if (how != "outer" and on) or (left_on and right_on):
+    if on or (left_on and right_on):
         overlap.difference_update(on or (left_on and right_on))
-    if how == "outer" and on:
-        left_on = [f"{col}{suffixes[0]}" for col in on]
-        right_on = [f"{col}{suffixes[1]}" for col in on]
-        on = None
 
     for col in overlap:
-        if f"{col}{suffixes[0]}" not in left_df.columns:
-            left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
-        if f"{col}{suffixes[1]}" not in right_df.columns:
-            right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
+        if col not in (on or []):
+            if f"{col}{suffixes[0]}" not in left_df.columns:
+                left_df = left_df.rename({col: f"{col}{suffixes[0]}"})
+            if f"{col}{suffixes[1]}" not in right_df.columns:
+                right_df = right_df.rename({col: f"{col}{suffixes[1]}"})
 
-    merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how)
+    merged_df = left_df.join(right_df, on=on, left_on=left_on, right_on=right_on, how=how, suffix=suffixes[1])
+
+    if how == "outer" and on:
+        for col in on:
+            col_y = f"{col}{suffixes[1]}"
+            if col_y in merged_df.columns:
+                merged_df = merged_df.with_columns(
+                    pl.when(pl.col(col).is_null())
+                    .then(pl.col(col_y))
+                    .otherwise(pl.col(col))
+                    .alias(col)
+                ).drop(col_y)
+
     return PolarsDataFrame(merged_df)
 
 
