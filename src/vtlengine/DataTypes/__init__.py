@@ -1,7 +1,7 @@
 import re
 from typing import Any, Dict, Optional, Set, Type, Union
 
-from vtlengine.DataFrame import isnull
+from vtlengine.Preprocessor import isnull
 from vtlengine.DataTypes.TimeHandling import (
     check_max_date,
     date_to_period_str,

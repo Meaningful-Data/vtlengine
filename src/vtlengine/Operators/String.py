@@ -15,7 +15,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRIM,
     UCASE,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.Preprocessor import DataFrame, Series, isnull
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar

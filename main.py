@@ -1,5 +1,5 @@
 from vtlengine import run
-from vtlengine.DataFrame import DataFrame
+from vtlengine.Preprocessor import DataFrame
 
 
 def main():

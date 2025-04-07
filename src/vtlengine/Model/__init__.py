@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import sqlglot
 import sqlglot.expressions as exp
 
-from vtlengine.DataFrame import DataFrame, assert_frame_equal, concat, isnull
+from vtlengine.Preprocessor import DataFrame, assert_frame_equal, concat, isnull
 from vtlengine.DataTypes import SCALAR_TYPES, SCALAR_TYPES_CLASS_REVERSE, Null, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler as TPHandler
 from vtlengine.Exceptions import SemanticError

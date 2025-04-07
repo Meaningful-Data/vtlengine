@@ -22,7 +22,7 @@ from vtlengine.AST.Grammar.tokens import (
     YEAR,
     YEARTODAY,
 )
-from vtlengine.DataFrame import DataFrame, Series, concat, to_datetime
+from vtlengine.Preprocessor import DataFrame, Series, concat, to_datetime
 from vtlengine.DataTypes import (
     Date,
     Duration,

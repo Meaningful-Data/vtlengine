@@ -2,7 +2,7 @@ from copy import copy
 from typing import Any, Dict, Optional
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
-from vtlengine.DataFrame import DataFrame, concat
+from vtlengine.Preprocessor import DataFrame, concat
 from vtlengine.DataTypes import (
     Boolean,
     Integer,

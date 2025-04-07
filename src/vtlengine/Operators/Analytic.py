@@ -24,7 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import POLARS_STR, DataFrame
+from vtlengine.Preprocessor import POLARS_STR, DataFrame
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 
-from vtlengine.DataFrame import DataFrame, read_csv
+from vtlengine.Preprocessor import DataFrame, read_csv
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,

@@ -23,7 +23,7 @@ from vtlengine.AST.ASTConstructor import ASTVisitor
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.DataFrame import DataFrame
+from vtlengine.Preprocessor import DataFrame
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,

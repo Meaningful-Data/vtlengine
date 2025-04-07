@@ -4,7 +4,7 @@ import os
 import pytest
 
 from vtlengine.API._InternalApi import load_datasets_with_data
-from vtlengine.DataFrame import read_csv
+from vtlengine.Preprocessor import read_csv
 
 
 def load_datasets(base_path, code, folder_type):

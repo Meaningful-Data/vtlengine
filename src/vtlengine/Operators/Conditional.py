@@ -3,7 +3,7 @@ from typing import Any, List, Union
 
 import numpy as np
 
-from vtlengine.DataFrame import DataFrame, Series, concat, merge
+from vtlengine.Preprocessor import DataFrame, Series, concat, merge
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,

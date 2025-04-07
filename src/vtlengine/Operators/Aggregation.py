@@ -17,7 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
-from vtlengine.DataFrame import POLARS_STR, DataFrame, merge
+from vtlengine.Preprocessor import POLARS_STR, DataFrame, merge
 from vtlengine.DataTypes import (
     Boolean,
     Date,

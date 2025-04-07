@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from vtlengine import DataTypes, run
-from vtlengine.DataFrame import DataFrame, assert_frame_equal, read_csv
+from vtlengine.Preprocessor import DataFrame, assert_frame_equal, read_csv
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints

@@ -3,7 +3,7 @@ from typing import Any, Optional, Type, Union
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
-from vtlengine.DataFrame import DataFrame, isna
+from vtlengine.Preprocessor import DataFrame, isna
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,

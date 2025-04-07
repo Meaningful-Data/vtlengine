@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Any, Dict, List, Optional
 
 from vtlengine.AST import BinOp
-from vtlengine.DataFrame import DataFrame, merge
+from vtlengine.Preprocessor import DataFrame, merge
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role

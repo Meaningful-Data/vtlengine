@@ -18,7 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull, merge
+from vtlengine.Preprocessor import DataFrame, Series, isnull, merge
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet

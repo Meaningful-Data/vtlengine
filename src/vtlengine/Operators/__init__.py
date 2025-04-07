@@ -16,7 +16,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull, merge
+from vtlengine.Preprocessor import DataFrame, Series, isnull, merge
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,

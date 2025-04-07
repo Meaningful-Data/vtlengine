@@ -24,7 +24,7 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     TRUNC,
 )
-from vtlengine.DataFrame import DataFrame, Series, isnull
+from vtlengine.Preprocessor import DataFrame, Series, isnull
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar

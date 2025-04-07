@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from vtlengine.API import create_ast
-from vtlengine.DataFrame import DataFrame
+from vtlengine.Preprocessor import DataFrame
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer

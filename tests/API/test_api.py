@@ -20,7 +20,7 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataFrame import POLARS_STR, DataFrame, PolarsDataFrame
+from vtlengine.Preprocessor import POLARS_STR, DataFrame
 from vtlengine.DataTypes import String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
@@ -1141,7 +1141,7 @@ def test_to_vtl_json_function(data, structure, path_reference):
     if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
         for k, v in result.items():
             if isinstance(v, Dataset):
-                v.data = PolarsDataFrame(v.data)
+                v.data = DataFrame(v.data)
                 result[k] = v
     assert result == reference
 
@@ -1153,7 +1153,7 @@ def test_run_sdmx_2_1_str_sp(code, data, structure):
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
         for k, v in result.items():
-            v.data = PolarsDataFrame(v.data)
+            v.data = DataFrame(v.data)
             result[k] = v
     assert result == reference
 
@@ -1165,7 +1165,7 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
         for k, v in result.items():
-            v.data = PolarsDataFrame(v.data)
+            v.data = DataFrame(v.data)
             result[k] = v
 
 

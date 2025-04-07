@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from vtlengine import API, DataTypes, run
-from vtlengine.DataFrame import read_csv
+from vtlengine.Preprocessor import read_csv
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
 

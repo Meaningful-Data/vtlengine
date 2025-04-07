@@ -4,7 +4,7 @@ import numpy as np
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
-from vtlengine.DataFrame import Series, isnull
+from vtlengine.Preprocessor import Series, isnull
 from vtlengine.DataTypes import Boolean
 
 
