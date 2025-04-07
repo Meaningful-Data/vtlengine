@@ -576,6 +576,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 for comp_name in node.partition_by:
                     if comp_name in self.udo_params[-1]:
                         partitioning.append(self.udo_params[-1][comp_name])
+                    elif comp_name in operand.get_identifiers_names():
+                        partitioning.append(comp_name)
                     else:
                         raise SemanticError(
                             "2-3-9",
@@ -587,7 +589,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 for o in node.order_by:
                     if o.component in self.udo_params[-1]:
                         o.component = self.udo_params[-1][o.component]
-                    else:
+                    elif o.component not in operand.get_identifiers_names():
                         raise SemanticError(
                             "2-3-9",
                             comp_type="Component",
