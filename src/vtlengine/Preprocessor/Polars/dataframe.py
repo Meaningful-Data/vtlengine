@@ -130,10 +130,10 @@ class PolarsDataFrame(pl.DataFrame):
         self._build_df(index=value.index)
 
     def __repr__(self):
-        return self.df.__repr__()
+        return super().__repr__()
 
     def _repr_html_(self, *args, **kwargs):
-        return self.df._repr_html_(*args, **kwargs)
+        return super()._repr_html_(*args, **kwargs)
 
     def __str__(self):
         return self.df.__str__()
@@ -394,6 +394,17 @@ def _merge(
 
     left_df = self.df
     right_df = right.df
+
+    if on:
+        for col in on:
+            dtype = left_df.schema.get(col, pl.Utf8)
+            left_df = left_df.with_columns(pl.col(col).cast(dtype))
+            right_df = right_df.with_columns(pl.col(col).cast(dtype))
+    elif left_on and right_on:
+        for lcol, rcol in zip(left_on, right_on):
+            dtype = left_df.schema.get(lcol, pl.Utf8)
+            left_df = left_df.with_columns(pl.col(lcol).cast(dtype))
+            right_df = right_df.with_columns(pl.col(rcol).cast(dtype))
 
     overlap = set(left_df.columns).intersection(right_df.columns)
     if on or (left_on and right_on):
