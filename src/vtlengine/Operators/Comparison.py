@@ -253,7 +253,7 @@ class Between(Operator.Operator):
         control_any_series_from_to = isinstance(from_data, Series) or isinstance(to_data, Series)
         if control_any_series_from_to:
             if not isinstance(from_data, Series):
-                from_data = Series(from_data, index=series.index, dtype=object)
+                from_data = Series(from_data, index=series.index)
             if not isinstance(to_data, Series):
                 to_data = Series(to_data, index=series.index)
             df = DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
@@ -371,9 +371,9 @@ class Between(Operator.Operator):
             isinstance(from_data, Series) or isinstance(to_data, Series)
         ):  # From or To is a DataComponent, or both
             if isinstance(from_data, Series):
-                series = Series(operand.value, index=from_data.index, dtype=object)
+                series = Series(operand.value, index=from_data.index)
             elif isinstance(to_data, Series):
-                series = Series(operand.value, index=to_data.index, dtype=object)
+                series = Series(operand.value, index=to_data.index)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
                 name=operand.name,

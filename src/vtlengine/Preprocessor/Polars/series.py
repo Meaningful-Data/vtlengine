@@ -12,7 +12,7 @@ from vtlengine.Preprocessor.Polars.utils import Index, polars_dtype_mapping
 class PolarsSeries(pl.Series):
     _index: Index = Index()
 
-    def __init__(self, data=None, name=None, index=None, **kwargs):
+    def __init__(self, data=None, name="", index=None, dtype=None, **kwargs):
         if data is None:
             data = []
         if isinstance(data, range):
@@ -22,8 +22,11 @@ class PolarsSeries(pl.Series):
         if len(data) > 0 and isinstance(data[0], list):
             data = data[0]
 
+        if dtype in polars_dtype_mapping.keys():
+            dtype = polars_dtype_mapping[dtype]
+
         self.index = index if index else Index(len(data))
-        super().__init__(name=name, values=data, strict=False)
+        super().__init__(name=name, values=data, dtype=dtype, strict=False)
 
     def __getitem__(self, key):
         if isinstance(key, range):
@@ -39,6 +42,19 @@ class PolarsSeries(pl.Series):
                 return PolarsSeries(self.filter(key), index=index_from_trues)
             return PolarsSeries(self.gather(key))
         raise TypeError(f"Invalid index type {type(key)} for __getitem__")
+
+    def __setitem__(self, key, value):
+        if isinstance(key, pl.Series) and isinstance(key.dtype, pl.Boolean):
+            if len(key) == len(self):
+                if not isinstance(value, pl.Series):
+                    value = pl.lit(value)
+                expr = pl.when(key).then(value).otherwise(self.s).alias(self.name)
+                self.s = pl.Series(pl.select(expr))
+            else:
+                raise ValueError("Mask and series must be same length")
+        else:
+            super().__setitem__(key, value)
+
 
     def __repr__(self):
         return super().__repr__()
@@ -72,17 +88,15 @@ class PolarsSeries(pl.Series):
 
     @property
     def iloc(self):
-        # return self.iLocIndexer(self)
         return self
 
     @property
     def loc(self):
-        # return self.LocIndexer(self)
         return self
 
     @property
     def name(self):
-        return self.s.name()
+        return self.s.name if isinstance(self.s.name, str) else self.s.name()
 
     @property
     def plot(self) -> SeriesPlot:
@@ -113,12 +127,14 @@ class PolarsSeries(pl.Series):
                 raise e
             return self
 
-    def combine(self, other, func):
-        return PolarsSeries(
-            [func(x, y) for x, y in zip(self.to_list(), other.to_list())],
-            name=self.name,
-            index=self.index,
-        )
+    def combine(self, other, func, fill_value=None):
+        combined = [
+            func(self[i] if self[i] is not None else fill_value,
+                 other[i] if other[i] is not None else fill_value)
+            for i in range(len(self))
+        ]
+
+        return PolarsSeries(combined, name=self.name, index=self.index)
 
     def copy(self):
         return PolarsSeries(self.to_list(), name=self.name)

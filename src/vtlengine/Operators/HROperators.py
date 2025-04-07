@@ -28,7 +28,7 @@ class HRComparison(Operators.Binary):
 
     @staticmethod
     def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        result = Series(True, index=left_series.index)
+        result = Series(True, index=left_series.index, name="result")
 
         if hr_mode in ("partial_null", "partial_zero"):
             mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
@@ -56,7 +56,7 @@ class HRComparison(Operators.Binary):
         left_series, right_series = left_series.align(right_series)
         remove_result = cls.hr_func(left_series, right_series, hr_mode)
         mask_valid = remove_result == True
-        result = Series(remove_result, index=left_series.index)
+        result = Series(remove_result, index=left_series.index, name="result")
         result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
         return result
 
