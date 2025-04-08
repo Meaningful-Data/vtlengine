@@ -90,23 +90,14 @@ class ASTString(ASTTemplate):
         return self.vtl_script
 
     def visit_Start(self, node: AST.Start) -> Any:
-        hierarchies = [x for x in node.children if isinstance(x, HRuleset)]
-        datapoints = [x for x in node.children if isinstance(x, DPRuleset)]
-        udos = [x for x in node.children if isinstance(x, Operator)]
-        definitions = datapoints + hierarchies + udos
-        comments = [x for x in node.children if isinstance(x, AST.Comment)]
         transformations = [
             x for x in node.children if not isinstance(x, (HRuleset, DPRuleset, Operator, Comment))
         ]
-        for child in definitions:
+        for child in node.children:
+            if child in transformations:
+                self.is_first_assignment = True
             self.visit(child)
             self.vtl_script += "\n"
-        for child in transformations:
-            self.is_first_assignment = True
-            self.visit(child)
-            self.vtl_script += "\n"
-        for child in comments:
-            self.vtl_script += f"{child.value}\n"
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
@@ -442,3 +433,8 @@ class ASTString(ASTTemplate):
         if node.order == "asc":
             return f"{node.component}"
         return f"{node.component} {node.order}"
+
+    def visit_Comment(self, node: AST.Comment) -> None:
+        value = copy.copy(node.value)
+        value = value[:-1] if value[-1] == "\n" else value
+        self.vtl_script += value

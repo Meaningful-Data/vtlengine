@@ -61,3 +61,13 @@ def test_comments_parsing():
     assert "*/" in ast.children[2].value[-2:]
     assert ast.children[2].line_start == 3
     assert ast.children[2].line_stop == 6
+
+
+def test_check_ast_string_output():
+    with open(vtl_filepath / "comments.vtl", "r") as file:
+        script = file.read()
+
+    ast = create_ast_with_comments(script)
+    result_script = ASTString().render(ast)
+
+    assert script == result_script
