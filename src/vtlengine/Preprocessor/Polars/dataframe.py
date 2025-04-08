@@ -59,7 +59,10 @@ class PolarsDataFrame(pl.DataFrame):
 
         self._build_df(index=index)
 
-    def _build_df(self, index=None):
+    def _build_df(self, index=None, by_df=False):
+        if by_df:
+            self.series = {col: PolarsSeries(self.df[col], name=col, index=index) for col in self.df.columns}
+
         if len(self.series) == 0:
             self.df = pl.DataFrame()
             return
@@ -264,7 +267,7 @@ class PolarsDataFrame(pl.DataFrame):
         df = self.df.unique(subset=subset, keep="none" if not keep else "any")
         if inplace:
             self.df = df
-            self._build_df()
+            self._build_df(by_df=inplace)
         else:
             return PolarsDataFrame(df)
 
@@ -272,7 +275,7 @@ class PolarsDataFrame(pl.DataFrame):
         df = self.df.drop_nulls(subset=subset) if not self.df.is_empty() else self.df
         if inplace:
             self.df = df
-            self._build_df()
+            self._build_df(by_df=inplace)
         else:
             return PolarsDataFrame(df)
 
@@ -330,7 +333,6 @@ class PolarsDataFrame(pl.DataFrame):
         if inplace:
             self.series = new_series
             self._build_df()
-            return None
         else:
             return PolarsDataFrame(new_series)
 

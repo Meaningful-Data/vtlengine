@@ -183,8 +183,6 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
-    # except NotImplementedError:
-    #     pass
 
 
 @pytest.mark.parametrize("param", params)
