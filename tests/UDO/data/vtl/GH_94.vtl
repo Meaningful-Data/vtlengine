@@ -1,0 +1,11 @@
+define operator add_lagged_features (ds dataset)
+returns dataset is
+    ds
+    [calc identifier dummy_id := 1]
+    [calc units_sold_1 := lag(units_sold, 1 over (partition by dummy_id order by period_label))]
+    [calc units_sold_2 := lag(units_sold, 2 over (partition by dummy_id order by period_label))]
+    [calc units_available_1 := lag(units_available, 1 over (partition by dummy_id order by period_label))]
+    [calc units_available_2 := lag(units_available, 2 over (partition by dummy_id order by period_label))]
+    [sub dummy_id=1]
+end operator;
+DS_r := add_lagged_features(DS_1);
