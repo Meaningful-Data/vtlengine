@@ -122,6 +122,8 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
 def _parse_boolean(value: str) -> bool:
     if isinstance(value, bool):
         return value
+    if not isinstance(value, str):
+        value = str(value)
     result = value.lower() == "true" or value == "1"
     return result
 

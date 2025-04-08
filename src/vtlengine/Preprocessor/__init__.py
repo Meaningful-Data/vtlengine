@@ -20,6 +20,7 @@ if backend_df == "pd":
 
     _assert_frame_equal = pandas_assert_frame_equal
     _concat = pd.concat
+    _infer_dtype = pd.api.types.infer_dtype
     _isnull = pd.isnull
     _isna = pd.isna
     _merge = pd.merge
@@ -32,7 +33,7 @@ elif backend_df == "pl":
     except ImportError:
         raise ImportError("Polars is not installed. Install it with `pip install polars`.")
 
-    from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype
+    from .Polars import PolarsDataFrame, PolarsSeries, handle_dtype, infer_dtype as polars_infer_dtype
     from .Polars import _assert_frame_equal as polars_assert_frame_equal
     from .Polars import _concat as polars_concat
     from .Polars import _isna as polars_isna
@@ -46,6 +47,7 @@ elif backend_df == "pl":
 
     _assert_frame_equal = polars_assert_frame_equal
     _concat = polars_concat
+    _infer_dtype = polars_infer_dtype
     _isnull = polars_isnull
     _isna = polars_isna
     _merge = polars_merge
@@ -60,6 +62,7 @@ Series = _Series
 
 assert_frame_equal = _assert_frame_equal
 concat = _concat
+infer_dtype = _infer_dtype
 isnull = _isnull
 isna = _isna
 merge = _merge

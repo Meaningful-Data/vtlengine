@@ -12,20 +12,25 @@ polars_dtype_mapping = {
     np.object_: pl.Utf8,
     "str": pl.Utf8,
     "string": pl.Utf8,
+    str: pl.Utf8,
+    np.str_: pl.Utf8,
     "int64": pl.Int64,
     "i64": pl.Int64,
+    int: pl.Int64,
     np.int64: pl.Int64,
     "int32": pl.Int32,
     "i32": pl.Int32,
     np.int32: pl.Int32,
     "float64": pl.Float64,
     "f64": pl.Float64,
+    float: pl.Float64,
+    np.float64: pl.Float64,
     "float32": pl.Float32,
     "f32": pl.Float32,
     np.float32: pl.Float32,
-    np.float64: pl.Float64,
     "boolean": pl.Boolean,
     "bool": pl.Boolean,
+    bool: pl.Boolean,
     np.bool_: pl.Boolean,
     np.datetime64: pl.Datetime,
     np.timedelta64: pl.Duration,
@@ -35,6 +40,16 @@ polars_dtype_mapping = {
 def handle_dtype(dtype: Any) -> Any:
     """Convert common data types to Polars data types."""
     return polars_dtype_mapping.get(dtype, dtype)
+
+
+def infer_dtype(obj, **kwargs):
+    if isinstance(obj, list):
+        if len(obj) == 0:
+            return pl.Utf8
+        obj = obj[0]
+    if not hasattr(obj, "dtype"):
+        return polars_dtype_mapping.get(type(obj), type(obj))
+    return polars_dtype_mapping.get(obj.dtype, obj.dtype)
 
 
 def _assert_frame_equal(left, right, check_dtype=True, **kwargs):

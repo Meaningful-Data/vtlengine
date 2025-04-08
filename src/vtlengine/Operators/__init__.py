@@ -226,14 +226,6 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        if os.getenv("SPARK", False):
-            if cls.spark_op is None:
-                cls.spark_op = cls.py_op
-
-            nulls = left_series.isnull() | right_series.isnull()
-            result = cls.spark_op(left_series, right_series)
-            result.loc[nulls] = None
-            return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
         return Series(result, index=list(range(len(result))))
 

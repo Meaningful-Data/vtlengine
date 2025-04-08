@@ -28,7 +28,7 @@ class Binary(Operator.Binary):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = cls.comp_op(left_series.astype("boolean"), right_series.astype("boolean"))
-        return result.replace({np.nan: None}).astype(object)
+        return result.replace({np.nan: None})
 
     @classmethod
     def op_func(cls, x: Optional[bool], y: Optional[bool]) -> Optional[bool]:

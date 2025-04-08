@@ -1,6 +1,6 @@
 from .dataframe import PolarsDataFrame, _concat, _merge, _read_csv
 from .series import PolarsSeries
-from .utils import _assert_frame_equal, _isna, _isnull, _to_datetime, handle_dtype
+from .utils import _assert_frame_equal, _isna, _isnull, _to_datetime, handle_dtype, infer_dtype
 
 __all__ = [
     "PolarsDataFrame",
@@ -13,4 +13,5 @@ __all__ = [
     "_read_csv",
     "_to_datetime",
     "handle_dtype",
+    "infer_dtype",
 ]

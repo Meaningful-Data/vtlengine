@@ -21,7 +21,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Preprocessor import DataFrame, Series, isnull, merge
+from vtlengine.Preprocessor import DataFrame, Series, isnull, merge, infer_dtype
 
 
 class Unary(Operator.Unary):
@@ -109,8 +109,8 @@ class Binary(Operator.Binary):
         if first_non_null is not None:
             scalar, first_non_null = cls._cast_values(scalar, first_non_null)
 
-            series_type = pd.api.types.infer_dtype(series, skipna=True)
-            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
+            series_type = infer_dtype(series, skipna=True)
+            first_non_null_type = infer_dtype([first_non_null])
 
             if series_type != first_non_null_type:
                 if isinstance(first_non_null, str):

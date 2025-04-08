@@ -49,7 +49,7 @@ class PolarsSeries(pl.Series):
                 if not isinstance(value, pl.Series):
                     value = pl.lit(value)
                 expr = pl.when(key).then(value).otherwise(self.s).alias(self.name)
-                self.s = pl.Series(pl.select(expr))
+                self.s = pl.Series(pl.select(expr), dtype=self.dtype)
             else:
                 raise ValueError("Mask and series must be same length")
         else:
@@ -72,6 +72,8 @@ class PolarsSeries(pl.Series):
 
     @property
     def dtype(self):
+        if isinstance(self.s.dtype, str):
+            return pl.Utf8
         return self.s.dtype()
 
     @property
