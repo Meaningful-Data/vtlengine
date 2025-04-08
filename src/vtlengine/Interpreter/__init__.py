@@ -336,7 +336,7 @@ class InterpreterAnalyzer(ASTTemplate):
             for i, rule in enumerate(node.rules):
                 rule.name = (i + 1).__str__()
 
-        cond_comp = []
+        cond_comp: List[Any] = []
         if isinstance(node.element, list):
             cond_comp = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
