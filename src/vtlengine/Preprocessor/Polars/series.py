@@ -49,7 +49,10 @@ class PolarsSeries(pl.Series):
                 if not isinstance(value, pl.Series):
                     value = pl.lit(value)
                 expr = pl.when(key).then(value).otherwise(self.s).alias(self.name)
-                self.s = pl.Series(pl.select(expr), dtype=self.dtype)
+                try:
+                    self.s = pl.Series(pl.select(expr), dtype=self.dtype)
+                except:
+                    self.s = pl.Series(pl.select(expr))
             else:
                 raise ValueError("Mask and series must be same length")
         else:
