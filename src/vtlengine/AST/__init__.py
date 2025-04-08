@@ -20,6 +20,11 @@ class AST:
     AST: (children)
     """
 
+    line_start: int
+    column_start: int
+    line_stop: int
+    column_stop: int
+
     @classmethod
     def __all_annotations(cls) -> Dict[str, Any]:
         class_attributes = {}
@@ -47,6 +52,30 @@ class AST:
 
     __repr__ = __str__
 
+    def ast_equality(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        for k in self.__all_annotations():
+            if (
+                getattr(self, k) != getattr(other, k)
+                and k not in AST.__annotations__
+                and k != "children"  # We do not want to compare the children order here
+            ):
+                return False
+        return True
+
+    __eq__ = ast_equality
+
+
+@dataclass
+class Comment(AST):
+    """
+    Comment: (value)
+    """
+
+    value: str
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class Start(AST):
@@ -55,6 +84,8 @@ class Start(AST):
     """
 
     children: List[AST]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -66,6 +97,8 @@ class Assignment(AST):
     left: AST
     op: str
     right: AST
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -87,6 +120,8 @@ class VarID(AST):
 
     value: str
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class UnaryOp(AST):
@@ -99,6 +134,8 @@ class UnaryOp(AST):
 
     op: str
     operand: AST
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -113,6 +150,8 @@ class BinOp(AST):
     op: str
     right: AST
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class MulOp(AST):
@@ -123,6 +162,8 @@ class MulOp(AST):
 
     op: str
     children: List[AST]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -137,11 +178,15 @@ class ParamOp(AST):
     children: List[AST]
     params: List[AST]
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class UDOCall(AST):
     op: str
     params: List[AST]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -159,6 +204,8 @@ class JoinOp(AST):
     using: Optional[List[str]]
     isLast: bool = False
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class Constant(AST):
@@ -172,6 +219,8 @@ class Constant(AST):
     type_: str
     value: Optional[Union[str, int, float, bool]]
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class ParamConstant(Constant):
@@ -184,6 +233,8 @@ class ParamConstant(Constant):
     type_: str
     value: str
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class Identifier(AST):
@@ -193,6 +244,8 @@ class Identifier(AST):
 
     value: str
     kind: str
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -205,6 +258,8 @@ class ID(AST):
 
     type_: str
     value: str
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -219,6 +274,8 @@ class Collection(AST):
     type: str
     children: List[AST]
     kind: str = "Set"
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -239,6 +296,8 @@ class Windowing(AST):
     stop: Union[int, str]
     stop_mode: str
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class OrderBy(AST):
@@ -248,6 +307,8 @@ class OrderBy(AST):
     def __post_init__(self):
         if self.order not in ["asc", "desc"]:
             raise ValueError(f"Invalid order: {self.order}")
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -274,6 +335,8 @@ class Analytic(AST):
         if self.partition_by is None and self.order_by is None:
             raise ValueError("Partition by or order by must be provided on Analytic.")
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class RegularAggregation(AST):
@@ -288,6 +351,8 @@ class RegularAggregation(AST):
     dataset: Optional[AST] = None
     isLast: bool = False
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class RenameNode(AST):
@@ -297,6 +362,8 @@ class RenameNode(AST):
 
     old_name: str
     new_name: str
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -316,6 +383,8 @@ class Aggregation(AST):
     grouping: Optional[List[AST]] = None
     having_clause: Optional[AST] = None
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class TimeAggregation(AST):
@@ -331,6 +400,8 @@ class TimeAggregation(AST):
     operand: Optional[AST] = None
     conf: Optional[str] = None
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class If(AST):
@@ -342,9 +413,11 @@ class If(AST):
     thenOp: AST
     elseOp: AST
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
-class CaseObj:
+class CaseObj(AST):
     condition: AST
     thenOp: AST
 
@@ -357,6 +430,8 @@ class Case(AST):
 
     cases: List[CaseObj]
     elseOp: AST
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -372,6 +447,8 @@ class Validation(AST):
     imbalance: Optional[AST]
     invalid: bool
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class ComponentType(AST):
@@ -382,6 +459,8 @@ class ComponentType(AST):
     name: str
     data_type: Optional[Type[ScalarType]] = None
     role: Optional[Role] = None
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -396,6 +475,8 @@ class DatasetType(AST):
     """
 
     components: List[ComponentType]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -415,6 +496,8 @@ class Types(AST):
     nullable: Optional[bool]
     name: Optional[str] = None
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class Argument(AST):
@@ -425,6 +508,8 @@ class Argument(AST):
     name: str
     type_: Type[ScalarType]
     default: Optional[AST]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -438,6 +523,8 @@ class Operator(AST):
     output_type: str
     expression: AST
 
+    __eq__ = AST.ast_equality
+
 
 # TODO: Is this class necessary?
 @dataclass
@@ -449,6 +536,8 @@ class DefIdentifier(AST):
     value: str
     kind: str
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class DPRIdentifier(AST):
@@ -459,6 +548,8 @@ class DPRIdentifier(AST):
     value: str
     kind: str
     alias: Optional[str] = None
+
+    __eq__ = AST.ast_equality
 
 
 # TODO: Are HRBinOp and HRUnOp necessary?
@@ -473,6 +564,8 @@ class HRBinOp(AST):
     op: str
     right: DefIdentifier
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class HRUnOp(AST):
@@ -483,6 +576,8 @@ class HRUnOp(AST):
 
     op: str
     operand: DefIdentifier
+
+    __eq__ = AST.ast_equality
 
 
 # TODO: Unify HRule and DPRule?
@@ -497,6 +592,8 @@ class HRule(AST):
     erCode: Optional[str]
     erLevel: Optional[int]
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class DPRule(AST):
@@ -508,6 +605,8 @@ class DPRule(AST):
     rule: HRBinOp
     erCode: Optional[str]
     erLevel: Optional[int]
+
+    __eq__ = AST.ast_equality
 
 
 # TODO: Unify HRuleset and DPRuleset?
@@ -522,6 +621,8 @@ class HRuleset(AST):
     element: DefIdentifier
     rules: List[HRule]
 
+    __eq__ = AST.ast_equality
+
 
 @dataclass
 class DPRuleset(AST):
@@ -533,6 +634,8 @@ class DPRuleset(AST):
     signature_type: str
     params: Union[DefIdentifier, list]
     rules: List[DPRule]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -547,6 +650,8 @@ class EvalOp(AST):
     operands: List[AST]
     output: Optional[Dataset]
     language: Optional[str]
+
+    __eq__ = AST.ast_equality
 
 
 @dataclass
@@ -565,3 +670,5 @@ class ParFunction(AST):
     """
 
     operand: AST
+
+    __eq__ = AST.ast_equality

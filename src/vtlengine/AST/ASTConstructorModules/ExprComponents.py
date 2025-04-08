@@ -20,6 +20,7 @@ from vtlengine.AST import (
     UnaryOp,
     VarID,
 )
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
@@ -109,7 +110,7 @@ class ExprComp(VtlVisitor):
             has_scaped_char = token.text.find("'") != -1
             if has_scaped_char:
                 token.text = str(token.text.replace("'", ""))
-            var_id_node = VarID(token.text)
+            var_id_node = VarID(value=token.text, **extract_token_info(ctx))
             return var_id_node
 
         else:
@@ -125,7 +126,7 @@ class ExprComp(VtlVisitor):
             op = ctx_list[1].getSymbol().text
         right_node = self.visitExprComponent(ctx_list[2])
 
-        bin_op_node = BinOp(left_node, op, right_node)
+        bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
 
@@ -149,7 +150,7 @@ class ExprComp(VtlVisitor):
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
             raise NotImplementedError
-        bin_op_node = BinOp(left_node, op, right_node)
+        bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
 
@@ -158,14 +159,14 @@ class ExprComp(VtlVisitor):
 
     def visitParenthesisExprComp(self, ctx: Parser.ParenthesisExprContext):
         operand = self.visitExprComponent(list(ctx.getChildren())[1])
-        return ParFunction(operand)
+        return ParFunction(operand=operand, **extract_token_info(ctx))
 
     def visitUnaryExprComp(self, ctx: Parser.UnaryExprContext):
         c_list = list(ctx.getChildren())
         op = c_list[0].getSymbol().text
         right = self.visitExprComponent(c_list[1])
 
-        return UnaryOp(op, right)
+        return UnaryOp(op=op, operand=right, **extract_token_info(ctx))
 
     def visitIfExprComp(self, ctx: Parser.IfExprCompContext):
         ctx_list = list(ctx.getChildren())
@@ -174,7 +175,12 @@ class ExprComp(VtlVisitor):
         then_op_node = self.visitExprComponent(ctx_list[3])
         else_op_node = self.visitExprComponent(ctx_list[5])
 
-        if_node = If(condition_node, then_op_node, else_op_node)
+        if_node = If(
+            condition=condition_node,
+            thenOp=then_op_node,
+            elseOp=else_op_node,
+            **extract_token_info(ctx),
+        )
 
         return if_node
 
@@ -191,10 +197,12 @@ class ExprComp(VtlVisitor):
         for i in range(0, len(ctx_list), 4):
             condition = self.visitExprComponent(ctx_list[i + 1])
             thenOp = self.visitExprComponent(ctx_list[i + 3])
-            case_obj = CaseObj(condition, thenOp)
+            case_obj = CaseObj(
+                condition=condition, thenOp=thenOp, **extract_token_info(ctx_list[i + 1])
+            )
             cases.append(case_obj)
 
-        case_node = Case(cases, else_node)
+        case_node = Case(cases=cases, elseOp=else_node, **extract_token_info(ctx))
 
         return case_node
 
@@ -212,7 +220,7 @@ class ExprComp(VtlVisitor):
         elif isinstance(c, TerminalNodeImpl):
             token = c.getSymbol()
             opt = token.text
-            return ID("OPTIONAL", opt)
+            return ID(type_="OPTIONAL", value=opt, **extract_token_info(ctx))
 
     """____________________________________________________________________________________
 
@@ -294,7 +302,7 @@ class ExprComp(VtlVisitor):
             if isinstance(element, Parser.ParameterComponentContext)
         ]
 
-        return UDOCall(op=op, params=param_nodes)
+        return UDOCall(op=op, params=param_nodes, **extract_token_info(ctx))
 
     def visitEvalAtomComponent(self, ctx: Parser.EvalAtomComponentContext):
         """
@@ -345,6 +353,7 @@ class ExprComp(VtlVisitor):
             operands=children_nodes[0],
             output=output_node[0],
             language=language_name[0].getSymbol().text,
+            **extract_token_info(ctx),
         )
 
     def visitCastExprComponent(self, ctx: Parser.CastExprComponentContext):
@@ -376,7 +385,11 @@ class ExprComp(VtlVisitor):
 
         if len(ctx_list) > 6:
             param_node = [
-                ParamConstant("PARAM_CAST", str_.symbol.text.strip('"'))
+                ParamConstant(
+                    type_="PARAM_CAST",
+                    value=str_.symbol.text.strip('"'),
+                    **extract_token_info(str_.getSymbol()),
+                )
                 for str_ in ctx_list
                 if isinstance(str_, TerminalNodeImpl)
                 and str_.getSymbol().type == Parser.STRING_CONSTANT
@@ -387,7 +400,9 @@ class ExprComp(VtlVisitor):
         if len(basic_scalar_type) == 1:
             children_nodes = expr_node + basic_scalar_type
 
-            return ParamOp(op=op, children=children_nodes, params=param_node)
+            return ParamOp(
+                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
+            )
 
         else:
             # AST_ASTCONSTRUCTOR.14
@@ -400,7 +415,7 @@ class ExprComp(VtlVisitor):
         if isinstance(c, Parser.ExprComponentContext):
             return self.visitExprComponent(c)
         elif isinstance(c, TerminalNodeImpl):
-            return ID("OPTIONAL", c.getSymbol().text)
+            return ID(type_="OPTIONAL", value=c.getSymbol().text, **extract_token_info(ctx))
         else:
             raise NotImplementedError
 
@@ -429,7 +444,7 @@ class ExprComp(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExprComponent(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitSubstrAtomComponent(self, ctx: Parser.SubstrAtomComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -452,7 +467,9 @@ class ExprComp(VtlVisitor):
             for param in params:
                 params_nodes.append(self.visitOptionalExprComponent(param))
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitReplaceAtomComponent(self, ctx: Parser.ReplaceAtomComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -475,7 +492,9 @@ class ExprComp(VtlVisitor):
         children_nodes = [expressions[0]]
         params_nodes = [expressions[1]] + params
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitInstrAtomComponent(self, ctx: Parser.InstrAtomComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -498,7 +517,9 @@ class ExprComp(VtlVisitor):
         children_nodes = [expressions[0]]
         params_nodes = [expressions[1]] + params
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     """
                         -----------------------------------
@@ -523,7 +544,7 @@ class ExprComp(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExprComponent(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitUnaryWithOptionalNumericComponent(
         self, ctx: Parser.UnaryWithOptionalNumericComponentContext
@@ -548,7 +569,9 @@ class ExprComp(VtlVisitor):
             for param in params:
                 params_nodes.append(self.visitOptionalExprComponent(param))
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitBinaryNumericComponent(self, ctx: Parser.BinaryNumericComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -559,7 +582,7 @@ class ExprComp(VtlVisitor):
         left_node = self.visitExprComponent(ctx_list[2])
         op_node = token.text
         right_node = self.visitExprComponent(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     """
                             -----------------------------------
@@ -619,7 +642,7 @@ class ExprComp(VtlVisitor):
             # AST_ASTCONSTRUCTOR.15
             raise NotImplementedError
 
-        return UnaryOp(op=op, operand=operand_node[0])
+        return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
     def visitTimeShiftAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
         """
@@ -630,9 +653,13 @@ class ExprComp(VtlVisitor):
 
         op = c.getSymbol().text
         left_node = self.visitExprComponent(ctx_list[2])
-        right_node = Constant("INTEGER_CONSTANT", int(ctx_list[4].getSymbol().text))
+        right_node = Constant(
+            type_="INTEGER_CONSTANT",
+            value=int(ctx_list[4].getSymbol().text),
+            **extract_token_info(ctx),
+        )
 
-        return BinOp(left=left_node, op=op, right=right_node)
+        return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
     def visitFillTimeAtomComponent(self, ctx: Parser.FillTimeAtomComponentContext):
         """
@@ -645,11 +672,19 @@ class ExprComp(VtlVisitor):
         children_node = [self.visitExprComponent(ctx_list[2])]
 
         if len(ctx_list) > 4:
-            param_constant_node = [ParamConstant("PARAM_TIMESERIES", ctx_list[4].getSymbol().text)]
+            param_constant_node = [
+                ParamConstant(
+                    type_="PARAM_TIMESERIES",
+                    value=ctx_list[4].getSymbol().text,
+                    **extract_token_info(ctx),
+                )
+            ]
         else:
             param_constant_node = []
 
-        return ParamOp(op=op, children=children_node, params=param_constant_node)
+        return ParamOp(
+            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+        )
 
     def visitTimeAggAtomComponent(self, ctx: Parser.TimeAggAtomComponentContext):
         """
@@ -681,7 +716,9 @@ class ExprComp(VtlVisitor):
             if isinstance(operand_node, ID):
                 operand_node = None
             elif isinstance(operand_node, Identifier):
-                operand_node = VarID(operand_node.value)  # Converting Identifier to VarID
+                operand_node = VarID(
+                    value=operand_node.value, **extract_token_info(ctx.op)
+                )  # Converting Identifier to VarID
         else:
             operand_node = None
 
@@ -691,11 +728,12 @@ class ExprComp(VtlVisitor):
             period_to=period_to,
             period_from=period_from,
             conf=conf,
+            **extract_token_info(ctx),
         )
 
     def visitCurrentDateAtomComponent(self, ctx: Parser.CurrentDateAtomComponentContext):
         c = list(ctx.getChildren())[0]
-        return MulOp(op=c.getSymbol().text, children=[])
+        return MulOp(op=c.getSymbol().text, children=[], **extract_token_info(ctx))
 
     def visitDateDiffAtomComponent(self, ctx: Parser.TimeShiftAtomComponentContext):
         """ """
@@ -706,7 +744,7 @@ class ExprComp(VtlVisitor):
         left_node = self.visitExprComponent(ctx_list[2])
         right_node = self.visitExprComponent(ctx_list[4])
 
-        return BinOp(left=left_node, op=op, right=right_node)
+        return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
     def visitDateAddAtomComponentContext(self, ctx: Parser.DateAddAtomComponentContext):
         """ """
@@ -723,7 +761,9 @@ class ExprComp(VtlVisitor):
             if len(ctx_list) > 6:
                 param_constant_node.append(self.visitExprComponent(ctx_list[6]))
 
-        return ParamOp(op=op, children=children_node, params=param_constant_node)
+        return ParamOp(
+            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+        )
 
     """
                             -----------------------------------
@@ -748,7 +788,7 @@ class ExprComp(VtlVisitor):
         left_node = self.visitExprComponent(ctx_list[2])
         op_node = token.text
         right_node = self.visitExprComponent(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     """
                         -----------------------------------
@@ -779,7 +819,7 @@ class ExprComp(VtlVisitor):
         for children in childrens:
             children_nodes.append(self.visitExprComponent(children))
 
-        return MulOp(op_node, children_nodes)
+        return MulOp(op=op_node, children=children_nodes, **extract_token_info(ctx))
 
     def visitCharsetMatchAtomComponent(self, ctx: Parser.CharsetMatchAtomComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -789,7 +829,7 @@ class ExprComp(VtlVisitor):
         left_node = self.visitExprComponent(ctx_list[2])
         op_node = token.text
         right_node = self.visitExprComponent(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitIsNullAtomComponent(self, ctx: Parser.IsNullAtomComponentContext):
         ctx_list = list(ctx.getChildren())
@@ -797,7 +837,7 @@ class ExprComp(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExprComponent(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     """
                             -----------------------------------
@@ -817,12 +857,12 @@ class ExprComp(VtlVisitor):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
         operand_node = self.visitExprComponent(ctx_list[2])
-        return Aggregation(op_node, operand_node)
+        return Aggregation(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitCountAggrComp(self, ctx: Parser.CountAggrCompContext):
         ctx_list = list(ctx.getChildren())
         op_node = ctx_list[0].getSymbol().text
-        return Aggregation(op_node)
+        return Aggregation(op=op_node, **extract_token_info(ctx))
 
     """
                                 -----------------------------------
@@ -871,6 +911,7 @@ class ExprComp(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             window=params,
+            **extract_token_info(ctx),
         )
 
     def visitLagOrLeadAnComponent(self, ctx: Parser.LagOrLeadAnComponentContext):
@@ -905,6 +946,7 @@ class ExprComp(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             params=params,
+            **extract_token_info(ctx),
         )
 
     def visitRankAnComponent(self, ctx: Parser.RankAnComponentContext):
@@ -929,6 +971,7 @@ class ExprComp(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             window=None,
+            **extract_token_info(ctx),
         )
 
     def visitRatioToReportAnComponent(self, ctx: Parser.RatioToReportAnComponentContext):
@@ -948,4 +991,5 @@ class ExprComp(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             window=params,
+            **extract_token_info(ctx),
         )

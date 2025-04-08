@@ -1,23 +1,47 @@
 {
     "class_name": "Start",
+    "column_stop": 20,
+    "line_stop": 1,
+    "column_start": 0,
+    "line_start": 1,
     "children": [
         {
             "class_name": "Assignment",
+            "column_stop": 19,
+            "line_stop": 1,
+            "column_start": 0,
+            "line_start": 1,
             "right": {
                 "class_name": "BinOp",
+                "column_stop": 19,
+                "line_stop": 1,
+                "column_start": 8,
+                "line_start": 1,
                 "right": {
                     "class_name": "VarID",
+                    "column_stop": 19,
+                    "line_stop": 1,
+                    "column_start": 15,
+                    "line_start": 1,
                     "value": "DS_2"
                 },
                 "op": "+",
                 "left": {
                     "class_name": "VarID",
+                    "column_stop": 12,
+                    "line_stop": 1,
+                    "column_start": 8,
+                    "line_start": 1,
                     "value": "DS_1"
                 }
             },
             "op": ":=",
             "left": {
                 "class_name": "VarID",
+                "column_stop": 4,
+                "line_stop": 1,
+                "column_start": 0,
+                "line_start": 1,
                 "value": "DS_r"
             }
         }
