@@ -1,0 +1,12 @@
+// Line comment before first transformation
+DS_r := DS_1 + 1;
+/* Block comment
+* Line 1
+* Line 2
+*/
+DS_r2 := DS_2 + 2;
+// Comment line to extract transformation
+DS_r3 := 2 + 1;
+// Comment line to extract definition
+define operator suma_1(ds dataset) returns dataset is ds + 1 end operator;
+// Comment end of code

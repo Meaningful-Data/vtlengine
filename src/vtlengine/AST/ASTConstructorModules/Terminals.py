@@ -12,6 +12,7 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.AST.VtlVisitor import VtlVisitor
 from vtlengine.DataTypes import (
@@ -37,26 +38,27 @@ def _remove_scaped_characters(text):
 class Terminals(VtlVisitor):
     def visitConstant(self, ctx: Parser.ConstantContext):
         token = ctx.children[0].getSymbol()
+        token_info = extract_token_info(token)
 
         if token.type == Parser.INTEGER_CONSTANT:
-            constant_node = Constant("INTEGER_CONSTANT", int(token.text))
+            constant_node = Constant(type_="INTEGER_CONSTANT", value=int(token.text), **token_info)
 
         elif token.type == Parser.NUMBER_CONSTANT:
-            constant_node = Constant("FLOAT_CONSTANT", float(token.text))
+            constant_node = Constant(type_="FLOAT_CONSTANT", value=float(token.text), **token_info)
 
         elif token.type == Parser.BOOLEAN_CONSTANT:
             if token.text == "true":
-                constant_node = Constant("BOOLEAN_CONSTANT", True)
+                constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
             elif token.text == "false":
-                constant_node = Constant("BOOLEAN_CONSTANT", False)
+                constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
             else:
                 raise NotImplementedError
 
         elif token.type == Parser.STRING_CONSTANT:
-            constant_node = Constant("STRING_CONSTANT", token.text[1:-1])
+            constant_node = Constant(type_="STRING_CONSTANT", value=token.text[1:-1], **token_info)
 
         elif token.type == Parser.NULL_CONSTANT:
-            constant_node = Constant("NULL_CONSTANT", None)
+            constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
 
         else:
             raise NotImplementedError
@@ -66,7 +68,8 @@ class Terminals(VtlVisitor):
     def visitVarID(self, ctx: Parser.VarIDContext):
         token = ctx.children[0].getSymbol()
         token.text = _remove_scaped_characters(token.text)
-        var_id_node = VarID(token.text)
+        token_info = extract_token_info(token)
+        var_id_node = VarID(value=token.text, **token_info)
         return var_id_node
 
     def visitVarIdExpr(self, ctx: Parser.VarIdExprContext):
@@ -76,7 +79,8 @@ class Terminals(VtlVisitor):
         token = ctx.children[0].getSymbol()
         # check token text
         token.text = _remove_scaped_characters(token.text)
-        var_id_node = VarID(token.text)
+        token_info = extract_token_info(token)
+        var_id_node = VarID(value=token.text, **token_info)
         return var_id_node
 
     def visitSimpleComponentId(self, ctx: Parser.SimpleComponentIdContext):
@@ -87,7 +91,7 @@ class Terminals(VtlVisitor):
         # check token text
         token.text = _remove_scaped_characters(token.text)
 
-        return Identifier(token.text, "ComponentID")
+        return Identifier(value=token.text, kind="ComponentID", **extract_token_info(ctx))
 
     def visitComponentID(self, ctx: Parser.ComponentIDContext):
         ctx_list = list(ctx.getChildren())
@@ -98,7 +102,11 @@ class Terminals(VtlVisitor):
                 "'"
             ):  # The component could be imbalance, errorcode or errorlevel
                 component_name = component_name[1:-1]
-            return Identifier(component_name, "ComponentID")
+            return Identifier(
+                value=component_name,
+                kind="ComponentID",
+                **extract_token_info(ctx_list[0].getSymbol()),
+            )
         else:
             component_name = ctx_list[2].getSymbol().text
             if component_name.startswith("'") and component_name.endswith(
@@ -107,9 +115,18 @@ class Terminals(VtlVisitor):
                 component_name = component_name[1:-1]
             op_node = ctx_list[1].getSymbol().text
             return BinOp(
-                left=Identifier(ctx_list[0].getSymbol().text, "DatasetID"),
+                left=Identifier(
+                    value=ctx_list[0].getSymbol().text,
+                    kind="DatasetID",
+                    **extract_token_info(ctx_list[0].getSymbol()),
+                ),
                 op=op_node,
-                right=Identifier(component_name, "ComponentID"),
+                right=Identifier(
+                    value=component_name,
+                    kind="ComponentID",
+                    **extract_token_info(ctx_list[1].getSymbol()),
+                ),
+                **extract_token_info(ctx),
             )
 
     def visitOperatorID(self, ctx: Parser.OperatorIDContext):
@@ -130,6 +147,7 @@ class Terminals(VtlVisitor):
             children=[],
             kind="ValueDomain",
             type="",
+            **extract_token_info(ctx),
         )
 
     def visitRulesetID(self, ctx: Parser.RulesetIDContext):
@@ -254,7 +272,9 @@ class Terminals(VtlVisitor):
         for scalar_with_cast in scalars_with_cast:
             scalar_nodes.append(self.visitScalarWithCast(scalar_with_cast))
 
-        return Collection("Set", None, scalar_nodes)
+        return Collection(
+            name="List", type="Lists", children=scalar_nodes, **extract_token_info(ctx)
+        )
 
     def visitMultModifier(self, ctx: Parser.MultModifierContext):
         """
@@ -508,12 +528,22 @@ class Terminals(VtlVisitor):
         const_node = self.visitConstant(ctx_list[2])
         basic_scalar_type = [self.visitBasicScalarType(ctx_list[4])]
 
-        param_node = [ParamConstant("PARAM_CAST", ctx_list[6])] if len(ctx_list) > 6 else []
+        param_node = (
+            [
+                ParamConstant(
+                    type_="PARAM_CAST", value=ctx_list[6], **extract_token_info(ctx_list[6])
+                )
+            ]
+            if len(ctx_list) > 6
+            else []
+        )
 
         if len(basic_scalar_type) == 1:
             children_nodes = [const_node, basic_scalar_type[0]]
 
-            return ParamOp(op=op, children=children_nodes, params=param_node)
+            return ParamOp(
+                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
+            )
 
         else:
             # AST_ASTCONSTRUCTOR.14
@@ -536,14 +566,20 @@ class Terminals(VtlVisitor):
 
         if token.type == Parser.BOOLEAN_CONSTANT:
             if token.text == "true":
-                param_constant_node = Constant("BOOLEAN_CONSTANT", True)
+                param_constant_node = Constant(
+                    type_="BOOLEAN_CONSTANT", value=True, **extract_token_info(token)
+                )
             elif token.text == "false":
-                param_constant_node = Constant("BOOLEAN_CONSTANT", False)
+                param_constant_node = Constant(
+                    type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
+                )
             else:
                 raise NotImplementedError
 
         elif token.type == Parser.ALL:
-            param_constant_node = ParamConstant("PARAM_CONSTANT", token.text)
+            param_constant_node = ParamConstant(
+                type_="PARAM_CONSTANT", value=token.text, **extract_token_info(token)
+            )
 
         else:
             raise NotImplementedError
@@ -596,6 +632,7 @@ class Terminals(VtlVisitor):
         """
         VarID (AS alias)?
         """
+        token_info = extract_token_info(ctx)
 
         ctx_list = list(ctx.getChildren())
         c = ctx_list[0]
@@ -605,10 +642,10 @@ class Terminals(VtlVisitor):
         alias_name = None
 
         if len(ctx_list) == 1:
-            return DPRIdentifier(value=node_name, kind=kind, alias=alias_name)
+            return DPRIdentifier(value=node_name, kind=kind, alias=alias_name, **token_info)
 
         alias_name = self.visitAlias(ctx_list[2])
-        return DPRIdentifier(value=node_name, kind=kind, alias=alias_name)
+        return DPRIdentifier(value=node_name, kind=kind, alias=alias_name, **token_info)
 
     """
         From Hierarchical
@@ -663,6 +700,8 @@ class Terminals(VtlVisitor):
 
         win_mode = ctx_list[0].getSymbol().text  # Windowing mode (data points | range )
 
+        token_info = extract_token_info(ctx)
+
         if win_mode == "data":
             num_rows_1, mode_1 = self.visitLimitClauseItem(ctx_list[3])
             num_rows_2, mode_2 = self.visitLimitClauseItem(ctx_list[5])
@@ -694,25 +733,30 @@ class Terminals(VtlVisitor):
 
         if mode_1 == mode_2:
             if mode_1 == "preceding" and first != -1 and second > first:  # 3 and 1: must be [-3:-1]
-                return create_windowing(win_mode, [second, first], [mode_2, mode_1])
+                return create_windowing(win_mode, [second, first], [mode_2, mode_1], token_info)
             if mode_1 == "preceding" and second == -1:
-                return create_windowing(win_mode, [second, first], [mode_2, mode_1])
+                return create_windowing(win_mode, [second, first], [mode_2, mode_1], token_info)
             if mode_1 == "following" and second != -1 and second < first:  # 3 and 1: must be [1:3]
-                return create_windowing(win_mode, [second, first], [mode_2, mode_1])
+                return create_windowing(win_mode, [second, first], [mode_2, mode_1], token_info)
             if mode_1 == "following" and first == -1:
-                return create_windowing(win_mode, [second, first], [mode_2, mode_1])
+                return create_windowing(win_mode, [second, first], [mode_2, mode_1], token_info)
 
-        return create_windowing(win_mode, [first, second], [mode_1, mode_2])
+        return create_windowing(win_mode, [first, second], [mode_1, mode_2], token_info)
 
     def visitOrderByItem(self, ctx: Parser.OrderByItemContext):
         ctx_list = list(ctx.getChildren())
 
+        token_info = extract_token_info(ctx)
+
         if len(ctx_list) == 1:
-            return OrderBy(component=self.visitComponentID(ctx_list[0]).value, order="asc")
+            return OrderBy(
+                component=self.visitComponentID(ctx_list[0]).value, order="asc", **token_info
+            )
 
         return OrderBy(
             component=self.visitComponentID(ctx_list[0]).value,
             order=ctx_list[1].getSymbol().text,
+            **token_info,
         )
 
     def visitLimitClauseItem(self, ctx: Parser.LimitClauseItemContext):
@@ -733,7 +777,7 @@ class Terminals(VtlVisitor):
         return result, ctx_list[1].getSymbol().text
 
 
-def create_windowing(win_mode, values, modes):
+def create_windowing(win_mode, values, modes, token_info):
     for e in range(0, 2):
         if values[e] == -1:
             values[e] = "unbounded"
@@ -746,4 +790,5 @@ def create_windowing(win_mode, values, modes):
         stop=values[1],
         start_mode=modes[0],
         stop_mode=modes[1],
+        **token_info,
     )

@@ -1,12 +1,16 @@
 import json
 
 from vtlengine import AST
+from vtlengine.Model import Dataset
 
 
 class ComplexEncoder(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, "toJSON"):
             return obj.toJSON()
+        # Makes a circular reference error if we do not check for this
+        elif isinstance(obj, Dataset):
+            return "dataset"
         else:
             return json.__dict__
 

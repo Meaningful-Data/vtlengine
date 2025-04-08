@@ -336,7 +336,7 @@ class InterpreterAnalyzer(ASTTemplate):
             for i, rule in enumerate(node.rules):
                 rule.name = (i + 1).__str__()
 
-        cond_comp = []
+        cond_comp: List[Any] = []
         if isinstance(node.element, list):
             cond_comp = [x.value for x in node.element[:-1]]
             node.element = node.element[-1]
@@ -394,7 +394,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
             else:
                 comp_name = f"{node.left.value}#{node.right.value}"
-            ast_var_id = AST.VarID(value=comp_name)
+            ast_var_id = AST.VarID(
+                value=comp_name,
+                line_start=node.right.line_start,
+                line_stop=node.right.line_stop,
+                column_start=node.right.column_start,
+                column_stop=node.right.column_stop,
+            )
             return self.visit(ast_var_id)
         left_operand = self.visit(node.left)
         right_operand = self.visit(node.right)
@@ -1279,6 +1285,10 @@ class InterpreterAnalyzer(ASTTemplate):
                         signature_type=hr_info["node"].signature_type,
                         element=hr_info["node"].element,
                         rules=aux,
+                        line_start=node.line_start,
+                        line_stop=node.line_stop,
+                        column_start=node.column_start,
+                        column_stop=node.column_stop,
                     )
                     HRDAGAnalyzer().visit(hierarchy_ast)
 
@@ -1898,7 +1908,13 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.aggregation_dataset is None:
                 raise SemanticError("1-1-19-11")
             component_name = Time_Aggregation._get_time_id(self.aggregation_dataset)
-            ast_operand = VarID(component_name)
+            ast_operand = VarID(
+                value=component_name,
+                line_start=node.line_start,
+                line_stop=node.line_stop,
+                column_start=node.column_start,
+                column_stop=node.column_stop,
+            )
             operand = self.visit(ast_operand)
         return Time_Aggregation.analyze(
             operand=operand,

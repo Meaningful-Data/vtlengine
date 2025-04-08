@@ -23,6 +23,7 @@ from vtlengine.AST import (
     PersistentAssignment,
     Start,
 )
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
@@ -64,7 +65,9 @@ class ASTVisitor(VtlVisitor):
             for statement in statements:
                 statements_nodes.append(self.visitStatement(statement))
 
-        start_node = Start(statements_nodes)
+        token_info = extract_token_info(ctx)
+
+        start_node = Start(children=statements_nodes, **token_info)
 
         return start_node
 
@@ -99,7 +102,8 @@ class ASTVisitor(VtlVisitor):
 
         right_node = Expr().visitExpr(ctx_list[2])
 
-        assignment_node = Assignment(left_node, op_node, right_node)
+        token_info = extract_token_info(ctx)
+        assignment_node = Assignment(left=left_node, op=op_node, right=right_node, **token_info)
         return assignment_node
 
     #     | varID PUT_SYMBOL expr          # persistAssignment
@@ -114,7 +118,10 @@ class ASTVisitor(VtlVisitor):
 
         right_node = Expr().visitExpr(ctx_list[2])
 
-        persistent_assignment_node = PersistentAssignment(left_node, op_node, right_node)
+        token_info = extract_token_info(ctx)
+        persistent_assignment_node = PersistentAssignment(
+            left=left_node, op=op_node, right=right_node, **token_info
+        )
         return persistent_assignment_node
 
     """______________________________________________________________________________________
@@ -167,8 +174,14 @@ class ASTVisitor(VtlVisitor):
         else:
             return_node = return_[0]
 
+        token_info = extract_token_info(ctx)
+
         return Operator(
-            op=operator, parameters=parameters, output_type=return_node, expression=expr
+            op=operator,
+            parameters=parameters,
+            output_type=return_node,
+            expression=expr,
+            **token_info,
         )
 
     """
@@ -189,11 +202,14 @@ class ASTVisitor(VtlVisitor):
         signature_type, ruleset_elements = self.visitRulesetSignature(ctx_list[5])
         ruleset_rules = self.visitRuleClauseDatapoint(ctx_list[8])
 
+        token_info = extract_token_info(ctx)
+
         return DPRuleset(
             name=ruleset_name,
             params=ruleset_elements,
             rules=ruleset_rules,
             signature_type=signature_type,
+            **token_info,
         )
 
     def visitRulesetSignature(self, ctx: Parser.RulesetSignatureContext):
@@ -209,6 +225,7 @@ class ASTVisitor(VtlVisitor):
             if isinstance(value_domain, TerminalNodeImpl)
             and value_domain.getSymbol().type == Parser.VALUE_DOMAIN
         ]
+        kind = ""
         if len(value_domains) != 0:
             kind = "ValuedomainID"
 
@@ -269,7 +286,10 @@ class ASTVisitor(VtlVisitor):
         ]
 
         if len(when) != 0:
-            rule_node = HRBinOp(left=expr_node[0], op=when[0].getSymbol().text, right=expr_node[1])
+            token_info = extract_token_info(when[0].getSymbol())
+            rule_node = HRBinOp(
+                left=expr_node[0], op=when[0].getSymbol().text, right=expr_node[1], **token_info
+            )
 
         else:
             rule_node = expr_node[0]
@@ -287,7 +307,10 @@ class ASTVisitor(VtlVisitor):
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
-        return DPRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
+        token_info = extract_token_info(ctx)
+        return DPRule(
+            name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level, **token_info
+        )
 
     def visitParameterItem(self, ctx: Parser.ParameterItemContext):
         """
@@ -314,7 +337,10 @@ class ASTVisitor(VtlVisitor):
 
         if isinstance(argument_type, (Dataset, Component, Scalar)):
             argument_type.name = argument_name.value
-        return Argument(name=argument_name.value, type_=argument_type, default=argument_default)
+        token_info = extract_token_info(ctx)
+        return Argument(
+            name=argument_name.value, type_=argument_type, default=argument_default, **token_info
+        )
 
     """
                         -----------------------------------
@@ -342,11 +368,14 @@ class ASTVisitor(VtlVisitor):
         if len(ruleset_rules) == 0:
             raise Exception(f"No rules found for the ruleset {ruleset_name}")
 
+        token_info = extract_token_info(ctx)
+
         return HRuleset(
             signature_type=signature_type,
             name=ruleset_name,
             element=ruleset_elements,
             rules=ruleset_rules,
+            **token_info,
         )
 
     # TODO Add support for value Domains.
@@ -379,18 +408,24 @@ class ASTVisitor(VtlVisitor):
             and identifier.getSymbol().type == Parser.IDENTIFIER
         ][0]
 
+        token_info = extract_token_info(ctx)
         if conditions:
             identifiers_list = [
                 DefIdentifier(
                     value=elto.alias if getattr(elto, "alias", None) else elto.value,
                     kind=kind,
+                    **token_info,
                 )
                 for elto in conditions[0]
             ]
-            identifiers_list.append(DefIdentifier(value=dataset.getSymbol().text, kind=kind))
+            identifiers_list.append(
+                DefIdentifier(value=dataset.getSymbol().text, kind=kind, **token_info)
+            )
             return signature_type, identifiers_list
         else:
-            return signature_type, DefIdentifier(value=dataset.getSymbol().text, kind=kind)
+            return signature_type, DefIdentifier(
+                value=dataset.getSymbol().text, kind=kind, **token_info
+            )
 
     # TODO Support for valueDomainSignature.
     def visitValueDomainSignature(self, ctx: Parser.ValueDomainSignatureContext):
@@ -453,7 +488,9 @@ class ASTVisitor(VtlVisitor):
         ]
         er_level = None if len(er_level) == 0 else er_level[0]
 
-        return HRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level)
+        token_info = extract_token_info(ctx)
+
+        return HRule(name=rule_name, rule=rule_node, erCode=er_code, erLevel=er_level, **token_info)
 
     def visitCodeItemRelation(self, ctx: Parser.CodeItemRelationContext):
         """
@@ -470,22 +507,29 @@ class ASTVisitor(VtlVisitor):
             when = ctx_list[0].getSymbol().text
             vd_value = Terminals().visitValueDomainValue(ctx_list[3])
             op = Terminals().visitComparisonOperand(ctx_list[4])
+            token_info_value = extract_token_info(ctx_list[3])
+            token_info_op = extract_token_info(ctx_list[4])
         else:
             vd_value = Terminals().visitValueDomainValue(ctx_list[0])
             op = Terminals().visitComparisonOperand(ctx_list[1])
+            token_info_value = extract_token_info(ctx_list[0])
+            token_info_op = extract_token_info(ctx_list[1])
 
         rule_node = HRBinOp(
-            left=DefIdentifier(value=vd_value, kind="CodeItemID"), op=op, right=None
+            left=DefIdentifier(value=vd_value, kind="CodeItemID", **token_info_value),
+            op=op,
+            right=None,
+            **token_info_op,
         )
         items = [
             item for item in ctx_list if isinstance(item, Parser.CodeItemRelationClauseContext)
         ]
-
+        token_info = extract_token_info(items[0])
         # Means that no concatenations of operations is needed for that rule.
         if len(items) == 1:
             cir_node = self.visitCodeItemRelationClause(items[0])
             if isinstance(cir_node, HRBinOp):
-                rule_node.right = HRUnOp(op=cir_node.op, operand=cir_node.right)
+                rule_node.right = HRUnOp(op=cir_node.op, operand=cir_node.right, **token_info)
 
             elif isinstance(cir_node, DefIdentifier):
                 rule_node.right = cir_node
@@ -494,7 +538,9 @@ class ASTVisitor(VtlVisitor):
         else:
             previous_node = self.visitCodeItemRelationClause(items[0])
             if isinstance(previous_node, HRBinOp):
-                previous_node = HRUnOp(op=previous_node.op, operand=previous_node.right)
+                previous_node = HRUnOp(
+                    op=previous_node.op, operand=previous_node.right, **token_info
+                )
 
             for item in items[1:]:
                 item_node = self.visitCodeItemRelationClause(item)
@@ -506,7 +552,8 @@ class ASTVisitor(VtlVisitor):
 
         if when is not None:
             expr_node = ExprComp().visitExprComponent(ctx_list[1])
-            rule_node = HRBinOp(left=expr_node, op=when, right=rule_node)
+            token_when_info = extract_token_info(ctx_list[1])
+            rule_node = HRBinOp(left=expr_node, op=when, right=rule_node, **token_when_info)
 
         return rule_node
 
@@ -531,14 +578,20 @@ class ASTVisitor(VtlVisitor):
             op = ctx_list[0].getSymbol().text
             value = Terminals().visitValueDomainValue(ctx_list[1])
 
-            code_item = DefIdentifier(value=value, kind="CodeItemID")
+            code_item = DefIdentifier(
+                value=value, kind="CodeItemID", **extract_token_info(ctx_list[1])
+            )
             if right_condition:
                 code_item._right_condition = right_condition[0]
 
-            return HRBinOp(left=None, op=op, right=code_item)
+            return HRBinOp(
+                left=None, op=op, right=code_item, **extract_token_info(ctx_list[0].getSymbol())
+            )
         else:
             value = Terminals().visitValueDomainValue(ctx_list[0])
-            code_item = DefIdentifier(value=value, kind="CodeItemID")
+            code_item = DefIdentifier(
+                value=value, kind="CodeItemID", **extract_token_info(ctx_list[0])
+            )
             if right_condition:
                 code_item._right_condition = right_condition[0]
 
