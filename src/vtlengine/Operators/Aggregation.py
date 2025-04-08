@@ -38,6 +38,9 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Preprocessor import POLARS_STR, DataFrame, merge
 
+if os.getenv("BACKEND_DF", "").lower() in POLARS_STR:
+    import polars as pl
+
 
 def extract_grouping_identifiers(
     identifier_names: List[str], group_op: Optional[str], grouping_components: Any
@@ -237,6 +240,12 @@ class Aggregation(Operator.Unary):
                 # Setting the dataframe as the pl.Dataframe instance
                 # and returning the query result as a pd.Dataframe instance
                 df = df.df
+                # polars handle NaNs in string series as literal string 'null'
+                df = df.with_columns([
+                    pl.col(me).fill_null('').alias(me)
+                    for me in measure_names
+                    if df[me].dtype == pl.String
+                ])
                 return DataFrame(duckdb.query(query).to_df())
             return duckdb.query(query).to_df().astype(object)
         except RuntimeError as e:
