@@ -9,7 +9,7 @@ from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperato
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
-from vtlengine.API import generate_sdmx, run, run_sdmx, semantic_analysis
+from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     load_datasets,
     load_datasets_with_data,
@@ -1179,3 +1179,10 @@ def test_generate_sdmx(script, agency_id, version):
     assert result.user_defined_operator_schemes[0].agency == agency_id
     assert result.user_defined_operator_schemes[0].version == version
     assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+
+
+def test_prettify_simple_expression():
+    input_script = "DS_r:= DS_1+DS_2;"
+    expected_output = "DS_r := DS_1 + DS_2;"
+    output = prettify(input_script)
+    assert output.strip() == expected_output
