@@ -101,23 +101,33 @@ class ASTString(ASTTemplate):
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
-        rules_sep = "; " if len(node.rules) > 1 else ""
         signature = f"{node.signature_type} rule {node.element.value}"
-        rules = rules_sep.join([self.visit(x) for x in node.rules])
-        self.vtl_script += (
-            f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
-            f"end hierarchical ruleset;"
-        )
+        if self.pretty:
+            self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is\n"
+
+            for i, rule in enumerate(node.rules):
+                self.vtl_script += f"\t{self.visit(rule)}\n"
+                if rule.erCode:
+                    self.vtl_script += f"\terrorcode {_handle_literal(rule.erCode)}\n"
+                if rule.erLevel:
+                    self.vtl_script += f"\terrorlevel {rule.erLevel}"
+                    if i != len(node.rules) - 1:
+                        self.vtl_script += ";\n"
+                    self.vtl_script += "\n"
+            self.vtl_script += "end hierarchical ruleset;\n"
+        else:
+            rules_sep = "; " if len(node.rules) > 1 else ""
+            rules = rules_sep.join([self.visit(x) for x in node.rules])
+            self.vtl_script += (
+                f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
+                f"end hierarchical ruleset;"
+            )
 
     def visit_HRule(self, node: AST.HRule) -> str:
         vtl_script = ""
         if node.name is not None:
             vtl_script += f"{node.name}: "
         vtl_script += f"{self.visit(node.rule)}"
-        if node.erCode is not None:
-            vtl_script += f" errorcode {_handle_literal(node.erCode)}"
-        if node.erLevel is not None:
-            vtl_script += f" errorlevel {node.erLevel}"
         return vtl_script
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> str:
@@ -155,9 +165,16 @@ class ASTString(ASTTemplate):
             f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
         )
         rules = rules_sep.join([self.visit(x) for x in node.rules])
-        self.vtl_script += (
-            f"define datapoint ruleset {node.name} ({signature}) is {rules} end datapoint ruleset;"
-        )
+        if self.pretty:
+            self.vtl_script += "\ndefine datapoint ruleset {node.name} ({signature}) is "
+            self.vtl_script += "\n\t"
+        else:
+            self.vtl_script += rules
+
+        self.vtl_script += " end datapoint ruleset;"
+
+        if self.pretty:
+            self.vtl_script += "\n"
 
     # ---------------------- User Defined Operators ----------------------
 
@@ -178,18 +195,34 @@ class ASTString(ASTTemplate):
     def visit_Operator(self, node: AST.Operator) -> None:
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
-        body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
-        self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
+        if self.pretty:
+            self.vtl_script += f"define operator {node.op}({signature})\n"
+            self.vtl_script += f"\treturns {node.output_type.lower()} is\n"
+            expression = self.visit(node.expression)
+            if "(" in expression:
+                expression = expression.replace("(", "(\n\t\t")
+                expression = expression.replace(")", "\n\t\t)")
+
+            self.vtl_script += f"\t\t{expression}\n"
+            self.vtl_script += "end operator;\n"
+        else:
+            body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
+            self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
     # ---------------------- Basic Operators ----------------------
     def visit_Assignment(self, node: AST.Assignment) -> Optional[str]:
         return_element = not copy.deepcopy(self.is_first_assignment)
         if self.is_first_assignment:
             self.is_first_assignment = False
-        expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
-        if return_element:
-            return expression
-        self.vtl_script += f"{expression};"
+        if self.pretty:
+            expression = f"{self.visit(node.left)} :="
+            right_expression = f"{self.visit(node.right)}"
+            self.vtl_script += f"{expression}\n\t{right_expression};\n"
+        else:
+            expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+            if return_element:
+                return expression
+            self.vtl_script += f"{expression};"
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Optional[str]:
         return self.visit_Assignment(node)
@@ -199,6 +232,9 @@ class ASTString(ASTTemplate):
             return f"{node.op}({self.visit(node.left)}, {self.visit(node.right)})"
         elif node.op == MEMBERSHIP:
             return f"{self.visit(node.left)}{node.op}{self.visit(node.right)}"
+        if self.pretty:
+            return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+
         return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
@@ -208,6 +244,9 @@ class ASTString(ASTTemplate):
             return f"{node.op} {self.visit(node.operand)}"
         elif node.op == MEASURE:
             return self.visit(node.operand)
+
+        if self.pretty:
+            return f"{node.op} {self.visit(node.operand)}"
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
@@ -291,6 +330,12 @@ class ASTString(ASTTemplate):
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:
         grouping, having = self._handle_grouping_having(node)
+        if self.pretty:
+            operand = self.visit(node.operand)
+            if "(" in operand:
+                operand = operand.replace("(", "(\n\t\t").replace(")", "\n\t\t)")
+            grouping = grouping.strip()
+            return f"{node.op}(\t{operand}\n\t\t\t{grouping}{having}\t)"
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
