@@ -132,7 +132,15 @@ class ASTString(ASTTemplate):
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> str:
         if node.op == "when":
-            return f"{node.op} {self.visit(node.left)} then {self.visit(node.right)}"
+            if self.pretty:
+                return (
+                    f"\t\t\twhen\n"
+                    f"\t\t\t\t{self.visit(node.left)}\n"
+                    f"\t\t\tthen\n"
+                    f"\t\t\t\t{self.visit(node.right)}"
+                )
+            else:
+                return f"{node.op} {self.visit(node.left)} then {self.visit(node.right)}"
         return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> str:
@@ -142,15 +150,27 @@ class ASTString(ASTTemplate):
         return node.value
 
     def visit_DPRule(self, node: AST.DPRule) -> str:
-        vtl_script = ""
-        if node.name is not None:
-            vtl_script += f"{node.name}: "
-        vtl_script += f"{self.visit(node.rule)}"
-        if node.erCode is not None:
-            vtl_script += f" errorcode {_handle_literal(node.erCode)}"
-        if node.erLevel is not None:
-            vtl_script += f" errorlevel {node.erLevel}"
-        return vtl_script
+        if self.pretty:
+            lines = []
+            if node.name is not None:
+                lines.append(f"\t{node.name} : ")
+            lines.append(self.visit(node.rule))
+            if node.erCode is not None:
+                lines.append(f"\t\t\terrorcode  {_handle_literal(node.erCode)}")
+            if node.erLevel is not None:
+                lines.append(f"\t\t\terrorlevel {node.erLevel}; ")
+            return "\n".join(lines)
+        else:
+            vtl_script = ""
+            if node.name is not None:
+                vtl_script += f"{node.name}: "
+            vtl_script += f"{self.visit(node.rule)}"
+            if node.erCode is not None:
+                vtl_script += f" errorcode {_handle_literal(node.erCode)}"
+            if node.erLevel is not None:
+                vtl_script += f" errorlevel {node.erLevel}"
+            vtl_script += ";"
+            return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:
         vtl_script = f"{node.value}"
@@ -164,17 +184,15 @@ class ASTString(ASTTemplate):
         signature = (
             f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
         )
-        rules = rules_sep.join([self.visit(x) for x in node.rules])
+
         if self.pretty:
-            self.vtl_script += "\ndefine datapoint ruleset {node.name} ({signature}) is "
-            self.vtl_script += "\n\t"
+            self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is \n"
+            for rule in node.rules:
+                self.vtl_script += f"\t{self.visit(rule)}\n\n"
+            self.vtl_script += "end datapoint ruleset;\n"
         else:
-            self.vtl_script += rules
-
-        self.vtl_script += " end datapoint ruleset;"
-
-        if self.pretty:
-            self.vtl_script += "\n"
+            rules = rules_sep.join([self.visit(x) for x in node.rules])
+            self.vtl_script += f"define datapoint ruleset {node.name} ({signature}) is {rules} end datapoint ruleset;"
 
     # ---------------------- User Defined Operators ----------------------
 
@@ -346,12 +364,16 @@ class ASTString(ASTTemplate):
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
             order = f" order by {order_sep.join([self.visit(x) for x in node.order_by])}"
-        window = f" {self.visit(node.window)}" if node.window is not None else ""
+        window = f"{self.visit(node.window)}" if node.window is not None else ""
         params = ""
         if node.params:
             params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+        if self.pretty:
+            result = f"{node.op}(\n\t\t\t{operand}{params} over({partition}{order} {window})\n\t\t)"
+        else:
+            result = f"{node.op}({operand}{params} over ({partition}{order}{window}))"
 
-        return f"{node.op}({operand}{params} over ({partition}{order}{window}))"
+        return result
 
     def visit_Case(self, node: AST.Case) -> str:
         else_str = f"else {self.visit(node.elseOp)}"
