@@ -215,14 +215,12 @@ class ASTString(ASTTemplate):
         if self.is_first_assignment:
             self.is_first_assignment = False
         if self.pretty:
-            expression = f"{self.visit(node.left)} :="
-            right_expression = f"{self.visit(node.right)}"
-            self.vtl_script += f"{expression}\n\t{right_expression};\n"
+            expression = f"{self.visit(node.left)} {node.op}\n\t{self.visit(node.right)}"
         else:
             expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
-            if return_element:
-                return expression
-            self.vtl_script += f"{expression};"
+        if return_element:
+            return expression
+        self.vtl_script += f"{expression};"
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Optional[str]:
         return self.visit_Assignment(node)
