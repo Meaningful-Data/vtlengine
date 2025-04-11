@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "period_label",
+          "role": "Identifier",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "units_sold",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "units_available",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
