@@ -297,10 +297,16 @@ class ASTString(ASTTemplate):
             param_output = (
                 f" {param_output_value}" if param_output_value != default_value_output else ""
             )
-            return (
-                f"{node.op}({operand}, {rule_name} rule {component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
+            if self.pretty:
+                return (
+                    f"{node.op}(\n\t\t{operand},\n\t\t{rule_name},\n\t\t{component_name}"
+                    f"{param_mode}{param_input}{param_output})"
+                )
+            else:
+                return (
+                    f"{node.op}({operand}, {rule_name} rule {component_name}"
+                    f"{param_mode}{param_input}{param_output})"
+                )
 
         elif node.op == CHECK_DATAPOINT:
             operand = self.visit(node.children[0])
@@ -308,23 +314,35 @@ class ASTString(ASTTemplate):
             output = ""
             if len(node.params) == 1 and node.params[0] != "invalid":
                 output = f" {node.params[0]}"
-            return f"{node.op}({operand}, {rule_name}{output})"
+            if self.pretty:
+                return f"{node.op}(\n\t{operand},\n\t{rule_name}{output}\n)"
+            else:
+                return f"{node.op}({operand}, {rule_name}{output})"
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
             mask = ""
             if len(node.params) == 1:
                 mask = f", {self.visit(node.params[0])}"
-            return f"{node.op}({operand}, {data_type}{mask})"
+            if self.pretty:
+                return f"{node.op}(\n\t{operand},\n\t{data_type}{mask}\n)"
+            else:
+                return f"{node.op}({operand}, {data_type}{mask})"
         elif node.op == FILL_TIME_SERIES:
             operand = self.visit(node.children[0])
             param = node.params[0].value if node.params else "all"
-            return f"{node.op}({operand}, {param})"
+            if self.pretty:
+                return f"{node.op}(\n\t{operand},\n\t{param}\n)"
+            else:
+                return f"{node.op}({operand}, {param})"
         elif node.op == DATE_ADD:
             operand = self.visit(node.children[0])
             shift_number = self.visit(node.params[0])
             period_indicator = self.visit(node.params[1])
-            return f"{node.op}({operand}, {shift_number}, {period_indicator})"
+            if self.pretty:
+                return f"{node.op}(\n\t{operand},\n\t{shift_number},\n\t{period_indicator}\n)"
+            else:
+                return f"{node.op}({operand}, {shift_number}, {period_indicator})"
 
     # ---------------------- Individual operators ----------------------
 
