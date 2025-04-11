@@ -450,4 +450,6 @@ def _read_csv(
 ) -> PolarsDataFrame:
     if na_values is not None and "null" not in na_values:
         na_values.append("null")
-    return PolarsDataFrame(pl.read_csv(source, null_values=na_values or ["null", "None"]))
+
+    df = pl.read_csv(source, null_values=na_values or ["null", "None"])
+    return PolarsDataFrame(df)
