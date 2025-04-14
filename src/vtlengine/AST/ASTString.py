@@ -233,7 +233,10 @@ class ASTString(ASTTemplate):
         if self.is_first_assignment:
             self.is_first_assignment = False
         if self.pretty:
-            expression = f"{self.visit(node.left)} {node.op}\n\t{self.visit(node.right)}"
+            if return_element == False:
+                expression = f"{self.visit(node.left)} {node.op}\n\t{self.visit(node.right)}"
+            else:
+                expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
         else:
             expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
         if return_element:
@@ -268,6 +271,8 @@ class ASTString(ASTTemplate):
     def visit_MulOp(self, node: AST.MulOp) -> str:
         sep = ", " if len(node.children) > 1 else ""
         body = sep.join([self.visit(x) for x in node.children])
+        if self.pretty:
+            return f"{node.op}({body})"
         return f"{node.op}({body})"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:
@@ -325,14 +330,14 @@ class ASTString(ASTTemplate):
             if len(node.params) == 1:
                 mask = f", {self.visit(node.params[0])}"
             if self.pretty:
-                return f"{node.op}(\n\t{operand},\n\t{data_type}{mask}\n)"
+                return f"{node.op}({operand},{data_type}{mask})"
             else:
-                return f"{node.op}({operand}, {data_type}{mask})"
+                return f"{node.op}({operand},{data_type}{mask})"
         elif node.op == FILL_TIME_SERIES:
             operand = self.visit(node.children[0])
             param = node.params[0].value if node.params else "all"
             if self.pretty:
-                return f"{node.op}(\n\t{operand},\n\t{param}\n)"
+                return f"{node.op}({operand},{param})"
             else:
                 return f"{node.op}({operand}, {param})"
         elif node.op == DATE_ADD:
@@ -340,7 +345,7 @@ class ASTString(ASTTemplate):
             shift_number = self.visit(node.params[0])
             period_indicator = self.visit(node.params[1])
             if self.pretty:
-                return f"{node.op}(\n\t{operand},\n\t{shift_number},\n\t{period_indicator}\n)"
+                return f"{node.op}(\n\t\t\t\t{operand},\n\t\t\t\t{shift_number},\n\t\t\t\t{period_indicator})"
             else:
                 return f"{node.op}({operand}, {shift_number}, {period_indicator})"
 
@@ -366,10 +371,7 @@ class ASTString(ASTTemplate):
         grouping, having = self._handle_grouping_having(node)
         if self.pretty:
             operand = self.visit(node.operand)
-            if "(" in operand:
-                operand = operand.replace("(", "(\n\t\t").replace(")", "\n\t\t)")
-            grouping = grouping.strip()
-            return f"{node.op}(\t{operand}\n\t\t\t{grouping}{having}\t)"
+            return f"{node.op}(\n\t\t\t{operand}{grouping}{having}\n\t\t)"
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
@@ -411,17 +413,30 @@ class ASTString(ASTTemplate):
         return f"eval({ext_routine} {language} {output})"
 
     def visit_If(self, node: AST.If) -> str:
-        else_str = f" else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
-        return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)}{else_str}"
+        if self.pretty:
+            else_str = f"else\n\t\t\t\t{self.visit(node.elseOp)}" if node.elseOp is not None else ""
+            return f"\n\t\t\tif \n\t\t\t\t{self.visit(node.condition)} \n\t\t\tthen \n\t\t\t\t{self.visit(node.thenOp)}\n\t\t\t{else_str}"
+        else:
+            else_str = f"else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
+            return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)} {else_str}"
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:
-        sep = ", " if len(node.clauses) > 1 else ""
-        clauses = sep.join([self.visit(x) for x in node.clauses])
-        using = ""
-        if node.using is not None:
-            using_sep = ", " if len(node.using) > 1 else ""
-            using = f" using {using_sep.join(node.using)}"
-        return f"{node.op}({clauses}{using})"
+        if self.pretty:
+            sep = ",\n\t\t" if len(node.clauses) > 1 else ""
+            clauses = sep.join([self.visit(x) for x in node.clauses])
+            using = ""
+            if node.using is not None:
+                using_sep = ", " if len(node.using) > 1 else ""
+                using = f"using {using_sep.join(node.using)}"
+            return f"{node.op}(\n\t\t{clauses}\n\t\t{using})"
+        else:
+            sep = ", " if len(node.clauses) > 1 else ""
+            clauses = sep.join([self.visit(x) for x in node.clauses])
+            using = ""
+            if node.using is not None:
+                using_sep = ", " if len(node.using) > 1 else ""
+                using = f" using {using_sep.join(node.using)}"
+            return f"{node.op}({clauses}{using})"
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
         return f"({self.visit(node.operand)})"
@@ -437,11 +452,17 @@ class ASTString(ASTTemplate):
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if isinstance(node.dataset, AST.JoinOp):
-            dataset = f"{self.visit(node.dataset)}"
-            return f"{dataset[:-1]} {node.op} {body})"
+            dataset = self.visit(node.dataset)
+            if self.pretty:
+                return f"{dataset[:-1]}{(node.op)} {body}\n\t)"
+            else:
+                return f"{dataset[:-1]} {node.op} {body})"
         else:
             dataset = self.visit(node.dataset)
-        return f"{dataset}[{node.op} {body}]"
+            if self.pretty:
+                return f"{dataset}\n\t\t\t\t[{node.op} {body}]\n\t\t\t"
+            else:
+                return f"{dataset} [{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
         return f"{node.old_name} to {node.new_name}"
@@ -450,7 +471,11 @@ class ASTString(ASTTemplate):
         operand = self.visit(node.operand)
         period_from = "_" if node.period_from is None else node.period_from
         period_to = _handle_literal(node.period_to)
-        return f"{node.op}({period_to}, {period_from}, {operand})"
+        conf = node.conf
+        if self.pretty:
+            return f"{node.op}({period_to},{period_from},{operand},{conf})"
+        else:
+            return f"{node.op}({period_to}, {period_from}, {operand}, {conf})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
