@@ -154,7 +154,7 @@ class ASTString(ASTTemplate):
         if self.pretty:
             lines = []
             if node.name is not None:
-                lines.append(f"\t{node.name} : ")
+                lines.append(f"\t{node.name}: ")
             lines.append(self.visit(node.rule))
             if node.erCode is not None:
                 lines.append(f"\t\t\terrorcode  {_handle_literal(node.erCode)}")
@@ -321,7 +321,7 @@ class ASTString(ASTTemplate):
             if len(node.params) == 1 and node.params[0] != "invalid":
                 output = f" {node.params[0]}"
             if self.pretty:
-                return f"{node.op}(\n\t{operand},\n\t{rule_name}{output}\n)"
+                return f"{node.op}(\n\t{operand},\n\t{rule_name}\n\t{output}\n)"
             else:
                 return f"{node.op}({operand}, {rule_name}{output})"
         elif node.op == CAST:
