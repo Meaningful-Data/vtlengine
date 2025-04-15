@@ -379,7 +379,7 @@ class ASTString(ASTTemplate):
         partition = ""
         if node.partition_by:
             partition_sep = ", " if len(node.partition_by) > 1 else ""
-            partition = f" partition by {partition_sep.join(node.partition_by)}"
+            partition = f"partition by {partition_sep.join(node.partition_by)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
@@ -483,7 +483,6 @@ class ASTString(ASTTemplate):
         operand = self.visit(node.operand)
         period_from = "_" if node.period_from is None else node.period_from
         period_to = _handle_literal(node.period_to)
-        conf = node.conf
         if self.pretty:
             return f"{node.op}({period_to},{period_from},{operand})"
         else:
