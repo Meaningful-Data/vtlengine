@@ -14,6 +14,7 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     DATE_ADD,
     DATEDIFF,
+    DROP,
     FILL_TIME_SERIES,
     HAVING,
     HIERARCHY,
@@ -304,7 +305,7 @@ class ASTString(ASTTemplate):
             )
             if self.pretty:
                 return (
-                    f"{node.op}(\n\t\t{operand},\n\t\t{rule_name},\n\t\t{component_name}"
+                    f"{node.op}(\n\t\t{operand},\n\t\t{rule_name},\n\t\trule {component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
             else:
@@ -396,13 +397,22 @@ class ASTString(ASTTemplate):
         return result
 
     def visit_Case(self, node: AST.Case) -> str:
-        else_str = f"else {self.visit(node.elseOp)}"
-        body_sep = " " if len(node.cases) > 1 else ""
-        body = body_sep.join([self.visit(x) for x in node.cases])
-        return f"case {body} {else_str}"
+        if self.pretty:
+            else_str = f"\n\t\telse\n\t\t\t{self.visit(node.elseOp)}"
+            body_sep = " " if len(node.cases) > 1 else ""
+            body = body_sep.join([self.visit(x) for x in node.cases])
+            return f"case {body} {else_str}"
+        else:
+            else_str = f"else {self.visit(node.elseOp)}"
+            body_sep = " " if len(node.cases) > 1 else ""
+            body = body_sep.join([self.visit(x) for x in node.cases])
+            return f"case {body} {else_str}"
 
     def visit_CaseObj(self, node: AST.CaseObj) -> str:
-        return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
+        if self.pretty:
+            return f"\n\t\twhen\n\t\t\t{self.visit(node.condition)}\n\t\tthen\n\t\t\t{self.visit(node.thenOp)}"
+        else:
+            return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
 
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         operand_sep = ", " if len(node.operands) > 1 else ""
@@ -449,6 +459,9 @@ class ASTString(ASTTemplate):
             self.is_from_agg = False
             grouping, having = self._handle_grouping_having(node.children[0].right)
             body = f"{body}{grouping}{having}"
+        elif node.op == DROP and self.pretty:
+            drop_sep = ",\n\t\t\t" if len(node.children) > 1 else ""
+            body = f"{drop_sep.join([self.visit(x) for x in node.children])}\n\t\t"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if isinstance(node.dataset, AST.JoinOp):
@@ -460,7 +473,7 @@ class ASTString(ASTTemplate):
         else:
             dataset = self.visit(node.dataset)
             if self.pretty:
-                return f"{dataset}\n\t\t\t\t[{node.op} {body}]\n\t\t\t"
+                return f"{dataset}\n\t\t[{node.op} {body}]"
             else:
                 return f"{dataset} [{node.op} {body}]"
 
