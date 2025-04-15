@@ -170,7 +170,6 @@ class ASTString(ASTTemplate):
                 vtl_script += f" errorcode {_handle_literal(node.erCode)}"
             if node.erLevel is not None:
                 vtl_script += f" errorlevel {node.erLevel}"
-            vtl_script += ";"
             return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:
@@ -385,7 +384,7 @@ class ASTString(ASTTemplate):
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
             order = f" order by {order_sep.join([self.visit(x) for x in node.order_by])}"
-        window = f"{self.visit(node.window)}" if node.window is not None else ""
+        window = f" {self.visit(node.window)}" if node.window is not None else ""
         params = ""
         if node.params:
             params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
@@ -486,9 +485,9 @@ class ASTString(ASTTemplate):
         period_to = _handle_literal(node.period_to)
         conf = node.conf
         if self.pretty:
-            return f"{node.op}({period_to},{period_from},{operand},{conf})"
+            return f"{node.op}({period_to},{period_from},{operand})"
         else:
-            return f"{node.op}({period_to}, {period_from}, {operand}, {conf})"
+            return f"{node.op}({period_to}, {period_from}, {operand})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
