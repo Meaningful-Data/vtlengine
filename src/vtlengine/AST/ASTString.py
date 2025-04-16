@@ -16,14 +16,17 @@ from vtlengine.AST.Grammar.tokens import (
     DATEDIFF,
     DROP,
     FILL_TIME_SERIES,
+    FILTER,
     HAVING,
     HIERARCHY,
     IDENTIFIER,
     INSTR,
     INTERSECT,
     LOG,
+    MAX,
     MEASURE,
     MEMBERSHIP,
+    MIN,
     MINUS,
     MOD,
     NVL,
@@ -63,12 +66,12 @@ def _handle_literal(value: Union[str, int, float, bool]):
 def _format_dataset_eval(dataset: Dataset) -> str:
     def __format_component(component: Component) -> str:
         return (
-            f"{component.role.value.lower()}"
+            f"\n\t\t\t{component.role.value.lower()}"
             f"<{SCALAR_TYPES_CLASS_REVERSE[component.data_type].lower()}> "
             f"{component.name}"
         )
 
-    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} }}"
+    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} \n\t\t}}"
 
 
 def _format_reserved_word(value: str):
@@ -192,7 +195,10 @@ class ASTString(ASTTemplate):
             self.vtl_script += "end datapoint ruleset;\n"
         else:
             rules = rules_sep.join([self.visit(x) for x in node.rules])
-            self.vtl_script += f"define datapoint ruleset {node.name} ({signature}) is {rules} end datapoint ruleset;"
+            self.vtl_script += (
+                f"define datapoint ruleset {node.name} "
+                f"({signature}) is {rules} end datapoint ruleset;"
+            )
 
     # ---------------------- User Defined Operators ----------------------
 
@@ -250,7 +256,7 @@ class ASTString(ASTTemplate):
         if node.op in [NVL, LOG, MOD, POWER, RANDOM, TIMESHIFT, DATEDIFF]:
             return f"{node.op}({self.visit(node.left)}, {self.visit(node.right)})"
         elif node.op == MEMBERSHIP:
-            return f"{self.visit(node.left)}{node.op}{self.visit(node.right)}"
+            return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
         if self.pretty:
             return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
@@ -318,7 +324,7 @@ class ASTString(ASTTemplate):
             rule_name = node.children[1]
             output = ""
             if len(node.params) == 1 and node.params[0] != "invalid":
-                output = f" {node.params[0]}"
+                output = f"{node.params[0]}"
             if self.pretty:
                 return f"{node.op}(\n\t{operand},\n\t{rule_name}\n\t{output}\n)"
             else:
@@ -345,7 +351,7 @@ class ASTString(ASTTemplate):
             shift_number = self.visit(node.params[0])
             period_indicator = self.visit(node.params[1])
             if self.pretty:
-                return f"{node.op}(\n\t\t\t\t{operand},\n\t\t\t\t{shift_number},\n\t\t\t\t{period_indicator})"
+                return f"{node.op}(\n\t\t{operand},\n\t\t{shift_number},\n\t\t{period_indicator})"
             else:
                 return f"{node.op}({operand}, {shift_number}, {period_indicator})"
 
@@ -369,7 +375,7 @@ class ASTString(ASTTemplate):
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:
         grouping, having = self._handle_grouping_having(node)
-        if self.pretty:
+        if self.pretty and node.op not in (MAX, MIN):
             operand = self.visit(node.operand)
             return f"{node.op}(\n\t\t\t{operand}{grouping}{having}\n\t\t)"
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
@@ -409,22 +415,37 @@ class ASTString(ASTTemplate):
 
     def visit_CaseObj(self, node: AST.CaseObj) -> str:
         if self.pretty:
-            return f"\n\t\twhen\n\t\t\t{self.visit(node.condition)}\n\t\tthen\n\t\t\t{self.visit(node.thenOp)}"
+            return (
+                f"\n\t\twhen\n\t\t\t{self.visit(node.condition)}\n\t\tthen"
+                f"\n\t\t\t{self.visit(node.thenOp)}"
+            )
         else:
             return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
 
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         operand_sep = ", " if len(node.operands) > 1 else ""
-        operands = operand_sep.join([self.visit(x) for x in node.operands])
-        ext_routine = f"{node.name}({operands})"
-        language = f"language {_handle_literal(node.language)}"
-        output = f"returns dataset {_format_dataset_eval(node.output)}"
-        return f"eval({ext_routine} {language} {output})"
+        if self.pretty:
+            operands = operand_sep.join([self.visit(x) for x in node.operands])
+            ext_routine = f"\n\t\t{node.name}({operands})"
+            language = f"\n\t\tlanguage {_handle_literal(node.language)}\n"
+            output = f"\t\treturns dataset {_format_dataset_eval(node.output)}"
+            return f"eval({ext_routine} {language} {output})"
+        else:
+            operands = operand_sep.join([self.visit(x) for x in node.operands])
+            ext_routine = f"{node.name}({operands})"
+            language = f"language {_handle_literal(node.language)}"
+            output = f"returns dataset {_format_dataset_eval(node.output)}"
+            return f"eval({ext_routine} {language} {output})"
 
     def visit_If(self, node: AST.If) -> str:
         if self.pretty:
-            else_str = f"else\n\t\t\t\t{self.visit(node.elseOp)}" if node.elseOp is not None else ""
-            return f"\n\t\t\tif \n\t\t\t\t{self.visit(node.condition)} \n\t\t\tthen \n\t\t\t\t{self.visit(node.thenOp)}\n\t\t\t{else_str}"
+            else_str = (
+                f"else\n\t\t\t\t\t{self.visit(node.elseOp)}" if node.elseOp is not None else ""
+            )
+            return (
+                f"\n\t\t\t\tif \n\t\t\t\t\t{self.visit(node.condition)} "
+                f"\n\t\t\t\tthen \n\t\t\t\t\t{self.visit(node.thenOp)}\n\t\t\t\t{else_str}"
+            )
         else:
             else_str = f"else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
             return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)} {else_str}"
@@ -457,10 +478,16 @@ class ASTString(ASTTemplate):
             body = child_sep.join([self.visit(x) for x in node.children])
             self.is_from_agg = False
             grouping, having = self._handle_grouping_having(node.children[0].right)
-            body = f"{body}{grouping}{having}"
+            body = f"\n\t\t\t{body}\n\t\t\t{grouping}{having}\n\t\t"
         elif node.op == DROP and self.pretty:
             drop_sep = ",\n\t\t\t" if len(node.children) > 1 else ""
             body = f"{drop_sep.join([self.visit(x) for x in node.children])}\n\t\t"
+        elif node.op == FILTER and self.pretty:
+            condition = self.visit(node.children[0])
+            if " and " in condition or " or " in condition:
+                for op in (" and ", " or "):
+                    condition = condition.replace(op, f"{op.strip()}\n\t\t\t\t\t")
+            body = f"\n\t\t\t\t{condition}\n\t\t"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if isinstance(node.dataset, AST.JoinOp):

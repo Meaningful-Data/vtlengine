@@ -1,0 +1,8 @@
+DS_r :=
+	case
+		when
+			DS_cond
+		then
+			DS_2
+		else
+			DS_1;

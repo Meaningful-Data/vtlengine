@@ -1,0 +1,5 @@
+DS_r :=
+	inner_join(
+		securities_static,
+		securities_dynamic
+		using securityId);
