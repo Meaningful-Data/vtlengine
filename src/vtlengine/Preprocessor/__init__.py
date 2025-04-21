@@ -1,7 +1,6 @@
 import os
+from pathlib import Path
 
-import pandas as pd
-from pandas._testing import assert_frame_equal as pandas_assert_frame_equal
 from vtlengine.Preprocessor.DuckDB import (
     LazyFrame,
     LazySeries,
@@ -32,10 +31,16 @@ LAZY_STR = ["duckdb", "db", "lazy", "streaming"]
 backend_df = BACKENDS.get(os.getenv("BACKEND_DF", "").lower(), "pd")
 
 if backend_df == "pd":
+    try:
+        import pandas as pd
+        from pandas._testing import assert_frame_equal
+    except ImportError:
+        raise ImportError("Pandas is not installed. Install it with `pip install pandas`.")
+
     _DataFrame = pd.DataFrame
     _Series = pd.Series
 
-    _assert_frame_equal = pandas_assert_frame_equal
+    _assert_frame_equal = assert_frame_equal
     _concat = pd.concat
     _infer_dtype = pd.api.types.infer_dtype
     _isnull = pd.isnull
@@ -49,6 +54,15 @@ elif backend_df == "duckdb":
         import duckdb
     except ImportError:
         raise ImportError("Duckdb is not installed. Install it with `pip install duckdb`.")
+
+    # Configuration of in-memory db and temporary directory
+    con = duckdb.connect(database=":memory:", read_only=False)
+    con.execute(f"SET memory_limit = '512MB';")
+    con.execute(f"SET max_memory = '512MB';")
+    temp_path = Path(__file__).parent / "duckdb_temp"
+    con.execute(f"SET temp_directory='{temp_path}';")
+    con.execute("SET enable_progress_bar = true;")
+    con.execute("SET explain_output = 'optimized_only';")
 
     _DataFrame = LazyFrame
     _Series = LazySeries
