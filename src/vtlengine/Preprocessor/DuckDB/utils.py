@@ -36,5 +36,6 @@ def _merge():
 def _read_csv(file_path: str, **kwargs):
     return con.from_csv_auto(str(file_path))
 
+
 def _to_datetime():
     pass

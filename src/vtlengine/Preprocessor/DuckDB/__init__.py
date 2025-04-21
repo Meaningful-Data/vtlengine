@@ -1,3 +1,4 @@
+from .attributes import set_attributes
 from .dataframe import LazyFrame
 from .series import LazySeries
 from .utils import (
@@ -11,8 +12,6 @@ from .utils import (
     _read_csv,
     _to_datetime,
 )
-
-from .attributes import set_attributes
 
 __all__ = [
     "LazyFrame",

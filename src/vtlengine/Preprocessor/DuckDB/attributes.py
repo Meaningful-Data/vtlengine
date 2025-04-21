@@ -1,4 +1,5 @@
 import uuid
+
 import duckdb
 
 
@@ -21,7 +22,10 @@ def _all(self, axis=0):
         raise NotImplementedError(f"All axis {axis} is not implemented")
 
     alias = unique_view_alias()
-    cols = [f"SUM(({col} IS NOT NULL AND {col} != 0)::INT) = COUNT({col}) AS {col}" for col in self.columns]
+    cols = [
+        f"SUM(({col} IS NOT NULL AND {col} != 0)::INT) = COUNT({col}) AS {col}"
+        for col in self.columns
+    ]
     query = f"SELECT {', '.join(cols)} FROM {alias}"
     result = self.query(alias, query).fetchdf().astype(bool)
     return result.values.all()
