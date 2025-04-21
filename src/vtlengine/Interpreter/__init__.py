@@ -1404,7 +1404,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return result_validation
             self.rule_data["bool_var"] = result_validation.data
             original_data = original_data.merge(
-                self.rule_data, how="left", on=original_data.columns.tolist()
+                self.rule_data, how="left", on=[col for col in original_data.columns]
             )
             original_data.loc[non_filtering_indexes, "bool_var"] = True
             original_data.loc[nan_indexes, "bool_var"] = None

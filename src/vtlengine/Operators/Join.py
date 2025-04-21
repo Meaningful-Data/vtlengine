@@ -137,9 +137,9 @@ class Join(Operator):
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
+            result.data.columns
         ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
+            missing = list(set(result.get_components_names()) - set(result.data.columns))
             if len(missing) == 0:
                 missing.append("None")
             raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
@@ -158,7 +158,7 @@ class Join(Operator):
         )
         for op in operands:
             if op.data is not None:
-                for column in op.data.columns.tolist():
+                for column in op.data.columns:
                     if column in common_measures and column not in using:
                         op.data = op.data.rename(columns={column: op.name + "#" + column})
         result.data = copy(cls.reference_dataset.data)
@@ -168,7 +168,7 @@ class Join(Operator):
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [key for key in join_keys if key in op.data.columns]
                     if (op.data is not None)
                     else []
                 )
@@ -345,7 +345,7 @@ class CrossJoin(Join):
                 result.data = result.data.rename(
                     columns={
                         column: op.name + "#" + column
-                        for column in result.data.columns.tolist()
+                        for column in result.data.columns
                         if column in common
                     }
                 )

@@ -135,7 +135,7 @@ def _validate_pandas(
 
     id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    missing_columns = [name for name in components if name not in data.columns.tolist()]
+    missing_columns = [name for name in components if name not in data.columns]
     if missing_columns:
         for name in missing_columns:
             if components[name].nullable is False:
