@@ -12,9 +12,12 @@ from .utils import (
     _to_datetime,
 )
 
+from .attributes import set_attributes
+
 __all__ = [
     "LazyFrame",
     "LazySeries",
+    "set_attributes",
     "_assert_frame_equal",
     "_concat",
     "_isnull",

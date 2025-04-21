@@ -4,6 +4,7 @@ from pathlib import Path
 from vtlengine.Preprocessor.DuckDB import (
     LazyFrame,
     LazySeries,
+    set_attributes,
 )
 from vtlengine.Preprocessor.DuckDB import (
     _assert_frame_equal as lazy_assert_frame_equal,
@@ -79,6 +80,8 @@ elif backend_df == "duckdb":
     con.execute(f"SET temp_directory='{temp_path}';")
     con.execute("SET enable_progress_bar = true;")
     con.execute("SET explain_output = 'optimized_only';")
+
+    set_attributes()
 
     _DataFrame = LazyFrame
     _Series = LazySeries
