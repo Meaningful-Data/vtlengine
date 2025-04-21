@@ -19,7 +19,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Preprocessor import read_csv
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
     check_date,
@@ -27,6 +26,7 @@ from vtlengine.files.parser._time_checking import (
     check_time_period,
 )
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import read_csv
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,

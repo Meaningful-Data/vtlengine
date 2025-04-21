@@ -4,13 +4,29 @@ from pathlib import Path
 from vtlengine.Preprocessor.DuckDB import (
     LazyFrame,
     LazySeries,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _assert_frame_equal as lazy_assert_frame_equal,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _concat as lazy_concat,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _infer_dtype as lazy_infer_dtype,
-    _isnull as lazy_isnull,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _isna as lazy_isna,
+)
+from vtlengine.Preprocessor.DuckDB import (
+    _isnull as lazy_isnull,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _merge as lazy_merge,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _read_csv as lazy_read_csv,
+)
+from vtlengine.Preprocessor.DuckDB import (
     _to_datetime as lazy_to_datetime,
 )
 
@@ -57,8 +73,8 @@ elif backend_df == "duckdb":
 
     # Configuration of in-memory db and temporary directory
     con = duckdb.connect(database=":memory:", read_only=False)
-    con.execute(f"SET memory_limit = '512MB';")
-    con.execute(f"SET max_memory = '512MB';")
+    con.execute("SET memory_limit = '512MB';")
+    con.execute("SET max_memory = '512MB';")
     temp_path = Path(__file__).parent / "duckdb_temp"
     con.execute(f"SET temp_directory='{temp_path}';")
     con.execute("SET enable_progress_bar = true;")

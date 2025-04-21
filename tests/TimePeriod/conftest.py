@@ -1,7 +1,6 @@
 import json
 import os
 
-import pandas as pd
 import pytest
 
 from vtlengine.API._InternalApi import load_datasets_with_data

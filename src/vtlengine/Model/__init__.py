@@ -15,8 +15,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Preprocessor import isnull, concat
-
+from vtlengine.Preprocessor import concat, isnull
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 

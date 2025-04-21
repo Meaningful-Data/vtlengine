@@ -1,5 +1,3 @@
-
-
 class LazyFrame:
     """
     A class representing a lazy DataFrame

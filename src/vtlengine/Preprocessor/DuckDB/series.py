@@ -1,6 +1,3 @@
-
-
-
 class LazySeries:
     """
     A class representing a lazy Series

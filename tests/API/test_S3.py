@@ -8,10 +8,10 @@ import pytest
 
 from vtlengine import DataTypes, run
 from vtlengine.Exceptions import InputValidationException
-from vtlengine.Preprocessor import read_csv
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import read_csv
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"

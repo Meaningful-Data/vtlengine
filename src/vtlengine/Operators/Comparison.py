@@ -25,7 +25,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Preprocessor import isnull, infer_dtype, merge
+from vtlengine.Preprocessor import infer_dtype, isnull, merge
 
 
 class Unary(Operator.Unary):

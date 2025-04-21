@@ -9,7 +9,7 @@ import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
-from vtlengine.Preprocessor import isnull, concat
+from vtlengine.Preprocessor import concat, isnull
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:

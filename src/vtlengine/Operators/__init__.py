@@ -37,7 +37,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Preprocessor import merge, isnull
+from vtlengine.Preprocessor import isnull, merge
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 

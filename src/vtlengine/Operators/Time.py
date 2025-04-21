@@ -40,7 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Preprocessor import to_datetime, concat
+from vtlengine.Preprocessor import concat, to_datetime
 
 
 class Time(Operators.Operator):

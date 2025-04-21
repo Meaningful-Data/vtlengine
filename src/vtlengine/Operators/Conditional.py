@@ -19,7 +19,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
-from vtlengine.Preprocessor import merge, concat
+from vtlengine.Preprocessor import concat, merge
 
 
 class If(Operator):
@@ -111,9 +111,7 @@ class If(Operator):
             )
 
         result.data = (
-            concat([true_data, false_data], ignore_index=True)
-            .drop_duplicates()
-            .sort_values(by=ids)
+            concat([true_data, false_data], ignore_index=True).drop_duplicates().sort_values(by=ids)
         )
         if isinstance(result, Dataset):
             drop_columns = [

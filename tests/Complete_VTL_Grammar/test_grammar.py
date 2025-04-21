@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import pandas as pd
-
 from vtlengine import API, DataTypes, run
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
