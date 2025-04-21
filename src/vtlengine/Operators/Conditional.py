@@ -19,6 +19,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
+from vtlengine.Preprocessor import merge, concat
 
 
 class If(Operator):
@@ -80,7 +81,7 @@ class If(Operator):
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(
+                true_data = merge(
                     true_data,
                     true_branch.data,
                     on=ids,
@@ -95,7 +96,7 @@ class If(Operator):
             )
         if isinstance(false_branch, Dataset):
             if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(
+                false_data = merge(
                     false_data,
                     false_branch.data,
                     on=ids,
@@ -110,7 +111,7 @@ class If(Operator):
             )
 
         result.data = (
-            pd.concat([true_data, false_data], ignore_index=True)
+            concat([true_data, false_data], ignore_index=True)
             .drop_duplicates()
             .sort_values(by=ids)
         )

@@ -37,6 +37,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Preprocessor import merge, isnull
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -225,7 +226,7 @@ class Binary(Operator):
     def op_func(cls, *args: Any) -> Any:
         x, y = args
 
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         return cls.py_op(x, y)
 
@@ -546,7 +547,7 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: pd.DataFrame = pd.DataFrame()
             else:
-                result_data = pd.merge(
+                result_data = merge(
                     base_operand_data,
                     other_operand_data,
                     how="inner",
@@ -730,7 +731,7 @@ class Unary(Operator):
     def op_func(cls, *args: Any) -> Any:
         x = args[0]
 
-        return None if pd.isnull(x) else cls.py_op(x)
+        return None if isnull(x) else cls.py_op(x)
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:

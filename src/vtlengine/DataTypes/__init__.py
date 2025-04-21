@@ -1,14 +1,13 @@
 import re
 from typing import Any, Dict, Optional, Set, Type, Union
 
-import pandas as pd
-
 from vtlengine.DataTypes.TimeHandling import (
     check_max_date,
     date_to_period_str,
     str_period_to_date,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import isnull
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
@@ -92,7 +91,7 @@ class ScalarType:
 
     @classmethod
     def cast(cls, value: Any) -> Any:
-        if pd.isnull(value):
+        if isnull(value):
             return None
         class_name: str = cls.__name__.__str__()
         return CAST_MAPPING[class_name](value)
@@ -110,7 +109,7 @@ class String(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
-        # if pd.isna(value):
+        # if isna(value):
         #     return cls.default
         if from_type in {
             Number,
@@ -158,7 +157,7 @@ class Number(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
-        # if pd.isna(value):
+        # if isna(value):
         #     return cls.default
         if from_type in {Integer, Number}:
             return float(value)
@@ -192,7 +191,7 @@ class Number(ScalarType):
 
     @classmethod
     def cast(cls, value: Any) -> Optional[float]:
-        if pd.isnull(value):
+        if isnull(value):
             return None
         if isinstance(value, str):
             if value.lower() == "true":
@@ -271,7 +270,7 @@ class Integer(Number):
 
     @classmethod
     def cast(cls, value: Any) -> Optional[int]:
-        if pd.isnull(value):
+        if isnull(value):
             return None
         if isinstance(value, float):
             # Check if the float has decimals
@@ -469,7 +468,7 @@ class Boolean(ScalarType):
 
     @classmethod
     def cast(cls, value: Any) -> Optional[bool]:
-        if pd.isnull(value):
+        if isnull(value):
             return None
         if isinstance(value, str):
             if value.lower() == "true":

@@ -50,6 +50,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import merge
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
@@ -654,7 +655,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = pd.merge(
+                joined_result = merge(
                     self.regular_aggregation_dataset.data[id_columns],
                     result.data,
                     on=id_columns,

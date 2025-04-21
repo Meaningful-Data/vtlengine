@@ -6,6 +6,7 @@ import pytest
 
 from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import read_csv
 
 
 def load_datasets(base_path, code, folder_type):
@@ -20,7 +21,7 @@ def load_datasets(base_path, code, folder_type):
             datastructure = json.load(file)
         if "datasets" in datastructure:
             ds_name = datastructure["datasets"][0]["name"]
-            datapoint = {ds_name: pd.read_csv(datapoints_path / f"{code}-{i}.csv")}
+            datapoint = {ds_name: read_csv(datapoints_path / f"{code}-{i}.csv")}
         else:
             datapoint = None
         datasets.update(load_datasets_with_data(datastructure, datapoint)[0])

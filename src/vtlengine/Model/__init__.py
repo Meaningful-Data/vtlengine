@@ -15,6 +15,8 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import isnull, concat
+
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
@@ -37,8 +39,8 @@ class Scalar:
     def __eq__(self, other: Any) -> bool:
         same_name = self.name == other.name
         same_type = self.data_type == other.data_type
-        x = None if not pd.isnull(self.value) else self.value
-        y = None if not pd.isnull(other.value) else other.value
+        x = None if not isnull(self.value) else self.value
+        y = None if not isnull(other.value) else other.value
         same_value = x == y
         return same_name and same_type and same_value
 
@@ -267,7 +269,7 @@ class Dataset:
                 print("result:", self.data.shape)
                 print("reference:", other.data.shape)
             # Differences between the dataframes
-            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
+            diff = concat([self.data, other.data]).drop_duplicates(keep=False)
             if len(diff) == 0:
                 return True
             # To display actual null values instead of -1234997

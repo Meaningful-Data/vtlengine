@@ -19,6 +19,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Preprocessor import read_csv
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
     check_date,
@@ -107,7 +108,7 @@ def _sanitize_pandas_columns(
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
     obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
 
-    data = pd.read_csv(
+    data = read_csv(
         csv_path,
         dtype=obj_dtypes,
         engine="c",

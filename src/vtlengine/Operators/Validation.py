@@ -14,6 +14,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
+from vtlengine.Preprocessor import concat
 
 
 # noinspection PyTypeChecker
@@ -121,7 +122,7 @@ class Validation(Operator):
 
         if len(rule_list_df) == 1:
             return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
+        df = concat(rule_list_df, ignore_index=True, copy=False)
         return df
 
     @classmethod
@@ -201,7 +202,7 @@ class Check_Hierarchy(Validation):
             rule_df["ruleid"] = rule_name
             rule_df["errorcode"] = rule_data["errorcode"]
             rule_df["errorlevel"] = rule_data["errorlevel"]
-            df = pd.concat([df, rule_df], ignore_index=True)
+            df = concat([df, rule_df], ignore_index=True)
         if df is None:
             df = pd.DataFrame()
         return df

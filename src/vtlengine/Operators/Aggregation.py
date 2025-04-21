@@ -36,6 +36,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import merge
 
 
 def extract_grouping_identifiers(
@@ -270,7 +271,7 @@ class Aggregation(Operator.Unary):
         elif len(aux_df) == 0:
             aux_df = pd.DataFrame(columns=result.get_components_names())
         else:
-            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
+            aux_df = merge(aux_df, result_df, how="left", on=grouping_keys)
         if having_expr is not None:
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
         result.data = aux_df

@@ -10,6 +10,7 @@ from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
+from vtlengine.Preprocessor import concat, isnull
 
 
 class Set(Operator):
@@ -66,7 +67,7 @@ class Union(Set):
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
-        result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
+        result.data = concat(all_datapoints, sort=True, ignore_index=True)
         identifiers_names = result.get_identifiers_names()
         result.data = result.data.drop_duplicates(subset=identifiers_names, keep="first")
         result.data.reset_index(drop=True, inplace=True)
@@ -122,8 +123,8 @@ class Symdiff(Set):
                     result.data["_merge"] = result.data.apply(
                         lambda row: (
                             "left_only"
-                            if pd.isnull(row[f"{measure}_y"])
-                            else ("right_only" if pd.isnull(row[f"{measure}_x"]) else "both")
+                            if isnull(row[f"{measure}_y"])
+                            else ("right_only" if isnull(row[f"{measure}_x"]) else "both")
                         ),
                         axis=1,
                     )

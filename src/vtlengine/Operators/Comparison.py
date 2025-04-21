@@ -25,6 +25,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Preprocessor import isnull, infer_dtype, merge
 
 
 class Unary(Operator.Unary):
@@ -42,7 +43,7 @@ class IsNull(Unary):
     """
 
     op = ISNULL
-    py_op = pd.isnull
+    py_op = isnull
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
@@ -50,7 +51,7 @@ class IsNull(Unary):
 
     @classmethod
     def op_func(cls, x: Any) -> Any:
-        return pd.isnull(x)
+        return isnull(x)
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
@@ -98,22 +99,22 @@ class Binary(Operator.Binary):
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         x, y = cls._cast_values(x, y)
         return cls.py_op(x, y)
 
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if pd.isnull(scalar):
+        if isnull(scalar):
             return pd.Series(None, index=series.index)
 
         first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
         if first_non_null is not None:
             scalar, first_non_null = cls._cast_values(scalar, first_non_null)
 
-            series_type = pd.api.types.infer_dtype(series, skipna=True)
-            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
+            series_type = infer_dtype(series, skipna=True)
+            first_non_null_type = infer_dtype([first_non_null])
 
             if series_type != first_non_null_type:
                 if isinstance(first_non_null, str):
@@ -218,7 +219,7 @@ class Match(Binary):
 
     @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
-        if pd.isnull(x) or pd.isnull(y):
+        if isnull(x) or isnull(y):
             return None
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
@@ -248,7 +249,7 @@ class Between(Operator.Operator):
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
         return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
+            None if (isnull(x) or isnull(y) or isnull(z)) else y <= x <= z  # type: ignore[operator]
         )
 
     @classmethod
@@ -437,7 +438,7 @@ class ExistIn(Operator.Operator):
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:
-            true_results = pd.merge(
+            true_results = merge(
                 dataset_1.data,
                 dataset_2.data,
                 how="inner",
@@ -455,7 +456,7 @@ class ExistIn(Operator.Operator):
             true_results["bool_var"] = True
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
-        final_result = pd.merge(
+        final_result = merge(
             dataset_1.data,
             true_results,
             how="left",

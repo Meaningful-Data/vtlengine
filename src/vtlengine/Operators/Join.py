@@ -13,6 +13,7 @@ from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
+from vtlengine.Preprocessor import merge
 
 
 class Join(Operator):
@@ -182,7 +183,7 @@ class Join(Operator):
                         op.data,
                     )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge(
                         result.data,
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]
@@ -335,7 +336,7 @@ class CrossJoin(Join):
                 result.data = op.data
             else:
                 if result.data is not None:
-                    result.data = pd.merge(
+                    result.data = merge(
                         result.data,
                         op.data,
                         how=cls.how,  # type: ignore[arg-type]

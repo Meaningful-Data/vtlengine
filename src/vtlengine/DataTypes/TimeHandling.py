@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Union
 import pandas as pd
 
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import isnull
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -242,7 +243,7 @@ class TimePeriodHandler:
         )
 
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
-        if pd.isnull(other):
+        if isnull(other):
             return None
 
         if py_op in (operator.eq, operator.ne):
@@ -398,7 +399,7 @@ class TimeIntervalHandler:
     __repr__ = __str__
 
     def _meta_comparison(self, other: Any, py_op: Any) -> Optional[bool]:
-        if pd.isnull(other):
+        if isnull(other):
             return None
         if isinstance(other, str):
             if len(other) == 0:
@@ -513,7 +514,7 @@ def generate_period_range(
 
 
 def check_max_date(str_: Optional[str]) -> Optional[str]:
-    if pd.isnull(str_) or str_ == "nan" or str_ == "NaT" or str_ is None:
+    if isnull(str_) or str_ == "nan" or str_ == "NaT" or str_ is None:
         return None
 
     if len(str_) == 9 and str_[7] == "-":

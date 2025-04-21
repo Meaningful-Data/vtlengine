@@ -22,6 +22,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Preprocessor import isna
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -414,7 +415,7 @@ class Cast(Operator.Unary):
     ) -> Scalar:
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
-        if pd.isna(operand.value):
+        if isna(operand.value):
             return Scalar(name=result_scalar.name, data_type=to_type, value=None)
         if mask:
             casted_data = cls.cast_value(operand.value, operand.data_type, to_type, mask)
