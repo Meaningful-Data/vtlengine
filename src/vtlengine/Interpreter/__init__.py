@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 
 import vtlengine.AST as AST
@@ -50,6 +51,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import backend_df
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
@@ -106,6 +108,9 @@ class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
+    sql_querys: Optional[Dict[str, str]] = None
+    # TODO: temporary counter, replace with the real one
+    vd_counter: int = 0
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
@@ -161,7 +166,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if statement_num not in self.ds_analysis[INSERT]:
             return
         for ds_name in self.ds_analysis[INSERT][statement_num]:
-            if ds_name in self.datapoints_paths:
+            if ds_name in self.datapoints_paths or backend_df != "pd":
                 self.datasets[ds_name].data = load_datapoints(
                     self.datasets[ds_name].components,
                     ds_name,
@@ -206,11 +211,14 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_Start(self, node: AST.Start) -> Any:
         statement_num = 1
+
         if self.only_semantic:
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
+
         results = {}
+        self.sql_querys = {}
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
@@ -238,6 +246,10 @@ class InterpreterAnalyzer(ASTTemplate):
             results[result.name] = result
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
+
+        if backend_df != "pd":
+            # TODO: check if collect all the operations here or per assigment
+            pass
 
         return results
 
@@ -365,6 +377,8 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         self.is_from_component_assignment = False
+        if backend_df != 'pd':
+            return Assignment.analyze(left_operand, right_operand, self)
         return Assignment.analyze(left_operand, right_operand)
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:

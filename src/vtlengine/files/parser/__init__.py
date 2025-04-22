@@ -19,6 +19,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Preprocessor import backend_df
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
     check_date,
@@ -211,15 +212,18 @@ def load_datapoints(
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
 ) -> pd.DataFrame:
-    if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
-        return pd.DataFrame(columns=list(components.keys()))
-    elif isinstance(csv_path, (str, Path)):
-        if isinstance(csv_path, Path):
-            _validate_csv_path(components, csv_path)
-        data = _pandas_load_csv(components, csv_path)
+    if backend_df == "pd":
+        if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
+            return pd.DataFrame(columns=list(components.keys()))
+        elif isinstance(csv_path, (str, Path)):
+            if isinstance(csv_path, Path):
+                _validate_csv_path(components, csv_path)
+            data = _pandas_load_csv(components, csv_path)
+        else:
+            raise Exception("Invalid csv_path type")
+        data = _validate_pandas(components, data, dataset_name)
     else:
-        raise Exception("Invalid csv_path type")
-    data = _validate_pandas(components, data, dataset_name)
+        data = Dataset(name=dataset_name, components=components, data=None)
 
     return data
 

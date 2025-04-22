@@ -3,42 +3,12 @@ import json
 import os
 import warnings
 from pathlib import Path
-
-# if os.environ.get("SPARK", False):
-#     import sys
-#
-#     virtualenv_path = sys.prefix
-#     sys.path.append(virtualenv_path)
-#     # os.environ['PYTHONPATH'] = f'{virtualenv_path}'
-#     os.environ['PYSPARK_PYTHON'] = f'{virtualenv_path}/bin/python'
-#     # os.environ['PYSPARK_PYTHON'] = f'{virtualenv_path}\\Scripts\\python'
-#     # os.environ['VIRTUAL_ENV'] = os.environ.get('PYTHONPATH', f'{virtualenv_path}')
-#
-#     from pyspark import SparkConf, SparkContext
-#
-#     conf = SparkConf()
-#     conf.set('spark.driver.cores', '2')
-#     conf.set('spark.executor.cores', '2')
-#     conf.set('spark.driver.memory', '2g')
-#     conf.set('spark.executor.memory', '2g')
-#     # conf.set('spark.sql.execution.arrow.pyspark.enabled', 'true')
-#     conf.set('spark.pyspark.virtualenv.enabled', 'true')
-#     conf.set('spark.pyspark.virtualenv.type', 'native')
-#     conf.set('spark.pyspark.virtualenv.requirements', 'requirements.txt')
-#     # conf.set('spark.pyspark.virtualenv.bin.path', f'{virtualenv_path}/Scripts/python')
-#     # Pandas API on Spark automatically uses this Spark context with the configurations set.
-#     SparkContext(conf=conf)
-#
-#     import pyspark.pandas as pd
-#
-#     pd.set_option('compute.ops_on_diff_frames', True)
-#     os.environ["PYSPARK_SUBMIT_ARGS"] = "--conf spark.network.timeout=600s pyspark-shell"
-# else:
 import pandas as pd
 import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
+from vtlengine.Preprocessor import backend_df
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
@@ -189,16 +159,18 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                 )
                 for component in dataset_json["DataStructure"]
             }
-            if dataset_name not in dataPoints:
-                data = pd.DataFrame(columns=components.keys())
+            if backend_df == "pd":
+                if dataset_name not in dataPoints:
+                    data = pd.DataFrame(columns=components.keys())
+                else:
+                    data = load_datapoints(
+                        components=components,
+                        dataset_name=dataset_name,
+                        csv_path=Path(f"{dp_dir}/{param}-{dataset_name}.csv"),
+                    )
+                datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
             else:
-                data = load_datapoints(
-                    components=components,
-                    dataset_name=dataset_name,
-                    csv_path=Path(f"{dp_dir}/{param}-{dataset_name}.csv"),
-                )
-
-            datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
+                datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets

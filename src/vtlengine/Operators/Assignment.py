@@ -21,3 +21,7 @@ class Assignment(Binary):
     @classmethod
     def evaluate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
         return cls.validate(left_operand, right_operand)
+
+    @classmethod
+    def evaluate_sql(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
+        return f"SELECT {left_operand} AS {right_operand.name}"
