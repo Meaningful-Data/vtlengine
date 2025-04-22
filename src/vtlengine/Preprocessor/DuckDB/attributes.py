@@ -1,3 +1,4 @@
+import inspect
 import uuid
 
 import duckdb
@@ -15,6 +16,27 @@ def sql_value_parser(value):
     elif isinstance(value, bool):
         return "TRUE" if value else "FALSE"
     return repr(value)
+
+
+def register_dynamic_function(func):
+    if not callable(func):
+        raise ValueError("`func` must be a callable function.")
+
+    # Generate a unique name for the UDF
+    func_name = f"udf_{uuid.uuid4().hex}"
+
+    # Inspect the function signature
+    sig = inspect.signature(func)
+    param_count = len(sig.parameters)
+
+    # Define input types dynamically (default to FLOAT for simplicity)
+    input_types = [duckdb.FLOAT] * param_count
+    return_type = duckdb.FLOAT  # Default return type, can be adjusted
+
+    # Register the function in DuckDB
+    duckdb.create_function(func_name, func, input_types, return_type)
+
+    return func_name
 
 
 def _all(self, axis=0):
@@ -60,7 +82,23 @@ def _isnull(self):
 
 
 def _map(self, func, na_action="ignore"):
-    pass
+    if not callable(func):
+        raise ValueError("`func` must be a callable function.")
+
+    get_lambda_name = lambda l: inspect.getsource(l).split('=')[0].strip()
+    func_name = get_lambda_name(func)
+
+    alias = unique_view_alias()
+    func_name = register_dynamic_function(func)
+
+    cols_query = [
+        f"CASE WHEN {col} IS NOT NULL THEN {func_name}({col}) ELSE {col} END AS {col}"
+        if na_action == "ignore" else f"{func_name}({col}) AS {col}"
+        for col in self.columns
+    ]
+
+    query = f"SELECT {', '.join(cols_query)} FROM {alias}"
+    return self.query(alias, query)
 
 
 def _replace(self, to_replace, value=None):

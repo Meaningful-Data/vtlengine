@@ -208,6 +208,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
     warnings.filterwarnings("ignore", category=FutureWarning)
+
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
