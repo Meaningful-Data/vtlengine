@@ -239,10 +239,11 @@ class ASTString(ASTTemplate):
     # ---------------------- Basic Operators ----------------------
     def visit_Assignment(self, node: AST.Assignment) -> Optional[str]:
         return_element = not copy.deepcopy(self.is_first_assignment)
-        if self.is_first_assignment:
+        is_first = self.is_first_assignment
+        if is_first:
             self.is_first_assignment = False
         if self.pretty:
-            if return_element == False:
+            if is_first:
                 expression = f"{self.visit(node.left)} {node.op}{nl}{tab}{self.visit(node.right)}"
             else:
                 expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
