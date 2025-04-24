@@ -403,7 +403,10 @@ class ASTString(ASTTemplate):
         if node.params:
             params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
         if self.pretty:
-            result = f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window}){nl}{tab * 2})"
+            result = (
+                f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
+                f"{nl}{tab * 2})"
+            )
         else:
             result = f"{node.op}({operand}{params} over ({partition}{order}{window}))"
 
