@@ -1,4 +1,0 @@
-DS_r :=
-	sum(
-			DS_1 group all time_agg("D",_,Id_1)
-		);

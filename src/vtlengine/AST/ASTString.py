@@ -386,7 +386,7 @@ class ASTString(ASTTemplate):
         grouping, having = self._handle_grouping_having(node)
         if self.pretty and node.op not in (MAX, MIN):
             operand = self.visit(node.operand)
-            return f"{node.op}({nl}{tab * 3}{operand}{grouping}{having}{nl}{tab * 2})"
+            return f"{node.op}({nl}{tab * 2}{operand}{grouping}{having}{nl}{tab * 2})"
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
@@ -498,7 +498,7 @@ class ASTString(ASTTemplate):
             condition = self.visit(node.children[0])
             if " and " in condition or " or " in condition:
                 for op in (" and ", " or "):
-                    condition = condition.replace(op, f"{op.strip()}{nl}{tab * 5}")
+                    condition = condition.replace(op, f"{op}{nl}{tab * 5}")
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])

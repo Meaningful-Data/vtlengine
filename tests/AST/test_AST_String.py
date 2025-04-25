@@ -23,22 +23,22 @@ params = [
 ]
 
 params_prettier = [
-    ("hierarchical_ruleset.vtl", "reference_hierarchical_ruleset.txt"),
-    ("group_all_time_aggr.vtl", "reference_group_all_time_aggr.txt"),
-    ("partition_by.vtl", "reference_partition_by.txt"),
-    ("join.vtl", "reference_join.txt"),
-    ("define_operator.vtl", "reference_define_operator.txt"),
-    ("define_dpr.vtl", "reference_define_dpr.txt"),
-    ("calc_case.vtl", "reference_calc_case.txt"),
-    ("case.vtl", "reference_case.txt"),
-    ("eval.vtl", "reference_eval.txt"),
-    ("calc_if_then_else.vtl", "reference_calc_if_then_else.txt"),
-    ("aggregate.vtl", "reference_aggregate.txt"),
-    ("assignment.vtl", "reference_assignment.txt"),
-    ("filter_cast_time_period.vtl", "reference_filter_cast_time_period.txt"),
-    ("calc_unary_op.vtl", "reference_calc_unary_op.txt"),
-    ("fill_time_series.vtl", "reference_fill_time_series.txt"),
-    ("date_add.vtl", "reference_date_add.txt"),
+    ("hierarchical_ruleset.vtl", "reference_hierarchical_ruleset.vtl"),
+    ("group_all_time_aggr.vtl", "reference_group_all_time_aggr.vtl"),
+    ("partition_by.vtl", "reference_partition_by.vtl"),
+    ("join.vtl", "reference_join.vtl"),
+    ("define_operator.vtl", "reference_define_operator.vtl"),
+    ("define_dpr.vtl", "reference_define_dpr.vtl"),
+    ("calc_case.vtl", "reference_calc_case.vtl"),
+    ("case.vtl", "reference_case.vtl"),
+    ("eval.vtl", "reference_eval.vtl"),
+    ("calc_if_then_else.vtl", "reference_calc_if_then_else.vtl"),
+    ("aggregate.vtl", "reference_aggregate.vtl"),
+    ("assignment.vtl", "reference_assignment.vtl"),
+    ("filter_cast_time_period.vtl", "reference_filter_cast_time_period.vtl"),
+    ("calc_unary_op.vtl", "reference_calc_unary_op.vtl"),
+    ("fill_time_series.vtl", "reference_fill_time_series.vtl"),
+    ("date_add.vtl", "reference_date_add.vtl"),
 ]
 
 
