@@ -14,15 +14,19 @@ from vtlengine.AST.Grammar.tokens import (
     CHECK_HIERARCHY,
     DATE_ADD,
     DATEDIFF,
+    DROP,
     FILL_TIME_SERIES,
+    FILTER,
     HAVING,
     HIERARCHY,
     IDENTIFIER,
     INSTR,
     INTERSECT,
     LOG,
+    MAX,
     MEASURE,
     MEMBERSHIP,
+    MIN,
     MINUS,
     MOD,
     NVL,
@@ -41,6 +45,9 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE
 from vtlengine.Model import Component, Dataset
+
+nl = "\n"
+tab = "\t"
 
 
 def _handle_literal(value: Union[str, int, float, bool]):
@@ -62,12 +69,12 @@ def _handle_literal(value: Union[str, int, float, bool]):
 def _format_dataset_eval(dataset: Dataset) -> str:
     def __format_component(component: Component) -> str:
         return (
-            f"{component.role.value.lower()}"
+            f"\n\t\t\t{component.role.value.lower()}"
             f"<{SCALAR_TYPES_CLASS_REVERSE[component.data_type].lower()}> "
             f"{component.name}"
         )
 
-    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} }}"
+    return f"{{ {', '.join([__format_component(x) for x in dataset.components.values()])} \n\t\t}}"
 
 
 def _format_reserved_word(value: str):
@@ -101,28 +108,46 @@ class ASTString(ASTTemplate):
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
-        rules_sep = "; " if len(node.rules) > 1 else ""
         signature = f"{node.signature_type} rule {node.element.value}"
-        rules = rules_sep.join([self.visit(x) for x in node.rules])
-        self.vtl_script += (
-            f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
-            f"end hierarchical ruleset;"
-        )
+        if self.pretty:
+            self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
+
+            for i, rule in enumerate(node.rules):
+                self.vtl_script += f"{tab}{self.visit(rule)}{nl}"
+                if rule.erCode:
+                    self.vtl_script += f"{tab}errorcode {_handle_literal(rule.erCode)}{nl}"
+                if rule.erLevel:
+                    self.vtl_script += f"{tab}errorlevel {rule.erLevel}"
+                    if i != len(node.rules) - 1:
+                        self.vtl_script += f";{nl}"
+                    self.vtl_script += nl
+            self.vtl_script += f"end hierarchical ruleset;{nl}"
+        else:
+            rules_sep = "; " if len(node.rules) > 1 else ""
+            rules = rules_sep.join([self.visit(x) for x in node.rules])
+            self.vtl_script += (
+                f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
+                f"end hierarchical ruleset;"
+            )
 
     def visit_HRule(self, node: AST.HRule) -> str:
         vtl_script = ""
         if node.name is not None:
             vtl_script += f"{node.name}: "
         vtl_script += f"{self.visit(node.rule)}"
-        if node.erCode is not None:
-            vtl_script += f" errorcode {_handle_literal(node.erCode)}"
-        if node.erLevel is not None:
-            vtl_script += f" errorlevel {node.erLevel}"
         return vtl_script
 
     def visit_HRBinOp(self, node: AST.HRBinOp) -> str:
         if node.op == "when":
-            return f"{node.op} {self.visit(node.left)} then {self.visit(node.right)}"
+            if self.pretty:
+                return (
+                    f"{tab * 3}when{nl}"
+                    f"{tab * 4}{self.visit(node.left)}{nl}"
+                    f"{tab * 3}then{nl}"
+                    f"{tab * 4}{self.visit(node.right)}"
+                )
+            else:
+                return f"{node.op} {self.visit(node.left)} then {self.visit(node.right)}"
         return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
     def visit_HRUnOp(self, node: AST.HRUnOp) -> str:
@@ -132,15 +157,26 @@ class ASTString(ASTTemplate):
         return node.value
 
     def visit_DPRule(self, node: AST.DPRule) -> str:
-        vtl_script = ""
-        if node.name is not None:
-            vtl_script += f"{node.name}: "
-        vtl_script += f"{self.visit(node.rule)}"
-        if node.erCode is not None:
-            vtl_script += f" errorcode {_handle_literal(node.erCode)}"
-        if node.erLevel is not None:
-            vtl_script += f" errorlevel {node.erLevel}"
-        return vtl_script
+        if self.pretty:
+            lines = []
+            if node.name is not None:
+                lines.append(f"{tab}{node.name}: ")
+            lines.append(self.visit(node.rule))
+            if node.erCode is not None:
+                lines.append(f"{tab * 3}errorcode  {_handle_literal(node.erCode)}")
+            if node.erLevel is not None:
+                lines.append(f"{tab * 3}errorlevel {node.erLevel}; ")
+            return nl.join(lines)
+        else:
+            vtl_script = ""
+            if node.name is not None:
+                vtl_script += f"{node.name}: "
+            vtl_script += f"{self.visit(node.rule)}"
+            if node.erCode is not None:
+                vtl_script += f" errorcode {_handle_literal(node.erCode)}"
+            if node.erLevel is not None:
+                vtl_script += f" errorlevel {node.erLevel}"
+            return vtl_script
 
     def visit_DPRIdentifier(self, node: AST.DPRIdentifier) -> str:
         vtl_script = f"{node.value}"
@@ -154,10 +190,18 @@ class ASTString(ASTTemplate):
         signature = (
             f"{node.signature_type} {signature_sep.join([self.visit(x) for x in node.params])}"
         )
-        rules = rules_sep.join([self.visit(x) for x in node.rules])
-        self.vtl_script += (
-            f"define datapoint ruleset {node.name} ({signature}) is {rules} end datapoint ruleset;"
-        )
+
+        if self.pretty:
+            self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is {nl}"
+            for rule in node.rules:
+                self.vtl_script += f"\t{self.visit(rule)}{nl * 2}"
+            self.vtl_script += f"end datapoint ruleset;{nl}"
+        else:
+            rules = rules_sep.join([self.visit(x) for x in node.rules])
+            self.vtl_script += (
+                f"define datapoint ruleset {node.name} "
+                f"({signature}) is {rules} end datapoint ruleset;"
+            )
 
     # ---------------------- User Defined Operators ----------------------
 
@@ -178,15 +222,33 @@ class ASTString(ASTTemplate):
     def visit_Operator(self, node: AST.Operator) -> None:
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
-        body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
-        self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
+        if self.pretty:
+            self.vtl_script += f"define operator {node.op}({signature}){nl}"
+            self.vtl_script += f"\treturns {node.output_type.lower()} is{nl}"
+            expression = self.visit(node.expression)
+            if "(" in expression:
+                expression = expression.replace("(", f"({nl}{tab * 2}")
+                expression = expression.replace(")", f"{nl}{tab * 2})")
+
+            self.vtl_script += f"{tab * 2}{expression}{nl}"
+            self.vtl_script += f"end operator;{nl}"
+        else:
+            body = f"returns {node.output_type.lower()} is {self.visit(node.expression)}"
+            self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
     # ---------------------- Basic Operators ----------------------
     def visit_Assignment(self, node: AST.Assignment) -> Optional[str]:
         return_element = not copy.deepcopy(self.is_first_assignment)
-        if self.is_first_assignment:
+        is_first = self.is_first_assignment
+        if is_first:
             self.is_first_assignment = False
-        expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+        if self.pretty:
+            if is_first:
+                expression = f"{self.visit(node.left)} {node.op}{nl}{tab}{self.visit(node.right)}"
+            else:
+                expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+        else:
+            expression = f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
         if return_element:
             return expression
         self.vtl_script += f"{expression};"
@@ -198,7 +260,10 @@ class ASTString(ASTTemplate):
         if node.op in [NVL, LOG, MOD, POWER, RANDOM, TIMESHIFT, DATEDIFF]:
             return f"{node.op}({self.visit(node.left)}, {self.visit(node.right)})"
         elif node.op == MEMBERSHIP:
-            return f"{self.visit(node.left)}{node.op}{self.visit(node.right)}"
+            return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+        if self.pretty:
+            return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+
         return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
@@ -208,11 +273,16 @@ class ASTString(ASTTemplate):
             return f"{node.op} {self.visit(node.operand)}"
         elif node.op == MEASURE:
             return self.visit(node.operand)
+
+        if self.pretty:
+            return f"{node.op} {self.visit(node.operand)}"
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
         sep = ", " if len(node.children) > 1 else ""
         body = sep.join([self.visit(x) for x in node.children])
+        if self.pretty:
+            return f"{node.op}({body})"
         return f"{node.op}({body})"
 
     def visit_ParamOp(self, node: AST.ParamOp) -> str:
@@ -242,34 +312,57 @@ class ASTString(ASTTemplate):
             param_output = (
                 f" {param_output_value}" if param_output_value != default_value_output else ""
             )
-            return (
-                f"{node.op}({operand}, {rule_name} rule {component_name}"
-                f"{param_mode}{param_input}{param_output})"
-            )
+            if self.pretty:
+                return (
+                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name},{nl}{tab * 2}rule "
+                    f"{component_name}"
+                    f"{param_mode}{param_input}{param_output})"
+                )
+            else:
+                return (
+                    f"{node.op}({operand}, {rule_name} rule {component_name}"
+                    f"{param_mode}{param_input}{param_output})"
+                )
 
         elif node.op == CHECK_DATAPOINT:
             operand = self.visit(node.children[0])
             rule_name = node.children[1]
             output = ""
             if len(node.params) == 1 and node.params[0] != "invalid":
-                output = f" {node.params[0]}"
-            return f"{node.op}({operand}, {rule_name}{output})"
+                output = f"{node.params[0]}"
+            if self.pretty:
+                return f"{node.op}({nl}{tab}{operand},{nl}{tab}{rule_name}{nl}{tab}{output}{nl})"
+            else:
+                return f"{node.op}({operand}, {rule_name}{output})"
         elif node.op == CAST:
             operand = self.visit(node.children[0])
             data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
             mask = ""
             if len(node.params) == 1:
                 mask = f", {self.visit(node.params[0])}"
-            return f"{node.op}({operand}, {data_type}{mask})"
+            if self.pretty:
+                return f"{node.op}({operand},{data_type}{mask})"
+            else:
+                return f"{node.op}({operand},{data_type}{mask})"
         elif node.op == FILL_TIME_SERIES:
             operand = self.visit(node.children[0])
             param = node.params[0].value if node.params else "all"
-            return f"{node.op}({operand}, {param})"
+            if self.pretty:
+                return f"{node.op}({operand},{param})"
+            else:
+                return f"{node.op}({operand}, {param})"
         elif node.op == DATE_ADD:
             operand = self.visit(node.children[0])
             shift_number = self.visit(node.params[0])
             period_indicator = self.visit(node.params[1])
-            return f"{node.op}({operand}, {shift_number}, {period_indicator})"
+            if self.pretty:
+                return (
+                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{shift_number},"
+                    f"{nl}{tab * 2}"
+                    f"{period_indicator})"
+                )
+            else:
+                return f"{node.op}({operand}, {shift_number}, {period_indicator})"
 
     # ---------------------- Individual operators ----------------------
 
@@ -291,6 +384,9 @@ class ASTString(ASTTemplate):
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:
         grouping, having = self._handle_grouping_having(node)
+        if self.pretty and node.op not in (MAX, MIN):
+            operand = self.visit(node.operand)
+            return f"{node.op}({nl}{tab * 2}{operand}{grouping}{having}{nl}{tab * 2})"
         return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
@@ -298,7 +394,7 @@ class ASTString(ASTTemplate):
         partition = ""
         if node.partition_by:
             partition_sep = ", " if len(node.partition_by) > 1 else ""
-            partition = f" partition by {partition_sep.join(node.partition_by)}"
+            partition = f"partition by {partition_sep.join(node.partition_by)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
@@ -307,38 +403,82 @@ class ASTString(ASTTemplate):
         params = ""
         if node.params:
             params = "" if len(node.params) == 0 else f", {int(node.params[0])}"
+        if self.pretty:
+            result = (
+                f"{node.op}({nl}{tab * 3}{operand}{params} over({partition}{order} {window})"
+                f"{nl}{tab * 2})"
+            )
+        else:
+            result = f"{node.op}({operand}{params} over ({partition}{order}{window}))"
 
-        return f"{node.op}({operand}{params} over ({partition}{order}{window}))"
+        return result
 
     def visit_Case(self, node: AST.Case) -> str:
-        else_str = f"else {self.visit(node.elseOp)}"
-        body_sep = " " if len(node.cases) > 1 else ""
-        body = body_sep.join([self.visit(x) for x in node.cases])
-        return f"case {body} {else_str}"
+        if self.pretty:
+            else_str = f"{nl}{tab * 2}else{nl}{tab * 3}{self.visit(node.elseOp)}"
+            body_sep = " " if len(node.cases) > 1 else ""
+            body = body_sep.join([self.visit(x) for x in node.cases])
+            return f"case {body} {else_str}"
+        else:
+            else_str = f"else {self.visit(node.elseOp)}"
+            body_sep = " " if len(node.cases) > 1 else ""
+            body = body_sep.join([self.visit(x) for x in node.cases])
+            return f"case {body} {else_str}"
 
     def visit_CaseObj(self, node: AST.CaseObj) -> str:
-        return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
+        if self.pretty:
+            return (
+                f"{nl}{tab * 2}when{nl}{tab * 3}{self.visit(node.condition)}{nl}{tab * 2}then"
+                f"{nl}{tab * 3}{self.visit(node.thenOp)}"
+            )
+        else:
+            return f"when {self.visit(node.condition)} then {self.visit(node.thenOp)}"
 
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         operand_sep = ", " if len(node.operands) > 1 else ""
-        operands = operand_sep.join([self.visit(x) for x in node.operands])
-        ext_routine = f"{node.name}({operands})"
-        language = f"language {_handle_literal(node.language)}"
-        output = f"returns dataset {_format_dataset_eval(node.output)}"
-        return f"eval({ext_routine} {language} {output})"
+        if self.pretty:
+            operands = operand_sep.join([self.visit(x) for x in node.operands])
+            ext_routine = f"{nl}{tab * 2}{node.name}({operands})"
+            language = f"{nl}{tab * 2}language {_handle_literal(node.language)}{nl}"
+            output = f"{tab * 2}returns dataset {_format_dataset_eval(node.output)}"
+            return f"eval({ext_routine} {language} {output})"
+        else:
+            operands = operand_sep.join([self.visit(x) for x in node.operands])
+            ext_routine = f"{node.name}({operands})"
+            language = f"language {_handle_literal(node.language)}"
+            output = f"returns dataset {_format_dataset_eval(node.output)}"
+            return f"eval({ext_routine} {language} {output})"
 
     def visit_If(self, node: AST.If) -> str:
-        else_str = f" else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
-        return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)}{else_str}"
+        if self.pretty:
+            else_str = (
+                f"else{nl}{tab * 5}{self.visit(node.elseOp)}" if node.elseOp is not None else ""
+            )
+            return (
+                f"{nl}{tab * 4}if {nl}{tab * 5}{self.visit(node.condition)} "
+                f"{nl}{tab * 4}then {nl}{tab * 5}{self.visit(node.thenOp)}{nl}{tab * 4}{else_str}"
+            )
+        else:
+            else_str = f"else {self.visit(node.elseOp)}" if node.elseOp is not None else ""
+            return f"if {self.visit(node.condition)} then {self.visit(node.thenOp)} {else_str}"
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:
-        sep = ", " if len(node.clauses) > 1 else ""
-        clauses = sep.join([self.visit(x) for x in node.clauses])
-        using = ""
-        if node.using is not None:
-            using_sep = ", " if len(node.using) > 1 else ""
-            using = f" using {using_sep.join(node.using)}"
-        return f"{node.op}({clauses}{using})"
+        if self.pretty:
+            sep = f",{nl}{tab * 2}" if len(node.clauses) > 1 else ""
+            clauses = sep.join([self.visit(x) for x in node.clauses])
+            using = ""
+            if node.using is not None:
+                using_sep = ", " if len(node.using) > 1 else ""
+                using = f"using {using_sep.join(node.using)}"
+            return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
+        else:
+            sep = ", " if len(node.clauses) > 1 else ""
+            clauses = sep.join([self.visit(x) for x in node.clauses])
+            using = ""
+            if node.using is not None:
+                using_sep = ", " if len(node.using) > 1 else ""
+                using = f" using {using_sep.join(node.using)}"
+            return f"{node.op}({clauses}{using})"
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
         return f"({self.visit(node.operand)})"
@@ -350,15 +490,30 @@ class ASTString(ASTTemplate):
             body = child_sep.join([self.visit(x) for x in node.children])
             self.is_from_agg = False
             grouping, having = self._handle_grouping_having(node.children[0].right)
-            body = f"{body}{grouping}{having}"
+            body = f"{nl}{tab * 3}{body}{nl}{tab * 3}{grouping}{having}{nl}{tab * 2}"
+        elif node.op == DROP and self.pretty:
+            drop_sep = f",{nl}{tab * 3}" if len(node.children) > 1 else ""
+            body = f"{drop_sep.join([self.visit(x) for x in node.children])}{nl}{tab * 2}"
+        elif node.op == FILTER and self.pretty:
+            condition = self.visit(node.children[0])
+            if " and " in condition or " or " in condition:
+                for op in (" and ", " or "):
+                    condition = condition.replace(op, f"{op}{nl}{tab * 5}")
+            body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
         if isinstance(node.dataset, AST.JoinOp):
-            dataset = f"{self.visit(node.dataset)}"
-            return f"{dataset[:-1]} {node.op} {body})"
+            dataset = self.visit(node.dataset)
+            if self.pretty:
+                return f"{dataset[:-1]}{(node.op)} {body}{nl}{tab})"
+            else:
+                return f"{dataset[:-1]} {node.op} {body})"
         else:
             dataset = self.visit(node.dataset)
-        return f"{dataset}[{node.op} {body}]"
+            if self.pretty:
+                return f"{dataset}{nl}{tab * 2}[{node.op} {body}]"
+            else:
+                return f"{dataset} [{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
         return f"{node.old_name} to {node.new_name}"
@@ -367,7 +522,10 @@ class ASTString(ASTTemplate):
         operand = self.visit(node.operand)
         period_from = "_" if node.period_from is None else node.period_from
         period_to = _handle_literal(node.period_to)
-        return f"{node.op}({period_to}, {period_from}, {operand})"
+        if self.pretty:
+            return f"{node.op}({period_to},{period_from},{operand})"
+        else:
+            return f"{node.op}({period_to}, {period_from}, {operand})"
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:
         params_sep = ", " if len(node.params) > 1 else ""
