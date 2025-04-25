@@ -669,3 +669,15 @@ class UdoTest(UDOHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_94(self):
+        """
+        Status: OK
+        Description: Test with analytic functions in UDO
+        Goal: Check Result.
+        """
+        code = "GH_94"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

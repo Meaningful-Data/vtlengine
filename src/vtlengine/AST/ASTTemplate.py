@@ -547,3 +547,8 @@ class ASTTemplate(NodeVisitor):
         """
         Windowing: (type_, start, start_mode, stop, stop_mode)
         """
+
+    def visit_Comment(self, node: AST.Comment) -> None:
+        """
+        Comment: (value)
+        """

@@ -30,6 +30,7 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
@@ -117,7 +118,12 @@ class Expr(VtlVisitor):
             then_op_node = self.visitExpr(ctx_list[3])
             else_op_node = self.visitExpr(ctx_list[5])
 
-            if_node = If(condition_node, then_op_node, else_op_node)
+            if_node = If(
+                condition=condition_node,
+                thenOp=then_op_node,
+                elseOp=else_op_node,
+                **extract_token_info(ctx),
+            )
 
             return if_node
 
@@ -133,10 +139,12 @@ class Expr(VtlVisitor):
             for i in range(0, len(ctx_list), 4):
                 condition = self.visitExpr(ctx_list[i + 1])
                 thenOp = self.visitExpr(ctx_list[i + 3])
-                case_obj = CaseObj(condition, thenOp)
+                case_obj = CaseObj(
+                    condition=condition, thenOp=thenOp, **extract_token_info(ctx_list[i + 1])
+                )
                 cases.append(case_obj)
 
-            case_node = Case(cases, else_node)
+            case_node = Case(cases=cases, elseOp=else_node, **extract_token_info(ctx))
 
             return case_node
 
@@ -160,8 +168,8 @@ class Expr(VtlVisitor):
         else:
             op = ctx_list[1].getSymbol().text
         right_node = self.visitExpr(ctx_list[2])
-
-        bin_op_node = BinOp(left_node, op, right_node)
+        token_info = extract_token_info(ctx)
+        bin_op_node = BinOp(left=left_node, op=op, right=right_node, **token_info)
 
         return bin_op_node
 
@@ -185,7 +193,7 @@ class Expr(VtlVisitor):
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
             raise NotImplementedError
-        bin_op_node = BinOp(left_node, op, right_node)
+        bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
 
@@ -194,14 +202,14 @@ class Expr(VtlVisitor):
 
     def visitParenthesisExpr(self, ctx: Parser.ParenthesisExprContext):
         operand = self.visitExpr(list(ctx.getChildren())[1])
-        return ParFunction(operand)
+        return ParFunction(operand=operand, **extract_token_info(ctx))
 
     def visitUnaryExpr(self, ctx: Parser.UnaryExprContext):
         c_list = list(ctx.getChildren())
         op = c_list[0].getSymbol().text
         right = self.visitExpr(c_list[1])
 
-        return UnaryOp(op, right)
+        return UnaryOp(op=op, operand=right, **extract_token_info(ctx))
 
     def visitMembershipExpr(self, ctx: Parser.MembershipExprContext):
         ctx_list = list(ctx.getChildren())
@@ -217,7 +225,10 @@ class Expr(VtlVisitor):
         # It is only possible to put a membership at the end so go the last one.
         if len(membership) != 0:
             previous_node = BinOp(
-                previous_node, "#", Terminals().visitSimpleComponentId(membership[0])
+                left=previous_node,
+                op="#",
+                right=Terminals().visitSimpleComponentId(membership[0]),
+                **extract_token_info(ctx),
             )
 
         return previous_node
@@ -318,8 +329,10 @@ class Expr(VtlVisitor):
 
         body_node = self.visitJoinBody(ctx_list[3])
 
+        token_info = extract_token_info(ctx)
+
         if len(body_node) != 0:
-            previous_node = JoinOp(op_node, clause_node, using_node)
+            previous_node = JoinOp(op=op_node, clauses=clause_node, using=using_node, **token_info)
             regular_aggregation = None
             for body in body_node:
                 regular_aggregation = body
@@ -332,7 +345,7 @@ class Expr(VtlVisitor):
             return regular_aggregation
 
         else:
-            join_node = JoinOp(op_node, clause_node, using_node)
+            join_node = JoinOp(op=op_node, clauses=clause_node, using=using_node, **token_info)
             join_node.isLast = True
             return join_node
 
@@ -342,9 +355,14 @@ class Expr(VtlVisitor):
         if len(ctx_list) == 1:
             return left_node
 
+        token_info = extract_token_info(ctx)
         intop_node = ctx_list[1].getSymbol().text
-        right_node = Identifier(Terminals().visitAlias(ctx_list[2]), "DatasetID")
-        return BinOp(left_node, intop_node, right_node)
+        right_node = Identifier(
+            value=Terminals().visitAlias(ctx_list[2]),
+            kind="DatasetID",
+            **extract_token_info(ctx_list[1].getSymbol()),
+        )
+        return BinOp(left=left_node, op=intop_node, right=right_node, **token_info)
 
     def visitJoinClause(self, ctx: Parser.JoinClauseContext):
         """
@@ -421,7 +439,7 @@ class Expr(VtlVisitor):
         op_node = ctx_list[0].getSymbol().text
         operand_nodes = [self.visitExpr(ctx_list[1])]
 
-        return RegularAggregation(op_node, operand_nodes)
+        return RegularAggregation(op=op_node, children=operand_nodes, **extract_token_info(ctx))
 
     """
                         -----------------------------------
@@ -453,7 +471,7 @@ class Expr(VtlVisitor):
             if isinstance(element, Parser.ParameterContext)
         ]
 
-        return UDOCall(op=op, params=param_nodes)
+        return UDOCall(op=op, params=param_nodes, **extract_token_info(ctx))
 
     def visitEvalAtom(self, ctx: Parser.EvalAtomContext):
         """
@@ -501,6 +519,7 @@ class Expr(VtlVisitor):
             operands=children_nodes,
             output=output_node[0],
             language=language_name[0].getSymbol().text,
+            **extract_token_info(ctx),
         )
 
     def visitCastExprDataset(self, ctx: Parser.CastExprDatasetContext):
@@ -530,7 +549,11 @@ class Expr(VtlVisitor):
 
         if len(ctx_list) > 6:
             param_node = [
-                ParamConstant("PARAM_CAST", str_.symbol.text.strip('"'))
+                ParamConstant(
+                    type_="PARAM_CAST",
+                    value=str_.symbol.text.strip('"'),
+                    **extract_token_info(str_.getSymbol()),
+                )
                 for str_ in ctx_list
                 if isinstance(str_, TerminalNodeImpl)
                 and str_.getSymbol().type == Parser.STRING_CONSTANT
@@ -541,7 +564,9 @@ class Expr(VtlVisitor):
         if len(basic_scalar_type) == 1:
             children_nodes = expr_node + basic_scalar_type
 
-            return ParamOp(op=op, children=children_nodes, params=param_node)
+            return ParamOp(
+                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
+            )
 
         else:
             # AST_ASTCONSTRUCTOR.14
@@ -554,7 +579,9 @@ class Expr(VtlVisitor):
         if isinstance(c, Parser.ExprContext):
             return self.visitExpr(c)
         elif isinstance(c, TerminalNodeImpl):
-            return ID("OPTIONAL", c.getSymbol().text)
+            return ID(
+                type_="OPTIONAL", value=c.getSymbol().text, **extract_token_info(c.getSymbol())
+            )
         else:
             raise NotImplementedError
 
@@ -583,7 +610,7 @@ class Expr(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExpr(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitSubstrAtom(self, ctx: Parser.SubstrAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -604,7 +631,9 @@ class Expr(VtlVisitor):
             for param in params:
                 params_nodes.append(self.visitOptionalExpr(param))
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitReplaceAtom(self, ctx: Parser.ReplaceAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -625,7 +654,9 @@ class Expr(VtlVisitor):
         children_nodes = [expressions[0]]
         params_nodes = [expressions[1]] + params
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitInstrAtom(self, ctx: Parser.InstrAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -646,7 +677,9 @@ class Expr(VtlVisitor):
         children_nodes = [expressions[0]]
         params_nodes = [expressions[1]] + params
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     """
                         -----------------------------------
@@ -671,7 +704,7 @@ class Expr(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExpr(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitUnaryWithOptionalNumeric(self, ctx: Parser.UnaryWithOptionalNumericContext):
         ctx_list = list(ctx.getChildren())
@@ -692,7 +725,9 @@ class Expr(VtlVisitor):
             for param in params:
                 params_nodes.append(self.visitOptionalExpr(param))
 
-        return ParamOp(op_node, children_nodes, params_nodes)
+        return ParamOp(
+            op=op_node, children=children_nodes, params=params_nodes, **extract_token_info(ctx)
+        )
 
     def visitBinaryNumeric(self, ctx: Parser.BinaryNumericContext):
         ctx_list = list(ctx.getChildren())
@@ -703,7 +738,7 @@ class Expr(VtlVisitor):
         left_node = self.visitExpr(ctx_list[2])
         op_node = token.text
         right_node = self.visitExpr(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     """
                         -----------------------------------
@@ -736,7 +771,7 @@ class Expr(VtlVisitor):
         for children in childrens:
             children_nodes.append(self.visitExpr(children))
 
-        return MulOp(op_node, children_nodes)
+        return MulOp(op=op_node, children=children_nodes, **extract_token_info(ctx))
 
     def visitCharsetMatchAtom(self, ctx: Parser.CharsetMatchAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -746,7 +781,7 @@ class Expr(VtlVisitor):
         left_node = self.visitExpr(ctx_list[2])
         op_node = token.text
         right_node = self.visitExpr(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitIsNullAtom(self, ctx: Parser.IsNullAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -754,7 +789,7 @@ class Expr(VtlVisitor):
         token = c.getSymbol()
         op_node = token.text
         operand_node = self.visitExpr(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitExistInAtom(self, ctx: Parser.ExistInAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -770,7 +805,7 @@ class Expr(VtlVisitor):
             if isinstance(retain, Parser.RetainTypeContext)
         ]
 
-        return MulOp(op=op, children=operand_nodes + retain_nodes)
+        return MulOp(op=op, children=operand_nodes + retain_nodes, **extract_token_info(ctx))
 
     """
                             -----------------------------------
@@ -828,7 +863,7 @@ class Expr(VtlVisitor):
             # AST_ASTCONSTRUCTOR.15
             raise NotImplementedError
 
-        return UnaryOp(op=op, operand=operand_node[0])
+        return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
     def visitTimeShiftAtom(self, ctx: Parser.TimeShiftAtomContext):
         """
@@ -839,9 +874,13 @@ class Expr(VtlVisitor):
 
         op = c.getSymbol().text
         left_node = self.visitExpr(ctx_list[2])
-        right_node = Constant("INTEGER_CONSTANT", Terminals().visitSignedInteger(ctx_list[4]))
+        right_node = Constant(
+            type_="INTEGER_CONSTANT",
+            value=Terminals().visitSignedInteger(ctx_list[4]),
+            **extract_token_info(ctx_list[4]),
+        )
 
-        return BinOp(left=left_node, op=op, right=right_node)
+        return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
     def visitFillTimeAtom(self, ctx: Parser.FillTimeAtomContext):
         """
@@ -854,11 +893,19 @@ class Expr(VtlVisitor):
         children_node = [self.visitExpr(ctx_list[2])]
 
         if len(ctx_list) > 4:
-            param_constant_node = [ParamConstant("PARAM_TIMESERIES", ctx_list[4].getSymbol().text)]
+            param_constant_node = [
+                ParamConstant(
+                    type_="PARAM_TIMESERIES",
+                    value=ctx_list[4].getSymbol().text,
+                    **extract_token_info(ctx_list[4].getSymbol()),
+                )
+            ]
         else:
             param_constant_node = []
 
-        return ParamOp(op=op, children=children_node, params=param_constant_node)
+        return ParamOp(
+            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+        )
 
     def visitTimeAggAtom(self, ctx: Parser.TimeAggAtomContext):
         """
@@ -888,7 +935,7 @@ class Expr(VtlVisitor):
             if isinstance(operand_node, ID):
                 operand_node = None
             elif isinstance(operand_node, Identifier):
-                operand_node = VarID(operand_node.value)
+                operand_node = VarID(value=operand_node.value, **extract_token_info(ctx))
         else:
             operand_node = None
 
@@ -901,6 +948,7 @@ class Expr(VtlVisitor):
             period_to=period_to,
             period_from=period_from,
             conf=conf,
+            **extract_token_info(ctx),
         )
 
     def visitFlowAtom(self, ctx: Parser.FlowAtomContext):
@@ -908,11 +956,11 @@ class Expr(VtlVisitor):
 
         op_node = ctx_list[0].getSymbol().text
         operand_node = self.visitExpr(ctx_list[2])
-        return UnaryOp(op_node, operand_node)
+        return UnaryOp(op=op_node, operand=operand_node, **extract_token_info(ctx))
 
     def visitCurrentDateAtom(self, ctx: Parser.CurrentDateAtomContext):
         c = list(ctx.getChildren())[0]
-        return MulOp(op=c.getSymbol().text, children=[])
+        return MulOp(op=c.getSymbol().text, children=[], **extract_token_info(ctx))
 
     def visitTimeDiffAtom(self, ctx: Parser.TimeShiftAtomContext):
         """ """
@@ -923,7 +971,7 @@ class Expr(VtlVisitor):
         left_node = self.visitExpr(ctx_list[2])
         right_node = self.visitExpr(ctx_list[4])
 
-        return BinOp(left=left_node, op=op, right=right_node)
+        return BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
     def visitTimeAddAtom(self, ctx: Parser.TimeShiftAtomContext):
         """ """
@@ -941,7 +989,9 @@ class Expr(VtlVisitor):
             if len(ctx_list) > 6:
                 param_constant_node.append(self.visitExpr(ctx_list[6]))
 
-        return ParamOp(op=op, children=children_node, params=param_constant_node)
+        return ParamOp(
+            op=op, children=children_node, params=param_constant_node, **extract_token_info(ctx)
+        )
 
     """
                             -----------------------------------
@@ -964,7 +1014,7 @@ class Expr(VtlVisitor):
         left_node = self.visitExpr(ctx_list[2])
         op_node = token.text
         right_node = self.visitExpr(ctx_list[4])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     """
                             -----------------------------------
@@ -993,7 +1043,9 @@ class Expr(VtlVisitor):
             self.visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)
         ]
 
-        return MulOp(ctx_list[0].getSymbol().text, exprs_nodes)
+        return MulOp(
+            op=ctx_list[0].getSymbol().text, children=exprs_nodes, **extract_token_info(ctx)
+        )
 
     def visitIntersectAtom(self, ctx: Parser.IntersectAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -1001,7 +1053,9 @@ class Expr(VtlVisitor):
             self.visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)
         ]
 
-        return MulOp(op=ctx_list[0].getSymbol().text, children=exprs_nodes)
+        return MulOp(
+            op=ctx_list[0].getSymbol().text, children=exprs_nodes, **extract_token_info(ctx)
+        )
 
     def visitSetOrSYmDiffAtom(self, ctx: Parser.SetOrSYmDiffAtomContext):
         ctx_list = list(ctx.getChildren())
@@ -1009,7 +1063,9 @@ class Expr(VtlVisitor):
             self.visitExpr(expr) for expr in ctx_list if isinstance(expr, Parser.ExprContext)
         ]
 
-        return MulOp(op=ctx_list[0].getSymbol().text, children=exprs_nodes)
+        return MulOp(
+            op=ctx_list[0].getSymbol().text, children=exprs_nodes, **extract_token_info(ctx)
+        )
 
     """
                             -----------------------------------
@@ -1026,13 +1082,18 @@ class Expr(VtlVisitor):
 
         op = c.getSymbol().text
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind="RuleID")
+        rule_name_node = Identifier(
+            value=ctx_list[4].getSymbol().text,
+            kind="RuleID",
+            **extract_token_info(ctx_list[4].getSymbol()),
+        )
 
         conditions = []
         modes = "non_null"
         inputs = "rule"
         retains = "computed"
         rule_comp = None
+
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
                 conditions.append(Terminals().visitConditionClause(c))
@@ -1053,9 +1114,15 @@ class Expr(VtlVisitor):
             raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
         param_constant_node = []
 
-        param_constant_node.append(ParamConstant("PARAM_MODE", modes))
-        param_constant_node.append(ParamConstant("PARAM_INPUT", inputs))
-        param_constant_node.append(ParamConstant("PARAM_OUTPUT", retains))
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
+        )
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
+        )
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
+        )
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -1064,7 +1131,9 @@ class Expr(VtlVisitor):
                 rule_element = de_ruleset_elements[rule_name_node.value]
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
-                rule_comp = Identifier(check_hierarchy_rule, "ComponentID")
+                rule_comp = Identifier(
+                    value=check_hierarchy_rule, kind="ComponentID", **extract_token_info(ctx)
+                )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
 
@@ -1072,6 +1141,7 @@ class Expr(VtlVisitor):
             op=op,
             children=[dataset_node, rule_comp, rule_name_node, *conditions],
             params=param_constant_node,
+            **extract_token_info(ctx),
         )
 
     """
@@ -1120,7 +1190,12 @@ class Expr(VtlVisitor):
         if isinstance(ctx_list[-2], Parser.ValidationOutputContext):
             output = Terminals().visitValidationOutput(ctx_list[-2])
 
-        return ParamOp(op=op, children=[operand_node, rule_name, *components], params=[output])
+        return ParamOp(
+            op=op,
+            children=[operand_node, rule_name, *components],
+            params=[output],
+            **extract_token_info(ctx),
+        )
 
     # TODO Not fully implemented only basic usage available.
     def visitValidateHRruleset(self, ctx: Parser.ValidateHRrulesetContext):
@@ -1134,7 +1209,11 @@ class Expr(VtlVisitor):
         op = c.getSymbol().text
 
         dataset_node = self.visitExpr(ctx_list[2])
-        rule_name_node = Identifier(value=ctx_list[4].getSymbol().text, kind="RuleID")
+        rule_name_node = Identifier(
+            value=ctx_list[4].getSymbol().text,
+            kind="RuleID",
+            **extract_token_info(ctx_list[4].getSymbol()),
+        )
 
         conditions = []
         # Default values
@@ -1142,6 +1221,7 @@ class Expr(VtlVisitor):
         inputs = "dataset"
         retains = "invalid"
         rule_comp = None
+
         for c in ctx_list:
             if isinstance(c, Parser.ConditionClauseContext):
                 conditions.append(Terminals().visitConditionClause(c))
@@ -1163,9 +1243,15 @@ class Expr(VtlVisitor):
         if inputs == DATASET_PRIORITY:
             raise NotImplementedError("Dataset Priority input mode on HR is not implemented")
 
-        param_constant_node.append(ParamConstant("PARAM_MODE", modes))
-        param_constant_node.append(ParamConstant("PARAM_INPUT", inputs))
-        param_constant_node.append(ParamConstant("PARAM_OUTPUT", retains))
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_MODE", value=modes, **extract_token_info(ctx))
+        )
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_INPUT", value=inputs, **extract_token_info(ctx))
+        )
+        param_constant_node.append(
+            ParamConstant(type_="PARAM_OUTPUT", value=retains, **extract_token_info(ctx))
+        )
 
         if not rule_comp:
             if isinstance(de_ruleset_elements[rule_name_node.value], list):
@@ -1175,7 +1261,11 @@ class Expr(VtlVisitor):
 
             if rule_element.kind == "DatasetID":
                 check_hierarchy_rule = rule_element.value
-                rule_comp = Identifier(check_hierarchy_rule, "ComponentID")
+                rule_comp = Identifier(
+                    value=check_hierarchy_rule,
+                    kind="ComponentID",
+                    **extract_token_info(ctx),
+                )
             else:  # ValuedomainID
                 raise SemanticError("1-1-10-4", op=op)
 
@@ -1183,6 +1273,7 @@ class Expr(VtlVisitor):
             op=op,
             children=[dataset_node, rule_comp, rule_name_node, *conditions],
             params=param_constant_node,
+            **extract_token_info(ctx),
         )
 
     def visitValidationSimple(self, ctx: Parser.ValidationSimpleContext):
@@ -1216,6 +1307,7 @@ class Expr(VtlVisitor):
             error_level=error_level,
             imbalance=inbalance_node,
             invalid=invalid_value,
+            **extract_token_info(ctx),
         )
 
     def visitImbalanceExpr(self, ctx: Parser.ImbalanceExprContext):
@@ -1275,6 +1367,7 @@ class Expr(VtlVisitor):
             grouping_op=grouping_op,
             grouping=group_node,
             having_clause=have_node,
+            **extract_token_info(ctx),
         )
 
     """
@@ -1325,6 +1418,7 @@ class Expr(VtlVisitor):
                 stop=0,
                 start_mode="preceding",
                 stop_mode="current",
+                **extract_token_info(ctx),
             )
 
         return Analytic(
@@ -1333,6 +1427,7 @@ class Expr(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             window=window,
+            **extract_token_info(ctx),
         )
 
     def visitLagOrLeadAn(self, ctx: Parser.LagOrLeadAnContext):
@@ -1371,6 +1466,7 @@ class Expr(VtlVisitor):
             partition_by=partition_by,
             order_by=order_by,
             params=params,
+            **extract_token_info(ctx),
         )
 
     def visitRatioToReportAn(self, ctx: Parser.RatioToReportAnContext):
@@ -1384,7 +1480,13 @@ class Expr(VtlVisitor):
 
         partition_by = Terminals().visitPartitionByClause(ctx_list[5])
 
-        return Analytic(op=op_node, operand=operand, partition_by=partition_by, order_by=order_by)
+        return Analytic(
+            op=op_node,
+            operand=operand,
+            partition_by=partition_by,
+            order_by=order_by,
+            **extract_token_info(ctx),
+        )
 
     """______________________________________________________________________________________
 
@@ -1460,7 +1562,9 @@ class Expr(VtlVisitor):
         for ctx_rename in renames:
             rename_nodes.append(self.visitRenameClauseItem(ctx_rename))
 
-        return RegularAggregation(op=ctx_list[0].getSymbol().text, children=rename_nodes)
+        return RegularAggregation(
+            op=ctx_list[0].getSymbol().text, children=rename_nodes, **extract_token_info(ctx)
+        )
 
     def visitRenameClauseItem(self, ctx: Parser.RenameClauseItemContext):
         """
@@ -1476,7 +1580,7 @@ class Expr(VtlVisitor):
 
         right_node = Terminals().visitVarID(ctx_list[2]).value
 
-        return RenameNode(left_node, right_node)
+        return RenameNode(old_name=left_node, new_name=right_node, **extract_token_info(ctx))
 
     """
                     -----------------------------------
@@ -1524,7 +1628,7 @@ class Expr(VtlVisitor):
         # Cannot find another way with less lines of code
         left_node.role = role
 
-        return Assignment(left_node, op_node, right_node)
+        return Assignment(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitAggrClause(self, ctx: Parser.AggrClauseContext):
         """
@@ -1557,10 +1661,11 @@ class Expr(VtlVisitor):
                 grouping_op=grouping_op,
                 grouping=group_node,
                 having_clause=have_node,
+                **extract_token_info(ctx_list[1]),
             )
             children.append(copy(element))
 
-        return RegularAggregation(op=op_node, children=children)
+        return RegularAggregation(op=op_node, children=children, **extract_token_info(ctx))
 
     def visitGroupingClause(self, ctx: Parser.GroupingClauseContext):
         """
@@ -1614,7 +1719,9 @@ class Expr(VtlVisitor):
         else:
             raise NotImplementedError
 
-        return ParamOp(op=op_node, children=None, params=param_nodes), expr
+        return ParamOp(
+            op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
+        ), expr
 
     def visitGroupByOrExcept(self, ctx: Parser.GroupByOrExceptContext):
         ctx_list = list(ctx.getChildren())
@@ -1662,7 +1769,7 @@ class Expr(VtlVisitor):
         operand_nodes = []
         operand_nodes.append(ExprComp().visitExprComponent(ctx_list[1]))
 
-        return RegularAggregation(op_node, operand_nodes)
+        return RegularAggregation(op=op_node, children=operand_nodes, **extract_token_info(ctx))
 
     """
                     -----------------------------------
@@ -1689,7 +1796,9 @@ class Expr(VtlVisitor):
             result = self.visitCalcClauseItem(calcClauseItem)
             calcClauseItems_nodes.append(result)
 
-        return RegularAggregation(op_node, calcClauseItems_nodes)
+        return RegularAggregation(
+            op=op_node, children=calcClauseItems_nodes, **extract_token_info(ctx)
+        )
 
     def visitCalcClauseItem(self, ctx: Parser.CalcClauseItemContext):
         """
@@ -1704,17 +1813,25 @@ class Expr(VtlVisitor):
             left_node = Terminals().visitComponentID(ctx_list[1])
             op_node = ":="
             right_node = ExprComp().visitExprComponent(ctx_list[3])
-            operand_node = Assignment(left_node, op_node, right_node)
+            operand_node = Assignment(
+                left=left_node, op=op_node, right=right_node, **extract_token_info(ctx)
+            )
             if role is None:
-                return UnaryOp(Role.MEASURE.value.lower(), operand_node)
-            return UnaryOp(role.value.lower(), operand_node)
+                return UnaryOp(
+                    op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(c)
+                )
+            return UnaryOp(op=role.value.lower(), operand=operand_node, **extract_token_info(c))
         else:
             left_node = Terminals().visitSimpleComponentId(c)
             op_node = ":="
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 
-            operand_node = Assignment(left_node, op_node, right_node)
-            return UnaryOp(Role.MEASURE.value.lower(), operand_node)
+            operand_node = Assignment(
+                left=left_node, op=op_node, right=right_node, **extract_token_info(ctx)
+            )
+            return UnaryOp(
+                op=Role.MEASURE.value.lower(), operand=operand_node, **extract_token_info(ctx)
+            )
 
     def visitKeepOrDropClause(self, ctx: Parser.KeepOrDropClauseContext):
         """
@@ -1731,7 +1848,7 @@ class Expr(VtlVisitor):
         for item in items:
             nodes.append(Terminals().visitComponentID(item))
 
-        return RegularAggregation(op_node, nodes)
+        return RegularAggregation(op=op_node, children=nodes, **extract_token_info(ctx))
 
     """
                     -----------------------------------
@@ -1752,7 +1869,7 @@ class Expr(VtlVisitor):
         children_nodes.append(Terminals().visitComponentID(ctx_list[1]))
         children_nodes.append(Terminals().visitComponentID(ctx_list[3]))
 
-        return RegularAggregation(op_node, children_nodes)
+        return RegularAggregation(op=op_node, children=children_nodes, **extract_token_info(ctx))
 
     """
                     -----------------------------------
@@ -1777,7 +1894,7 @@ class Expr(VtlVisitor):
             subspace_nodes.append(self.visitSubspaceClauseItem(subspace))
 
         op_node = c.getSymbol().text
-        return RegularAggregation(op_node, subspace_nodes)
+        return RegularAggregation(op=op_node, children=subspace_nodes, **extract_token_info(ctx))
 
     def visitSubspaceClauseItem(self, ctx: Parser.SubspaceClauseItemContext):
         ctx_list = list(ctx.getChildren())
@@ -1785,7 +1902,7 @@ class Expr(VtlVisitor):
         left_node = Terminals().visitVarID(ctx_list[0])
         op_node = ctx_list[1].getSymbol().text
         right_node = Terminals().visitScalarItem(ctx_list[2])
-        return BinOp(left_node, op_node, right_node)
+        return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitOptionalExpr(self, ctx: Parser.OptionalExprContext):
         """
@@ -1801,4 +1918,4 @@ class Expr(VtlVisitor):
         elif isinstance(c, TerminalNodeImpl):
             token = c.getSymbol()
             opt = token.text
-            return ID("OPTIONAL", opt)
+            return ID(type_="OPTIONAL", value=opt, **extract_token_info(ctx))

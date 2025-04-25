@@ -96,7 +96,17 @@ def test_ast_to_sdmx(script, agency_id, version):
 
 def test_visit_TimeAggregation_error():
     interpreter = InterpreterAnalyzer(datasets={})
-    node = TimeAggregation(op="time_agg", period_to="A", period_from=None, operand=None, conf=None)
+    node = TimeAggregation(
+        op="time_agg",
+        period_to="A",
+        period_from=None,
+        operand=None,
+        conf=None,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
 
     with pytest.raises(SemanticError, match="1-1-19-11"):
         interpreter.visit_TimeAggregation(node)

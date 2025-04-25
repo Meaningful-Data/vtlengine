@@ -21,6 +21,7 @@ from vtlengine.API._InternalApi import (
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
+from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
@@ -73,6 +74,13 @@ def _parser(stream: CommonTokenStream) -> Any:
     vtl_parser = Parser(stream)
     vtl_parser._listeners = [__VTLSingleErrorListener()]
     return vtl_parser.start()
+
+
+def prettify(text: str) -> str:
+    from vtlengine.AST.ASTComment import create_ast_with_comments
+
+    ast = create_ast_with_comments(text)
+    return ASTString(pretty=True).render(ast)
 
 
 def create_ast(text: str) -> Start:
