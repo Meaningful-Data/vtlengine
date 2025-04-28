@@ -15,6 +15,8 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN, con
+
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
@@ -217,6 +219,16 @@ class Dataset:
             return False
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
             raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+
+        # Duckdb lazy equal comparison (checking if there is no differences using sql querys)
+        if backend_df == DUCKDB_TOKEN:
+            query1 = f"SELECT * FROM {self.name} EXCEPT SELECT * FROM {other.name}"
+            diff1 = con.query(query1).df()
+
+            query2 = f"SELECT * FROM {other.name} EXCEPT SELECT * FROM {self.name}"
+            diff2 = con.query(query2).df()
+
+            return diff1.empty and diff2.empty
 
         self.data.fillna("", inplace=True)
         other.data.fillna("", inplace=True)

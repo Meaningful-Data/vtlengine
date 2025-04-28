@@ -3,6 +3,7 @@ from typing import Any, Union
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset
 from vtlengine.Operators import Binary
+from vtlengine.Preprocessor import con
 
 ALL_MODEL_TYPES = Union[DataComponent, Dataset]
 
@@ -24,4 +25,16 @@ class Assignment(Binary):
 
     @classmethod
     def evaluate_sql(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
-        return f"SELECT {left_operand} AS {right_operand.name}"
+        if (
+            isinstance(right_operand, DataComponent)
+            and right_operand.role.__str__() == "IDENTIFIER"
+        ):
+            raise SemanticError("1-1-6-13", op=cls.op, comp_name=right_operand.name)
+
+        sql_query = f"SELECT * FROM {right_operand.name} AS {left_operand}"
+        relation = con.query(sql_query)
+        return Dataset(
+            name=left_operand,
+            components=right_operand.components,
+            data=relation,
+        )

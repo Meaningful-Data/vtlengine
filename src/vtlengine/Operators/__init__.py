@@ -37,7 +37,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Preprocessor import backend_df
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -64,17 +64,8 @@ class Operator:
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:
         if only_semantic:
             return cls.validate(*args, **kwargs)
-        elif backend_df != "pd":
-            # Removing the interpreter instance from the args
-            *args, interpreter_instance = args
-            # TODO: get vd_num from singleton instead of the temporary counter
-            interpreter_instance.vd_counter += 1
-            vd_num = interpreter_instance.vd_counter
-            # get the sql query
-            interpreter_instance.sql_querys[f"@VD_{vd_num}"] = cls.evaluate_sql(*args, **kwargs)
-            # return the result structures
-            return cls.validate(*args, **kwargs)
-        return cls.evaluate(*args, **kwargs)
+        evaluate = cls.evaluate_sql if backend_df == DUCKDB_TOKEN else cls.evaluate
+        return evaluate(*args, **kwargs)
 
     @classmethod
     def cast_time_types(cls, data_type: Any, series: Any) -> Any:

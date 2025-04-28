@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Preprocessor import backend_df
+from vtlengine.Preprocessor import backend_df, con
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
@@ -170,7 +170,12 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                     )
                 datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
             else:
-                datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=None)
+                input_path = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
+                relation = con.from_csv_auto(str(input_path))
+                con.register(dataset_name, relation)
+                datasets[dataset_name] = Dataset(name=dataset_name,
+                                                 components=components,
+                                                 data=relation)
     if len(datasets) == 0:
         raise FileNotFoundError("No datasets found")
     return datasets
@@ -185,8 +190,6 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
     assert result == reference_datasets
-    # except NotImplementedError:
-    #     pass
 
 
 @pytest.mark.parametrize("param", params)
