@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import duckdb
 import pandas as pd
 
 import vtlengine.AST as AST
@@ -108,9 +107,6 @@ class InterpreterAnalyzer(ASTTemplate):
     datasets: Dict[str, Dataset]
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
-    sql_querys: Optional[Dict[str, str]] = None
-    # TODO: temporary counter, replace with the real one
-    vd_counter: int = 0
     # Analysis mode
     only_semantic: bool = False
     # Memory efficient
