@@ -14,13 +14,13 @@ BACKENDS = {
     "streaming": DUCKDB_TOKEN,
 }
 
-LAZY_STR = ["duckdb", "db", "lazy", "streaming"]
-
 backend_df = BACKENDS.get(os.getenv("BACKEND_DF", "").lower(), "pd")
 
 con = None
+sql_promotion = None
 if backend_df == DUCKDB_TOKEN:
-    import duckdb
-    con = duckdb.connect(database=":memory:", read_only=False)
+    from .utils import con as duckdb_con
+    from .utils import sql_column_type_promotion as sql_promotion
+    con = duckdb_con
 
-__all__ = ["con"]
+__all__ = ["con", "sql_promotion"]
