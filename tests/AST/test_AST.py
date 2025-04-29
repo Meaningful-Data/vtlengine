@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
@@ -318,10 +319,7 @@ def test_visit_CaseObj():
         column_stop=1,
     )
     result = visitor.visit_CaseObj(node)
-    assert result == None
-
-
-from unittest.mock import Mock
+    assert result is None
 
 
 def test_visit_Operator():
