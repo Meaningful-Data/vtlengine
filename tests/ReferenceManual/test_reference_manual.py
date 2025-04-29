@@ -9,6 +9,7 @@ import pytest
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Preprocessor import backend_df, con
+from vtlengine.Preprocessor.utils import get_sql_type
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
@@ -171,7 +172,11 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                 datasets[dataset_name] = Dataset(name=dataset_name, components=components, data=data)
             else:
                 input_path = Path(f"{dp_dir}/{param}-{dataset_name}.csv")
-                relation = con.from_csv_auto(str(input_path))
+                dtypes = {
+                    component["name"]: get_sql_type(component["type"])
+                    for component in dataset_json["DataStructure"]
+                }
+                relation = con.from_csv_auto(str(input_path), dtype=dtypes).set_alias(dataset_name)
                 con.register(dataset_name, relation)
                 datasets[dataset_name] = Dataset(name=dataset_name,
                                                  components=components,
