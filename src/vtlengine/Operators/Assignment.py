@@ -31,8 +31,7 @@ class Assignment(Binary):
         ):
             raise SemanticError("1-1-6-13", op=cls.op, comp_name=right_operand.name)
 
-        sql_query = f"SELECT * FROM {right_operand.name} AS {left_operand}"
-        relation = con.query(sql_query)
+        relation = right_operand.data.set_alias(left_operand)
         return Dataset(
             name=left_operand,
             components=right_operand.components,

@@ -17,6 +17,12 @@ VTL_TO_SQL_TYPE_MAP = {
 }
 
 
+BIN_OP_SQL_TOKENS = {
+    "==": "=",
+    "!=": "<>",
+}
+
+
 def get_sql_type(vtl_type: str) -> str:
     """
     Convert VTL type to SQL type.

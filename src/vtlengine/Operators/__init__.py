@@ -2,10 +2,6 @@ import os
 from copy import copy
 from typing import Any, Optional, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import (
@@ -37,7 +33,8 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
-from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN, con
+from vtlengine.Preprocessor.utils import BIN_OP_SQL_TOKENS
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -179,11 +176,11 @@ class Operator:
 
 
 def _id_type_promotion_join_keys(
-    c_left: Component,
-    c_right: Component,
-    join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
+        c_left: Component,
+        c_right: Component,
+        join_key: str,
+        left_data: Optional[pd.DataFrame] = None,
+        right_data: Optional[pd.DataFrame] = None,
 ) -> None:
     if left_data is None:
         left_data = pd.DataFrame()
@@ -198,7 +195,7 @@ def _id_type_promotion_join_keys(
         right_data[join_key] = right_data[join_key].astype(object)
         return
     if (left_type_name == "Integer" and right_type_name == "Number") or (
-        left_type_name == "Number" and right_type_name == "Integer"
+            left_type_name == "Number" and right_type_name == "Integer"
     ):
         left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
         right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
@@ -233,23 +230,15 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        if os.getenv("SPARK", False):
-            if cls.spark_op is None:
-                cls.spark_op = cls.py_op
-
-            nulls = left_series.isnull() | right_series.isnull()
-            result = cls.spark_op(left_series, right_series)
-            result.loc[nulls] = None
-            return result
         result = list(map(cls.op_func, left_series.values, right_series.values))
         return pd.Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
-        cls,
-        series: Any,
-        scalar: Scalar,
-        series_left: bool,
+            cls,
+            series: Any,
+            scalar: Scalar,
+            series_left: bool,
     ) -> Any:
         if scalar is None:
             return pd.Series(None, index=series.index)
@@ -373,7 +362,7 @@ class Binary(Operator):
 
     @classmethod
     def component_validation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
+            cls, left_operand: DataComponent, right_operand: DataComponent
     ) -> DataComponent:
         """
         Validates the compatibility between the types of the components and the operator
@@ -423,7 +412,7 @@ class Binary(Operator):
 
     @classmethod
     def component_set_validation(
-        cls, component: DataComponent, scalar_set: ScalarSet
+            cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         cls.type_validation(component.data_type, scalar_set.data_type)
         result = DataComponent(
@@ -477,7 +466,7 @@ class Binary(Operator):
 
     @classmethod
     def apply_return_type_dataset(
-        cls, result_dataset: Dataset, left_operand: Any, right_operand: Any
+            cls, result_dataset: Dataset, left_operand: Any, right_operand: Any
     ) -> None:
         """
         Used in dataset's validation.
@@ -507,9 +496,9 @@ class Binary(Operator):
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
-                changed_allowed is False
-                and is_mono_measure is False
-                and left_type.promotion_changed_type(result_data_type)
+                    changed_allowed is False
+                    and is_mono_measure is False
+                    and left_type.promotion_changed_type(result_data_type)
             ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
@@ -601,7 +590,7 @@ class Binary(Operator):
 
     @classmethod
     def dataset_scalar_evaluation(
-        cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
+            cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
     ) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
@@ -612,7 +601,7 @@ class Binary(Operator):
         for measure in dataset.get_measures():
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
             if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
-                scalar_value, int
+                    scalar_value, int
             ):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
@@ -627,7 +616,7 @@ class Binary(Operator):
 
     @classmethod
     def component_evaluation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
+            cls, left_operand: DataComponent, right_operand: DataComponent
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
         left_data = cls.cast_time_types(
@@ -643,7 +632,7 @@ class Binary(Operator):
 
     @classmethod
     def component_scalar_evaluation(
-        cls, component: DataComponent, scalar: Scalar, component_left: bool = True
+            cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = cls.cast_time_types(
@@ -652,7 +641,7 @@ class Binary(Operator):
         )
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
-            scalar_value, int
+                scalar_value, int
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(
@@ -679,7 +668,7 @@ class Binary(Operator):
 
     @classmethod
     def component_set_evaluation(
-        cls, component: DataComponent, scalar_set: ScalarSet
+            cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_component.data = cls.apply_operation_two_series(
@@ -725,6 +714,63 @@ class Binary(Operator):
             return cls.component_set_evaluation(left_operand, right_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
             return cls.scalar_set_evaluation(left_operand, right_operand)
+
+    @classmethod
+    def evaluate_sql(cls, left_operand: Any, right_operand: Any) -> Any:
+        if isinstance(left_operand, Dataset) and isinstance(right_operand, Dataset):
+            return cls.sql_dataset_evaluation(left_operand, right_operand)
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, Scalar):
+            return cls.scalar_evaluation(left_operand, right_operand)
+        if isinstance(left_operand, Dataset) and isinstance(right_operand, Scalar):
+            return cls.dataset_scalar_evaluation(left_operand, right_operand, dataset_left=True)
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, Dataset):
+            return cls.dataset_scalar_evaluation(right_operand, left_operand, dataset_left=False)
+        if isinstance(left_operand, DataComponent) and isinstance(right_operand, DataComponent):
+            return cls.component_evaluation(left_operand, right_operand)
+        if isinstance(left_operand, DataComponent) and isinstance(right_operand, Scalar):
+            return cls.component_scalar_evaluation(left_operand, right_operand, component_left=True)
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, DataComponent):
+            return cls.component_scalar_evaluation(
+                right_operand, left_operand, component_left=False
+            )
+        if isinstance(left_operand, Dataset) and isinstance(right_operand, ScalarSet):
+            return cls.dataset_set_evaluation(left_operand, right_operand)
+        if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
+            return cls.component_set_evaluation(left_operand, right_operand)
+        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
+            return cls.scalar_set_evaluation(left_operand, right_operand)
+
+    @classmethod
+    def sql_dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
+        result_dataset = cls.dataset_validation(left_operand, right_operand)
+
+        use_right_as_base = len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names())
+        base_operand_data = right_operand.data if use_right_as_base else left_operand.data
+        other_operand_data = left_operand.data if use_right_as_base else right_operand.data
+
+        join_keys = list(
+            set(left_operand.get_identifiers_names()).intersection(
+                right_operand.get_identifiers_names()
+            )
+        )
+        other_columns = set(comp for comp in
+                             (left_operand.get_components_names() + right_operand.get_components_names())
+                             if comp not in join_keys
+                             )
+        sql_operation = BIN_OP_SQL_TOKENS.get(cls.op, cls.op)
+
+        merge_query = f"""
+            SELECT 
+                {" ,".join([f"base.{key}" for key in join_keys])}, 
+                {" ,".join([f"base.{col} {sql_operation} other.{col} AS {col}" for col in other_columns])}
+            FROM {base_operand_data.alias} AS base
+            INNER JOIN {other_operand_data.alias} AS other
+            ON {" AND ".join([f"base.{key} = other.{key}" for key in join_keys])}
+        """
+
+        result_dataset.data = con.query(merge_query).set_alias(result_dataset.name)
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
 
 
 class Unary(Operator):
@@ -843,9 +889,9 @@ class Unary(Operator):
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
-                changed_allowed is False
-                and is_mono_measure is False
-                and operand_type.promotion_changed_type(result_data_type)
+                    changed_allowed is False
+                    and is_mono_measure is False
+                    and operand_type.promotion_changed_type(result_data_type)
             ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
