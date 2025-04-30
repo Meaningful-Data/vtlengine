@@ -1,5 +1,6 @@
 import os
 
+PANDAS_TOKEN = "pd"
 DUCKDB_TOKEN = "duckdb"
 
 BACKENDS = {

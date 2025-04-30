@@ -37,7 +37,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN, con
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN, con, PANDAS_TOKEN
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -251,7 +251,7 @@ class Analytic(Operator.Unary):
         identifiers_sql = ", ".join(identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
-        if cls.op == COUNT:
+        if cls.op == COUNT and backend_df == PANDAS_TOKEN:
             df[measure_names] = df[measure_names].fillna(-1)
         if backend_df == DUCKDB_TOKEN:
             return con.query(query)

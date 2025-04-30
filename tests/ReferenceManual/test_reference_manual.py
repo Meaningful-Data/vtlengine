@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Preprocessor import backend_df, con
+from vtlengine.Preprocessor import backend_df, con, PANDAS_TOKEN
 from vtlengine.Preprocessor.utils import get_sql_type
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
@@ -160,7 +160,7 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
                 )
                 for component in dataset_json["DataStructure"]
             }
-            if backend_df == "pd":
+            if backend_df == PANDAS_TOKEN:
                 if dataset_name not in dataPoints:
                     data = pd.DataFrame(columns=components.keys())
                 else:

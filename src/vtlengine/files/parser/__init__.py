@@ -19,7 +19,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Preprocessor import backend_df, con
+from vtlengine.Preprocessor import backend_df, con, PANDAS_TOKEN
 from vtlengine.Preprocessor.utils import get_sql_type
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
@@ -213,7 +213,7 @@ def load_datapoints(
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
 ) -> pd.DataFrame:
-    if backend_df == "pd":
+    if backend_df == PANDAS_TOKEN:
         if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
             return pd.DataFrame(columns=list(components.keys()))
         elif isinstance(csv_path, (str, Path)):
