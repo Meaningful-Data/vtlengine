@@ -7,6 +7,7 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
+from vtlengine.Preprocessor import con
 
 
 class Membership(Binary):
@@ -67,6 +68,29 @@ class Membership(Binary):
                     data=left_operand.data[right_operand],
                 )
             result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+        return result_dataset
+
+    @classmethod
+    def evaluate_sql(
+        cls,
+        left_operand: Dataset,
+        right_operand: str,
+        is_from_component_assignment: bool = False,
+    ) -> Union[DataComponent, Dataset]:
+        result_dataset = cls.validate(left_operand, right_operand)
+
+        if is_from_component_assignment:
+            return DataComponent(
+                name=right_operand,
+                data_type=left_operand.components[right_operand].data_type,
+                role=Role.MEASURE,
+                nullable=left_operand.components[right_operand].nullable,
+                data=left_operand.data[right_operand],
+            )
+
+        query = f"SELECT {', '.join(list(result_dataset.components.keys()))} FROM {left_operand.name}"
+        result_dataset.data = con.query(query)
+
         return result_dataset
 
 
