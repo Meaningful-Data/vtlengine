@@ -518,3 +518,16 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
     )
 
     return transformation_scheme
+
+
+def _check_script(script: Union[str, TransformationScheme, Path]) -> Any:
+    """
+    Check if the TransformationScheme object is valid to generate a vtl script.
+    """
+    if isinstance(script, TransformationScheme):
+        from pysdmx.toolkit.vtl.generate_vtl_script import generate_vtl_script
+
+        vtl_script = generate_vtl_script(script, model_validation=True)
+        return vtl_script
+    else:
+        return script
