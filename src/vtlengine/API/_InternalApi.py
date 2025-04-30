@@ -520,7 +520,7 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
     return transformation_scheme
 
 
-def _check_script(script: Union[str, TransformationScheme, Path]) -> Any:
+def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     """
     Check if the TransformationScheme object is valid to generate a vtl script.
     """
