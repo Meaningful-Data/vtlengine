@@ -524,6 +524,10 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     """
     Check if the TransformationScheme object is valid to generate a vtl script.
     """
+    if not isinstance(script, (str, TransformationScheme, Path)):
+        raise Exception(
+            "Invalid script format. Input must be a string, TransformationScheme or Path object"
+        )
     if isinstance(script, TransformationScheme):
         from pysdmx.toolkit.vtl.generate_vtl_script import generate_vtl_script
 

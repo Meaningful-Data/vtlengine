@@ -93,8 +93,11 @@ class ASTString(ASTTemplate):
     is_from_agg: bool = False  # Handler to write grouping at aggr level
 
     def render(self, ast: AST.AST) -> str:
-        self.visit(ast)
-        return self.vtl_script
+        self.vtl_script = ""
+        result = self.visit(ast)
+        if result:
+            self.vtl_script += result
+        return result
 
     def visit_Start(self, node: AST.Start) -> Any:
         transformations = [
