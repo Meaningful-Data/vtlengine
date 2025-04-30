@@ -37,6 +37,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN, con
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -252,8 +253,8 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        # if os.getenv("SPARK", False):
-        #     df = df.to_pandas()
+        if backend_df == DUCKDB_TOKEN:
+            return con.query(query)
         return duckdb.query(query).to_df().astype(object)
 
     @classmethod
@@ -267,7 +268,10 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        if backend_df == DUCKDB_TOKEN:
+            df = operand.data
+        else:
+            df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:
@@ -285,10 +289,11 @@ class Analytic(Operator.Unary):
             params=params,
         )
 
-        # if cls.return_type == Integer:
-        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
-
         return result
+
+    @classmethod
+    def evaluate_sql(cls, *args, **kwargs) -> Dataset:
+        return cls.evaluate(*args, **kwargs)
 
 
 class Max(Analytic):

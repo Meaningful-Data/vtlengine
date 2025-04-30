@@ -19,7 +19,8 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Preprocessor import backend_df
+from vtlengine.Preprocessor import backend_df, con
+from vtlengine.Preprocessor.utils import get_sql_type
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
     check_date,
@@ -223,7 +224,12 @@ def load_datapoints(
             raise Exception("Invalid csv_path type")
         data = _validate_pandas(components, data, dataset_name)
     else:
-        data = Dataset(name=dataset_name, components=components, data=None)
+        dtypes = {
+            component.name: get_sql_type(component.data_type)
+            for component in components.values()
+        }
+        data = con.from_csv_auto(str(csv_path), dtype=dtypes).set_alias(dataset_name)
+        con.register(dataset_name, data)
 
     return data
 
