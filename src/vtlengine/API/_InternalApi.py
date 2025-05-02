@@ -466,7 +466,7 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
         ruleset_type = "datapoint"
     elif isinstance(child, HRuleset):
         ruleset_type = "hierarchical"
-    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
+    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)  # type: ignore[arg-type]
 
 
 def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
@@ -509,12 +509,16 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
             RulesetScheme(
                 items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
             )
-        ],
+        ]
+        if list_rulesets
+        else [],
         user_defined_operator_schemes=[
             UserDefinedOperatorScheme(
                 items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
             )
-        ],
+        ]
+        if list_udos
+        else [],
     )
 
     return transformation_scheme
@@ -534,4 +538,4 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
         vtl_script = generate_vtl_script(script, model_validation=True)
         return vtl_script
     else:
-        return script
+        return str(script)

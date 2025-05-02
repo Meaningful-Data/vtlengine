@@ -97,7 +97,7 @@ class ASTString(ASTTemplate):
         result = self.visit(ast)
         if result:
             self.vtl_script += result
-        return result
+        return self.vtl_script
 
     def visit_Start(self, node: AST.Start) -> Any:
         transformations = [
