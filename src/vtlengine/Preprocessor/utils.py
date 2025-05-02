@@ -3,6 +3,8 @@ from typing import Any
 import duckdb
 
 con = duckdb.connect(database=":memory:", read_only=False)
+con.execute("SET memory_limit='512MB';")
+con.execute("SET enable_progress_bar = true;")
 
 
 VTL_TO_SQL_TYPE_MAP = {
@@ -11,6 +13,7 @@ VTL_TO_SQL_TYPE_MAP = {
     "Number": "FLOAT",
     "Boolean": "BOOLEAN",
     "Date": "DATE",
+    "TimePeriod": "DATE",
     "Time": "TIME",
     "Duration": "INTERVAL",
     "Null": "NULL",

@@ -225,7 +225,7 @@ def load_datapoints(
         data = _validate_pandas(components, data, dataset_name)
     else:
         dtypes = {
-            component.name: get_sql_type(component.data_type)
+            component.name: get_sql_type(component.data_type.__name__)
             for component in components.values()
         }
         data = con.from_csv_auto(str(csv_path), dtype=dtypes).set_alias(dataset_name)

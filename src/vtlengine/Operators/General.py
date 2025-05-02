@@ -89,7 +89,7 @@ class Membership(Binary):
             )
 
         query = f"SELECT {', '.join(list(result_dataset.components.keys()))} FROM {left_operand.name}"
-        result_dataset.data = con.query(query)
+        result_dataset.data = con.query(query).set_alias(left_operand.name)
 
         return result_dataset
 

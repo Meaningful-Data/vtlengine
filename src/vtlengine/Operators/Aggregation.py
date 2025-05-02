@@ -36,6 +36,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Preprocessor import backend_df, DUCKDB_TOKEN
 
 
 def extract_grouping_identifiers(
@@ -247,7 +248,10 @@ class Aggregation(Operator.Unary):
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        if backend_df == DUCKDB_TOKEN:
+            result_df = operand.data
+        else:
+            result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         measure_names = operand.get_measures_names()
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
@@ -275,6 +279,10 @@ class Aggregation(Operator.Unary):
             aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
         result.data = aux_df
         return result
+
+    @classmethod
+    def evaluate_sql(cls, *args, **kwargs) -> Dataset:
+        return cls.evaluate(*args, **kwargs)
 
 
 class Max(Aggregation):
