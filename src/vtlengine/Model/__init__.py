@@ -234,11 +234,11 @@ class Dataset:
                 self.data[comp.name] = self.data[comp.name].astype(str)
                 other.data[comp.name] = other.data[comp.name].astype(str)
                 self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
                     na_action="ignore",
                 )
                 other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(x)) if x != "" else "",
+                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
                     na_action="ignore",
                 )
             elif type_name in ["Integer", "Number"]:
