@@ -182,7 +182,7 @@ def _validate_pandas(
                         values_correct = (
                             data[comp_name]
                             .map(
-                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,  # type: ignore[union-attr]
+                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,
                                 na_action="ignore",
                             )
                             .all()
