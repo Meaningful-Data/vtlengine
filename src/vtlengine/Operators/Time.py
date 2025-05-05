@@ -967,7 +967,7 @@ class Date_Add(Parametrized):
             for measure in operand.get_measures():
                 if measure.data_type in [Date, TimePeriod]:
                     result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.py_op(x, shift, period, measure.data_type == TimePeriod),
+                        lambda x: cls.py_op(str(x), shift, period, measure.data_type == TimePeriod),
                         na_action="ignore",
                     )
                     measure.data_type = Date
