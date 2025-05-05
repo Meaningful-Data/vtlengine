@@ -534,7 +534,7 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
             "Invalid script format. Input must be a string, TransformationScheme or Path object"
         )
     if isinstance(script, TransformationScheme):
-        from pysdmx.toolkit.vtl.generate_vtl_script import (  # type: ignore[import-not-found]
+        from pysdmx.toolkit.vtl.generate_vtl_script import (
             generate_vtl_script,
         )
 
