@@ -4,14 +4,9 @@ import uuid
 import duckdb
 from duckdb.duckdb import DuckDBPyRelation
 
-from vtlengine.Preprocessor.DuckDB.utils import con
-
+from vtlengine.Preprocessor.DuckDB.utils import con, unique_view_alias
 
 SETTING_ALLOWED_TYPES = (str, int, float, bool, DuckDBPyRelation)
-
-
-def unique_view_alias():
-    return f"rel_{uuid.uuid4().hex}"
 
 
 def sql_value_parser(value):
@@ -25,15 +20,6 @@ def sql_value_parser(value):
 
 
 def register_dynamic_function(func):
-    """
-    Registers a dynamic user-defined function (UDF) in DuckDB.
-
-    Args:
-        func (callable): The function to register as a UDF.
-
-    Returns:
-        str: The name of the registered UDF.
-    """
     if not callable(func):
         raise ValueError("`func` must be a callable function.")
 
@@ -53,18 +39,6 @@ def register_dynamic_function(func):
 
 
 def define_input_sig_dynamically(func, default_type='FLOAT'):
-    """
-    Define input types dynamically for a function, defaulting to FLOAT.
-    Inspects the function signature to determine the number of parameters
-    and assigns the default type to each parameter.
-
-    Args:
-        func (callable): The function to inspect.
-        default_type: The default DuckDB type to assign to each parameter.
-
-    Returns:
-        list: A list of input types for the function.
-    """
     if not callable(func):
         raise ValueError("`func` must be a callable function.")
 
@@ -98,21 +72,29 @@ def _any(self, axis=0):
     return result.values.any()
 
 
+def _astype(self, dtype, **kwargs):
+    alias = unique_view_alias()
+    cols = [
+        f"CAST({col} AS {dtype}) AS {col}" if dtype != "VARCHAR" else f"{col}::VARCHAR AS {col}"
+        for col in self.columns
+    ]
+    query = f"SELECT {', '.join(cols)} FROM {alias}"
+    return self.query(alias, query).set_alias(alias)
+
+
 def _fillna(self, value):
     alias = unique_view_alias()
     sql_value = sql_value_parser(value)
     cols = [f"COALESCE({col}, {sql_value}) AS {col}" for col in self.columns]
     query = f"SELECT {', '.join(cols)} FROM {alias}"
-    result = self.query(alias, query)
-    return result
+    return self.query(alias, query).set_alias(alias)
 
 
 def _isnull(self):
     alias = unique_view_alias()
     cols = [f"({col} IS NULL)::INT AS {col}" for col in self.columns]
     query = f"SELECT {', '.join(cols)} FROM {alias}"
-    result = self.query(alias, query)
-    return result
+    return self.query(alias, query).set_alias(alias)
 
 
 def _map(self, func, na_action="ignore"):
@@ -129,7 +111,7 @@ def _map(self, func, na_action="ignore"):
     ]
 
     query = f"SELECT {', '.join(cols_query)} FROM {alias}"
-    return self.query(alias, query)
+    return self.query(alias, query).set_alias(alias)
 
 
 def _replace(self, to_replace, value=None):
@@ -144,8 +126,7 @@ def _replace(self, to_replace, value=None):
         for col in self.columns
     ]
     query = f"SELECT {', '.join(cols)} FROM {alias}"
-    result = self.query(alias, query)
-    return result
+    return self.query(alias, query).set_alias(alias)
 
 
 def __setitem__(self, key, value):
@@ -170,13 +151,16 @@ def __setitem__(self, key, value):
             (SELECT {value_column} FROM {temp_view}) AS {key}
             FROM {alias}
         """
+    else:
+        raise ValueError(f"`value` must be: {SETTING_ALLOWED_TYPES}.")
 
-    return self.query(alias, query)
+    return self.query(alias, query).set_alias(alias)
 
 
 def set_attributes():
     duckdb.DuckDBPyRelation.all = _all
     duckdb.DuckDBPyRelation.any = _any
+    duckdb.DuckDBPyRelation.astype = _astype
     duckdb.DuckDBPyRelation.fillna = _fillna
     duckdb.DuckDBPyRelation.isna = _isnull
     duckdb.DuckDBPyRelation.isnull = _isnull

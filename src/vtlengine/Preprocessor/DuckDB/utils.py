@@ -1,10 +1,15 @@
+import uuid
+
 import duckdb
 import pandas as pd
 
 MEM_SIZE = 4096
 
-
 con = duckdb.connect(database=":memory:", read_only=False)
+
+
+def unique_view_alias():
+    return f"rel_{uuid.uuid4().hex}"
 
 
 def _assert_frame_equal():
@@ -37,7 +42,7 @@ def _merge():
 
 
 def _read_csv(file_path: str, **kwargs):
-    return con.from_csv_auto(str(file_path))
+    return con.from_csv_auto(str(file_path)).set_alias(unique_view_alias())
 
 
 def _to_datetime():
