@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import jsonschema
 import pandas as pd
@@ -461,12 +461,13 @@ def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
-    ruleset_type = ASTString().render(ast=child)
-    if isinstance(child, DPRuleset):
-        ruleset_type = "datapoint"
-    elif isinstance(child, HRuleset):
-        ruleset_type = "hierarchical"
-    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
+    ruleset_definition = ASTString().render(ast=child)
+    ruleset_type: Literal["datapoint", "hierarchical"] = (
+        "datapoint" if isinstance(child, DPRuleset) else "hierarchical"
+    )
+    return Ruleset(
+        id=f"RS{count}", ruleset_definition=ruleset_definition, ruleset_type=ruleset_type
+    )
 
 
 def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
