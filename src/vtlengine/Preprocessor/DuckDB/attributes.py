@@ -3,6 +3,8 @@ import uuid
 
 import duckdb
 
+from vtlengine.Preprocessor.DuckDB.utils import con
+
 
 def unique_view_alias():
     return f"rel_{uuid.uuid4().hex}"
@@ -18,25 +20,53 @@ def sql_value_parser(value):
     return repr(value)
 
 
-# def register_dynamic_function(func):
-#     if not callable(func):
-#         raise ValueError("`func` must be a callable function.")
-#
-#     # Generate a unique name for the UDF
-#     func_name = f"udf_{uuid.uuid4().hex}"
-#
-#     # Inspect the function signature
-#     sig = inspect.signature(func)
-#     param_count = len(sig.parameters)
-#
-#     # Define input types dynamically (default to FLOAT for simplicity)
-#     input_types = [duckdb.FLOAT] * param_count
-#     return_type = duckdb.FLOAT  # Default return type, can be adjusted
-#
-#     # Register the function in DuckDB
-#     duckdb.create_function(func_name, func, input_types, return_type)
-#
-#     return func_name
+def register_dynamic_function(func):
+    """
+    Registers a dynamic user-defined function (UDF) in DuckDB.
+
+    Args:
+        func (callable): The function to register as a UDF.
+
+    Returns:
+        str: The name of the registered UDF.
+    """
+    if not callable(func):
+        raise ValueError("`func` must be a callable function.")
+
+    # Generate a unique name for the UDF
+    func_name = f"udf_{uuid.uuid4().hex}"
+
+    # Define input types dynamically
+    input_types = define_input_sig_dynamically(func)
+
+    # Set the default return type
+    return_type = 'FLOAT'
+
+    # Register the function in DuckDB using the active connection
+    con.create_function(func_name, func, input_types, return_type)
+
+    return func_name
+
+
+def define_input_sig_dynamically(func, default_type='FLOAT'):
+    """
+    Define input types dynamically for a function, defaulting to FLOAT.
+    Inspects the function signature to determine the number of parameters
+    and assigns the default type to each parameter.
+
+    Args:
+        func (callable): The function to inspect.
+        default_type: The default DuckDB type to assign to each parameter.
+
+    Returns:
+        list: A list of input types for the function.
+    """
+    if not callable(func):
+        raise ValueError("`func` must be a callable function.")
+
+    sig = inspect.signature(func)
+    param_count = len(sig.parameters)
+    return [default_type] * param_count
 
 
 def _all(self, axis=0):
@@ -82,24 +112,20 @@ def _isnull(self):
 
 
 def _map(self, func, na_action="ignore"):
-    # if not callable(func):
-    #     raise ValueError("`func` must be a callable function.")
-    #
-    # get_lambda_name = lambda l: inspect.getsource(l).split('=')[0].strip()
-    # func_name = get_lambda_name(func)
-    #
-    # alias = unique_view_alias()
-    # func_name = register_dynamic_function(func)
-    #
-    # cols_query = [
-    #     f"CASE WHEN {col} IS NOT NULL THEN {func_name}({col}) ELSE {col} END AS {col}"
-    #     if na_action == "ignore" else f"{func_name}({col}) AS {col}"
-    #     for col in self.columns
-    # ]
-    #
-    # query = f"SELECT {', '.join(cols_query)} FROM {alias}"
-    # return self.query(alias, query)
-    pass
+    if not callable(func):
+        raise ValueError("`func` must be a callable function.")
+
+    func_name = register_dynamic_function(func)
+
+    alias = f"rel_{uuid.uuid4().hex}"
+    cols_query = [
+        f"CASE WHEN {col} IS NOT NULL THEN {func_name}({col}) ELSE {col} END AS {col}"
+        if na_action == "ignore" else f"{func_name}({col}) AS {col}"
+        for col in self.columns
+    ]
+
+    query = f"SELECT {', '.join(cols_query)} FROM {alias}"
+    return self.query(alias, query)
 
 
 def _replace(self, to_replace, value=None):
