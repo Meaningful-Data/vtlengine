@@ -159,9 +159,7 @@ def _validate_pandas(
                     TIME_CHECKS_MAPPING[comp.data_type], na_action="ignore"
                 )
             elif comp.data_type == Integer:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: Integer.cast(float(str(x))), na_action="ignore"
-                )
+                data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
             elif comp.data_type == Number:
                 data[comp_name] = data[comp_name].map(lambda x: float(str(x)), na_action="ignore")
             elif comp.data_type == Boolean:
