@@ -200,7 +200,7 @@ def _validate_pandas(
                 )
             data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
 
-    except ValueError:
+    except ValueError as e:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 

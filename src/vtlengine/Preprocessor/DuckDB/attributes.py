@@ -2,8 +2,12 @@ import inspect
 import uuid
 
 import duckdb
+from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.Preprocessor.DuckDB.utils import con
+
+
+SETTING_ALLOWED_TYPES = (str, int, float, bool, DuckDBPyRelation)
 
 
 def unique_view_alias():
@@ -144,6 +148,32 @@ def _replace(self, to_replace, value=None):
     return result
 
 
+def __setitem__(self, key, value):
+    if not isinstance(key, str):
+        raise ValueError("`key` must be a string.")
+    if not isinstance(value, SETTING_ALLOWED_TYPES):
+        raise ValueError(f"`value` must be: {SETTING_ALLOWED_TYPES}.")
+
+    alias = unique_view_alias()
+    if isinstance(value, (str, int, float, bool)):
+        sql_value = sql_value_parser(value)
+        query = f"SELECT *, {sql_value} AS {key} FROM {alias}"
+    elif isinstance(value, DuckDBPyRelation):
+        cols = value.columns
+        if len(cols) != 1:
+            raise ValueError("The value relation must have exactly one column")
+        value_column = cols[0]
+        temp_view = unique_view_alias()
+        value.create_view(temp_view)  # Create a temporary view for the relation
+        query = f"""
+            SELECT *,
+            (SELECT {value_column} FROM {temp_view}) AS {key}
+            FROM {alias}
+        """
+
+    return self.query(alias, query)
+
+
 def set_attributes():
     duckdb.DuckDBPyRelation.all = _all
     duckdb.DuckDBPyRelation.any = _any
@@ -152,3 +182,4 @@ def set_attributes():
     duckdb.DuckDBPyRelation.isnull = _isnull
     duckdb.DuckDBPyRelation.map = _map
     duckdb.DuckDBPyRelation.replace = _replace
+    duckdb.DuckDBPyRelation.__setitem__ = __setitem__
