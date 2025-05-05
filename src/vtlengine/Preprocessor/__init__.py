@@ -4,7 +4,7 @@ from pathlib import Path
 from vtlengine.Preprocessor.DuckDB import (
     LazyFrame,
     LazySeries,
-    set_attributes,
+    set_attributes, MEM_SIZE,
 )
 from vtlengine.Preprocessor.DuckDB import (
     _assert_frame_equal as lazy_assert_frame_equal,
@@ -74,9 +74,9 @@ elif backend_df == "duckdb":
 
     # Configuration of in-memory db and temporary directory
     con = duckdb.connect(database=":memory:", read_only=False)
-    con.execute("SET memory_limit = '512MB';")
-    con.execute("SET max_memory = '512MB';")
     temp_path = Path(__file__).parent / "duckdb_temp"
+    con.execute(f"SET memory_limit = '{MEM_SIZE}MB';")
+    con.execute(f"SET max_memory = '{MEM_SIZE}MB';")
     con.execute(f"SET temp_directory='{temp_path}';")
     con.execute("SET enable_progress_bar = true;")
     con.execute("SET explain_output = 'optimized_only';")

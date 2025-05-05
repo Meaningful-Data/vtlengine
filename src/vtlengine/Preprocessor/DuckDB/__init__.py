@@ -11,9 +11,11 @@ from .utils import (
     _merge,
     _read_csv,
     _to_datetime,
+    MEM_SIZE,
 )
 
 __all__ = [
+    "MEM_SIZE",
     "LazyFrame",
     "LazySeries",
     "set_attributes",

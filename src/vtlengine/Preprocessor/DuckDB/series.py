@@ -1,7 +1,8 @@
-class LazySeries:
+from duckdb.duckdb import DuckDBPyRelation
+
+
+class LazySeries(DuckDBPyRelation):
     """
     A class representing a lazy Series
     """
-
-    def __init__(self, series):
-        pass
+    pass

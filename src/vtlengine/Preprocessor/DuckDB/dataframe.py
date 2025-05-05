@@ -1,7 +1,8 @@
-class LazyFrame:
+from duckdb.duckdb import DuckDBPyRelation
+
+
+class LazyFrame(DuckDBPyRelation):
     """
     A class representing a lazy DataFrame
     """
-
-    def __init__(self, db_path: str, table_name: str):
-        pass
+    pass

@@ -1,7 +1,10 @@
 import duckdb
 import pandas as pd
 
-con = duckdb.connect()
+MEM_SIZE = 4096
+
+
+con = duckdb.connect(database=":memory:", read_only=False)
 
 
 def _assert_frame_equal():
