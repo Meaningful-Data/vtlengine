@@ -10,6 +10,7 @@ from pysdmx.model.dataflow import Schema
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
+    _check_script,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -105,7 +106,7 @@ def create_ast(text: str) -> Start:
 
 
 def semantic_analysis(
-    script: Union[str, Path],
+    script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[Dict[str, Any], Path]] = None,
@@ -154,8 +155,10 @@ def semantic_analysis(
         Exception: If the files have the wrong format, or they do not exist, \
         or their Paths are invalid.
     """
+
     # AST generation
-    vtl = load_vtl(script)
+    checking = _check_script(script)
+    vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
     # Loading datasets
@@ -181,7 +184,7 @@ def semantic_analysis(
 
 
 def run(
-    script: Union[str, Path],
+    script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
@@ -283,7 +286,9 @@ def run(
         or their Paths are invalid.
 
     """
+
     # AST generation
+    script = _check_script(script)
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 

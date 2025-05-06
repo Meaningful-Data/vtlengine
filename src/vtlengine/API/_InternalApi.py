@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import jsonschema
 import pandas as pd
@@ -461,12 +461,13 @@ def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
-    ruleset_type = ASTString().render(ast=child)
-    if isinstance(child, DPRuleset):
-        ruleset_type = "datapoint"
-    elif isinstance(child, HRuleset):
-        ruleset_type = "hierarchical"
-    return Ruleset(id=f"RS{count}", ruleset_definition=str(child), ruleset_type=ruleset_type)
+    ruleset_definition = ASTString().render(ast=child)
+    ruleset_type: Literal["datapoint", "hierarchical"] = (
+        "datapoint" if isinstance(child, DPRuleset) else "hierarchical"
+    )
+    return Ruleset(
+        id=f"RS{count}", ruleset_definition=ruleset_definition, ruleset_type=ruleset_type
+    )
 
 
 def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
@@ -509,12 +510,35 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
             RulesetScheme(
                 items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
             )
-        ],
+        ]
+        if list_rulesets
+        else [],
         user_defined_operator_schemes=[
             UserDefinedOperatorScheme(
                 items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
             )
-        ],
+        ]
+        if list_udos
+        else [],
     )
 
     return transformation_scheme
+
+
+def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
+    """
+    Check if the TransformationScheme object is valid to generate a vtl script.
+    """
+    if not isinstance(script, (str, TransformationScheme, Path)):
+        raise Exception(
+            "Invalid script format. Input must be a string, TransformationScheme or Path object"
+        )
+    if isinstance(script, TransformationScheme):
+        from pysdmx.toolkit.vtl.generate_vtl_script import (
+            generate_vtl_script,
+        )
+
+        vtl_script = generate_vtl_script(script, model_validation=True)
+        return vtl_script
+    else:
+        return str(script)

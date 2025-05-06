@@ -160,13 +160,13 @@ def _validate_pandas(
                 )
             elif comp.data_type == Integer:
                 data[comp_name] = data[comp_name].map(
-                    lambda x: Integer.cast(float(x)), na_action="ignore"
+                    lambda x: Integer.cast(float(str(x))), na_action="ignore"
                 )
             elif comp.data_type == Number:
-                data[comp_name] = data[comp_name].map(lambda x: float(x), na_action="ignore")
+                data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
             elif comp.data_type == Boolean:
                 data[comp_name] = data[comp_name].map(
-                    lambda x: _parse_boolean(x), na_action="ignore"
+                    lambda x: _parse_boolean(str(x)), na_action="ignore"
                 )
             elif comp.data_type == Duration:
                 values_correct = (
@@ -182,7 +182,7 @@ def _validate_pandas(
                         values_correct = (
                             data[comp_name]
                             .map(
-                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,
+                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,  # type: ignore[union-attr]
                                 na_action="ignore",
                             )
                             .all()
