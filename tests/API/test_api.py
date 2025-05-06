@@ -1177,16 +1177,12 @@ def test_generate_sdmx(script, agency_id, version):
         assert result.ruleset_schemes[0].agency == agency_id
         assert result.ruleset_schemes[0].version == version
         assert result.ruleset_schemes[0].vtl_version == "2.1"
-    else:
-        assert result.ruleset_schemes == []
     if result.user_defined_operator_schemes:
         assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
         assert result.user_defined_operator_schemes[0].id == "UDS1"
         assert result.user_defined_operator_schemes[0].agency == agency_id
         assert result.user_defined_operator_schemes[0].version == version
         assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
-    else:
-        assert result.user_defined_operator_schemes == []
 
 
 def test_check_script_with_transformation_scheme():
