@@ -114,7 +114,6 @@ class ASTString(ASTTemplate):
         signature = f"{node.signature_type} rule {node.element.value}"
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
-
             for i, rule in enumerate(node.rules):
                 self.vtl_script += f"{tab}{self.visit(rule)}{nl}"
                 if rule.erCode:
@@ -126,8 +125,16 @@ class ASTString(ASTTemplate):
                     self.vtl_script += nl
             self.vtl_script += f"end hierarchical ruleset;{nl}"
         else:
-            rules_sep = "; " if len(node.rules) > 1 else ""
-            rules = rules_sep.join([self.visit(x) for x in node.rules])
+            rules_strs = []
+            for rule in node.rules:
+                rule_str = self.visit(rule)
+                if rule.erCode:
+                    rule_str += f" errorcode {_handle_literal(rule.erCode)}"
+                if rule.erLevel:
+                    rule_str += f" errorlevel {rule.erLevel}"
+                rules_strs.append(rule_str)
+            rules_sep = "; " if len(rules_strs) > 1 else ""
+            rules = rules_sep.join(rules_strs)
             self.vtl_script += (
                 f"define hierarchical ruleset {node.name} ({signature}) is {rules} "
                 f"end hierarchical ruleset;"
