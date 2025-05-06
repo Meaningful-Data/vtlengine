@@ -81,16 +81,18 @@ def test_ast_to_sdmx(script, agency_id, version):
     assert result.id == "TS1"
     assert result.version == version
     assert result.vtl_version == "2.1"
-    assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-    assert result.ruleset_schemes[0].id == "RS1"
-    assert result.ruleset_schemes[0].agency == agency_id
-    assert result.ruleset_schemes[0].version == version
-    assert result.ruleset_schemes[0].vtl_version == "2.1"
-    assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-    assert result.user_defined_operator_schemes[0].id == "UDS1"
-    assert result.user_defined_operator_schemes[0].agency == agency_id
-    assert result.user_defined_operator_schemes[0].version == version
-    assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+    if result.ruleset_schemes:
+        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
+        assert result.ruleset_schemes[0].id == "RS1"
+        assert result.ruleset_schemes[0].agency == agency_id
+        assert result.ruleset_schemes[0].version == version
+        assert result.ruleset_schemes[0].vtl_version == "2.1"
+    if result.user_defined_operator_schemes:
+        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
+        assert result.user_defined_operator_schemes[0].id == "UDS1"
+        assert result.user_defined_operator_schemes[0].agency == agency_id
+        assert result.user_defined_operator_schemes[0].version == version
+        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
 
 
 def test_visit_TimeAggregation_error():

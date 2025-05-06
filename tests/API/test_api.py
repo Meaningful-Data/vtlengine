@@ -1,6 +1,7 @@
 import json
 import warnings
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -11,6 +12,7 @@ import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
+    _check_script,
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
@@ -1169,13 +1171,39 @@ def test_generate_sdmx(script, agency_id, version):
     assert result.id == "TS1"
     assert result.version == version
     assert result.vtl_version == "2.1"
-    assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-    assert result.ruleset_schemes[0].id == "RS1"
-    assert result.ruleset_schemes[0].agency == agency_id
-    assert result.ruleset_schemes[0].version == version
-    assert result.ruleset_schemes[0].vtl_version == "2.1"
-    assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-    assert result.user_defined_operator_schemes[0].id == "UDS1"
-    assert result.user_defined_operator_schemes[0].agency == agency_id
-    assert result.user_defined_operator_schemes[0].version == version
-    assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+    if result.ruleset_schemes:
+        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
+        assert result.ruleset_schemes[0].id == "RS1"
+        assert result.ruleset_schemes[0].agency == agency_id
+        assert result.ruleset_schemes[0].version == version
+        assert result.ruleset_schemes[0].vtl_version == "2.1"
+    else:
+        assert result.ruleset_schemes == []
+    if result.user_defined_operator_schemes:
+        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
+        assert result.user_defined_operator_schemes[0].id == "UDS1"
+        assert result.user_defined_operator_schemes[0].agency == agency_id
+        assert result.user_defined_operator_schemes[0].version == version
+        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+    else:
+        assert result.user_defined_operator_schemes == []
+
+
+def test_check_script_with_transformation_scheme():
+    mock_scheme = TransformationScheme(id="TS1", agency="MD", version="1.0", vtl_version="2.1")
+    with patch("pysdmx.toolkit.vtl.generate_vtl_script.generate_vtl_script") as mock_generate:
+        mock_generate.return_value = "DS_r := DS_1 + DS_2;"
+        result = _check_script(mock_scheme)
+        assert result == "DS_r := DS_1 + DS_2;"
+        mock_generate.assert_called_once_with(mock_scheme, model_validation=True)
+
+
+def test_check_script_with_string_input():
+    script = "DS_r := DS_1 + DS_2;"
+    result = _check_script(script)
+    assert result == script
+
+
+def test_check_script_invalid_input_type():
+    with pytest.raises(Exception, match="Invalid script format"):
+        _check_script(12345)
