@@ -5,7 +5,12 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
-from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
+from pysdmx.model import (
+    RulesetScheme,
+    Transformation,
+    TransformationScheme,
+    UserDefinedOperatorScheme,
+)
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
@@ -335,6 +340,32 @@ params_2_1_gen_str = [
 
 params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-3-1-2")]
 
+params_check_script = [
+    (
+        (
+            TransformationScheme(
+                id="TS1",
+                version="1.0",
+                agency="MD",
+                vtl_version="2.1",
+                items=[
+                    Transformation(
+                        id="T1",
+                        uri=None,
+                        urn=None,
+                        name=None,
+                        description=None,
+                        expression="DS_1 + DS_2",
+                        is_persistent=False,
+                        result="DS_r",
+                        annotations=(),
+                    )
+                ],
+            ),
+            (filepath_VTL / "check_script_reference.vtl"),
+        )
+    )
+]
 
 params_generate_sdmx = [
     ("DS_r := DS_1 + DS_2;", "MD", "1.0"),
@@ -1224,3 +1255,11 @@ def test_generate_sdmx_and_check_script(script, agency_id, version):
 
     regenerated_script = _check_script(result)
     assert prettify(script) == prettify(regenerated_script)
+
+
+@pytest.mark.parametrize("transformation_scheme, result_script", params_check_script)
+def test_check_script_with_transformation_scheme(transformation_scheme, result_script):
+    result = _check_script(transformation_scheme)
+    with open(result_script, "r") as file:
+        reference = file.read()
+    assert prettify(result) == prettify(reference)
