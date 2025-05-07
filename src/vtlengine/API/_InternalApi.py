@@ -500,26 +500,27 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
             count_udo += 1
             list_udos.append(__generate_udo(child=child, count=count_udo))
 
+    references: Any = {}
+    if list_rulesets:
+        references["ruleset_schemes"] = [
+            RulesetScheme(
+                items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
+            )
+        ]
+    if list_udos:
+        references["user_defined_operator_schemes"] = [
+            UserDefinedOperatorScheme(
+                items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
+            )
+        ]
+
     transformation_scheme = TransformationScheme(
         items=list_transformation,
         agency=agency_id,
         id="TS1",
         vtl_version="2.1",
         version=version,
-        ruleset_schemes=[
-            RulesetScheme(
-                items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
-            )
-        ]
-        if list_rulesets
-        else [],
-        user_defined_operator_schemes=[
-            UserDefinedOperatorScheme(
-                items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
-            )
-        ]
-        if list_udos
-        else [],
+        **references,
     )
 
     return transformation_scheme
