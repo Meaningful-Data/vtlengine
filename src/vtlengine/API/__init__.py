@@ -78,6 +78,14 @@ def _parser(stream: CommonTokenStream) -> Any:
 
 
 def prettify(text: str) -> str:
+    """
+    Function that prettifies the vtl expression given.
+    Args:
+        text: A str with the vtl expression.
+
+    Returns:
+        A str with the prettified vtl expression.
+    """
     from vtlengine.AST.ASTComment import create_ast_with_comments
 
     ast = create_ast_with_comments(text)
@@ -113,10 +121,13 @@ def semantic_analysis(
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl operation can be done.To do that, it generates the AST with the vtl script
-    given and also reviews if the data structure given can fit with it.
+    given and also reviews if the data structure given can fit with it. As part of the compatibility
+    with pysdmx library, the vtl script can be a Transformation Scheme object, which availability as
+    input is going to be checked before it is loaded as a vtl script. Therefore, the Transformation
+    Scheme object id going to be treated internally and transformed into a vtl script.
 
-    This vtl script can be a string with the actual expression or a filepath to the folder
-    that contains the vtl file.
+    This vtl script can be a string with the actual expression, a Transformation Scheme object or a
+    filepath to the folder that contains the vtl file.
 
     Moreover, the data structure can be a dictionary or a filepath to the folder that contains it.
 
@@ -142,7 +153,8 @@ def semantic_analysis(
     This function has the following params:
 
     Args:
-        script: String or Path of the vtl expression.
+        script: Vtl expression as a string, Transformation Scheme object or Path
+        to hte folder that holds vtl expression.
         data_structures: Dict or Path (file or folder), \
         or List of Dicts or Paths with the data structures JSON files.
         value_domains: Dict or Path of the value domains JSON files. (default: None)
@@ -197,7 +209,8 @@ def run(
     Run is the main function of the ``API``, which mission is to ensure the vtl operation is ready
     to be performed.
     When the vtl expression is given, an AST object is created.
-    This vtl script can be given as a string or a path with the folder or file that contains it.
+    This vtl script can be given as a string, Transformation Scheme object,
+    or a path with the folder or file that contains it.
     At the same time, data structures are loaded with its datapoints.
 
     The data structure information is contained in the JSON file given,
@@ -258,7 +271,8 @@ def run(
     This function has the following params:
 
     Args:
-        script: String or Path with the vtl expression.
+        script: Vtl expression as a string
+        a Transformation Scheme object or Path with the vtl expression.
 
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
