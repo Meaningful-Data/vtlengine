@@ -414,7 +414,8 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
 
 def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
     """
-    Converts a `pysdmx` DataStructureDefinition or Schema into a vtl-compatible json representation.
+    Converts a pysdmx `DataStructureDefinition` or `Schema` into a vtl-compatible json
+    representation.
 
     This function extracts and transforms the components (dimensions, measures, and attributes)
     from the given SDMX data structure and maps them into a dictionary format that conforms
@@ -507,7 +508,7 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
     additional references.
 
     Args:
-        ast: The root node of the VTL abstract syntax tree representing the set of
+        ast: The root node of the vtl ast representing the set of
         vtl expressions.
         agency_id: The identifier of the agency defining the SDMX structure as a string.
         version: The version of the transformation scheme given as a string.

@@ -360,7 +360,8 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
     dataset uses a valid `Schema` instance from the `pysdmx` model. Each schema is converted
     to the appropriate vtl json structure, and its data content is extracted.
 
-    The function then calls the `run` function with the provided vtl script and prepared inputs.
+    The function then calls the :obj:`run <vtl-engine-spark.API.>` function with the provided vtl
+    script and prepared inputs.
 
     Args:
         script: The vtl expression prepared to be executed.
@@ -393,7 +394,7 @@ def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> Transfor
     Function that generates a TransformationScheme object from a VTL expression
     to generate a SDMX file. Firstly, the AST is created from the VTL expression
     and then the Transformation Scheme object is generated from the AST using
-    the `ast_to_sdmx` function.
+    the :obj:`ast_to_sdmx <vtl-engine-spark.API._InternalAPI>` function.
     Args:
         script: A string with the VTL expression.
         agency_id: The id string of the agency that will be used in the SDMX.
