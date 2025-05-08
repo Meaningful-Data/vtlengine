@@ -105,7 +105,7 @@ def _sanitize_pandas_columns(
 
 
 def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
-    obj_dtypes = {comp_name: np.object_ for comp_name, comp in components.items()}
+    obj_dtypes = {comp_name: object for comp_name, comp in components.items()}
 
     data = pd.read_csv(
         csv_path,
@@ -197,7 +197,7 @@ def _validate_pandas(
                 data[comp_name] = data[comp_name].map(
                     lambda x: str(x).replace('"', ""), na_action="ignore"
                 )
-            data[comp_name] = data[comp_name].astype(np.object_, errors="raise")
+            data[comp_name] = data[comp_name].astype(object, errors="raise")
 
     except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"

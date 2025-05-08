@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -158,7 +157,7 @@ def test_run_s3(mock_read_csv):
     with pytest.raises(InputValidationException):
         run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
 
-    dtypes = {comp["name"]: np.object_ for comp in data_structures["datasets"][0]["DataStructure"]}
+    dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
     mock_read_csv.assert_called_once_with(
         input_path,
         dtype=dtypes,
