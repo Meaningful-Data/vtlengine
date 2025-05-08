@@ -50,7 +50,7 @@ python = ">=3.9,<4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
-pytest-cov = "^6.0.0"
+pytest-cov = "^6.1.1"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.15.0"
 pandas-stubs = "^2.1.4.231227"
