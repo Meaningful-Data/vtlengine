@@ -485,7 +485,7 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
 
 def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
     """
-    Converts a vtl AST into an SDMX-compatible `TransformationScheme` object, following
+    Converts a vtl AST into an SDMX compatible `TransformationScheme` object, following
     the pysdmx model.
 
     This function iterates over the child nodes of the given AST and categorizes each into one of

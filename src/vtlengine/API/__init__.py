@@ -351,6 +351,29 @@ def run(
 
 
 def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Dataset]:
+    """
+    Executes a vtl script using a collection of datasets following pysdmx
+    `PandasDataset` model.
+
+    This function prepares the required vtl data structures and datapoints from
+    the given list of pysdmx `PandasDataset` objects. It performs schema validation to ensure each
+    dataset uses a valid `Schema` instance from the `pysdmx` model. Each schema is converted
+    to the appropriate vtl json structure, and its data content is extracted.
+
+    The function then calls the `run` function with the provided vtl script and prepared inputs.
+
+    Args:
+        script: The vtl expression prepared to be executed.
+        datasets: The given datasets.
+
+    Returns:
+        A dictionary mapping dataset names (based on schema IDs) to resulting `Dataset` objects
+        produced by the VTL execution.
+
+    Raises:
+        SemanticError: If any dataset does not contain a valid `Schema` instance as its structure.
+
+    """
     datapoints = {}
     data_structures = []
     for dataset in datasets:
@@ -368,14 +391,16 @@ def run_sdmx(script: str, datasets: Sequence[PandasDataset]) -> Dict[str, Datase
 def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> TransformationScheme:
     """
     Function that generates a TransformationScheme object from a VTL expression
-    to generate a SDMX file.
+    to generate a SDMX file. Firstly, the AST is created from the VTL expression
+    and then the Transformation Scheme object is generated from the AST using
+    the `ast_to_sdmx` function.
     Args:
         script: A string with the VTL expression.
         agency_id: The id string of the agency that will be used in the SDMX.
         version: The string version of the SDMX file that will be generated. (default: "1.0")
 
     Returns:
-        This function will return a TransformationScheme object.
+        The created Transformation Scheme object.
     """
     ast = create_ast(script)
     result = ast_to_sdmx(ast, agency_id, version)
