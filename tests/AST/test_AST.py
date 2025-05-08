@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
@@ -15,8 +16,11 @@ from vtlengine.AST import (
     Assignment,
     BinOp,
     CaseObj,
+    DefIdentifier,
     DPRule,
     DPRuleset,
+    HRBinOp,
+    HRule,
     HRuleset,
     HRUnOp,
     Identifier,
@@ -144,8 +148,12 @@ def test_visit_Start():
     node = Start(
         children=[child1, child2], line_start=1, column_start=1, line_stop=1, column_stop=1
     )
-    visitor.visit_Start(node)
-    assert True
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_Start(node)
+        mock_visit.assert_any_call(child1)
+        mock_visit.assert_any_call(child2)
+        mock_visit.assert_called_with(child2)
+        assert mock_visit.call_count == 2
 
 
 def test_visit_Assignment():
@@ -161,8 +169,12 @@ def test_visit_Assignment():
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_Assignment(node)
-    assert True
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_Assignment(node)
+        mock_visit.assert_any_call(node_left)
+        mock_visit.assert_any_call(node_right)
+        mock_visit.assert_called_with(node_right)
+        assert mock_visit.call_count == 2
 
 
 def test_visit_PersistentAssignment():
@@ -178,8 +190,12 @@ def test_visit_PersistentAssignment():
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_PersistentAssignment(node)
-    assert True
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_PersistentAssignment(node)
+        mock_visit.assert_any_call(node_left)
+        mock_visit.assert_any_call(node_right)
+        mock_visit.assert_called_with(node_right)
+        assert mock_visit.call_count == 2
 
 
 def test_visit_BinOp():
@@ -195,8 +211,12 @@ def test_visit_BinOp():
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_BinOp(node)
-    assert True
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_BinOp(node)
+        mock_visit.assert_any_call(node_left)
+        mock_visit.assert_any_call(node_right)
+        mock_visit.assert_called_with(node_right)
+        assert mock_visit.call_count == 2
 
 
 def test_visit_JoinOp():
@@ -213,8 +233,12 @@ def test_visit_JoinOp():
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_JoinOp(node)
-    assert True
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_JoinOp(node)
+        mock_visit.assert_any_call(clause1)
+        mock_visit.assert_any_call(clause2)
+        mock_visit.assert_called_with(using_node)
+        assert mock_visit.call_count == 3
 
 
 def test_visit_Identifier():
@@ -247,8 +271,12 @@ def test_visit_RegularAggregation():
         line_stop=1,
         column_stop=1,
     )
-    result = visitor.visit_RegularAggregation(node)
-    assert result is None
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_RegularAggregation(node)
+        mock_visit.assert_any_call(dataset_node)
+        mock_visit.assert_any_call(child_node1)
+        mock_visit.assert_any_call(child_node2)
+        assert mock_visit.call_count == 3
 
 
 def test_visit_Aggregation():
@@ -266,8 +294,12 @@ def test_visit_Aggregation():
         line_stop=1,
         column_stop=1,
     )
-    result = visitor.visit_Aggregation(node)
-    assert result is None
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_Aggregation(node)
+        mock_visit.assert_any_call(operand_node)
+        mock_visit.assert_any_call(group_node1)
+        mock_visit.assert_any_call(group_node2)
+        assert mock_visit.call_count == 3
 
 
 def test_visit_Analytic():
@@ -302,8 +334,11 @@ def test_visit_Analytic():
         line_stop=1,
         column_stop=1,
     )
-    result = visitor.visit_Analytic(node)
-    assert result is None
+
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_Analytic(node)
+        mock_visit.assert_any_call(operand_node)
+        assert mock_visit.call_count == 1
 
 
 def test_visit_CaseObj():
@@ -320,8 +355,11 @@ def test_visit_CaseObj():
         line_stop=1,
         column_stop=1,
     )
-    result = visitor.visit_CaseObj(node)
-    assert result is None
+    with mock.patch.object(visitor, "visit_VarID") as mock_visit:
+        visitor.visit_CaseObj(node)
+        mock_visit.assert_any_call(condition_node)
+        mock_visit.assert_any_call(then_op_node)
+        assert mock_visit.call_count == 2
 
 
 def test_visit_Operator():
@@ -329,7 +367,7 @@ def test_visit_Operator():
     visitor.visit = Mock()
     param1 = Argument(
         name="param1",
-        type_=Mock(spec=ScalarType),
+        type_=ScalarType,
         default=None,
         line_start=1,
         column_start=1,
@@ -338,7 +376,7 @@ def test_visit_Operator():
     )
     param2 = Argument(
         name="param2",
-        type_=Mock(spec=ScalarType),
+        type_=ScalarType,
         default=None,
         line_start=1,
         column_start=1,
@@ -362,114 +400,207 @@ def test_visit_Operator():
         line_stop=1,
         column_stop=1,
     )
-    result = visitor.visit_Operator(node)
-    assert result is None
+    visitor.visit_Operator(node)
     visitor.visit.assert_any_call(param1)
     visitor.visit.assert_any_call(param2)
     visitor.visit.assert_any_call(expression_node)
+    assert visitor.visit.call_count == 3
 
 
 def test_visit_Argument():
-    from unittest.mock import Mock
-
     visitor = ASTTemplate()
     visitor.visit = Mock()
-    type_node = Mock()
-    default_node = Mock()
     node = Argument(
         name="arg1",
-        type_=type_node,
-        default=default_node,
+        type_=ScalarType,
+        default=None,
         line_start=1,
         column_start=1,
         line_stop=1,
         column_stop=1,
     )
     visitor.visit_Argument(node)
-    visitor.visit.assert_any_call(type_node)
-    visitor.visit.assert_any_call(default_node)
 
 
 def test_visit_HRuleset():
     visitor = ASTTemplate()
-    visitor.visit = Mock()
-    element_node = Mock()
-    rule1 = Mock()
-    rule2 = Mock()
+    element_node = DefIdentifier(
+        value="Identifier",
+        kind="Identifier",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    left_operand = DefIdentifier(
+        value="Identifier",
+        kind="Identifier",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    right_operand = DefIdentifier(
+        value="Identifier",
+        kind="Identifier",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    bin_op_node = HRBinOp(
+        left=left_operand,
+        op="+",
+        right=right_operand,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    rule_node = HRule(
+        name="rule1",
+        rule=bin_op_node,
+        erCode="er001",
+        erLevel=1,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
     node = HRuleset(
         name="ruleset1",
-        signature_type="type1",
+        signature_type="accounting_entry",
         element=element_node,
-        rules=[rule1, rule2],
+        rules=[rule_node],
         line_start=1,
         column_start=1,
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_HRuleset(node)
-    visitor.visit.assert_any_call(element_node)
-    visitor.visit.assert_any_call(rule1)
-    visitor.visit.assert_any_call(rule2)
-
-
-def test_visit_DPRuleset():
-    visitor = ASTTemplate()
-    visitor.visit = Mock()
-    param1 = Mock()
-    param2 = Mock()
-    rule1 = Mock()
-    rule2 = Mock()
-    node = DPRuleset(
-        name="DpRuleset1",
-        params=[param1, param2],
-        rules=[rule1, rule2],
-        signature_type="variable",
-        line_start=1,
-        column_start=1,
-        line_stop=1,
-        column_stop=1,
-    )
-    visitor.visit_DPRuleset(node)
-    visitor.visit.assert_any_call(param1)
-    visitor.visit.assert_any_call(param2)
-    visitor.visit.assert_any_call(rule1)
-    visitor.visit.assert_any_call(rule2)
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HRuleset(node)
+        mock_visit.assert_any_call(element_node)
+        mock_visit.assert_any_call(rule_node)
+        mock_visit.assert_any_call(bin_op_node)
+        mock_visit.assert_any_call(left_operand)
+        mock_visit.assert_any_call(right_operand)
+        assert mock_visit.call_count == 5
 
 
 def test_visit_DPRule():
     visitor = ASTTemplate()
-    visitor.visit = Mock()
-    rule_node = Mock()
-    er_code_node = Mock()
-    er_level_node = Mock()
-    node = DPRule(
-        name="rule1",
-        rule=rule_node,
-        erCode=er_code_node,
-        erLevel=er_level_node,
+    left_node = DefIdentifier(
+        value="Identifier",
+        kind="Identifier",
         line_start=1,
         column_start=1,
         line_stop=1,
         column_stop=1,
     )
-    visitor.visit_DPRule(node)
-    visitor.visit.assert_any_call(rule_node)
+    right_node = DefIdentifier(
+        value="Identifier",
+        kind="Identifier",
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    rule_node = HRBinOp(
+        left=left_node,
+        op="=",
+        right=right_node,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    dp_rule_node = DPRule(
+        name="dp_rule_name",
+        rule=rule_node,
+        erCode="4",
+        erLevel=1,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_DPRule(dp_rule_node)
+        mock_visit.assert_any_call(rule_node)
+        assert mock_visit.call_count == 3
+
+
+def test_visit_DPRuleset():
+    visitor = ASTTemplate()
+    element_node = DefIdentifier(
+        value="element", kind="kind", line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    rule_node1 = DPRule(
+        name="dprule1",
+        rule=HRBinOp(
+            left=element_node,
+            op="=",
+            right=element_node,
+            line_start=1,
+            column_start=1,
+            line_stop=1,
+            column_stop=1,
+        ),
+        erCode="1",
+        erLevel=1,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    rule_node2 = DPRule(
+        name="dprule2",
+        rule=HRBinOp(
+            left=element_node,
+            op=">",
+            right=element_node,
+            line_start=1,
+            column_start=1,
+            line_stop=1,
+            column_stop=1,
+        ),
+        erCode="2",
+        erLevel=2,
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    dp_ruleset_node = DPRuleset(
+        name="dp_ruleset_name",
+        signature_type="accounting_entry",
+        params=[element_node],
+        rules=[rule_node1, rule_node2],
+        line_start=1,
+        column_start=1,
+        line_stop=1,
+        column_stop=1,
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_DPRuleset(dp_ruleset_node)
+        mock_visit.assert_any_call(element_node)
+        mock_visit.assert_any_call(rule_node1)
+        mock_visit.assert_any_call(rule_node2)
+        assert mock_visit.call_count == 9
 
 
 def test_visit_HRUnOp():
     visitor = ASTTemplate()
-    visitor.visit = Mock()
-    operand_node = Mock()
-    node = HRUnOp(
-        op="+",
-        operand=operand_node,
-        line_start=1,
-        column_start=1,
-        line_stop=1,
-        column_stop=1,
+    operand_node = DefIdentifier(
+        value="operand", kind="Identifier", line_start=1, column_start=1, line_stop=1, column_stop=1
     )
-    visitor.visit_HRUnOp(node)
-    visitor.visit.assert_any_call(operand_node)
+    node = HRUnOp(
+        op="-", operand=operand_node, line_start=1, column_start=1, line_stop=1, column_stop=1
+    )
+    with mock.patch.object(visitor, "visit", wraps=visitor.visit) as mock_visit:
+        visitor.visit_HRUnOp(node)
+        mock_visit.assert_any_call(operand_node)
+        assert mock_visit.call_count == 1
 
 
 def test_visit_DefIdentifier():
