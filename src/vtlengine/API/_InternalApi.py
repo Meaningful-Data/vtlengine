@@ -413,7 +413,21 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
 
 
 def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
-    """Formats the DataStructureDefinition as a VTL DataStructure."""
+    """
+    Converts a pysdmx `DataStructureDefinition` or `Schema` into a vtl-compatible json
+    representation.
+
+    This function extracts and transforms the components (dimensions, measures, and attributes)
+    from the given SDMX data structure and maps them into a dictionary format that conforms
+    to the expected vtl data structure json schema.
+
+    Args:
+        dsd: An instance of `DataStructureDefinition` or `Schema` from the `pysdmx` model.
+
+    Returns:
+            A dictionary representing the dataset in vtl format, with keys for dataset name and its
+            components, including their name, role, data type, and nullability.
+    """
     dataset_name = dsd.id
     components = []
     NAME = "name"
@@ -471,6 +485,40 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
 
 
 def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
+    """
+    Converts a vtl AST into an SDMX compatible `TransformationScheme` object, following
+    the pysdmx model.
+
+    This function iterates over the child nodes of the given AST and categorizes each into one of
+    the following types:
+    - `PersistentAssignment`: Represents a persistent transformation. These are added to the
+    transformation list with a persistence flag.
+    - `Assignment`: Represents a temporary (non-persistent) transformation. These are added to the
+    transformation list without the persistence flag
+    - `DPRuleset` or `HRuleset`: Represent validation rule sets.
+    These are collected and wrapped into a `RulesetScheme` object.
+    - `Operator`: Defines user-defined operators. These are collected
+    into a `UserDefinedOperatorScheme` object.
+
+    After parsing all AST elements:
+    - If any rulesets were found, a `RulesetScheme` is created and added to the references.
+    - If any user-defined operators were found, a `UserDefinedOperatorScheme` is created and added
+    to the references.
+    - A `TransformationScheme` object is constructed with all collected transformations and any
+    additional references.
+
+    Args:
+        ast: The root node of the vtl ast representing the set of
+        vtl expressions.
+        agency_id: The identifier of the agency defining the SDMX structure as a string.
+        version: The version of the transformation scheme given as a string.
+
+    Returns:
+        TransformationScheme: A fully constructed transformation scheme that includes
+        transformations, and optionally rule sets and user-defined operator schemes,
+        suitable for SDMX.
+
+    """
     list_transformation = []
     list_udos = []
     list_rulesets = []
