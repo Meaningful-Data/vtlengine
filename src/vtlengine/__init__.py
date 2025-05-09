@@ -1,3 +1,3 @@
-from vtlengine.API import generate_sdmx, run, run_sdmx, semantic_analysis
+from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 
-__all__ = ["semantic_analysis", "run", "generate_sdmx", "run_sdmx"]
+__all__ = ["semantic_analysis", "run", "generate_sdmx", "run_sdmx", "prettify"]

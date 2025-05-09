@@ -77,18 +77,21 @@ def _parser(stream: CommonTokenStream) -> Any:
     return vtl_parser.start()
 
 
-def prettify(text: str) -> str:
+def prettify(script: Union[str, TransformationScheme, Path]) -> str:
     """
-    Function that prettifies the vtl expression given.
+    Function that prettifies the VTL script given.
+
     Args:
-        text: A str with the vtl expression.
+        script: VTL script as a string, a Transformation Scheme object or Path with the VTL script.
 
     Returns:
-        A str with the prettified vtl expression.
+        A str with the prettified VTL script.
     """
     from vtlengine.AST.ASTComment import create_ast_with_comments
 
-    ast = create_ast_with_comments(text)
+    checking = _check_script(script)
+    vtl = load_vtl(checking)
+    ast = create_ast_with_comments(vtl)
     return ASTString(pretty=True).render(ast)
 
 
