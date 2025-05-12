@@ -4,11 +4,16 @@
 
 Summarizes the main functions of the VTL Engine
 
-The VTL Engine API implements two basic methods:
+The VTL Engine API implements five basic methods:
 
 * **Semantic Analysis**: aimed at validating the correctness of a script and computing the data
   structures of the data sets created in the script.
 * **Run**: aimed at executing the provided input on the provided input datasets.
+* **Run_sdmx**: as part of the compatibility with pysdmx, this method is used to run a VTL script by using the pysdmx `PandasDataset`.
+  It allows the use of SDMX datasets as input to run the given script.
+* **Generate_sdmx**: as part of the compatibility with pysdmx, this method is used to generate a `TransformationScheme` object from a
+  VTL script.
+* **Prettify**: aimed at formatting the VTL script to make it more readable.
 
 Any action with VTL requires the following elements as input:
 
@@ -191,5 +196,51 @@ returns:
     0    1  100.0
     1    2  200.0
     2    3  300.0)}
+
+================================
+Example 4: Run from SDMX Dataset
+================================
+
+********
+Prettify
+********
+
+The `prettify` method serves to format a VTL script to make it more readable.
+
+.. code-block:: python
+
+    from vtlengine import prettify
+    script = """
+        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+        DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        """
+    prettified_script = prettify(script)
+    print(prettified_script)
+
+returns:
+
+.. code-block:: python
+
+    """
+    define hierarchical ruleset accountingEntry(variable rule ACCOUNTING_ENTRY) is
+        B = C - D
+	    errorcode "Balance (credit-debit)"
+	    errorlevel 4;
+
+	    N = A - L
+	    errorcode "Net (assets-liabilities)"
+	    errorlevel 4
+    end hierarchical ruleset;
+
+    DS_r :=
+	    check_hierarchy(
+		    BOP,
+		    accountingEntry,
+		    rule ACCOUNTING_ENTRY);
+    """
 
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_
