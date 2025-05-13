@@ -5,12 +5,15 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
+from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
     RulesetScheme,
     Transformation,
     TransformationScheme,
     UserDefinedOperatorScheme,
 )
+from pysdmx.model.dataflow import Schema
+from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
@@ -314,6 +317,71 @@ params_run_sdmx = [
     ),
 ]
 
+params_run_sdmx_with_mappings = [
+    (
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        None,
+    ),
+    (
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        {"BIS": "BIS_DER"},
+    ),
+    (
+        (filepath_sdmx_input / "gen_all_minimal.xml"),
+        (filepath_sdmx_input / "metadata_minimal.xml"),
+        VtlDataflowMapping(dataflow="BIS", dataflow_alias="BIS_DER", id="BIS_DER"),
+    ),
+]
+
+params_run_sdmx_errors = [
+    (
+        [
+            PandasDataset(
+                structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
+                data=pd.DataFrame(),
+            ),
+            PandasDataset(
+                structure=Schema(id="DS2", components=[], agency="BIS", context="datastructure"),
+                data=pd.DataFrame(),
+            ),
+        ],
+        None,
+        ValueError,
+        "only one dataset is allowed",
+    ),
+    (
+        [
+            PandasDataset(
+                structure=Schema(
+                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
+                ),
+                data=pd.DataFrame(),
+            )
+        ],
+        42,
+        TypeError,
+        "Expected str, dict or VtlDataflowMapping",
+    ),
+    (
+        [
+            PandasDataset(
+                structure=Schema(
+                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
+                ),
+                data=pd.DataFrame(),
+            )
+        ],
+        VtlDataflowMapping(
+            dataflow=123,
+            dataflow_alias="ALIAS",
+            id="Test",
+        ),
+        TypeError,
+        "Expected str type for dataflow",
+    ),
+]
 params_to_vtl_json = [
     (
         (filepath_sdmx_input / "str_all_minimal.xml"),
@@ -1185,6 +1253,23 @@ def test_run_sdmx_function(data, structure):
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+@pytest.mark.parametrize("data, structure, mappings", params_run_sdmx_with_mappings)
+def test_run_sdmx_function_with_mappings(data, structure, mappings):
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets, mappings=mappings)
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+@pytest.mark.parametrize("datasets, mappings, expected_exception, match", params_run_sdmx_errors)
+def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, match):
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    with pytest.raises(expected_exception, match=match):
+        run_sdmx(script, datasets, mappings=mappings)
 
 
 @pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)
