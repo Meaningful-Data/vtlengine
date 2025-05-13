@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
@@ -7,6 +8,7 @@ from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-unty
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Schema
+from pysdmx.model.vtl import VtlDataflowMapping
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -321,6 +323,7 @@ def run(
 def run_sdmx(
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
+    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
@@ -359,6 +362,8 @@ def run_sdmx(
 
         datasets: A list of PandasDataset.
 
+        mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
+
         value_domains: Dict or Path of the value domains JSON files. (default:None)
 
         external_routines: String or Path of the external routines SQL files. (default: None)
@@ -379,6 +384,26 @@ def run_sdmx(
         SemanticError: If any dataset does not contain a valid `Schema` instance as its structure.
 
     """
+    mapping_dict = {}
+
+    if mappings is None:
+        if len(datasets) != 1:
+            raise ValueError("If no mappings are provided, only one dataset is allowed.")
+    elif isinstance(mappings, Dict):
+        mapping_dict = mappings
+    elif isinstance(mappings, VtlDataflowMapping):
+        if mappings.to_vtl_mapping_method is not None:
+            warnings.warn("This method is not implemented yet.")
+        if mappings.from_vtl_mapping_method is not None:
+            warnings.warn("This method is not implemented yet.")
+
+        if not isinstance(mappings.dataflow, str):
+            raise TypeError("Expected str type for dataflow.")
+
+        mapping_dict = {mappings.dataflow: mappings.dataflow_alias}
+    else:
+        raise TypeError("Expected str, dict or VtlDataflowMapping type for mappings.")
+
     datapoints = {}
     data_structures = []
     for dataset in datasets:
@@ -387,7 +412,8 @@ def run_sdmx(
             raise SemanticError("0-3-1-2", schema=schema)
         vtl_structure = to_vtl_json(schema)
         data_structures.append(vtl_structure)
-        datapoints[schema.id] = dataset.data
+        dataset_name = mapping_dict.get(schema.id, schema.id)
+        datapoints[dataset_name] = dataset.data
 
     result = run(
         script=script,
