@@ -9,6 +9,7 @@ from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Schema
 from pysdmx.model.vtl import VtlDataflowMapping
+from pysdmx.util import parse_short_urn, parse_urn
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -77,6 +78,20 @@ def _parser(stream: CommonTokenStream) -> Any:
     vtl_parser = Parser(stream)
     vtl_parser._listeners = [__VTLSingleErrorListener()]
     return vtl_parser.start()
+
+
+def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> str:
+    if isinstance(script, TransformationScheme):
+        vtl_script = _check_script(script)
+    elif isinstance(script, (str, Path)):
+        vtl_script = load_vtl(script)
+    else:
+        raise TypeError("Unsupported script type.")
+
+    ast = create_ast(vtl_script)
+    dag_inputs = DAGAnalyzer.ds_structure(ast)["global_inputs"]
+
+    return dag_inputs
 
 
 def prettify(script: Union[str, TransformationScheme, Path]) -> str:
@@ -385,36 +400,54 @@ def run_sdmx(
 
     """
     mapping_dict = {}
+    input_names = _extract_input_datasets(script)
+
+    # Mapping handling
 
     if mappings is None:
         if len(datasets) != 1:
-            raise ValueError("If no mappings are provided, only one dataset is allowed.")
+            raise SemanticError("0-1-3-3")
+        if len(datasets) == 1:
+            if len(input_names) != 1:
+                raise SemanticError("0-1-3-1", number_datasets=len(input_names))
+            schema = datasets[0].structure
+            if not isinstance(schema, Schema):
+                raise SemanticError("0-1-3-2", schema=schema)
+            mapping_dict = {schema.short_urn: input_names[0]}
     elif isinstance(mappings, Dict):
         mapping_dict = mappings
     elif isinstance(mappings, VtlDataflowMapping):
         if mappings.to_vtl_mapping_method is not None:
-            warnings.warn("This method is not implemented yet.")
+            warnings.warn(
+                "To_vtl_mapping_method is not implemented yet, we will use the Basic "
+                "method with old data."
+            )
         if mappings.from_vtl_mapping_method is not None:
-            warnings.warn("This method is not implemented yet.")
+            warnings.warn(
+                "From_vtl_mapping_method is not implemented yet, we will use the Basic "
+                "method with old data."
+            )
 
-        if not isinstance(mappings.dataflow, str):
-            raise TypeError("Expected str type for dataflow.")
-
-        mapping_dict = {mappings.dataflow: mappings.dataflow_alias}
+        short_urn = str(parse_urn(mappings.dataflow))
+        mapping_dict = {short_urn: mappings.dataflow_alias}
     else:
-        raise TypeError("Expected str, dict or VtlDataflowMapping type for mappings.")
+        raise TypeError("Expected dict or VtlDataflowMapping type for mappings.")
 
+    # TODO: Review if mapping values are in input_names
     datapoints = {}
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
-            raise SemanticError("0-3-1-2", schema=schema)
+            raise SemanticError("0-1-3-2", schema=schema)
         vtl_structure = to_vtl_json(schema)
         data_structures.append(vtl_structure)
-        dataset_name = mapping_dict.get(schema.id, schema.id)
+        if schema.short_urn not in mapping_dict:
+            raise SemanticError("0-1-3-4", short_urn=schema.short_urn)
+        dataset_name = mapping_dict[schema.short_urn]
         datapoints[dataset_name] = dataset.data
 
+    # TODO: Check if in the mapping, the set of datasets are equal to the existing mappings.
     result = run(
         script=script,
         data_structures=data_structures,

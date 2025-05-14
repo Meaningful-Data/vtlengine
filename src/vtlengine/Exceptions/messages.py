@@ -15,10 +15,13 @@ centralised_messages = {
     "0-1-2-3": "Component {component} is duplicated.",
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
+    # Run SDMX errors
+    "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
+    "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
+    "0-1-3-3": "If no mappings are provided, only one dataset is allowed.",
+    "0-1-3-4": "Dataset {short_urn} not found in mapping dictionary.",
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
-    # SDMX Schema validation
-    "0-3-1-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
     # Infer Data Structure errors
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-3": "Can not infer data structure: {errors}.",
