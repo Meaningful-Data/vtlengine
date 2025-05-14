@@ -6,8 +6,8 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import TransformationScheme
-from pysdmx.model.dataflow import Schema
+from pysdmx.model import DataflowRef, Reference, TransformationScheme
+from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 from pysdmx.util import parse_short_urn, parse_urn
 
@@ -427,13 +427,26 @@ def run_sdmx(
                 "From_vtl_mapping_method is not implemented yet, we will use the Basic "
                 "method with old data."
             )
+        if isinstance(mappings.dataflow, str):
+            short_urn = str(parse_urn(mappings.dataflow))
+        elif isinstance(mappings.dataflow, (Reference, DataflowRef)):
+            short_urn = str(mappings.dataflow)
+        elif isinstance(mappings.dataflow, Dataflow):
+            short_urn = mappings.dataflow.short_urn
+        else:
+            raise TypeError(
+                "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
+                "VtlDataflowMapping."
+            )
 
-        short_urn = str(parse_urn(mappings.dataflow))
         mapping_dict = {short_urn: mappings.dataflow_alias}
     else:
         raise TypeError("Expected dict or VtlDataflowMapping type for mappings.")
 
-    # TODO: Review if mapping values are in input_names
+    for vtl_name in mapping_dict.values():
+        if vtl_name not in input_names:
+            raise SemanticError("0-1-3-5", dataset=vtl_name)
+
     datapoints = {}
     data_structures = []
     for dataset in datasets:
@@ -447,7 +460,13 @@ def run_sdmx(
         dataset_name = mapping_dict[schema.short_urn]
         datapoints[dataset_name] = dataset.data
 
-    # TODO: Check if in the mapping, the set of datasets are equal to the existing mappings.
+    missing = []
+    for input_name in input_names:
+        if input_name not in mapping_dict.values():
+            missing.append(input_name)
+    if missing:
+        raise SemanticError("0-1-3-6", missing=missing)
+
     result = run(
         script=script,
         data_structures=data_structures,

@@ -20,6 +20,8 @@ centralised_messages = {
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
     "0-1-3-3": "If no mappings are provided, only one dataset is allowed.",
     "0-1-3-4": "Dataset {short_urn} not found in mapping dictionary.",
+    "0-1-3-5": "Dataset {short_urn} not found in the input datasets.",
+    "0-1-3-6": "Input name {missing} not found in the input datasets.",
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
