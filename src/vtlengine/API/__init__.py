@@ -445,7 +445,7 @@ def run_sdmx(
 
     for vtl_name in mapping_dict.values():
         if vtl_name not in input_names:
-            raise SemanticError("0-1-3-5", dataset=vtl_name)
+            raise SemanticError("0-1-3-5", dataset_name=vtl_name)
 
     datapoints = {}
     data_structures = []
@@ -453,11 +453,12 @@ def run_sdmx(
         schema = dataset.structure
         if not isinstance(schema, Schema):
             raise SemanticError("0-1-3-2", schema=schema)
-        vtl_structure = to_vtl_json(schema)
-        data_structures.append(vtl_structure)
         if schema.short_urn not in mapping_dict:
             raise SemanticError("0-1-3-4", short_urn=schema.short_urn)
+        # Generating VTL Datastructure and Datapoints.
         dataset_name = mapping_dict[schema.short_urn]
+        vtl_structure = to_vtl_json(schema, dataset_name)
+        data_structures.append(vtl_structure)
         datapoints[dataset_name] = dataset.data
 
     missing = []
