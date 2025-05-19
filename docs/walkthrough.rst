@@ -201,6 +201,129 @@ returns:
 Example 4: Run from SDMX Dataset
 ================================
 
+The `run_sdmx` method serves to execute a VTL script with input SDMX files, using get_datasets function from pysdmx.
+Executes a VTL script using one or more `PandasDataset` instances from the `pysdmx` library.
+
+This function prepares the required VTL data structures and datapoints, handles mapping from dataset structures to VTL identifiers,
+and delegates execution to the VTL engine. It performs internal validation of dataset structures and the VTL script's input dependencies using DAG analysis.
+
+Taking as input a xml file with the Dataflow and a metadata file with the DataStructureDefinition,
+the function will create a dataset with the same structure as the input dataset.
+.. code-block:: python
+
+    from pathlib import Path
+
+    from pysdmx.io import get_datasets
+
+    from vtlengine import run_sdmx
+
+    data = Path("Docs/_static/dataflow.xml")
+    structure = Path("Docs/_static/metadata_minimal.xml")
+    datasets = get_datasets(data, structure)
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    print(run_sdmx(script, datasets))
+
+
+Data contains the Dataflow as it is shown in this example:
+
+.. code-block:: xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <message:GenericData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message"
+                         xmlns:generic="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"
+                         xmlns:common="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common"
+                         xsi:schemaLocation="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message https://registry.sdmx.org/schemas/v2_1/SDMXMessage.xsd">
+        <message:Header>
+            <message:ID>test</message:ID>
+            <message:Test>true</message:Test>
+            <message:Prepared>2021-03-08T17:05:06</message:Prepared>
+            <message:Sender id="Unknown"/>
+            <message:Receiver id="Not_supplied"/>
+            <message:Structure structureID="BIS_DER" dimensionAtObservation="AllDimensions">
+                <common:Structure>
+                    <Ref agencyID="BIS" id="BIS_DER" version="1.0" class="DataStructure"/>
+                </common:Structure>
+            </message:Structure>
+        </message:Header>
+        <message:DataSet structureRef="BIS_DER" action="Replace">
+            <generic:Attributes>
+                <generic:Value id="DECIMALS" value="3"/>
+                <generic:Value id="UNIT_MULT" value="6"/>
+                <generic:Value id="UNIT_MEASURE" value="USD"/>
+            </generic:Attributes>
+            <generic:Obs>
+                <generic:ObsKey>
+                    <generic:Value id="FREQ" value="A"/>
+                    <generic:Value id="DER_TYPE" value="U"/>
+                    ...
+                    <generic:Value id="TIME_PERIOD" value="2011"/>
+                </generic:ObsKey>
+            </generic:Obs>
+        </message:DataSet>
+    </message:GenericData>
+
+Structure contains the metadata of the dataset, which is the same as the one used in the example above:
+
+.. code-block:: xml
+    <?xml version='1.0' encoding='UTF-8'?>
+    <mes:Structure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xml="http://www.w3.org/XML/1998/namespace"
+                   xmlns:mes="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message"
+                   xmlns:str="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure"
+                   xmlns:com="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common"
+                   xsi:schemaLocation="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message https://registry.sdmx.org/schemas/v2_1/SDMXMessage.xsd">
+        <mes:Header>
+            <mes:ID>IREF534795</mes:ID>
+            <mes:Test>false</mes:Test>
+            <mes:Prepared>2021-03-05T14:11:16Z</mes:Prepared>
+            <mes:Sender id="Unknown"/>
+            <mes:Receiver id="not_supplied"/>
+        </mes:Header>
+        <mes:Structures>
+            <str:DataStructures>
+                <str:DataStructure urn="urn:sdmx:org.sdmx.infomodel.datastructure.DataStructure=BIS:BIS_DER(1.0)"
+                                   isExternalReference="false" agencyID="BIS" id="BIS_DER" isFinal="false" version="1.0">
+                    <com:Name xml:lang="en">BIS derivatives statistics</com:Name>
+                    <str:DataStructureComponents>
+                        <str:DimensionList>
+                            <str:Dimension id="FREQ" position="1">...</str:Dimension>
+                            <str:Dimension id="DER_TYPE" position="2">...</str:Dimension>
+                            <str:Dimension id="DER_INSTR" position="3">...</str:Dimension>
+                            <str:TimeDimension id="TIME_PERIOD" position="15">...</str:TimeDimension>
+                        </str:DimensionList>
+                        <str:MeasureList>
+                            <str:PrimaryMeasure id="OBS_VALUE">...</str:PrimaryMeasure>
+                        </str:MeasureList>
+                    </str:DataStructureComponents>
+                </str:DataStructure>
+            </str:DataStructures>
+        </mes:Structures>
+    </mes:Structure>
+
+
+returns:
+
+.. code-block:: python
+    {'DS_r': Dataset(name='DS_r', components={'FREQ': {"name": "FREQ", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_TYPE': {"name": "DER_TYPE", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_INSTR': {"name": "DER_INSTR", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_RISK': {"name": "DER_RISK", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_REP_CTY': {"name": "DER_REP_CTY", "data_type": "String", "role": "Identifier", "nullable": false}, 'TIME_PERIOD': {"name": "TIME_PERIOD", "data_type": "Time_Period", "role": "Identifier", "nullable": false}, 'OBS_VALUE': {"name": "OBS_VALUE", "data_type": "String", "role": "Measure", "nullable": true}, 'Me_4': {"name": "Me_4", "data_type": "String", "role": "Measure", "nullable": true}}, data=  FREQ DER_TYPE DER_INSTR  ... TIME_PERIOD     OBS_VALUE          Me_4
+    0    A        U         A  ...        2002
+    1    A        U         A  ...        2003
+    2    A        U         A  ...        2004  14206.490766  14206.490766
+    3    A        U         A  ...        2005
+    4    A        U         A  ...        2006
+    5    A        U         A  ...        2007  29929.036014  29929.036014
+    6    A        U         A  ...        2008
+    7    A        U         A  ...        2009
+    8    A        U         A  ...        2010  31040.395041  31040.395041
+    9    A        U         A  ...        2011
+
+Files used in the example can be found in the `Docs/_static` folder:
+
+- :download:`dataflow.xml <_static/dataflow.xml>`
+- :download:`metadata.xml <_static/metadata.xml>`
+
+This run_sdmx function can also be used by taking as input a TransformationScheme object:
+
+
+
 ********
 Prettify
 ********
