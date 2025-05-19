@@ -300,22 +300,6 @@ Structure contains the metadata of the dataset, which is the same as the one use
     </mes:Structure>
 
 
-returns:
-
-.. code-block:: python
-    {'DS_r': Dataset(name='DS_r', components={'FREQ': {"name": "FREQ", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_TYPE': {"name": "DER_TYPE", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_INSTR': {"name": "DER_INSTR", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_RISK': {"name": "DER_RISK", "data_type": "String", "role": "Identifier", "nullable": false}, 'DER_REP_CTY': {"name": "DER_REP_CTY", "data_type": "String", "role": "Identifier", "nullable": false}, 'TIME_PERIOD': {"name": "TIME_PERIOD", "data_type": "Time_Period", "role": "Identifier", "nullable": false}, 'OBS_VALUE': {"name": "OBS_VALUE", "data_type": "String", "role": "Measure", "nullable": true}, 'Me_4': {"name": "Me_4", "data_type": "String", "role": "Measure", "nullable": true}}, data=  FREQ DER_TYPE DER_INSTR  ... TIME_PERIOD     OBS_VALUE          Me_4
-    0    A        U         A  ...        2002
-    1    A        U         A  ...        2003
-    2    A        U         A  ...        2004  14206.490766  14206.490766
-    3    A        U         A  ...        2005
-    4    A        U         A  ...        2006
-    5    A        U         A  ...        2007  29929.036014  29929.036014
-    6    A        U         A  ...        2008
-    7    A        U         A  ...        2009
-    8    A        U         A  ...        2010  31040.395041  31040.395041
-    9    A        U         A  ...        2011
-
-
 As part with the compatibility with pysdmx, the function can also be used by taking as input a
 TransformationScheme object:
 
@@ -349,6 +333,46 @@ TransformationScheme object:
     )
     print(run_sdmx(script, datasets))
 
+Finally, the function can also map the input dataset to the output dataset, by using the VTLDataflowMapping
+object from pysdmx:
+
+.. code-block:: python
+
+    from pysdmx.io import get_datasets
+    from pysdmx.model.vtl import TransformationScheme, Transformation
+    from pysdmx.model.vtl import VTLDataflowMapping
+    from vtlengine import run_sdmx
+
+    data = Path("Docs/_static/dataflow.xml")
+    structure = Path("Docs/_static/metadata_minimal.xml")
+    datasets = get_datasets(data, structure)
+    script = TransformationScheme(
+        id="TS1",
+        version="1.0",
+        agency="BIS",
+        vtl_version="2.1",
+        items=[
+            Transformation(
+                id="T1",
+                uri=None,
+                urn=None,
+                name=None,
+                description=None,
+                expression="BIS_DER [calc Me_4 := OBS_VALUE]",
+                is_persistent=False,
+                result="DS_r",
+                annotations=(),
+            )
+        ],
+    )
+    mapping = VtlDataflowMapping(
+            dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
+            dataflow_alias="DS_1",
+            id="VTL_MAP_1",
+        )
+    print(run_sdmx(script, datasets, mapping=mapping))
+
+
 returns:
 
 .. code-block:: python
@@ -364,7 +388,8 @@ returns:
     8    A        U         A  ...        2010  31040.395041  31040.395041
     9    A        U         A  ...        2011
 
-Also, files used in the example can be found in the `Docs/_static` folder:
+
+Files used in the example can be found in the `Docs/_static` folder:
 
 - :download:`dataflow.xml <_static/dataflow.xml>`
 - :download:`metadata.xml <_static/metadata.xml>`
