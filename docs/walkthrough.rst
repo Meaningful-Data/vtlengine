@@ -409,8 +409,7 @@ object from pysdmx or a dictionary.
 
     # Mapping using dictionary:
     mapping = {
-    "Dataflow=MD:TEST_DF(1.0)": "DSD_1",
-
+    "Dataflow=MD:TEST_DF(1.0)": "DSD_1"
     }
     run_sdmx(script, datasets, mapping=mapping)
 
