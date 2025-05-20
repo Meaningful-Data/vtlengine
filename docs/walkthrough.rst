@@ -288,6 +288,63 @@ returns:
     7     E     D
     8     E     E  31040.395041  31040.395041
     9     F     E                            )}
+It can be also performed with two or more Transformation objects:
+
+.. code-block:: python
+    from pysdmx.io import get_datasets
+    from pysdmx.model.vtl import TransformationScheme, Transformation
+    from vtlengine import run_sdmx
+
+    data = Path(__file__).parent / "dataflow.xml"
+    structure = Path(__file__).parent / "metadata.xml"
+    datasets = get_datasets(data, structure)
+    script = TransformationScheme(
+        id="TS1",
+        version="1.0",
+        agency="MD",
+        vtl_version="2.1",
+        items=[
+            Transformation(
+                id="T1",
+                uri=None,
+                urn=None,
+                name=None,
+                description=None,
+                expression="DSD_1 [calc Me_4 := OBS_VALUE];",
+                is_persistent=False,
+                result="DS_r",
+                annotations=(),
+            ),
+            Transformation(
+                id="T2",
+                uri=None,
+                urn=None,
+                name=None,
+                description=None,
+                expression="DSD_1 [rename OBS_VALUE to Me_5];",
+                is_persistent=False,
+                result="DS_r",
+                annotations=(),
+            )
+        ],
+    )
+    run_sdmx(script, datasets=datasets)
+
+returns:
+
+.. code-block:: python
+    {'DS_r': Dataset(name='DS_r', components={'DIM_1': {"name": "DIM_1", "data_type": "String", "role": "Identifier", "nullable": false}, 'DIM_2': {"name": "DIM_2", "data_type": "String", "role": "Identifier", "nullable": false}, 'Me_5': {"name": "Me_5", "data_type": "String", "role": "Measure", "nullable": true}},
+    data=  DIM_1 DIM_2          Me_5
+    0     A     A
+    1     A     B
+    2     B     B  14206.490766
+    3     C     B
+    4     C     C
+    5     C     D  29929.036014
+    6     D     D
+    7     E     D
+    8     E     E  31040.395041
+    9     F     E              )}
 
 Finally, the mapping information is used to map the SDMX input dataset to the VTL input dataset by using the VTLDataflowMapping
 object from pysdmx or a dictionary.
@@ -314,7 +371,7 @@ object from pysdmx or a dictionary.
                 urn=None,
                 name=None,
                 description=None,
-                expression="DS_1 [calc Me_4 := OBS_VALUE]",
+                expression="DSD_1 [calc Me_4 := OBS_VALUE]",
                 is_persistent=False,
                 result="DS_r",
                 annotations=(),
@@ -330,7 +387,7 @@ object from pysdmx or a dictionary.
 
     # Mapping using dictionary:
     mapping = {
-    "Dataflow=MD:TEST_DF(1.0)": "DS_1",
+    "Dataflow=MD:TEST_DF(1.0)": "DSD_1",
 
     }
     run_sdmx(script, datasets, mapping=mapping)
