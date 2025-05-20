@@ -21,16 +21,11 @@
     </message:Header>
     <message:DataSet ss:structureRef="MD_DF" xsi:type="ns1:DataSetType"
                      action="Replace">
-        <Obs  DIM_1="A" DIM_2="A"  />
-        <Obs  DIM_1="A" DIM_2="B"  />
+        <Obs  DIM_1="A" DIM_2="A"  OBS_VALUE="100" />
+        <Obs  DIM_1="A" DIM_2="B"  OBS_VALUE="102"/>
         <Obs  DIM_1="B" DIM_2="B"  OBS_VALUE="14206.490766" />
-        <Obs  DIM_1="C" DIM_2="B"  />
+        <Obs  DIM_1="C" DIM_2="B"  OBS_VALUE="10130"/>
         <Obs  DIM_1="C" DIM_2="C"  />
         <Obs  DIM_1="C" DIM_2="D"  OBS_VALUE="29929.036014" />
-        <Obs  DIM_1="D" DIM_2="D"  />
-        <Obs  DIM_1="E" DIM_2="D"  />
-        <Obs  DIM_1="E" DIM_2="E"  OBS_VALUE="31040.395041" />
-        <Obs  DIM_1="F" DIM_2="E"
-             />
     </message:DataSet>
 </message:StructureSpecificData>
