@@ -567,28 +567,36 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
-    def dataset_scalar_evaluation(
-        cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
-    ) -> Dataset:
+    def dataset_scalar_evaluation(cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True) -> Dataset:
+        """
+        Applies the operation between a dataset and a scalar using DuckDB.
+        """
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+
+        if dataset.data is not None:
+            # Alias the dataset for SQL operations
+            dataset_data = dataset.data.set_alias("t")
+            scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+
+            # Apply the operation to each measure
+            projections = []
+            for measure_name in dataset.get_measures_names():
+                if dataset_left:
+                    projections.append(
+                        f"t.{measure_name} {cls.op} {scalar_value} AS {measure_name}"
+                    )
+                else:
+                    projections.append(
+                        f"{scalar_value} {cls.op} t.{measure_name} AS {measure_name}"
+                    )
+
+            # Include identifiers and projected measures
+            final_projection = ", ".join([f"t.{col} AS {col}" for col in dataset.get_identifiers_names()] + projections)
+            result_data = dataset_data.project(final_projection)
+        else:
+            result_data = None
+
         result_dataset.data = result_data
-
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-
-        for measure in dataset.get_measures():
-            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
-                scalar_value, int
-            ):
-                scalar_value = PERIOD_IND_MAPPING[scalar_value]
-            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left
-            )
-
-        result_dataset.data = result_data
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
-        result_dataset.data = result_dataset.data[cols_to_keep]
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
