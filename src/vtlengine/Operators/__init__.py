@@ -112,14 +112,18 @@ class Operator:
         Function used by the evaluate function when a dataset is involved
         """
 
-        if len(result.get_measures()) == 1 and cls.return_type is not None and result is not None:
+        if len(result.get_measures()) == 1 and cls.return_type is not None and result.data is not None:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
             for column in columns:
                 if column not in set(components) and result.data is not None:
-                    result.data[measure_name] = result.data[column]
-                    del result.data[column]
+                    result.data = result.data.project(
+                        ", ".join(
+                            f"{col} AS {measure_name}" if col == column else col
+                            for col in result.data.columns
+                        )
+                    )
 
     @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
