@@ -2832,4 +2832,4 @@ s3 = ["fsspec", "s3fs"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "3765f160042964aa2f01ecb1950c632f58dd054105ca9dd738f7a6e76d3de5be"
+content-hash = "8cd6b42721bceaf1cfd4747a2e9a39cf21bb32f4b11721b0fbd162b28d4b2927"
