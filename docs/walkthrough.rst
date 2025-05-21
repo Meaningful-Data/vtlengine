@@ -188,14 +188,10 @@ Example 3: Simple run
     print(run_result)
 
 
-returns:
 
-.. code-block:: python
-
-    {'DS_A': Dataset(name='DS_A', components={'Id_1': Component(name='Id_1', data_type="Integer", role="Identifier", nullable=False), 'Me_1': Component(name='Me_1', data_type="Number", role="Measure", nullable=True)}, data=  Id_1   Me_1
-    0    1  100.0
-    1    2  200.0
-    2    3  300.0)}
+.. csv-table:: Returns:
+    :file: _static/DS_r_run.csv
+    :header-rows: 1
 
 ================================
 Example 4: Run from SDMX Dataset
@@ -247,22 +243,9 @@ Optional settings include:
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
     run_sdmx(script, datasets)
 
-
-returns:
-
-.. code-block:: python
-    {'DS_r': Dataset(name='DS_r', components={'DIM_1': {"name": "DIM_1", "data_type": "String", "role": "Identifier", "nullable": false}, 'DIM_2': {"name": "DIM_2", "data_type": "String", "role": "Identifier", "nullable": false}, 'OBS_VALUE': {"name": "OBS_VALUE", "data_type": "String", "role": "Measure", "nullable": true}, 'Me_4': {"name": "Me_4", "data_type": "String", "role": "Measure", "nullable": true}},
-    data=  DIM_1 DIM_2     OBS_VALUE          Me_4
-    0     A     A
-    1     A     B
-    2     B     B  14206.490766  14206.490766
-    3     C     B
-    4     C     C
-    5     C     D  29929.036014  29929.036014
-    6     D     D
-    7     E     D
-    8     E     E  31040.395041  31040.395041
-    9     F     E                            )}
+.. csv-table:: Returns:
+    :file: _static/DS_r_run_sdmx.csv
+   :header-rows: 1
 
 As part with the compatibility with pysdmx, the function can also be used by taking as input a
 TransformationScheme object. If we do not include a mapping, VTL script must have a single input, and data file must have only one dataset:
