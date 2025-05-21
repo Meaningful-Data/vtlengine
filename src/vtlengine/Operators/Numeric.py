@@ -6,6 +6,7 @@ from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
 import pandas as pd
+from duckdb import DuckDBPyRelation
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -47,28 +48,6 @@ class Binary(Operator.Binary):
 
     type_to_check = Number
 
-    @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        if isinstance(x, int) and isinstance(y, int):
-            if cls.op == DIV and y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            if cls.op == RANDOM:
-                return cls.py_op(x, y)
-        x = float(x)
-        y = float(y)
-        # Handles precision to avoid floating point errors
-        if cls.op == DIV and y == 0:
-            raise SemanticError("2-1-15-6", op=cls.op, value=y)
-
-        decimal_value = cls.py_op(Decimal(x), Decimal(y))
-        getcontext().prec = 10
-        result = float(decimal_value)
-        if result.is_integer():
-            return int(result)
-        return result
-
 
 class UnPlus(Unary):
     """
@@ -76,11 +55,6 @@ class UnPlus(Unary):
     """  # noqa E501
 
     op = PLUS
-    py_op = operator.pos
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        return series
 
 
 class UnMinus(Unary):
@@ -89,7 +63,6 @@ class UnMinus(Unary):
     """  # noqa E501
 
     op = MINUS
-    py_op = operator.neg
 
 
 class AbsoluteValue(Unary):
@@ -98,7 +71,6 @@ class AbsoluteValue(Unary):
     """  # noqa E501
 
     op = ABS
-    py_op = operator.abs
 
 
 class Exponential(Unary):
@@ -107,7 +79,6 @@ class Exponential(Unary):
     """  # noqa E501
 
     op = EXP
-    py_op = math.exp
     return_type = Number
 
 
@@ -118,7 +89,6 @@ class NaturalLogarithm(Unary):
     """  # noqa E501
 
     op = LN
-    py_op = math.log
     return_type = Number
 
 
@@ -129,7 +99,6 @@ class SquareRoot(Unary):
     """  # noqa E501
 
     op = SQRT
-    py_op = math.sqrt
     return_type = Number
 
 
@@ -139,7 +108,6 @@ class Ceil(Unary):
     """  # noqa E501
 
     op = CEIL
-    py_op = math.ceil
     return_type = Integer
 
 
@@ -149,7 +117,6 @@ class Floor(Unary):
     """  # noqa E501
 
     op = FLOOR
-    py_op = math.floor
     return_type = Integer
 
 
@@ -159,7 +126,6 @@ class BinPlus(Binary):
     """  # noqa E501
 
     op = PLUS
-    py_op = operator.add
     type_to_check = Number
 
 
@@ -169,7 +135,6 @@ class BinMinus(Binary):
     """  # noqa E501
 
     op = MINUS
-    py_op = operator.sub
     type_to_check = Number
 
 
@@ -180,7 +145,6 @@ class Mult(Binary):
     """  # noqa E501
 
     op = MULT
-    py_op = operator.mul
 
 
 class Div(Binary):
@@ -190,7 +154,6 @@ class Div(Binary):
     """  # noqa E501
 
     op = DIV
-    py_op = operator.truediv
     return_type = Number
 
 
@@ -202,15 +165,6 @@ class Logarithm(Binary):
     op = LOG
     return_type = Number
 
-    @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
-            return None
-        if param <= 0:
-            raise SemanticError("2-1-15-3", op=cls.op, value=param)
-
-        return math.log(x, param)
-
 
 class Modulo(Binary):
     """
@@ -218,7 +172,7 @@ class Modulo(Binary):
     """  # noqa E501
 
     op = MOD
-    py_op = operator.mod
+    py_op = "%"
 
 
 class Power(Binary):
@@ -227,13 +181,8 @@ class Power(Binary):
     """  # noqa E501
 
     op = POWER
+    py_op = "^"
     return_type = Number
-
-    @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
-            return None
-        return x**param
 
 
 class Parameterized(Unary):

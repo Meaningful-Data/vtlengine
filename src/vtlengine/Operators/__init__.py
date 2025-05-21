@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 # else:
 #     import pandas as pd
 import pandas as pd
+from duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -37,6 +38,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.connection import con
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -180,32 +182,34 @@ def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
     join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
+    left_data: Optional[DuckDBPyRelation] = None,
+    right_data: Optional[DuckDBPyRelation] = None,
 ) -> None:
     if left_data is None:
-        left_data = pd.DataFrame()
+        left_data = con.sql("SELECT NULL AS dummy").project(f"{join_key}::ANY")
     if right_data is None:
-        right_data = pd.DataFrame()
+        right_data = con.sql("SELECT NULL AS dummy").project(f"{join_key}::ANY")
 
     left_type_name: str = str(c_left.data_type.__name__)
     right_type_name: str = str(c_right.data_type.__name__)
 
     if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
+        left_data = left_data.project(f"{join_key}::VARCHAR AS {join_key}")
+        right_data = right_data.project(f"{join_key}::VARCHAR AS {join_key}")
         return
+
     if (left_type_name == "Integer" and right_type_name == "Number") or (
         left_type_name == "Number" and right_type_name == "Integer"
     ):
-        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
-        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
+        left_data = left_data.project(f"CAST({join_key} AS DOUBLE) AS {join_key}")
+        right_data = right_data.project(f"CAST({join_key} AS DOUBLE) AS {join_key}")
     elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
-        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
+        left_data = left_data.project(f"CAST({join_key} AS VARCHAR) AS {join_key}")
     elif left_type_name in ("Integer", "Number") and right_type_name == "String":
-        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(object)
-    right_data[join_key] = right_data[join_key].astype(object)
+        right_data = right_data.project(f"CAST({join_key} AS VARCHAR) AS {join_key}")
+
+    left_data = left_data.project(f"{join_key}::VARCHAR AS {join_key}")
+    right_data = right_data.project(f"{join_key}::VARCHAR AS {join_key}")
 
 
 def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
@@ -515,16 +519,10 @@ class Binary(Operator):
 
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
+        """
+        Applies the binary operation between two datasets.
+        """
         result_dataset = cls.dataset_validation(left_operand, right_operand)
-
-        use_right_as_base = False
-        if len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names()):
-            use_right_as_base = True
-            base_operand_data = right_operand.data
-            other_operand_data = left_operand.data
-        else:
-            base_operand_data = left_operand.data
-            other_operand_data = right_operand.data
 
         join_keys = list(
             set(left_operand.get_identifiers_names()).intersection(
@@ -532,63 +530,34 @@ class Binary(Operator):
             )
         )
 
-        for join_key in join_keys:
-            _id_type_promotion_join_keys(
-                left_operand.get_component(join_key),
-                right_operand.get_component(join_key),
-                join_key,
-                base_operand_data,
-                other_operand_data,
-            )
+        left_data = left_operand.data
+        right_data = right_operand.data
+        result_data = None
 
-        try:
-            # Merge the data
-            if base_operand_data is None or other_operand_data is None:
-                result_data: pd.DataFrame = pd.DataFrame()
-            else:
-                result_data = pd.merge(
-                    base_operand_data,
-                    other_operand_data,
-                    how="inner",
-                    on=join_keys,
-                    suffixes=("_x", "_y"),
-                )
-        except ValueError as e:
-            raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
+        if left_data is not None and right_data is not None:
+            # Alias the tables using SQL
+            left_data = left_data.set_alias("l")
+            right_data = right_data.set_alias("r")
 
-        # Measures are the same, using left operand measures names
-        for measure in left_operand.get_measures():
-            result_data[measure.name + "_x"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_x"]
-            )
-            result_data[measure.name + "_y"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_y"]
-            )
-            if use_right_as_base:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_y"], result_data[measure.name + "_x"]
-                )
-            else:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_x"], result_data[measure.name + "_y"]
-                )
-            result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
+            # Perform join and apply binary operation
+            join_condition = " AND ".join([f"l.{key} = r.{key}" for key in join_keys])
+            result_data = left_data.join(right_data, how="inner", condition=join_condition)
 
-        # Delete attributes from the result data
-        attributes = list(
-            set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
-        )
-        for att in attributes:
-            if att in result_data.columns:
-                result_data = result_data.drop(att, axis=1)
-            if att + "_x" in result_data.columns:
-                result_data = result_data.drop(att + "_x", axis=1)
-            if att + "_y" in result_data.columns:
-                result_data = result_data.drop(att + "_y", axis=1)
+            projections = []
+            for measure in left_operand.get_measures():
+                measure_name = measure.name
+                projections.append(
+                    f"""
+                    l.{measure_name} {cls.py_op if cls.py_op else cls.op} r.{measure_name} AS {measure_name}
+                    """
+                )
+
+            # Include join keys and final measures in the projection
+            final_projection = ", ".join([f"l.{key} AS {key}" for key in join_keys] + projections)
+            result_data = result_data.project(final_projection)
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-
         return result_dataset
 
     @classmethod
@@ -861,12 +830,20 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        for measure_name in operand.get_measures_names():
-            result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
 
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
-        result_data = result_data[cols_to_keep]
+        if operand.data is not None:
+            operand_data = operand.data.set_alias("t")
+
+            projections = []
+            for measure_name in operand.get_measures_names():
+                projections.append(
+                    f"{cls.op}(t.{measure_name}) AS {measure_name}"
+                )
+
+            final_projection = ", ".join([f"t.{col} AS {col}" for col in operand.get_identifiers_names()] + projections)
+            result_data = operand_data.project(final_projection)
+        else:
+            result_data = None
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
