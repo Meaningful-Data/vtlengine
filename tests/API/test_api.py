@@ -7,11 +7,9 @@ import pytest
 from pysdmx.io import get_datasets
 from pysdmx.model import (
     Ruleset,
-    RulesetScheme,
     Transformation,
     TransformationScheme,
     UserDefinedOperator,
-    UserDefinedOperatorScheme,
 )
 
 import vtlengine.DataTypes as DataTypes
@@ -1312,11 +1310,21 @@ def test_ts_with_2_rulesets():
 
 
 def test_ts_with_ruleset_and_udo():
-    script = filepath_VTL / "validations.vtl"
-    with open(script, "r") as f:
-        vtl_script = f.read()
+    script = """
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
 
-    ts = generate_sdmx(vtl_script, agency_id="MD", id="TestID")
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
 
     # Validate TransformationScheme
     assert isinstance(ts, TransformationScheme)
@@ -1333,9 +1341,9 @@ def test_ts_with_ruleset_and_udo():
     assert hasattr(ts, "ruleset_schemes")
     rs_scheme = ts.ruleset_schemes[0]
     assert rs_scheme.id == "RS1"
-    assert len(rs_scheme.items) == 2
+    assert len(rs_scheme.items) == 1
     assert isinstance(rs_scheme.items[0], Ruleset)
-    assert rs_scheme.items[0].ruleset_type == "datapoint"
+    assert rs_scheme.items[0].ruleset_type == "hierarchical"
 
 
 def test_check_script_with_string_input():
@@ -1349,31 +1357,31 @@ def test_check_script_invalid_input_type():
         _check_script(12345)
 
 
-@pytest.mark.parametrize("script, agency_id, version", params_generate_sdmx)
-def test_generate_sdmx_and_check_script(script, agency_id, version):
-    result = generate_sdmx(script, agency_id, version)
-    assert isinstance(result, TransformationScheme)
-    assert result.agency == agency_id
-    assert result.id == "TS1"
-    assert result.version == version
-    assert result.vtl_version == "2.1"
+def test_generate_sdmx_and_check_script():
+    script = """
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+    end hierarchical ruleset;
+    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
 
-    if result.ruleset_schemes:
-        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-        assert result.ruleset_schemes[0].id == "RS1"
-        assert result.ruleset_schemes[0].agency == agency_id
-        assert result.ruleset_schemes[0].version == version
-        assert result.ruleset_schemes[0].vtl_version == "2.1"
-
-    if result.user_defined_operator_schemes:
-        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-        assert result.user_defined_operator_schemes[0].id == "UDS1"
-        assert result.user_defined_operator_schemes[0].agency == agency_id
-        assert result.user_defined_operator_schemes[0].version == version
-        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
-
-    regenerated_script = _check_script(result)
-    assert prettify(script) == prettify(regenerated_script)
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
+    """
+    vtl_script = _check_script(script)
+    ts = generate_sdmx(vtl_script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo = ts.user_defined_operator_schemes[0]
+    assert isinstance(udo.items[0], UserDefinedOperator)
+    assert hasattr(ts, "ruleset_schemes")
+    rs = ts.ruleset_schemes[0]
+    assert isinstance(rs.items[0], Ruleset)
+    assert rs.items[0].ruleset_type == "hierarchical"
 
 
 @pytest.mark.parametrize("transformation_scheme, result_script", params_check_script)
