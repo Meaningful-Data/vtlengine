@@ -403,7 +403,7 @@ def run_sdmx(
 
 
 def generate_sdmx(
-    script: Union[str, TransformationScheme, Path], agency_id: str, id: str, version: str = "1.0"
+    script: Union[str, Path], agency_id: str, id: str, version: str = "1.0"
 ) -> TransformationScheme:
     """
     Function that generates a TransformationScheme object from a VTL script.
