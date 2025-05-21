@@ -191,7 +191,7 @@ def run(
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
@@ -324,7 +324,7 @@ def run_sdmx(
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
