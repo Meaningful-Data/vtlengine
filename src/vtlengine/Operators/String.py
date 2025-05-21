@@ -53,48 +53,30 @@ class Unary(Operator.Unary):
 class Length(Unary):
     op = LEN
     return_type = Integer
-    py_op = len
-
-    @classmethod
-    def op_func(cls, x: Any) -> Any:
-        result = super().op_func(x)
-        if pd.isnull(result):
-            return 0
-        return result
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        """Applies the operation to a component"""
-        return series.map(cls.op_func)
 
 
 class Lower(Unary):
     op = LCASE
-    py_op = str.lower
     return_type = String
 
 
 class Upper(Unary):
     op = UCASE
-    py_op = str.upper
     return_type = String
 
 
 class Trim(Unary):
     op = TRIM
-    py_op = str.strip
     return_type = String
 
 
 class Ltrim(Unary):
     op = LTRIM
-    py_op = str.lstrip
     return_type = String
 
 
 class Rtrim(Unary):
     op = RTRIM
-    py_op = str.rstrip
     return_type = String
 
 
@@ -110,7 +92,6 @@ class Binary(Operator.Binary):
 
 class Concatenate(Binary):
     op = CONCAT
-    py_op = operator.concat
     return_type = String
 
 
