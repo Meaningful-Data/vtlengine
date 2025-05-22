@@ -305,7 +305,7 @@ object from pysdmx or a dictionary.
     from pysdmx.model.vtl import VTLDataflowMapping
     from vtlengine import run_sdmx
 
-    data = Path("Docs/_static/dataflow.xml")
+    data = Path("Docs/_static/data.xml")
     structure = Path("Docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
     script = TransformationScheme(
