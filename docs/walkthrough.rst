@@ -185,12 +185,12 @@ Example 3: Simple run
     run_result = run(script=script, data_structures=data_structures,
                      datapoints=datapoints)
 
-    print(run_result)
+    print(run_result["DS_A"].data)
 
 
 
 .. csv-table:: Returns:
-    :file: _static/DS_r_run.csv
+    :file: _static/DS_A_run.csv
     :header-rows: 1
 
 ================================
@@ -203,7 +203,7 @@ Executes a VTL script using one or more `PandasDataset` instances from the `pysd
 This function prepares the required VTL data structures and datapoints, handles mapping from dataset structures to VTL identifiers,
 and delegates execution to the VTL engine. It performs internal validation of dataset structures and the VTL script's input dependencies using DAG analysis.
 
-Documentation on read and writing SDMX datasets https://py.sdmx.io/howto/data_rw.html.
+`Documentation on read and writing SDMX datasets <https://py.sdmx.io/howto/data_rw.html>`_.
 
 The process works as follows:
 
@@ -241,11 +241,12 @@ Optional settings include:
     structure = Path("Docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
-    run_sdmx(script, datasets)
+    print(run_sdmx(script, datasets)['DS_r'].data)
+
 
 .. csv-table:: Returns:
     :file: _static/DS_r_run_sdmx.csv
-   :header-rows: 1
+    :header-rows: 1
 
 As part with the compatibility with pysdmx, the function can also be used by taking as input a
 TransformationScheme object. If we do not include a mapping, VTL script must have a single input, and data file must have only one dataset:
@@ -343,7 +344,7 @@ object from pysdmx or a dictionary.
 
 Files used in the example can be found here:
 
-- :download:`dataflow.xml <_static/dataflow.xml>`
+- :download:`data.xml <_static/data.xml>`
 - :download:`metadata.xml <_static/metadata.xml>`
 
 ********
