@@ -25,7 +25,7 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 dependencies = [
     # PyPi dependencies
     "duckdb>=1.1,<1.2",
-    "pysdmx[xml]>=1.1,<2.0",
+    "pysdmx[xml]>=1.2.0,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
@@ -33,6 +33,7 @@ dependencies = [
     "pandas>=2.1.4,<2.2 ; python_version < '3.13'",
     "pandas>=2.2,<3.0 ; python_version >= '3.13'",
     "networkx>=2.8,<3.0",
+    "numpy>=1.23.2,<2 ; python_version < '3.13'",
     "numpy>=2.1.0; python_version >= '3.13'",
 ]
 
