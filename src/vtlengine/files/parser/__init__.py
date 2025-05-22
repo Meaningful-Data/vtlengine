@@ -134,16 +134,6 @@ def _duckdb_load_csv_lazy(components: Dict[str, Component], csv_path: Union[str,
         columns=duckdb_types,
     )
 
-    # rel = con.read_csv(
-    #     str(csv_path),
-    #     header=True,
-    #     columns=duckdb_types,
-    #     na_values=[""],
-    #     union_by_name=True,
-    #     all_varchar=True,  # Makes the coltypes definition work consistently
-    #     sample_size=-1  # Avoids sampling for auto-detection
-    # )
-
     return _sanitize_duckdb_columns(components, csv_path, rel)
 
 
@@ -185,17 +175,18 @@ def _validate_duckdb(
 
     for comp_name, comp in components.items():
         dtype = comp.data_type
+        rel_dtype = rel.dtypes[rel.columns.index(comp_name)]
 
         try:
             if dtype == Integer:
                 expr = f"CAST({comp_name} AS BIGINT)"
             elif dtype == Number:
                 expr = f"CAST({comp_name} AS DOUBLE)"
-            elif dtype == Boolean:
+            elif dtype == Boolean and rel_dtype != "BOOLEAN":
                 expr = f"""
                     CASE
-                        WHEN LOWER({comp_name}) IN ('true', '1', 'yes') THEN TRUE
-                        WHEN LOWER({comp_name}) IN ('false', '0', 'no') THEN FALSE
+                        WHEN LOWER({comp_name}) IN ('true', '1') THEN TRUE
+                        WHEN LOWER({comp_name}) IN ('false', '0') THEN FALSE
                         WHEN {comp_name} IS NULL THEN NULL
                         ELSE NULL
                     END
