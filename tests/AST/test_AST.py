@@ -4,9 +4,15 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from pysdmx.model import RulesetScheme, TransformationScheme, UserDefinedOperatorScheme
+from pysdmx.io import get_datasets
+from pysdmx.model import (
+    RulesetScheme,
+    Transformation,
+    TransformationScheme,
+    UserDefinedOperatorScheme,
+)
 
-from vtlengine.API import create_ast, load_vtl
+from vtlengine.API import create_ast, load_vtl, run_sdmx
 from vtlengine.API._InternalApi import ast_to_sdmx
 from vtlengine.AST import (
     ID,
@@ -617,3 +623,43 @@ def test_visit_DPRIdentifier():
     node.value = "dpr_identifier_value"
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
+
+
+def test_error_DAG_two_outputs_same_name():
+    data = Path(base_path / "data" / "SDMX" / "data.xml")
+    structure = Path(base_path / "data" / "SDMX" / "metadata.xml")
+    datasets = get_datasets(data, structure)
+    script = TransformationScheme(
+        id="TS1",
+        version="1.0",
+        agency="MD",
+        vtl_version="2.1",
+        items=[
+            Transformation(
+                id="T1",
+                uri=None,
+                urn=None,
+                name=None,
+                description=None,
+                expression="DSD_1 [calc Me_4 := OBS_VALUE];",
+                is_persistent=False,
+                result="DS_r",
+                annotations=(),
+            ),
+            Transformation(
+                id="T2",
+                uri=None,
+                urn=None,
+                name=None,
+                description=None,
+                expression="DSD_1 [rename OBS_VALUE to Me_5];",
+                is_persistent=False,
+                result="DS_r",
+                annotations=(),
+            ),
+        ],
+    )
+    with pytest.raises(
+        ValueError, match="There are two or more output datasets with the same name."
+    ):
+        run_sdmx(script, datasets=datasets)

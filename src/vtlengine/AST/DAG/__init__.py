@@ -100,6 +100,10 @@ class DAGAnalyzer(ASTTemplate):
             else:
                 statements[DELETE][deletion_key] = reference
 
+        duplicates = [x for x in all_output if all_output.count(x) > 1]
+        if duplicates:
+            raise ValueError("There are two or more output datasets with the same name.")
+
         # Deletion of gloabl inputs
         for key, statement in self.dependencies.items():
             inputs = statement[INPUTS]
