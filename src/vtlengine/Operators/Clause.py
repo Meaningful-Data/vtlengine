@@ -15,6 +15,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
+from vtlengine.connection import con
 
 
 class Calc(Operator):
@@ -56,12 +57,20 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        for operand in operands:
+        result = dataset.data.project(f"*, row_number() OVER () AS _rowid").set_alias("t")
+
+        for i, operand in enumerate(operands):
             if isinstance(operand, Scalar):
-                result_dataset.data[operand.name] = operand.value
+                result = result.select("*", f"{repr(operand.value)} AS {operand.name}")
             else:
-                result_dataset.data[operand.name] = operand.data
+                operand_with_idx = operand.data.project(
+                    f"{operand.data.columns[0]} AS {operand.name}, row_number() OVER () AS _rowid"
+                ).set_alias(f"op_{i}")
+                condition = f"t._rowid = op_{i}._rowid"
+                result = result.join(operand_with_idx, condition=condition, how="inner")
+
+        cols = ", ".join(f'"{col}"' for col in result.columns if col != "_rowid")
+        result_dataset.data = result.project(cols)
         return result_dataset
 
 
