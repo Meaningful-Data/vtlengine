@@ -605,19 +605,28 @@ class Binary(Operator):
         return result_dataset
 
     @classmethod
-    def component_evaluation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
-    ) -> DataComponent:
+    def component_evaluation(cls, left_operand: DataComponent, right_operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
-        left_data = cls.cast_time_types(
-            left_operand.data_type,
-            left_operand.data.copy() if left_operand.data is not None else pd.Series(),
-        )
-        right_data = cls.cast_time_types(
-            right_operand.data_type,
-            (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
-        )
-        result_component.data = cls.apply_operation_two_series(left_data, right_data)
+
+        if left_operand.data is not None and right_operand.data is not None:
+            # Alias the data for SQL operations
+            left_data = left_operand.data.set_alias("l")
+            right_data = right_operand.data.set_alias("r")
+
+            # Generate row_id for alignment
+            left_data = left_data.project("*, ROW_NUMBER() OVER () AS row_id")
+            right_data = right_data.project("*, ROW_NUMBER() OVER () AS row_id")
+
+            # Perform the join on row_id
+            joined_data = left_data.join(right_data, how="inner", condition="l.row_id = r.row_id")
+            # Apply the binary operation
+            result_data = joined_data.project(
+                f"l.{left_operand.name} {cls.py_op if cls.py_op else cls.op} r.{right_operand.name} AS {result_component.name}"
+            )
+        else:
+            result_data = None
+
+        result_component.data = result_data
         return result_component
 
     @classmethod
@@ -870,7 +879,13 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_component.data = cls.apply_operation_component(
-            operand.data.copy() if operand.data is not None else pd.Series()
-        )
+
+        if operand.data is not None:
+            operand_data = operand.data.set_alias("t")
+            # Apply the operation using as a projection
+            result_data = operand_data.project(f"{cls.op}(t.{operand.name}) AS {operand.name}")
+        else:
+            result_data = None
+
+        result_component.data = result_data
         return result_component
