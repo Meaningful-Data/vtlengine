@@ -1228,7 +1228,6 @@ def test_ts_without_udo_or_rs():
     assert ts.agency == "MD"
     assert ts.version == "1.0"
     assert ts.name == "TransformationScheme TestID"
-    assert hasattr(ts, "items")
     assert len(ts.items) == 1
     transformation = ts.items[0]
     assert transformation.is_persistent is False
@@ -1296,6 +1295,10 @@ def test_ts_with_hierarchical_ruleset():
     assert isinstance(ruleset, Ruleset)
     assert ruleset.id == "R1"
     assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
 
 
 def test_ts_with_2_rulesets():
@@ -1344,6 +1347,14 @@ def test_ts_with_ruleset_and_udo():
     assert len(rs_scheme.items) == 1
     assert isinstance(rs_scheme.items[0], Ruleset)
     assert rs_scheme.items[0].ruleset_type == "hierarchical"
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
 
 
 def test_check_script_with_string_input():
@@ -1363,16 +1374,14 @@ def test_generate_sdmx_and_check_script():
         B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
         N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
     end hierarchical ruleset;
-    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-
     define operator suma (ds1 dataset, ds2 dataset)
             returns dataset is
             ds1 + ds2
     end operator;
+    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
     DS_r := suma(ds1, ds2);
     """
-    vtl_script = _check_script(script)
-    ts = generate_sdmx(vtl_script, agency_id="MD", id="TestID")
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
     assert isinstance(ts, TransformationScheme)
     assert hasattr(ts, "user_defined_operator_schemes")
     assert len(ts.user_defined_operator_schemes) == 1
@@ -1382,6 +1391,8 @@ def test_generate_sdmx_and_check_script():
     rs = ts.ruleset_schemes[0]
     assert isinstance(rs.items[0], Ruleset)
     assert rs.items[0].ruleset_type == "hierarchical"
+    regenerated_script = _check_script(ts)
+    assert prettify(script) == prettify(regenerated_script)
 
 
 @pytest.mark.parametrize("transformation_scheme, result_script", params_check_script)
