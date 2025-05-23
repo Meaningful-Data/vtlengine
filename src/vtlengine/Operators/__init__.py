@@ -631,21 +631,34 @@ class Binary(Operator):
 
     @classmethod
     def component_scalar_evaluation(
-        cls, component: DataComponent, scalar: Scalar, component_left: bool = True
+            cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
+        # Validate the component and scalar compatibility
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(
-            component.data_type,
-            component.data.copy() if component.data is not None else pd.Series(),
-        )
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if component.data_type.__name__.__str__() == "Duration" and not isinstance(
-            scalar_value, int
-        ):
-            scalar_value = PERIOD_IND_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(
-            comp_data, scalar_value, component_left
-        )
+
+        if component.data is not None:
+            # Alias for the component's table
+            component_data = component.data.set_alias("t")
+            scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+
+            # Special handling for the Duration type
+            if component.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
+                scalar_value = PERIOD_IND_MAPPING[scalar_value]
+
+            # Construct the SQL operation
+            if component_left:
+                result_data = component_data.project(
+                    f"t.{component.name} {cls.op} {scalar_value} AS {result_component.name}"
+                )
+            else:
+                result_data = component_data.project(
+                    f"{scalar_value} {cls.op} t.{component.name} AS {result_component.name}"
+                )
+        else:
+            result_data = None
+
+        # Assign the resulting data to the result component
+        result_component.data = result_data
         return result_component
 
     @classmethod
