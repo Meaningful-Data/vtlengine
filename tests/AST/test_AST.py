@@ -42,41 +42,6 @@ filepath = base_path / "data" / "encode"
 
 param = ["DS_r := DS_1 + DS_2;"]
 
-params_to_sdmx = [
-    ("DS_r := DS_1 + DS_2;", "MD", "1.0"),
-    ("DS_r <- DS_1 + 1;", "MD", "1.0"),
-    (
-        """
-    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
-        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
-        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
-        end datapoint ruleset;
-    """,
-        "MD",
-        "1.0",
-    ),
-    (
-        """
-        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
-                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
-                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
-                    end hierarchical ruleset;
-        """,
-        "MD",
-        "1.0",
-    ),
-    (
-        """
-        define operator suma (ds1 dataset, ds2 dataset)
-            returns dataset is
-            ds1 + ds2
-        end operator;
-    """,
-        "MD",
-        "1.0",
-    ),
-]
 
 param_ast = [
     ("DS_r := DS_1 + 5; DS_r := DS_1 * 10;", "1-3-3"),
