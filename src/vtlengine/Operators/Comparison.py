@@ -154,32 +154,26 @@ class Binary(Operator.Binary):
 
 class Equal(Binary):
     op = EQ
-    py_op = operator.eq
 
 
 class NotEqual(Binary):
     op = NEQ
-    py_op = operator.ne
 
 
 class Greater(Binary):
     op = GT
-    py_op = operator.gt
 
 
 class GreaterEqual(Binary):
     op = GTE
-    py_op = operator.ge
 
 
 class Less(Binary):
     op = LT
-    py_op = operator.lt
 
 
 class LessEqual(Binary):
     op = LTE
-    py_op = operator.le
 
 
 class In(Binary):
