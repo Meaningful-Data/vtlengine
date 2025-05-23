@@ -646,7 +646,5 @@ def test_error_DAG_two_outputs_same_name():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(
-        ValueError, match="There are two or more output datasets with the same name."
-    ):
+    with pytest.raises(ValueError, match="The following output datasets are duplicated."):
         run(script=script, data_structures=data_structures, datapoints=datapoints)

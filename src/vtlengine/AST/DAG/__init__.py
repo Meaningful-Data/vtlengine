@@ -102,7 +102,7 @@ class DAGAnalyzer(ASTTemplate):
 
         duplicates = [x for x in all_output if all_output.count(x) > 1]
         if duplicates:
-            raise ValueError("There are two or more output datasets with the same name.")
+            raise ValueError(f"The following output datasets are duplicated: {set(duplicates)}.")
 
         # Deletion of gloabl inputs
         for key, statement in self.dependencies.items():
