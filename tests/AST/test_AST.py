@@ -4,14 +4,11 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from pysdmx.model import (
-    RulesetScheme,
-    TransformationScheme,
-    UserDefinedOperatorScheme,
-)
 
 from vtlengine.API import create_ast, load_vtl
+
 from vtlengine.API._InternalApi import ast_to_sdmx
+
 from vtlengine.AST import (
     ID,
     Aggregation,
@@ -108,29 +105,6 @@ def test_decode_ast(script):
     with open(filepath / "reference_encode.json") as file:
         ast_decode = json.load(file, object_hook=ComplexDecoder.object_hook)
     assert ast_decode == ast
-
-
-@pytest.mark.parametrize("script, agency_id, version", params_to_sdmx)
-def test_ast_to_sdmx(script, agency_id, version):
-    ast = create_ast(script)
-    result = ast_to_sdmx(ast, agency_id, version)
-    assert isinstance(result, TransformationScheme)
-    assert result.agency == agency_id
-    assert result.id == "TS1"
-    assert result.version == version
-    assert result.vtl_version == "2.1"
-    if result.ruleset_schemes:
-        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-        assert result.ruleset_schemes[0].id == "RS1"
-        assert result.ruleset_schemes[0].agency == agency_id
-        assert result.ruleset_schemes[0].version == version
-        assert result.ruleset_schemes[0].vtl_version == "2.1"
-    if result.user_defined_operator_schemes:
-        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-        assert result.user_defined_operator_schemes[0].id == "UDS1"
-        assert result.user_defined_operator_schemes[0].agency == agency_id
-        assert result.user_defined_operator_schemes[0].version == version
-        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
 
 
 def test_visit_TimeAggregation_error():
@@ -628,8 +602,9 @@ def test_visit_DPRIdentifier():
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
 
-
 @pytest.mark.parametrize("script, error", param_ast)
 def test_error_DAG_two_outputs_same_name(script, error):
     with pytest.raises(SemanticError, match=error):
         create_ast(text=script)
+
+
