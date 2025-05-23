@@ -571,7 +571,7 @@ def test_semantic(script, data_structures, value_domains, external_routines):
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run(script, data_structures, datapoints, value_domains, external_routines):
-    result = run(script, data_structures, datapoints, value_domains, external_routines)
+    result = run(script, data_structures, datapoints, value_domains, external_routines, return_only_persistent=False)
     reference = {
         "DS_r": Dataset(
             name="DS_r",
@@ -711,7 +711,7 @@ def test_readme_example():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints, return_only_persistent=False)
 
     assert run_result == {
         "DS_A": Dataset(
@@ -770,7 +770,7 @@ def test_readme_run():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints, return_only_persistent=False)
 
     assert run_result == {
         "DS_A": Dataset(
@@ -879,7 +879,7 @@ def test_non_mandatory_fill_at():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints, return_only_persistent=False)
 
     assert run_result == {
         "DS_r": Dataset(
@@ -969,7 +969,7 @@ def test_non_mandatory_fill_me():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints, return_only_persistent=False)
 
     assert run_result == {
         "DS_r": Dataset(
@@ -1181,7 +1181,7 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
 def test_run_sdmx_function(data, structure):
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets)
+    result = run_sdmx(script, datasets, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -1199,7 +1199,7 @@ def test_to_vtl_json_function(data, structure, path_reference):
 @pytest.mark.parametrize("code, data, structure", params_2_1_str_sp)
 def test_run_sdmx_2_1_str_sp(code, data, structure):
     datasets = get_datasets(data, structure)
-    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False)
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     assert result == reference
 
@@ -1207,7 +1207,7 @@ def test_run_sdmx_2_1_str_sp(code, data, structure):
 @pytest.mark.parametrize("code, data, structure", params_2_1_gen_str)
 def test_run_sdmx_2_1_gen_all(code, data, structure):
     datasets = get_datasets(data, structure)
-    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False)
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     assert result == reference
 
