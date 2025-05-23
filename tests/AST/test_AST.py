@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock
 
-import pandas as pd
 import pytest
 from pysdmx.model import (
     RulesetScheme,
@@ -11,7 +10,7 @@ from pysdmx.model import (
     UserDefinedOperatorScheme,
 )
 
-from vtlengine.API import create_ast, load_vtl, run
+from vtlengine.API import create_ast, load_vtl
 from vtlengine.API._InternalApi import ast_to_sdmx
 from vtlengine.AST import (
     ID,
@@ -83,6 +82,12 @@ params_to_sdmx = [
         "MD",
         "1.0",
     ),
+]
+
+param_ast = [
+    ("DS_r := DS_1 + 5; DS_r := DS_1 * 10;", "1-3-3"),
+    ("DS_r := DS_1 + 5; DS_r <- DS_1 * 10;", "1-3-3"),
+    ("DS_r <- DS_1 + 5; DS_r <- DS_1 * 10;", "1-3-3"),
 ]
 
 
@@ -624,27 +629,7 @@ def test_visit_DPRIdentifier():
     assert result == "dpr_identifier_value"
 
 
-def test_error_DAG_two_outputs_same_name():
-    script = """
-            DS_r := DS_1 * 10;
-            DS_r := DS_1 + 5;
-        """
-
-    data_structures = {
-        "datasets": [
-            {
-                "name": "DS_1",
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                ],
-            }
-        ]
-    }
-
-    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
-
-    datapoints = {"DS_1": data_df}
-
-    with pytest.raises(ValueError, match="The following output datasets are duplicated."):
-        run(script=script, data_structures=data_structures, datapoints=datapoints)
+@pytest.mark.parametrize("script, error", param_ast)
+def test_error_DAG_two_outputs_same_name(script, error):
+    with pytest.raises(SemanticError, match=error):
+        create_ast(text=script)
