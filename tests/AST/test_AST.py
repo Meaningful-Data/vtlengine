@@ -6,9 +6,6 @@ from unittest.mock import Mock
 import pytest
 
 from vtlengine.API import create_ast, load_vtl
-
-from vtlengine.API._InternalApi import ast_to_sdmx
-
 from vtlengine.AST import (
     ID,
     Aggregation,
@@ -602,9 +599,8 @@ def test_visit_DPRIdentifier():
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
 
+
 @pytest.mark.parametrize("script, error", param_ast)
 def test_error_DAG_two_outputs_same_name(script, error):
     with pytest.raises(SemanticError, match=error):
         create_ast(text=script)
-
-
