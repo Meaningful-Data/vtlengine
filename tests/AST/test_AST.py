@@ -3,16 +3,15 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock
 
+import pandas as pd
 import pytest
-from pysdmx.io import get_datasets
 from pysdmx.model import (
     RulesetScheme,
-    Transformation,
     TransformationScheme,
     UserDefinedOperatorScheme,
 )
 
-from vtlengine.API import create_ast, load_vtl, run_sdmx
+from vtlengine.API import create_ast, load_vtl, run
 from vtlengine.API._InternalApi import ast_to_sdmx
 from vtlengine.AST import (
     ID,
@@ -626,40 +625,28 @@ def test_visit_DPRIdentifier():
 
 
 def test_error_DAG_two_outputs_same_name():
-    data = Path(base_path / "data" / "SDMX" / "data.xml")
-    structure = Path(base_path / "data" / "SDMX" / "metadata.xml")
-    datasets = get_datasets(data, structure)
-    script = TransformationScheme(
-        id="TS1",
-        version="1.0",
-        agency="MD",
-        vtl_version="2.1",
-        items=[
-            Transformation(
-                id="T1",
-                uri=None,
-                urn=None,
-                name=None,
-                description=None,
-                expression="DSD_1 [calc Me_4 := OBS_VALUE];",
-                is_persistent=False,
-                result="DS_r",
-                annotations=(),
-            ),
-            Transformation(
-                id="T2",
-                uri=None,
-                urn=None,
-                name=None,
-                description=None,
-                expression="DSD_1 [rename OBS_VALUE to Me_5];",
-                is_persistent=False,
-                result="DS_r",
-                annotations=(),
-            ),
-        ],
-    )
+    script = """
+            DS_r := DS_1 * 10;
+            DS_r := DS_1 + 5;
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+
     with pytest.raises(
         ValueError, match="There are two or more output datasets with the same name."
     ):
-        run_sdmx(script, datasets=datasets)
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
