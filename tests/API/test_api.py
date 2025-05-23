@@ -1325,7 +1325,7 @@ def test_ts_with_ruleset_and_udo():
                         N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
                     end hierarchical ruleset;
 
-    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    DS_r2 := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
     """
     ts = generate_sdmx(script, agency_id="MD", id="TestID")
 
@@ -1379,7 +1379,7 @@ def test_generate_sdmx_and_check_script():
             ds1 + ds2
     end operator;
     DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-    DS_r := suma(ds1, ds2);
+    DS_r2 := suma(ds1, ds2);
     """
     ts = generate_sdmx(script, agency_id="MD", id="TestID")
     assert isinstance(ts, TransformationScheme)

@@ -43,6 +43,13 @@ filepath = base_path / "data" / "encode"
 param = ["DS_r := DS_1 + DS_2;"]
 
 
+param_ast = [
+    ("DS_r := DS_1 + 5; DS_r := DS_1 * 10;", "1-3-3"),
+    ("DS_r := DS_1 + 5; DS_r <- DS_1 * 10;", "1-3-3"),
+    ("DS_r <- DS_1 + 5; DS_r <- DS_1 * 10;", "1-3-3"),
+]
+
+
 @pytest.mark.parametrize("script", param)
 def test_encode_ast(script):
     vtl = load_vtl(script)
@@ -556,3 +563,9 @@ def test_visit_DPRIdentifier():
     node.value = "dpr_identifier_value"
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
+
+
+@pytest.mark.parametrize("script, error", param_ast)
+def test_error_DAG_two_outputs_same_name(script, error):
+    with pytest.raises(SemanticError, match=error):
+        create_ast(text=script)
