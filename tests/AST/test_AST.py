@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock
 
-import pandas as pd
 import pytest
 
 from vtlengine.API import create_ast, load_vtl
@@ -557,4 +556,3 @@ def test_visit_DPRIdentifier():
     node.value = "dpr_identifier_value"
     result = visitor.visit_DPRIdentifier(node)
     assert result == "dpr_identifier_value"
-
