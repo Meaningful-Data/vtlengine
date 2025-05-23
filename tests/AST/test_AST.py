@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 from pysdmx.model import (
     RulesetScheme,
@@ -10,7 +11,7 @@ from pysdmx.model import (
     UserDefinedOperatorScheme,
 )
 
-from vtlengine.API import create_ast, load_vtl
+from vtlengine.API import create_ast, load_vtl, run
 from vtlengine.API._InternalApi import ast_to_sdmx
 from vtlengine.AST import (
     ID,
