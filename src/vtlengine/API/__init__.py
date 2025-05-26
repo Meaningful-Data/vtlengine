@@ -255,7 +255,7 @@ def run(
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
@@ -368,7 +368,7 @@ def run_sdmx(
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 

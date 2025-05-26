@@ -647,7 +647,18 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
 def test_run_only_persistent_results(
     script, data_structures, datapoints, value_domains, external_routines
 ):
-    result = run(script, data_structures, datapoints, value_domains, external_routines)
+    output_path = Path(__file__).parent / "output_folder_test"
+
+    result = run(
+        script,
+        data_structures,
+        datapoints,
+        value_domains,
+        external_routines,
+        output_folder=output_path,
+        return_only_persistent=True,
+    )
+
     reference = {
         "DS_r2": Dataset(
             name="DS_r2",
@@ -680,6 +691,12 @@ def test_run_only_persistent_results(
     }
 
     assert result == reference
+    assert set(result.keys()) == {"DS_r2"}
+    expected_file = output_path / "DS_r2.csv"
+    assert expected_file.exists()
+    with expected_file.open("r", encoding="utf-8") as f:
+        content = f.read().strip()
+        assert content
 
 
 @pytest.mark.parametrize(
