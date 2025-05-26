@@ -1390,7 +1390,7 @@ def test_run_sdmx_function(data, structure):
 def test_run_sdmx_function_with_mappings(data, structure, mappings):
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets, mappings=mappings)
+    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
