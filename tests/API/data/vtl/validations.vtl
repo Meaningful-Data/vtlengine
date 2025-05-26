@@ -1,0 +1,194 @@
+define datapoint ruleset  subcategories (variable CATEGORY, SUBCATEGORY) is
+    c1: when CATEGORY = "RESIDENT_GOVERNMENT_ENTITY" then not isnull(SUBCATEGORY) errorcode "C1" errorlevel 1;
+    c2: when CATEGORY <> "RESIDENT_GOVERNMENT_ENTITY" then isnull(SUBCATEGORY) errorcode "C2" errorlevel 1
+end datapoint ruleset;
+define datapoint ruleset  postal_codes (variable COUNTRY_INCORPORATION, POSTAL_CODE) is
+    pc1: when COUNTRY_INCORPORATION = "AD" then match_characters(POSTAL_CODE,"^(AD\d{3})$") errorcode "pc1" errorlevel 3;
+    pc2: when COUNTRY_INCORPORATION = "AF" then match_characters(POSTAL_CODE,"^\d{4}$|^((([1-3][0-9])|(4[0-3]))\d{4})$") errorcode "pc2" errorlevel 3;
+    pc3: when COUNTRY_INCORPORATION = "AI" then match_characters(POSTAL_CODE,"^AI-2640$") errorcode "pc3" errorlevel 3;
+    pc4: when COUNTRY_INCORPORATION = "AL" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc4" errorlevel 3;
+    pc5: when COUNTRY_INCORPORATION = "AM" then match_characters(POSTAL_CODE,"(\d{4})|(\d{6})") errorcode "pc5" errorlevel 3;
+    pc6: when COUNTRY_INCORPORATION = "AR" then match_characters(POSTAL_CODE,"^(([A-Z]\d{4}[A-Z]{3})|([A-Z]\d{4}))$") errorcode "pc6" errorlevel 3;
+    pc7: when COUNTRY_INCORPORATION = "AS" then match_characters(POSTAL_CODE,"^(96799(-\d{4})?)$") errorcode "pc7" errorlevel 3;
+    pc8: when COUNTRY_INCORPORATION = "AT" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc8" errorlevel 3;
+    pc9: when COUNTRY_INCORPORATION = "AU" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc9" errorlevel 3;
+    pc10: when COUNTRY_INCORPORATION = "AZ" then match_characters(POSTAL_CODE,"^((AZ)(\d{4})|(AZ )(\d{4}))$") errorcode "pc10" errorlevel 3;
+    pc11: when COUNTRY_INCORPORATION = "BA" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc11" errorlevel 3;
+    pc12: when COUNTRY_INCORPORATION = "BB" then match_characters(POSTAL_CODE,"^BB\d{5}$") errorcode "pc12" errorlevel 3;
+    pc13: when COUNTRY_INCORPORATION = "BD" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc13" errorlevel 3;
+    pc14: when COUNTRY_INCORPORATION = "BE" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc14" errorlevel 3;
+    pc15: when COUNTRY_INCORPORATION = "BG" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc15" errorlevel 3;
+    pc16: when COUNTRY_INCORPORATION = "BH" then match_characters(POSTAL_CODE,"^(\d{3,4})$") errorcode "pc16" errorlevel 3;
+    pc17: when COUNTRY_INCORPORATION = "BM" then match_characters(POSTAL_CODE,"^([A-Z]{2} [A-Z0-9]{2})$") errorcode "pc17" errorlevel 3;
+    pc18: when COUNTRY_INCORPORATION = "BN" then match_characters(POSTAL_CODE,"^[A-Z]{2}\d{4}$") errorcode "pc18" errorlevel 3;
+    pc19: when COUNTRY_INCORPORATION = "BR" then match_characters(POSTAL_CODE,"^\d{5}-\d{3}$") errorcode "pc19" errorlevel 3;
+    pc20: when COUNTRY_INCORPORATION = "BT" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc20" errorlevel 3;
+    pc21: when COUNTRY_INCORPORATION = "BY" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc21" errorlevel 3;
+    pc22: when COUNTRY_INCORPORATION = "CA" then match_characters(POSTAL_CODE,"^((?=[^DdFfIiOoQqUu\d\s])[A-Z]\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\s{1}\d(?=[^DdFfIiOoQqUu\d\s])[A-Z]\d)$") errorcode "pc22" errorlevel 3;
+    pc23: when COUNTRY_INCORPORATION = "CC" then match_characters(POSTAL_CODE,"^6799$") errorcode "pc23" errorlevel 3;
+    pc24: when COUNTRY_INCORPORATION = "CH" then match_characters(POSTAL_CODE,"^([1-9]\d{3})$") errorcode "pc24" errorlevel 3;
+    pc25: when COUNTRY_INCORPORATION = "CL" then match_characters(POSTAL_CODE,"^\d{7}$") errorcode "pc25" errorlevel 3;
+    pc26: when COUNTRY_INCORPORATION = "CN" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc26" errorlevel 3;
+    pc27: when COUNTRY_INCORPORATION = "CO" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc27" errorlevel 3;
+    pc28: when COUNTRY_INCORPORATION = "CR" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc28" errorlevel 3;
+    pc29: when COUNTRY_INCORPORATION = "CU" then match_characters(POSTAL_CODE,"^(((CP )?\d{5})|((CP)?\d{5}))$") errorcode "pc29" errorlevel 3;
+    pc30: when COUNTRY_INCORPORATION = "CV" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc30" errorlevel 3;
+    pc31: when COUNTRY_INCORPORATION = "CX" then match_characters(POSTAL_CODE,"^6798$") errorcode "pc31" errorlevel 3;
+    pc32: when COUNTRY_INCORPORATION = "CY" then match_characters(POSTAL_CODE,"^(([1-9]\d{3})|(99\d{3}))$") errorcode "pc32" errorlevel 3;
+    pc33: when COUNTRY_INCORPORATION = "CZ" then match_characters(POSTAL_CODE,"^([1-7][0-9]{2} [0-9]{2}|[1-7][0-9]{4})$") errorcode "pc33" errorlevel 3;
+    pc34: when COUNTRY_INCORPORATION = "DE" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc34" errorlevel 3;
+    pc35: when COUNTRY_INCORPORATION = "DK" then match_characters(POSTAL_CODE,"^(DK-)?\d{4}$") errorcode "pc35" errorlevel 3;
+    pc36: when COUNTRY_INCORPORATION = "DO" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc36" errorlevel 3;
+    pc37: when COUNTRY_INCORPORATION = "DZ" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc37" errorlevel 3;
+    pc38: when COUNTRY_INCORPORATION = "EC" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc38" errorlevel 3;
+    pc39: when COUNTRY_INCORPORATION = "EE" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc39" errorlevel 3;
+    pc40: when COUNTRY_INCORPORATION = "EG" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc40" errorlevel 3;
+    pc41: when COUNTRY_INCORPORATION = "ES" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc41" errorlevel 3;
+    pc42: when COUNTRY_INCORPORATION = "ET" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc42" errorlevel 3;
+    pc43: when COUNTRY_INCORPORATION = "FI" then match_characters(POSTAL_CODE,"^(FI-)?\d{5}$") errorcode "pc43" errorlevel 3;
+    pc44: when COUNTRY_INCORPORATION = "FK" then match_characters(POSTAL_CODE,"^FIQQ 1ZZ$") errorcode "pc44" errorlevel 3;
+    pc45: when COUNTRY_INCORPORATION = "FM" then match_characters(POSTAL_CODE,"^((FM )?9694[1-4]{1}(-\d{4})?)$") errorcode "pc45" errorlevel 3;
+    pc46: when COUNTRY_INCORPORATION = "FO" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc46" errorlevel 3;
+    pc47: when COUNTRY_INCORPORATION = "FR" then match_characters(POSTAL_CODE,"^\d{3}[ ]?\d{2}$") errorcode "pc47" errorlevel 3;
+    pc48: when COUNTRY_INCORPORATION = "GB" then match_characters(POSTAL_CODE,"^(GIR[ ]?0AA|((AB|AL|B|BA|BB|BD|BH|BL|BN|BR|BS|BT|CA|CB|CF|CH|CM|CO|CR|CT|CV|CW|DA|DD|DE|DG|DH|DL|DN|DT|DY|E|EC|EH|EN|EX|FK|FY|G|GL|GY|GU|HA|HD|HG|HP|HR|HS|HU|HX|IG|IM|IP|IV|JE|KA|KT|KW|KY|L|LA|LD|LE|LL|LN|LS|LU|M|ME|MK|ML|N|NE|NG|NN|NP|NR|NW|OL|OX|PA|PE|PH|PL|PO|PR|RG|RH|RM|S|SA|SE|SG|SK|SL|SM|SN|SO|SP|SR|SS|ST|SW|SY|TA|TD|TF|TN|TQ|TR|TS|TW|UB|W|WA|WC|WD|WF|WN|WR|WS|WV|YO|ZE)(\d[\dA-Z]?[ ]?\d[ABD-HJLN-UW-Z]{2}))|BFPO[ ]?\d{1,4})$") errorcode "pc48" errorlevel 3;
+    pc49: when COUNTRY_INCORPORATION = "GE" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc49" errorlevel 3;
+    pc50: when COUNTRY_INCORPORATION = "GG" then match_characters(POSTAL_CODE,"^GY\d[\dA-Z]?[ ]?\d[ABD-HJLN-UW-Z]{2}$") errorcode "pc50" errorlevel 3;
+    pc51: when COUNTRY_INCORPORATION = "GI" then match_characters(POSTAL_CODE,"^GX11 1AA$") errorcode "pc51" errorlevel 3;
+    pc52: when COUNTRY_INCORPORATION = "GL" then match_characters(POSTAL_CODE,"^39\d{2}$") errorcode "pc52" errorlevel 3;
+    pc53: when COUNTRY_INCORPORATION = "GN" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc53" errorlevel 3;
+    pc54: when COUNTRY_INCORPORATION = "GR" then match_characters(POSTAL_CODE,"^\d{3}\s{0,1}\d{2}$") errorcode "pc54" errorlevel 3;
+    pc55: when COUNTRY_INCORPORATION = "GS" then match_characters(POSTAL_CODE,"^SIQQ 1ZZ$") errorcode "pc55" errorlevel 3;
+    pc56: when COUNTRY_INCORPORATION = "GT" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc56" errorlevel 3;
+    pc57: when COUNTRY_INCORPORATION = "GU" then match_characters(POSTAL_CODE,"^(((969)((1[0123567])|(2[012389])|(3[012])))(-\d{4})?)$") errorcode "pc57" errorlevel 3;
+    pc58: when COUNTRY_INCORPORATION = "GW" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc58" errorlevel 3;
+    pc59: when COUNTRY_INCORPORATION = "HK" then match_characters(POSTAL_CODE,"^(999077)?$") errorcode "pc59" errorlevel 3;
+    pc60: when COUNTRY_INCORPORATION = "HM" then match_characters(POSTAL_CODE,"^7151$") errorcode "pc60" errorlevel 3;
+    pc61: when COUNTRY_INCORPORATION = "HN" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc61" errorlevel 3;
+    pc62: when COUNTRY_INCORPORATION = "HR" then match_characters(POSTAL_CODE,"^([1-5]\d{4})$") errorcode "pc62" errorlevel 3;
+    pc63: when COUNTRY_INCORPORATION = "HT" then match_characters(POSTAL_CODE,"^((HT)(\d{4})|(HT) (\d{4}))$") errorcode "pc63" errorlevel 3;
+    pc64: when COUNTRY_INCORPORATION = "HU" then match_characters(POSTAL_CODE,"^([1-9]\d{3})$") errorcode "pc64" errorlevel 3;
+    pc65: when COUNTRY_INCORPORATION = "ID" then match_characters(POSTAL_CODE,"^([1-9]\d{4})$") errorcode "pc65" errorlevel 3;
+    pc66: when COUNTRY_INCORPORATION = "IL" then match_characters(POSTAL_CODE,"^\d{7}$") errorcode "pc66" errorlevel 3;
+    pc67: when COUNTRY_INCORPORATION = "IM" then match_characters(POSTAL_CODE,"^((IM)([0-9][0-9A-HJKPS-UW]?|[A-HK-Y][0-9][0-9ABEHMNPRV-Y]?) [0-9][ABD-HJLNP-UW-Z]{2})$") errorcode "pc67" errorlevel 3;
+    pc68: when COUNTRY_INCORPORATION = "IN" then match_characters(POSTAL_CODE,"^([1-9]\d{5})$") errorcode "pc68" errorlevel 3;
+    pc69: when COUNTRY_INCORPORATION = "IQ" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc69" errorlevel 3;
+    pc70: when COUNTRY_INCORPORATION = "IR" then match_characters(POSTAL_CODE,"^\d{5}-?\d{5}$") errorcode "pc70" errorlevel 3;
+    pc71: when COUNTRY_INCORPORATION = "IS" then match_characters(POSTAL_CODE,"^([1-9]\d{2})$") errorcode "pc71" errorlevel 3;
+    pc72: when COUNTRY_INCORPORATION = "IT" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc72" errorlevel 3;
+    pc73: when COUNTRY_INCORPORATION = "JE" then match_characters(POSTAL_CODE,"^(JE[0-9]{1}[\s]([\d][A-Z]{2}))$") errorcode "pc73" errorlevel 3;
+    pc74: when COUNTRY_INCORPORATION = "JM" then match_characters(POSTAL_CODE,"^((((JM)[A-Z]{3})?\d{1,2})?)$") errorcode "pc74" errorlevel 3;
+    pc75: when COUNTRY_INCORPORATION = "JO" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc75" errorlevel 3;
+    pc76: when COUNTRY_INCORPORATION = "JP" then match_characters(POSTAL_CODE,"^\d{3}-\d{4}$") errorcode "pc76" errorlevel 3;
+    pc77: when COUNTRY_INCORPORATION = "KE" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc77" errorlevel 3;
+    pc78: when COUNTRY_INCORPORATION = "KG" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc78" errorlevel 3;
+    pc79: when COUNTRY_INCORPORATION = "KH" then match_characters(POSTAL_CODE,"^\d{5,6}$") errorcode "pc79" errorlevel 3;
+    pc80: when COUNTRY_INCORPORATION = "KR" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc80" errorlevel 3;
+    pc81: when COUNTRY_INCORPORATION = "KW" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc81" errorlevel 3;
+    pc82: when COUNTRY_INCORPORATION = "KY" then match_characters(POSTAL_CODE,"^KY[123]-\d{4}$") errorcode "pc82" errorlevel 3;
+    pc83: when COUNTRY_INCORPORATION = "KZ" then match_characters(POSTAL_CODE,"^(([A-Z]\d{2}[A-Z]\d[A-Z]\d)|(\d{6}))$") errorcode "pc83" errorlevel 3;
+    pc84: when COUNTRY_INCORPORATION = "LA" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc84" errorlevel 3;
+    pc85: when COUNTRY_INCORPORATION = "LB" then match_characters(POSTAL_CODE,"^(\d{4}( \d{4})?)$") errorcode "pc85" errorlevel 3;
+    pc86: when COUNTRY_INCORPORATION = "LI" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc86" errorlevel 3;
+    pc87: when COUNTRY_INCORPORATION = "LK" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc87" errorlevel 3;
+    pc88: when COUNTRY_INCORPORATION = "LR" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc88" errorlevel 3;
+    pc89: when COUNTRY_INCORPORATION = "LS" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc89" errorlevel 3;
+    pc90: when COUNTRY_INCORPORATION = "LT" then match_characters(POSTAL_CODE,"^(((LT)[\-])?(\d{5}))$") errorcode "pc90" errorlevel 3;
+    pc91: when COUNTRY_INCORPORATION = "LU" then match_characters(POSTAL_CODE,"^(((L)[\-])?(\d{4}))$") errorcode "pc91" errorlevel 3;
+    pc92: when COUNTRY_INCORPORATION = "LV" then match_characters(POSTAL_CODE,"^(((LV)[\-])?(\d{4}))$") errorcode "pc92" errorlevel 3;
+    pc93: when COUNTRY_INCORPORATION = "MA" then match_characters(POSTAL_CODE,"[1-9]\d{4}") errorcode "pc93" errorlevel 3;
+    pc94: when COUNTRY_INCORPORATION = "MD" then match_characters(POSTAL_CODE,"^((MD[\-]?)?(\d{4}))$") errorcode "pc94" errorlevel 3;
+    pc95: when COUNTRY_INCORPORATION = "ME" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc95" errorlevel 3;
+    pc96: when COUNTRY_INCORPORATION = "MG" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc96" errorlevel 3;
+    pc97: when COUNTRY_INCORPORATION = "MH" then match_characters(POSTAL_CODE,"^((MH )?((969)[6-7][0-9])(-\d{4})?)$") errorcode "pc97" errorlevel 3;
+    pc98: when COUNTRY_INCORPORATION = "MK" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc98" errorlevel 3;
+    pc99: when COUNTRY_INCORPORATION = "MM" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc99" errorlevel 3;
+    pc100: when COUNTRY_INCORPORATION = "MN" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc100" errorlevel 3;
+    pc101: when COUNTRY_INCORPORATION = "MP" then match_characters(POSTAL_CODE,"^(9695[0-2]{1}(-\d{4})?)$") errorcode "pc101" errorlevel 3;
+    pc102: when COUNTRY_INCORPORATION = "MS" then match_characters(POSTAL_CODE,"^MSR\d{4}$") errorcode "pc102" errorlevel 3;
+    pc103: when COUNTRY_INCORPORATION = "MT" then match_characters(POSTAL_CODE,"^([A-Z]{3} [0-9]{4}|[A-Z]{2}[0-9]{2}|[A-Z]{2} [0-9]{2}|[A-Z]{3}[0-9]{4}|[A-Z]{3}[0-9]{2}|[A-Z]{3} [0-9]{2})$") errorcode "pc103" errorlevel 3;
+    pc104: when COUNTRY_INCORPORATION = "MU" then match_characters(POSTAL_CODE,"^(([0-9A-R]\d{4}))$") errorcode "pc104" errorlevel 3;
+    pc105: when COUNTRY_INCORPORATION = "MV" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc105" errorlevel 3;
+    pc106: when COUNTRY_INCORPORATION = "MX" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc106" errorlevel 3;
+    pc107: when COUNTRY_INCORPORATION = "MY" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc107" errorlevel 3;
+    pc108: when COUNTRY_INCORPORATION = "MZ" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc108" errorlevel 3;
+    pc109: when COUNTRY_INCORPORATION = "NC" then match_characters(POSTAL_CODE,"^988\d{2}$") errorcode "pc109" errorlevel 3;
+    pc110: when COUNTRY_INCORPORATION = "NE" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc110" errorlevel 3;
+    pc111: when COUNTRY_INCORPORATION = "NF" then match_characters(POSTAL_CODE,"^2899$") errorcode "pc111" errorlevel 3;
+    pc112: when COUNTRY_INCORPORATION = "NG" then match_characters(POSTAL_CODE,"^[1-9]\d{5}$") errorcode "pc112" errorlevel 3;
+    pc113: when COUNTRY_INCORPORATION = "NI" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc113" errorlevel 3;
+    pc114: when COUNTRY_INCORPORATION = "NL" then match_characters(POSTAL_CODE,"^(([1-9]\d{3} [A-Z]{2})|([1-9]\d{3}[A-Z]{2}))$") errorcode "pc114" errorlevel 3;
+    pc115: when COUNTRY_INCORPORATION = "NO" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc115" errorlevel 3;
+    pc116: when COUNTRY_INCORPORATION = "NP" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc116" errorlevel 3;
+    pc117: when COUNTRY_INCORPORATION = "NZ" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc117" errorlevel 3;
+    pc118: when COUNTRY_INCORPORATION = "OM" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc118" errorlevel 3;
+    pc119: when COUNTRY_INCORPORATION = "PA" then match_characters(POSTAL_CODE,"^(\d{4}(-\d{4})?)$") errorcode "pc119" errorlevel 3;
+    pc120: when COUNTRY_INCORPORATION = "PE" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc120" errorlevel 3;
+    pc121: when COUNTRY_INCORPORATION = "PF" then match_characters(POSTAL_CODE,"^987\d{2}$") errorcode "pc121" errorlevel 3;
+    pc122: when COUNTRY_INCORPORATION = "PG" then match_characters(POSTAL_CODE,"^\d{3}$") errorcode "pc122" errorlevel 3;
+    pc123: when COUNTRY_INCORPORATION = "PH" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc123" errorlevel 3;
+    pc124: when COUNTRY_INCORPORATION = "PK" then match_characters(POSTAL_CODE,"^[1-9]\d{4}$") errorcode "pc124" errorlevel 3;
+    pc125: when COUNTRY_INCORPORATION = "PL" then match_characters(POSTAL_CODE,"^\d{2}-\d{3}$") errorcode "pc125" errorlevel 3;
+    pc126: when COUNTRY_INCORPORATION = "PN" then match_characters(POSTAL_CODE,"^(PCR9 1ZZ)$") errorcode "pc126" errorlevel 3;
+    pc127: when COUNTRY_INCORPORATION = "PT" then match_characters(POSTAL_CODE,"^([1-9]\d{3}((-)\d{3}))$") errorcode "pc127" errorlevel 3;
+    pc128: when COUNTRY_INCORPORATION = "PW" then match_characters(POSTAL_CODE,"^(96939|96940)$") errorcode "pc128" errorlevel 3;
+    pc129: when COUNTRY_INCORPORATION = "PY" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc129" errorlevel 3;
+    pc130: when COUNTRY_INCORPORATION = "RO" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc130" errorlevel 3;
+    pc131: when COUNTRY_INCORPORATION = "RS" then match_characters(POSTAL_CODE,"^\d{5,6}$") errorcode "pc131" errorlevel 3;
+    pc132: when COUNTRY_INCORPORATION = "RU" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc132" errorlevel 3;
+    pc133: when COUNTRY_INCORPORATION = "SA" then match_characters(POSTAL_CODE,"^([1-8]\d{4}([\-]\d{4})?)$") errorcode "pc133" errorlevel 3;
+    pc134: when COUNTRY_INCORPORATION = "SD" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc134" errorlevel 3;
+    pc135: when COUNTRY_INCORPORATION = "SE" then match_characters(POSTAL_CODE,"^([1-9]\d{2} \d{2})$") errorcode "pc135" errorlevel 3;
+    pc136: when COUNTRY_INCORPORATION = "SG" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc136" errorlevel 3;
+    pc137: when COUNTRY_INCORPORATION = "SH" then match_characters(POSTAL_CODE,"^((ASCN 1ZZ|TDCU 1ZZ|STHL 1ZZ))$") errorcode "pc137" errorlevel 3;
+    pc138: when COUNTRY_INCORPORATION = "SI" then match_characters(POSTAL_CODE,"^([1-9]\d{3})$") errorcode "pc138" errorlevel 3;
+    pc139: when COUNTRY_INCORPORATION = "SK" then match_characters(POSTAL_CODE,"^((\d{3} \d{2})|\d{5})$") errorcode "pc139" errorlevel 3;
+    pc140: when COUNTRY_INCORPORATION = "SM" then match_characters(POSTAL_CODE,"^4789\d$") errorcode "pc140" errorlevel 3;
+    pc141: when COUNTRY_INCORPORATION = "SN" then match_characters(POSTAL_CODE,"^([1-8]\d{4})$") errorcode "pc141" errorlevel 3;
+    pc142: when COUNTRY_INCORPORATION = "SV" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc142" errorlevel 3;
+    pc143: when COUNTRY_INCORPORATION = "SZ" then match_characters(POSTAL_CODE,"^[HLMS]\d{3}$") errorcode "pc143" errorlevel 3;
+    pc144: when COUNTRY_INCORPORATION = "TC" then match_characters(POSTAL_CODE,"^TKCA 1ZZ$") errorcode "pc144" errorlevel 3;
+    pc145: when COUNTRY_INCORPORATION = "TH" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc145" errorlevel 3;
+    pc146: when COUNTRY_INCORPORATION = "TJ" then match_characters(POSTAL_CODE,"^7\d{5}$") errorcode "pc146" errorlevel 3;
+    pc147: when COUNTRY_INCORPORATION = "TM" then match_characters(POSTAL_CODE,"^7\d{5}$") errorcode "pc147" errorlevel 3;
+    pc148: when COUNTRY_INCORPORATION = "TN" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc148" errorlevel 3;
+    pc149: when COUNTRY_INCORPORATION = "TR" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc149" errorlevel 3;
+    pc150: when COUNTRY_INCORPORATION = "TT" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc150" errorlevel 3;
+    pc151: when COUNTRY_INCORPORATION = "TW" then match_characters(POSTAL_CODE,"(\d{3}\-\d{3})|(\d{3}[-]\d{2})|(\d{6})|(\d{3})") errorcode "pc151" errorlevel 3;
+    pc152: when COUNTRY_INCORPORATION = "UA" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc152" errorlevel 3;
+    pc153: when COUNTRY_INCORPORATION = "US" then match_characters(POSTAL_CODE,"^\d{5}(-\d{4})?$") errorcode "pc153" errorlevel 3;
+    pc154: when COUNTRY_INCORPORATION = "UY" then match_characters(POSTAL_CODE,"^([1-9]\d{4})$") errorcode "pc154" errorlevel 3;
+    pc155: when COUNTRY_INCORPORATION = "UZ" then match_characters(POSTAL_CODE,"^\d{6}$") errorcode "pc155" errorlevel 3;
+    pc156: when COUNTRY_INCORPORATION = "VA" then match_characters(POSTAL_CODE,"^(00120)$") errorcode "pc156" errorlevel 3;
+    pc157: when COUNTRY_INCORPORATION = "VC" then match_characters(POSTAL_CODE,"^VC\d{4}$") errorcode "pc157" errorlevel 3;
+    pc158: when COUNTRY_INCORPORATION = "VE" then match_characters(POSTAL_CODE,"^([1-8]\d{3})$") errorcode "pc158" errorlevel 3;
+    pc159: when COUNTRY_INCORPORATION = "VG" then match_characters(POSTAL_CODE,"^((VG11)[1-6][0])$") errorcode "pc159" errorlevel 3;
+    pc160: when COUNTRY_INCORPORATION = "VI" then match_characters(POSTAL_CODE,"^(008\d{2}(-\d{4})?)$") errorcode "pc160" errorlevel 3;
+    pc161: when COUNTRY_INCORPORATION = "VN" then match_characters(POSTAL_CODE,"^\d{5,6}$") errorcode "pc161" errorlevel 3;
+    pc162: when COUNTRY_INCORPORATION = "WF" then match_characters(POSTAL_CODE,"^986\d{2}$") errorcode "pc162" errorlevel 3;
+    pc163: when COUNTRY_INCORPORATION = "WS" then match_characters(POSTAL_CODE,"^(WS[1-2]\d{3})$") errorcode "pc163" errorlevel 3;
+    pc164: when COUNTRY_INCORPORATION = "ZA" then match_characters(POSTAL_CODE,"^\d{4}$") errorcode "pc164" errorlevel 3;
+    pc165: when COUNTRY_INCORPORATION = "ZM" then match_characters(POSTAL_CODE,"^\d{5}$") errorcode "pc165" errorlevel 3
+end datapoint ruleset;
+/*******************************************************************************
+*       Module validation
+*******************************************************************************/
+validation.postal_codes_errors :=
+	check_datapoint(
+		LEI_DATA,
+		postal_codes);
+
+validation.subcategories_errors :=
+	check_datapoint(
+		LEI_DATA,
+		subcategories);
+
+validation_results <-
+	 union(validation.postal_codes_errors,validation.subcategories_errors);
+
+errors_count <-
+	 count(
+			validation_results
+				[calc identifier 'errorlevel' := nvl('errorlevel',0)]
+				[keep 'errorcode']
+			group by 'errorlevel'
+		);

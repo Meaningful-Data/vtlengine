@@ -130,7 +130,7 @@ class DAGAnalyzer(ASTTemplate):
         return statements
 
     @classmethod
-    def createDAG(cls, ast: AST):
+    def createDAG(cls, ast: Start):
         """ """
         # Visit AST.
         dag = cls()
@@ -143,6 +143,11 @@ class DAGAnalyzer(ASTTemplate):
             # Create output dict.
             if len(dag.edges) != 0:
                 dag.sortAST(ast)
+            else:
+                MLStatements: list = [
+                    ML for ML in ast.children if not isinstance(ML, (HRuleset, DPRuleset, Operator))
+                ]
+                dag.check_overwriting(MLStatements)
             return dag
 
         except nx.NetworkXUnfeasible as error:

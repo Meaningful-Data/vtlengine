@@ -465,13 +465,21 @@ def __generate_transformation(
     expression = ASTString().render(ast=child.right)
     result = child.left.value  # type: ignore[attr-defined]
     return Transformation(
-        id=f"T{count}", expression=expression, is_persistent=is_persistent, result=result
+        id=f"T{count}",
+        expression=expression,
+        is_persistent=is_persistent,
+        result=result,
+        name=f"Transformation {result}",
     )
 
 
 def __generate_udo(child: Operator, count: int) -> UserDefinedOperator:
     operator_definition = ASTString().render(ast=child)
-    return UserDefinedOperator(id=f"UDO{count}", operator_definition=operator_definition)
+    return UserDefinedOperator(
+        id=f"UDO{count}",
+        operator_definition=operator_definition,
+        name=f"UserDefinedOperator {child.op}",
+    )
 
 
 def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset:
@@ -480,11 +488,14 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
         "datapoint" if isinstance(child, DPRuleset) else "hierarchical"
     )
     return Ruleset(
-        id=f"RS{count}", ruleset_definition=ruleset_definition, ruleset_type=ruleset_type
+        id=f"R{count}",
+        ruleset_definition=ruleset_definition,
+        ruleset_type=ruleset_type,
+        name=f"{ruleset_type.capitalize()} ruleset {child.name}",
     )
 
 
-def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationScheme:
+def ast_to_sdmx(ast: AST.Start, agency_id: str, id: str, version: str) -> TransformationScheme:
     """
     Converts a vtl AST into an SDMX compatible `TransformationScheme` object, following
     the pysdmx model.
@@ -511,6 +522,7 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
         ast: The root node of the vtl ast representing the set of
         vtl expressions.
         agency_id: The identifier of the agency defining the SDMX structure as a string.
+        id: The identifier of the transformation scheme as a string.
         version: The version of the transformation scheme given as a string.
 
     Returns:
@@ -552,13 +564,23 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
     if list_rulesets:
         references["ruleset_schemes"] = [
             RulesetScheme(
-                items=list_rulesets, agency=agency_id, id="RS1", vtl_version="2.1", version=version
+                items=list_rulesets,
+                agency=agency_id,
+                id="RS1",
+                vtl_version="2.1",
+                version=version,
+                name=f"RulesetScheme {id}-RS",
             )
         ]
     if list_udos:
         references["user_defined_operator_schemes"] = [
             UserDefinedOperatorScheme(
-                items=list_udos, agency=agency_id, id="UDS1", vtl_version="2.1", version=version
+                items=list_udos,
+                agency=agency_id,
+                id="UDS1",
+                vtl_version="2.1",
+                version=version,
+                name=f"UserDefinedOperatorScheme {id}-UDS",
             )
         ]
 
@@ -568,6 +590,7 @@ def ast_to_sdmx(ast: AST.Start, agency_id: str, version: str) -> TransformationS
         id="TS1",
         vtl_version="2.1",
         version=version,
+        name=f"TransformationScheme {id}",
         **references,
     )
 

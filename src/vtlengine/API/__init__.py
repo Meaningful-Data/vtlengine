@@ -481,7 +481,9 @@ def run_sdmx(
     return result
 
 
-def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> TransformationScheme:
+def generate_sdmx(
+    script: Union[str, Path], agency_id: str, id: str, version: str = "1.0"
+) -> TransformationScheme:
     """
     Function that generates a TransformationScheme object from a VTL script.
 
@@ -492,11 +494,13 @@ def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> Transfor
     Args:
         script: A string with the VTL script.
         agency_id: The Agency ID used in the generated `TransformationScheme` object.
+        id: The given id of the generated `TransformationScheme` object.
         version: The Version used in the generated `TransformationScheme` object. (default: "1.0")
 
     Returns:
         The generated Transformation Scheme object.
     """
-    ast = create_ast(script)
-    result = ast_to_sdmx(ast, agency_id, version)
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
+    result = ast_to_sdmx(ast, agency_id, id, version)
     return result
