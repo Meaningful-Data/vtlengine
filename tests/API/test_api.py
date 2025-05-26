@@ -6,10 +6,10 @@ import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.model import (
-    RulesetScheme,
+    Ruleset,
     Transformation,
     TransformationScheme,
-    UserDefinedOperatorScheme,
+    UserDefinedOperator,
 )
 
 import vtlengine.DataTypes as DataTypes
@@ -1219,26 +1219,142 @@ def test_to_vtl_json_exception(data, error_code):
         run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
 
 
-@pytest.mark.parametrize("script, agency_id, version", params_generate_sdmx)
-def test_generate_sdmx(script, agency_id, version):
-    result = generate_sdmx(script, agency_id, version)
-    assert isinstance(result, TransformationScheme)
-    assert result.agency == agency_id
-    assert result.id == "TS1"
-    assert result.version == version
-    assert result.vtl_version == "2.1"
-    if result.ruleset_schemes:
-        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-        assert result.ruleset_schemes[0].id == "RS1"
-        assert result.ruleset_schemes[0].agency == agency_id
-        assert result.ruleset_schemes[0].version == version
-        assert result.ruleset_schemes[0].vtl_version == "2.1"
-    if result.user_defined_operator_schemes:
-        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-        assert result.user_defined_operator_schemes[0].id == "UDS1"
-        assert result.user_defined_operator_schemes[0].agency == agency_id
-        assert result.user_defined_operator_schemes[0].version == version
-        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
+def test_ts_without_udo_or_rs():
+    script = "DS_r := DS_1 + DS_2;"
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+
+    assert isinstance(ts, TransformationScheme)
+    assert ts.id == "TS1"
+    assert ts.agency == "MD"
+    assert ts.version == "1.0"
+    assert ts.name == "TransformationScheme TestID"
+    assert len(ts.items) == 1
+    transformation = ts.items[0]
+    assert transformation.is_persistent is False
+
+
+def test_ts_with_udo():
+    script = """
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert len(ts.items) == 1
+    udo_scheme = ts.user_defined_operator_schemes[0]
+    assert udo_scheme.id == "UDS1"
+    assert udo_scheme.name == "UserDefinedOperatorScheme TestID-UDS"
+    assert len(udo_scheme.items) == 1
+    udo = udo_scheme.items[0]
+    assert isinstance(udo, UserDefinedOperator)
+    assert udo.id == "UDO1"
+
+
+def test_ts_with_dp_ruleset():
+    script = """
+    define datapoint ruleset signValidation (variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI,
+        FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+        sign1c: when AE = "C" and IAI = "G" then O > 0 errorcode "sign1c" errorlevel 1;
+        sign2c: when AE = "C" and IAI = "GA" then O > 0 errorcode "sign2c" errorlevel 1
+    end datapoint ruleset;
+    DS_r := check_datapoint (BOP, signValidation);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert rs_scheme.name == "RulesetScheme TestID-RS"
+    assert len(rs_scheme.items) == 1
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "datapoint"
+
+
+def test_ts_with_hierarchical_ruleset():
+    script = """
+        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+        DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert rs_scheme.name == "RulesetScheme TestID-RS"
+    assert len(rs_scheme.items) == 1
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
+
+
+def test_ts_with_2_rulesets():
+    script = filepath_VTL / "validations.vtl"
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert len(rs_scheme.items) == 2
+    assert isinstance(rs_scheme.items[0], Ruleset)
+    assert rs_scheme.items[0].ruleset_type == "datapoint"
+
+
+def test_ts_with_ruleset_and_udo():
+    script = """
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := suma(ds1, ds2);
+
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+    DS_r2 := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+
+    # Validate TransformationScheme
+    assert isinstance(ts, TransformationScheme)
+
+    # Validate UDO scheme
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo_scheme = ts.user_defined_operator_schemes[0]
+    assert udo_scheme.id == "UDS1"
+    assert len(udo_scheme.items) == 1
+    assert isinstance(udo_scheme.items[0], UserDefinedOperator)
+
+    # Validate Ruleset scheme
+    assert hasattr(ts, "ruleset_schemes")
+    rs_scheme = ts.ruleset_schemes[0]
+    assert rs_scheme.id == "RS1"
+    assert len(rs_scheme.items) == 1
+    assert isinstance(rs_scheme.items[0], Ruleset)
+    assert rs_scheme.items[0].ruleset_type == "hierarchical"
+    ruleset = rs_scheme.items[0]
+    assert isinstance(ruleset, Ruleset)
+    assert ruleset.id == "R1"
+    assert ruleset.ruleset_type == "hierarchical"
+    assert ruleset.ruleset_definition == (
+        "define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is "
+        'B = C - D errorcode "Balance (credit-debit)" errorlevel 4; N = A - L errorcode "Net (assets-liabilities)" errorlevel 4 end hierarchical ruleset;'
+    )
 
 
 def test_check_script_with_string_input():
@@ -1252,30 +1368,30 @@ def test_check_script_invalid_input_type():
         _check_script(12345)
 
 
-@pytest.mark.parametrize("script, agency_id, version", params_generate_sdmx)
-def test_generate_sdmx_and_check_script(script, agency_id, version):
-    result = generate_sdmx(script, agency_id, version)
-    assert isinstance(result, TransformationScheme)
-    assert result.agency == agency_id
-    assert result.id == "TS1"
-    assert result.version == version
-    assert result.vtl_version == "2.1"
-
-    if result.ruleset_schemes:
-        assert isinstance(result.ruleset_schemes[0], RulesetScheme)
-        assert result.ruleset_schemes[0].id == "RS1"
-        assert result.ruleset_schemes[0].agency == agency_id
-        assert result.ruleset_schemes[0].version == version
-        assert result.ruleset_schemes[0].vtl_version == "2.1"
-
-    if result.user_defined_operator_schemes:
-        assert isinstance(result.user_defined_operator_schemes[0], UserDefinedOperatorScheme)
-        assert result.user_defined_operator_schemes[0].id == "UDS1"
-        assert result.user_defined_operator_schemes[0].agency == agency_id
-        assert result.user_defined_operator_schemes[0].version == version
-        assert result.user_defined_operator_schemes[0].vtl_version == "2.1"
-
-    regenerated_script = _check_script(result)
+def test_generate_sdmx_and_check_script():
+    script = """
+    define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+    end hierarchical ruleset;
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+    DS_r2 := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo = ts.user_defined_operator_schemes[0]
+    assert isinstance(udo.items[0], UserDefinedOperator)
+    assert hasattr(ts, "ruleset_schemes")
+    rs = ts.ruleset_schemes[0]
+    assert isinstance(rs.items[0], Ruleset)
+    assert rs.items[0].ruleset_type == "hierarchical"
+    regenerated_script = _check_script(ts)
     assert prettify(script) == prettify(regenerated_script)
 
 

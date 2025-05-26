@@ -1926,14 +1926,14 @@ files = [
 
 [[package]]
 name = "pysdmx"
-version = "1.2.2"
+version = "1.3.0"
 description = "Your opinionated Python SDMX library"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pysdmx-1.2.2-py3-none-any.whl", hash = "sha256:3b7492adc5ec73a5fe2ed8481db51bec05e00a9312cd797056c55daf9a430fe7"},
-    {file = "pysdmx-1.2.2.tar.gz", hash = "sha256:4a3cabf5b3d5c124a0e2cf416d5053e88907cf46c764100e59ecca710e51201d"},
+    {file = "pysdmx-1.3.0-py3-none-any.whl", hash = "sha256:4b9d5e6a13d8c059502a4e2f3144d791837d0f97661daf19240a9d8b49d415e0"},
+    {file = "pysdmx-1.3.0.tar.gz", hash = "sha256:17ddbf68f6a3a4fbe2fa10edb12fbb5c087c65f3b3cb14b6afe3c1108ffb422a"},
 ]
 
 [package.dependencies]
@@ -2832,4 +2832,4 @@ s3 = ["fsspec", "s3fs"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "bd29163cc63a5f4a2bdfbb2e2834488b92f7d60e50893dc82aaa419aa26c79d1"
+content-hash = "10222fafc462c36cf6fffd4745083a315a136ee6b4eb89022cb407f0d3a58a32"
