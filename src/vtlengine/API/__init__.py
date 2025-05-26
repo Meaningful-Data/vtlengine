@@ -9,7 +9,7 @@ from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
-from pysdmx.util import parse_short_urn, parse_urn
+from pysdmx.util import parse_urn
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -335,7 +335,7 @@ def run(
     return result
 
 
-def run_sdmx(
+def run_sdmx(  # noqa: C901
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,

@@ -7,10 +7,9 @@ import pytest
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
-    Ruleset,
     DataflowRef,
     Reference,
-    RulesetScheme,
+    Ruleset,
     Transformation,
     TransformationScheme,
     UserDefinedOperator,
