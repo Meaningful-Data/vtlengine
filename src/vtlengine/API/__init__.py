@@ -321,6 +321,7 @@ def run(
         datapoints_paths=path_dict,
         output_path=output_folder,
         time_period_representation=time_period_representation,
+        return_only_persistent=return_only_persistent,
     )
     result = interpreter.visit(ast)
 
