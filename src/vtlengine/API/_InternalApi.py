@@ -412,23 +412,23 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         os.mkdir(output_folder)
 
 
-def to_vtl_json(dsd: Union[DataStructureDefinition, Schema]) -> Dict[str, Any]:
+def to_vtl_json(dsd: Union[DataStructureDefinition, Schema], dataset_name: str) -> Dict[str, Any]:
     """
-    Converts a pysdmx `DataStructureDefinition` or `Schema` into a vtl-compatible json
+    Converts a pysdmx `DataStructureDefinition` or `Schema` into a VTL-compatible JSON
     representation.
 
     This function extracts and transforms the components (dimensions, measures, and attributes)
     from the given SDMX data structure and maps them into a dictionary format that conforms
-    to the expected vtl data structure json schema.
+    to the expected VTL data structure json schema.
 
     Args:
         dsd: An instance of `DataStructureDefinition` or `Schema` from the `pysdmx` model.
+        dataset_name: The name of the resulting VTL dataset.
 
     Returns:
-            A dictionary representing the dataset in vtl format, with keys for dataset name and its
+            A dictionary representing the dataset in VTL format, with keys for dataset name and its
             components, including their name, role, data type, and nullability.
     """
-    dataset_name = dsd.id
     components = []
     NAME = "name"
     ROLE = "role"

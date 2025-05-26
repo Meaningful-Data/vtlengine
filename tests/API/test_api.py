@@ -5,12 +5,17 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
+from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
+    DataflowRef,
+    Reference,
     Ruleset,
     Transformation,
     TransformationScheme,
     UserDefinedOperator,
 )
+from pysdmx.model.dataflow import Dataflow, Schema
+from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
@@ -314,6 +319,115 @@ params_run_sdmx = [
     ),
 ]
 
+params_run_sdmx_with_mappings = [
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        None,
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        {"Dataflow=MD:TEST_DF(1.0)": "DS_1"},
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        VtlDataflowMapping(
+            dataflow="urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)",
+            dataflow_alias="DS_1",
+            id="VTL_MAP_1",
+        ),
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        VtlDataflowMapping(
+            dataflow=Reference(
+                sdmx_type="Dataflow",
+                agency="MD",
+                id="TEST_DF",
+                version="1.0",
+            ),
+            dataflow_alias="DS_1",
+            id="VTL_MAP_2",
+        ),
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        VtlDataflowMapping(
+            dataflow=DataflowRef(
+                agency="MD",
+                id="TEST_DF",
+                version="1.0",
+            ),
+            dataflow_alias="DS_1",
+            id="VTL_MAP_3",
+        ),
+    ),
+    (
+        (filepath_sdmx_input / "str_all_minimal_df.xml"),
+        (filepath_sdmx_input / "metadata_minimal_df.xml"),
+        VtlDataflowMapping(
+            dataflow=Dataflow(
+                id="TEST_DF",
+                agency="MD",
+                version="1.0",
+            ),
+            dataflow_alias="DS_1",
+            id="VTL_MAP_4",
+        ),
+    ),
+]
+
+params_run_sdmx_errors = [
+    (
+        [
+            PandasDataset(
+                structure=Schema(id="DS1", components=[], agency="BIS", context="datastructure"),
+                data=pd.DataFrame(),
+            ),
+            PandasDataset(
+                structure=Schema(id="DS2", components=[], agency="BIS", context="datastructure"),
+                data=pd.DataFrame(),
+            ),
+        ],
+        None,
+        SemanticError,
+        "0-1-3-3",
+    ),
+    (
+        [
+            PandasDataset(
+                structure=Schema(
+                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
+                ),
+                data=pd.DataFrame(),
+            )
+        ],
+        42,
+        TypeError,
+        "Expected dict or VtlDataflowMapping type for mappings.",
+    ),
+    (
+        [
+            PandasDataset(
+                structure=Schema(
+                    id="BIS_DER", components=[], agency="BIS", context="datastructure"
+                ),
+                data=pd.DataFrame(),
+            )
+        ],
+        VtlDataflowMapping(
+            dataflow=123,
+            dataflow_alias="ALIAS",
+            id="Test",
+        ),
+        TypeError,
+        "Expected str, Reference, DataflowRef or Dataflow type for dataflow in VtlDataflowMapping.",
+    ),
+]
 params_to_vtl_json = [
     (
         (filepath_sdmx_input / "str_all_minimal.xml"),
@@ -338,7 +452,7 @@ params_2_1_gen_str = [
     )
 ]
 
-params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-3-1-2")]
+params_exception_vtl_to_json = [((filepath_sdmx_input / "str_all_minimal.xml"), "0-1-3-2")]
 
 params_check_script = [
     (
@@ -1272,10 +1386,27 @@ def test_run_sdmx_function(data, structure):
     assert isinstance(result["DS_r"].data, pd.DataFrame)
 
 
+@pytest.mark.parametrize("data, structure, mappings", params_run_sdmx_with_mappings)
+def test_run_sdmx_function_with_mappings(data, structure, mappings):
+    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    datasets = get_datasets(data, structure)
+    result = run_sdmx(script, datasets, mappings=mappings)
+    assert isinstance(result, dict)
+    assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
+    assert isinstance(result["DS_r"].data, pd.DataFrame)
+
+
+@pytest.mark.parametrize("datasets, mappings, expected_exception, match", params_run_sdmx_errors)
+def test_run_sdmx_errors_with_mappings(datasets, mappings, expected_exception, match):
+    script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
+    with pytest.raises(expected_exception, match=match):
+        run_sdmx(script, datasets, mappings=mappings)
+
+
 @pytest.mark.parametrize("data, structure, path_reference", params_to_vtl_json)
 def test_to_vtl_json_function(data, structure, path_reference):
     datasets = get_datasets(data, structure)
-    result = to_vtl_json(datasets[0].structure)
+    result = to_vtl_json(datasets[0].structure, dataset_name="BIS_DER")
     with open(path_reference, "r") as file:
         reference = json.load(file)
     assert result == reference
