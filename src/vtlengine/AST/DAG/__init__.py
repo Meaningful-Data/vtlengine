@@ -85,10 +85,13 @@ class DAGAnalyzer(ASTTemplate):
         all_output = []
         global_inputs = []
         inserted = []
+        persistent_datasets = []
         for key, statement in self.dependencies.items():
             outputs = statement[OUTPUTS]
             persistent = statement[PERSISTENT]
             reference = outputs + persistent
+            if len(persistent) == 1 and persistent[0] not in persistent_datasets:
+                persistent_datasets.append(persistent[0])
             deletion_key = key
             all_output.append(reference[0])
             for subKey, subStatement in self.dependencies.items():
@@ -127,6 +130,7 @@ class DAGAnalyzer(ASTTemplate):
                         statements[INSERT][key] = [element]
 
         statements[GLOBAL] = global_inputs
+        statements[PERSISTENT] = persistent_datasets
         return statements
 
     @classmethod

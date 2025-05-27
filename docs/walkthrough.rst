@@ -51,7 +51,7 @@ Example 1: Correct VTL
     from vtlengine import semantic_analysis
 
     script = """
-        DS_A := DS_1 * 10;
+        DS_A <= DS_1 * 10;
     """
 
     data_structures = {
@@ -96,7 +96,7 @@ data type, instead of Number.
     from vtlengine import semantic_analysis
 
     script = """
-        DS_A := DS_1 * 10;
+        DS_A <= DS_1 * 10;
     """
 
     data_structures = {
@@ -155,7 +155,7 @@ Example 3: Simple run
     import pandas as pd
 
     script = """
-        DS_A := DS_1 * 10;
+        DS_A <= DS_1 * 10;
     """
 
     data_structures = {
@@ -240,7 +240,7 @@ Optional settings include:
     data = Path("Docs/_static/data.xml")
     structure = Path("Docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
-    script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
+    script = "DS_r <= DS_1 [calc Me_4 := OBS_VALUE];"
     print(run_sdmx(script, datasets)['DS_r'].data)
 
 
@@ -273,7 +273,7 @@ TransformationScheme object. If we do not include a mapping, VTL script must hav
                 name=None,
                 description=None,
                 expression="DS_1 [calc Me_4 := OBS_VALUE];",
-                is_persistent=False,
+                is_persistent=True,
                 result="DS_r1",
                 annotations=(),
             ),
@@ -284,7 +284,7 @@ TransformationScheme object. If we do not include a mapping, VTL script must hav
                 name=None,
                 description=None,
                 expression="DS_1 [rename OBS_VALUE to Me_5];",
-                is_persistent=False,
+                is_persistent=True,
                 result="DS_r2",
                 annotations=(),
             )
@@ -321,7 +321,7 @@ object from pysdmx or a dictionary.
                 name=None,
                 description=None,
                 expression="DS_1 [calc Me_4 := OBS_VALUE]",
-                is_persistent=False,
+                is_persistent=True,
                 result="DS_r",
                 annotations=(),
             ),
@@ -362,7 +362,7 @@ The `prettify` method serves to format a VTL script to make it more readable.
                         N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
                     end hierarchical ruleset;
 
-        DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        DS_r <= check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
         """
     prettified_script = prettify(script)
     print(prettified_script)
@@ -382,7 +382,7 @@ returns:
 	    errorlevel 4
     end hierarchical ruleset;
 
-    DS_r :=
+    DS_r <=
 	    check_hierarchy(
 		    BOP,
 		    accountingEntry,

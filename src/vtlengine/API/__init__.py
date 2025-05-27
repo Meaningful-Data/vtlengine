@@ -208,7 +208,7 @@ def run(
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
@@ -272,7 +272,7 @@ def run(
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
@@ -321,6 +321,7 @@ def run(
         datapoints_paths=path_dict,
         output_path=output_folder,
         time_period_representation=time_period_representation,
+        return_only_persistent=return_only_persistent,
     )
     result = interpreter.visit(ast)
 
@@ -342,7 +343,7 @@ def run_sdmx(  # noqa: C901
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
@@ -388,7 +389,7 @@ def run_sdmx(  # noqa: C901
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 

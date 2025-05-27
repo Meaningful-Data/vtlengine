@@ -685,7 +685,14 @@ def test_semantic(script, data_structures, value_domains, external_routines):
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run(script, data_structures, datapoints, value_domains, external_routines):
-    result = run(script, data_structures, datapoints, value_domains, external_routines)
+    result = run(
+        script,
+        data_structures,
+        datapoints,
+        value_domains,
+        external_routines,
+        return_only_persistent=False,
+    )
     reference = {
         "DS_r": Dataset(
             name="DS_r",
@@ -746,6 +753,65 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
     }
 
     assert result == reference
+
+
+@pytest.mark.parametrize(
+    "script, data_structures, datapoints, value_domains, external_routines", params_run
+)
+def test_run_only_persistent_results(
+    script, data_structures, datapoints, value_domains, external_routines, tmp_path
+):
+    output_path = tmp_path
+
+    result = run(
+        script,
+        data_structures,
+        datapoints,
+        value_domains,
+        external_routines,
+        output_folder=output_path,
+        return_only_persistent=True,
+    )
+
+    reference = {
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Id_1": Component(
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Id_2": Component(
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame(
+                columns=["Id_1", "Id_2", "Me_1"],
+                index=[0, 1],
+                data=[(1, "A", 3), (1, "B", 6)],
+            ),
+        ),
+    }
+
+    assert result == reference
+    files = list(output_path.iterdir())
+    assert len(files) == 1
+    assert set(result.keys()) == {"DS_r2"}
+    expected_file = output_path / "DS_r2.csv"
+    assert expected_file.exists()
+    content = expected_file.read_text(encoding="utf-8").strip()
+    assert content
 
 
 @pytest.mark.parametrize(
@@ -825,7 +891,12 @@ def test_readme_example():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
 
     assert run_result == {
         "DS_A": Dataset(
@@ -884,7 +955,12 @@ def test_readme_run():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
 
     assert run_result == {
         "DS_A": Dataset(
@@ -993,7 +1069,12 @@ def test_non_mandatory_fill_at():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
 
     assert run_result == {
         "DS_r": Dataset(
@@ -1083,7 +1164,12 @@ def test_non_mandatory_fill_me():
 
     datapoints = {"DS_1": data_df}
 
-    run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        return_only_persistent=False,
+    )
 
     assert run_result == {
         "DS_r": Dataset(
@@ -1295,7 +1381,7 @@ def test_load_data_structure_with_wrong_data_type(ds_r, error_code):
 def test_run_sdmx_function(data, structure):
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets)
+    result = run_sdmx(script, datasets, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -1305,7 +1391,7 @@ def test_run_sdmx_function(data, structure):
 def test_run_sdmx_function_with_mappings(data, structure, mappings):
     script = "DS_r := DS_1 [calc Me_4 := OBS_VALUE];"
     datasets = get_datasets(data, structure)
-    result = run_sdmx(script, datasets, mappings=mappings)
+    result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
     assert isinstance(result["DS_r"].data, pd.DataFrame)
@@ -1330,7 +1416,9 @@ def test_to_vtl_json_function(data, structure, path_reference):
 @pytest.mark.parametrize("code, data, structure", params_2_1_str_sp)
 def test_run_sdmx_2_1_str_sp(code, data, structure):
     datasets = get_datasets(data, structure)
-    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    result = run_sdmx(
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
+    )
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     assert result == reference
 
@@ -1338,7 +1426,9 @@ def test_run_sdmx_2_1_str_sp(code, data, structure):
 @pytest.mark.parametrize("code, data, structure", params_2_1_gen_str)
 def test_run_sdmx_2_1_gen_all(code, data, structure):
     datasets = get_datasets(data, structure)
-    result = run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
+    result = run_sdmx(
+        "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets, return_only_persistent=False
+    )
     reference = SDMXTestsOutput.LoadOutputs(code, ["DS_r"])
     assert result == reference
 
