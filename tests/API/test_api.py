@@ -759,9 +759,9 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run_only_persistent_results(
-    script, data_structures, datapoints, value_domains, external_routines
+    script, data_structures, datapoints, value_domains, external_routines, tmp_path
 ):
-    output_path = Path(__file__).parent / "output_folder_test"
+    output_path = tmp_path
 
     result = run(
         script,
@@ -805,12 +805,13 @@ def test_run_only_persistent_results(
     }
 
     assert result == reference
+    files = list(output_path.iterdir())
+    assert len(files) == 1
     assert set(result.keys()) == {"DS_r2"}
     expected_file = output_path / "DS_r2.csv"
     assert expected_file.exists()
-    with expected_file.open("r", encoding="utf-8") as f:
-        content = f.read().strip()
-        assert content
+    content = expected_file.read_text(encoding="utf-8").strip()
+    assert content
 
 
 @pytest.mark.parametrize(

@@ -11,7 +11,7 @@ import vtlengine.Operators as Operators
 from vtlengine.AST import VarID
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
-from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INSERT, PERSISTENT
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
@@ -149,6 +149,7 @@ class InterpreterAnalyzer(ASTTemplate):
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    # Saving only persistent datasets
 
     # **********************************
     # *                                *
@@ -189,6 +190,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 continue
             if ds_name in self.ds_analysis[GLOBAL]:
                 # We do not save global input datasets, only results of transformations
+                self.datasets[ds_name].data = None
+                continue
+            if self.return_only_persistent and ds_name not in self.ds_analysis[PERSISTENT]:
                 self.datasets[ds_name].data = None
                 continue
             # Saving only datasets, no scalars
