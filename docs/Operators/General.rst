@@ -2,7 +2,7 @@
 GENERAL
 *******
 
-.. py:currentmodule:: vtl-engine-spark.Operators.General
+.. py:currentmodule:: vtlengine.Operators.General
 
 
 .. autoclass:: Membership

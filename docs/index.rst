@@ -2,7 +2,10 @@ VTL Engine Documentation
 ########################
 
 The VTL Engine is a Python library that allows you to validate and run VTL scripts.
-It is a Python-based library around the `VTL Language 2.0 <http://sdmx.org/?page_id=5096>`_
+It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.github.io/vtl/2.1/html/index.html>`_
+
+The vtlengine library is compatible with pysdmx, which is a Python library to handle SDMX data and metadata.
+Check the `pysdmx documentation <https://py.sdmx.io/>`_ for more information.
 
 Useful links
 ************
@@ -19,7 +22,7 @@ Installation
 Requirements
 ============
 
-The VTL Engine requires Python 3.10 or higher.
+The VTL Engine requires Python 3.9 or higher.
 
 
 Install with pip
@@ -38,17 +41,16 @@ To install the VTL Engine on any Operating System, you can download it from `pip
 S3 Extra
 ========
 
-If you would like to use the S3 storage, you need to install the `s3` extra:
+If you would like to use the S3 capabilities, you need to install the `s3` extra:
 
 .. code-block:: bash
 
     pip install vtlengine[s3]
 
-The S3 extra is based on the pandas[aws] package, which requires to set up some environment variables. Please check the `boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables>`_
+The S3 extra is based on the pandas[aws] extra, which requires to set up some environment variables. Please check the `boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables>`_
 
 .. toctree::
 
-    index
     walkthrough
     api
 

@@ -4,7 +4,7 @@ Aggregation Operators
 
 This module contains the necessary operators to perform aggregate operations.
 
-.. py:currentmodule:: vtl-engine-spark.Aggregation
+.. py:currentmodule:: vtlengine.Operators.Aggregation
 
 The main characteristic of this kind of operation is the use of the expressions 'group by' and
 'group except' to extract the identifiers. Also, the use of pandas dataframe is the main method to perform it.
