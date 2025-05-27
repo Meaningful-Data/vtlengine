@@ -4,7 +4,7 @@ Numeric
 
 This module contains the necessary tools to perform the unary and binary numeric operations.
 
-.. py:currentmodule:: vtl-engine-spark.Numeric
+.. py:currentmodule:: vtlengine.Operators.Numeric
 
 Two main classes inherits from Binary and Unary main class, to ensure the data type is number and is able to perform the
 operation.

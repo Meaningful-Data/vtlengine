@@ -2,7 +2,7 @@
 String
 ******
 
-.. py:currentmodule:: vtl-engine-spark.Operators.String
+.. py:currentmodule:: vtlengine.Operators.String
 
 .. autoclass:: Unary
 
@@ -22,12 +22,8 @@ String
 
 .. autoclass:: Concatenate
 
-.. autoclass:: Parametrized
-
 .. autoclass:: Substr
 
 .. autoclass:: Replace
 
 .. autoclass:: Instr
-
-.. autoclass::
