@@ -149,7 +149,6 @@ class InterpreterAnalyzer(ASTTemplate):
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
-    # Saving only persistent datasets
 
     # **********************************
     # *                                *
