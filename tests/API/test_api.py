@@ -1612,6 +1612,35 @@ def test_generate_sdmx_and_check_script():
     rs = ts.ruleset_schemes[0]
     assert isinstance(rs.items[0], Ruleset)
     assert rs.items[0].ruleset_type == "hierarchical"
+    assert rs.items[0].ruleset_scope == "variable"
+    regenerated_script = _check_script(ts)
+    assert prettify(script) == prettify(regenerated_script)
+
+
+def test_generate_sdmx_and_check_script_with_valuedomain():
+    script = """
+    define hierarchical ruleset sectorsHierarchy (valuedomain rule abstract) is
+                        B = C - D errorcode "totalComparedToBanks" errorlevel 4;
+                        N >  A + L errorcode "totalGeUnal" errorlevel 3
+    end hierarchical ruleset;
+    define operator suma (ds1 dataset, ds2 dataset)
+            returns dataset is
+            ds1 + ds2
+    end operator;
+    sectors_hier_val_unf := check_hierarchy(DS_1, sectorsHierarchy rule Id_2 non_zero);
+    DS_r2 := suma(ds1, ds2);
+    """
+    ts = generate_sdmx(script, agency_id="MD", id="TestID")
+    assert isinstance(ts, TransformationScheme)
+    assert hasattr(ts, "user_defined_operator_schemes")
+    assert len(ts.user_defined_operator_schemes) == 1
+    udo = ts.user_defined_operator_schemes[0]
+    assert isinstance(udo.items[0], UserDefinedOperator)
+    assert hasattr(ts, "ruleset_schemes")
+    rs = ts.ruleset_schemes[0]
+    assert isinstance(rs.items[0], Ruleset)
+    assert rs.items[0].ruleset_type == "hierarchical"
+    assert rs.items[0].ruleset_scope == "valuedomain"
     regenerated_script = _check_script(ts)
     assert prettify(script) == prettify(regenerated_script)
 
