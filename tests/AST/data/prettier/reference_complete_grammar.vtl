@@ -378,8 +378,7 @@ define datapoint ruleset dr_test(variable Me_int, Me_num, Me_str) is
 				else
 					false
 			errorcode  "DR_3"
-			errorlevel 2;
-
+			errorlevel 2
 end datapoint ruleset;
 
 DR_ds :=
@@ -423,7 +422,7 @@ end hierarchical ruleset;
 HR_ds :=
 	check_hierarchy(
 		DS_1#Me_num,
-		hr_test,
+		hr_test
 		rule Id_2);
 /*************************************************
 JOIN
@@ -456,17 +455,17 @@ unplus_sc :=
 unminus_sc :=
 	-2;
 abs_sc :=
-	abs -3;
+	abs(-3);
 exp_sc :=
-	exp 4;
+	exp(4);
 ln_sc :=
-	ln 5;
+	ln(5);
 sqrt_sc :=
-	sqrt 6;
+	sqrt(6);
 ceil_sc :=
-	ceil 7.5;
+	ceil(7.5);
 floor_sc :=
-	floor 8.5;
+	floor(8.5);
 binplus_sc :=
 	1 + 2;
 binminus_sc :=
@@ -492,17 +491,17 @@ unplus_ds :=
 unminus_ds :=
 	-DS_1#Me_int;
 abs_ds :=
-	abs DS_1#Me_int;
+	abs(DS_1#Me_int);
 exp_ds :=
-	exp DS_1#Me_int;
+	exp(DS_1#Me_int);
 ln_ds :=
-	ln DS_1#Me_int;
+	ln(DS_1#Me_int);
 sqrt_ds :=
-	sqrt DS_1#Me_int;
+	sqrt(DS_1#Me_int);
 ceil_ds :=
-	ceil DS_1#Me_num;
+	ceil(DS_1#Me_num);
 floor_ds :=
-	floor DS_1#Me_num;
+	floor(DS_1#Me_num);
 binplus_ds :=
 	DS_1#Me_int + DS_1#Me_int;
 binminus_ds :=
@@ -552,7 +551,7 @@ STRING
 concat_sc :=
 	"a" || "b";
 length_sc :=
-	length "abc";
+	length("abc");
 substring_sc :=
 	substr("abc", 1, 2);
 instr_sc :=
@@ -560,19 +559,19 @@ instr_sc :=
 replace_sc :=
 	replace("abc", "b", "d");
 lower_sc :=
-	lower "ABC";
+	lower("ABC");
 upper_sc :=
-	upper "abc";
+	upper("abc");
 trim_sc :=
-	trim " abc ";
+	trim(" abc ");
 ltrim_sc :=
-	ltrim " abc ";
+	ltrim(" abc ");
 rtrim_sc :=
-	rtrim " abc ";
+	rtrim(" abc ");
 concat_ds :=
 	DS_1#Me_str || DS_1#Me_str;
 length_ds :=
-	length DS_1#Me_str;
+	length(DS_1#Me_str);
 substring_ds :=
 	substr(DS_1#Me_str, 1, 2);
 instr_ds :=
@@ -580,42 +579,42 @@ instr_ds :=
 replace_ds :=
 	replace(DS_1#Me_str, "b", "d");
 lower_ds :=
-	lower DS_1#Me_str;
+	lower(DS_1#Me_str);
 upper_ds :=
-	upper DS_1#Me_str;
+	upper(DS_1#Me_str);
 trim_ds :=
-	trim DS_1#Me_str;
+	trim(DS_1#Me_str);
 ltrim_ds :=
-	ltrim DS_1#Me_str;
+	ltrim(DS_1#Me_str);
 rtrim_ds :=
-	rtrim DS_1#Me_str;
+	rtrim(DS_1#Me_str);
 /*************************************************
 TIME
 *************************************************/
 current_date_sc :=
 	current_date();
 year_sc :=
-	year cast("2000-01-01", date);
+	year(cast("2000-01-01", date));
 month_sc :=
-	month cast("2012-12-25", date);
+	month(cast("2012-12-25", date));
 dayofyear_sc :=
-	dayofyear cast("2020-12-31", date);
+	dayofyear(cast("2020-12-31", date));
 dayofmonth_sc :=
-	dayofmonth cast("2025-03-07", date);
+	dayofmonth(cast("2025-03-07", date));
 daytoyear_sc :=
-	daytoyear 730;
+	daytoyear(730);
 daytomonth_sc :=
-	daytomonth 183;
+	daytomonth(183);
 yeartoday_sc :=
-	yeartoday "P1Y6M15D";
+	yeartoday("P1Y6M15D");
 monthtoday_sc :=
-	monthtoday "P2Y9M21D";
+	monthtoday("P2Y9M21D");
 period_indicator_ds :=
-	period_indicator drop_identifier(DS_1, Id_date);
+	period_indicator(drop_identifier(DS_1, Id_date));
 flow_to_stock_date_ds :=
-	flow_to_stock drop_identifier(DS_1, Id_date);
+	flow_to_stock(drop_identifier(DS_1, Id_date));
 stock_to_flow_period_ds :=
-	flow_to_stock drop_identifier(DS_1, Id_period);
+	flow_to_stock(drop_identifier(DS_1, Id_period));
 fill_time_series_date_single_ds :=
 	fill_time_series(drop_identifier(DS_1, Id_period),single);
 fill_time_series_period_all_ds :=

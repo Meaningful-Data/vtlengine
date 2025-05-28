@@ -178,7 +178,7 @@ class ASTString(ASTTemplate):
             if node.erCode is not None:
                 lines.append(f"{tab * 3}errorcode  {_handle_literal(node.erCode)}")
             if node.erLevel is not None:
-                lines.append(f"{tab * 3}errorlevel {node.erLevel}; ")
+                lines.append(f"{tab * 3}errorlevel {node.erLevel}")
             return nl.join(lines)
         else:
             vtl_script = ""
@@ -206,8 +206,14 @@ class ASTString(ASTTemplate):
 
         if self.pretty:
             self.vtl_script += f"define datapoint ruleset {node.name}({signature}) is {nl}"
-            for rule in node.rules:
-                self.vtl_script += f"\t{self.visit(rule)}{nl * 2}"
+            rules = ""
+            for i, rule in enumerate(node.rules):
+                rules += f"\t{self.visit(rule)}"
+                if i != len(node.rules) - 1:
+                    rules += f";{nl * 2}"
+                else:
+                    rules += f"{nl}"
+            self.vtl_script += rules
             self.vtl_script += f"end datapoint ruleset;{nl}"
         else:
             rules = rules_sep.join([self.visit(x) for x in node.rules])
@@ -287,8 +293,6 @@ class ASTString(ASTTemplate):
         elif node.op == MEASURE:
             return self.visit(node.operand)
 
-        if self.pretty:
-            return f"{node.op} {self.visit(node.operand)}"
         return f"{node.op}({self.visit(node.operand)})"
 
     def visit_MulOp(self, node: AST.MulOp) -> str:
@@ -327,7 +331,7 @@ class ASTString(ASTTemplate):
             )
             if self.pretty:
                 return (
-                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name},{nl}{tab * 2}rule "
+                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl}{tab * 2}rule "
                     f"{component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
