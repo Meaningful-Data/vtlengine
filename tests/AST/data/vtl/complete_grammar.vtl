@@ -1,0 +1,320 @@
+/*************************************************
+AGGREGATION
+*************************************************/
+sum_ds := sum(DS_1#Me_int group by Id_1, Id_2);
+avg_ds := avg(DS_1#Me_int group by Id_1, Id_2);
+min_ds := min(DS_1#Me_int group by Id_1, Id_2);
+max_ds := max(DS_1#Me_int group by Id_1, Id_2);
+count_ds := count(DS_1#Me_int group by Id_1, Id_2);
+median_ds := median(DS_1#Me_int group by Id_1, Id_2);
+stddev_pop_ds := stddev_pop(DS_1#Me_int group by Id_1, Id_2);
+stddev_samp_ds := stddev_samp(DS_1#Me_int group by Id_1, Id_2);
+var_pop_ds := var_pop(DS_1#Me_int group by Id_1, Id_2);
+var_samp_ds := var_samp(DS_1#Me_int group by Id_1, Id_2);
+
+aggr_ds := DS_1[aggr Me_sum := sum(Me_int), Me_max := max(Me_int) group by Id_1, Id_2 having avg(Me_int) > 2];
+apply_ds := inner_join (DS_1#Me_str as d1, DS_1#Me_str as d2 apply d1 || d2);
+drop_ds := DS_1 [drop Me_bool];
+filter_ds := DS_1[filter Id_1 = 1 and Me_int < 5];
+group_by_ds := DS_1[aggr Me_sum := sum(Me_int) group by Id_1, Id_2];
+keep_ds := full_join(DS_1 as d1, DS_1 as d2 keep d1#Me_int, d2#Me_num, d1#Me_str, d2#Me_bool);
+rename_ds := DS_1 [rename Me_int to Me_renamed];
+sub_ds := DS_1 [sub Id_1 = 1, Id_2 = "A"];
+
+/*************************************************
+ANALYTIC
+*************************************************/
+first_value_ds := first_value(DS_1#Me_num over (partition by Id_1, Id_2 order by Id_3 data points between 1 preceding and 1 following));
+last_value_ds := first_value(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1 , Id_2 order by Id_3));
+lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
+rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
+ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2));
+max_analytic_ds := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+min_analytic_ds := min(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+sum_analytic_ds := sum(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+count_analytic_ds := count(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+avg_analytic_ds := avg(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+median_analytic_ds := median(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+stddev_pop_analytic_ds := stddev_pop(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+stddev_samp_analytic_ds := stddev_samp(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+var_pop_analytic_ds := var_pop(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+var_samp_analytic_ds := var_samp(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+
+/*************************************************
+ASSIGNMENT
+*************************************************/
+assignment_sc := 1;
+assignment_ds := DS_1;
+
+persistent_sc <- 2;
+persistent_ds <- DS_1;
+
+/*************************************************
+BOOLEAN
+*************************************************/
+boolean_sc := true;
+boolean_and_sc := true and false;
+boolean_or_sc := true or false;
+boolean_not_sc := not true;
+boolean_xor_sc := true xor false;
+
+boolean_ds1 := DS_1#Me_bool;
+boolean_ds2 := DS_1#Me_bool;
+boolean_and_ds_sc := boolean_ds1 and true;
+boolean_and_ds_ds := boolean_ds1 and boolean_ds2;
+boolean_or_ds_sc := boolean_ds1 or false;
+boolean_or_ds_ds := boolean_ds1 or boolean_ds2;
+boolean_not_ds := not boolean_ds1;
+boolean_xor_ds_sc := boolean_ds1 xor true;
+boolean_xor_ds_ds := boolean_ds1 xor boolean_ds2;
+
+/*************************************************
+CAST
+*************************************************/
+cast_sc_int_str := cast(1, string);
+cast_sc_str_int := cast("2", integer);
+cast_sc_num_str := cast(3.0, string);
+cast_sc_str_num := cast("4.0", number);
+cast_sc_bool_str := cast(true, string);
+cast_sc_int_num := cast(5, number);
+cast_sc_num_int := cast(6.0, integer);
+cast_sc_str_date := cast("2020-01-01", date);
+cast_sc_str_time_period := cast("2020-M01", time_period);
+cast_ds_int_str := DS_1[calc Me_str_from_int := cast(Me_int, string)];
+
+/*************************************************
+COMPARISON
+*************************************************/
+eq_sc := 1 = 2;
+neq_sc := 1 <> 2;
+lt_sc := 1 < 2;
+lte_sc := 1 <= 2;
+gt_sc := 1 > 2;
+gte_sc := 1 >= 2;
+between_sc := between(2, 1, 3);
+match_characters_sc := match_characters("abc", "[:alpha:]{2}[:digit:]{3}");
+
+eq_ds_sc := DS_1#Me_int = 2;
+neq_ds_sc := DS_1#Me_int <> 2;
+lt_ds_sc := DS_1#Me_int < 2;
+lte_ds_sc := DS_1#Me_int <= 2;
+gt_ds_sc := DS_1#Me_int > 2;
+gte_ds_sc := DS_1#Me_int >= 2;
+between_ds_sc := between(DS_1#Me_int, 1, 5);
+match_characters_ds := match_characters(DS_1#Me_str, "[:alpha:]{2}[:digit:]{3}");
+
+eq_ds_ds := DS_1#Me_int = DS_1#Me_int;
+neq_ds_ds := DS_1#Me_int <> DS_1#Me_int;
+lt_ds_ds := DS_1#Me_int < DS_1#Me_int;
+lte_ds_ds := DS_1#Me_int <= DS_1#Me_int;
+gt_ds_ds := DS_1#Me_int > DS_1#Me_int;
+gte_ds_ds := DS_1#Me_int >= DS_1#Me_int;
+exists_in_ds_ds := exists_in(DS_1, DS_1, all);
+
+
+/*************************************************
+CONDITIONAL
+*************************************************/
+DS_cond := DS_1#Me_bool;
+DS_then := DS_1#Me_int;
+DS_else := DS_1#Me_int;
+
+if_sc := if true then 1 else 2;
+nvl_sc := nvl(null, 3);
+case_sc := case when if_sc = 1 then 10 when if_sc = 2 then 20 else 0;
+
+if_ds_sc := DS_1[calc Me_int_from_if := if Me_int < 5 then Me_int else 5];
+nvl_ds_sc := nvl(DS_1#Me_str, "default");
+case_ds_sc := DS_1[calc Me_int_from_case := case when Me_int < 5 then Me_int when Me_int > 5 then 5 else 0];
+
+if_ds_ds := if DS_cond#Id_2 = "A" then DS_then else DS_else;
+nvl_ds_ds := nvl(DS_1#Me_str, DS_1#Me_str);
+case_ds_ds := case when DS_cond#Id_1 = 1 then DS_then when DS_cond#Id_1 = 2 then DS_else else null;
+
+/*************************************************
+DATAPOINT RULESET
+*************************************************/
+define datapoint ruleset dr_test (variable Me_int, Me_num, Me_str) is
+    DR_1:
+        if Me_int = 1 then true
+        else false
+        errorcode "DR_1" errorlevel 2;
+    DR_2:
+        if Me_num = 2 then true
+        else false
+        errorcode "DR_2" errorlevel 2;
+    DR_3:
+        if Me_str = "3" then true
+        else false
+        errorcode "DR_3" errorlevel 2
+end datapoint ruleset;
+
+DR_ds := check_datapoint(DS_1, dr_test);
+
+/*************************************************
+GENERAL
+*************************************************/
+ds_from_membership := DS_1#Me_int;
+ds_as_alias := inner_join(DS_1 as alias_1, DS_1 as alias_2);
+/*eval_ds := eval(SQL1(DS_1) language "sqlite"
+              returns dataset {
+                identifier<integer> Id_1,
+                identifier<string> Id_2,
+                identifier<integer> Id_3,
+                measure<integer> Me_int,
+                measure<integer> Me_str
+              }
+            );*/
+
+/*************************************************
+HIERARCHICAL RULESET
+*************************************************/
+define hierarchical ruleset hr_test (variable rule Id_2) is
+    E = A - B errorcode "code_1" errorlevel 4;
+    F = C - D errorcode "code_2" errorlevel 4
+end hierarchical ruleset;
+
+HR_ds := check_hierarchy(DS_1#Me_num, hr_test rule Id_2 dataset);
+
+/*************************************************
+JOIN
+*************************************************/
+inner_join_ds := inner_join(DS_1 as alias_1, DS_1 as alias_2);
+left_join_ds := left_join(DS_1 as alias_1, DS_1 as alias_2);
+full_join_ds := full_join(DS_1 as alias_1, DS_1 as alias_2);
+cross_join_ds := cross_join(DS_1 as alias_1, DS_1 as alias_2);
+
+/*************************************************
+NUMERIC
+*************************************************/
+unplus_sc := +1;
+unminus_sc := -2;
+abs_sc := abs(-3);
+exp_sc := exp(4);
+ln_sc := ln(5);
+sqrt_sc := sqrt(6);
+ceil_sc := ceil(7.5);
+floor_sc := floor(8.5);
+
+binplus_sc := 1 + 2;
+binminus_sc := 3 - 4;
+mult_sc := 5 * 6;
+div_sc := 7 / 8;
+log_sc := log(9, 10);
+mod_sc := mod(11, 12);
+power_sc := power(13, 14);
+
+round_sc := round(15.56789, 1);
+trunc_sc := trunc(16.56789, 3);
+random_sc := random(17, 18);
+
+unplus_ds := +DS_1#Me_int;
+unminus_ds := -DS_1#Me_int;
+abs_ds := abs(DS_1#Me_int);
+exp_ds := exp(DS_1#Me_int);
+ln_ds := ln(DS_1#Me_int);
+sqrt_ds := sqrt(DS_1#Me_int);
+ceil_ds := ceil(DS_1#Me_num);
+floor_ds := floor(DS_1#Me_num);
+
+binplus_ds := DS_1#Me_int + DS_1#Me_int;
+binminus_ds := DS_1#Me_int - DS_1#Me_int;
+mult_ds := DS_1#Me_int * DS_1#Me_int;
+div_ds := DS_1#Me_int / DS_1#Me_int;
+log_ds := log(DS_1#Me_num, DS_1#Me_num);
+mod_ds := mod(DS_1#Me_int, DS_1#Me_int);
+power_ds := power(DS_1#Me_int, DS_1#Me_int);
+
+round_ds := round(DS_1#Me_num, 1);
+trunc_ds := trunc(DS_1#Me_num, 1);
+random_ds := random(DS_1#Me_int, 1);
+
+/*************************************************
+ROLE_SETTER
+*************************************************/
+identifier_ds := DS_1[calc identifier Id_4 := nvl(Me_int, 0)];
+measure_ds := DS_1[calc measure Me_new := Me_num * 5];
+attribute_ds := DS_1[calc attribute At_new := "new"];
+
+/*************************************************
+SET
+*************************************************/
+union_ds := union(DS_1, DS_1);
+intersect_ds := intersect(DS_1, DS_1);
+setdiff_ds := setdiff(DS_1, DS_1);
+symdiff_ds := symdiff(DS_1, DS_1);
+
+/*************************************************
+STRING
+*************************************************/
+concat_sc := "a" || "b";
+length_sc := length("abc");
+substring_sc := substr("abc", 1, 2);
+instr_sc := instr("abc", "b");
+replace_sc := replace("abc", "b", "d");
+lower_sc := lower("ABC");
+upper_sc := upper("abc");
+trim_sc := trim(" abc ");
+ltrim_sc := ltrim(" abc ");
+rtrim_sc := rtrim(" abc ");
+
+concat_ds := DS_1#Me_str || DS_1#Me_str;
+length_ds := length(DS_1#Me_str);
+substring_ds := substr(DS_1#Me_str, 1, 2);
+instr_ds := instr(DS_1#Me_str, "b");
+replace_ds := replace(DS_1#Me_str, "b", "d");
+lower_ds := lower(DS_1#Me_str);
+upper_ds := upper(DS_1#Me_str);
+trim_ds := trim(DS_1#Me_str);
+ltrim_ds := ltrim(DS_1#Me_str);
+rtrim_ds := rtrim(DS_1#Me_str);
+
+/*************************************************
+TIME
+*************************************************/
+current_date_sc := current_date();
+year_sc := year(cast("2000-01-01", date));
+month_sc := month(cast("2012-12-25", date));
+dayofyear_sc := dayofyear(cast("2020-12-31", date));
+dayofmonth_sc := dayofmonth(cast("2025-03-07", date));
+daytoyear_sc := daytoyear(730);
+daytomonth_sc := daytomonth(183);
+yeartoday_sc := yeartoday("P1Y6M15D");
+monthtoday_sc := monthtoday("P2Y9M21D");
+
+period_indicator_ds := period_indicator(drop_identifier(DS_1, Id_date));
+flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1, Id_date));
+stock_to_flow_period_ds := flow_to_stock(drop_identifier(DS_1, Id_period));
+
+fill_time_series_date_single_ds := fill_time_series(drop_identifier(DS_1, Id_period), single);
+fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1, Id_date), all);
+timeshift_date_ds := timeshift(drop_identifier(DS_1, Id_period), 1);
+timeshift_period_ds := timeshift(drop_identifier(DS_1, Id_date), -2);
+datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
+date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
+
+time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A", _, Id_date));
+time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M", _, Id_period));
+
+/*************************************************
+USER DEFINE OPERATOR
+*************************************************/
+define operator drop_identifier (ds dataset, comp component)
+  returns dataset is
+    max(ds group except comp)
+end operator;
+
+UDO_ds := drop_identifier(DS_1, Id_3);
+
+/*************************************************
+VALIDATION
+*************************************************/
+check_ds := check(DS_1#Me_num > DS_1#Me_num errorcode "errorcode" errorlevel 1 imbalance DS_1#Me_num - DS_1#Me_num invalid );
+
+/*************************************************
+VALUE DOMAIN
+*************************************************/
+value_domain_sc := "ES" in countries;
+
+value_domain_ds := DS_1#Me_str in countries;

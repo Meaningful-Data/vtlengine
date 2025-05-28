@@ -2,14 +2,15 @@ import copy
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
-import vtlengine.AST.Grammar.tokens
 from vtlengine import AST
 from vtlengine.AST import Comment, DPRuleset, HRuleset, Operator, TimeAggregation
 from vtlengine.AST.ASTTemplate import ASTTemplate
+from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ATTRIBUTE,
     CAST,
+    CHARSET_MATCH,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
     DATE_ADD,
@@ -29,6 +30,7 @@ from vtlengine.AST.Grammar.tokens import (
     MIN,
     MINUS,
     MOD,
+    NOT,
     NVL,
     PLUS,
     POWER,
@@ -78,9 +80,10 @@ def _format_dataset_eval(dataset: Dataset) -> str:
 
 
 def _format_reserved_word(value: str):
-    tokens_dict = vtlengine.AST.Grammar.tokens.__dict__
-    tokens_dict = {k: v for k, v in tokens_dict.items() if not k.startswith("__")}
-    if value in tokens_dict.values():
+    reserved_words = {x.replace("'", ""): x for x in Lexer.literalNames}
+    if value in reserved_words:
+        return reserved_words[value]
+    elif value[0] == "_":
         return f"'{value}'"
     return value
 
@@ -164,7 +167,7 @@ class ASTString(ASTTemplate):
         return f"{node.op} {self.visit(node.operand)}"
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> str:
-        return node.value
+        return _format_reserved_word(node.value)
 
     def visit_DPRule(self, node: AST.DPRule) -> str:
         if self.pretty:
@@ -267,10 +270,10 @@ class ASTString(ASTTemplate):
         return self.visit_Assignment(node)
 
     def visit_BinOp(self, node: AST.BinOp) -> str:
-        if node.op in [NVL, LOG, MOD, POWER, RANDOM, TIMESHIFT, DATEDIFF]:
+        if node.op in [NVL, LOG, MOD, POWER, RANDOM, TIMESHIFT, DATEDIFF, CHARSET_MATCH]:
             return f"{node.op}({self.visit(node.left)}, {self.visit(node.right)})"
         elif node.op == MEMBERSHIP:
-            return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
+            return f"{self.visit(node.left)}{node.op}{self.visit(node.right)}"
         if self.pretty:
             return f"{self.visit(node.left)} {node.op} {self.visit(node.right)}"
 
@@ -279,7 +282,7 @@ class ASTString(ASTTemplate):
     def visit_UnaryOp(self, node: AST.UnaryOp) -> str:
         if node.op in [PLUS, MINUS]:
             return f"{node.op}{self.visit(node.operand)}"
-        elif node.op in [IDENTIFIER, ATTRIBUTE, VIRAL_ATTRIBUTE]:
+        elif node.op in [IDENTIFIER, ATTRIBUTE, VIRAL_ATTRIBUTE, NOT]:
             return f"{node.op} {self.visit(node.operand)}"
         elif node.op == MEASURE:
             return self.visit(node.operand)
@@ -349,11 +352,11 @@ class ASTString(ASTTemplate):
             data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
             mask = ""
             if len(node.params) == 1:
-                mask = f", {self.visit(node.params[0])}"
+                mask = f", {_handle_literal(self.visit(node.params[0]))}"
             if self.pretty:
-                return f"{node.op}({operand},{data_type}{mask})"
+                return f"{node.op}({operand}, {data_type}{mask})"
             else:
-                return f"{node.op}({operand},{data_type}{mask})"
+                return f"{node.op}({operand}, {data_type}{mask})"
         elif node.op == FILL_TIME_SERIES:
             operand = self.visit(node.children[0])
             param = node.params[0].value if node.params else "all"
@@ -373,6 +376,7 @@ class ASTString(ASTTemplate):
                 )
             else:
                 return f"{node.op}({operand}, {shift_number}, {period_indicator})"
+        return ""
 
     # ---------------------- Individual operators ----------------------
 
@@ -387,7 +391,7 @@ class ASTString(ASTTemplate):
                 if isinstance(grouping_value, TimeAggregation):
                     grouping_values.append(self.visit(grouping_value))
                 else:
-                    grouping_values.append(grouping_value.value)
+                    grouping_values.append(_format_reserved_word(grouping_value.value))
             grouping = f" {node.grouping_op} {grouping_sep.join(grouping_values)}"
         having = f" {self.visit(node.having_clause)}" if node.having_clause is not None else ""
         return grouping, having
@@ -404,7 +408,8 @@ class ASTString(ASTTemplate):
         partition = ""
         if node.partition_by:
             partition_sep = ", " if len(node.partition_by) > 1 else ""
-            partition = f"partition by {partition_sep.join(node.partition_by)}"
+            partition_values = [_format_reserved_word(x) for x in node.partition_by]
+            partition = f"partition by {partition_sep.join(partition_values)}"
         order = ""
         if node.order_by:
             order_sep = ", " if len(node.order_by) > 1 else ""
@@ -479,7 +484,8 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using = f"using {using_sep.join(node.using)}"
+                using_values = [_format_reserved_word(x) for x in node.using]
+                using = f"using {using_sep.join(using_values)}"
             return f"{node.op}({nl}{tab * 2}{clauses}{nl}{tab * 2}{using})"
         else:
             sep = ", " if len(node.clauses) > 1 else ""
@@ -500,7 +506,10 @@ class ASTString(ASTTemplate):
             body = child_sep.join([self.visit(x) for x in node.children])
             self.is_from_agg = False
             grouping, having = self._handle_grouping_having(node.children[0].right)
-            body = f"{nl}{tab * 3}{body}{nl}{tab * 3}{grouping}{having}{nl}{tab * 2}"
+            if self.pretty:
+                body = f"{nl}{tab * 3}{body}{nl}{tab * 3}{grouping}{having}{nl}{tab * 2}"
+            else:
+                body = f"{body}{grouping}{having}"
         elif node.op == DROP and self.pretty:
             drop_sep = f",{nl}{tab * 3}" if len(node.children) > 1 else ""
             body = f"{drop_sep.join([self.visit(x) for x in node.children])}{nl}{tab * 2}"
@@ -523,17 +532,17 @@ class ASTString(ASTTemplate):
             if self.pretty:
                 return f"{dataset}{nl}{tab * 2}[{node.op} {body}]"
             else:
-                return f"{dataset} [{node.op} {body}]"
+                return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
         return f"{node.old_name} to {node.new_name}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         operand = self.visit(node.operand)
-        period_from = "_" if node.period_from is None else node.period_from
+        period_from = "_" if node.period_from is None else _handle_literal(node.period_from)
         period_to = _handle_literal(node.period_to)
         if self.pretty:
-            return f"{node.op}({period_to},{period_from},{operand})"
+            return f"{node.op}({period_to}, {period_from}, {operand})"
         else:
             return f"{node.op}({period_to}, {period_from}, {operand})"
 
@@ -568,7 +577,7 @@ class ASTString(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> Any:
         if node.value is None:
             return "null"
-        return _handle_literal(node.value)
+        return node.value
 
     def visit_Collection(self, node: AST.Collection) -> str:
         if node.kind == "ValueDomain":
@@ -599,8 +608,8 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{node.component}"
-        return f"{node.component} {node.order}"
+            return f"{_format_reserved_word(node.component)}"
+        return f"{_format_reserved_word(node.component)} {node.order}"
 
     def visit_Comment(self, node: AST.Comment) -> None:
         value = copy.copy(node.value)

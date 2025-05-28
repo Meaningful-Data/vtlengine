@@ -1,0 +1,24 @@
+define operator count_by_measure(ds dataset, 'measure' component, Me1 component, default_value string default "N/A")
+    returns dataset
+    is
+        count(
+            ds
+                [calc identifier 'measure' := nvl('measure', default_value)][drop Me1]
+            group by Me1 having count(Me1) > 0)
+end operator;
+
+errors_count <-
+	 count(
+			validation_results
+				[calc identifier 'errorlevel' := nvl('errorlevel',0)]
+				[keep 'errorcode']
+			group by 'errorlevel'
+		);
+define datapoint ruleset zeroValidation (variable COUNTERPART_AREA as CA, REF_SECTOR as RS, COUNTERPART_SECTOR as CS, FLOW_STOCK_ENTRY as FSE, ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+  EQ0_1: when CA = "I8" and RS = "S1" and CS = "S121" and FSE = "T" and AE = "A" and IAI = "FA"  and FC = "P"  and IA = "F3" then O = 0 errorcode "EQ0_1 [Zero Validation rule ' when COUNTERPART_AREA = I8 and REF_SECTOR = S1 and COUNTERPART_SECTOR = S121 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = A and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']" errorlevel 4 ;
+  EQ0_2: when CA = "W1" and RS = "S121" and CS = "S1" and FSE = "T" and AE = "L" and IAI = "FA"  and FC = "P"  and IA = "F3" then O = 0 errorcode "EQ0_2  [Zero Validation rule ' when COUNTERPART_AREA = W1 and REF_SECTOR = S121 and COUNTERPART_SECTOR = S1 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = L and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']" errorlevel 4
+end datapoint ruleset;
+all_dates_and_month := all_dates[calc identifier 'month' := time_agg("M", "D", cast(REF_PERIOD, time_period))];
+define hierarchical ruleset HR_TEST (valuedomain rule EXR_CURRENCY) is
+    INR =  BRN + MXN + THB + '_T'
+end hierarchical ruleset ;
