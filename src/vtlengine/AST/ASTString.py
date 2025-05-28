@@ -493,7 +493,8 @@ class ASTString(ASTTemplate):
             using = ""
             if node.using is not None:
                 using_sep = ", " if len(node.using) > 1 else ""
-                using = f" using {using_sep.join(node.using)}"
+                using_values = [_format_reserved_word(x) for x in node.using]
+                using = f" using {using_sep.join(using_values)}"
             return f"{node.op}({clauses}{using})"
 
     def visit_ParFunction(self, node: AST.ParFunction) -> str:
@@ -524,7 +525,7 @@ class ASTString(ASTTemplate):
         if isinstance(node.dataset, AST.JoinOp):
             dataset = self.visit(node.dataset)
             if self.pretty:
-                return f"{dataset[:-1]}{(node.op)} {body}{nl}{tab})"
+                return f"{dataset[:-1]} {(node.op)} {body}{nl}{tab})"
             else:
                 return f"{dataset[:-1]} {node.op} {body})"
         else:
