@@ -487,10 +487,14 @@ def __generate_ruleset(child: Union[DPRuleset, HRuleset], count: int) -> Ruleset
     ruleset_type: Literal["datapoint", "hierarchical"] = (
         "datapoint" if isinstance(child, DPRuleset) else "hierarchical"
     )
+    ruleset_scope: Literal["variable", "valuedomain"] = (
+        "variable" if child.signature_type == "variable" else "valuedomain"
+    )
     return Ruleset(
         id=f"R{count}",
         ruleset_definition=ruleset_definition,
         ruleset_type=ruleset_type,
+        ruleset_scope=ruleset_scope,
         name=f"{ruleset_type.capitalize()} ruleset {child.name}",
     )
 
