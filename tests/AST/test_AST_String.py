@@ -20,6 +20,7 @@ params = [
     "string.vtl",
     "time.vtl",
     "comments.vtl",
+    "complete_grammar.vtl",
 ]
 
 params_prettier = [
@@ -39,6 +40,7 @@ params_prettier = [
     ("calc_unary_op.vtl", "reference_calc_unary_op.vtl"),
     ("fill_time_series.vtl", "reference_fill_time_series.vtl"),
     ("date_add.vtl", "reference_date_add.vtl"),
+    ("complete_grammar.vtl", "reference_complete_grammar.vtl"),
 ]
 
 
@@ -106,3 +108,39 @@ def test_prettier(filename, expected):
         expected_script = file.read()
 
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
+
+
+@pytest.mark.parametrize("filename", params)
+def test_syntax_validation_ast_string(filename):
+    with open(vtl_filepath / filename, "r") as file:
+        script = file.read()
+
+    script_generated = ASTString().render(create_ast_with_comments(script))
+
+    try:
+        create_ast_with_comments(script)
+    except Exception as e:
+        pytest.fail(f"Syntax validation failed for original script {filename}: {e}")
+
+    try:
+        create_ast_with_comments(script_generated)
+    except Exception as e:
+        pytest.fail(f"Syntax validation failed for generated script {filename}: {e}")
+
+
+@pytest.mark.parametrize("filename", params)
+def test_syntax_validation_prettier(filename):
+    with open(vtl_filepath / filename, "r") as file:
+        script = file.read()
+
+    script_generated = prettify(script)
+
+    try:
+        create_ast_with_comments(script)
+    except Exception as e:
+        pytest.fail(f"Syntax validation failed for original script {filename}: {e}")
+
+    try:
+        create_ast_with_comments(script_generated)
+    except Exception as e:
+        pytest.fail(f"Syntax validation failed for generated script {filename}: {e}")
