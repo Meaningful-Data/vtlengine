@@ -97,6 +97,7 @@ from vtlengine.Utils import (
     THEN_ELSE,
     UNARY_MAPPING,
 )
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 # noinspection PyTypeChecker
@@ -227,6 +228,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self.then_condition_dataset = None
             self.else_condition_dataset = None
             self.nested_condition = False
+
+            # Reset VirtualCounter
+            VirtualCounter().reset()
 
             if result is None:
                 continue
