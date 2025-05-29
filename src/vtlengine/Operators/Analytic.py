@@ -37,6 +37,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -111,7 +112,7 @@ class Analytic(Operator.Unary):
                     nullable=operand.components[component_name].nullable,
                 )
             if cls.op == COUNT:
-                measure_name = COMP_NAME_MAPPING[cls.return_type]
+                measure_name = COMP_NAME_MAPPING[cls.return_type] or VirtualCounter()._new_dc_name()
                 result_components[measure_name] = Component(
                     name=measure_name,
                     data_type=cls.return_type,
@@ -147,7 +148,7 @@ class Analytic(Operator.Unary):
                     result_components[measure.name] = new_measure
 
             if cls.op == COUNT and len(measures) <= 1:
-                measure_name = COMP_NAME_MAPPING[cls.return_type]
+                measure_name = COMP_NAME_MAPPING[cls.return_type] or VirtualCounter()._new_dc_name()
                 nullable = False if len(measures) == 0 else measures[0].nullable
                 if len(measures) == 1:
                     del result_components[measures[0].name]
@@ -157,8 +158,8 @@ class Analytic(Operator.Unary):
                     role=Role.MEASURE,
                     nullable=nullable,
                 )
-
-        return Dataset(name="result", components=result_components, data=None)
+        dataset_name = VirtualCounter()._new_ds_name()
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def analyticfunc(
