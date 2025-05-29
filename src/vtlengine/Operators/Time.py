@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
+from duckdb import DuckDBPyRelation
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
@@ -90,24 +91,31 @@ class Time(Operators.Operator):
         return date.fromisoformat(date_str)
 
     @classmethod
-    def get_frequencies(cls, dates: Any) -> Any:
-        dates = pd.to_datetime(dates)
-        dates = dates.sort_values()
-        deltas = dates.diff().dropna()
-        return deltas
+    def get_frequencies(cls, dates: DuckDBPyRelation) -> DuckDBPyRelation:
+        sorted_dates = dates.order(cls.time_id)
+
+        # Calculate the differences between consecutive dates using LAG
+        return sorted_dates.project(f"""
+                {cls.time_id},
+                DATEDIFF('day', LAG({cls.time_id}) OVER (ORDER BY {cls.time_id}), {cls.time_id}) AS delta_days,
+                DATEDIFF('month', LAG({cls.time_id}) OVER (ORDER BY {cls.time_id}), {cls.time_id}) AS delta_months,
+                DATEDIFF('year', LAG({cls.time_id}) OVER (ORDER BY {cls.time_id}), {cls.time_id}) AS delta_years
+            """).filter("delta_days IS NOT NULL")
 
     @classmethod
-    def find_min_frequency(cls, differences: Any) -> str:
-        months_deltas = differences.apply(lambda x: x.days // 30)
-        days_deltas = differences.apply(lambda x: x.days)
-        min_months = min(
-            (diff for diff in months_deltas if diff > 0 and diff % 12 != 0),
-            default=None,
-        )
-        min_days = min(
-            (diff for diff in days_deltas if diff > 0 and diff % 365 != 0 and diff % 366 != 0),
-            default=None,
-        )
+    def find_min_frequency(cls, differences: DuckDBPyRelation) -> str:
+        min_days_relation = differences.filter("delta_days > 0 AND delta_days % 365 != 0 AND delta_days % 366 != 0") \
+            .aggregate("MIN(delta_days) AS min_days")
+        min_days = min_days_relation.fetchone()[0]
+
+        min_months_relation = differences.filter("delta_months > 0 AND delta_months % 12 != 0") \
+            .aggregate("MIN(delta_months) AS min_months")
+        min_months = min_months_relation.fetchone()[0]
+
+        min_years_relation = differences.filter("delta_years > 0") \
+            .aggregate("MIN(delta_years) AS min_years")
+        min_years = min_years_relation.fetchone()[0]
+
         return "D" if min_days else "M" if min_months else "Y"
 
     @classmethod
@@ -543,33 +551,35 @@ class Time_Shift(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Any) -> Dataset:
         result = cls.validate(operand, shift_value)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
 
+        shift_value = int(shift_value.value)
         data_type: Any = result.components[cls.time_id].data_type
+
+        if operand.data is None:
+            result.data = None
+            return result
 
         if data_type == Date:
             freq = cls.find_min_frequency(
                 cls.get_frequencies(
-                    result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
+                    operand.data
                 )
             )
-            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
+            result.data = cls.shift_dates(operand.data, shift_value, freq)
         elif data_type == Time:
-            freq = cls.get_frequency_from_time(result.data[cls.time_id].iloc[0])
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_interval(x, shift_value, freq)
+            freq = cls.get_frequency_from_time(operand.data.project(f"{cls.time_id}").fetchone()[0])
+            result.data = operand.data.project(
+                f"{cls.time_id}, {cls.time_id} || '/' || {cls.time_id} AS shifted_interval"
             )
         elif data_type == TimePeriod:
-            periods = result.data[cls.time_id].apply(cls._get_period).unique()
-            result.data[cls.time_id] = result.data[cls.time_id].apply(
-                lambda x: cls.shift_period(x, shift_value)
+            periods = operand.data.project(f"{cls.time_id}").distinct().fetchall()
+            result.data = operand.data.project(
+                f"{cls.time_id}, {cls.shift_period(cls.time_id, shift_value)} AS shifted_period"
             )
-            if len(periods) == 1 and periods[0] == "A":
-                result.data[cls.time_id] = result.data[cls.time_id].astype(int)
         else:
             raise SemanticError("1-1-19-2", op=cls.op)
+
         return result
 
     @classmethod
@@ -579,17 +589,19 @@ class Time_Shift(Binary):
         return Dataset(name="result", components=operand.components.copy(), data=None)
 
     @classmethod
-    def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
-        dates = pd.to_datetime(dates)
+    def shift_dates(cls, data: DuckDBPyRelation, shift_value: int, frequency: str) -> DuckDBPyRelation:
         if frequency == "D":
-            return dates + pd.to_timedelta(shift_value, unit="D")
+            data = data.project(f"DATE_ADD({cls.time_id}, INTERVAL {shift_value} DAY) AS {cls.time_id}")
         elif frequency == "W":
-            return dates + pd.to_timedelta(shift_value, unit="W")
+            data = data.project(f"DATE_ADD({cls.time_id}, INTERVAL {shift_value * 7} DAY) AS {cls.time_id}")
         elif frequency == "Y":
-            return dates + pd.DateOffset(years=shift_value)
+            data = data.project(f"DATE_ADD({cls.time_id}, INTERVAL {shift_value} YEAR) AS {cls.time_id}")
         elif frequency in ["M", "Q", "S"]:
-            return dates + pd.DateOffset(months=shift_value)
-        raise SemanticError("2-1-19-2", period=frequency)
+            months = {"M": 1, "Q": 3, "S": 6}[frequency] * shift_value
+            data = data.project(f"DATE_ADD({cls.time_id}, INTERVAL {months} MONTH) AS {cls.time_id}")
+        else:
+            raise SemanticError("2-1-19-2", period=frequency)
+        return data
 
     @classmethod
     def shift_period(
