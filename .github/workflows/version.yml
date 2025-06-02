@@ -26,7 +26,7 @@ jobs:
         uses: sravinet/toml-select@v1.0.1
         with:
           file: 'pyproject.toml'
-          field: 'project.version'  # Adjust if using Poetry: 'tool.poetry.version'
+          field: 'project.version'
 
       - name: Extract __version__ from module
         id: module-version
