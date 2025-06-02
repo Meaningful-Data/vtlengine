@@ -15,6 +15,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Calc(Operator):
@@ -23,7 +24,8 @@ class Calc(Operator):
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
-        result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
+        dataset_name = VirtualCounter()._new_ds_name()
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
 
         for operand in operands:
             if operand.name in result_dataset.components:
@@ -70,7 +72,8 @@ class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-        result_dataset = Dataset(name=dataset.name, components=dataset.components, data=None)
+        dataset_name = VirtualCounter()._new_ds_name()
+        result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 
         for operand in operands:
             if operand.name in dataset.get_identifiers_names() or (
@@ -122,7 +125,8 @@ class Filter(Operator):
     def validate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         if condition.data_type != Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
-        return Dataset(name=dataset.name, components=dataset.components, data=None)
+        dataset_name = VirtualCounter()._new_ds_name()
+        return Dataset(name=dataset_name, components=dataset.components, data=None)
 
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
@@ -139,19 +143,20 @@ class Keep(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         for operand in operands:
             if operand not in dataset.get_components_names():
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=operand, dataset_name=dataset.name
+                    "1-1-1-10", op=cls.op, comp_name=operand, dataset_name=dataset_name
                 )
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset_name)
         result_components = {
             name: comp
             for name, comp in dataset.components.items()
             if comp.name in operands or comp.role == Role.IDENTIFIER
         }
-        return Dataset(name=dataset.name, components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
@@ -170,17 +175,18 @@ class Drop(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         for operand in operands:
             if operand not in dataset.components:
-                raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset.name)
+                raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset_name)
             if dataset.get_component(operand).role == Role.IDENTIFIER:
-                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset.name)
+                raise SemanticError("1-1-6-2", op=cls.op, name=operand, dataset=dataset_name)
         if len(dataset.components) == len(operands):
             raise SemanticError("1-1-6-12", op=cls.op)
         result_components = {
             name: comp for name, comp in dataset.components.items() if comp.name not in operands
         }
-        return Dataset(name=dataset.name, components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
@@ -195,6 +201,7 @@ class Rename(Operator):
 
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         from_names = [operand.old_name for operand in operands]
         if len(from_names) != len(set(from_names)):
             duplicates = set([name for name in from_names if from_names.count(name) > 1])
@@ -211,14 +218,14 @@ class Rename(Operator):
                     "1-1-1-10",
                     op=cls.op,
                     comp_name=operand.old_name,
-                    dataset_name=dataset.name,
+                    dataset_name=dataset_name,
                 )
             if operand.new_name in dataset.components:
                 raise SemanticError(
                     "1-1-6-8",
                     op=cls.op,
                     comp_name=operand.new_name,
-                    dataset_name=dataset.name,
+                    dataset_name=dataset_name,
                 )
 
         result_components = {comp.name: comp for comp in dataset.components.values()}
@@ -230,8 +237,7 @@ class Rename(Operator):
                 nullable=result_components[operand.old_name].nullable,
             )
             del result_components[operand.old_name]
-
-        return Dataset(name=dataset.name, components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
@@ -256,6 +262,7 @@ class Pivot(Operator):
 class Unpivot(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
@@ -263,10 +270,10 @@ class Unpivot(Operator):
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-3-27", op=cls.op)
         if identifier in dataset.components:
-            raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset.name)
+            raise SemanticError("1-1-6-2", op=cls.op, name=identifier, dataset=dataset_name)
 
         result_components = {comp.name: comp for comp in dataset.get_identifiers()}
-        result_dataset = Dataset(name=dataset.name, components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         # noinspection PyTypeChecker
         result_dataset.add_component(
             Component(name=identifier, data_type=String, role=Role.IDENTIFIER, nullable=False)
@@ -306,6 +313,7 @@ class Sub(Operator):
 
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:
@@ -314,14 +322,14 @@ class Sub(Operator):
                     "1-1-1-10",
                     op=cls.op,
                     comp_name=operand.name,
-                    dataset_name=dataset.name,
+                    dataset_name=dataset_name,
                 )
             if operand.role != Role.IDENTIFIER:
                 raise SemanticError(
                     "1-1-6-10",
                     op=cls.op,
                     operand=operand.name,
-                    dataset_name=dataset.name,
+                    dataset_name=dataset_name,
                 )
             if isinstance(operand, Scalar):
                 raise SemanticError("1-1-6-5", op=cls.op, name=operand.name)
@@ -331,7 +339,7 @@ class Sub(Operator):
             for name, comp in dataset.components.items()
             if comp.name not in [operand.name for operand in operands]
         }
-        return Dataset(name=dataset.name, components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
