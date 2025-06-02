@@ -14,6 +14,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 # noinspection PyTypeChecker
@@ -29,6 +30,7 @@ class Check(Operator):
         error_level: Optional[int],
         invalid: bool,
     ) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         if len(validation_element.get_measures()) != 1:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
         measure = validation_element.get_measures()[0]
@@ -71,7 +73,7 @@ class Check(Operator):
             name="errorlevel", data_type=Integer, role=Role.MEASURE, nullable=True
         )
 
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(
@@ -126,6 +128,7 @@ class Validation(Operator):
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
             name="ruleid", data_type=String, role=Role.IDENTIFIER, nullable=False
@@ -154,7 +157,7 @@ class Validation(Operator):
             name="errorlevel", data_type=Number, role=Role.MEASURE, nullable=True
         )
 
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:

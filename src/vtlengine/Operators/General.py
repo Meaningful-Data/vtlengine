@@ -7,6 +7,7 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role
 from vtlengine.Operators import Binary, Unary
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Membership(Binary):
@@ -21,6 +22,7 @@ class Membership(Binary):
 
     @classmethod
     def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
+        dataset_name = VirtualCounter()._new_ds_name()
         if right_operand not in left_operand.components:
             raise SemanticError(
                 "1-1-1-10",
@@ -46,7 +48,7 @@ class Membership(Binary):
             for name, comp in left_operand.components.items()
             if comp.role == Role.IDENTIFIER or comp.name == right_operand
         }
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         return result_dataset
 
     @classmethod
