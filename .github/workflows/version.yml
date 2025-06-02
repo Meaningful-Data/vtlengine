@@ -35,7 +35,7 @@ jobs:
       - name: Extract __version__ from module
         id: module-version
         run: |
-          echo "MODULE_VERSION=$(python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
+          echo "MODULE_VERSION=$(poetry run python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         run: |
