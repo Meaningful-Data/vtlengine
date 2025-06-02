@@ -23,7 +23,7 @@ jobs:
 
       - name: Extract pyproject.toml version
         id: pyproject-version
-        uses: sravinet/toml-select@v1
+        uses: sravinet/toml-select@v1.0.1
         with:
           file: 'pyproject.toml'
           field: 'project.version'  # Adjust if using Poetry: 'tool.poetry.version'
