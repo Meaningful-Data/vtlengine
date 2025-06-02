@@ -382,10 +382,10 @@ class Binary(Operator):
         :param right_operand: The right component
         :return: The result data type of the validation
         """
-
+        comp_name = VirtualCounter()._new_dc_name()
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=result_data_type,
             data=None,
             role=left_operand.role,
@@ -427,9 +427,10 @@ class Binary(Operator):
     def component_set_validation(
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
+        comp_name = VirtualCounter()._new_dc_name()
         cls.type_validation(component.data_type, scalar_set.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=cls.type_validation(component.data_type, scalar_set.data_type),
             data=None,
             role=Role.MEASURE,
@@ -783,9 +784,10 @@ class Unary(Operator):
 
     @classmethod
     def component_validation(cls, operand: DataComponent) -> DataComponent:
+        comp_name = VirtualCounter()._new_dc_name()
         result_type = cls.type_validation(operand.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=result_type,
             data=None,
             role=operand.role,
