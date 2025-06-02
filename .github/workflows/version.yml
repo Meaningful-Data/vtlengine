@@ -27,6 +27,10 @@ jobs:
         with:
           file: 'pyproject.toml'
           field: 'project.version'
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Install only current project
+        run: poetry install --only-root
 
       - name: Extract __version__ from module
         id: module-version
