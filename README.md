@@ -1,22 +1,30 @@
 # VTL Engine
 
-|         |                                                                                                                                                                                |
-|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Testing | [![Testing](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml/badge.svg)](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml) |
-| Package | [![PyPI Latest Release](https://img.shields.io/pypi/v/vtlengine.svg)](https://pypi.org/project/vtlengine/)                                                                     |
-| License | [![License - AGPL 3.0](https://img.shields.io/pypi/l/vtlengine.svg)](https://github.com/Meaningful-Data/vtlengine/blob/main/LICENSE.md)                                        |
+|              |                                                                                                                                                                                |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Testing      | [![Testing](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml/badge.svg)](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml) |
+| Package      | [![PyPI Latest Release](https://img.shields.io/pypi/v/vtlengine.svg)](https://pypi.org/project/vtlengine/)                                                                     |
+| License      | [![License - AGPL 3.0](https://img.shields.io/pypi/l/vtlengine.svg)](https://github.com/Meaningful-Data/vtlengine/blob/main/LICENSE.md)                                        |
+| Mentioned in | [![Mentioned in Awesome Official Statistics ](https://awesome.re/mentioned-badge.svg)](http://www.awesomeofficialstatistics.org)                                               |
 
 ## Introduction
 
-The VTL Engine is a Python library for validating and running VTL scripts.
+The VTL Engine is a Python library that allows you to validate, format and execute VTL scripts.
 
-It is a Python-based library around the [VTL Language](http://sdmx.org/?page_id=5096).
+It is a Python-based library around the [VTL Language 2.1](https://sdmx-twg.github.io/vtl/2.1/html/index.html).
+
+## Useful Links
+
+- [MeaningfulData: who we are](https://www.meaningfuldata.eu)
+- [Source Code](https://github.com/Meaningful-Data/vtlengine)
+- [Bug Tracker](https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+- [New features Tracker](https://github.com/Meaningful-Data/vtlengine/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement)
 
 ## Installation
 
 ### Requirements
 
-The VTL Engine requires Python 3.10 or higher.
+The VTL Engine requires Python 3.9 or higher.
 
 ### Install with pip
 
@@ -30,184 +38,14 @@ pip install vtlengine
 
 *Note: it is recommended to install the VTL Engine in a virtual environment.*
 
-## Usage
+### S3 extra
 
-The VTL Engine API implements two basic methods:
+If you want to use the S3 functionality, you can install the VTL Engine with the `s3` extra:
 
-* **Semantic Analysis**: aimed at validating the correctness of a script and computing the data
-  structures of the data sets created in the script.
-* **Run**: aimed at executing the provided input on the provided input datasets.
-
-Any action with VTL requires the following elements as input:
-
-* **VTL Script**: Is the VTL to be executed, which includes the transformation scheme, as well as de
-  User Defined Operators, Hierarchical Rulesets and Datapoint Rulesets. It is provided as a string
-  or as a Path object to a vtl file.
-* **Data structures** : Provides the structure of the input artifacts of the VTL script, according
-  to
-  the VTL Information model. Given that the current version doesn't prescribe a standard format for
-  providing the information, the VTL Engine is implementing a JSON format that can be found here.
-  Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have
-* **External routines**: The VTL Engine allows using SQL (SQLite) with the eval operator. Can be
-  provided as a string with the SQL or as a path object to an SQL file. Its default value is `None`,
-  which shall be used if external routines are not applicable to the VTL script.
-* **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
-  operator. Can be provided as a dictionary or as a path to a JSON file. Its default value
-  is `None`, which shall be used if value domains are not applicable to the VTL script.
-
-### Semantic Analysis
-
-The `semantic_analysis` method serves to validate the correctness of a VTL script, as well as to
-calculate the data structures of the datasets generated by the VTL script itself (that calculation
-is a pre-requisite for the semantic analysis).
-
-* If the VTL script is correct, the method returns a dictionary with the data structures of all the
-  datasets generated by the script.
-* If the VTL script is incorrect, raises a VTL Engine custom error Explaining the error.
-
-#### Example 1: Correct VTL
-
-```python
-from vtlengine import semantic_analysis
-
-script = """
-    DS_A := DS_1 * 10;
-"""
-
-data_structures = {
-    'datasets': [
-        {'name': 'DS_1',
-         'DataStructure': [
-             {'name': 'Id_1',
-              'type':
-                  'Integer',
-              'role': 'Identifier',
-              'nullable': False},
-             {'name': 'Me_1',
-              'type': 'Number',
-              'role': 'Measure',
-              'nullable': True}
-         ]
-         }
-    ]
-}
-
-sa_result = semantic_analysis(script=script, data_structures=data_structures)
-
-print(sa_result)
-
+```bash
+pip install vtlengine[s3]
 ```
 
-Returns:
+## Documentation
 
-```
-{'DS_A': Dataset(name='DS_A', components={'Id_1': Component(name='Id_1', data_type=<class 'vtlengine.DataTypes.Integer'>, role=<Role.IDENTIFIER: 'Identifier'>, nullable=False), 'Me_1': Component(name='Me_1', data_type=<class 'vtlengine.DataTypes.Number'>, role=<Role.MEASURE: 'Measure'>, nullable=True)}, data=None)}
-```
-
-#### Example 2: Incorrect VTL
-
-Note that, as compared to Example 1, the only change is that Me_1 is of the String data type,
-instead of Number.
-
-```python
-from vtlengine import semantic_analysis
-
-script = """
-    DS_A := DS_1 * 10;
-"""
-
-data_structures = {
-    'datasets': [
-        {'name': 'DS_1',
-         'DataStructure': [
-             {'name': 'Id_1',
-              'type':
-                  'Integer',
-              'role': 'Identifier',
-              'nullable': False},
-             {'name': 'Me_1',
-              'type': 'String',
-              'role': 'Measure',
-              'nullable': True}
-         ]
-         }
-    ]
-}
-
-sa_result = semantic_analysis(script=script, data_structures=data_structures)
-
-print(sa_result)
-
-```  
-
-Will raise the following Error:
-
-``` python
-raise SemanticError(code="1-1-1-2",
-vtlengine.Exceptions.SemanticError: ('Invalid implicit cast from String and Integer to Number.', '1-1-1-2')
-```
-
-### Run VTL Scripts
-
-The `run` method serves to execute a VTL script with input datapoints.
-
-Returns a dictionary with all the generated Datasets.
-When the output parameter is set, the engine will write the result of the computation to the output
-folder, else it will include the data in the dictionary of the computed datasets.
-
-Two validations are performed before running, which can raise errors:
-
-* Semantic analysis: Equivalent to running the `semantic_analysis` method
-* Data load analysis: Basic check of the data structure (names and types)
-
-#### Example 3: Simple run
-
-```python
-from vtlengine import run
-import pandas as pd
-
-script = """
-    DS_A := DS_1 * 10;
-"""
-
-data_structures = {
-    'datasets': [
-        {'name': 'DS_1',
-         'DataStructure': [
-             {'name': 'Id_1',
-              'type':
-                  'Integer',
-              'role': 'Identifier',
-              'nullable': False},
-             {'name': 'Me_1',
-              'type': 'Number',
-              'role': 'Measure',
-              'nullable': True}
-         ]
-         }
-    ]
-}
-
-data_df = pd.DataFrame(
-    {"Id_1": [1, 2, 3],
-     "Me_1": [10, 20, 30]})
-
-datapoints = {"DS_1": data_df}
-
-run_result = run(script=script, data_structures=data_structures,
-                 datapoints=datapoints)
-
-print(run_result)
-```
-
-returns:
-
-``` python
-{'DS_A': Dataset(name='DS_A', components={'Id_1': Component(name='Id_1', data_type=<class 'vtlengine.DataTypes.Integer'>, role=<Role.IDENTIFIER: 'Identifier'>, nullable=False), 'Me_1': Component(name='Me_1', data_type=<class 'vtlengine.DataTypes.Number'>, role=<Role.MEASURE: 'Measure'>, nullable=True)}, data=  Id_1   Me_1
-0    1  100.0
-1    2  200.0
-2    3  300.0)}
-```
-
-For more information on usage, please refer to
-the [API documentation](https://docs.vtlengine.meaningfuldata.eu/api.html).
+The documentation for the VTL Engine is available at [docs.vtlengine.meaningfuldata.eu](https://docs.vtlengine.meaningfuldata.eu).
