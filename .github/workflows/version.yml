@@ -21,12 +21,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Extract pyproject.toml version
-        id: pyproject-version
-        uses: sravinet/toml-select@v1.0.1
-        with:
-          file: 'pyproject.toml'
-          field: 'project.version'
       - name: Install poetry
         run: pipx install poetry
       - name: Install dependencies
@@ -36,6 +30,12 @@ jobs:
         id: module-version
         run: |
           echo "MODULE_VERSION=$(poetry run python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
+
+      - name: Extract version from pyproject.toml
+        id: pyproject-version
+        run: |
+          VERSION=$(poetry version --short)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         run: |
