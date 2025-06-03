@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.1"
+version = "1.1.1"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -56,7 +56,7 @@ pytest-cov = "^6.1.1"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.15.0"
 pandas-stubs = "^2.1.4.231227"
-ruff = "^0.11.11"
+ruff = "^0.11.12"
 types-jsonschema = "4.23.0.20250516"
 
 [tool.poetry.group.docs.dependencies]
