@@ -5,7 +5,7 @@
 | Testing      | [![Testing](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml/badge.svg)](https://github.com/Meaningful-Data/vtlengine/actions/workflows/testing.yml) |
 | Package      | [![PyPI Latest Release](https://img.shields.io/pypi/v/vtlengine.svg)](https://pypi.org/project/vtlengine/)                                                                     |
 | License      | [![License - AGPL 3.0](https://img.shields.io/pypi/l/vtlengine.svg)](https://github.com/Meaningful-Data/vtlengine/blob/main/LICENSE.md)                                        |
-| Mentioned in | [![Mentioned in Awesome Official Statistics ](https://awesome.re/mentioned-badge.svg)](http://www.awesomeofficialstatistics.org)                                               |
+| Mentioned in | [![Mentioned in Awesome Official Statistics ](https://awesome.re/mentioned-badge.svg)](https://github.com/SNStatComp/awesome-official-statistics-software)                                               |
 
 ## Introduction
 
