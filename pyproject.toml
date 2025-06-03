@@ -52,7 +52,7 @@ Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 python = ">=3.9,<4.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3"
+pytest = "^8.4"
 pytest-cov = "^6.1.1"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.16.0"
