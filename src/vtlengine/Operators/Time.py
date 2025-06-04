@@ -185,6 +185,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
+        dataset_name = VirtualCounter()._new_ds_name()
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if operand.components[time_id].data_type != TimePeriod:
@@ -200,7 +201,7 @@ class Period_indicator(Unary):
                 role=Role.MEASURE,
                 nullable=True,
             )
-            return Dataset(name="result", components=result_components, data=None)
+            return Dataset(name=dataset_name, components=result_components, data=None)
         # DataComponent and Scalar validation
         if operand.data_type != TimePeriod:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period component")

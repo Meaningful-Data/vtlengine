@@ -149,6 +149,7 @@ class If(Operator):
                 right = true_branch
 
         # Datacomponent
+        comp_name = VirtualCounter()._new_dc_name()
         if isinstance(condition, DataComponent):
             if not condition.data_type == Boolean:
                 raise SemanticError(
@@ -166,7 +167,7 @@ class If(Operator):
             if isinstance(right, DataComponent):
                 nullable |= right.nullable
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=None,
                 data_type=binary_implicit_promotion(left.data_type, right.data_type),
                 role=Role.MEASURE,
@@ -186,7 +187,7 @@ class If(Operator):
             left.data_type = right.data_type = binary_implicit_promotion(
                 left.data_type, right.data_type
             )
-            return Dataset(name="result", components=copy(condition.components), data=None)
+            return Dataset(name=dataset_name, components=copy(condition.components), data=None)
         if left.get_identifiers() != condition.get_identifiers():
             raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
         if isinstance(right, Scalar):
@@ -257,6 +258,7 @@ class Nvl(Binary):
     @classmethod
     def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         dataset_name = VirtualCounter()._new_ds_name()
+        comp_name = VirtualCounter()._new_dc_name()
         result_components = {}
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
@@ -274,7 +276,7 @@ class Nvl(Binary):
                 )
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=pd.Series(dtype=object),
                 data_type=left.data_type,
                 role=Role.MEASURE,
@@ -397,6 +399,7 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         dataset_name = VirtualCounter()._new_ds_name()
+        comp_name = VirtualCounter()._new_dc_name()
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
 
@@ -440,7 +443,7 @@ class Case(Operator):
                 data_type = binary_implicit_promotion(data_type, op.data_type)
 
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=None,
                 data_type=data_type,
                 role=Role.MEASURE,

@@ -112,7 +112,7 @@ class Analytic(Operator.Unary):
                     nullable=operand.components[component_name].nullable,
                 )
             if cls.op == COUNT:
-                measure_name = COMP_NAME_MAPPING[cls.return_type] or VirtualCounter()._new_dc_name()
+                measure_name = COMP_NAME_MAPPING[cls.return_type]
                 result_components[measure_name] = Component(
                     name=measure_name,
                     data_type=cls.return_type,
@@ -148,7 +148,7 @@ class Analytic(Operator.Unary):
                     result_components[measure.name] = new_measure
 
             if cls.op == COUNT and len(measures) <= 1:
-                measure_name = COMP_NAME_MAPPING[cls.return_type] or VirtualCounter()._new_dc_name()
+                measure_name = COMP_NAME_MAPPING[cls.return_type]
                 nullable = False if len(measures) == 0 else measures[0].nullable
                 if len(measures) == 1:
                     del result_components[measures[0].name]
