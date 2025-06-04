@@ -332,7 +332,7 @@ class Cast(Operator.Unary):
             role=Role.MEASURE,
             nullable=measure.nullable,
         )
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
@@ -348,7 +348,7 @@ class Cast(Operator.Unary):
 
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-        comp_name = VirtualCounter()._new_dc_name()
+        comp_name = VirtualCounter._new_dc_name()
         return DataComponent(name=comp_name, data=None, data_type=to_type, role=operand.role)
 
     @classmethod

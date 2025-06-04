@@ -24,7 +24,7 @@ class Calc(Operator):
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
 
         for operand in operands:
@@ -72,7 +72,7 @@ class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 
         for operand in operands:
@@ -125,7 +125,7 @@ class Filter(Operator):
     def validate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         if condition.data_type != Boolean:
             raise ValueError(f"Filter condition must be of type {Boolean}")
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=dataset.components, data=None)
 
     @classmethod
@@ -143,7 +143,7 @@ class Keep(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         for operand in operands:
             if operand not in dataset.get_components_names():
                 raise SemanticError(
@@ -175,7 +175,7 @@ class Drop(Operator):
 
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         for operand in operands:
             if operand not in dataset.components:
                 raise SemanticError("1-1-1-10", comp_name=operand, dataset_name=dataset_name)
@@ -201,7 +201,7 @@ class Rename(Operator):
 
     @classmethod
     def validate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         from_names = [operand.old_name for operand in operands]
         if len(from_names) != len(set(from_names)):
             duplicates = set([name for name in from_names if from_names.count(name) > 1])
@@ -262,7 +262,7 @@ class Pivot(Operator):
 class Unpivot(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if len(operands) != 2:
             raise ValueError("Unpivot clause requires two operands")
         identifier, measure = operands
@@ -313,7 +313,7 @@ class Sub(Operator):
 
     @classmethod
     def validate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-3-27", op=cls.op)
         for operand in operands:

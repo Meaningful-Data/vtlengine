@@ -230,7 +230,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.nested_condition = False
 
             # Reset VirtualCounter
-            VirtualCounter().reset()
+            VirtualCounter.reset()
 
             if result is None:
                 continue

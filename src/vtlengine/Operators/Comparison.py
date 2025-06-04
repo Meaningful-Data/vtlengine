@@ -404,7 +404,7 @@ class ExistIn(Operator.Operator):
     def validate(
         cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
     ) -> Any:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 

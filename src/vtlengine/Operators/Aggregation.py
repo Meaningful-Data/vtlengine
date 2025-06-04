@@ -178,7 +178,7 @@ class Aggregation(Operator.Unary):
             )
             result_components["int_var"] = new_comp
 
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod

@@ -197,7 +197,7 @@ class Join(Operator):
 
     @classmethod
     def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
         if not all(isinstance(op, Dataset) for op in operands):

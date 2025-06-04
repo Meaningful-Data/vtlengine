@@ -136,7 +136,7 @@ class If(Operator):
         nullable = False
         left = true_branch
         right = false_branch
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if true_branch.__class__ != false_branch.__class__:
             if (isinstance(true_branch, DataComponent) and isinstance(false_branch, Dataset)) or (
                 isinstance(true_branch, Dataset) and isinstance(false_branch, DataComponent)
@@ -149,7 +149,7 @@ class If(Operator):
                 right = true_branch
 
         # Datacomponent
-        comp_name = VirtualCounter()._new_dc_name()
+        comp_name = VirtualCounter._new_dc_name()
         if isinstance(condition, DataComponent):
             if not condition.data_type == Boolean:
                 raise SemanticError(
@@ -257,8 +257,8 @@ class Nvl(Binary):
 
     @classmethod
     def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
-        dataset_name = VirtualCounter()._new_ds_name()
-        comp_name = VirtualCounter()._new_dc_name()
+        dataset_name = VirtualCounter._new_ds_name()
+        comp_name = VirtualCounter._new_dc_name()
         result_components = {}
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
@@ -398,8 +398,8 @@ class Case(Operator):
     def validate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-        dataset_name = VirtualCounter()._new_ds_name()
-        comp_name = VirtualCounter()._new_dc_name()
+        dataset_name = VirtualCounter._new_ds_name()
+        comp_name = VirtualCounter._new_dc_name()
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
 

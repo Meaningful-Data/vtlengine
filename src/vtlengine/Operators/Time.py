@@ -125,7 +125,7 @@ class Time(Operators.Operator):
 class Unary(Time):
     @classmethod
     def validate(cls, operand: Any) -> Any:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
@@ -185,7 +185,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if operand.components[time_id].data_type != TimePeriod:
@@ -292,7 +292,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, fill_type: str) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         cls.time_id = cls._get_time_id(operand)
@@ -578,7 +578,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
@@ -912,7 +912,7 @@ class Date_Add(Parametrized):
     def validate(
         cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         expected_types = [Integer, String]
         for i, param in enumerate(param_list):
             error = (

@@ -158,7 +158,7 @@ class Analytic(Operator.Unary):
                     role=Role.MEASURE,
                     nullable=nullable,
                 )
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod

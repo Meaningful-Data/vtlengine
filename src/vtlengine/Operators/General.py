@@ -22,7 +22,7 @@ class Membership(Binary):
 
     @classmethod
     def validate(cls, left_operand: Any, right_operand: Any) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if right_operand not in left_operand.components:
             raise SemanticError(
                 "1-1-1-10",

@@ -30,7 +30,7 @@ class Check(Operator):
         error_level: Optional[int],
         invalid: bool,
     ) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         if len(validation_element.get_measures()) != 1:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
         measure = validation_element.get_measures()[0]
@@ -128,7 +128,7 @@ class Validation(Operator):
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
             name="ruleid", data_type=String, role=Role.IDENTIFIER, nullable=False

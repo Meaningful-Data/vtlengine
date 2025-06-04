@@ -222,7 +222,7 @@ class Hierarchy(Operators.Operator):
     def validate(
         cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
     ) -> Dataset:
-        dataset_name = VirtualCounter()._new_ds_name()
+        dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }

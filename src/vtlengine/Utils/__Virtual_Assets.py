@@ -1,5 +1,10 @@
+from copy import copy
+
+
 class VirtualCounter:
     _instance = None
+    dataset_count: int = 0
+    component_count: int = 0
 
     def __init__(self):
         self.dataset_count = 0
@@ -11,16 +16,19 @@ class VirtualCounter:
             cls._instance.reset()
         return cls._instance
 
-    def reset(self):
-        self.dataset_count = 0
-        self.component_count = 0
+    @classmethod
+    def reset(cls):
+        cls.dataset_count = 0
+        cls.component_count = 0
 
-    def _new_ds_name(self) -> str:
-        name = f"@VDS_{self.dataset_count}"
-        self.dataset_count += 1
+    @classmethod
+    def _new_ds_name(cls) -> str:
+        cls.dataset_count += 1
+        name = f"@VDS_{copy(cls.dataset_count)}"
         return name
 
-    def _new_dc_name(self) -> str:
-        name = f"@VDC_{self.component_count}"
-        self.component_count += 1
+    @classmethod
+    def _new_dc_name(cls) -> str:
+        cls.component_count += 1
+        name = f"@VDC_{copy(cls.component_count)}"
         return name
