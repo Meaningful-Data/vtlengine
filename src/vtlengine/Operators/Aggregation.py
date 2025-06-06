@@ -36,7 +36,6 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 def extract_grouping_identifiers(
@@ -178,8 +177,8 @@ class Aggregation(Operator.Unary):
             )
             result_components["int_var"] = new_comp
 
-        dataset_name = VirtualCounter._new_ds_name()
-        return Dataset(name=dataset_name, components=result_components, data=None)
+        # VDS is handled in visit_Aggregation
+        return Dataset(name="result", components=result_components, data=None)
 
     @classmethod
     def _agg_func(

@@ -5,12 +5,11 @@ import pandas as pd
 from vtlengine import run
 from vtlengine.DataTypes import Integer, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
-from vtlengine.Operators.Aggregation import Aggregation
 from vtlengine.Operators.Analytic import Analytic
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
-def test_aggregation_generates_virtual_dataset_name():
+def test_analytic_generates_virtual_dataset_name():
     VirtualCounter.reset()
     ds = Dataset(
         name="DS_1",
@@ -20,14 +19,14 @@ def test_aggregation_generates_virtual_dataset_name():
         },
         data=None,
     )
-    result = Aggregation.validate(
-        operand=ds, group_op=None, grouping_columns=None, having_data=None
+    result = Analytic.validate(
+        operand=ds, partitioning=[], ordering=None, window=None, params=None, component_name=None
     )
     assert result.name == "@VDS_1"
     assert result.name.startswith("@VDS_")
 
 
-def test_aggregation_generates_virtual_dataset_name_2_ds():
+def test_analytic_generates_virtual_dataset_name_2_ds():
     VirtualCounter.reset()
     ds_1 = Dataset(
         name="DS_1",
@@ -45,11 +44,11 @@ def test_aggregation_generates_virtual_dataset_name_2_ds():
         },
         data=None,
     )
-    result_1 = Aggregation.validate(
-        operand=ds_1, group_op=None, grouping_columns=None, having_data=None
+    result_1 = Analytic.validate(
+        operand=ds_1, partitioning=[], ordering=None, window=None, params=None, component_name=None
     )
-    result_2 = Aggregation.validate(
-        operand=ds_2, group_op=None, grouping_columns=None, having_data=None
+    result_2 = Analytic.validate(
+        operand=ds_2, partitioning=[], ordering=None, window=None, params=None, component_name=None
     )
     assert result_1.name == "@VDS_1"
     assert result_2.name == "@VDS_2"
@@ -146,3 +145,85 @@ def test_virtual_counter_with_run():
     assert "DS_r" in result
     assert len(call_vds) == 6
     assert len(call_vdc) == 1
+    assert VirtualCounter.dataset_count == 0
+    assert VirtualCounter.component_count == 0
+
+
+def test_virtual_counter_aggregate():
+    VirtualCounter.reset()
+    script = """
+        DS_r := DS_1[aggr Me_2 := sum(Me_1) group by Id_2];
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Id_2": ["A", "B", "C"], "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+    call_vds = []
+
+    def mock_new_ds_name():
+        ds = f"@VDS_{len(call_vds) + 1}"
+        call_vds.append(ds)
+        return ds
+
+    with patch(
+        "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
+    ):
+        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    assert len(call_vds) == 1
+    assert set(call_vds) == {"@VDS_1"}
+    assert VirtualCounter.dataset_count == 0
+    assert VirtualCounter.component_count == 0
+
+
+def test_virtual_counter_analytic():
+    VirtualCounter.reset()
+    script = """
+        DS_r := first_value ( DS_1 over ( partition by Id_1, Id_2));
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Id_2": ["A", "B", "C"], "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+    call_vds = []
+
+    def mock_new_ds_name():
+        ds = f"@VDS_{len(call_vds) + 1}"
+        call_vds.append(ds)
+        return ds
+
+    with patch(
+        "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
+    ):
+        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    assert len(result["DS_r"].data) == 3
+    assert len(call_vds) == 1
+    assert VirtualCounter.dataset_count == 0
+    assert VirtualCounter.component_count == 0
