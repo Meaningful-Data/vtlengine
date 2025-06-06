@@ -102,6 +102,7 @@ def test_virtual_counter_with_run():
            DS_r := DS_1 * 10;
            DS_r := DS_1 [ calc Me_1:= Me_1 * 2 ];
            DS_r := inner_join ( DS_1  filter Id_2="B" calc Me_2:=Me_1);
+           DS_r := DS_1[calc Me_3 := daytomonth(Me_2)];
        """
 
     data_structures = {
@@ -122,15 +123,26 @@ def test_virtual_counter_with_run():
 
     datapoints = {"DS_1": data_df}
     call_vds = []
+    call_vdc = []
 
     def mock_new_ds_name():
         ds = f"@VDS_{len(call_vds) + 1}"
         call_vds.append(ds)
         return ds
 
+    def mock_new_dc_name():
+        dc = f"@VDC_{len(call_vdc) + 1}"
+        call_vdc.append(dc)
+        return dc
+
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
         result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+    with patch(
+        "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_dc_name", side_effect=mock_new_dc_name
+    ):
+        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
     assert "DS_r" in result
-    assert len(call_vds) == 5
+    assert len(call_vds) == 6
+    assert len(call_vdc) == 1
