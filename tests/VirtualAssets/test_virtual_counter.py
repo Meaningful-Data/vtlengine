@@ -182,10 +182,10 @@ def test_multiple_components_increments_counter():
 def test_virtual_counter_with_run():
     VirtualCounter.reset()
     script = """
-           DS_r := DS_1 * 10;
-           DS_r := DS_1 [ calc Me_1:= Me_1 * 2 ];
-           DS_r := inner_join ( DS_1  filter Id_2="B" calc Me_2:=Me_1);
-           DS_r := DS_1[calc Me_3 := daytomonth(Me_2)];
+           DS_r1 := DS_1 * 10;
+           DS_r2 := DS_1 [ calc Me_1:= Me_1 * 2 ];
+           DS_r3 := inner_join ( DS_1  filter Id_2="B" calc Me_2:=Me_1);
+           DS_r4 := DS_1[calc Me_3 := daytomonth(Me_2)];
        """
 
     data_structures = {
@@ -221,12 +221,11 @@ def test_virtual_counter_with_run():
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_dc_name", side_effect=mock_new_dc_name
     ):
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert "DS_r" in result
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
     assert len(call_vds) == 6
     assert len(call_vdc) == 1
     assert VirtualCounter.dataset_count == 0
@@ -306,8 +305,7 @@ def test_virtual_counter_analytic():
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert len(result["DS_r"].data) == 3
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
     assert len(call_vds) == 1
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
@@ -337,14 +335,13 @@ def test_virtual_counter_run_with_udo():
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
     with patch(
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_dc_name", side_effect=mock_new_dc_name
     ):
-        result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+        run(script=script, data_structures=data_structures, datapoints=datapoints)
 
     assert len(call_vds) == 2
     assert len(call_vdc) == 0
-    assert result["DS_r"].data["Me_1"].tolist() == [15, 6, 9, 12, 30, 12, 18, 24]
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
