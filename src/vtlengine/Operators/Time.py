@@ -385,7 +385,7 @@ class Fill_time_series(Binary):
                         )
 
         filled_data = pd.concat(filled_data, ignore_index=True)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
+        combined_data = pd.concat([filled_data, data], ignore_index=True)
         if len(cls.periods) == 1 and cls.periods[0] == "A":
             combined_data[cls.time_id] = combined_data[cls.time_id].astype(int)
         else:
@@ -463,7 +463,7 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)  # type: ignore[list-item]
+        combined_data = pd.concat([filled_data, data], ignore_index=True)
         combined_data[cls.time_id] = combined_data[cls.time_id].astype(str)
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 

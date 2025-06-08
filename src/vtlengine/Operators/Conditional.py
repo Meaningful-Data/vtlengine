@@ -344,9 +344,9 @@ class Case(Operator):
 
             for i, condition in enumerate(conditions):
                 value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(  # type: ignore[call-overload]
+                result.data = np.where(
                     condition.data.notna(),
-                    np.where(condition.data, value, result.data),  # type: ignore[call-overload]
+                    np.where(condition.data, value, result.data),
                     result.data,
                 )
 
