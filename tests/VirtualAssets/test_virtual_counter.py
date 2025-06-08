@@ -14,7 +14,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 base_path = Path(__file__).parent
 filepath_VTL = base_path / "data" / "vtl"
 filepath_json = base_path / "data" / "DataStructure" / "input"
-filepath_csv = base_path / "data" / "DataSet" / "input"
+filepath_csv = base_path / "data" / "Dataset" / "input"
 
 
 def test_analytic_generates_virtual_dataset_name():
