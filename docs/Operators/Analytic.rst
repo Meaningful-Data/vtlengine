@@ -4,7 +4,7 @@ Analytic Operators
 
 This module contains the necessary tools to perform analytic operations. It performs using the library duckdb, which is similar to pandas but has a database background.
 
-.. py:currentmodule:: vtl-engine-spark.Analytic
+.. py:currentmodule:: vtlengine.Operators.Analytic
 
 Analytic's main class inherits from Operators.Unary. Also, it has the following class methods:
 

@@ -4,7 +4,7 @@ Comparison
 
 Comparison operations are the ones which sets a condition and evaluates if that condition is fulfilled or not.
 
-.. py:currentmodule:: vtl-engine-spark.Comparison
+.. py:currentmodule:: vtlengine.Operators.Comparison
 
 
 Two main classes inherits from Binary and Unary main class, to ensure the data type is boolean and is able to perform the

@@ -1,0 +1,49 @@
+name: Version Consistency Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Extract __version__ from module
+        id: module-version
+        run: |
+          echo "MODULE_VERSION=$(poetry run python -c 'import vtlengine; print(vtlengine.__version__)')" >> $GITHUB_OUTPUT
+
+      - name: Extract version from pyproject.toml
+        id: pyproject-version
+        run: |
+          VERSION=$(poetry version --short)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          if [ "${{ steps.pyproject-version.outputs.value }}" != "${{ steps.module-version.outputs.MODULE_VERSION }}" ]; then
+            echo "❌ Version mismatch detected!"
+            echo "pyproject.toml version: ${{ steps.pyproject-version.outputs.value }}"
+            echo "__version__ value: ${{ steps.module-version.outputs.MODULE_VERSION }}"
+            exit 1
+          else
+            echo "✅ Versions match (${{ steps.pyproject-version.outputs.value }})"
+          fi

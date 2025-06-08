@@ -85,10 +85,13 @@ class DAGAnalyzer(ASTTemplate):
         all_output = []
         global_inputs = []
         inserted = []
+        persistent_datasets = []
         for key, statement in self.dependencies.items():
             outputs = statement[OUTPUTS]
             persistent = statement[PERSISTENT]
             reference = outputs + persistent
+            if len(persistent) == 1 and persistent[0] not in persistent_datasets:
+                persistent_datasets.append(persistent[0])
             deletion_key = key
             all_output.append(reference[0])
             for subKey, subStatement in self.dependencies.items():
@@ -127,10 +130,11 @@ class DAGAnalyzer(ASTTemplate):
                         statements[INSERT][key] = [element]
 
         statements[GLOBAL] = global_inputs
+        statements[PERSISTENT] = persistent_datasets
         return statements
 
     @classmethod
-    def createDAG(cls, ast: AST):
+    def createDAG(cls, ast: Start):
         """ """
         # Visit AST.
         dag = cls()
@@ -143,6 +147,11 @@ class DAGAnalyzer(ASTTemplate):
             # Create output dict.
             if len(dag.edges) != 0:
                 dag.sortAST(ast)
+            else:
+                MLStatements: list = [
+                    ML for ML in ast.children if not isinstance(ML, (HRuleset, DPRuleset, Operator))
+                ]
+                dag.check_overwriting(MLStatements)
             return dag
 
         except nx.NetworkXUnfeasible as error:

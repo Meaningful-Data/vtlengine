@@ -7,7 +7,7 @@ To do it, many class methods are created to indentify what type of data are trea
 or even the type of data the operator is using.
 
 
-.. py:currentmodule:: vtl-engine-spark.Operators
+.. py:currentmodule:: vtlengine.Operators
 
 Operator class
 --------------

@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.1"
+version = "1.1.1"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -25,13 +25,15 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 dependencies = [
     # PyPi dependencies
     "duckdb>=1.1,<1.2",
-    "pysdmx[xml]>=1.1,<2.0",
+    "pysdmx[xml]>=1.3.0,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
     "antlr4-python3-runtime>=4.9.2,<4.10",
-    "pandas>=2.1.4,<2.2",
+    "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
+    "numpy>=1.23.2,<2 ; python_version < '3.13'",
+    "numpy>=2.1.0; python_version >= '3.13'",
 ]
 
 [project.optional-dependencies]
@@ -49,13 +51,13 @@ Authors = 'https://github.com/Meaningful-Data/vtlengine/graphs/contributors'
 python = ">=3.9,<4.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3"
+pytest = "^8.4"
 pytest-cov = "^6.1.1"
 line-profiler-pycharm = "^1.2.0"
-mypy = "1.15.0"
+mypy = "1.16.0"
 pandas-stubs = "^2.1.4.231227"
-ruff = "^0.11.8"
-types-jsonschema = "4.23.0.20241208"
+ruff = "^0.11.12"
+types-jsonschema = "4.24.0.20250528"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.4.7"

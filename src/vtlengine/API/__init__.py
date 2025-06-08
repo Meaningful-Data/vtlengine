@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
@@ -5,8 +6,10 @@ import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import TransformationScheme
-from pysdmx.model.dataflow import Schema
+from pysdmx.model import DataflowRef, Reference, TransformationScheme
+from pysdmx.model.dataflow import Dataflow, Schema
+from pysdmx.model.vtl import VtlDataflowMapping
+from pysdmx.util import parse_urn
 
 from vtlengine.API._InternalApi import (
     _check_output_folder,
@@ -75,6 +78,20 @@ def _parser(stream: CommonTokenStream) -> Any:
     vtl_parser = Parser(stream)
     vtl_parser._listeners = [__VTLSingleErrorListener()]
     return vtl_parser.start()
+
+
+def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> str:
+    if isinstance(script, TransformationScheme):
+        vtl_script = _check_script(script)
+    elif isinstance(script, (str, Path)):
+        vtl_script = load_vtl(script)
+    else:
+        raise TypeError("Unsupported script type.")
+
+    ast = create_ast(vtl_script)
+    dag_inputs = DAGAnalyzer.ds_structure(ast)["global_inputs"]
+
+    return dag_inputs
 
 
 def prettify(script: Union[str, TransformationScheme, Path]) -> str:
@@ -191,7 +208,7 @@ def run(
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
@@ -255,7 +272,7 @@ def run(
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
@@ -304,6 +321,7 @@ def run(
         datapoints_paths=path_dict,
         output_path=output_folder,
         time_period_representation=time_period_representation,
+        return_only_persistent=return_only_persistent,
     )
     result = interpreter.visit(ast)
 
@@ -318,13 +336,14 @@ def run(
     return result
 
 
-def run_sdmx(
+def run_sdmx(  # noqa: C901
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
+    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    return_only_persistent: bool = False,
+    return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Dataset]:
     """
@@ -359,6 +378,8 @@ def run_sdmx(
 
         datasets: A list of PandasDataset.
 
+        mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
+
         value_domains: Dict or Path of the value domains JSON files. (default:None)
 
         external_routines: String or Path of the external routines SQL files. (default: None)
@@ -368,7 +389,7 @@ def run_sdmx(
         Time Period components.
 
         return_only_persistent: If True, run function will only return the results of \
-        Persistent Assignments. (default: False)
+        Persistent Assignments. (default: True)
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
@@ -379,15 +400,74 @@ def run_sdmx(
         SemanticError: If any dataset does not contain a valid `Schema` instance as its structure.
 
     """
+    mapping_dict = {}
+    input_names = _extract_input_datasets(script)
+
+    # Mapping handling
+
+    if mappings is None:
+        if len(datasets) != 1:
+            raise SemanticError("0-1-3-3")
+        if len(datasets) == 1:
+            if len(input_names) != 1:
+                raise SemanticError("0-1-3-1", number_datasets=len(input_names))
+            schema = datasets[0].structure
+            if not isinstance(schema, Schema):
+                raise SemanticError("0-1-3-2", schema=schema)
+            mapping_dict = {schema.short_urn: input_names[0]}
+    elif isinstance(mappings, Dict):
+        mapping_dict = mappings
+    elif isinstance(mappings, VtlDataflowMapping):
+        if mappings.to_vtl_mapping_method is not None:
+            warnings.warn(
+                "To_vtl_mapping_method is not implemented yet, we will use the Basic "
+                "method with old data."
+            )
+        if mappings.from_vtl_mapping_method is not None:
+            warnings.warn(
+                "From_vtl_mapping_method is not implemented yet, we will use the Basic "
+                "method with old data."
+            )
+        if isinstance(mappings.dataflow, str):
+            short_urn = str(parse_urn(mappings.dataflow))
+        elif isinstance(mappings.dataflow, (Reference, DataflowRef)):
+            short_urn = str(mappings.dataflow)
+        elif isinstance(mappings.dataflow, Dataflow):
+            short_urn = mappings.dataflow.short_urn
+        else:
+            raise TypeError(
+                "Expected str, Reference, DataflowRef or Dataflow type for dataflow in "
+                "VtlDataflowMapping."
+            )
+
+        mapping_dict = {short_urn: mappings.dataflow_alias}
+    else:
+        raise TypeError("Expected dict or VtlDataflowMapping type for mappings.")
+
+    for vtl_name in mapping_dict.values():
+        if vtl_name not in input_names:
+            raise SemanticError("0-1-3-5", dataset_name=vtl_name)
+
     datapoints = {}
     data_structures = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
-            raise SemanticError("0-3-1-2", schema=schema)
-        vtl_structure = to_vtl_json(schema)
+            raise SemanticError("0-1-3-2", schema=schema)
+        if schema.short_urn not in mapping_dict:
+            raise SemanticError("0-1-3-4", short_urn=schema.short_urn)
+        # Generating VTL Datastructure and Datapoints.
+        dataset_name = mapping_dict[schema.short_urn]
+        vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures.append(vtl_structure)
-        datapoints[schema.id] = dataset.data
+        datapoints[dataset_name] = dataset.data
+
+    missing = []
+    for input_name in input_names:
+        if input_name not in mapping_dict.values():
+            missing.append(input_name)
+    if missing:
+        raise SemanticError("0-1-3-6", missing=missing)
 
     result = run(
         script=script,
@@ -402,7 +482,9 @@ def run_sdmx(
     return result
 
 
-def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> TransformationScheme:
+def generate_sdmx(
+    script: Union[str, Path], agency_id: str, id: str, version: str = "1.0"
+) -> TransformationScheme:
     """
     Function that generates a TransformationScheme object from a VTL script.
 
@@ -413,11 +495,13 @@ def generate_sdmx(script: str, agency_id: str, version: str = "1.0") -> Transfor
     Args:
         script: A string with the VTL script.
         agency_id: The Agency ID used in the generated `TransformationScheme` object.
+        id: The given id of the generated `TransformationScheme` object.
         version: The Version used in the generated `TransformationScheme` object. (default: "1.0")
 
     Returns:
         The generated Transformation Scheme object.
     """
-    ast = create_ast(script)
-    result = ast_to_sdmx(ast, agency_id, version)
+    vtl = load_vtl(script)
+    ast = create_ast(vtl)
+    result = ast_to_sdmx(ast, agency_id, id, version)
     return result
