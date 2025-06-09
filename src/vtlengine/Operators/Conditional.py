@@ -19,6 +19,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class If(Operator):
@@ -135,6 +136,7 @@ class If(Operator):
         nullable = False
         left = true_branch
         right = false_branch
+        dataset_name = VirtualCounter._new_ds_name()
         if true_branch.__class__ != false_branch.__class__:
             if (isinstance(true_branch, DataComponent) and isinstance(false_branch, Dataset)) or (
                 isinstance(true_branch, Dataset) and isinstance(false_branch, DataComponent)
@@ -147,6 +149,7 @@ class If(Operator):
                 right = true_branch
 
         # Datacomponent
+        comp_name = VirtualCounter._new_dc_name()
         if isinstance(condition, DataComponent):
             if not condition.data_type == Boolean:
                 raise SemanticError(
@@ -164,7 +167,7 @@ class If(Operator):
             if isinstance(right, DataComponent):
                 nullable |= right.nullable
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=None,
                 data_type=binary_implicit_promotion(left.data_type, right.data_type),
                 role=Role.MEASURE,
@@ -184,7 +187,7 @@ class If(Operator):
             left.data_type = right.data_type = binary_implicit_promotion(
                 left.data_type, right.data_type
             )
-            return Dataset(name="result", components=copy(condition.components), data=None)
+            return Dataset(name=dataset_name, components=copy(condition.components), data=None)
         if left.get_identifiers() != condition.get_identifiers():
             raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
         if isinstance(right, Scalar):
@@ -218,7 +221,7 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
 
 class Nvl(Binary):
@@ -254,6 +257,8 @@ class Nvl(Binary):
 
     @classmethod
     def validate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
+        dataset_name = VirtualCounter._new_ds_name()
+        comp_name = VirtualCounter._new_dc_name()
         result_components = {}
         if isinstance(left, Scalar):
             if not isinstance(right, Scalar):
@@ -271,7 +276,7 @@ class Nvl(Binary):
                 )
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=pd.Series(dtype=object),
                 data_type=left.data_type,
                 role=Role.MEASURE,
@@ -298,7 +303,7 @@ class Nvl(Binary):
             }
             for comp in result_components.values():
                 comp.nullable = False
-        return Dataset(name="result", components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
 
 class Case(Operator):
@@ -393,6 +398,8 @@ class Case(Operator):
     def validate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
+        dataset_name = VirtualCounter._new_ds_name()
+        comp_name = VirtualCounter._new_dc_name()
         if len(set(map(type, conditions))) > 1:
             raise SemanticError("2-1-9-1", op=cls.op)
 
@@ -436,7 +443,7 @@ class Case(Operator):
                 data_type = binary_implicit_promotion(data_type, op.data_type)
 
             return DataComponent(
-                name="result",
+                name=comp_name,
                 data=None,
                 data_type=data_type,
                 role=Role.MEASURE,
@@ -459,4 +466,4 @@ class Case(Operator):
             if isinstance(op, Dataset) and op.get_components_names() != comp_names:
                 raise SemanticError("2-1-9-7", op=cls.op)
 
-        return Dataset(name="result", components=components, data=None)
+        return Dataset(name=dataset_name, components=components, data=None)

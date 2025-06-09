@@ -170,9 +170,14 @@ class Aggregation(Operator.Unary):
             for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
             new_comp = Component(
-                name="int_var", role=Role.MEASURE, data_type=Integer, nullable=True
+                name="int_var",
+                role=Role.MEASURE,
+                data_type=Integer,
+                nullable=True,
             )
             result_components["int_var"] = new_comp
+
+        # VDS is handled in visit_Aggregation
         return Dataset(name="result", components=result_components, data=None)
 
     @classmethod

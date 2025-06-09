@@ -97,6 +97,7 @@ from vtlengine.Utils import (
     THEN_ELSE,
     UNARY_MAPPING,
 )
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 # noinspection PyTypeChecker
@@ -231,6 +232,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self.then_condition_dataset = None
             self.else_condition_dataset = None
             self.nested_condition = False
+
+            # Reset VirtualCounter
+            VirtualCounter.reset()
 
             if result is None:
                 continue
@@ -529,7 +533,10 @@ class InterpreterAnalyzer(ASTTemplate):
             # Setting here group by as we have already selected the identifiers we need
             grouping_op = "group by"
 
-        return AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
+        result = AGGREGATION_MAPPING[node.op].analyze(operand, grouping_op, groupings, having)
+        if not self.is_from_regular_aggregation:
+            result.name = VirtualCounter._new_ds_name()
+        return result
 
     def _format_having_expression_udo(self, having: str) -> str:
         if self.udo_params is None:

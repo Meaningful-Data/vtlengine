@@ -22,6 +22,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -331,7 +332,8 @@ class Cast(Operator.Unary):
             role=Role.MEASURE,
             nullable=measure.nullable,
         )
-        return Dataset(name="result", components=result_components, data=None)
+        dataset_name = VirtualCounter._new_ds_name()
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def component_validation(  # type: ignore[override]
@@ -346,7 +348,8 @@ class Cast(Operator.Unary):
 
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-        return DataComponent(name=operand.name, data=None, data_type=to_type, role=operand.role)
+        comp_name = VirtualCounter._new_dc_name()
+        return DataComponent(name=comp_name, data=None, data_type=to_type, role=operand.role)
 
     @classmethod
     def scalar_validation(  # type: ignore[override]

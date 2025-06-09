@@ -40,6 +40,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Time(Operators.Operator):
@@ -124,12 +125,13 @@ class Time(Operators.Operator):
 class Unary(Time):
     @classmethod
     def validate(cls, operand: Any) -> Any:
+        dataset_name = VirtualCounter._new_ds_name()
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         operand.data = cls.sort_by_time(operand)
-        return Dataset(name="result", components=operand.components.copy(), data=None)
+        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
     def evaluate(cls, operand: Any) -> Any:
@@ -183,6 +185,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
+        dataset_name = VirtualCounter._new_ds_name()
         if isinstance(operand, Dataset):
             time_id = cls._get_time_id(operand)
             if operand.components[time_id].data_type != TimePeriod:
@@ -198,7 +201,7 @@ class Period_indicator(Unary):
                 role=Role.MEASURE,
                 nullable=True,
             )
-            return Dataset(name="result", components=result_components, data=None)
+            return Dataset(name=dataset_name, components=result_components, data=None)
         # DataComponent and Scalar validation
         if operand.data_type != TimePeriod:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time period component")
@@ -289,6 +292,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, fill_type: str) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         if not isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         cls.time_id = cls._get_time_id(operand)
@@ -298,7 +302,7 @@ class Fill_time_series(Binary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if fill_type not in ["all", "single"]:
             fill_type = "all"
-        return Dataset(name="result", components=operand.components.copy(), data=None)
+        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
     def max_min_from_period(cls, data: pd.DataFrame, mode: str = "all") -> Dict[str, Any]:
@@ -574,9 +578,10 @@ class Time_Shift(Binary):
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        return Dataset(name="result", components=operand.components.copy(), data=None)
+        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
     def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
@@ -907,6 +912,7 @@ class Date_Add(Parametrized):
     def validate(
         cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
+        dataset_name = VirtualCounter._new_ds_name()
         expected_types = [Integer, String]
         for i, param in enumerate(param_list):
             error = (
@@ -938,7 +944,7 @@ class Date_Add(Parametrized):
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
             raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
-        return Dataset(name="result", components=operand.components.copy(), data=None)
+        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
 
     @classmethod
     def evaluate(

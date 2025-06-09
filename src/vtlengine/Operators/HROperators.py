@@ -9,6 +9,7 @@ import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -221,10 +222,11 @@ class Hierarchy(Operators.Operator):
     def validate(
         cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
     ) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
-        return Dataset(name=dataset.name, components=result_components, data=None)
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def evaluate(

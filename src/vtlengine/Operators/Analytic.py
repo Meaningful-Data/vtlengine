@@ -37,6 +37,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -157,8 +158,8 @@ class Analytic(Operator.Unary):
                     role=Role.MEASURE,
                     nullable=nullable,
                 )
-
-        return Dataset(name="result", components=result_components, data=None)
+        dataset_name = VirtualCounter._new_ds_name()
+        return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
     def analyticfunc(

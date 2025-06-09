@@ -25,6 +25,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Unary(Operator.Unary):
@@ -403,6 +404,7 @@ class ExistIn(Operator.Operator):
     def validate(
         cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
     ) -> Any:
+        dataset_name = VirtualCounter._new_ds_name()
         left_identifiers = dataset_1.get_identifiers_names()
         right_identifiers = dataset_2.get_identifiers_names()
 
@@ -412,7 +414,7 @@ class ExistIn(Operator.Operator):
             raise ValueError("Datasets must have common identifiers")
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         result_dataset.add_component(
             Component(name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=False)
         )

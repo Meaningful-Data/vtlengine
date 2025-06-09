@@ -37,6 +37,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -289,6 +290,7 @@ class Binary(Operator):
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         left_identifiers = left_operand.get_identifiers_names()
         right_identifiers = right_operand.get_identifiers_names()
 
@@ -336,12 +338,13 @@ class Binary(Operator):
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
 
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, left_operand, right_operand)
         return result_dataset
 
     @classmethod
     def dataset_scalar_validation(cls, dataset: Dataset, scalar: Scalar) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
 
@@ -350,7 +353,7 @@ class Binary(Operator):
             for comp_name, comp in dataset.components.items()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE]
         }
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
 
@@ -379,10 +382,10 @@ class Binary(Operator):
         :param right_operand: The right component
         :return: The result data type of the validation
         """
-
+        comp_name = VirtualCounter._new_dc_name()
         result_data_type = cls.type_validation(left_operand.data_type, right_operand.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=result_data_type,
             data=None,
             role=left_operand.role,
@@ -405,6 +408,7 @@ class Binary(Operator):
 
     @classmethod
     def dataset_set_validation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         if len(dataset.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=dataset.name)
         for measure in dataset.get_measures():
@@ -415,7 +419,7 @@ class Binary(Operator):
             if comp.role in [Role.IDENTIFIER, Role.MEASURE]
         }
 
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar_set)
         return result_dataset
 
@@ -423,9 +427,10 @@ class Binary(Operator):
     def component_set_validation(
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
+        comp_name = VirtualCounter._new_dc_name()
         cls.type_validation(component.data_type, scalar_set.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=cls.type_validation(component.data_type, scalar_set.data_type),
             data=None,
             role=Role.MEASURE,
@@ -757,6 +762,7 @@ class Unary(Operator):
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         cls.validate_dataset_type(operand)
         if len(operand.get_measures()) == 0:
             raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -766,7 +772,7 @@ class Unary(Operator):
             if comp.role in [Role.IDENTIFIER, Role.MEASURE]
         }
 
-        result_dataset = Dataset(name="result", components=result_components, data=None)
+        result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, operand)
         return result_dataset
 
@@ -778,9 +784,10 @@ class Unary(Operator):
 
     @classmethod
     def component_validation(cls, operand: DataComponent) -> DataComponent:
+        comp_name = VirtualCounter._new_dc_name()
         result_type = cls.type_validation(operand.data_type)
         result = DataComponent(
-            name="result",
+            name=comp_name,
             data_type=result_type,
             data=None,
             role=operand.role,

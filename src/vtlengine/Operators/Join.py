@@ -13,6 +13,7 @@ from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Join(Operator):
@@ -196,12 +197,13 @@ class Join(Operator):
 
     @classmethod
     def validate(cls, operands: List[Dataset], using: Optional[List[str]]) -> Dataset:
+        dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
             raise Exception("Join operator requires at least 1 dataset")
         if not all(isinstance(op, Dataset) for op in operands):
             raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
-            return Dataset(name="result", components=operands[0].components, data=None)
+            return Dataset(name=dataset_name, components=operands[0].components, data=None)
         for op in operands:
             if len(op.get_identifiers()) == 0:
                 raise SemanticError("1-3-27", op=cls.op)
@@ -215,7 +217,7 @@ class Join(Operator):
         if len(set(components.keys())) != len(components):
             raise SemanticError("1-1-13-9", comp_name="")
 
-        return Dataset(name="result", components=components, data=None)
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]]) -> None:
