@@ -117,6 +117,8 @@ class InterpreterAnalyzer(ASTTemplate):
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Return only persistent
     return_only_persistent: bool = True
+    # Scalars
+    scalars: Optional[Dict[str, Union[int, str, bool, float, None]]] = (None,)
     # Flags to change behavior
     nested_condition: Union[str, bool] = False
     is_from_assignment: bool = False

@@ -210,6 +210,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
+    scalars: Optional[Dict[str, Union[int, str, bool, float, None]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -276,6 +277,8 @@ def run(
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
+        scalars: Dict with the scalar values to be used in the VTL script. \
+
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -307,6 +310,15 @@ def run(
 
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
+    global_inputs = ds_analysis["global_inputs"]
+
+    # Scalar handling
+    if scalars is not None:
+        for key in scalars:
+            if key not in global_inputs:
+                raise ValueError(f"Scalar '{key}' does not exists.")
+            if key in datasets:
+                raise ValueError(f"Scalar '{key}' must not have the same name as a DataSet.")
 
     # Checking the output path to be a Path object to a directory
     if output_folder is not None:
@@ -322,6 +334,7 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
+        scalars=scalars,
     )
     result = interpreter.visit(ast)
 
