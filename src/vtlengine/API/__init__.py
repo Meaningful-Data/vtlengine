@@ -210,7 +210,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-    scalars: Optional[Dict[str, Union[int, str, bool, float, None]]] = None,
+    scalars: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute

@@ -362,8 +362,8 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-    datasets: Dict[str, Dataset], ast: Start
-) -> Dict[str, Dataset]:
+    datasets: Dict[str, Union[Dataset, Scalar]], ast: Start
+) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Returns only the datasets with a persistent assignment.
     """

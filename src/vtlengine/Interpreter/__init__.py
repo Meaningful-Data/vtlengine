@@ -105,6 +105,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
+    scalars: Optional[Dict[str, Scalar]] = None
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
@@ -117,8 +118,6 @@ class InterpreterAnalyzer(ASTTemplate):
     time_period_representation: Optional[TimePeriodRepresentation] = None
     # Return only persistent
     return_only_persistent: bool = True
-    # Scalars
-    scalars: Optional[Dict[str, Union[int, str, bool, float, None]]] = (None,)
     # Flags to change behavior
     nested_condition: Union[str, bool] = False
     is_from_assignment: bool = False
@@ -844,6 +843,8 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
+        if node.value in self.scalars:
+            return self.scalars[node.value]
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
