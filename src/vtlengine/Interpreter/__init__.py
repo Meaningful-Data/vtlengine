@@ -843,7 +843,7 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
-        if node.value in self.scalars:
+        if self.scalars and node.value in self.scalars:
             return self.scalars[node.value]
         return self.datasets[node.value]
 
