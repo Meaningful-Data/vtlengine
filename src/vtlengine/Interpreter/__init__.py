@@ -841,10 +841,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 role=self.ruleset_dataset.components[comp_name].role,
                 nullable=self.ruleset_dataset.components[comp_name].nullable,
             )
-        if node.value not in self.datasets:
-            raise SemanticError("2-3-6", dataset_name=node.value)
         if self.scalars and node.value in self.scalars:
             return self.scalars[node.value]
+        if node.value not in self.datasets:
+            raise SemanticError("2-3-6", dataset_name=node.value)
+
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
