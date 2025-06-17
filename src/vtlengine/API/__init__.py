@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
@@ -35,7 +35,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset
+from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
 
@@ -312,6 +312,9 @@ def run(
     ds_analysis = DAGAnalyzer.ds_structure(ast)
     global_inputs = ds_analysis["global_inputs"]
 
+    preloaded_scalars = {
+        name: obj.value for name, obj in datasets.items() if isinstance(obj, Scalar)
+    }
     # Scalar handling
     if scalars is not None:
         for key in scalars:
@@ -323,7 +326,7 @@ def run(
     # Checking the output path to be a Path object to a directory
     if output_folder is not None:
         _check_output_folder(output_folder)
-
+    final_scalars = {**preloaded_scalars, **(scalars or {})}
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
         datasets=datasets,
@@ -334,7 +337,7 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
-        scalars=scalars,
+        scalars=final_scalars,
     )
     result = interpreter.visit(ast)
 

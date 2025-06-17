@@ -61,6 +61,8 @@ class DAGAnalyzer(ASTTemplate):
     inputs: Optional[list] = None
     outputs: Optional[list] = None
     persistent: Optional[list] = None
+    known_datasets: Optional[set] = None
+    scalars: Optional[list] = None
 
     def __post_init__(self):
         self.dependencies = {}
@@ -72,11 +74,15 @@ class DAGAnalyzer(ASTTemplate):
         self.outputs = []
         self.persistent = []
         self.alias = []
+        self.known_datasets = set()
+        self.scalars = []
 
     @classmethod
-    def ds_structure(cls, ast: AST):
+    def ds_structure(cls, ast: AST, known_datasets: Optional[set] = None):
         # Visit AST.
         dag = cls()
+        if known_datasets:
+            dag.known_datasets = known_datasets
         dag.visit(ast)
         return dag._ds_usage_analysis()
 
@@ -104,12 +110,15 @@ class DAGAnalyzer(ASTTemplate):
                 statements[DELETE][deletion_key] = reference
 
         # Deletion of gloabl inputs
+        scalars = []
         for key, statement in self.dependencies.items():
             inputs = statement[INPUTS]
             for element in inputs:
                 if element not in all_output and element not in global_inputs:
                     deletion_key = key
                     global_inputs.append(element)
+                    if element not in self.known_datasets:
+                        scalars.append(element)
                     for subKey, subStatement in self.dependencies.items():
                         candidates = subStatement[INPUTS]
                         if candidates and element in candidates:
@@ -129,7 +138,10 @@ class DAGAnalyzer(ASTTemplate):
                     else:
                         statements[INSERT][key] = [element]
 
-        statements[GLOBAL] = global_inputs
+        scalars = [inp for inp in global_inputs if inp not in self.known_datasets]
+        global_inputs.extend(s for s in scalars if s not in global_inputs)
+
+        statements[GLOBAL] = list(set(global_inputs + self.scalars))
         statements[PERSISTENT] = persistent_datasets
         return statements
 
@@ -283,6 +295,9 @@ class DAGAnalyzer(ASTTemplate):
                 self.dependencies[self.numberOfStatements] = copy.deepcopy(
                     self.statementStructure()
                 )
+                for dep in self.dependencies.values():
+                    self.known_datasets.update(dep[OUTPUTS])
+                    self.known_datasets.update(dep[PERSISTENT])
 
                 # Count the number of statements in order to name the scope symbol table for
                 # each one.
@@ -331,10 +346,17 @@ class DAGAnalyzer(ASTTemplate):
     def visit_VarID(self, node: VarID) -> None:
         if (not self.isFromRegularAggregation or self.isDataset) and node.value not in self.alias:
             self.inputs.append(node.value)
+        if node.value not in self.alias:
+            if self.isDataset:
+                self.inputs.append(node.value)
+            else:
+                self.scalars.append(node.value)
 
     def visit_Identifier(self, node: Identifier) -> None:
         if node.kind == "DatasetID" and node.value not in self.alias:
             self.inputs.append(node.value)
+        else:
+            self.scalars.append(node.value)
 
     def visit_ParamOp(self, node: ParamOp) -> None:
         if self.udos and node.op in self.udos:

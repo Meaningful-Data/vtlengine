@@ -242,10 +242,9 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
                 datasets[dataset_name].components, data, dataset_name
             )
         for dataset_name in datasets:
-            if datasets[dataset_name].data is None:
-                datasets[dataset_name].data = pd.DataFrame(
-                    columns=list(datasets[dataset_name].components.keys())
-                )
+            ds = datasets[dataset_name]
+            if isinstance(ds, Dataset) and ds.data is None:
+                ds.data = pd.DataFrame(columns=list(ds.components.keys()))
         return datasets, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
