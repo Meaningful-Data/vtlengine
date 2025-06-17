@@ -74,6 +74,19 @@ class DataComponent:
             return False
         return self.to_dict() == other.to_dict()
 
+    def __setattr__(self, key: str, value: any) -> None:
+        if key == "nullable" and not isinstance(value, bool):
+            if isinstance(value, str):
+                value = value.lower() == "true"
+            elif isinstance(value, int):
+                value = bool(value)
+            else:
+                raise ValueError(f"Invalid value for nullable: {value}")
+
+        super().__setattr__(key, value)
+        if hasattr(self, "data") and self.data is not None and self.name not in self.data.columns:
+            self.data = self.data.project(f"{self.data.columns[0]} AS {self.name}")
+
     @classmethod
     def from_json(cls, json_str: Any) -> "DataComponent":
         return cls(
@@ -94,6 +107,15 @@ class DataComponent:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
+
+    def has_nulls(self) -> Optional[DuckDBPyRelation]:
+        """
+        Lazily checks whether this column contains any NULLs.
+        Returns a DuckDBPyRelation with a single boolean column 'has_nulls'.
+        """
+        if self.data is None:
+            return None
+        return self.data.aggregate(f"bool_or({self.name} IS NULL) as has_nulls").fetchone()[0]
 
 
 @dataclass

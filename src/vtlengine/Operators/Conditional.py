@@ -1,13 +1,10 @@
 from copy import copy
 from typing import Any, List, Union
 
+import duckdb
 import numpy as np
-
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
+from duckdb import DuckDBPyRelation
 
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -19,114 +16,97 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
+from vtlengine.connection import con
+
+
+def format_scalar_value(value: Any) -> str:
+    if isinstance(value, str):
+        return f"'{value}'"
+    if value is None:
+        return "NULL"
+    return str(value)
 
 
 class If(Operator):
-    """
-    If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
-        inherits from Operator, a superclass that contains general validate and evaluate class methods.
-        It has the following class methods:
-    Class methods:
-        evaluate: Evaluates if the operation is well constructed, checking the actual condition and
-        dropping a boolean result.
-        The result will depend on the data class, such as datacomponent and dataset.
-
-        component_level_evaluation: Returns a pandas dataframe with data to set the condition
-
-        dataset_level_evaluation: Sets the dataset and evaluates its correct schema to be able to perform the condition.
-
-        validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
-        the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
-        identifiers are the same in 'if', 'then' and 'else'.
-    """  # noqa E501
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
         result = cls.validate(condition, true_branch, false_branch)
-        if not isinstance(result, Scalar):
-            if isinstance(condition, DataComponent):
-                result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
-            if isinstance(condition, Dataset):
-                result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
+        if isinstance(result, Scalar):
+            return result
+
+        # Use lazy logic when condition is a DataComponent or Dataset
+        if isinstance(condition, DataComponent):
+            result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+        elif isinstance(condition, Dataset):
+            result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
+
         return result
 
     @classmethod
     def component_level_evaluation(
-        cls, condition: DataComponent, true_branch: Any, false_branch: Any
-    ) -> Any:
-        result = None
-        if condition.data is not None:
-            if isinstance(true_branch, Scalar):
-                true_data = pd.Series(true_branch.value, index=condition.data.index)
-            else:
-                true_data = true_branch.data.reindex(condition.data.index)
-            if isinstance(false_branch, Scalar):
-                false_data = pd.Series(false_branch.value, index=condition.data.index)
-            else:
-                false_data = false_branch.data.reindex(condition.data.index)
-            result = np.where(condition.data, true_data, false_data)
+            cls, condition: DataComponent, true_branch: Any, false_branch: Any
+    ) -> DuckDBPyRelation:
+        if condition.data is None:
+            raise ValueError("Condition component must contain data")
 
-        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
+        cond_relation = condition.data.project(f"{condition.name} AS __condition__")
+
+        if isinstance(true_branch, Scalar):
+            true_expr = format_scalar_value(true_branch.value)
+        else:
+            true_branch.data = true_branch.data.set_alias("tb")
+            cond_relation = cond_relation.join(true_branch.data, how="outer", condition="__condition__ = true")
+            true_expr = f"tb.{true_branch.data.columns[0]}"
+
+        if isinstance(false_branch, Scalar):
+            false_expr = format_scalar_value(false_branch.value)
+        else:
+            false_branch.data = false_branch.data.set_alias("fb")
+            cond_relation = cond_relation.join(false_branch.data, how="outer", condition="__condition__ = false")
+            false_expr = f"fb.{false_branch.data.columns[0]}"
+
+        return cond_relation.project(f"""
+            CASE
+                WHEN __condition__ = True
+                THEN {true_expr}
+                ELSE {false_expr}
+            END AS {condition.name}
+        """)
 
     @classmethod
     def dataset_level_evaluation(
-        cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
+        cls, result: Dataset, condition: Dataset, true_branch: Any, false_branch: Any
     ) -> Dataset:
-        ids = condition.get_identifiers_names()
-        condition_measure = condition.get_measures_names()[0]
-        true_data = condition.data[condition.data[condition_measure] == True]
-        false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
+        if condition.data is None:
+            raise ValueError("Condition dataset must contain data")
 
-        if isinstance(true_branch, Dataset):
-            if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(
-                    true_data,
-                    true_branch.data,
-                    on=ids,
-                    how="right",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                true_data = pd.DataFrame(columns=true_branch.get_components_names())
+        condition_expr = condition.get_measures_names()[0]
+        cond_relation = condition.data.project(f"{condition_expr} as __condition__")
+
+        if isinstance(true_branch, Scalar):
+            true_expr = f"{format_scalar_value(true_branch.value)} as {condition_expr}"
+            true_relation = cond_relation.filter("__condition__").project(true_expr)
         else:
-            true_data[condition_measure] = true_data[condition_measure].apply(
-                lambda x: true_branch.value
-            )
-        if isinstance(false_branch, Dataset):
-            if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(
-                    false_data,
-                    false_branch.data,
-                    on=ids,
-                    how="right",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                false_data = pd.DataFrame(columns=false_branch.get_components_names())
-        else:
-            false_data[condition_measure] = false_data[condition_measure].apply(
-                lambda x: false_branch.value
+            true_relation = cond_relation.filter("__condition__").join(
+                true_branch.data, how="left", condition="true"
             )
 
-        result.data = (
-            pd.concat([true_data, false_data], ignore_index=True)
-            .drop_duplicates()
-            .sort_values(by=ids)
-        )
-        if isinstance(result, Dataset):
-            drop_columns = [
-                column for column in result.data.columns if column not in result.components
-            ]
-            result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
-        if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
-            result.get_measures()[0].data_type = true_branch.data_type
-            result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={condition_measure: result.get_measures()[0].name}
-                )
+        if isinstance(false_branch, Scalar):
+            false_expr = f"{format_scalar_value(true_branch.value)} as {condition_expr}"
+            false_relation = cond_relation.filter("not __condition__").project(false_expr)
+        else:
+            false_relation = cond_relation.filter("not __condition__").join(
+                false_branch.data, how="left", condition="true"
+            )
+
+        result.data = true_relation.union_all(false_relation)
+
+        # Optionally clean up extra columns if needed
+        result.components = true_branch.components if isinstance(true_branch, Dataset) else result.components
+
         return result
+
 
     @classmethod
     def validate(  # noqa: C901

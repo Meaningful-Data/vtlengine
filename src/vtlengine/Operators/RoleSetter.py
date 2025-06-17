@@ -34,7 +34,7 @@ class RoleSetter(Unary):
             isinstance(operand, DataComponent)
             and operand.data is not None
             and not operand.nullable
-            and any(operand.data.isnull())
+            and operand.has_nulls()
         ):
             raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
