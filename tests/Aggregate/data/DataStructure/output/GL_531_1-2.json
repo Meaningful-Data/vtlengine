@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r_filter",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "type": "Integer",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "Id_2",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "var1",
+          "type": "Integer",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "var2",
+          "type": "Integer",
+          "nullable": true,
+          "role": "Measure"
+        }
+      ]
+    }
+  ]
+}
