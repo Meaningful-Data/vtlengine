@@ -60,6 +60,10 @@ class ScalarType:
     def instance_is_included(self, set_: Set[Any]) -> bool:
         return self.__class__ in set_
 
+    @property
+    def sql_type(self) -> str:
+        return "VARCHAR"
+
     @classmethod
     def is_included(cls, set_: Set[Any]) -> bool:
         return cls in set_
@@ -108,6 +112,10 @@ class String(ScalarType):
 
     default = ""
 
+    @property
+    def sql_type(self) -> str:
+        return "VARCHAR"
+
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
         # if pd.isna(value):
@@ -155,6 +163,10 @@ class Number(ScalarType):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+    @property
+    def sql_type(self) -> str:
+        return "DOUBLE"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
@@ -213,6 +225,10 @@ class Integer(Number):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+    @property
+    def sql_type(self) -> str:
+        return "INTEGER"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> int:
@@ -467,6 +483,10 @@ class Boolean(ScalarType):
 
     default = None
 
+    @property
+    def sql_type(self) -> str:
+        return "BOOLEAN"
+
     @classmethod
     def cast(cls, value: Any) -> Optional[bool]:
         if pd.isnull(value):
@@ -517,6 +537,10 @@ class Boolean(ScalarType):
 
 class Null(ScalarType):
     """ """
+
+    @property
+    def sql_type(self) -> str:
+        return "NULL"
 
     @classmethod
     def is_null_type(cls) -> bool:

@@ -23,7 +23,7 @@ from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentA
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_duckdb
 from vtlengine.Model import (
     Component as VTL_Component,
 )
@@ -238,7 +238,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name}")
-            datasets[dataset_name].data = _validate_pandas(
+            datasets[dataset_name].data = _validate_duckdb(
                 datasets[dataset_name].components, data, dataset_name
             )
         for dataset_name in datasets:
