@@ -743,6 +743,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_VarID(self, node: AST.VarID) -> Any:  # noqa: C901
         if self.is_from_assignment:
             return node.value
+        if self.scalars and node.value in self.scalars:
+            return self.scalars[node.value]
         # Having takes precedence as it is lower in the AST
         if self.udo_params is not None and node.value in self.udo_params[-1]:
             udo_element = self.udo_params[-1][node.value]

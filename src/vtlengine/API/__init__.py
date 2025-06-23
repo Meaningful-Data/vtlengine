@@ -210,7 +210,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-    scalars: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -277,7 +277,7 @@ def run(
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
-        scalars: Dict with the scalar values to be used in the VTL script. \
+        scalar_values: Dict with the scalar values to be used in the VTL script. \
 
 
     Returns:
@@ -295,7 +295,7 @@ def run(
     ast = create_ast(vtl)
 
     # Loading datasets and datapoints
-    datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
+    datasets, scalars, path_dict = load_datasets_with_data(data_structures, datapoints)
 
     # Handling of library items
     vd = None
@@ -310,23 +310,11 @@ def run(
 
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-    global_inputs = ds_analysis["global_inputs"]
-
-    preloaded_scalars = {
-        name: obj.value for name, obj in datasets.items() if isinstance(obj, Scalar)
-    }
-    # Scalar handling
-    if scalars is not None:
-        for key in scalars:
-            if key not in global_inputs:
-                raise ValueError(f"Scalar '{key}' does not exists.")
-            if key in datasets:
-                raise ValueError(f"Scalar '{key}' must not have the same name as a DataSet.")
 
     # Checking the output path to be a Path object to a directory
     if output_folder is not None:
         _check_output_folder(output_folder)
-    final_scalars = {**preloaded_scalars, **(scalars or {})}
+
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
         datasets=datasets,
@@ -337,7 +325,7 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
-        scalars=final_scalars,
+        scalars=scalars,
     )
     result = interpreter.visit(ast)
 

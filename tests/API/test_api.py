@@ -29,9 +29,9 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataTypes import String
+from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
 base_path = Path(__file__).parent
@@ -118,7 +118,13 @@ load_datasets_input_params_OK = [
                         },
                     ],
                 }
-            ]
+            ],
+            "scalars": [
+                {
+                    "name": "sc_1",
+                    "type": "Integer",
+                },
+            ],
         }
     ),
 ]
@@ -159,6 +165,7 @@ load_datasets_with_data_without_dp_params_OK = [
                     data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
+            {"sc_1": Scalar(name="sc_1", data_type=DataTypes.Integer, value=None)},
             None,
         ),
     )
@@ -195,6 +202,7 @@ load_datasets_with_data_path_params_OK = [
                     data=None,
                 )
             },
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             {"DS_1": filepath_csv / "DS_1.csv"},
         ),
     ),
@@ -252,6 +260,7 @@ load_datasets_with_data_path_params_OK = [
                     data=None,
                 ),
             },
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
         ),
     ),
@@ -593,8 +602,8 @@ def test_load_wrong_inputs_vd(input, error_message):
 
 @pytest.mark.parametrize("datastructure", load_datasets_input_params_OK)
 def test_load_datastructures(datastructure):
-    result = load_datasets(datastructure)
-    reference = Dataset(
+    datasets, scalars = load_datasets(datastructure)
+    reference_dataset = Dataset(
         name="DS_1",
         components={
             "Id_1": Component(
@@ -618,8 +627,17 @@ def test_load_datastructures(datastructure):
         },
         data=None,
     )
-    assert "DS_1" in result
-    assert result["DS_1"] == reference
+    reference_scalar = Scalar(
+        name="sc_1",
+        data_type=DataTypes.Integer,
+        value=None,
+    )
+
+    assert "DS_1" in datasets
+    assert datasets["DS_1"] == reference_dataset
+
+    assert "sc_1" in scalars
+    assert scalars["sc_1"] == reference_scalar
 
 
 @pytest.mark.parametrize("input, error_message", load_datasets_wrong_input_params)
@@ -1324,7 +1342,7 @@ def test_mandatory_me_error():
 
 @pytest.mark.parametrize("data_structure", params_schema)
 def test_load_data_structure_with_new_schema(data_structure):
-    result = load_datasets(data_structure)
+    datasets, _ = load_datasets(data_structure)
     reference = Dataset(
         name="DS_Schema",
         components={
@@ -1355,8 +1373,8 @@ def test_load_data_structure_with_new_schema(data_structure):
         },
         data=None,
     )
-    assert "DS_Schema" in result
-    assert result["DS_Schema"] == reference
+    assert "DS_Schema" in datasets
+    assert datasets["DS_Schema"] == reference
 
 
 @pytest.mark.parametrize("ds_r, error_message", param_id_null)
