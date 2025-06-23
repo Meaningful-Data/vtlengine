@@ -29,7 +29,7 @@ dependencies = [
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
-    "antlr4-python3-runtime>=4.9.2,<4.10",
+    "antlr4-python3-runtime>=4.13.2,<4.14",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
     "numpy>=1.23.2,<2 ; python_version < '3.13'",

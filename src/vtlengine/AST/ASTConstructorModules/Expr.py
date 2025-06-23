@@ -840,8 +840,8 @@ class Expr(VtlVisitor):
                 Parser.DayOfYearAtomContext,
                 Parser.DayToYearAtomContext,
                 Parser.DayToMonthAtomContext,
-                Parser.YearTodayAtomContext,
-                Parser.MonthTodayAtomContext,
+                Parser.YearToDayAtomContext,
+                Parser.MonthToDayAtomContext,
             ),
         ):
             return self.visitTimeUnaryAtom(ctx)
