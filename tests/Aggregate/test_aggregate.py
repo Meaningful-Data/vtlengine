@@ -1294,7 +1294,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = 'GL_531_1'
         number_inputs = 1
-        references_names = ["1", "2"]
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(
             code=code,
@@ -1316,7 +1316,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = 'GL_531_2'
         number_inputs = 1
-        references_names = ["1", "2"]
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(
             code=code,
