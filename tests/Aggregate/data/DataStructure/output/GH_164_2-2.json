@@ -1,8 +1,27 @@
 {
-  "scalars": [
+  "datasets": [
     {
-      "name": "sc_sub",
-      "type": "Integer"
+      "name": "DS_r_sub",
+      "DataStructure": [
+        {
+          "name": "Id_2",
+          "type": "String",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "var1",
+          "type": "Integer",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "var2",
+          "type": "Integer",
+          "nullable": true,
+          "role": "Measure"
+        }
+      ]
     }
   ]
 }
