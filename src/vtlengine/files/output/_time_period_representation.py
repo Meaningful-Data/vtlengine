@@ -48,8 +48,10 @@ def format_time_period_external_representation(
         return
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = dataset.data[comp.name].map(
-                _format_vtl_representation, na_action="ignore"
-            )
+            # TODO: check if implement this at SQLDataModel level or here
+            pass
+            # dataset.data[comp.name] = dataset.data[comp.name].map(
+            #     _format_vtl_representation, na_action="ignore"
+            # )
 
     return

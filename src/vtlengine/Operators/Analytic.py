@@ -3,10 +3,7 @@ from typing import List, Optional
 
 import duckdb
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
+
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -253,8 +250,6 @@ class Analytic(Operator.Unary):
 
         if cls.op == COUNT:
             df[measure_names] = df[measure_names].fillna(-1)
-        # if os.getenv("SPARK", False):
-        #     df = df.to_pandas()
         return duckdb.query(query).to_df().astype(object)
 
     @classmethod

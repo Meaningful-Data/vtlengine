@@ -4,7 +4,6 @@ from typing import Any, List, Optional
 import duckdb
 import pandas as pd
 
-import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
     AVG,
     COUNT,
@@ -36,6 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Operators import Unary
 
 
 def extract_grouping_identifiers(
@@ -50,7 +50,7 @@ def extract_grouping_identifiers(
 
 
 # noinspection PyMethodOverriding
-class Aggregation(Operator.Unary):
+class Aggregation(Unary):
     @classmethod
     def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
         to_replace: List[Optional[str]]

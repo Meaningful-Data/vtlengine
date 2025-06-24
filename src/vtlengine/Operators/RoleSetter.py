@@ -1,10 +1,7 @@
 from copy import copy
 from typing import Any, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
+
 import pandas as pd
 
 from vtlengine.Exceptions import SemanticError

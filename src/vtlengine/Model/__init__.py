@@ -12,10 +12,10 @@ from duckdb.duckdb import DuckDBPyRelation
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
+from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
-from vtlengine.connection import con
 
 
 @dataclass
@@ -104,10 +104,7 @@ class DataComponent:
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
 
         # Lazy comparison: check if any difference exists
-        if diff.limit(1).df().shape[0] > 0:
-            return False
-
-        return True
+        return not diff.limit(1).df().shape[0] > 0
 
     @classmethod
     def from_json(cls, json_str: Any) -> "DataComponent":

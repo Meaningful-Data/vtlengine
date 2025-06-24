@@ -1,9 +1,6 @@
 from typing import Any, Dict, List
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
+
 import pandas as pd
 
 from vtlengine.DataTypes import binary_implicit_promotion
@@ -110,7 +107,6 @@ class Symdiff(Set):
             if result.data is None:
                 result.data = data
             else:
-                # Realiza la operación equivalente en pyspark.pandas
                 result.data = result.data.merge(
                     data,
                     how="outer",

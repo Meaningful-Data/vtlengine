@@ -3,10 +3,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
+
 import pandas as pd
 
 import vtlengine.Operators as Operator

@@ -1,38 +1,30 @@
 from csv import DictReader
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Union
 
-import duckdb
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
-
 from vtlengine.DataTypes import (
-    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
     Integer,
     Number,
-    ScalarType,
     TimeInterval,
-    TimePeriod, String,
+    TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import (
-    check_date,
     check_time,
     check_time_period,
+    load_time_checks,
 )
 from vtlengine.Model import Component, Dataset, Role
 
-TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
-    Date: check_date,
-    TimePeriod: check_time_period,
-    TimeInterval: check_time,
-}
+load_time_checks()
+
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
     # GE1 check if the file is empty
@@ -100,7 +92,7 @@ def _sanitize_duckdb_columns(
         column_names = modified_data.columns
 
     # Validate identifiers
-    comp_names = set(c.name for c in components.values() if c.role == Role.IDENTIFIER)
+    comp_names = {c.name for c in components.values() if c.role == Role.IDENTIFIER}
     missing = [name for name in comp_names if name not in column_names]
 
     if missing:
@@ -158,13 +150,20 @@ def _validate_duckdb(
                        .filter(f"{col}_chk IS NOT NULL") \
                        .project(f"* EXCLUDE {col}_chk")
 
-        # TODO add temporal type checks
+        elif dtype in [Date, TimeInterval, TimePeriod]:
+            check_method = f"check_{dtype.__name__}".lower()
+            data = data.project(f"*, {check_method}({col}) AS {col}_chk") \
+                       .filter(f"{col}_chk IS NOT NULL") \
+                       .project(f"* EXCLUDE {col}_chk")
 
         else:
             # Strip quotes
             data = data.project(f"*, REPLACE({col}::TEXT, '\"', '') AS {col}_clean") \
                        .project(f"* EXCLUDE {col}").project(f"*, {col}_clean AS {col}") \
                        .project(f"* EXCLUDE {col}_clean")
+
+    a = data.df()
+    b = 0
 
     return data
 
@@ -177,7 +176,8 @@ def load_datapoints(
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         # Empty dataset as table
         column_defs = ", ".join([f'"{name}" VARCHAR' for name in components])
-        rel = con.query(f"SELECT {', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))} LIMIT 0")
+        rel = con.query(f"SELECT {', '.join(f'NULL::{col.split()[1]}' for col in 
+                                            column_defs.split(','))} LIMIT 0")
         return _sanitize_duckdb_columns(components, None, rel)
 
     elif isinstance(csv_path, (str, Path)):

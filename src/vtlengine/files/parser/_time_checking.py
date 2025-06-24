@@ -1,31 +1,45 @@
 import calendar
 import re
 from datetime import date, datetime
+from typing import Union
 
+from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
 
 
-def check_date(value: str) -> str:
+def load_time_checks():
+    # Register the functions with DuckDB
+    con.create_function("check_date", check_date, return_type="DATE")
+    con.create_function("check_timeinterval", check_time, return_type="VARCHAR")
+    con.create_function("check_timeperiod", check_time_period, return_type="VARCHAR")
+
+
+def check_date(value: Union[str, date]) -> date:
     """
-    Check if the date is in the correct format.
+    Check if the date is in the correct format and return a DATE object.
+    If the input is already a date, skip validation.
     """
-    # Remove all whitespaces
-    value = value.replace(" ", "")
-    try:
-        if len(value) == 9 and value[7] == "-":
-            value = value[:-1] + "0" + value[-1]
-        date_value = date.fromisoformat(value)
-    except ValueError as e:
-        if "is out of range" in str(e):
-            raise InputValidationException(f"Date {value} is out of range for the month.")
-        if "month must be in 1..12" in str(e):
+    if isinstance(value, str):
+        # Remove all whitespaces
+        value = value.replace(" ", "")
+        try:
+            if len(value) == 9 and value[7] == "-":
+                value = value[:-1] + "0" + value[-1]
+            date_value = date.fromisoformat(value)
+        except ValueError as e:
+            if "is out of range" in str(e):
+                raise InputValidationException(f"Date {value} is out of range for the month.")
+            if "month must be in 1..12" in str(e):
+                raise InputValidationException(
+                    f"Date {value} is invalid. Month must be between 1 and 12."
+                )
             raise InputValidationException(
-                f"Date {value} is invalid. Month must be between 1 and 12."
+                f"Date {value} is not in the correct format. Use YYYY-MM-DD."
             )
-        raise InputValidationException(
-            f"Date {value} is not in the correct format. Use YYYY-MM-DD."
-        )
+
+    else:
+        date_value = value
 
     # Check date is between 1900 and 9999
     if not 1800 <= date_value.year <= 9999:
@@ -33,7 +47,7 @@ def check_date(value: str) -> str:
             f"Date {value} is invalid. Year must be between 1900 and 9999."
         )
 
-    return date_value.isoformat()
+    return date_value
 
 
 def dates_to_string(date1: date, date2: date) -> str:
@@ -91,9 +105,10 @@ further_options_period_pattern = (
 )
 
 
-def check_time_period(value: str) -> str:
-    if isinstance(value, int):
+def check_time_period(value: Union[str, int, date]) -> str:
+    if isinstance(value, (int, date)):
         value = str(value)
+
     value = value.replace(" ", "")
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:
@@ -112,7 +127,6 @@ def check_time_period(value: str) -> str:
         year = datetime.strptime(value, "%Y")
         year_period_wo_A = str(year.year)
         return year_period_wo_A
-        # return year_period
 
     month_result = re.fullmatch(month_period_pattern, value)
     if month_result is not None:
