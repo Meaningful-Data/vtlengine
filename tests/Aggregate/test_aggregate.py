@@ -1281,7 +1281,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
-    def test_GL_531_1(self):
+    def test_GH_164_1(self):
         """
         Dataset --> Dataset
         Status: OK
@@ -1292,7 +1292,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #466.
         Goal: aggr (count) with null values
         """
-        code = 'GL_531_1'
+        code = 'GH_164_1'
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
@@ -1303,7 +1303,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         )
 
 
-    def test_GL_531_2(self):
+    def test_GH_164_2(self):
         """
         Dataset --> Dataset
         Status: OK
@@ -1314,7 +1314,7 @@ class AggregateOperatorsTest(TestAggregateHelper):
         Git Branch: #466.
         Goal: aggr (count) with null values
         """
-        code = 'GL_531_2'
+        code = 'GH_164_2'
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
