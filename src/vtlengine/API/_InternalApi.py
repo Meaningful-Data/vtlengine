@@ -113,7 +113,7 @@ def _load_dataset_from_structure(
                 data_type=SCALAR_TYPES[scalar_json["type"]],
                 value=None,
             )
-            scalars[scalar_name] = scalar  # type: ignore[assignment]
+            scalars[scalar_name] = scalar
     return datasets, scalars
 
 
@@ -221,8 +221,18 @@ def load_datasets(
         return ds_structures, scalar_structures
     return _load_datastructure_single(data_structure)
 
+def _handle_scalars_values(scalars: Dict[str, Scalar], scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None):
+    if scalar_values is None:
+        return
+    # Handling scalar values with the scalar dict
+    for name, value in scalar_values.items():
+        if name not in scalars:
+            raise Exception(f"Not found scalar {name}")
+        # Casting value to scalar data type
+        scalars[name].value = scalars[name].data_type.cast(value)
 
-def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None) -> Any:
+def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None,
+                            scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
 
@@ -241,6 +251,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         for dataset in datasets.values():
             if isinstance(dataset, Dataset):
                 _fill_dataset_empty_data(dataset)
+        _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
     if isinstance(datapoints, dict):
         # Handling dictionary of Pandas Dataframes
@@ -255,12 +266,15 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
                 datasets[dataset_name].data = pd.DataFrame(
                     columns=list(datasets[dataset_name].components.keys())
                 )
+        _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
     for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
+
+    _handle_scalars_values(scalars, scalar_values)
 
     return datasets, scalars, dict_datapoints
 

@@ -180,7 +180,7 @@ def semantic_analysis(
     ast = create_ast(vtl)
 
     # Loading datasets
-    structures = load_datasets(data_structures)
+    datasets, scalars = load_datasets(data_structures)
 
     # Handling of library items
     vd = None
@@ -192,9 +192,10 @@ def semantic_analysis(
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
-        datasets=structures,
+        datasets=datasets,
         value_domains=vd,
         external_routines=ext_routines,
+        scalars=scalars,
         only_semantic=True,
     )
     result = interpreter.visit(ast)
@@ -295,7 +296,7 @@ def run(
     ast = create_ast(vtl)
 
     # Loading datasets and datapoints
-    datasets, scalars, path_dict = load_datasets_with_data(data_structures, datapoints)
+    datasets, scalars, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
 
     # Handling of library items
     vd = None
