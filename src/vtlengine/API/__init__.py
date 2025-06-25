@@ -332,8 +332,11 @@ def run(
 
     # Applying time period output format
     if output_folder is None:
-        for dataset in result.values():
-            format_time_period_external_representation(dataset, time_period_representation)
+        for obj in result.values():
+            if isinstance(obj, Dataset):
+                format_time_period_external_representation(obj, time_period_representation)
+            elif isinstance(obj, Scalar):
+                format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
     if return_only_persistent:

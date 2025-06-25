@@ -1,3 +1,4 @@
+import csv
 import json
 import warnings
 from pathlib import Path
@@ -552,7 +553,9 @@ params_generate_sdmx = [
     ),
 ]
 
-
+params_run_with_scalars = [
+    (filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")
+]
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
     result = load_external_routines(input)
@@ -1669,3 +1672,56 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
     with open(result_script, "r") as file:
         reference = file.read()
     assert prettify(result) == prettify(reference)
+
+@pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
+def test_run_with_scalars(data_structures, datapoints, tmp_path):
+    script = """
+        DS_r <- DS_3[filter Me_1 = sc_1];
+        Sc_r <- sc_1 + sc_2 + 3;
+    """
+    scalars = {"sc_1": 20, "sc_2": 5}
+    output_folder = tmp_path
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalars,
+        output_folder=output_folder,
+        return_only_persistent=True
+    )
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+        ),
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=28)
+    }
+    assert run_result == reference
+    ds_csv = output_folder / "DS_r.csv"
+    sc_csv = output_folder / "Sc_r.csv"
+    assert ds_csv.exists()
+    assert sc_csv.exists()
+    df = pd.read_csv(ds_csv)
+    assert list(df.columns) == ["Id_1", "Me_1"]
+    assert df.loc[0, "Id_1"] == 2
+    assert df.loc[0, "Me_1"] == 20
+    with open(sc_csv, newline="") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0][0] == str(reference["Sc_r"].value)
+
