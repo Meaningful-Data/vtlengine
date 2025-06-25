@@ -127,6 +127,10 @@ class DataComponent:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
+    @property
+    def df(self) -> pd.Series:
+        return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
+
 
 @dataclass
 class Component:
@@ -336,16 +340,17 @@ class Dataset:
         result = {"datasets": [ds_info]}
         return json.dumps(result, indent=2)
 
-    def __repr__(self) -> str:
-        data = None
-        if self.data is not None:
-            # Fetch a preview of the data
-            data = self.data.limit(10).execute().fetchall()
-        return (
-            f"Dataset(name={self.name}, "
-            f"components={list(self.components.keys())}, "
-            f"data={data})"
-        )
+    def __repr__(self):
+        return (f"Dataset("
+                f"name={self.name}, "
+                f"components={list(self.components.keys())},"
+                f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
+                f")")
+
+    @property
+    def df(self) -> pd.Series:
+        return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
+
 
 @dataclass
 class ScalarSet:
