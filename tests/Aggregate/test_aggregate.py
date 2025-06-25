@@ -1280,19 +1280,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-
     def test_GH_164_1(self):
         """
-        Dataset --> Dataset
         Status: OK
-        Expression:
-
-        Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
-
-        Git Branch: #466.
-        Goal: aggr (count) with null values
+        Description: Sub and filter with Scalars: https://github.com/Meaningful-Data/vtlengine/issues/164
+        Goal: Sub and filter with Scalars
         """
-        code = 'GH_164_1'
+        code = "GH_164_1"
         number_inputs = 1
         references_names = ["1", "2"]
 
@@ -1302,19 +1296,13 @@ class AggregateOperatorsTest(TestAggregateHelper):
             references_names=references_names,
         )
 
-
     def test_GH_164_2(self):
         """
-        Dataset --> Dataset
         Status: OK
-        Expression:
-
-        Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
-
-        Git Branch: #466.
-        Goal: aggr (count) with null values
+        Description: Sub and filter with Scalars: https://github.com/Meaningful-Data/vtlengine/issues/164
+        Goal: Sub and filter with Scalars
         """
-        code = 'GH_164_2'
+        code = "GH_164_2"
         number_inputs = 1
         references_names = ["1", "2"]
 

@@ -219,11 +219,11 @@ timeOperators:
     | YEAR_OP LPAREN expr RPAREN                                                # yearAtom
     | MONTH_OP LPAREN expr RPAREN                                               # monthAtom
     | DAYOFMONTH LPAREN expr RPAREN                                             # dayOfMonthAtom
-    | DAYOFYEAR LPAREN expr RPAREN                                              # datOfYearAtom
+    | DAYOFYEAR LPAREN expr RPAREN                                              # dayOfYearAtom
     | DAYTOYEAR LPAREN expr RPAREN                                              # dayToYearAtom
     | DAYTOMONTH LPAREN expr RPAREN                                             # dayToMonthAtom
-    | YEARTODAY LPAREN expr RPAREN                                              # yearTodayAtom
-    | MONTHTODAY LPAREN expr RPAREN                                             # monthTodayAtom
+    | YEARTODAY LPAREN expr RPAREN                                              # yearToDayAtom
+    | MONTHTODAY LPAREN expr RPAREN                                             # monthToDayAtom
 ;
 
 timeOperatorsComponent:
@@ -238,11 +238,11 @@ timeOperatorsComponent:
     | YEAR_OP LPAREN exprComponent RPAREN                                                # yearAtomComponent
     | MONTH_OP LPAREN exprComponent RPAREN                                               # monthAtomComponent
     | DAYOFMONTH LPAREN exprComponent RPAREN                                             # dayOfMonthAtomComponent
-    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # datOfYearAtomComponent
+    | DAYOFYEAR LPAREN exprComponent RPAREN                                              # dayOfYearAtomComponent
     | DAYTOYEAR LPAREN exprComponent RPAREN                                              # dayToYearAtomComponent
     | DAYTOMONTH LPAREN exprComponent RPAREN                                             # dayToMonthAtomComponent
-    | YEARTODAY LPAREN exprComponent RPAREN                                              # yearTodayAtomComponent
-    | MONTHTODAY LPAREN exprComponent RPAREN                                             # monthTodayAtomComponent
+    | YEARTODAY LPAREN exprComponent RPAREN                                              # yearToDayAtomComponent
+    | MONTHTODAY LPAREN exprComponent RPAREN                                             # monthToDayAtomComponent
 ;
 
 setOperators:
