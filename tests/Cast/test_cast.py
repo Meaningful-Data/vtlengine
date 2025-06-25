@@ -144,8 +144,7 @@ cast_error_params = [
         String,
         "DD.DDD",
         SemanticError,
-        "('Impossible to cast 40.000 from type Number to String. Please check transformation with "
-        "output dataset DS_r', '2-1-5-1')",
+        "('Impossible to cast 40.000 from type Number to String.', '2-1-5-1')",
     ),
 ]
 test_params = [

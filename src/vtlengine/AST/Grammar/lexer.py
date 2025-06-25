@@ -1,13 +1,8 @@
 # Generated from C:/Users/Javier/PycharmProjects/vtlengine/src/vtlengine/AST/Grammar/Vtl.g4 by ANTLR 4.13.2
 from antlr4 import *
-from antlr4 import Lexer as ANTLR_Lexer
-from io import StringIO
+from antlr4 import Lexer as ANTLRLexer
 import sys
-
-if sys.version_info[1] > 5:
-    from typing import TextIO
-else:
-    from typing.io import TextIO
+from typing import TextIO
 
 
 def serializedATN():
@@ -19767,7 +19762,7 @@ def serializedATN():
     ]
 
 
-class Lexer(ANTLR_Lexer):
+class Lexer(ANTLRLexer):
     atn = ATNDeserializer().deserialize(serializedATN())
 
     decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
