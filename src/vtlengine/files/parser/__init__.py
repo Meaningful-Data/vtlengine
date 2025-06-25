@@ -1,7 +1,9 @@
+import csv
 from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
@@ -183,7 +185,15 @@ def load_datapoints(
             _validate_csv_path(components, csv_path)
 
         # Lazy CSV read
-        rel = con.from_csv_auto(path_str, header=True)
+        with open(path_str, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+
+        dtypes = {
+            comp.name: comp.data_type().sql_type for comp in components.values() if comp.name in header
+        }
+
+        rel = con.read_csv(path_str, header=True, columns=dtypes)
 
         # Type validation and normalization
         rel = _validate_duckdb(components, rel, dataset_name)

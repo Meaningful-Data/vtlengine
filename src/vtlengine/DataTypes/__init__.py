@@ -347,6 +347,10 @@ class Date(TimeInterval):
 
     default = None
 
+    @property
+    def sql_type(self) -> str:
+        return "DATE"
+
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
         # TODO: Remove String, only for compatibility with previous engine
