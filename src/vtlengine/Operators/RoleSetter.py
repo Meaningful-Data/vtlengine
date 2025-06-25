@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Any, Union
 
-
 import pandas as pd
 
 from vtlengine.Exceptions import SemanticError

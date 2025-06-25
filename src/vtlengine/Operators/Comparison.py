@@ -3,7 +3,6 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
-
 import pandas as pd
 
 import vtlengine.Operators as Operator

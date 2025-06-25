@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-
 import pandas as pd
 
 from vtlengine.DataTypes import binary_implicit_promotion

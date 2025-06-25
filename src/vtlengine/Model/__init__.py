@@ -251,9 +251,10 @@ class Dataset:
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
-        # Loading only the first row to check if there are any differences (avoiding memory overload)
+        # Loading only the first row to check if there are any internal structure differences
+        # (avoiding memory overload)
         if diff.limit(1).df().shape[0] > 0:
-            print("Data mismatch")
+            print("Data structure mismatch")
             diff.show()
             return False
 
