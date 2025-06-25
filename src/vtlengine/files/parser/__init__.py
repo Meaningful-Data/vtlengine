@@ -3,7 +3,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from duckdb import duckdb
+import pyarrow as pa
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
@@ -127,10 +127,28 @@ def _validate_duckdb(
             data = data.project(f"*, NULL AS {name}")
 
     # Null check for identifiers
-    for id_name in id_names:
-        null_check = data.filter(f"{id_name} IS NULL").limit(1)
-        if null_check.count("1").fetchone()[0] > 0:
-            raise SemanticError("0-1-1-4", null_identifier=id_name, name=dataset_name)
+    non_nullable = [comp.name for comp in components.values() if not comp.nullable or comp.role == Role.IDENTIFIER]
+    query = "SELECT COUNT(*) > 0 FROM data WHERE "
+    query += " OR ".join([f"{col} IS NULL" for col in non_nullable])
+    if con.execute(query).fetchone()[0]:
+        for col in non_nullable:
+            query = f"SELECT COUNT(*) FROM data WHERE {col} IS NULL"
+            if con.execute(query).fetchone()[0] > 0:
+                if col in id_names:
+                    raise SemanticError("0-1-1-4", null_identifier=col, name=dataset_name)
+                raise SemanticError("0-1-1-15", measure=col, name=dataset_name)
+
+    # Check if there are any duplicated records
+    query = f"""
+        SELECT COUNT(*) > 0 from (
+            SELECT COUNT(*) as count
+            FROM data
+            GROUP BY {', '.join(id_names)}
+            HAVING COUNT(*) > 1
+        ) AS duplicates
+        """
+    if con.query(query).fetchone()[0]:
+        raise Exception("Found duplicated records in the table")
 
     # Require at least 1 identifier if more than 1 row
     if not id_names:
@@ -193,7 +211,14 @@ def load_datapoints(
             comp.name: comp.data_type().sql_type for comp in components.values() if comp.name in header
         }
 
-        rel = con.read_csv(path_str, header=True, columns=dtypes)
+        rel = con.read_csv(
+            path_str,
+            header=True,
+            columns=dtypes,
+            delimiter=',',
+            quotechar='"',
+            ignore_errors=True,
+        )
 
         # Type validation and normalization
         rel = _validate_duckdb(components, rel, dataset_name)
@@ -214,4 +239,3 @@ def _fill_dataset_empty_data(dataset: Dataset) -> None:
         for name, comp in dataset.components.items()
     ])
     dataset.data = con.query(f"SELECT {column_defs} LIMIT 0")
-
