@@ -1677,9 +1677,10 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
         DS_r <- DS_3[filter Me_1 = sc_1];
-        Sc_r <- sc_1 + sc_2 + 3;
+        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        Sc_r <- sc_1 + sc_2 + 3 + sc_3;
     """
-    scalars = {"sc_1": 20, "sc_2": 5}
+    scalars = {"sc_1": 20, "sc_2": 5, "sc_3": 3}
     output_folder = tmp_path
     run_result = run(
         script=script,
@@ -1708,7 +1709,19 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             },
             data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
         ),
-        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=28)
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Me_1": []}),
+        ),
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31)
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
@@ -1724,4 +1737,69 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         rows = list(reader)
     assert len(rows) == 1
     assert rows[0][0] == str(reference["Sc_r"].value)
+
+@pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
+def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
+    script = """
+        DS_r <- DS_3[filter Me_1 = sc_1];
+        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        Sc_r <- sc_1 + sc_2 + 3 + sc_3;
+    """
+    scalars = {"sc_1": 20, "sc_2": 5, "sc_3": None}
+    output_folder = tmp_path
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalars,
+        output_folder=output_folder,
+        return_only_persistent=True
+    )
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Me_1": []}),
+        ),
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None)
+    }
+    assert run_result == reference
+    ds_csv = output_folder / "DS_r.csv"
+    sc_csv = output_folder / "Sc_r.csv"
+    assert ds_csv.exists()
+    assert sc_csv.exists()
+    df = pd.read_csv(ds_csv)
+    assert list(df.columns) == ["Id_1", "Me_1"]
+    assert df.loc[0, "Id_1"] == 2
+    assert df.loc[0, "Me_1"] == 20
+    with open(sc_csv, newline="") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0] == [] or rows[0] == ['']
 
