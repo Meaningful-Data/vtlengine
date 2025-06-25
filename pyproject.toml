@@ -29,7 +29,7 @@ dependencies = [
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
-    "antlr4-python3-runtime>=4.9.2,<4.10",
+    "antlr4-python3-runtime>=4.13.2,<4.14",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
     "numpy>=1.23.2,<2 ; python_version < '3.13'",
@@ -53,9 +53,10 @@ python = ">=3.9,<4.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4"
 pytest-cov = "^6.2.1"
+pytest-xdist = "^3.7.0"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.16.1"
-pandas-stubs = "^2.1.4.231227"
+pandas-stubs = "2.2.2.240807"
 ruff = "^0.12.0"
 types-jsonschema = "4.24.0.20250528"
 
@@ -75,7 +76,7 @@ lint.select = [
 # TODO: check S608 (duckdb querys)
 lint.ignore = ["B023", "B028", "B904", "C403", "D100", "D101", "D102", "D103", "D104", "D105",
     "D107", "D200", "D201", "D202", "D203", "D205", "D209", "D212", "D213", "D301",
-    "D400", "D401", "D404", "D411", "D413", "D415", "D419", "E203", "S320", "S608"]
+    "D400", "D401", "D404", "D411", "D413", "D415", "D419", "E203", "S608"]
 lint.exclude = ["*/Grammar/*"]
 
 [tool.ruff.lint.per-file-ignores]
