@@ -26784,7 +26784,19 @@ class Parser(ANTLR_Parser):
             self.state = 1356
             self.match(Parser.EQ)
             self.state = 1357
-            self.scalarItem()
+            # self.scalarItem()
+            self._errHandler.sync(self)
+            token = self._input.LA(1)
+            if token in [54, 218, 241, 242, 243, 244]:
+                self.state = 1204
+                self.scalarItem()
+                pass
+            elif token in [245]:
+                self.state = 1205
+                self.varID()
+                pass
+            else:
+                raise NoViableAltException(self)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
