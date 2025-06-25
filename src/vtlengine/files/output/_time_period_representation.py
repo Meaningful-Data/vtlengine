@@ -46,6 +46,7 @@ def format_time_period_external_representation(
     # VTL Representation
     if dataset.data is None or len(dataset.data) == 0:
         return
+
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
             # TODO: check if implement this at SQLDataModel level or here

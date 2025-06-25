@@ -16,11 +16,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import (
-    check_time,
-    check_time_period,
-    load_time_checks,
-)
+from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
 
 load_time_checks()
@@ -145,15 +141,16 @@ def _validate_duckdb(
         col = name
         dtype = comp.data_type
 
+        if not comp.nullable and data.filter(f"{col} IS NULL").limit(1).count("1").fetchone()[0] > 0:
+            raise SemanticError("0-1-1-15", measure=name, name=dataset_name)
+
         if dtype in [Integer, Number, Boolean]:
             data = data.project(f"*, TRY_CAST({col} AS {dtype().sql_type}) AS {col}_chk") \
-                       .filter(f"{col}_chk IS NOT NULL") \
                        .project(f"* EXCLUDE {col}_chk")
 
-        elif dtype in [Date, TimeInterval, TimePeriod]:
+        elif dtype in [Date, Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
             data = data.project(f"*, {check_method}({col}) AS {col}_chk") \
-                       .filter(f"{col}_chk IS NOT NULL") \
                        .project(f"* EXCLUDE {col}_chk")
 
         else:
@@ -161,9 +158,6 @@ def _validate_duckdb(
             data = data.project(f"*, REPLACE({col}::TEXT, '\"', '') AS {col}_clean") \
                        .project(f"* EXCLUDE {col}").project(f"*, {col}_clean AS {col}") \
                        .project(f"* EXCLUDE {col}_clean")
-
-    a = data.df()
-    b = 0
 
     return data
 

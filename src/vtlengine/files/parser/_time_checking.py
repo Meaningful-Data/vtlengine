@@ -4,13 +4,14 @@ from datetime import date, datetime
 from typing import Union
 
 from vtlengine.connection import con
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException
 
 
 def load_time_checks():
     # Register the functions with DuckDB
     con.create_function("check_date", check_date, return_type="DATE")
+    con.create_function("check_duration", check_duration, return_type="VARCHAR")
     con.create_function("check_timeinterval", check_time, return_type="VARCHAR")
     con.create_function("check_timeperiod", check_time_period, return_type="VARCHAR")
 
@@ -142,3 +143,12 @@ def check_time_period(value: Union[str, int, date]) -> str:
         day_period = day.strftime("%YD%-j")
         return day_period
     raise ValueError
+
+
+def check_duration(value: str) -> None:
+    if value not in PERIOD_IND_MAPPING:
+        raise ValueError(
+            f"Duration {value} is not a valid duration. "
+            f"Valid durations are: {', '.join(PERIOD_IND_MAPPING)}."
+        )
+    return value
