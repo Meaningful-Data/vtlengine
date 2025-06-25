@@ -18,6 +18,16 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
 
 
+def __duckdb_repr__(self):
+    """
+    DuckDB internal repr based on pandas repr
+    """
+    return f"<DuckDBPyRelation: {self.df().__repr__()}>"
+
+
+DuckDBPyRelation.__repr__ = __duckdb_repr__  # type: ignore[method-assign]
+
+
 @dataclass
 class Scalar:
     """

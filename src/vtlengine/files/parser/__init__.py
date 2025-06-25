@@ -153,6 +153,7 @@ def _validate_duckdb(
             data = data.project(f"*, {check_method}({col}) AS {col}_chk") \
                        .project(f"* EXCLUDE {col}_chk")
 
+        # String type
         else:
             # Strip quotes
             data = data.project(f"*, REPLACE({col}::TEXT, '\"', '') AS {col}_clean") \

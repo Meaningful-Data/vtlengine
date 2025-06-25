@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
@@ -30,6 +31,7 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.Exceptions import SemanticError
+from vtlengine.connection import con
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -460,7 +462,8 @@ def run_sdmx(  # noqa: C901
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures.append(vtl_structure)
-        datapoints[dataset_name] = dataset.data
+        # datapoints[dataset_name] = dataset.data
+        datapoints[dataset_name] = con.from_df(dataset.data)
 
     missing = []
     for input_name in input_names:
