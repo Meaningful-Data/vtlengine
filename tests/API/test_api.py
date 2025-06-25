@@ -1737,6 +1737,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         rows = list(reader)
     assert len(rows) == 1
     assert rows[0][0] == str(reference["Sc_r"].value)
+    assert all(isinstance(v, (Dataset, Scalar)) for v in run_result.values())
 
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):

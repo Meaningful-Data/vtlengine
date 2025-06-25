@@ -1,13 +1,15 @@
 import warnings
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper
-from vtlengine.API import create_ast
-from vtlengine.DataTypes import Integer, Number, String
+from vtlengine.API import create_ast, run
+from vtlengine.DataTypes import Integer, Number, String, Boolean
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
+from vtlengine.Model import Scalar
 
 
 class AdditionalScalarsTests(TestHelper):
@@ -228,7 +230,52 @@ ds_param = [
     ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
 ]
 
+params = [
+    # (nombre scalar, expresión, valor esperado, tipo de dato)
+    ("DS_r", 'instr("abcde", "c")', 3, Integer),
+    ("DS_r", 'substr("abcdefghijklmnopqrstuvwxyz", 1, 3)', "abc", String),
+    ("DS_r", 'replace("Hello world", "Hello", "Hi")', "Hi world", String),
+    ("DS_r", "2 + 3.3", 5.3, Number),
+    ("DS_r", "true and false", False, Boolean),
+    ("DS_r", 'between("a", "a", "z")', True, Boolean),
+    ("DS_r", "+null", None, Integer),
+    ("DS_r", 'substr(null)', "", String),
+    ("DS_r", "not null", None, Boolean),
+]
 
+
+params_scalar_operations = [
+    (
+        "Sc_r <- sc_1 + sc_2 + 3 + sc_3;",
+        {
+            "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=21)
+        }
+    ),
+    (
+        'Sc_str <- replace("Hello world", "Hello", "Hi");',
+        {
+            "Sc_str": Scalar(name="Sc_str", data_type=String, value="Hi world")
+        }
+    ),
+    (
+        'Sc_instr <- instr("abcde", "c");',
+        {
+            "Sc_instr": Scalar(name="Sc_instr", data_type=Integer, value=3)
+        }
+    ),
+    (
+        'Sc_bool <- true and false;',
+        {
+            "Sc_bool": Scalar(name="Sc_bool", data_type=Boolean, value=False)
+        }
+    ),
+    (
+        'Sc_null <- +null;',
+        {
+            "Sc_null": Scalar(name="Sc_null", data_type=Number, value=None)
+        }
+    ),
+]
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -315,3 +362,60 @@ def test_comp_op_test(text, reference):
     interpreter = InterpreterAnalyzer({})
     result = interpreter.visit(ast)
     assert result["DS_r"].value == reference
+
+
+@pytest.mark.parametrize("script, reference", params_scalar_operations)
+def test_run_scalars_operations(script, reference, tmp_path):
+    scalar_values = {
+        "sc_1": 10,
+        "sc_2": 5,
+        "sc_3": 3,
+        "sc_4": "abcdef",
+        "sc_5": "apple",
+        "sc_6": True,
+        "sc_7": False,
+    }
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_3",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [
+            {"name": "sc_1", "type": "Integer"},
+            {"name": "sc_2", "type": "Integer"},
+            {"name": "sc_3", "type": "Integer"},
+            {"name": "sc_4", "type": "String"},
+            {"name": "sc_5", "type": "String"},
+            {"name": "sc_6", "type": "Boolean"},
+            {"name": "sc_7", "type": "Boolean"},
+        ],
+    }
+
+    datapoints = {
+        "DS_3": pd.DataFrame(
+            {
+                "Id_1": [1, 2, 3],
+                "Me_1": [10.0, 20.5, 30.1],
+            }
+        )
+    }
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalar_values,
+        output_folder=tmp_path,
+        return_only_persistent=True,
+    )
+    for k, expected_scalar in reference.items():
+        assert k in run_result
+        result_scalar = run_result[k]
+        assert result_scalar.value == expected_scalar.value
+        assert result_scalar.data_type == expected_scalar.data_type
