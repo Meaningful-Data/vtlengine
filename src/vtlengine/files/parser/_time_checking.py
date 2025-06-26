@@ -3,17 +3,19 @@ import re
 from datetime import date, datetime
 from typing import Union
 
+from duckdb import duckdb
+
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandler
 
 # TODO: check if pyarrow execution has lower times
 
 
-def load_time_checks():
+def load_time_checks() -> None:
     # Register the functions with DuckDB
-    con.create_function("check_duration", check_duration, return_type="VARCHAR")
-    con.create_function("check_timeinterval", check_time, return_type="VARCHAR")
-    con.create_function("check_timeperiod", check_time_period, return_type="VARCHAR")
+    con.create_function("check_duration", check_duration, return_type=duckdb.type("VARCHAR"))
+    con.create_function("check_timeinterval", check_time, return_type=duckdb.type("VARCHAR"))
+    con.create_function("check_timeperiod", check_time_period, return_type=duckdb.type("VARCHAR"))
 
 
 def dates_to_string(date1: date, date2: date) -> str:
@@ -110,7 +112,7 @@ def check_time_period(value: Union[str, int, date]) -> str:
     raise ValueError
 
 
-def check_duration(value: str) -> None:
+def check_duration(value: str) -> str:
     if value not in PERIOD_IND_MAPPING:
         raise ValueError(
             f"Duration {value} is not a valid duration. "

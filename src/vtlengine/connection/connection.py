@@ -1,3 +1,5 @@
+from typing import Optional
+
 import duckdb
 
 BASE_DATABASE = ":memory:"
@@ -11,7 +13,12 @@ class ConnectionManager:
     _threads = None
 
     @classmethod
-    def configure(cls, database=BASE_DATABASE, memory_limit=BASE_MEMORY_LIMIT, threads=None):
+    def configure(
+        cls,
+        database: str = BASE_DATABASE,
+        memory_limit: str = BASE_MEMORY_LIMIT,
+        threads: Optional[int] = None,
+    ) -> None:
         """
         Configures the database path and memory limit for DuckDB.
         """
@@ -21,7 +28,7 @@ class ConnectionManager:
             cls._threads = threads
 
     @classmethod
-    def get_connection(cls):
+    def get_connection(cls) -> duckdb.DuckDBPyConnection:
         """
         Returns a local DuckDB connection. Creates one if it doesn't exist.
         """
@@ -33,7 +40,7 @@ class ConnectionManager:
         return cls._connection
 
     @classmethod
-    def close_connection(cls):
+    def close_connection(cls) -> None:
         """
         Closes the thread-local DuckDB connection.
         """

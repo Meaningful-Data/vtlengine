@@ -18,14 +18,14 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import SemanticError
 
 
-def __duckdb_repr__(self):
+def __duckdb_repr__(self: Any) -> str:
     """
     DuckDB internal repr based on pandas repr
     """
     return f"<DuckDBPyRelation: {self.df().__repr__()}>"
 
 
-DuckDBPyRelation.__repr__ = __duckdb_repr__  # type: ignore[method-assign]
+DuckDBPyRelation.__repr__ = __duckdb_repr__
 
 
 @dataclass
@@ -138,7 +138,7 @@ class DataComponent:
         return json.dumps(self.to_dict(), indent=4)
 
     @property
-    def df(self) -> pd.Series:
+    def df(self) -> pd.DataFrame:
         return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
 
 
@@ -350,7 +350,7 @@ class Dataset:
         result = {"datasets": [ds_info]}
         return json.dumps(result, indent=2)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Dataset("
             f"name={self.name}, "
@@ -360,7 +360,7 @@ class Dataset:
         )
 
     @property
-    def df(self) -> pd.Series:
+    def df(self) -> pd.DataFrame:
         return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
 
 

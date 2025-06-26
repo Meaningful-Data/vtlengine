@@ -132,7 +132,9 @@ def _validate_duckdb(
     return data
 
 
-def check_nulls(components: Dict[str, Component], data: DuckDBPyRelation, dataset_name: str):
+def check_nulls(
+    components: Dict[str, Component], data: DuckDBPyRelation, dataset_name: str
+) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
     non_nullable = [
         comp.name
@@ -162,7 +164,7 @@ def check_duplicates(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
-):
+) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if id_names:
@@ -184,7 +186,7 @@ def check_dwi(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
-):
+) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if not id_names:
@@ -206,7 +208,7 @@ def load_datapoints(
                 ', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))
             } LIMIT 0"
         )
-        return _sanitize_duckdb_columns(components, None, rel)
+        return rel
 
     elif isinstance(csv_path, (str, Path)):
         path_str = str(csv_path)

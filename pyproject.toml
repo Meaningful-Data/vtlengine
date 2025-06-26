@@ -84,7 +84,7 @@ lint.exclude = ["*/Grammar/*"]
 
 [tool.mypy]
 files = "src"
-exclude = "src/vtlengine/AST/.*"
+exclude = ["src/vtlengine/AST/.*", "src/dev.py"]
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 ignore_errors = false
