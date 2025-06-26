@@ -221,7 +221,11 @@ def load_datasets(
         return ds_structures, scalar_structures
     return _load_datastructure_single(data_structure)
 
-def _handle_scalars_values(scalars: Dict[str, Scalar], scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None):
+
+def _handle_scalars_values(
+    scalars: Dict[str, Scalar],
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> None:
     if scalar_values is None:
         return
     # Handling scalar values with the scalar dict
@@ -231,14 +235,19 @@ def _handle_scalars_values(scalars: Dict[str, Scalar], scalar_values: Optional[D
         # Casting value to scalar data type
         scalars[name].value = scalars[name].data_type.cast(value)
 
-def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None,
-                            scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None) -> Any:
+
+def load_datasets_with_data(
+    data_structures: Any,
+    datapoints: Optional[Any] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
 
     Args:
         data_structures: Dict, Path or a List of dicts or Paths.
         datapoints: Dict, Path or a List of Paths.
+        scalar_values: Dict with the scalar values.
 
     Returns:
         A dict with the structure and a pandas dataframe with the data.

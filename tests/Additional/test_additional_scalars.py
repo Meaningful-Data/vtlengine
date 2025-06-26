@@ -6,7 +6,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast, run
-from vtlengine.DataTypes import Integer, Number, String, Boolean
+from vtlengine.DataTypes import Boolean, Integer, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Scalar
@@ -239,43 +239,29 @@ params = [
     ("DS_r", "true and false", False, Boolean),
     ("DS_r", 'between("a", "a", "z")', True, Boolean),
     ("DS_r", "+null", None, Integer),
-    ("DS_r", 'substr(null)', "", String),
+    ("DS_r", "substr(null)", "", String),
     ("DS_r", "not null", None, Boolean),
 ]
 
 
 params_scalar_operations = [
+    ("Sc_r <- sc_1 + sc_2 + 3 + sc_3;", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=21)}),
     (
-        "Sc_r <- sc_1 + sc_2 + 3 + sc_3;",
-        {
-            "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=21)
-        }
+        'Sc_r <- replace("Hello world", "Hello", "Hi");',
+        {"Sc_r": Scalar(name="Sc_r", data_type=String, value="Hi world")},
     ),
     (
-        'Sc_str <- replace("Hello world", "Hello", "Hi");',
-        {
-            "Sc_str": Scalar(name="Sc_str", data_type=String, value="Hi world")
-        }
+        'Sc_r <- instr("abcde", "c");',
+        {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)},
     ),
     (
-        'Sc_instr <- instr("abcde", "c");',
-        {
-            "Sc_instr": Scalar(name="Sc_instr", data_type=Integer, value=3)
-        }
+        "Sc_r <- true and false;",
+        {"Sc_r": Scalar(name="Sc_r", data_type=Boolean, value=False)},
     ),
-    (
-        'Sc_bool <- true and false;',
-        {
-            "Sc_bool": Scalar(name="Sc_bool", data_type=Boolean, value=False)
-        }
-    ),
-    (
-        'Sc_null <- +null;',
-        {
-            "Sc_null": Scalar(name="Sc_null", data_type=Number, value=None)
-        }
-    ),
+    ("Sc_r <- +null;", {"Sc_r": Scalar(name="Sc_r", data_type=Number, value=None)}),
 ]
+
+
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
     warnings.filterwarnings("ignore", category=FutureWarning)

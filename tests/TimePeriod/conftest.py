@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pytest
 
-from vtlengine.API._InternalApi import load_datasets_with_data, _load_dataset_from_structure
+from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.Exceptions import SemanticError
 
 

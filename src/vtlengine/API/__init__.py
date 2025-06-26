@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
@@ -296,7 +296,9 @@ def run(
     ast = create_ast(vtl)
 
     # Loading datasets and datapoints
-    datasets, scalars, path_dict = load_datasets_with_data(data_structures, datapoints, scalar_values)
+    datasets, scalars, path_dict = load_datasets_with_data(
+        data_structures, datapoints, scalar_values
+    )
 
     # Handling of library items
     vd = None
@@ -333,14 +335,12 @@ def run(
     # Applying time period output format
     if output_folder is None:
         for obj in result.values():
-            if isinstance(obj, Dataset):
-                format_time_period_external_representation(obj, time_period_representation)
-            elif isinstance(obj, Scalar):
+            if isinstance(obj, (Dataset, Scalar)):
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
     if return_only_persistent:
-        return _return_only_persistent_datasets(result, ast)
+        return _return_only_persistent_datasets(result, ast)  # type: ignore[return-value]
     return result
 
 

@@ -553,9 +553,9 @@ params_generate_sdmx = [
     ),
 ]
 
-params_run_with_scalars = [
-    (filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")
-]
+params_run_with_scalars = [(filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")]
+
+
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
     result = load_external_routines(input)
@@ -1673,6 +1673,7 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
         reference = file.read()
     assert prettify(result) == prettify(reference)
 
+
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
@@ -1688,7 +1689,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
         datapoints=datapoints,
         scalar_values=scalars,
         output_folder=output_folder,
-        return_only_persistent=True
+        return_only_persistent=True,
     )
     reference = {
         "DS_r": Dataset(
@@ -1721,7 +1722,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             },
             data=pd.DataFrame({"Me_1": []}),
         ),
-        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31)
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
@@ -1739,6 +1740,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
     assert rows[0][0] == str(reference["Sc_r"].value)
     assert all(isinstance(v, (Dataset, Scalar)) for v in run_result.values())
 
+
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     script = """
@@ -1754,7 +1756,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         datapoints=datapoints,
         scalar_values=scalars,
         output_folder=output_folder,
-        return_only_persistent=True
+        return_only_persistent=True,
     )
     reference = {
         "DS_r": Dataset(
@@ -1787,7 +1789,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
             },
             data=pd.DataFrame({"Me_1": []}),
         ),
-        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None)
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None),
     }
     assert run_result == reference
     ds_csv = output_folder / "DS_r.csv"
@@ -1802,5 +1804,4 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         reader = csv.reader(f)
         rows = list(reader)
     assert len(rows) == 1
-    assert rows[0] == [] or rows[0] == ['']
-
+    assert rows[0] == [] or rows[0] == [""]
