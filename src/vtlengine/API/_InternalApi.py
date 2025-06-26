@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import jsonschema
 import pandas as pd
@@ -44,11 +44,14 @@ with open(schema_path / "json_schema_2.1.json", "r") as file:
     schema = json.load(file)
 
 
-def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
+def _load_dataset_from_structure(
+    structures: Dict[str, Any],
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Loads a dataset with the structure given.
     """
     datasets = {}
+    scalars = {}
 
     if "datasets" in structures:
         for dataset_json in structures["datasets"]:
@@ -110,8 +113,8 @@ def _load_dataset_from_structure(structures: Dict[str, Any]) -> Dict[str, Any]:
                 data_type=SCALAR_TYPES[scalar_json["type"]],
                 value=None,
             )
-            datasets[scalar_name] = scalar  # type: ignore[assignment]
-    return datasets
+            scalars[scalar_name] = scalar
+    return datasets, scalars
 
 
 def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
@@ -159,7 +162,9 @@ def _load_datapoints_path(
     return _load_single_datapoint(datapoints)
 
 
-def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> Dict[str, Dataset]:
+def _load_datastructure_single(
+    data_structure: Union[Dict[str, Any], Path],
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads a single data structure.
     """
@@ -170,13 +175,15 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
     if not data_structure.exists():
         raise Exception("Invalid datastructure. Input does not exist")
     if data_structure.is_dir():
-        datasets: Dict[str, Any] = {}
+        datasets: Dict[str, Dataset] = {}
+        scalars: Dict[str, Scalar] = {}
         for f in data_structure.iterdir():
             if f.suffix != ".json":
                 continue
-            dataset = _load_datastructure_single(f)
-            datasets = {**datasets, **dataset}
-        return datasets
+            ds, sc = _load_datastructure_single(f)
+            datasets = {**datasets, **ds}
+            scalars = {**scalars, **sc}
+        return datasets, scalars
     else:
         if data_structure.suffix != ".json":
             raise Exception("Invalid datastructure. Must have .json extension")
@@ -187,7 +194,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
 
 def load_datasets(
     data_structure: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-) -> Dict[str, Dataset]:
+) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads multiple datasets.
 
@@ -205,21 +212,42 @@ def load_datasets(
     if isinstance(data_structure, dict):
         return _load_datastructure_single(data_structure)
     if isinstance(data_structure, list):
-        ds_structures: Dict[str, Any] = {}
+        ds_structures: Dict[str, Dataset] = {}
+        scalar_structures: Dict[str, Scalar] = {}
         for x in data_structure:
-            result = _load_datastructure_single(x)
-            ds_structures = {**ds_structures, **result}  # Overwrite ds_structures dict.
-        return ds_structures
+            ds, sc = _load_datastructure_single(x)
+            ds_structures = {**ds_structures, **ds}  # Overwrite ds_structures dict.
+            scalar_structures = {**scalar_structures, **sc}  # Overwrite scalar_structures dict.
+        return ds_structures, scalar_structures
     return _load_datastructure_single(data_structure)
 
 
-def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = None) -> Any:
+def _handle_scalars_values(
+    scalars: Dict[str, Scalar],
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> None:
+    if scalar_values is None:
+        return
+    # Handling scalar values with the scalar dict
+    for name, value in scalar_values.items():
+        if name not in scalars:
+            raise Exception(f"Not found scalar {name}")
+        # Casting value to scalar data type
+        scalars[name].value = scalars[name].data_type.cast(value)
+
+
+def load_datasets_with_data(
+    data_structures: Any,
+    datapoints: Optional[Any] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
 
     Args:
         data_structures: Dict, Path or a List of dicts or Paths.
         datapoints: Dict, Path or a List of Paths.
+        scalar_values: Dict with the scalar values.
 
     Returns:
         A dict with the structure and a pandas dataframe with the data.
@@ -227,12 +255,13 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
     Raises:
         Exception: If the Path is wrong or the file is invalid.
     """
-    datasets = load_datasets(data_structures)
+    datasets, scalars = load_datasets(data_structures)
     if datapoints is None:
         for dataset in datasets.values():
             if isinstance(dataset, Dataset):
                 _fill_dataset_empty_data(dataset)
-        return datasets, None
+        _handle_scalars_values(scalars, scalar_values)
+        return datasets, scalars, None
     if isinstance(datapoints, dict):
         # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
@@ -246,14 +275,17 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
                 datasets[dataset_name].data = pd.DataFrame(
                     columns=list(datasets[dataset_name].components.keys())
                 )
-        return datasets, None
+        _handle_scalars_values(scalars, scalar_values)
+        return datasets, scalars, None
     # Handling dictionary of paths
     dict_datapoints = _load_datapoints_path(datapoints)
     for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name}")
 
-    return datasets, dict_datapoints
+    _handle_scalars_values(scalars, scalar_values)
+
+    return datasets, scalars, dict_datapoints
 
 
 def load_vtl(input: Union[str, Path]) -> str:
@@ -362,8 +394,8 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
 
 
 def _return_only_persistent_datasets(
-    datasets: Dict[str, Dataset], ast: Start
-) -> Dict[str, Dataset]:
+    datasets: Dict[str, Union[Dataset, Scalar]], ast: Start
+) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Returns only the datasets with a persistent assignment.
     """
