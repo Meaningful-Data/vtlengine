@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Union
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import Date, Duration, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks

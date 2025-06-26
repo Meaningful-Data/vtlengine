@@ -9,13 +9,10 @@ import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
-from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import SemanticError
 
 
 def __duckdb_repr__(self: Any) -> str:
