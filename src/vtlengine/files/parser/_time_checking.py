@@ -5,8 +5,6 @@ from typing import Union
 
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandler
-from vtlengine.Exceptions import InputValidationException
-
 
 # TODO: check if pyarrow execution has lower times
 

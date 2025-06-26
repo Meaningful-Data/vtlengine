@@ -225,7 +225,8 @@ class Dataset:
         if self.components != other.components:
             print("Components mismatch")
             diff_comps = {
-                k: v for k, v in self.components.items()
+                k: v
+                for k, v in self.components.items()
                 if k not in other.components or v != other.components[k]
             }
             print(f"Differences in components: {diff_comps}")
@@ -323,12 +324,10 @@ class Dataset:
             "name": self.name,
             "components": {k: v.to_dict() for k, v in self.components.items()},
             "data": (
-                [
-                    dict(zip(self.data.columns, row))
-                    for row in self.data.execute().fetchall()
-                ]
-                if self.data is not None else None
-            )
+                [dict(zip(self.data.columns, row)) for row in self.data.execute().fetchall()]
+                if self.data is not None
+                else None
+            ),
         }
 
     def to_json(self) -> str:
@@ -352,11 +351,13 @@ class Dataset:
         return json.dumps(result, indent=2)
 
     def __repr__(self):
-        return (f"Dataset("
-                f"name={self.name}, "
-                f"components={list(self.components.keys())},"
-                f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
-                f")")
+        return (
+            f"Dataset("
+            f"name={self.name}, "
+            f"components={list(self.components.keys())},"
+            f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
+            f")"
+        )
 
     @property
     def df(self) -> pd.Series:

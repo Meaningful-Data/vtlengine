@@ -3,16 +3,10 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-import pyarrow as pa
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import (
-    Date,
-    Duration,
-    TimeInterval,
-    TimePeriod
-)
+from vtlengine.DataTypes import Date, Duration, TimeInterval, TimePeriod
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
@@ -81,9 +75,7 @@ def _sanitize_duckdb_columns(
         if "ACTION" in column_names:
             modified_data = modified_data.filter("ACTION != 'D'")
 
-        modified_data = modified_data.project(
-            ", ".join([f'"{col}"' for col in remaining_cols])
-        )
+        modified_data = modified_data.project(", ".join([f'"{col}"' for col in remaining_cols]))
         column_names = modified_data.columns
 
     # Validate identifiers
@@ -100,7 +92,7 @@ def _sanitize_duckdb_columns(
             if not comp.nullable:
                 raise InputValidationException(f"Component {comp_name} is missing in the file.")
             modified_data = modified_data.project(
-                f"*, NULL::{comp.data_type().sql_type} AS \"{comp_name}\""
+                f'*, NULL::{comp.data_type().sql_type} AS "{comp_name}"'
             )
             column_names = modified_data.columns
 
@@ -140,14 +132,23 @@ def _validate_duckdb(
     return data
 
 
-def check_nulls(
-    components: Dict[str, Component],
-    data: DuckDBPyRelation,
-    dataset_name: str
-):
+def check_nulls(components: Dict[str, Component], data: DuckDBPyRelation, dataset_name: str):
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
-    non_nullable = [comp.name for comp in components.values() if not comp.nullable or comp.role == Role.IDENTIFIER]
-    query = "SELECT " + ", ".join([f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count" for col in non_nullable]) + " FROM data"
+    non_nullable = [
+        comp.name
+        for comp in components.values()
+        if not comp.nullable or comp.role == Role.IDENTIFIER
+    ]
+    query = (
+        "SELECT "
+        + ", ".join(
+            [
+                f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count"
+                for col in non_nullable
+            ]
+        )
+        + " FROM data"
+    )
     null_counts = con.execute(query).fetchone()
 
     for col, null_count in zip(non_nullable, null_counts):
@@ -169,7 +170,7 @@ def check_duplicates(
                 SELECT COUNT(*) > 0 from (
                     SELECT COUNT(*) as count
                     FROM data
-                    GROUP BY {', '.join(id_names)}
+                    GROUP BY {", ".join(id_names)}
                     HAVING COUNT(*) > 1
                 ) AS duplicates
                 """
@@ -200,8 +201,11 @@ def load_datapoints(
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         # Empty dataset as table
         column_defs = ", ".join([f'"{name}" VARCHAR' for name in components])
-        rel = con.query(f"SELECT {', '.join(f'NULL::{col.split()[1]}' for col in
-                                            column_defs.split(','))} LIMIT 0")
+        rel = con.query(
+            f"SELECT {
+                ', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))
+            } LIMIT 0"
+        )
         return _sanitize_duckdb_columns(components, None, rel)
 
     elif isinstance(csv_path, (str, Path)):
@@ -210,19 +214,21 @@ def load_datapoints(
             _validate_csv_path(components, csv_path)
 
         # Lazy CSV read
-        with open(path_str, mode='r', encoding='utf-8') as file:
+        with open(path_str, mode="r", encoding="utf-8") as file:
             csv_reader = csv.reader(file)
             header = next(csv_reader)
 
         dtypes = {
-            comp.name: comp.data_type().sql_type for comp in components.values() if comp.name in header
+            comp.name: comp.data_type().sql_type
+            for comp in components.values()
+            if comp.name in header
         }
 
         rel = con.read_csv(
             path_str,
             header=True,
             columns=dtypes,
-            delimiter=',',
+            delimiter=",",
             quotechar='"',
             ignore_errors=True,
             date_format="%Y-%m-%d",
@@ -242,8 +248,10 @@ def _fill_dataset_empty_data(dataset: Dataset) -> None:
         dataset.data = con.query("SELECT NULL LIMIT 0")
         return
 
-    column_defs = ", ".join([
-        f"NULL::{comp.data_type().sql_type} AS \"{name}\""
-        for name, comp in dataset.components.items()
-    ])
+    column_defs = ", ".join(
+        [
+            f'NULL::{comp.data_type().sql_type} AS "{name}"'
+            for name, comp in dataset.components.items()
+        ]
+    )
     dataset.data = con.query(f"SELECT {column_defs} LIMIT 0")
