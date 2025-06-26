@@ -14,7 +14,7 @@ from vtlengine.DataTypes import (
     Integer,
     Number,
     TimeInterval,
-    TimePeriod,
+    TimePeriod, String,
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
@@ -117,37 +117,28 @@ def _validate_duckdb(
 ) -> DuckDBPyRelation:
     # Check for missing columns
     data_columns = data.columns
-    for name in components:
-        if name not in data_columns:
-            if not components[name].nullable:
-                raise SemanticError("0-1-1-10", name=dataset_name, comp_name=name)
+    for col in components:
+        if col not in data_columns:
+            if not components[col].nullable:
+                raise SemanticError("0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
-            data = data.project(f"*, NULL AS {name}")
+            data = data.project(f"*, NULL AS {col}")
 
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
     check_duplicates(components, data, dataset_name)
     check_rows(components, data, dataset_name)
 
-    # Type validation and normalization
-    for name, comp in components.items():
-        col = name
+    transformations = []
+    for col, comp in components.items():
         dtype = comp.data_type
-
-        if dtype in [Integer, Number, Boolean]:
-            continue
-
-        elif dtype in [Date, Duration, TimeInterval, TimePeriod]:
+        if dtype in [Date, Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
-            data = data.project(f"*, {check_method}({col}) AS {col}_chk") \
-                       .project(f"* EXCLUDE {col}_chk")
-
-        # String type
+            transformations.append(f"{check_method}({col}) AS {col}")
         else:
-            # Strip quotes
-            data = data.project(f"*, REPLACE({col}::TEXT, '\"', '') AS {col}_clean") \
-                       .project(f"* EXCLUDE {col}").project(f"*, {col}_clean AS {col}") \
-                       .project(f"* EXCLUDE {col}_clean")
+            transformations.append(col)
+
+    data = data.project(", ".join(transformations))
 
     return data
 
@@ -186,20 +177,20 @@ def check_duplicates(
                 ) AS duplicates
                 """
 
-        if con.query(query).fetchone()[0]:
-            raise SemanticError("0-1-1-3", name=dataset_name, ids=con.query(query).fetchone()[0])
+        dup = con.execute(query).fetchone()[0]
+        if dup:
+            raise SemanticError("0-1-1-3", name=dataset_name, ids=dup)
 
 
 def check_rows(
-        components: Dict[str, Component],
-        data: DuckDBPyRelation,
-        dataset_name: str,
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str,
 ):
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    # Require at least 1 identifier if more than 1 row
     if not id_names:
-        rowcount = data.limit(2).count("1").fetchone()[0]
+        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]
         if rowcount > 1:
             raise SemanticError("0-1-1-5", name=dataset_name)
 
