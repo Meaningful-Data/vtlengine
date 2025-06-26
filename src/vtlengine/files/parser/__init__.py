@@ -176,17 +176,18 @@ def check_duplicates(
 ):
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    query = f"""
-            SELECT COUNT(*) > 0 from (
-                SELECT COUNT(*) as count
-                FROM data
-                GROUP BY {', '.join(id_names)}
-                HAVING COUNT(*) > 1
-            ) AS duplicates
-            """
+    if id_names:
+        query = f"""
+                SELECT COUNT(*) > 0 from (
+                    SELECT COUNT(*) as count
+                    FROM data
+                    GROUP BY {', '.join(id_names)}
+                    HAVING COUNT(*) > 1
+                ) AS duplicates
+                """
 
-    if con.query(query).fetchone()[0]:
-        raise SemanticError("0-1-1-3", name=dataset_name, ids=con.query(query).fetchone()[0])
+        if con.query(query).fetchone()[0]:
+            raise SemanticError("0-1-1-3", name=dataset_name, ids=con.query(query).fetchone()[0])
 
 
 def check_rows(
