@@ -8,47 +8,14 @@ from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandl
 from vtlengine.Exceptions import InputValidationException
 
 
+# TODO: check if pyarrow execution has lower times
+
+
 def load_time_checks():
     # Register the functions with DuckDB
-    con.create_function("check_date", check_date, return_type="DATE")
     con.create_function("check_duration", check_duration, return_type="VARCHAR")
     con.create_function("check_timeinterval", check_time, return_type="VARCHAR")
     con.create_function("check_timeperiod", check_time_period, return_type="VARCHAR")
-
-
-def check_date(value: Union[str, date]) -> date:
-    """
-    Check if the date is in the correct format and return a DATE object.
-    If the input is already a date, skip validation.
-    """
-    if isinstance(value, str):
-        # Remove all whitespaces
-        value = value.replace(" ", "")
-        try:
-            if len(value) == 9 and value[7] == "-":
-                value = value[:-1] + "0" + value[-1]
-            date_value = date.fromisoformat(value)
-        except ValueError as e:
-            if "is out of range" in str(e):
-                raise InputValidationException(f"Date {value} is out of range for the month.")
-            if "month must be in 1..12" in str(e):
-                raise InputValidationException(
-                    f"Date {value} is invalid. Month must be between 1 and 12."
-                )
-            raise InputValidationException(
-                f"Date {value} is not in the correct format. Use YYYY-MM-DD."
-            )
-
-    else:
-        date_value = value
-
-    # Check date is between 1800 and 9999
-    if not 1800 <= date_value.year <= 9999:
-        raise InputValidationException(
-            f"Date {value} is invalid. Year must be between 1800 and 9999."
-        )
-
-    return date_value
 
 
 def dates_to_string(date1: date, date2: date) -> str:

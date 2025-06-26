@@ -8,13 +8,10 @@ from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
-    Boolean,
     Date,
     Duration,
-    Integer,
-    Number,
     TimeInterval,
-    TimePeriod, String,
+    TimePeriod
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
@@ -127,12 +124,12 @@ def _validate_duckdb(
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
     check_duplicates(components, data, dataset_name)
-    check_rows(components, data, dataset_name)
+    check_dwi(components, data, dataset_name)
 
     transformations = []
     for col, comp in components.items():
         dtype = comp.data_type
-        if dtype in [Date, Duration, TimeInterval, TimePeriod]:
+        if dtype in [Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
             transformations.append(f"{check_method}({col}) AS {col}")
         else:
@@ -182,7 +179,7 @@ def check_duplicates(
             raise SemanticError("0-1-1-3", name=dataset_name, ids=dup)
 
 
-def check_rows(
+def check_dwi(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
