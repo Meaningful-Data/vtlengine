@@ -42,10 +42,10 @@ def check_date(value: Union[str, date]) -> date:
     else:
         date_value = value
 
-    # Check date is between 1900 and 9999
+    # Check date is between 1800 and 9999
     if not 1800 <= date_value.year <= 9999:
         raise InputValidationException(
-            f"Date {value} is invalid. Year must be between 1900 and 9999."
+            f"Date {value} is invalid. Year must be between 1800 and 9999."
         )
 
     return date_value
