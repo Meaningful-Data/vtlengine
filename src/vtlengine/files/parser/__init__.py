@@ -167,8 +167,7 @@ def _validate_duckdb(
                 raise SemanticError("0-1-1-15", measure=name, name=dataset_name)
 
         if dtype in [Integer, Number, Boolean]:
-            data = data.project(f"*, TRY_CAST({col} AS {dtype().sql_type}) AS {col}_chk") \
-                       .project(f"* EXCLUDE {col}_chk")
+            continue
 
         elif dtype in [Date, Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
@@ -218,6 +217,7 @@ def load_datapoints(
             delimiter=',',
             quotechar='"',
             ignore_errors=True,
+            date_format="%Y-%m-%d",
         )
 
         # Type validation and normalization
