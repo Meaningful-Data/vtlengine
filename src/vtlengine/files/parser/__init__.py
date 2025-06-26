@@ -115,8 +115,6 @@ def _validate_duckdb(
     data: DuckDBPyRelation,
     dataset_name: str,
 ) -> DuckDBPyRelation:
-    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
-
     # Check for missing columns
     data_columns = data.columns
     for name in components:
@@ -126,45 +124,15 @@ def _validate_duckdb(
             # Add NULL column
             data = data.project(f"*, NULL AS {name}")
 
-    # Null check for identifiers
-    non_nullable = [comp.name for comp in components.values() if not comp.nullable or comp.role == Role.IDENTIFIER]
-    query = "SELECT COUNT(*) > 0 FROM data WHERE "
-    query += " OR ".join([f"{col} IS NULL" for col in non_nullable])
-    if con.execute(query).fetchone()[0]:
-        for col in non_nullable:
-            query = f"SELECT COUNT(*) FROM data WHERE {col} IS NULL"
-            if con.execute(query).fetchone()[0] > 0:
-                if col in id_names:
-                    raise SemanticError("0-1-1-4", null_identifier=col, name=dataset_name)
-                raise SemanticError("0-1-1-15", measure=col, name=dataset_name)
-
-    # Check if there are any duplicated records
-    query = f"""
-        SELECT COUNT(*) > 0 from (
-            SELECT COUNT(*) as count
-            FROM data
-            GROUP BY {', '.join(id_names)}
-            HAVING COUNT(*) > 1
-        ) AS duplicates
-        """
-    if con.query(query).fetchone()[0]:
-        raise Exception("Found duplicated records in the table")
-
-    # Require at least 1 identifier if more than 1 row
-    if not id_names:
-        rowcount = data.limit(2).count("1").fetchone()[0]
-        if rowcount > 1:
-            raise SemanticError("0-1-1-5", name=dataset_name)
+    # Check dataset integrity
+    check_nulls(components, data, dataset_name)
+    check_duplicates(components, data, dataset_name)
+    check_rows(components, data, dataset_name)
 
     # Type validation and normalization
     for name, comp in components.items():
         col = name
         dtype = comp.data_type
-
-        if not comp.nullable:
-            null_check = data.filter(f"{col} IS NULL").limit(1)
-            if null_check.count("1").fetchone()[0] > 0:
-                raise SemanticError("0-1-1-15", measure=name, name=dataset_name)
 
         if dtype in [Integer, Number, Boolean]:
             continue
@@ -182,6 +150,57 @@ def _validate_duckdb(
                        .project(f"* EXCLUDE {col}_clean")
 
     return data
+
+
+def check_nulls(
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str
+):
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    non_nullable = [comp.name for comp in components.values() if not comp.nullable or comp.role == Role.IDENTIFIER]
+    query = "SELECT " + ", ".join([f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count" for col in non_nullable]) + " FROM data"
+    null_counts = con.execute(query).fetchone()
+
+    for col, null_count in zip(non_nullable, null_counts):
+        if null_count > 0:
+            if col in id_names:
+                raise SemanticError("0-1-1-4", null_identifier=col, name=dataset_name)
+            raise SemanticError("0-1-1-15", measure=col, name=dataset_name)
+
+
+def check_duplicates(
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str,
+):
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+
+    query = f"""
+            SELECT COUNT(*) > 0 from (
+                SELECT COUNT(*) as count
+                FROM data
+                GROUP BY {', '.join(id_names)}
+                HAVING COUNT(*) > 1
+            ) AS duplicates
+            """
+
+    if con.query(query).fetchone()[0]:
+        raise SemanticError("0-1-1-3", name=dataset_name, ids=con.query(query).fetchone()[0])
+
+
+def check_rows(
+        components: Dict[str, Component],
+        data: DuckDBPyRelation,
+        dataset_name: str,
+):
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+
+    # Require at least 1 identifier if more than 1 row
+    if not id_names:
+        rowcount = data.limit(2).count("1").fetchone()[0]
+        if rowcount > 1:
+            raise SemanticError("0-1-1-5", name=dataset_name)
 
 
 def load_datapoints(
