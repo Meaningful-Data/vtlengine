@@ -230,19 +230,6 @@ ds_param = [
     ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
 ]
 
-params = [
-    # (nombre scalar, expresión, valor esperado, tipo de dato)
-    ("DS_r", 'instr("abcde", "c")', 3, Integer),
-    ("DS_r", 'substr("abcdefghijklmnopqrstuvwxyz", 1, 3)', "abc", String),
-    ("DS_r", 'replace("Hello world", "Hello", "Hi")', "Hi world", String),
-    ("DS_r", "2 + 3.3", 5.3, Number),
-    ("DS_r", "true and false", False, Boolean),
-    ("DS_r", 'between("a", "a", "z")', True, Boolean),
-    ("DS_r", "+null", None, Integer),
-    ("DS_r", "substr(null)", "", String),
-    ("DS_r", "not null", None, Boolean),
-]
-
 
 params_scalar_operations = [
     ("Sc_r <- sc_1 + sc_2 + 3 + sc_3;", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=21)}),
