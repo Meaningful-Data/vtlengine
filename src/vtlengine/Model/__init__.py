@@ -15,16 +15,6 @@ from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 
 
-def __duckdb_repr__(self: Any) -> str:
-    """
-    DuckDB internal repr based on pandas repr
-    """
-    return f"<DuckDBPyRelation: {self.df().__repr__()}>"
-
-
-DuckDBPyRelation.__repr__ = __duckdb_repr__
-
-
 @dataclass
 class Scalar:
     """
@@ -193,11 +183,93 @@ class Component:
     __repr__ = __str__
 
 
+class DataProxy:
+    def __init__(self, obj, components: Optional[Dict[str, DataComponent]] = None) -> None:
+        self._obj = obj
+        self._comps = components or {}
+        self._fallback = pd.DataFrame if isinstance(obj, DuckDBPyRelation) else DuckDBPyRelation
+
+    def __getattr__(self, attr):
+        def hooked(*args, **kwargs):
+            return orig_attr(*args, **kwargs)
+
+        if hasattr(self._obj, attr):
+            orig_attr = getattr(self._obj, attr)
+            return hooked if callable(orig_attr) else orig_attr
+
+        if self._fallback and hasattr(self._fallback, attr):
+            self._to_pandas() if self._fallback == pd.DataFrame else self._to_duckdb()
+            orig_attr = getattr(self._obj, attr)
+            return hooked if callable(orig_attr) else orig_attr
+
+        raise AttributeError(f"{type(self._obj).__name__} or {self._fallback.__name__} does not have '{attr}'")
+
+    def __len__(self):
+        return len(self._obj)
+
+    def __getitem__(self, key):
+        result = self._obj[key]
+        return DataProxy(result, self._comps)
+
+    # def __setitem__(self, key, value):
+    #     if isinstance(value, DataProxy):
+    #         value = value._obj
+    #
+    #     if isinstance(value, DuckDBPyRelation):
+    #         self._to_pandas()
+    #         value = value.df()
+    #
+    #     if isinstance(self._obj, pd.DataFrame):
+    #         self._obj[key] = value.df() if isinstance(value, DuckDBPyRelation) else value
+
+    def __iter__(self):
+        return iter(self._obj)
+
+    def __str__(self):
+        return str(self._obj)
+
+    def __repr__(self):
+        return repr(self._obj)
+
+    def _to_duckdb(self) -> None:
+        if isinstance(self._obj, pd.DataFrame):
+            sql_types = {
+                c.name: c.data_type().sql_type
+                for c in self._comps.values()
+                if c.name in self._obj.columns
+            }
+
+            query = ", ".join(
+                f"TRY_CAST({col} AS {sql_type}) AS {col}" for col, sql_type in sql_types.items()
+            )
+
+            self._obj = con.from_df(self._obj).project(query)
+            self._fallback = pd.DataFrame
+
+    def _to_pandas(self) -> None:
+        if isinstance(self._obj, DuckDBPyRelation):
+            self._obj = self._obj.df()
+            self._fallback = DuckDBPyRelation
+
+
 @dataclass
 class Dataset:
     name: str
     components: Dict[str, Component]
-    data: Optional[DuckDBPyRelation] = None
+    _data: Optional[Union[DuckDBPyRelation, pd.DataFrame]] = None
+
+    def __init__(self, name=None, components=None, data=None) -> None:
+        self.name = name or ""
+        self.components = components or {}
+        self._data = data
+
+    @property
+    def data(self):
+        return DataProxy(self._data, self.components) if self._data is not None else None
+
+    @data.setter
+    def data(self, value: Union[DuckDBPyRelation, pd.DataFrame]) -> None:
+        self._data = value
 
     def __post_init__(self) -> None:
         if self.data is not None:
@@ -257,6 +329,24 @@ class Dataset:
             return False
 
         return True
+
+    def _to_duckdb(self) -> None:
+        if isinstance(self.data, pd.DataFrame):
+            sql_types = {
+                c.name: c.data_type().sql_type
+                for c in self.components.values()
+                if c.name in self.data.columns
+            }
+
+            query = ", ".join(
+                f"TRY_CAST({col} AS {sql_type}) AS {col}" for col, sql_type in sql_types.items()
+            )
+
+            self.data = con.from_df(self.data).project(query)
+
+    def _to_pandas(self) -> None:
+        if isinstance(self.data, DuckDBPyRelation):
+            self.data = self.data.df()
 
     def get_component(self, component_name: str) -> Component:
         return self.components[component_name]

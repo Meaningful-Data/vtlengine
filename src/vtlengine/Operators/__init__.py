@@ -537,8 +537,7 @@ class Binary(Operator):
             if base_operand_data is None or other_operand_data is None:
                 result_data: pd.DataFrame = pd.DataFrame()
             else:
-                result_data = pd.merge(
-                    base_operand_data,
+                result_data = base_operand_data.merge(
                     other_operand_data,
                     how="inner",
                     on=join_keys,
