@@ -1805,3 +1805,38 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
         rows = list(reader)
     assert len(rows) == 1
     assert rows[0] == [] or rows[0] == [""]
+
+def test_script_with_component_working_as_scalar_and_component():
+    script = """
+            Me_2 <- 10;
+            DS_r <- DS_1[filter Me_1 = Me_2];
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [
+            {
+                "name": "Sc_1",
+                "type": "Number",
+            }
+        ],
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    datapoints = {"DS_1": data_df}
+    with pytest.raises(SemanticError, match="1-1-6-11"):
+        run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=True,
+        )

@@ -766,6 +766,13 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_VarID(self, node: AST.VarID) -> Any:  # noqa: C901
         if self.is_from_assignment:
             return node.value
+        if (
+                self.is_from_regular_aggregation
+                and node.value in self.scalars
+                and self.regular_aggregation_dataset is not None
+                and node.value in self.regular_aggregation_dataset.components
+        ):
+            raise SemanticError("1-1-6-11", comp_name=node.value)
         if self.scalars and node.value in self.scalars:
             return self.scalars[node.value]
         # Having takes precedence as it is lower in the AST
