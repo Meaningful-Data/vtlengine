@@ -1806,6 +1806,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
     assert len(rows) == 1
     assert rows[0] == [] or rows[0] == [""]
 
+
 def test_script_with_component_working_as_scalar_and_component():
     script = """
             Me_2 <- 10;
