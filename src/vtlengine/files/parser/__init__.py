@@ -34,7 +34,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         ) from None
 
     if not csv_columns:
-        raise InputValidationException(code="0-1-1-6", file=csv_path)
+        raise InputValidationException(code="0-1-1-7")
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
@@ -109,7 +109,7 @@ def _validate_duckdb(
     for col in components:
         if col not in data_columns:
             if not components[col].nullable:
-                raise SemanticError("0-1-1-10", name=dataset_name, comp_name=col)
+                raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
             data = data.project(f"*, NULL AS {col}")
 
@@ -156,8 +156,8 @@ def check_nulls(
     for col, null_count in zip(non_nullable, null_counts):
         if null_count > 0:
             if col in id_names:
-                raise SemanticError("0-1-1-4", null_identifier=col, name=dataset_name)
-            raise SemanticError("0-1-1-15", measure=col, name=dataset_name)
+                raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
+            raise SemanticError(code="0-1-1-15", measure=col, name=dataset_name)
 
 
 def check_duplicates(
@@ -179,7 +179,7 @@ def check_duplicates(
 
         dup = con.execute(query).fetchone()[0]
         if dup:
-            raise SemanticError("0-1-1-3", name=dataset_name, ids=dup)
+            raise InputValidationException(code="0-1-1-6")
 
 
 def check_dwi(
@@ -192,7 +192,7 @@ def check_dwi(
     if not id_names:
         rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]
         if rowcount > 1:
-            raise SemanticError("0-1-1-5", name=dataset_name)
+            raise SemanticError(code="0-1-1-5", name=dataset_name)
 
 
 def load_datapoints(
