@@ -30,6 +30,10 @@ Any action with VTL requires the following elements as input:
 * **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
   operator. Can be provided as a dictionary or as a path to a JSON file. Its default value
   is `None`, which shall be used if value domains are not applicable to the VTL script.
+* **Scalar values**: The VTL Engine now allows the use of scalar values to be used as input in the VTL script. These scalar values can be provided as a dictionary, where the keys are the names of the scalar values and the values are the scalar values themselves. The default value is `None`, which shall be used if scalar values are not applicable to the VTL script.
+* **Output folder**: The VTL Engine allows the user to specify an output folder where the results of
+  the VTL script execution will be saved. This is useful for scripts that generate datasets or scalar
+  values. The output folder can be provided as a Path object.
 
 *****************
 Semantic Analysis
@@ -51,7 +55,7 @@ Example 1: Correct VTL
     from vtlengine import semantic_analysis
 
     script = """
-        DS_A <= DS_1 * 10;
+        DS_A <- DS_1 * 10;
     """
 
     data_structures = {
@@ -94,7 +98,7 @@ data type, instead of Number.
     from vtlengine import semantic_analysis
 
     script = """
-        DS_A <= DS_1 * 10;
+        DS_A <- DS_1 * 10;
     """
 
     data_structures = {
@@ -153,7 +157,7 @@ Example 3: Simple run
     import pandas as pd
 
     script = """
-        DS_A <= DS_1 * 10;
+        DS_A <- DS_1 * 10;
     """
 
     data_structures = {
@@ -241,7 +245,7 @@ Optional settings are the same as in the run method, including:
     data = Path("Docs/_static/data.xml")
     structure = Path("Docs/_static/metadata.xml")
     datasets = get_datasets(data, structure)
-    script = "DS_r <= DS_1 [calc Me_4 := OBS_VALUE];"
+    script = "DS_r <- DS_1 [calc Me_4 := OBS_VALUE];"
     print(run_sdmx(script, datasets)['DS_r'].data)
 
 
@@ -363,7 +367,7 @@ The :meth:`vtlengine.prettify` method serves to format a VTL script to make it m
                         N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
                     end hierarchical ruleset;
 
-        DS_r <= check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        DS_r <- check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
         """
     prettified_script = prettify(script)
     print(prettified_script)
@@ -383,11 +387,79 @@ returns:
         errorlevel 4
     end hierarchical ruleset;
 
-    DS_r <=
+    DS_r <-
         check_hierarchy(
             BOP,
             accountingEntry,
             rule ACCOUNTING_ENTRY);
 
+**********************
+Run with Scalar Values
+**********************
+The VTL Engine now allows the use of scalar values to be used as input in the VTL script. With the provided output
+path, csv files will be generated with the results of the script execution. Scalar results will be saved in a
+csv file with value of the resulted scalar.
+
+=================================
+Example 5: Run with Scalar Values
+=================================
+
+.. code-block:: python
+
+    from vtlengine import run
+    import pandas as pd
+
+        script = """
+        DS_r <- DS_1[filter Me_1 = Sc_1];
+        Sc_r <- Sc_1 + 10;
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [
+            {
+                "name": "Sc_1",
+                "type": "Number",
+            }
+        ],
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    datapoints = {"DS_1": data_df}
+    scalars = {"Sc_1": 20}
+
+    # Folder where CSVs will be saved
+    output_folder = Path("output_csvs")
+    output_folder.mkdir(exist_ok=True)
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalars,
+        output_folder=output_folder,
+        return_only_persistent=True
+    )
+
+    print(run_result["DS_r"].data)
+    print(run_result["Sc_r"].data)
+
+
+
+.. csv-table:: Returns:
+    :file: _static/DS_r_run_with_scalars.csv
+    :header-rows: 1
+
+.. code-block:: text
+
+    30
 
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_

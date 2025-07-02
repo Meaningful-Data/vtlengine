@@ -105,6 +105,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
+    scalars: Optional[Dict[str, Scalar]] = None
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
@@ -203,6 +204,15 @@ class InterpreterAnalyzer(ASTTemplate):
             )
             self.datasets[ds_name].data = None
 
+    def _save_scalars_efficient(self, scalars: Dict[str, Scalar]) -> None:
+        output_path = Path(self.output_path)  # type: ignore[arg-type]
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        for name, scalar in scalars.items():
+            file_path = output_path / f"{name}.csv"
+            df = pd.DataFrame([[scalar.value]] if scalar.value is not None else [[]])
+            df.to_csv(file_path, header=False, index=False)
+
     # **********************************
     # *                                *
     # *          AST Visitors          *
@@ -216,6 +226,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             Operators.only_semantic = False
         results = {}
+        scalars_to_save = set()
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
@@ -244,8 +255,21 @@ class InterpreterAnalyzer(ASTTemplate):
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
+            if isinstance(result, Scalar):
+                scalars_to_save.add(result.name)
+                if self.scalars is None:
+                    self.scalars = {}
+                self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
+
+        if self.output_path is not None and scalars_to_save:
+            scalars_filtered = {
+                name: self.scalars[name]  # type: ignore[index]
+                for name in scalars_to_save
+                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, []))  # type: ignore[union-attr]
+            }
+            self._save_scalars_efficient(scalars_filtered)
 
         return results
 
@@ -772,10 +796,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_join and node.value in self.datasets:
                 return self.datasets[node.value]
             if self.regular_aggregation_dataset is not None:
-                if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
+                if self.scalars is not None and node.value in self.scalars:
                     if node.value in self.regular_aggregation_dataset.components:
                         raise SemanticError("1-1-6-11", comp_name=node.value)
-                    return self.datasets[node.value]
+                    return self.scalars[node.value]
                 if self.regular_aggregation_dataset.data is not None:
                     if (
                         self.is_from_join
@@ -840,8 +864,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 role=self.ruleset_dataset.components[comp_name].role,
                 nullable=self.ruleset_dataset.components[comp_name].nullable,
             )
+        if self.scalars and node.value in self.scalars:
+            return self.scalars[node.value]
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
+
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
