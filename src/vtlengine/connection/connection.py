@@ -47,3 +47,15 @@ class ConnectionManager:
         if cls._connection:
             cls._connection.close()
             cls._connection = None
+
+
+    @classmethod
+    def clean_connection(cls) -> None:
+        """
+        Cleans the connection by closing it and resetting the class variables.
+        """
+        try:
+            cls._connection.rollback()
+        except Exception:
+            # No rollback needed
+            pass
