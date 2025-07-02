@@ -1,3 +1,4 @@
+import contextlib
 from typing import Optional
 
 import duckdb
@@ -48,7 +49,6 @@ class ConnectionManager:
             cls._connection.close()
             cls._connection = None
 
-
     @classmethod
     def clean_connection(cls) -> None:
         """
@@ -56,6 +56,6 @@ class ConnectionManager:
         """
         try:
             cls._connection.rollback()
-        except Exception:
+        except Exception as e:
             # No rollback needed
-            pass
+            contextlib.suppress(e)

@@ -1,5 +1,7 @@
 import pytest
+
 from src.vtlengine.connection.connection import ConnectionManager
+
 
 @pytest.fixture(autouse=True)
 def clean_duckdb_connection():
