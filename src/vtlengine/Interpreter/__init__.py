@@ -241,6 +241,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 continue
 
             if isinstance(result, Dataset):
+                # TODO: add parquet, csv or tem tables storage using a flag
                 con.register(result.name, result.data)
 
             # Removing output dataset
