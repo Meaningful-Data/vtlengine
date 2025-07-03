@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
+from sqlglot import condition
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -19,6 +20,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
+from vtlengine.Utils.duckdb_utils import duckdb_concat
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -575,6 +577,7 @@ class Binary(Operator):
 
         return joined.project(", ".join(set(keep_cols)))
 
+
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
@@ -696,15 +699,21 @@ class Binary(Operator):
         cls, left_operand: DataComponent, right_operand: DataComponent
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
-        left_data = cls.cast_time_types(
-            left_operand.data_type,
-            left_operand.data.copy() if left_operand.data is not None else pd.Series(),
-        )
-        right_data = cls.cast_time_types(
-            right_operand.data_type,
-            (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
-        )
-        result_component.data = cls.apply_operation_two_series(left_data, right_data)
+        if left_operand.data is None or right_operand.data is None:
+            return duckdb.from_df(pd.Series())
+
+        result_data = duckdb_concat(left_operand.data, right_operand.data)
+
+        transformations = ["*"]
+        if left_operand.data_type in TIME_TYPES:
+            transformations.append(f"cast_time_types('{left_operand.data_type.__name__}', {left_operand.name}) AS {left_operand.name}")
+        if right_operand.data_type in TIME_TYPES:
+            transformations.append(f"cast_time_types('{right_operand.data_type.__name__}', {right_operand.name}) AS {right_operand.name}")
+
+        transformations.append(apply_operation(cls.op, result_component.name, left_operand.name, right_operand.name))
+        final_query = f"{', '.join(transformations)}"
+        result_data = result_data.project(final_query)
+        result_component.data = result_data.project(result_component.name)
         return result_component
 
     @classmethod
