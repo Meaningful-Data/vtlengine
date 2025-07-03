@@ -1,13 +1,10 @@
 from copy import copy
 from typing import Any, Union
 
-import pandas as pd
-from duckdb import duckdb
-
+from vtlengine.connection import con
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
-from vtlengine.connection import con
 
 ALLOWED_MODEL_TYPES = Union[DataComponent, Scalar]
 

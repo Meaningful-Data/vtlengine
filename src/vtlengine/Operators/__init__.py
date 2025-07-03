@@ -4,7 +4,6 @@ from typing import Any, Optional, Union
 import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
-from sqlglot import condition
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -20,7 +19,6 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
-from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -40,6 +38,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._to_sql import LEFT, MIDDLE, TO_SQL_TOKEN
+from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -528,7 +527,6 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
-
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
@@ -582,8 +580,9 @@ class Binary(Operator):
                     cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
                 """)
             left, right = (
-                (f"{me.name}_y", f"{me.name}_x") if use_right_as_base else
-                (f"{me.name}_x", f"{me.name}_y")
+                (f"{me.name}_y", f"{me.name}_x")
+                if use_right_as_base
+                else (f"{me.name}_x", f"{me.name}_y")
             )
             transformations.append(apply_operation(cls.op, me.name, left, right))
             cols_to_exclude.extend([f"{me.name}_x", f"{me.name}_y"])
@@ -631,10 +630,10 @@ class Binary(Operator):
         transformations = ["*"]
         for me in dataset.get_measures():
             if me.data_type.__name__ in TIME_TYPES:
-                transformations.append(f"cast_time_types('{me.data_type.__name__}', {me.name}) AS {me.name}")
-            if me.data_type.__name__.__str__() == "Duration" and not isinstance(
-                scalar_value, int
-            ):
+                transformations.append(
+                    f"cast_time_types('{me.data_type.__name__}', {me.name}) AS {me.name}"
+                )
+            if me.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
             left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
@@ -657,11 +656,19 @@ class Binary(Operator):
 
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
-            transformations.append(f"cast_time_types('{left_operand.data_type.__name__}', {left_operand.name}) AS {left_operand.name}")
+            transformations.append(
+                f"cast_time_types('{left_operand.data_type.__name__}', {left_operand.name}) "
+                f"AS {left_operand.name}"
+            )
         if right_operand.data_type in TIME_TYPES:
-            transformations.append(f"cast_time_types('{right_operand.data_type.__name__}', {right_operand.name}) AS {right_operand.name}")
+            transformations.append(
+                f"cast_time_types('{right_operand.data_type.__name__}', {right_operand.name}) "
+                f"AS {right_operand.name}"
+            )
 
-        transformations.append(apply_operation(cls.op, result_component.name, left_operand.name, right_operand.name))
+        transformations.append(
+            apply_operation(cls.op, result_component.name, left_operand.name, right_operand.name)
+        )
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
         result_component.data = result_data.project(result_component.name)

@@ -27,11 +27,11 @@ class VirtualCounter:
     @classmethod
     def _new_ds_name(cls) -> str:
         cls.dataset_count += 1
-        name = f'__VDS_{copy(cls.dataset_count)}__'
+        name = f"__VDS_{copy(cls.dataset_count)}__"
         return name
 
     @classmethod
     def _new_dc_name(cls) -> str:
         cls.component_count += 1
-        name = f'__VDC_{copy(cls.component_count)}__'
+        name = f"__VDC_{copy(cls.component_count)}__"
         return name
