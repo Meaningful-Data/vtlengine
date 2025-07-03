@@ -54,11 +54,16 @@ DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
-def apply_operation(op: Any, measure_name: str, right_as_base: bool) -> DUCKDB_RETURN_TYPES:
+def apply_operation(op: Any, me_name: str, right_as_base: bool) -> DUCKDB_RETURN_TYPES:
+    token_position = "middle"
     op_token = TO_SQL_TOKEN.get(op, op)
-    if right_as_base:
-        return f"({measure_name}_y {op_token} {measure_name}_x) AS {measure_name}"
-    return f"({measure_name}_x {op_token} {measure_name}_y) AS {measure_name}"
+    if isinstance(op_token, tuple):
+        op_token, token_position = op_token
+
+    left, right = (f"{me_name}_y", f"{me_name}_x") if right_as_base else (f"{me_name}_x", f"{me_name}_y")
+    if token_position == "left":
+        return f"{op_token}({left} {right}) AS {me_name}"
+    return f"({left} {op_token} {right}) AS {me_name}"
 
 
 def _cast_time_types(data_type: Any, value: Any) -> str:
