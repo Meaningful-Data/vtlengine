@@ -127,7 +127,8 @@ def _validate_duckdb(
         else:
             transformations.append(col)
 
-    data = data.project(", ".join(transformations))
+    final_query = ", ".join(transformations)
+    data = data.project(final_query)
 
     return data
 

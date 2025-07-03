@@ -1,7 +1,9 @@
 from copy import copy
 from typing import Any, Optional, Union
 
+import duckdb
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -23,7 +25,7 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
-    unary_implicit_promotion,
+    unary_implicit_promotion, ScalarType,
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
@@ -33,6 +35,8 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._to_sql import TO_SQL_TOKEN
+from vtlengine.connection import con
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -44,6 +48,61 @@ BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
+
+
+DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
+TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
+
+
+def apply_operation(op: Any, measure_name: str, right_as_base: bool) -> DUCKDB_RETURN_TYPES:
+    op_token = TO_SQL_TOKEN.get(op, op)
+    if right_as_base:
+        return f"({measure_name}_y {op_token} {measure_name}_x) AS {measure_name}"
+    return f"({measure_name}_x {op_token} {measure_name}_y) AS {measure_name}"
+
+
+def _cast_time_types(data_type: Any, value: Any) -> str:
+    if data_type.__name__ == "TimeInterval":
+        return TimeIntervalHandler.from_iso_format(value)
+    elif data_type.__name__ == "TimePeriod":
+        return TimePeriodHandler(value)
+    elif data_type.__name__ == "Duration":
+        if value not in PERIOD_IND_MAPPING:
+            raise Exception(f"Duration {value} is not valid")
+        return PERIOD_IND_MAPPING[value]
+    return str(value)
+
+
+def _cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> str:
+    if op not in BINARY_COMPARISON_OPERATORS:
+        return value
+    if data_type.__name__ == "TimeInterval":
+        return TimeIntervalHandler.from_iso_format(value)
+    elif data_type.__name__ == "TimePeriod":
+        return TimePeriodHandler(value)
+    elif data_type.__name__ == "Duration":
+        if value not in PERIOD_IND_MAPPING:
+            raise Exception(f"Duration {value} is not valid")
+        return PERIOD_IND_MAPPING[value]
+    return value
+
+
+def _handle_str_number(x: Union[str, int, float]) -> str:
+    if isinstance(x, int):
+        return x
+    try:
+        x = float(x)
+        if x.is_integer():
+            return str(int(x))
+        return str(x)
+    except ValueError:
+        return str(x)
+
+
+# Pyarrow functions declaration for DuckDB
+con.create_function("cast_time_types", _cast_time_types)
+con.create_function("cast_time_types_scalar", _cast_time_types_scalar)
+con.create_function("handle_str_number", _handle_str_number)
 
 
 class Operator:
@@ -59,34 +118,6 @@ class Operator:
         if only_semantic:
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
-
-    @classmethod
-    def cast_time_types(cls, data_type: Any, series: Any) -> Any:
-        if cls.op not in BINARY_COMPARISON_OPERATORS:
-            return series
-        if data_type.__name__ == "TimeInterval":
-            series = series.map(
-                lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
-            )
-        elif data_type.__name__ == "TimePeriod":
-            series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
-        elif data_type.__name__ == "Duration":
-            series = series.map(lambda x: PERIOD_IND_MAPPING[x], na_action="ignore")
-        return series
-
-    @classmethod
-    def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
-        if cls.op not in BINARY_COMPARISON_OPERATORS:
-            return value
-        if data_type.__name__ == "TimeInterval":
-            return TimeIntervalHandler.from_iso_format(value)
-        elif data_type.__name__ == "TimePeriod":
-            return TimePeriodHandler(value)
-        elif data_type.__name__ == "Duration":
-            if value not in PERIOD_IND_MAPPING:
-                raise Exception(f"Duration {value} is not valid")
-            return PERIOD_IND_MAPPING[value]
-        return value
 
     @classmethod
     def modify_measure_column(cls, result: Dataset) -> None:
@@ -175,44 +206,36 @@ def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
     join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
-) -> None:
-    if left_data is None:
-        left_data = pd.DataFrame()
-    if right_data is None:
-        right_data = pd.DataFrame()
+    left_data: Optional[DuckDBPyRelation] = None,
+    right_data: Optional[DuckDBPyRelation] = None,
+) -> tuple[Optional[DuckDBPyRelation], Optional[DuckDBPyRelation]]:
+    if not left_data or not right_data:
+        return left_data, right_data
 
-    left_type_name: str = str(c_left.data_type.__name__)
-    right_type_name: str = str(c_right.data_type.__name__)
+    left_type_name = c_left.data_type.__name__
+    right_type_name = c_right.data_type.__name__
 
-    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(object)
-        right_data[join_key] = right_data[join_key].astype(object)
-        return
-    if (left_type_name == "Integer" and right_type_name == "Number") or (
-        left_type_name == "Number" and right_type_name == "Integer"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
-        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-    elif left_type_name == "String" and right_type_name in ("Integer", "Number"):
-        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-    elif left_type_name in ("Integer", "Number") and right_type_name == "String":
-        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(object)
-    right_data[join_key] = right_data[join_key].astype(object)
+    if left_type_name == right_type_name:
+        return left_data, right_data
 
+    if {left_type_name, right_type_name} <= {"Integer", "Number"}:
+        cast_expr = f"CAST({join_key} AS DOUBLE)::INT AS {join_key}, * EXCLUDE({join_key})"
+        left_data = left_data.project(cast_expr)
+        right_data = right_data.project(cast_expr)
+    elif {"String", "Integer", "Number"} & {left_type_name, right_type_name}:
+        transformations = [
+            f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
+            for col in left_data.columns
+        ]
+        left_data = left_data.project(", ".join(transformations))
 
-def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
-    if isinstance(x, int):
-        return x
-    try:
-        x = float(x)
-        if x.is_integer():
-            return int(x)
-        return x
-    except ValueError:  # Unable to get to string, return the same value that will not be matched
-        return x
+        transformations = [
+            f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
+            for col in right_data.columns
+        ]
+        right_data = right_data.project(", ".join(transformations))
+
+    return left_data, right_data
 
 
 class Binary(Operator):
@@ -223,11 +246,6 @@ class Binary(Operator):
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls.py_op(x, y)
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
@@ -504,6 +522,56 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
+
+    @classmethod
+    def duckdb_merge(
+            cls,
+            base_relation: Optional[DuckDBPyRelation],
+            other_relation: Optional[DuckDBPyRelation],
+            join_keys: list[str],
+            how: str = "inner",
+    ):
+        suffixes = ["_x", "_y"]
+        base_cols = set(base_relation.columns)
+        other_cols = set(other_relation.columns)
+        common_cols = (base_cols & other_cols) - set(join_keys)
+
+        base_proj_cols = []
+        for c in base_relation.columns:
+            if c in common_cols:
+                base_proj_cols.append(f"{c} AS {c}{suffixes[0]}")
+            else:
+                base_proj_cols.append(c)
+        base_relation = base_relation.project(", ".join(base_proj_cols))
+
+        other_proj_cols = []
+        for c in other_relation.columns:
+            if c in common_cols:
+                other_proj_cols.append(f"{c} AS {c}{suffixes[1]}")
+            else:
+                other_proj_cols.append(c)
+        other_relation = other_relation.project(", ".join(other_proj_cols))
+
+        base_alias = "base"
+        other_alias = "other"
+        base_relation = base_relation.set_alias(base_alias)
+        other_relation = other_relation.set_alias(other_alias)
+
+        join_condition = " AND ".join([f"{base_alias}.{k} = {other_alias}.{k}" for k in join_keys])
+        joined = base_relation.join(
+            other_relation,
+            condition=join_condition,
+            how=how,
+        )
+
+        keep_cols = []
+        for c in joined.columns:
+            if c in join_keys:
+                c = f"{base_alias}.{c}"
+            keep_cols.append(c)
+
+        return joined.project(", ".join(set(keep_cols)))
+
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
@@ -524,7 +592,7 @@ class Binary(Operator):
         )
 
         for join_key in join_keys:
-            _id_type_promotion_join_keys(
+            base_operand_data, other_operand_data = _id_type_promotion_join_keys(
                 left_operand.get_component(join_key),
                 right_operand.get_component(join_key),
                 join_key,
@@ -535,35 +603,34 @@ class Binary(Operator):
         try:
             # Merge the data
             if base_operand_data is None or other_operand_data is None:
-                result_data: pd.DataFrame = pd.DataFrame()
+                # TODO: Check if this is the right way to handle empty data and if its lazy
+                result_data = duckdb.from_df(pd.DataFrame())
             else:
-                result_data = pd.merge(
+                result_data = cls.duckdb_merge(
                     base_operand_data,
                     other_operand_data,
+                    join_keys,
                     how="inner",
-                    on=join_keys,
-                    suffixes=("_x", "_y"),
                 )
-        except ValueError as e:
+        except Exception as e:
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
+        transformations = ["*"]
+        cols_to_exclude = []
         for measure in left_operand.get_measures():
-            result_data[measure.name + "_x"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_x"]
-            )
-            result_data[measure.name + "_y"] = cls.cast_time_types(
-                measure.data_type, result_data[measure.name + "_y"]
-            )
-            if use_right_as_base:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_y"], result_data[measure.name + "_x"]
-                )
-            else:
-                result_data[measure.name] = cls.apply_operation_two_series(
-                    result_data[measure.name + "_x"], result_data[measure.name + "_y"]
-                )
-            result_data = result_data.drop([measure.name + "_x", measure.name + "_y"], axis=1)
+            if cls.op in BINARY_COMPARISON_OPERATORS and measure.data_type.__name__ in TIME_TYPES:
+                transformations.append(f"""
+                    cast_time_types('{measure.data_type.__name__}', {measure.name}_x) AS {measure.name}_x,
+                    cast_time_types('{measure.data_type.__name__}', {measure.name}_y) AS {measure.name}_y
+                """)
+
+            transformations.append(apply_operation(cls.op, measure.name, use_right_as_base))
+            cols_to_exclude.extend([f"{measure.name}_x", f"{measure.name}_y"])
+
+        final_query = f"{', '.join(transformations)}"
+        exclude_query = f"* EXCLUDE({', '.join(cols_to_exclude)})" if cols_to_exclude else "*"
+        result_data = result_data.project(final_query).project(exclude_query)
 
         # Delete attributes from the result data
         attributes = list(
