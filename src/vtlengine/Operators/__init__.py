@@ -679,18 +679,21 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(
-            component.data_type,
-            component.data.copy() if component.data is not None else pd.Series(),
-        )
+        comp_data = duckdb.from_df(pd.Series()) if component.data is None else component.data
+
+        transformations = ["*"]
+        if component.data_type.__name__ in TIME_TYPES:
+            transformations.append(f"cast_time_types('{component.data_type.__name__}', {component.name}) AS {component.name}")
+
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
             scalar_value, int
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(
-            comp_data, scalar_value, component_left
-        )
+
+        transformations.append(apply_operation(cls.op, result_component.name, component.name, scalar_value))
+        final_query = f"{', '.join(transformations)}"
+        result_component.data = comp_data.project(final_query).project(f"{result_component.name}_1 AS {component.name}")
         return result_component
 
     @classmethod
