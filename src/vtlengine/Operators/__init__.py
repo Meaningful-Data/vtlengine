@@ -19,13 +19,15 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    ScalarType,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
-    unary_implicit_promotion, ScalarType,
+    unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
@@ -35,8 +37,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils._to_sql import TO_SQL_TOKEN
-from vtlengine.connection import con
+from vtlengine.Utils._to_sql import LEFT, MIDDLE, TO_SQL_TOKEN
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -55,13 +56,15 @@ TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
 def apply_operation(op: Any, me_name: str, right_as_base: bool) -> DUCKDB_RETURN_TYPES:
-    token_position = "middle"
+    token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left, right = (f"{me_name}_y", f"{me_name}_x") if right_as_base else (f"{me_name}_x", f"{me_name}_y")
-    if token_position == "left":
+    left, right = (
+        (f"{me_name}_y", f"{me_name}_x") if right_as_base else (f"{me_name}_x", f"{me_name}_y")
+    )
+    if token_position == LEFT:
         return f"{op_token}({left} {right}) AS {me_name}"
     return f"({left} {op_token} {right}) AS {me_name}"
 
@@ -527,14 +530,13 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
-
     @classmethod
     def duckdb_merge(
-            cls,
-            base_relation: Optional[DuckDBPyRelation],
-            other_relation: Optional[DuckDBPyRelation],
-            join_keys: list[str],
-            how: str = "inner",
+        cls,
+        base_relation: Optional[DuckDBPyRelation],
+        other_relation: Optional[DuckDBPyRelation],
+        join_keys: list[str],
+        how: str = "inner",
     ):
         suffixes = ["_x", "_y"]
         base_cols = set(base_relation.columns)
@@ -623,15 +625,15 @@ class Binary(Operator):
         # Measures are the same, using left operand measures names
         transformations = ["*"]
         cols_to_exclude = []
-        for measure in left_operand.get_measures():
-            if cls.op in BINARY_COMPARISON_OPERATORS and measure.data_type.__name__ in TIME_TYPES:
+        for me in left_operand.get_measures():
+            if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type.__name__ in TIME_TYPES:
                 transformations.append(f"""
-                    cast_time_types('{measure.data_type.__name__}', {measure.name}_x) AS {measure.name}_x,
-                    cast_time_types('{measure.data_type.__name__}', {measure.name}_y) AS {measure.name}_y
+                    cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
+                    cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
                 """)
 
-            transformations.append(apply_operation(cls.op, measure.name, use_right_as_base))
-            cols_to_exclude.extend([f"{measure.name}_x", f"{measure.name}_y"])
+            transformations.append(apply_operation(cls.op, me.name, use_right_as_base))
+            cols_to_exclude.extend([f"{me.name}_x", f"{me.name}_y"])
 
         final_query = f"{', '.join(transformations)}"
         exclude_query = f"* EXCLUDE({', '.join(cols_to_exclude)})" if cols_to_exclude else "*"
