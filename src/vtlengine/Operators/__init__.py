@@ -683,7 +683,10 @@ class Binary(Operator):
 
         transformations = ["*"]
         if component.data_type.__name__ in TIME_TYPES:
-            transformations.append(f"cast_time_types('{component.data_type.__name__}', {component.name}) AS {component.name}")
+            transformations.append(
+                f"cast_time_types('{component.data_type.__name__}', {component.name}) "
+                f"AS {component.name}"
+            )
 
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
@@ -691,9 +694,13 @@ class Binary(Operator):
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
-        transformations.append(apply_operation(cls.op, result_component.name, component.name, scalar_value))
+        transformations.append(
+            apply_operation(cls.op, result_component.name, component.name, scalar_value)
+        )
         final_query = f"{', '.join(transformations)}"
-        result_component.data = comp_data.project(final_query).project(f"{result_component.name}_1 AS {component.name}")
+        result_component.data = comp_data.project(final_query).project(
+            f"{result_component.name}_1 AS {component.name}"
+        )
         return result_component
 
     @classmethod
