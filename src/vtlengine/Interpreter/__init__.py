@@ -50,6 +50,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.connection import con
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.files.parser import _fill_dataset_empty_data, load_datapoints
@@ -238,6 +239,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            if isinstance(result, Dataset):
+                con.register(result.name, result.data)
 
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
