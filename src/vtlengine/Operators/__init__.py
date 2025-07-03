@@ -20,7 +20,7 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     XOR,
 )
-from vtlengine.Utils.duckdb_utils import duckdb_concat
+from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -528,55 +528,6 @@ class Binary(Operator):
             else:
                 measure.data_type = result_data_type
 
-    @classmethod
-    def duckdb_merge(
-        cls,
-        base_relation: Optional[DuckDBPyRelation],
-        other_relation: Optional[DuckDBPyRelation],
-        join_keys: list[str],
-        how: str = "inner",
-    ):
-        suffixes = ["_x", "_y"]
-        base_cols = set(base_relation.columns)
-        other_cols = set(other_relation.columns)
-        common_cols = (base_cols & other_cols) - set(join_keys)
-
-        base_proj_cols = []
-        for c in base_relation.columns:
-            if c in common_cols:
-                base_proj_cols.append(f"{c} AS {c}{suffixes[0]}")
-            else:
-                base_proj_cols.append(c)
-        base_relation = base_relation.project(", ".join(base_proj_cols))
-
-        other_proj_cols = []
-        for c in other_relation.columns:
-            if c in common_cols:
-                other_proj_cols.append(f"{c} AS {c}{suffixes[1]}")
-            else:
-                other_proj_cols.append(c)
-        other_relation = other_relation.project(", ".join(other_proj_cols))
-
-        base_alias = "base"
-        other_alias = "other"
-        base_relation = base_relation.set_alias(base_alias)
-        other_relation = other_relation.set_alias(other_alias)
-
-        join_condition = " AND ".join([f"{base_alias}.{k} = {other_alias}.{k}" for k in join_keys])
-        joined = base_relation.join(
-            other_relation,
-            condition=join_condition,
-            how=how,
-        )
-
-        keep_cols = []
-        for c in joined.columns:
-            if c in join_keys:
-                c = f"{base_alias}.{c}"
-            keep_cols.append(c)
-
-        return joined.project(", ".join(set(keep_cols)))
-
 
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
@@ -612,7 +563,7 @@ class Binary(Operator):
                 # TODO: Check if this is the right way to handle empty data and if its lazy
                 result_data = duckdb.from_df(pd.DataFrame())
             else:
-                result_data = cls.duckdb_merge(
+                result_data = duckdb_merge(
                     base_operand_data,
                     other_operand_data,
                     join_keys,
