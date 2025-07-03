@@ -55,15 +55,12 @@ DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
-def apply_operation(op: Any, me_name: str, right_as_base: bool) -> DUCKDB_RETURN_TYPES:
+def apply_operation(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left, right = (
-        (f"{me_name}_y", f"{me_name}_x") if right_as_base else (f"{me_name}_x", f"{me_name}_y")
-    )
     if token_position == LEFT:
         return f"{op_token}({left} {right}) AS {me_name}"
     return f"({left} {op_token} {right}) AS {me_name}"
@@ -81,7 +78,7 @@ def _cast_time_types(data_type: Any, value: Any) -> str:
     return str(value)
 
 
-def _cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> str:
+def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> str:
     if op not in BINARY_COMPARISON_OPERATORS:
         return value
     if data_type.__name__ == "TimeInterval":
@@ -109,7 +106,6 @@ def _handle_str_number(x: Union[str, int, float]) -> str:
 
 # Pyarrow functions declaration for DuckDB
 con.create_function("cast_time_types", _cast_time_types)
-con.create_function("cast_time_types_scalar", _cast_time_types_scalar)
 con.create_function("handle_str_number", _handle_str_number)
 
 
@@ -631,8 +627,11 @@ class Binary(Operator):
                     cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
                     cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
                 """)
-
-            transformations.append(apply_operation(cls.op, me.name, use_right_as_base))
+            left, right = (
+                (f"{me.name}_y", f"{me.name}_x") if use_right_as_base else
+                (f"{me.name}_x", f"{me.name}_y")
+            )
+            transformations.append(apply_operation(cls.op, me.name, left, right))
             cols_to_exclude.extend([f"{me.name}_x", f"{me.name}_y"])
 
         final_query = f"{', '.join(transformations)}"
@@ -667,24 +666,28 @@ class Binary(Operator):
         cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
     ) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
-        result_dataset.data = result_data
 
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+        if dataset.data is None:
+            result_dataset.data = duckdb.from_df(pd.DataFrame())
+            return result_dataset
 
-        for measure in dataset.get_measures():
-            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
+        result_data = dataset.data
+        scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
+
+        transformations = ["*"]
+        for me in dataset.get_measures():
+            if me.data_type.__name__ in TIME_TYPES:
+                transformations.append(f"cast_time_types('{me.data_type.__name__}', {me.name}) AS {me.name}")
+            if me.data_type.__name__.__str__() == "Duration" and not isinstance(
                 scalar_value, int
             ):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
-            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left
-            )
 
-        result_dataset.data = result_data
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
-        result_dataset.data = result_dataset.data[cols_to_keep]
+            left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
+            transformations.append(apply_operation(cls.op, me.name, left, right))
+
+        final_query = f"{', '.join(transformations)}"
+        result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -713,7 +716,7 @@ class Binary(Operator):
             component.data_type,
             component.data.copy() if component.data is not None else pd.Series(),
         )
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+        scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
             scalar_value, int
         ):
