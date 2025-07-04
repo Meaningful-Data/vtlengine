@@ -368,7 +368,7 @@ class ScalarSet:
     """
 
     data_type: Type[ScalarType]
-    values: List[Union[int, float, str, bool]]
+    values: Union[List[Union[int, float, str, bool]], DuckDBPyRelation]
 
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():

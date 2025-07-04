@@ -3,7 +3,6 @@ from typing import Any, Optional, Union
 
 import duckdb
 import pandas as pd
-from click.formatting import measure_table
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
@@ -599,10 +598,7 @@ class Binary(Operator):
             transformations.append(apply_bin_op(cls.op, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
-        try:
-            result_data = result_data.project(final_query)
-        except Exception as e:
-            a = 0
+        result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
         attributes = list(
@@ -717,11 +713,17 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data or duckdb.from_df(pd.DataFrame())
+        scalar_set.values = (
+            scalar_set.values
+            if isinstance(scalar_set.values, DuckDBPyRelation)
+            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+        )
 
         transformations = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            # transformations.append(apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0]))
-            pass
+            transformations.append(
+                apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0])
+            )
 
         result_dataset.data = result_data.project(", ".join(transformations))
         cls.modify_measure_column(result_dataset)
@@ -733,7 +735,17 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_data = component.data or duckdb.from_df(pd.Series())
-        result_component.data = result_data.project(apply_bin_op(cls.op, result_component.name, component.name, scalar_set.name))
+        scalar_set.values = (
+            scalar_set.values
+            if isinstance(scalar_set.values, DuckDBPyRelation)
+            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+        )
+
+        result_component.data = result_data.project(
+            apply_bin_op(
+                cls.op, result_component.name, component.name, scalar_set.values.columns[0]
+            )
+        )
         return result_component
 
     @classmethod
@@ -933,5 +945,7 @@ class Unary(Operator):
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_data = operand.data or duckdb.from_df(pd.Series())
-        result_component.data = result_data.project(apply_unary_op(cls.op, operand.name, result_component.name))
+        result_component.data = result_data.project(
+            apply_unary_op(cls.op, operand.name, result_component.name)
+        )
         return result_component
