@@ -3,7 +3,6 @@ from typing import Optional
 from duckdb.duckdb import DuckDBPyRelation
 
 
-@classmethod
 def duckdb_merge(
     base_relation: Optional[DuckDBPyRelation],
     other_relation: Optional[DuckDBPyRelation],
