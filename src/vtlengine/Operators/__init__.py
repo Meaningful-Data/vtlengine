@@ -58,7 +58,7 @@ TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 def apply_unary_op(op: Any, me_name: str, value: Any) -> DUCKDB_RETURN_TYPES:
     op_token = TO_SQL_TOKEN.get(op, op)
-    return f"{op_token}({value}) AS {me_name}"
+    return f"{op_token}({me_name}) AS {value}"
 
 
 def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
@@ -920,7 +920,6 @@ class Unary(Operator):
             transformations.append(apply_unary_op(cls.op, measure_name, f'"{measure_name}"'))
 
         result_dataset.data = result_data.project(", ".join(transformations))
-        print(result_dataset.data)
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -933,7 +932,6 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_component.data = cls.apply_operation_component(
-            operand.data.copy() if operand.data is not None else pd.Series()
-        )
+        result_data = operand.data or duckdb.from_df(pd.Series())
+        result_component.data = result_data.project(apply_unary_op(cls.op, operand.name, f'"{result_component.name}"'))
         return result_component
