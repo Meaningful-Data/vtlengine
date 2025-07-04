@@ -150,10 +150,20 @@ class Operator:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
+            # for column in columns:
+            #     if column not in set(components) and result.data is not None:
+            #         result.data[measure_name] = result.data[column]
+            #         del result.data[column]
+            transformations = []
+            column_to_rename = None
             for column in columns:
-                if column not in set(components) and result.data is not None:
-                    result.data[measure_name] = result.data[column]
-                    del result.data[column]
+                if column not in set(components):
+                    column_to_rename = column
+                else:
+                    transformations.append(f'"{column}"')
+            if column_to_rename:
+                transformations.append(f'"{column_to_rename}" AS "{measure_name}"')
+            result.data = result.data.project(", ".join(transformations))
 
     @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
