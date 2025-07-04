@@ -42,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.Utils.duckdb_utils import duckdb_rename
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -924,6 +925,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             role = role_info[role_key]
                 else:
                     role = role_info[operand.name]
+                data = duckdb_rename(data, {measure.name: operand.name})
                 aux_operands.append(
                     DataComponent(
                         name=operand.name,
@@ -1550,7 +1552,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ):
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
-            if condition.data is None or condition.data.empty:
+            if condition.data is None or len(condition.data) == 0:
                 data = None
             else:
                 data = condition.data[name]

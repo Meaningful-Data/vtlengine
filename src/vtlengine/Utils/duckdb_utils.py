@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from duckdb.duckdb import DuckDBPyRelation
 
@@ -10,6 +10,7 @@ def empty_relation() -> DuckDBPyRelation:
     return con.sql("SELECT 1 LIMIT 0")
 
 
+# TODO: implement other merge types: left, outer...
 def duckdb_merge(
     base_relation: Optional[DuckDBPyRelation],
     other_relation: Optional[DuckDBPyRelation],
@@ -79,3 +80,27 @@ def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRe
     right = right.project(f"{cols_right}, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
     condition = "base.__row_id__ = other.__row_id__"
     return left.join(right, condition=condition, how="inner").project(", ".join(cols))
+
+
+def duckdb_rename(data: DuckDBPyRelation, name_dict: Dict[str, str]) -> DuckDBPyRelation:
+    """Renames a column in a DuckDB relation."""
+    cols = set(data.columns)
+    for old_name, new_name in name_dict.items():
+        if old_name not in cols:
+            raise ValueError(f"Column '{old_name}' not found in relation.")
+        cols.remove(old_name)
+        cols.add(f'{old_name} AS "{new_name}"')
+    return data.project(", ".join(cols))
+
+
+def duckdb_fill(data: DuckDBPyRelation, col_name: str, value: Any) -> DuckDBPyRelation:
+    """
+    Fills a column in a DuckDB relation with a specified value.
+
+    If the column does not exist, it will be created.
+    """
+    if col_name not in data.columns:
+        data = data.project(f"*, {value} AS {col_name}")
+    else:
+        data = data.project(f"{col_name} COALESCE({value}) AS {col_name}")
+    return data

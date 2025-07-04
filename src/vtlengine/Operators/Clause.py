@@ -16,7 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation
+from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename
 
 
 class Calc(Operator):
@@ -115,10 +115,7 @@ class Aggregate(Operator):
         result_dataset.data = dataset.data or empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
-                # result_dataset.data[operand.name] = operand.value
-                result_dataset.data = result_dataset.data.project(
-                    f"*, {operand.value} AS {operand.name}"
-                )
+                result_dataset.data = duckdb_fill(result_dataset.data, operand.name, operand.value)
             else:
                 if operand.data is not None and len(operand.data) > 0:
                     result_dataset.data = duckdb_concat(result_dataset.data, operand.data)
@@ -253,11 +250,8 @@ class Rename(Operator):
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            old_names = {operand.old_name for operand in operands}
-            cols = set(dataset.data.columns) - old_names
-            cols.update(f'{operand.old_name} AS "{operand.new_name}"' for operand in operands)
-            query = ", ".join(cols)
-            result_dataset.data = dataset.data.project(query)
+            rename_dict = {operand.old_name: operand.new_name for operand in operands}
+            result_dataset.data = duckdb_rename(dataset.data, rename_dict)
         return result_dataset
 
 
