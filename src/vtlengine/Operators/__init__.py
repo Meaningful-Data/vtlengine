@@ -638,7 +638,10 @@ class Binary(Operator):
             return result_dataset
 
         result_data = dataset.data
+
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
+        if isinstance(scalar_value, str):
+            scalar_value = f"'{scalar_value}'"
 
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
@@ -706,6 +709,8 @@ class Binary(Operator):
             scalar_value, int
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
+        if isinstance(scalar_value, str):
+            scalar_value = f"'{scalar_value}'"
 
         transformations.append(
             apply_bin_op(cls.op, result_component.name, component.name, scalar_value)

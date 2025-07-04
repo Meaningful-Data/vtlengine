@@ -112,15 +112,20 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data or empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
-                result_dataset.data[operand.name] = operand.value
+                # result_dataset.data[operand.name] = operand.value
+                result_dataset.data = result_dataset.data.project(
+                    f"*, {operand.value} AS {operand.name}"
+                )
             else:
                 if operand.data is not None and len(operand.data) > 0:
-                    result_dataset.data[operand.name] = operand.data
+                    result_dataset.data = duckdb_concat(result_dataset.data, operand.data)
                 else:
-                    result_dataset.data[operand.name] = None
+                    result_dataset.data = result_dataset.data.project(
+                        f"*, NULL::{operand.data_type.sql_type} AS {operand.name}"
+                    )
         return result_dataset
 
 
