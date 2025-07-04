@@ -909,7 +909,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role != Role.MEASURE
             }
             if dataset.data is not None:
-                dataset.data = dataset.data.project(dataset.get_identifiers_names())
+                dataset.data = dataset.data.project(", ".join(dataset.get_identifiers_names()))
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
