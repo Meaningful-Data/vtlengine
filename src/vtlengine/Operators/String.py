@@ -20,6 +20,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
+from vtlengine.Utils.duckdb_utils import empty_relation
 
 
 class Unary(Operator.Unary):
@@ -154,7 +155,7 @@ class Parameterized(Unary):
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data or empty_relation()
         for measure_name in operand.get_measures_names():
             if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
                 result.data[measure_name] = cls.apply_operation_series(
@@ -180,7 +181,7 @@ class Parameterized(Unary):
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        result.data = operand.data or empty_relation()
         if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
             result.data = cls.apply_operation_series(result.data, param1, param2)
         else:
@@ -437,7 +438,7 @@ class Instr(Parameterized):
         param3: Optional[Union[DataComponent, Scalar]],
     ) -> Dataset:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data or empty_relation()
         for measure_name in operand.get_measures_names():
             if (
                 isinstance(param1, DataComponent)
@@ -469,7 +470,7 @@ class Instr(Parameterized):
         param3: Optional[Union[DataComponent, Scalar]],
     ) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
-        result.data = operand.data.copy() if operand.data is not None else pd.Series()
+        result.data = operand.data or empty_relation()
         if (
             isinstance(param1, DataComponent)
             or isinstance(param2, DataComponent)

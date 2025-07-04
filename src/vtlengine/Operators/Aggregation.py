@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 
 import duckdb
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
     AVG,
@@ -16,6 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     Boolean,
     Date,
@@ -36,6 +38,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Unary
+from vtlengine.Utils.duckdb_utils import duckdb_merge, empty_relation
 
 
 def extract_grouping_identifiers(
@@ -183,11 +186,11 @@ class Aggregation(Unary):
     @classmethod
     def _agg_func(
         cls,
-        df: pd.DataFrame,
+        rel: DuckDBPyRelation,
         grouping_keys: Optional[List[str]],
         measure_names: Optional[List[str]],
         having_expression: Optional[str],
-    ) -> pd.DataFrame:
+    ) -> DuckDBPyRelation:
         grouping_names = (
             [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
         )
@@ -203,11 +206,13 @@ class Aggregation(Unary):
             if grouping_names is not None:
                 query = (
                     f"SELECT {', '.join(grouping_names)}, COUNT() AS "
-                    f"int_var from df {grouping} {having_expression}"
+                    f"int_var from rel {grouping} {having_expression}"
                 )
             else:
-                query = f"SELECT COUNT() AS int_var from df {grouping}"
-            return duckdb.query(query).to_df()
+                query = f"SELECT COUNT() AS int_var from rel {grouping}"
+            a = con.query(query)
+            print(a)
+            return con.query(query)
 
         if measure_names is not None and len(measure_names) > 0:
             functions = ""
@@ -225,18 +230,20 @@ class Aggregation(Unary):
             if grouping_names is not None and len(grouping_names) > 0:
                 query = (
                     f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
-                    f"from df {grouping} {having_expression}"
+                    f"from rel {grouping} {having_expression}"
                 )
             else:
-                query = f"SELECT {functions[:-2]} from df"
+                query = f"SELECT {functions[:-2]} from rel"
 
         else:
             query = (
-                f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
+                f"SELECT {', '.join(grouping_names or [])} from rel {grouping} {having_expression}"
             )
 
         try:
-            return duckdb.query(query).to_df().astype(object)
+            a = con.query(query)
+            print(a)
+            return con.query(query)
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise SemanticError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
@@ -254,33 +261,35 @@ class Aggregation(Unary):
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result_rel = operand.data or empty_relation()
         measure_names = operand.get_measures_names()
-        result_df = result_df[grouping_keys + measure_names]
+        result_rel = result_rel.project(", ".join(grouping_keys + measure_names))
         if cls.op == COUNT:
-            result_df = result_df.dropna(subset=measure_names, how="any")
-        cls._handle_data_types(result_df, operand.get_measures(), "input")
-        result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
+            condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
+            result_rel = result_rel.filter(condition)
+        cls._handle_data_types(result_rel, operand.get_measures(), "input")
+        result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
 
-        cls._handle_data_types(result_df, operand.get_measures(), "result")
+        cls._handle_data_types(result_rel, operand.get_measures(), "result")
         # Handle correct order on result
-        aux_df = (
-            operand.data[grouping_keys].drop_duplicates()
-            if operand.data is not None
-            else pd.DataFrame()
-        )
+        aux_rel = operand.data or empty_relation()
+        aux_rel = aux_rel.project(", ".join(grouping_keys)).distinct()
         if len(grouping_keys) == 0:
-            aux_df = result_df
-            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
-            if cls.op == COUNT and len(result_df) == 0:
-                aux_df["int_var"] = 0
-        elif len(aux_df) == 0:
-            aux_df = pd.DataFrame(columns=result.get_components_names())
+            aux_rel = result_rel
+            condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())
+            aux_rel = aux_rel.filter(condition)
+            if cls.op == COUNT and len(result_rel) == 0:
+                aux_rel = aux_rel.project(
+                    ", ".join(result.get_measures_names() + ['0 AS "int_var"'])
+                )
+        elif len(aux_rel) == 0:
+            aux_rel = duckdb.from_df(pd.DataFrame(columns=result.get_components_names()))
         else:
-            aux_df = pd.merge(aux_df, result_df, how="left", on=grouping_keys)
+            aux_rel = duckdb_merge(aux_rel, result_rel, join_keys=grouping_keys, how="left")
         if having_expr is not None:
-            aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
-        result.data = aux_df
+            condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())
+            aux_rel = aux_rel.filter(condition)
+        result.data = aux_rel
         return result
 
 

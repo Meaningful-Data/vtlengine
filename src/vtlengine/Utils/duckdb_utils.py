@@ -1,8 +1,13 @@
 from typing import Optional
 
-import duckdb
-import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
+
+from vtlengine.connection import con
+
+
+def empty_relation() -> DuckDBPyRelation:
+    """Returns an empty DuckDB relation with no columns."""
+    return con.sql("SELECT 1 LIMIT 0")
 
 
 def duckdb_merge(
@@ -11,8 +16,8 @@ def duckdb_merge(
     join_keys: list[str],
     how: str = "inner",
 ) -> DuckDBPyRelation:
-    base_relation = base_relation or duckdb.from_df(pd.DataFrame())
-    other_relation = other_relation or duckdb.from_df(pd.DataFrame())
+    base_relation = base_relation or empty_relation()
+    other_relation = other_relation or empty_relation()
 
     suffixes = ["_x", "_y"]
     base_cols = set(base_relation.columns)
@@ -57,6 +62,9 @@ def duckdb_merge(
 
 
 def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
+    if left is None or right is None:
+        return empty_relation()
+
     cols = set(left.columns) | set(right.columns)
     common_cols = set(left.columns).intersection(set(right.columns))
     cols_left = "*"

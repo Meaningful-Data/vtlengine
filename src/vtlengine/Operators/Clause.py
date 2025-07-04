@@ -1,7 +1,6 @@
 from copy import copy
 from typing import List, Type, Union
 
-import duckdb
 import pandas as pd
 
 from vtlengine.AST import RenameNode
@@ -17,7 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_concat
+from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation
 
 
 class Calc(Operator):
@@ -60,7 +59,7 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        relation = dataset.data if dataset.data is not None else duckdb.from_df(pd.DataFrame())
+        relation = dataset.data or empty_relation()
 
         for operand in operands:
             if isinstance(operand, Scalar):
@@ -136,7 +135,7 @@ class Filter(Operator):
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data or empty_relation()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             true_indexes = condition.data[condition.data == True].index
             result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)

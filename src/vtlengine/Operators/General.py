@@ -68,7 +68,9 @@ class Membership(Binary):
                     nullable=left_operand.components[right_operand].nullable,
                     data=left_operand.data[right_operand],
                 )
-            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+            result_dataset.data = left_operand.data.project(
+                ", ".join(list(result_dataset.components.keys()))
+            )
         return result_dataset
 
 

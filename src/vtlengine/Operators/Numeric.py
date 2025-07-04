@@ -30,6 +30,7 @@ from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
+from vtlengine.Utils.duckdb_utils import empty_relation
 
 
 class Unary(Operator.Unary):
@@ -285,7 +286,7 @@ class Parameterized(Unary):
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data or empty_relation()
         for measure_name in result.get_measures_names():
             try:
                 if isinstance(param, DataComponent):

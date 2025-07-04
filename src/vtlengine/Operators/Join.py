@@ -154,17 +154,17 @@ class Join(Operator):
         )
         for op in operands:
             if op.data is not None:
-                for column in op.data.columns.tolist():
+                for column in list(op.data.columns):
                     if column in common_measures and column not in using:
                         op.data = op.data.rename(columns={column: op.name + "#" + column})
-        result.data = copy(cls.reference_dataset.data)
+        result.data = cls.reference_dataset.data
 
         join_keys = using if using else result.get_identifiers_names()
 
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [key for key in join_keys if key in list(op.data.columns)]
                     if (op.data is not None)
                     else []
                 )

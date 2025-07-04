@@ -38,7 +38,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._to_sql import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge
+from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -571,7 +571,7 @@ class Binary(Operator):
             # Merge the data
             if base_operand_data is None or other_operand_data is None:
                 # TODO: Check if this is the right way to handle empty data and if its lazy
-                result_data = duckdb.from_df(pd.DataFrame())
+                result_data = empty_relation()
             else:
                 result_data = duckdb_merge(
                     base_operand_data,
@@ -634,7 +634,7 @@ class Binary(Operator):
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
 
         if dataset.data is None:
-            result_dataset.data = duckdb.from_df(pd.DataFrame())
+            result_dataset.data = empty_relation()
             return result_dataset
 
         result_data = dataset.data
@@ -663,7 +663,7 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
         if left_operand.data is None or right_operand.data is None:
-            return duckdb.from_df(pd.DataFrame())
+            return empty_relation()
 
         result_data = duckdb_concat(left_operand.data, right_operand.data)
 
@@ -692,7 +692,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = component.data or duckdb.from_df(pd.DataFrame())
+        comp_data = component.data or empty_relation()
 
         transformations = []
         if component.data_type.__name__ in TIME_TYPES:
@@ -717,7 +717,7 @@ class Binary(Operator):
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data or duckdb.from_df(pd.DataFrame())
+        result_data = dataset.data or empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
@@ -739,7 +739,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_data = component.data or duckdb.from_df(pd.DataFrame())
+        result_data = component.data or empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
@@ -930,7 +930,7 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data or duckdb.from_df(pd.DataFrame())
+        result_data = operand.data or empty_relation()
 
         transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
@@ -949,7 +949,7 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_data = operand.data or duckdb.from_df(pd.DataFrame())
+        result_data = operand.data or empty_relation()
         result_component.data = result_data.project(
             apply_unary_op(cls.op, operand.name, result_component.name)
         )
