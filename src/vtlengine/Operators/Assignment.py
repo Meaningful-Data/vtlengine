@@ -24,7 +24,7 @@ class Assignment(Binary):
     @classmethod
     def evaluate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
         result = cls.validate(left_operand, right_operand)
-        result.data = result.data or duckdb.from_df(pd.Series())
+        result.data = result.data or duckdb.from_df(pd.DataFrame())
         if isinstance(result, DataComponent):
             col_name = result.data.columns[0]
             if col_name != left_operand:

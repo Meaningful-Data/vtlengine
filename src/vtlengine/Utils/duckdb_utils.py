@@ -10,9 +10,9 @@ def duckdb_merge(
     other_relation: Optional[DuckDBPyRelation],
     join_keys: list[str],
     how: str = "inner",
-):
-    base_relation = base_relation or duckdb.from_df(pd.Series())
-    other_relation = other_relation or duckdb.from_df(pd.Series())
+) -> DuckDBPyRelation:
+    base_relation = base_relation or duckdb.from_df(pd.DataFrame())
+    other_relation = other_relation or duckdb.from_df(pd.DataFrame())
 
     suffixes = ["_x", "_y"]
     base_cols = set(base_relation.columns)

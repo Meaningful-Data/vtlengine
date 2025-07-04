@@ -56,12 +56,12 @@ DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
-def apply_unary_op(op: Any, me_name: str, value: Any) -> DUCKDB_RETURN_TYPES:
+def apply_unary_op(op: Any, me_name: str, value: Any) -> str:
     op_token = TO_SQL_TOKEN.get(op, op)
     return f'{op_token}({me_name}) AS "{value}"'
 
 
-def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
+def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> str:
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
@@ -663,7 +663,7 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
         if left_operand.data is None or right_operand.data is None:
-            return duckdb.from_df(pd.Series())
+            return duckdb.from_df(pd.DataFrame())
 
         result_data = duckdb_concat(left_operand.data, right_operand.data)
 
@@ -692,7 +692,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = component.data or duckdb.from_df(pd.Series())
+        comp_data = component.data or duckdb.from_df(pd.DataFrame())
 
         transformations = []
         if component.data_type.__name__ in TIME_TYPES:
@@ -739,7 +739,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_data = component.data or duckdb.from_df(pd.Series())
+        result_data = component.data or duckdb.from_df(pd.DataFrame())
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
@@ -949,7 +949,7 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_data = operand.data or duckdb.from_df(pd.Series())
+        result_data = operand.data or duckdb.from_df(pd.DataFrame())
         result_component.data = result_data.project(
             apply_unary_op(cls.op, operand.name, result_component.name)
         )
