@@ -42,7 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.Utils.duckdb_utils import duckdb_rename
+from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -582,7 +582,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[dataset_components.keys()]
+                    # data = self.regular_aggregation_dataset.data[dataset_components.keys()]
+                    data = duckdb_select(self.regular_aggregation_dataset.data, dataset_components.keys())
 
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,

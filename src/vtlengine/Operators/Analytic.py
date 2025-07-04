@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import duckdb
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -33,6 +34,8 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils.duckdb_utils import empty_relation
+from vtlengine.connection import con
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -159,14 +162,14 @@ class Analytic(Operator.Unary):
     @classmethod
     def analyticfunc(
         cls,
-        df: pd.DataFrame,
+        rel: DuckDBPyRelation,
         partitioning: List[str],
         identifier_names: List[str],
         measure_names: List[str],
         ordering: List[OrderBy],
         window: Optional[Windowing],
         params: Optional[List[int]] = None,
-    ) -> pd.DataFrame:
+    ) -> DuckDBPyRelation:
         """Annotation class
 
         It is used to analyze the attributes specified bellow
@@ -244,11 +247,11 @@ class Analytic(Operator.Unary):
 
         measures_sql = ", ".join(measure_queries)
         identifiers_sql = ", ".join(identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
+        query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
-        return duckdb.query(query).to_df().astype(object)
+            rel[measure_names] = rel[measure_names].fillna(-1)
+        return con.query(query)
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -261,7 +264,7 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        rel = operand.data or empty_relation()
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:
@@ -270,7 +273,7 @@ class Analytic(Operator.Unary):
             measure_names = operand.get_measures_names()
 
         result.data = cls.analyticfunc(
-            df=df,
+            rel=rel,
             partitioning=partitioning,
             identifier_names=identifier_names,
             measure_names=measure_names,

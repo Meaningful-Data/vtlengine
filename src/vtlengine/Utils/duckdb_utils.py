@@ -112,7 +112,6 @@ def duckdb_drop(data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]]) -> 
 
     If the column does not exist, it will be ignored.
     """
-    cols_to_drop = [cols_to_drop] if isinstance(cols_to_drop, str) else cols_to_drop
     cols = set(data.columns) - set(cols_to_drop)
     if not cols:
         return empty_relation()
@@ -125,8 +124,7 @@ def duckdb_select(data: DuckDBPyRelation, cols: Union[str, List[str]]) -> DuckDB
 
     If the column does not exist, it will be ignored.
     """
-    if isinstance(cols, str):
-        cols = [cols]
+    cols = set(cols)
     if not cols:
         return empty_relation()
     return data.project(", ".join(cols))
