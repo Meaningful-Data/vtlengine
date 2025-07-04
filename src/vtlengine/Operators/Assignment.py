@@ -1,5 +1,8 @@
 from typing import Any, Union
 
+import pandas as pd
+from duckdb import duckdb
+
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset
 from vtlengine.Operators import Binary
@@ -21,6 +24,7 @@ class Assignment(Binary):
     @classmethod
     def evaluate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
         result = cls.validate(left_operand, right_operand)
+        result.data = result.data or duckdb.from_df(pd.Series())
         if isinstance(result, DataComponent):
             col_name = result.data.columns[0]
             if col_name != left_operand:

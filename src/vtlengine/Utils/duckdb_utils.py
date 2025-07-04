@@ -1,5 +1,7 @@
 from typing import Optional
 
+import duckdb
+import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 
 
@@ -9,6 +11,9 @@ def duckdb_merge(
     join_keys: list[str],
     how: str = "inner",
 ):
+    base_relation = base_relation or duckdb.from_df(pd.Series())
+    other_relation = other_relation or duckdb.from_df(pd.Series())
+
     suffixes = ["_x", "_y"]
     base_cols = set(base_relation.columns)
     other_cols = set(other_relation.columns)

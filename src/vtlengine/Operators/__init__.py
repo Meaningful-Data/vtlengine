@@ -84,7 +84,7 @@ def _cast_time_types(data_type: Any, value: Any) -> str:
     return str(value)
 
 
-def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> str:
+def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> Union[str, int]:
     if op not in BINARY_COMPARISON_OPERATORS:
         return value
     if data_type.__name__ == "TimeInterval":
@@ -604,13 +604,18 @@ class Binary(Operator):
         attributes = list(
             set(left_operand.get_attributes_names()).union(right_operand.get_attributes_names())
         )
+        to_exclude = set()
+        cols = set(result_data.columns)
         for att in attributes:
-            if att in result_data.columns:
-                result_data = result_data.drop(att, axis=1)
-            if att + "_x" in result_data.columns:
-                result_data = result_data.drop(att + "_x", axis=1)
-            if att + "_y" in result_data.columns:
-                result_data = result_data.drop(att + "_y", axis=1)
+            if att in cols:
+                to_exclude.add(att)
+            if f"{att}_x" in cols:
+                to_exclude.add(f"{att}_x")
+            if f"{att}_y" in cols:
+                to_exclude.add(f"{att}_y")
+        if to_exclude:
+            exclude_clause = f"EXCLUDE ({', '.join(to_exclude)})"
+            result_data = result_data.project(f"* {exclude_clause}")
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)

@@ -55,7 +55,8 @@ class ConnectionManager:
         Cleans the connection by closing it and resetting the class variables.
         """
         try:
-            cls._connection.rollback()
+            if cls._connection:
+                cls._connection.rollback()
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)
