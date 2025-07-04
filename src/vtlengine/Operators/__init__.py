@@ -69,7 +69,7 @@ def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_
         op_token, token_position = op_token
 
     if token_position == LEFT:
-        return f'{op_token}({left} {right}) AS "{me_name}"'
+        return f'{op_token}({left}, {right}) AS "{me_name}"'
     return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
@@ -599,7 +599,10 @@ class Binary(Operator):
             transformations.append(apply_bin_op(cls.op, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
-        result_data = result_data.project(final_query)
+        try:
+            result_data = result_data.project(final_query)
+        except Exception as e:
+            a = 0
 
         # Delete attributes from the result data
         attributes = list(
