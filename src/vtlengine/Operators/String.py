@@ -2,10 +2,6 @@ import operator
 import re
 from typing import Any, Optional, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
 import pandas as pd
 
 import vtlengine.Operators as Operator

@@ -1,37 +1,18 @@
-import warnings
+import csv
 from csv import DictReader
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Union
 
-import numpy as np
-import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
-from vtlengine.DataTypes import (
-    SCALAR_TYPES_CLASS_REVERSE,
-    Boolean,
-    Date,
-    Duration,
-    Integer,
-    Number,
-    ScalarType,
-    TimeInterval,
-    TimePeriod,
-)
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
+from vtlengine.connection import con
+from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import (
-    check_date,
-    check_time,
-    check_time_period,
-)
+from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
 
-TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
-    Date: check_date,
-    TimePeriod: check_time_period,
-    TimeInterval: check_time,
-}
+load_time_checks()
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -53,7 +34,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         ) from None
 
     if not csv_columns:
-        raise InputValidationException(code="0-1-1-6", file=csv_path)
+        raise InputValidationException(code="0-1-1-7")
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
@@ -68,161 +49,212 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
 
 
-def _sanitize_pandas_columns(
-    components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
-) -> pd.DataFrame:
+def _sanitize_duckdb_columns(
+    components: Dict[str, Component],
+    csv_path: Union[str, Path],
+    data: DuckDBPyRelation,
+) -> DuckDBPyRelation:
+    column_names = data.columns
+    modified_data = data
+
     # Fast loading from SDMX-CSV
     if (
-        "DATAFLOW" in data.columns
-        and data.columns[0] == "DATAFLOW"
+        "DATAFLOW" in column_names
+        and column_names[0] == "DATAFLOW"
         and "DATAFLOW" not in components
     ):
-        data.drop(columns=["DATAFLOW"], inplace=True)
-    if "STRUCTURE" in data.columns and data.columns[0] == "STRUCTURE":
-        if "STRUCTURE" not in components:
-            data.drop(columns=["STRUCTURE"], inplace=True)
-        if "STRUCTURE_ID" in data.columns:
-            data.drop(columns=["STRUCTURE_ID"], inplace=True)
-        if "ACTION" in data.columns:
-            data = data[data["ACTION"] != "D"]
-            data.drop(columns=["ACTION"], inplace=True)
+        modified_data = modified_data.project(
+            ", ".join([f'"{col}"' for col in column_names if col != "DATAFLOW"])
+        )
+        column_names = modified_data.columns
+
+    if "STRUCTURE" in column_names and column_names[0] == "STRUCTURE":
+        cols_to_drop = {"STRUCTURE", "STRUCTURE_ID", "ACTION"} & set(column_names)
+        remaining_cols = [col for col in column_names if col not in cols_to_drop]
+
+        if "ACTION" in column_names:
+            modified_data = modified_data.filter("ACTION != 'D'")
+
+        modified_data = modified_data.project(", ".join([f'"{col}"' for col in remaining_cols]))
+        column_names = modified_data.columns
 
     # Validate identifiers
-    comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in data.columns]
-    if comps_missing:
-        comps_missing = ", ".join(comps_missing)
-        file = csv_path if isinstance(csv_path, str) else csv_path.name
-        raise InputValidationException(code="0-1-1-7", ids=comps_missing, file=file)
+    comp_names = {c.name for c in components.values() if c.role == Role.IDENTIFIER}
+    missing = [name for name in comp_names if name not in column_names]
 
-    # Fill rest of components with null values
+    if missing:
+        file = csv_path if isinstance(csv_path, str) else csv_path.name
+        raise InputValidationException(code="0-1-1-7", ids=", ".join(missing), file=file)
+
+    # Add missing nullable columns
     for comp_name, comp in components.items():
-        if comp_name not in data:
+        if comp_name not in column_names:
             if not comp.nullable:
                 raise InputValidationException(f"Component {comp_name} is missing in the file.")
-            data[comp_name] = None
+            modified_data = modified_data.project(
+                f'*, NULL::{comp.data_type().sql_type} AS "{comp_name}"'
+            )
+            column_names = modified_data.columns
+
+    return modified_data
+
+
+def _validate_duckdb(
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str,
+) -> DuckDBPyRelation:
+    # Check for missing columns
+    data_columns = data.columns
+    for col in components:
+        if col not in data_columns:
+            if not components[col].nullable:
+                raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
+            # Add NULL column
+            data = data.project(f"*, NULL AS {col}")
+
+    # Check dataset integrity
+    check_nulls(components, data, dataset_name)
+    check_duplicates(components, data, dataset_name)
+    check_dwi(components, data, dataset_name)
+
+    transformations = []
+    for col, comp in components.items():
+        dtype = comp.data_type
+        if dtype in [Duration, TimeInterval, TimePeriod]:
+            check_method = f"check_{dtype.__name__}".lower()
+            transformations.append(f"{check_method}({col}) AS {col}")
+        else:
+            transformations.append(col)
+
+    final_query = ", ".join(transformations)
+    data = data.project(final_query)
+
     return data
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
-    obj_dtypes = {comp_name: object for comp_name, comp in components.items()}
-
-    data = pd.read_csv(
-        csv_path,
-        dtype=obj_dtypes,
-        engine="c",
-        keep_default_na=False,
-        na_values=[""],
-        encoding_errors="replace",
+def check_nulls(
+    components: Dict[str, Component], data: DuckDBPyRelation, dataset_name: str
+) -> None:
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    non_nullable = [
+        comp.name
+        for comp in components.values()
+        if not comp.nullable or comp.role == Role.IDENTIFIER
+    ]
+    query = (
+        "SELECT "
+        + ", ".join(
+            [
+                f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count"
+                for col in non_nullable
+            ]
+        )
+        + " FROM data"
     )
+    null_counts = con.execute(query).fetchone()
 
-    return _sanitize_pandas_columns(components, csv_path, data)
-
-
-def _parse_boolean(value: str) -> bool:
-    if isinstance(value, bool):
-        return value
-    result = value.lower() == "true" or value == "1"
-    return result
+    for col, null_count in zip(non_nullable, null_counts):
+        if null_count > 0:
+            if col in id_names:
+                raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
+            raise SemanticError(code="0-1-1-15", measure=col, name=dataset_name)
 
 
-def _validate_pandas(
-    components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
-) -> pd.DataFrame:
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    # Identifier checking
+def check_duplicates(
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str,
+) -> None:
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    id_names = [comp_name for comp_name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    if id_names:
+        query = f"""
+                SELECT COUNT(*) > 0 from (
+                    SELECT COUNT(*) as count
+                    FROM data
+                    GROUP BY {", ".join(id_names)}
+                    HAVING COUNT(*) > 1
+                ) AS duplicates
+                """
 
-    missing_columns = [name for name in components if name not in data.columns.tolist()]
-    if missing_columns:
-        for name in missing_columns:
-            if components[name].nullable is False:
-                raise SemanticError("0-1-1-10", name=dataset_name, comp_name=name)
-            data[name] = None
+        dup = con.execute(query).fetchone()[0]
+        if dup:
+            raise InputValidationException(code="0-1-1-6")
 
-    for id_name in id_names:
-        if data[id_name].isnull().any():
-            raise SemanticError("0-1-1-4", null_identifier=id_name, name=dataset_name)
 
-    if len(id_names) == 0 and len(data) > 1:
-        raise SemanticError("0-1-1-5", name=dataset_name)
+def check_dwi(
+    components: Dict[str, Component],
+    data: DuckDBPyRelation,
+    dataset_name: str,
+) -> None:
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
-    data = data.fillna(np.nan).replace([np.nan], [None])
-    # Checking data types on all data types
-    comp_name = ""
-    comp = None
-    try:
-        for comp_name, comp in components.items():
-            if comp.data_type in (Date, TimePeriod, TimeInterval):
-                data[comp_name] = data[comp_name].map(
-                    TIME_CHECKS_MAPPING[comp.data_type], na_action="ignore"
-                )
-            elif comp.data_type == Integer:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: Integer.cast(float(str(x))), na_action="ignore"
-                )
-            elif comp.data_type == Number:
-                data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
-            elif comp.data_type == Boolean:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: _parse_boolean(str(x)), na_action="ignore"
-                )
-            elif comp.data_type == Duration:
-                values_correct = (
-                    data[comp_name]
-                    .map(
-                        lambda x: Duration.validate_duration(x),
-                        na_action="ignore",
-                    )
-                    .all()
-                )
-                if not values_correct:
-                    try:
-                        values_correct = (
-                            data[comp_name]
-                            .map(
-                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,  # type: ignore[union-attr]
-                                na_action="ignore",
-                            )
-                            .all()
-                        )
-                        if not values_correct:
-                            raise ValueError(
-                                f"Duration values are not correct in column {comp_name}"
-                            )
-                    except ValueError:
-                        raise ValueError(f"Duration values are not correct in column {comp_name}")
-            else:
-                data[comp_name] = data[comp_name].map(
-                    lambda x: str(x).replace('"', ""), na_action="ignore"
-                )
-            data[comp_name] = data[comp_name].astype(object, errors="raise")
-
-    except ValueError:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
-        raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
-
-    return data
+    if not id_names:
+        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]
+        if rowcount > 1:
+            raise SemanticError(code="0-1-1-5", name=dataset_name)
 
 
 def load_datapoints(
     components: Dict[str, Component],
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
-) -> pd.DataFrame:
+) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
-        return pd.DataFrame(columns=list(components.keys()))
+        # Empty dataset as table
+        column_defs = ", ".join([f'"{name}" VARCHAR' for name in components])
+        rel = con.query(
+            f"SELECT {
+                ', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))
+            } LIMIT 0"
+        )
+        return rel
+
     elif isinstance(csv_path, (str, Path)):
+        path_str = str(csv_path)
         if isinstance(csv_path, Path):
             _validate_csv_path(components, csv_path)
-        data = _pandas_load_csv(components, csv_path)
+
+        # Lazy CSV read
+        with open(path_str, mode="r", encoding="utf-8") as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader)
+
+        dtypes = {
+            comp.name: comp.data_type().sql_type
+            for comp in components.values()
+            if comp.name in header
+        }
+
+        rel = con.read_csv(
+            path_str,
+            header=True,
+            columns=dtypes,
+            delimiter=",",
+            quotechar='"',
+            ignore_errors=True,
+            date_format="%Y-%m-%d",
+        )
+
+        # Type validation and normalization
+        rel = _validate_duckdb(components, rel, dataset_name)
+
+        return _sanitize_duckdb_columns(components, csv_path, rel)
+
     else:
         raise Exception("Invalid csv_path type")
-    data = _validate_pandas(components, data, dataset_name)
-
-    return data
 
 
 def _fill_dataset_empty_data(dataset: Dataset) -> None:
-    dataset.data = pd.DataFrame(columns=list(dataset.components.keys()))
+    if not dataset.components:
+        dataset.data = con.query("SELECT NULL LIMIT 0")
+        return
+
+    column_defs = ", ".join(
+        [
+            f'NULL::{comp.data_type().sql_type} AS "{name}"'
+            for name, comp in dataset.components.items()
+        ]
+    )
+    dataset.data = con.query(f"SELECT {column_defs} LIMIT 0")

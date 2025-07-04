@@ -171,3 +171,6 @@ development/
 # Documentation
 _build/
 _site/
+/ENV_DIR/
+/.tmp/
+/src/dev.py

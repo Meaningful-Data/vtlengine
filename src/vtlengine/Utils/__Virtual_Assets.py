@@ -21,14 +21,17 @@ class VirtualCounter:
         cls.dataset_count = 0
         cls.component_count = 0
 
+    # TODO: DuckDB have problem operating columns with @ in their names
+    #  Virtual name @ have been replaced with __VDS_...__ and __VDC_...__ to avoid this issue
+    #  until we consider the names changes.
     @classmethod
     def _new_ds_name(cls) -> str:
         cls.dataset_count += 1
-        name = f"@VDS_{copy(cls.dataset_count)}"
+        name = f"__VDS_{copy(cls.dataset_count)}__"
         return name
 
     @classmethod
     def _new_dc_name(cls) -> str:
         cls.component_count += 1
-        name = f"@VDC_{copy(cls.component_count)}"
+        name = f"__VDC_{copy(cls.component_count)}__"
         return name

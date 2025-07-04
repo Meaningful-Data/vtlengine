@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from duckdb.duckdb import DuckDBPyRelation
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
@@ -1384,7 +1385,7 @@ def test_run_sdmx_function(data, structure):
     result = run_sdmx(script, datasets, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
-    assert isinstance(result["DS_r"].data, pd.DataFrame)
+    assert isinstance(result["DS_r"].data, DuckDBPyRelation)
 
 
 @pytest.mark.parametrize("data, structure, mappings", params_run_sdmx_with_mappings)
@@ -1394,7 +1395,7 @@ def test_run_sdmx_function_with_mappings(data, structure, mappings):
     result = run_sdmx(script, datasets, mappings=mappings, return_only_persistent=False)
     assert isinstance(result, dict)
     assert all(isinstance(k, str) and isinstance(v, Dataset) for k, v in result.items())
-    assert isinstance(result["DS_r"].data, pd.DataFrame)
+    assert isinstance(result["DS_r"].data, DuckDBPyRelation)
 
 
 @pytest.mark.parametrize("datasets, mappings, expected_exception, match", params_run_sdmx_errors)

@@ -1,12 +1,7 @@
 from copy import copy
 from typing import Any, Union
 
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
-import pandas as pd
-
+from vtlengine.connection import con
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
 from vtlengine.Operators import Unary
@@ -44,7 +39,8 @@ class RoleSetter(Unary):
             raise SemanticError("1-1-1-16")
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
-            result.data = pd.Series([operand.value] * data_size, dtype=object)
+            query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
+            result.data = con.query(query)
         else:
             result.data = operand.data
         return result
