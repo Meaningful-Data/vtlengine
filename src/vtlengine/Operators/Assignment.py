@@ -16,14 +16,13 @@ class Assignment(Binary):
         ):
             raise SemanticError("1-1-6-13", op=cls.op, comp_name=right_operand.name)
         right_operand.name = left_operand
-
-        if isinstance(right_operand, DataComponent):
-            col_name = right_operand.data.columns[0]
-            if col_name != left_operand:
-                right_operand.data = right_operand.data.project(f"{col_name} AS {left_operand}")
-
         return right_operand
 
     @classmethod
     def evaluate(cls, left_operand: Any, right_operand: Any) -> ALL_MODEL_TYPES:
-        return cls.validate(left_operand, right_operand)
+        result = cls.validate(left_operand, right_operand)
+        if isinstance(result, DataComponent):
+            col_name = result.data.columns[0]
+            if col_name != left_operand:
+                result.data = result.data.project(f"{col_name} AS {left_operand}")
+        return result
