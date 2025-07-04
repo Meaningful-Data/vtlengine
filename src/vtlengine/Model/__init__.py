@@ -243,9 +243,12 @@ class Dataset:
             return False
 
         # Order by identifiers
-        identifiers = self.get_identifiers_names()
-        sorted_self = self.data.order(", ".join(identifiers))
-        sorted_other = other.data.order(", ".join(identifiers))
+        self_cols = set(self.data.columns)
+        sorted_self = self.data.project(", ".join(self_cols))
+        sorted_other = other.data.project(", ".join(self_cols))
+
+        print(sorted_self)
+        print(sorted_other)
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))

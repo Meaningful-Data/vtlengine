@@ -220,14 +220,12 @@ def load_datapoints(
         # Lazy CSV read
         with open(path_str, mode="r", encoding="utf-8") as file:
             csv_reader = csv.reader(file)
-            header = next(csv_reader)
+            header = next(csv_reader)  # Extract the header to determine column order
 
-        dtypes = {
-            comp.name: comp.data_type().sql_type
-            for comp in components.values()
-            if comp.name in header
-        }
+        # Extract data types from components in header
+        dtypes = {col: comp.data_type().sql_type for col in header for comp in components.values() if comp.name == col}
 
+        # Read the CSV file
         rel = con.read_csv(
             path_str,
             header=True,

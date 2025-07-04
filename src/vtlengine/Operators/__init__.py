@@ -710,7 +710,7 @@ class Binary(Operator):
         transformations.append(
             apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
         )
-        final_query = f"{', '.join(transformations)}"
+        final_query = ', '.join(transformations)
         result_component.data = comp_data.project(final_query)
         return result_component
 
@@ -730,7 +730,7 @@ class Binary(Operator):
                 apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0])
             )
 
-        result_dataset.data = result_data.project(", ".join(transformations))
+        result_dataset.data = result_data.project(', '.join(transformations))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
