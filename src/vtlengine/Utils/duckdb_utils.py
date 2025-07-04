@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List
 
 from duckdb.duckdb import DuckDBPyRelation
 
@@ -104,3 +104,16 @@ def duckdb_fill(data: DuckDBPyRelation, col_name: str, value: Any) -> DuckDBPyRe
     else:
         data = data.project(f"{col_name} COALESCE({value}) AS {col_name}")
     return data
+
+
+def duckdb_drop(data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]]) -> DuckDBPyRelation:
+    """
+    Drops a column from a DuckDB relation.
+
+    If the column does not exist, it will be ignored.
+    """
+    cols_to_drop = [cols_to_drop] if isinstance(cols_to_drop, str) else cols_to_drop
+    cols = set(data.columns) - set(cols_to_drop)
+    if not cols:
+        return empty_relation()
+    return data.project(", ".join(cols))

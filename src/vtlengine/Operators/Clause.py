@@ -16,7 +16,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename
+from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename, duckdb_drop
 
 
 class Calc(Operator):
@@ -173,6 +173,7 @@ class Keep(Operator):
             raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
+            cols_to_keep = set(operands) | set(dataset.get_identifiers_names())
             result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
         return result_dataset
 
@@ -199,7 +200,7 @@ class Drop(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.drop(columns=operands, axis=1)
+            result_dataset.data = duckdb_drop(dataset.data, operands)
         return result_dataset
 
 
