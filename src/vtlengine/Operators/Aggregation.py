@@ -241,8 +241,6 @@ class Aggregation(Unary):
             )
 
         try:
-            a = con.query(query)
-            print(a)
             return con.query(query)
         except RuntimeError as e:
             if "Conversion" in e.args[0]:

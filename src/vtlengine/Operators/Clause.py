@@ -137,8 +137,9 @@ class Filter(Operator):
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data or empty_relation()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
-            true_indexes = condition.data[condition.data == True].index
-            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
+            condition_col = condition.data.project(f'{condition.name} AS "__condition_col__"')
+            result_data = duckdb_concat(result_dataset.data, condition_col)
+            result_dataset.data = result_data.filter('__condition_col__ = TRUE').project('* EXCLUDE("__condition_col__")')
         return result_dataset
 
 
@@ -247,9 +248,11 @@ class Rename(Operator):
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.rename(
-                columns={operand.old_name: operand.new_name for operand in operands}
-            )
+            old_names = {operand.old_name for operand in operands}
+            cols = set(dataset.data.columns) - old_names
+            cols.update(f'{operand.old_name} AS "{operand.new_name}"' for operand in operands)
+            query = ", ".join(cols)
+            result_dataset.data = dataset.data.project(query)
         return result_dataset
 
 
