@@ -56,7 +56,12 @@ DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
-def apply_operation(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
+def apply_unary_op(op: Any, me_name: str, value: Any) -> DUCKDB_RETURN_TYPES:
+    op_token = TO_SQL_TOKEN.get(op, op)
+    return f"{op_token}({value}) AS {me_name}"
+
+
+def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
@@ -584,7 +589,7 @@ class Binary(Operator):
                 if use_right_as_base
                 else (f"{me.name}_x", f"{me.name}_y")
             )
-            transformations.append(apply_operation(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls.op, me.name, left, right))
             cols_to_exclude.extend([f"{me.name}_x", f"{me.name}_y"])
 
         final_query = f"{', '.join(transformations)}"
@@ -637,7 +642,7 @@ class Binary(Operator):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
             left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
-            transformations.append(apply_operation(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls.op, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
         result_dataset.data = result_data.project(final_query)
@@ -667,7 +672,7 @@ class Binary(Operator):
             )
 
         transformations.append(
-            apply_operation(cls.op, result_component.name, left_operand.name, right_operand.name)
+            apply_bin_op(cls.op, result_component.name, left_operand.name, right_operand.name)
         )
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
@@ -679,7 +684,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = duckdb.from_df(pd.Series()) if component.data is None else component.data
+        comp_data = component.data or duckdb.from_df(pd.Series())
 
         transformations = ["*"]
         if component.data_type.__name__ in TIME_TYPES:
@@ -695,7 +700,7 @@ class Binary(Operator):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
         transformations.append(
-            apply_operation(cls.op, result_component.name, component.name, scalar_value)
+            apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
         )
         final_query = f"{', '.join(transformations)}"
         result_component.data = comp_data.project(final_query).project(
@@ -908,14 +913,14 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result_data = operand.data or duckdb.from_df(pd.DataFrame())
+
+        transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
-            result_data[measure_name] = cls.apply_operation_component(result_data[measure_name])
+            transformations.append(apply_unary_op(cls.op, measure_name, f'"{measure_name}"'))
 
-        cols_to_keep = operand.get_identifiers_names() + operand.get_measures_names()
-        result_data = result_data[cols_to_keep]
-
-        result_dataset.data = result_data
+        result_dataset.data = result_data.project(", ".join(transformations))
+        print(result_dataset.data)
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
