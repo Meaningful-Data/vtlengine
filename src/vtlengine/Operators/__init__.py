@@ -72,7 +72,7 @@ def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> str:
     return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
-def _cast_time_types(data_type: Any, value: Any) -> str:
+def _cast_time_types(data_type: Any, value: Any) -> Union[int, str]:
     if data_type.__name__ == "TimeInterval":
         return TimeIntervalHandler.from_iso_format(value)
     elif data_type.__name__ == "TimePeriod":
@@ -668,12 +668,12 @@ class Binary(Operator):
         result_data = duckdb_concat(left_operand.data, right_operand.data)
 
         transformations = ["*"]
-        if left_operand.data_type in TIME_TYPES:
+        if left_operand.data_type.__name__ in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
                 f'AS "{left_operand.name}"'
             )
-        if right_operand.data_type in TIME_TYPES:
+        if right_operand.data_type.__name__ in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
                 f'AS "{right_operand.name}"'
