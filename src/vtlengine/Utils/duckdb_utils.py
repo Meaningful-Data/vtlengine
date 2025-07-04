@@ -117,3 +117,16 @@ def duckdb_drop(data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]]) -> 
     if not cols:
         return empty_relation()
     return data.project(", ".join(cols))
+
+
+def duckdb_select(data: DuckDBPyRelation, cols: Union[str, List[str]]) -> DuckDBPyRelation:
+    """
+    Selects specific columns from a DuckDB relation.
+
+    If the column does not exist, it will be ignored.
+    """
+    if isinstance(cols, str):
+        cols = [cols]
+    if not cols:
+        return empty_relation()
+    return data.project(", ".join(cols))

@@ -16,7 +16,8 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename, duckdb_drop
+from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename, duckdb_drop, \
+    duckdb_select
 
 
 class Calc(Operator):
@@ -174,7 +175,7 @@ class Keep(Operator):
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
             cols_to_keep = set(operands) | set(dataset.get_identifiers_names())
-            result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
+            result_dataset.data = duckdb_select(dataset.data, cols_to_keep)
         return result_dataset
 
 
