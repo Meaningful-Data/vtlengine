@@ -1,8 +1,5 @@
 from typing import Any, Union
 
-import pandas as pd
-from duckdb import duckdb
-
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset
 from vtlengine.Operators import Binary
