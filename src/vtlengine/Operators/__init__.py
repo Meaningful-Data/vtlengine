@@ -3,6 +3,7 @@ from typing import Any, Optional, Union
 
 import duckdb
 import pandas as pd
+from click.formatting import measure_table
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
@@ -58,7 +59,7 @@ TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 def apply_unary_op(op: Any, me_name: str, value: Any) -> DUCKDB_RETURN_TYPES:
     op_token = TO_SQL_TOKEN.get(op, op)
-    return f"{op_token}({me_name}) AS {value}"
+    return f'{op_token}({me_name}) AS "{value}"'
 
 
 def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_TYPES:
@@ -68,8 +69,8 @@ def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> DUCKDB_RETURN_
         op_token, token_position = op_token
 
     if token_position == LEFT:
-        return f"{op_token}({left} {right}) AS {me_name}"
-    return f"({left} {op_token} {right}) AS {me_name}"
+        return f'{op_token}({left} {right}) AS "{me_name}"'
+    return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
 def _cast_time_types(data_type: Any, value: Any) -> str:
@@ -150,10 +151,7 @@ class Operator:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
-            # for column in columns:
-            #     if column not in set(components) and result.data is not None:
-            #         result.data[measure_name] = result.data[column]
-            #         del result.data[column]
+
             transformations = []
             column_to_rename = None
             for column in columns:
@@ -586,8 +584,7 @@ class Binary(Operator):
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
-        transformations = ["*"]
-        cols_to_exclude = []
+        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in left_operand.get_measures():
             if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type.__name__ in TIME_TYPES:
                 transformations.append(f"""
@@ -600,11 +597,9 @@ class Binary(Operator):
                 else (f"{me.name}_x", f"{me.name}_y")
             )
             transformations.append(apply_bin_op(cls.op, me.name, left, right))
-            cols_to_exclude.extend([f"{me.name}_x", f"{me.name}_y"])
 
         final_query = f"{', '.join(transformations)}"
-        exclude_query = f"* EXCLUDE({', '.join(cols_to_exclude)})" if cols_to_exclude else "*"
-        result_data = result_data.project(final_query).project(exclude_query)
+        result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
         attributes = list(
@@ -620,7 +615,6 @@ class Binary(Operator):
 
         result_dataset.data = result_data
         cls.modify_measure_column(result_dataset)
-
         return result_dataset
 
     @classmethod
@@ -642,11 +636,11 @@ class Binary(Operator):
         result_data = dataset.data
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
 
-        transformations = ["*"]
+        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
             if me.data_type.__name__ in TIME_TYPES:
                 transformations.append(
-                    f"cast_time_types('{me.data_type.__name__}', {me.name}) AS {me.name}"
+                    f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
                 )
             if me.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
@@ -672,13 +666,13 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f"cast_time_types('{left_operand.data_type.__name__}', {left_operand.name}) "
-                f"AS {left_operand.name}"
+                f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
+                f'AS "{left_operand.name}"'
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f"cast_time_types('{right_operand.data_type.__name__}', {right_operand.name}) "
-                f"AS {right_operand.name}"
+                f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
+                f'AS "{right_operand.name}"'
             )
 
         transformations.append(
@@ -696,11 +690,11 @@ class Binary(Operator):
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = component.data or duckdb.from_df(pd.Series())
 
-        transformations = ["*"]
+        transformations = []
         if component.data_type.__name__ in TIME_TYPES:
             transformations.append(
-                f"cast_time_types('{component.data_type.__name__}', {component.name}) "
-                f"AS {component.name}"
+                f'cast_time_types("{component.data_type.__name__}", {component.name}) '
+                f'AS "{component.name}"'
             )
 
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
@@ -713,26 +707,21 @@ class Binary(Operator):
             apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
         )
         final_query = f"{', '.join(transformations)}"
-        result_component.data = comp_data.project(final_query).project(
-            f"{result_component.name}_1 AS {component.name}"
-        )
+        result_component.data = comp_data.project(final_query)
         return result_component
 
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_data = dataset.data or duckdb.from_df(pd.DataFrame())
 
+        transformations = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            if dataset.data is not None:
-                result_data[measure_name] = cls.apply_operation_two_series(
-                    dataset.data[measure_name], scalar_set
-                )
+            # transformations.append(apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0]))
+            pass
 
-        cols_to_keep = dataset.get_identifiers_names() + dataset.get_measures_names()
-        result_dataset.data = result_data[cols_to_keep]
+        result_dataset.data = result_data.project(", ".join(transformations))
         cls.modify_measure_column(result_dataset)
-
         return result_dataset
 
     @classmethod
@@ -740,10 +729,8 @@ class Binary(Operator):
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_component.data = cls.apply_operation_two_series(
-            component.data.copy() if component.data is not None else pd.Series(),
-            scalar_set,
-        )
+        result_data = component.data or duckdb.from_df(pd.Series())
+        result_component.data = result_data.project(apply_bin_op(cls.op, result_component.name, component.name, scalar_set.name))
         return result_component
 
     @classmethod
@@ -927,7 +914,7 @@ class Unary(Operator):
 
         transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
-            transformations.append(apply_unary_op(cls.op, measure_name, f'"{measure_name}"'))
+            transformations.append(apply_unary_op(cls.op, measure_name, measure_name))
 
         result_dataset.data = result_data.project(", ".join(transformations))
         cls.modify_measure_column(result_dataset)
@@ -943,5 +930,5 @@ class Unary(Operator):
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_data = operand.data or duckdb.from_df(pd.Series())
-        result_component.data = result_data.project(apply_unary_op(cls.op, operand.name, f'"{result_component.name}"'))
+        result_component.data = result_data.project(apply_unary_op(cls.op, operand.name, result_component.name))
         return result_component
