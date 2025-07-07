@@ -126,10 +126,10 @@ class Aggregate(Operator):
             else:
                 if operand.data is not None and len(operand.data) > 0:
                     result_dataset.data = duckdb_concat(result_dataset.data, operand.data)
-                # else:
-                #     result_dataset.data = result_dataset.data.project(
-                #         f"*, NULL::{operand.data_type.sql_type} AS {operand.name}"
-                #     )
+                else:
+                    result_dataset.data = result_dataset.data.project(
+                        f'*, NULL::{operand.data_type().sql_type} AS "{operand.name}"'
+                    )
         return result_dataset
 
 
@@ -360,7 +360,7 @@ class Sub(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         operand_names = [operand.name for operand in operands]
         if dataset.data is not None and len(dataset.data) > 0:
             # Filter the Dataframe
@@ -377,6 +377,5 @@ class Sub(Operator):
                             set(operand.data[operand.data == True].index)
                         )
             result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
-        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
-        result_dataset.data = result_dataset.data.reset_index(drop=True)
+        result_dataset.data = duckdb_drop(result_dataset.data, operand_names)
         return result_dataset
