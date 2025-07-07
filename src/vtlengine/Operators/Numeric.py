@@ -286,7 +286,7 @@ class Parameterized(Unary):
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
         result = cls.validate(operand, param)
-        result.data = operand.data or empty_relation()
+        result.data = operand.data if operand.data is not None else empty_relation()
         for measure_name in result.get_measures_names():
             try:
                 if isinstance(param, DataComponent):

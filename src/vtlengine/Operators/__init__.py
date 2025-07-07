@@ -695,7 +695,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = component.data or empty_relation()
+        comp_data = component.data if component.data is not None else empty_relation()
 
         exprs = []
         if component.data_type.__name__ in TIME_TYPES:
@@ -720,7 +720,7 @@ class Binary(Operator):
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data or empty_relation()
+        result_data = dataset.data if dataset.data is not None else empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
@@ -742,7 +742,7 @@ class Binary(Operator):
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_data = component.data or empty_relation()
+        result_data = component.data if component.data is not None else empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
@@ -933,7 +933,7 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data or empty_relation()
+        result_data = operand.data if operand.data is not None else empty_relation()
 
         transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
@@ -952,7 +952,7 @@ class Unary(Operator):
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_data = operand.data or empty_relation()
+        result_data = operand.data if operand.data is not None else empty_relation()
         result_component.data = result_data.project(
             apply_unary_op(cls.op, operand.name, result_component.name)
         )

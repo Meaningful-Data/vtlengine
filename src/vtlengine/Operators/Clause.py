@@ -66,7 +66,7 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        relation = dataset.data or empty_relation()
+        relation = dataset.data if dataset.data is not None else empty_relation()
 
         for operand in operands:
             if isinstance(operand, Scalar):
@@ -119,17 +119,17 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data or empty_relation()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data = duckdb_fill(result_dataset.data, operand.name, operand.value)
             else:
                 if operand.data is not None and len(operand.data) > 0:
                     result_dataset.data = duckdb_concat(result_dataset.data, operand.data)
-                else:
-                    result_dataset.data = result_dataset.data.project(
-                        f"*, NULL::{operand.data_type.sql_type} AS {operand.name}"
-                    )
+                # else:
+                #     result_dataset.data = result_dataset.data.project(
+                #         f"*, NULL::{operand.data_type.sql_type} AS {operand.name}"
+                #     )
         return result_dataset
 
 
@@ -144,7 +144,7 @@ class Filter(Operator):
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data or empty_relation()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             condition_col = condition.data.project(f'{condition.name} AS "__condition_col__"')
             result_data = duckdb_concat(result_dataset.data, condition_col)

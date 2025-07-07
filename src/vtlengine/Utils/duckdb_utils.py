@@ -1,12 +1,15 @@
 from typing import Any, Dict, List, Optional, Union
 
+import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
 
 
-def empty_relation() -> DuckDBPyRelation:
+def empty_relation(cols: Optional[Union[str, List[str]]] = None) -> DuckDBPyRelation:
     """Returns an empty DuckDB relation with no columns."""
+    if cols:
+        return con.from_df(pd.DataFrame(columns=list(cols)))
     return con.sql("SELECT 1 LIMIT 0")
 
 
@@ -17,8 +20,8 @@ def duckdb_merge(
     join_keys: list[str],
     how: str = "inner",
 ) -> DuckDBPyRelation:
-    base_relation = base_relation or empty_relation()
-    other_relation = other_relation or empty_relation()
+    base_relation = base_relation if base_relation is not None else empty_relation()
+    other_relation = other_relation if other_relation is not None else empty_relation()
 
     suffixes = ["_x", "_y"]
     base_cols = set(base_relation.columns)

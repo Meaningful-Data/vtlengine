@@ -257,7 +257,7 @@ class Aggregation(Unary):
         result = cls.validate(operand, group_op, grouping_columns, having_expr)
 
         grouping_keys = result.get_identifiers_names()
-        result_rel = operand.data or empty_relation()
+        result_rel = operand.data if operand.data is not None else empty_relation()
         measure_names = operand.get_measures_names()
         result_rel = result_rel.project(", ".join(grouping_keys + measure_names))
         if cls.op == COUNT:
@@ -268,7 +268,7 @@ class Aggregation(Unary):
 
         cls._handle_data_types(result_rel, operand.get_measures(), "result")
         # Handle correct order on result
-        aux_rel = operand.data or empty_relation()
+        aux_rel = operand.data if operand.data is not None else empty_relation()
         aux_rel = aux_rel.project(", ".join(grouping_keys)).distinct()
         if len(grouping_keys) == 0:
             aux_rel = result_rel

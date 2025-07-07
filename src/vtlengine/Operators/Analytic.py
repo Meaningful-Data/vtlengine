@@ -265,7 +265,7 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        rel = operand.data or empty_relation()
+        rel = operand.data if operand.data is not None else empty_relation()
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:

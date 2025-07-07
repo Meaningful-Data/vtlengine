@@ -10,7 +10,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_merge
+from vtlengine.Utils.duckdb_utils import empty_relation, duckdb_merge
 
 
 class Join(Operator):
@@ -155,7 +155,7 @@ class Join(Operator):
         )
         for op in operands:
             if op.data is not None:
-                for column in list(op.data.columns):
+                for column in op.data.columns:
                     if column in common_measures and column not in using:
                         op.data = op.data.rename(columns={column: op.name + "#" + column})
         result.data = cls.reference_dataset.data
@@ -165,7 +165,7 @@ class Join(Operator):
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in list(op.data.columns)]
+                    [key for key in join_keys if key in op.data.columns]
                     if (op.data is not None)
                     else []
                 )
@@ -184,12 +184,10 @@ class Join(Operator):
                         result.data,
                         op.data,
                         join_keys=merge_join_keys,
-                        how=cls.how,
+                        how=cls.how
                     )
                 else:
-                    result.data = pd.DataFrame()
-        # if result.data is not None:
-        #     result.data.reset_index(drop=True, inplace=True)
+                    result.data = empty_relation()
         return result
 
     @classmethod

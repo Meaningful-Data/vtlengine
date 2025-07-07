@@ -41,7 +41,6 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import empty_relation
 
 
 class Time(Operators.Operator):
@@ -263,7 +262,9 @@ class Fill_time_series(Binary):
     @classmethod
     def evaluate(cls, operand: Dataset, fill_type: str) -> Dataset:
         result = cls.validate(operand, fill_type)
-        result.data = operand.data or empty_relation()
+        if operand.data is None:
+            operand.data = pd.DataFrame()
+        result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype(str)
         if len(result.data) < 2:
             return result
