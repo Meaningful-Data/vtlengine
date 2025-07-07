@@ -1390,9 +1390,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = (
-                None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
-            )
+            self.rule_data = self.ruleset_dataset.data
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False

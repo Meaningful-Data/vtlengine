@@ -279,7 +279,7 @@ class Aggregation(Unary):
                     ", ".join(result.get_measures_names() + ['0 AS "int_var"'])
                 )
         elif len(aux_rel) == 0:
-            aux_rel = duckdb.from_df(pd.DataFrame(columns=result.get_components_names()))
+            aux_rel = con.from_df(pd.DataFrame(columns=result.get_components_names()))
         else:
             aux_rel = duckdb_merge(aux_rel, result_rel, join_keys=grouping_keys, how="left")
         if having_expr is not None:
