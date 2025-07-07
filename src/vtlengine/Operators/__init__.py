@@ -634,7 +634,7 @@ class Binary(Operator):
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
 
         if dataset.data is None:
-            result_dataset.data = empty_relation()
+            result_dataset.data = empty_relation(result_dataset.get_components_names())
             return result_dataset
 
         result_data = dataset.data
