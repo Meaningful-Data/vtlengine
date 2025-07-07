@@ -373,7 +373,9 @@ class Dataset:
         """
         exprs = []
         double_columns = [
-            col for col, dtype in zip(data.columns, data.dtypes) if dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT")]
+            col
+            for col, dtype in zip(data.columns, data.dtypes)
+            if dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT")]
         ]
         for col in data.columns:
             if col in double_columns:

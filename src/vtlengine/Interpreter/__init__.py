@@ -99,7 +99,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select, duckdb_merge
+from vtlengine.Utils.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select
 
 
 # noinspection PyTypeChecker

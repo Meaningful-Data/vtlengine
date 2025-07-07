@@ -712,9 +712,7 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        exprs.append(
-            apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
-        )
+        exprs.append(apply_bin_op(cls.op, result_component.name, component.name, scalar_value))
         final_query = ", ".join(exprs)
         result_component.data = comp_data.project(final_query)
         return result_component
