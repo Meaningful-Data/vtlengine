@@ -120,7 +120,7 @@ class Aggregate(Operator):
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
-                result_dataset.data = duckdb_fill(result_dataset.data, operand.name, operand.value)
+                result_dataset.data = duckdb_fill(result_dataset.data, operand.value, operand.name)
             else:
                 if operand.data is not None and len(operand.data) > 0:
                     result_dataset.data = duckdb_concat(result_dataset.data, operand.data)

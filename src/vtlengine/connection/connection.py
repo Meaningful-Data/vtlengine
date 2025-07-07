@@ -4,7 +4,7 @@ from typing import Optional
 import duckdb
 
 BASE_DATABASE = ":memory:"
-BASE_MEMORY_LIMIT = "4GB"
+BASE_MEMORY_LIMIT = "8GB"
 
 
 class ConnectionManager:

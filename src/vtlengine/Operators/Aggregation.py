@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Any, List, Optional
 
-import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 

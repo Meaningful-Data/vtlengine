@@ -11,7 +11,6 @@ import sqlglot
 import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
 from duckdb.duckdb.typing import DuckDBPyType
-from numba.cuda.simulator.kernelapi import andlock
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
@@ -380,9 +379,10 @@ class Dataset:
 
         exprs = []
         double_columns = [
-            col for col, dtype in zip(data.columns, data.dtypes)
-            if isinstance(dtype, DuckDBPyType) and
-               dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")]
+            col
+            for col, dtype in zip(data.columns, data.dtypes)
+            if isinstance(dtype, DuckDBPyType)
+            and dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")]
         ]
         for col in data.columns:
             if col in double_columns:

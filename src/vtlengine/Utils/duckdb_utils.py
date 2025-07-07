@@ -6,11 +6,96 @@ from duckdb.duckdb import DuckDBPyRelation
 from vtlengine.connection import con
 
 
-def empty_relation(cols: Optional[Union[str, List[str]]] = None) -> DuckDBPyRelation:
-    """Returns an empty DuckDB relation with no columns."""
+def empty_relation(
+    cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
+) -> DuckDBPyRelation:
+    """
+    Returns an empty DuckDB relation.
+
+    If `cols` is provided, it will create an empty relation with those columns.
+    """
     if cols:
         return con.from_df(pd.DataFrame(columns=list(cols)))
-    return con.sql("SELECT 1 LIMIT 0")
+    query = "SELECT 1 LIMIT 0"
+    return query if as_query else con.sql(query)
+
+
+def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
+    """
+    Concatenates two DuckDB relations by row, ensuring that columns are aligned.
+
+    If either relation is None, returns an empty relation.
+
+    Its behavior is similar to pandas dataframe-series assignment.
+    """
+
+    if left is None or right is None:
+        return empty_relation()
+
+    cols = set(left.columns) | set(right.columns)
+    common_cols = set(left.columns).intersection(set(right.columns))
+    cols_left = "*"
+    cols_right = "*"
+    if common_cols:
+        if len(left.columns) > len(right.columns):
+            cols_left += f" EXCLUDE ({', '.join(common_cols)})"
+        else:
+            cols_right += f" EXCLUDE ({', '.join(common_cols)})"
+
+    left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
+    right = right.project(f"{cols_right}, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
+    condition = "base.__row_id__ = other.__row_id__"
+    return left.join(right, condition=condition, how="inner").project(", ".join(cols))
+
+
+def duckdb_drop(
+    data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]], as_query: bool = False
+) -> DuckDBPyRelation:
+    """
+    Drops a column from a DuckDB relation.
+
+    If no columns are specified, returns an empty relation.
+    """
+    cols = set(data.columns) - set(cols_to_drop)
+    if not cols:
+        return empty_relation(as_query=as_query)
+    query = ", ".join(cols)
+    return query if as_query else data.project(query)
+
+
+def duckdb_fill(
+    data: DuckDBPyRelation, value: Any, col_name: str, as_query: bool = False
+) -> DuckDBPyRelation:
+    """
+    Fills a column in a DuckDB relation with a specified value.
+
+    If the column does not exist, it will be created.
+    """
+    if col_name not in data.columns:
+        query = f'*, {value} AS "{col_name}"'
+    else:
+        query = f'{col_name} COALESCE({value}) AS "{col_name}"'
+    return query if as_query else data.project(query)
+
+
+def duckdb_fillna(
+    data: DuckDBPyRelation,
+    value: Any,
+    cols: Optional[Union[str, List[str]]] = None,
+    as_query: bool = False,
+) -> DuckDBPyRelation:
+    """
+    Fills NaN values in specified columns of a DuckDB relation with a specified value.
+
+    If no columns are specified, all columns will be filled.
+    """
+    cols = set(cols) if cols else data.columns
+    fill_exprs = [f"{col} COALESCE({value}) AS {col}" for col in cols]
+    query = ", ".join(fill_exprs)
+
+    if as_query:
+        return query
+    return data.project(", ".join(fill_exprs)) if query else data
 
 
 # TODO: implement other merge types: left, outer...
@@ -20,6 +105,9 @@ def duckdb_merge(
     join_keys: list[str],
     how: str = "inner",
 ) -> DuckDBPyRelation:
+    """
+    Merges two DuckDB relations on specified join keys and mode.
+    """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
 
@@ -65,27 +153,9 @@ def duckdb_merge(
     return joined.project(", ".join(set(keep_cols)))
 
 
-def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
-    if left is None or right is None:
-        return empty_relation()
-
-    cols = set(left.columns) | set(right.columns)
-    common_cols = set(left.columns).intersection(set(right.columns))
-    cols_left = "*"
-    cols_right = "*"
-    if common_cols:
-        if len(left.columns) > len(right.columns):
-            cols_left += f" EXCLUDE ({', '.join(common_cols)})"
-        else:
-            cols_right += f" EXCLUDE ({', '.join(common_cols)})"
-
-    left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
-    right = right.project(f"{cols_right}, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
-    condition = "base.__row_id__ = other.__row_id__"
-    return left.join(right, condition=condition, how="inner").project(", ".join(cols))
-
-
-def duckdb_rename(data: DuckDBPyRelation, name_dict: Dict[str, str]) -> DuckDBPyRelation:
+def duckdb_rename(
+    data: DuckDBPyRelation, name_dict: Dict[str, str], as_query: bool = False
+) -> DuckDBPyRelation:
     """Renames a column in a DuckDB relation."""
     cols = set(data.columns)
     for old_name, new_name in name_dict.items():
@@ -93,41 +163,20 @@ def duckdb_rename(data: DuckDBPyRelation, name_dict: Dict[str, str]) -> DuckDBPy
             raise ValueError(f"Column '{old_name}' not found in relation.")
         cols.remove(old_name)
         cols.add(f'{old_name} AS "{new_name}"')
-    return data.project(", ".join(cols))
+    query = ", ".join(cols)
+    return query if as_query else data.project(", ".join(cols))
 
 
-def duckdb_fill(data: DuckDBPyRelation, col_name: str, value: Any) -> DuckDBPyRelation:
-    """
-    Fills a column in a DuckDB relation with a specified value.
-
-    If the column does not exist, it will be created.
-    """
-    if col_name not in data.columns:
-        data = data.project(f"*, {value} AS {col_name}")
-    else:
-        data = data.project(f"{col_name} COALESCE({value}) AS {col_name}")
-    return data
-
-
-def duckdb_drop(data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]]) -> DuckDBPyRelation:
-    """
-    Drops a column from a DuckDB relation.
-
-    If the column does not exist, it will be ignored.
-    """
-    cols = set(data.columns) - set(cols_to_drop)
-    if not cols:
-        return empty_relation()
-    return data.project(", ".join(cols))
-
-
-def duckdb_select(data: DuckDBPyRelation, cols: Union[str, List[str]]) -> DuckDBPyRelation:
+def duckdb_select(
+    data: DuckDBPyRelation, cols: Union[str, List[str]] = "*", as_query: bool = False
+) -> DuckDBPyRelation:
     """
     Selects specific columns from a DuckDB relation.
 
-    If the column does not exist, it will be ignored.
+    If no columns are specified, returns an empty relation.
+
+    If `as_query` is True, returns the SQL query string instead of the relation.
     """
     cols = set(cols)
-    if not cols:
-        return empty_relation()
-    return data.project(", ".join(cols))
+    query = ", ".join(cols)
+    return query if as_query else data.project(query)
