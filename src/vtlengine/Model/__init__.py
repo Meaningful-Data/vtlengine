@@ -243,6 +243,7 @@ class Dataset:
             print("Column mismatch")
             return False
 
+        # Round double values to avoid precision issues
         self.data = self.round_doubles(self.data)
         other.data = self.round_doubles(other.data)
 
@@ -371,6 +372,8 @@ class Dataset:
         """
         Rounds double values in the dataset to avoid precision issues.
         """
+        NUM_DEC = 6
+
         exprs = []
         double_columns = [
             col
@@ -379,7 +382,7 @@ class Dataset:
         ]
         for col in data.columns:
             if col in double_columns:
-                exprs.append(f'ROUND({col}, 12) AS "{col}"')
+                exprs.append(f'ROUND({col}, {NUM_DEC}) AS "{col}"')
             else:
                 exprs.append(f'"{col}"')
         return data.project(", ".join(exprs))

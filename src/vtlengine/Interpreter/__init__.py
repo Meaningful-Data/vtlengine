@@ -980,9 +980,16 @@ class InterpreterAnalyzer(ASTTemplate):
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 if result.data is not None:
-                    result.data.rename(
-                        columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
-                        inplace=True,
+                    # result.data.rename(
+                    #     columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
+                    #     inplace=True,
+                    # )
+                    result.data = duckdb_rename(result.data,
+                        {
+                            col: col[col.find("#") + 1 :]
+                            for col in result.data.columns
+                            if "#" in col
+                        },
                     )
                 result.components = {
                     comp_name[comp_name.find("#") + 1 :]: comp
@@ -990,8 +997,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 }
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
-                if result.data is not None:
-                    result.data.reset_index(drop=True, inplace=True)
+                # if result.data is not None:
+                #     result.data.reset_index(drop=True, inplace=True)
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
