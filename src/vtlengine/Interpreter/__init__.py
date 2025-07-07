@@ -99,7 +99,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select
+from vtlengine.Utils.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select, duckdb_concat
 
 
 # noinspection PyTypeChecker
@@ -473,8 +473,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:
-                    data_to_keep = operand.data[operand.get_identifiers_names()]
-                    data_to_keep[op_comp.name] = op_comp.data
+                    # data_to_keep = operand.data[operand.get_identifiers_names()]
+                    # data_to_keep[op_comp.name] = op_comp.data
+                    data_to_keep = duckdb_select(operand.data, operand.get_identifiers_names())
+                    data_to_keep = duckdb_concat(data_to_keep, op_comp.data)
                 else:
                     data_to_keep = None
                 operand = Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
