@@ -32,8 +32,8 @@ from vtlengine.AST import (
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
-from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT
-from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO
+from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
+from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO, RENAME, KEEP, DROP
 from vtlengine.Exceptions import SemanticError
 
 
@@ -61,6 +61,8 @@ class DAGAnalyzer(ASTTemplate):
     inputs: Optional[list] = None
     outputs: Optional[list] = None
     persistent: Optional[list] = None
+    unknown_variables: Optional[list] = None
+    unknown_variables_statement: Optional[list] = None
 
     def __post_init__(self):
         self.dependencies = {}
@@ -72,6 +74,8 @@ class DAGAnalyzer(ASTTemplate):
         self.outputs = []
         self.persistent = []
         self.alias = []
+        self.unknown_variables = []
+        self.unknown_variables_statement = []
 
     @classmethod
     def ds_structure(cls, ast: AST):
@@ -176,7 +180,7 @@ class DAGAnalyzer(ASTTemplate):
         """ """
         # For each vertex
         for key, statement in self.dependencies.items():
-            output = statement[OUTPUTS] + statement[PERSISTENT]
+            output = statement[OUTPUTS] + statement[PERSISTENT] + statement[UNKNOWN]
             # If the statement has no := or -> symbol there is no vertex to add.
             if len(output) != 0:
                 self.vertex[key] = output[0]
@@ -245,12 +249,15 @@ class DAGAnalyzer(ASTTemplate):
         inputs = list(set(self.inputs))
         outputs = list(set(self.outputs))
         persistent = list(set(self.persistent))
+        unknown = list(set(self.unknown_variables_statement))
 
         # Remove inputs that are outputs of some statement.
         inputsF = [inputf for inputf in inputs if inputf not in outputs]
 
-        dict_ = {INPUTS: inputsF, OUTPUTS: outputs, PERSISTENT: persistent}
-
+        dict_ = {INPUTS: inputsF, OUTPUTS: outputs, PERSISTENT: persistent, UNKNOWN: unknown}
+        for variable in self.unknown_variables_statement:
+            if variable not in self.unknown_variables:
+                self.unknown_variables.append(variable)
         return dict_
 
     """______________________________________________________________________________________
@@ -293,6 +300,19 @@ class DAGAnalyzer(ASTTemplate):
                 self.inputs = []
                 self.outputs = []
                 self.persistent = []
+                self.unknown_variables_statement = []
+        aux = copy.copy(self.unknown_variables)
+        for variable in aux:
+            for number_of_statement, dependency in self.dependencies.items():
+                if variable in dependency[OUTPUTS]:
+                    if variable in self.unknown_variables:
+                        self.unknown_variables.remove(variable)
+                    for number_of_statement, dependency in self.dependencies.items():
+                        if variable in dependency[UNKNOWN]:
+                            dependency[UNKNOWN].remove(variable)
+                            dependency[INPUTS].append(variable)
+                        if variable not in self.inputs:
+                            self.inputs.append(variable)
 
     def visit_Assignment(self, node: Assignment) -> None:
         if self.isFirstAssignment:
@@ -310,6 +330,8 @@ class DAGAnalyzer(ASTTemplate):
 
     def visit_RegularAggregation(self, node: RegularAggregation) -> None:
         self.visit(node.dataset)
+        if node.op in [KEEP, DROP, RENAME]:
+            return
         for child in node.children:
             self.isFromRegularAggregation = True
             self.visit(child)
@@ -331,6 +353,9 @@ class DAGAnalyzer(ASTTemplate):
     def visit_VarID(self, node: VarID) -> None:
         if (not self.isFromRegularAggregation or self.isDataset) and node.value not in self.alias:
             self.inputs.append(node.value)
+        elif self.isFromRegularAggregation and node.value not in self.alias and not self.isDataset:
+            if node.value not in self.unknown_variables_statement:
+                self.unknown_variables_statement.append(node.value)
 
     def visit_Identifier(self, node: Identifier) -> None:
         if node.kind == "DatasetID" and node.value not in self.alias:

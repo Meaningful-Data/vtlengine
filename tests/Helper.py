@@ -173,6 +173,7 @@ class TestHelper(TestCase):
             scalars=scalars_obj,
             value_domains=value_domains,
             external_routines=external_routines,
+            only_semantic=only_semantic,
         )
         result = interpreter.visit(ast)
         for dataset in result.values():
