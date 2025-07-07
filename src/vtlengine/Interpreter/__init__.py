@@ -42,7 +42,6 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -984,7 +983,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     #     columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
                     #     inplace=True,
                     # )
-                    result.data = duckdb_rename(result.data,
+                    result.data = duckdb_rename(
+                        result.data,
                         {
                             col: col[col.find("#") + 1 :]
                             for col in result.data.columns

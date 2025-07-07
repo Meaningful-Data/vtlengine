@@ -10,7 +10,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import empty_relation, duckdb_merge
+from vtlengine.Utils.duckdb_utils import duckdb_merge, empty_relation
 
 
 class Join(Operator):
@@ -181,10 +181,7 @@ class Join(Operator):
                     )
                 if op.data is not None and result.data is not None:
                     result.data = duckdb_merge(
-                        result.data,
-                        op.data,
-                        join_keys=merge_join_keys,
-                        how=cls.how
+                        result.data, op.data, join_keys=merge_join_keys, how=cls.how
                     )
                 else:
                     result.data = empty_relation()
