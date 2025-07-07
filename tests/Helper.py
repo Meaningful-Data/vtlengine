@@ -243,8 +243,8 @@ class TestHelper(TestCase):
                     raise Exception(f"{scalar_name} is a dataset")
                 input_datasets[scalar_name].value = scalar_value
 
-        datasets = {k:v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-        scalars_obj = {k:v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
 
         interpreter = InterpreterAnalyzer(
             datasets=datasets,

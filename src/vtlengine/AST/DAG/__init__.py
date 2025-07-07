@@ -33,7 +33,7 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
-from vtlengine.AST.Grammar.tokens import AS, MEMBERSHIP, TO, RENAME, KEEP, DROP
+from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
 
 
@@ -303,11 +303,11 @@ class DAGAnalyzer(ASTTemplate):
                 self.unknown_variables_statement = []
         aux = copy.copy(self.unknown_variables)
         for variable in aux:
-            for number_of_statement, dependency in self.dependencies.items():
+            for _number_of_statement, dependency in self.dependencies.items():
                 if variable in dependency[OUTPUTS]:
                     if variable in self.unknown_variables:
                         self.unknown_variables.remove(variable)
-                    for number_of_statement, dependency in self.dependencies.items():
+                    for _number_of_statement, dependency in self.dependencies.items():
                         if variable in dependency[UNKNOWN]:
                             dependency[UNKNOWN].remove(variable)
                             dependency[INPUTS].append(variable)
@@ -353,9 +353,13 @@ class DAGAnalyzer(ASTTemplate):
     def visit_VarID(self, node: VarID) -> None:
         if (not self.isFromRegularAggregation or self.isDataset) and node.value not in self.alias:
             self.inputs.append(node.value)
-        elif self.isFromRegularAggregation and node.value not in self.alias and not self.isDataset:
-            if node.value not in self.unknown_variables_statement:
-                self.unknown_variables_statement.append(node.value)
+        elif (
+            self.isFromRegularAggregation
+            and node.value not in self.alias
+            and not self.isDataset
+            and node.value not in self.unknown_variables_statement
+        ):
+            self.unknown_variables_statement.append(node.value)
 
     def visit_Identifier(self, node: Identifier) -> None:
         if node.kind == "DatasetID" and node.value not in self.alias:
