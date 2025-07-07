@@ -248,12 +248,9 @@ class Analytic(Operator.Unary):
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
-            transformations = identifier_names + [
-                f'COALESCE({measure}, -1) AS "{measure}"' for measure in measure_names
-            ]
+            transformations = identifier_names
             transformations.append(duckdb_fillna(rel, value=-1, cols=measure_names, as_query=True))
             rel = rel.project(", ".join(transformations))
-        a = rel.to_df()
         return con.query(query)
 
     @classmethod
@@ -283,7 +280,7 @@ class Analytic(Operator.Unary):
             ordering=ordering or [],
             window=window,
             params=params,
-        )
+        ).order(", ".join(operand.get_identifiers_names()))
 
         return result
 

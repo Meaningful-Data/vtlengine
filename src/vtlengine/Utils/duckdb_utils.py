@@ -90,8 +90,8 @@ def duckdb_fillna(
     If no columns are specified, all columns will be filled.
     """
     cols = set(cols) if cols else data.columns
-    fill_exprs = [f"{col} COALESCE({value}) AS {col}" for col in cols]
-    query = ", ".join(fill_exprs)
+    fill_exprs = [f'COALESCE({col}, {value}) AS "{col}"' for col in cols]
+    query = ", ".join(fill_exprs) if fill_exprs else ""
 
     if as_query:
         return query
