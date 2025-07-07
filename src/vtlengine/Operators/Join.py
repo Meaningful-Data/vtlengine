@@ -134,7 +134,7 @@ class Join(Operator):
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
-            list(result.data.columns)
+            result.data.columns
         ):
             missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
             if len(missing) == 0:
