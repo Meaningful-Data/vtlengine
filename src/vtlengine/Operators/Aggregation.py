@@ -210,8 +210,6 @@ class Aggregation(Unary):
                 )
             else:
                 query = f"SELECT COUNT() AS int_var from rel {grouping}"
-            a = con.query(query)
-            print(a)
             return con.query(query)
 
         if measure_names is not None and len(measure_names) > 0:

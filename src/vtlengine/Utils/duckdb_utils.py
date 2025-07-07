@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, Union, List
+from typing import Any, Dict, List, Optional, Union
 
 from duckdb.duckdb import DuckDBPyRelation
 

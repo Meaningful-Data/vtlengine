@@ -42,7 +42,6 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -100,6 +99,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select
 
 
 # noinspection PyTypeChecker
@@ -583,7 +583,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     data = None
                 else:
                     # data = self.regular_aggregation_dataset.data[dataset_components.keys()]
-                    data = duckdb_select(self.regular_aggregation_dataset.data, dataset_components.keys())
+                    data = duckdb_select(
+                        self.regular_aggregation_dataset.data, dataset_components.keys()
+                    )
 
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,

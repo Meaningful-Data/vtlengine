@@ -1,8 +1,6 @@
 from copy import copy
 from typing import List, Optional
 
-import duckdb
-import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 
 import vtlengine.Operators as Operator
@@ -25,6 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,
@@ -35,7 +34,6 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils.duckdb_utils import empty_relation
-from vtlengine.connection import con
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -250,7 +248,10 @@ class Analytic(Operator.Unary):
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
-            rel[measure_names] = rel[measure_names].fillna(-1)
+            transformations = identifier_names + [
+                f'COALESCE({measure}, -1) AS "{measure}"' for measure in measure_names
+            ]
+            rel = rel.project(", ".join(transformations))
         return con.query(query)
 
     @classmethod

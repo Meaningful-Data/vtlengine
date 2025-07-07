@@ -16,8 +16,14 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_concat, empty_relation, duckdb_fill, duckdb_rename, duckdb_drop, \
-    duckdb_select
+from vtlengine.Utils.duckdb_utils import (
+    duckdb_concat,
+    duckdb_drop,
+    duckdb_fill,
+    duckdb_rename,
+    duckdb_select,
+    empty_relation,
+)
 
 
 class Calc(Operator):
@@ -142,7 +148,9 @@ class Filter(Operator):
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             condition_col = condition.data.project(f'{condition.name} AS "__condition_col__"')
             result_data = duckdb_concat(result_dataset.data, condition_col)
-            result_dataset.data = result_data.filter('__condition_col__ = TRUE').project('* EXCLUDE("__condition_col__")')
+            result_dataset.data = result_data.filter("__condition_col__ = TRUE").project(
+                '* EXCLUDE("__condition_col__")'
+            )
         return result_dataset
 
 

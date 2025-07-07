@@ -223,7 +223,12 @@ def load_datapoints(
             header = next(csv_reader)  # Extract the header to determine column order
 
         # Extract data types from components in header
-        dtypes = {col: comp.data_type().sql_type for col in header for comp in components.values() if comp.name == col}
+        dtypes = {
+            col: comp.data_type().sql_type
+            for col in header
+            for comp in components.values()
+            if comp.name == col
+        }
 
         # Read the CSV file
         rel = con.read_csv(
