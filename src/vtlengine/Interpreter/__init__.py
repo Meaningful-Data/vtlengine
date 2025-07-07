@@ -99,7 +99,7 @@ from vtlengine.Utils import (
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select
+from vtlengine.Utils.duckdb_utils import duckdb_rename, duckdb_select, duckdb_merge
 
 
 # noinspection PyTypeChecker
@@ -674,13 +674,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = pd.merge(
-                    self.regular_aggregation_dataset.data[id_columns],
+                id_cols_data = self.regular_aggregation_dataset.data.project(", ".join(id_columns))
+                data = duckdb_merge(
+                    id_cols_data,
                     result.data,
-                    on=id_columns,
+                    id_columns,
                     how="inner",
-                )
-                data = joined_result[measure_name]
+                ).project(measure_name)
             else:
                 data = None
 

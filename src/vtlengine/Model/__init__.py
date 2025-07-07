@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
@@ -242,6 +243,9 @@ class Dataset:
             print("Column mismatch")
             return False
 
+        self.data = self.round_doubles(self.data)
+        other.data = self.round_doubles(other.data)
+
         # Order by identifiers
         self_cols = set(self.data.columns)
         sorted_self = self.data.project(", ".join(self_cols))
@@ -362,6 +366,21 @@ class Dataset:
     @property
     def df(self) -> pd.DataFrame:
         return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
+
+    def round_doubles(self, data: DuckDBPyRelation) -> DuckDBPyRelation:
+        """
+        Rounds double values in the dataset to avoid precision issues.
+        """
+        exprs = []
+        double_columns = [
+            col for col, dtype in zip(data.columns, data.dtypes) if dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT")]
+        ]
+        for col in data.columns:
+            if col in double_columns:
+                exprs.append(f'ROUND({col}, 12) AS "{col}"')
+            else:
+                exprs.append(f'"{col}"')
+        return data.project(", ".join(exprs))
 
 
 @dataclass

@@ -151,16 +151,16 @@ class Operator:
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
 
-            transformations = []
+            exprs = []
             column_to_rename = None
             for column in columns:
                 if column not in set(components):
                     column_to_rename = column
                 else:
-                    transformations.append(f'"{column}"')
+                    exprs.append(f'"{column}"')
             if column_to_rename:
-                transformations.append(f'"{column_to_rename}" AS "{measure_name}"')
-            result.data = result.data.project(", ".join(transformations))
+                exprs.append(f'"{column_to_rename}" AS "{measure_name}"')
+            result.data = result.data.project(", ".join(exprs))
 
     @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
@@ -697,9 +697,9 @@ class Binary(Operator):
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = component.data or empty_relation()
 
-        transformations = []
+        exprs = []
         if component.data_type.__name__ in TIME_TYPES:
-            transformations.append(
+            exprs.append(
                 f'cast_time_types("{component.data_type.__name__}", {component.name}) '
                 f'AS "{component.name}"'
             )
@@ -712,10 +712,10 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        transformations.append(
+        exprs.append(
             apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
         )
-        final_query = ", ".join(transformations)
+        final_query = ", ".join(exprs)
         result_component.data = comp_data.project(final_query)
         return result_component
 

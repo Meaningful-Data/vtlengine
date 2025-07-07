@@ -118,16 +118,16 @@ def _validate_duckdb(
     check_duplicates(components, data, dataset_name)
     check_dwi(components, data, dataset_name)
 
-    transformations = []
+    exprs = []
     for col, comp in components.items():
         dtype = comp.data_type
         if dtype in [Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
-            transformations.append(f"{check_method}({col}) AS {col}")
+            exprs.append(f"{check_method}({col}) AS {col}")
         else:
-            transformations.append(col)
+            exprs.append(col)
 
-    final_query = ", ".join(transformations)
+    final_query = ", ".join(exprs)
     data = data.project(final_query)
 
     return data
