@@ -33,7 +33,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import empty_relation
+from vtlengine.Utils.duckdb_utils import empty_relation, duckdb_fillna
 
 return_integer_operators = [MAX, MIN, SUM]
 
@@ -232,15 +232,15 @@ class Analytic(Operator.Unary):
             else:
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
-                measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                measure_query += f' {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             elif cls.op in return_integer_operators and cls.return_integer:
-                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
+                measure_query = f'CAST({measure_query} {analytic_str} AS INTEGER) as "{measure}"'
             else:
                 measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
         if cls.op == COUNT and len(measure_names) == 0:
             measure_queries.append(
-                f"COUNT(*) {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             )
 
         measures_sql = ", ".join(measure_queries)
@@ -251,7 +251,9 @@ class Analytic(Operator.Unary):
             transformations = identifier_names + [
                 f'COALESCE({measure}, -1) AS "{measure}"' for measure in measure_names
             ]
+            transformations.append(duckdb_fillna(rel, value=-1, cols=measure_names, as_query=True))
             rel = rel.project(", ".join(transformations))
+        a = rel.to_df()
         return con.query(query)
 
     @classmethod
@@ -282,9 +284,6 @@ class Analytic(Operator.Unary):
             window=window,
             params=params,
         )
-
-        # if cls.return_type == Integer:
-        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
 
         return result
 
