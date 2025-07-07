@@ -262,7 +262,8 @@ class Aggregation(Unary):
         result_rel = result_rel.project(", ".join(grouping_keys + measure_names))
         if cls.op == COUNT:
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
-            result_rel = result_rel.filter(condition)
+            if condition:
+                result_rel = result_rel.filter(condition)
         cls._handle_data_types(result_rel, operand.get_measures(), "input")
         result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
 
