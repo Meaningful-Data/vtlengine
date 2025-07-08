@@ -33,7 +33,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import empty_relation, duckdb_fillna
+from vtlengine.Duckdb.duckdb_utils import empty_relation, duckdb_fillna
 
 return_integer_operators = [MAX, MIN, SUM]
 

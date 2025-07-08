@@ -38,7 +38,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._to_sql import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 

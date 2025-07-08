@@ -14,7 +14,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import (
+from vtlengine.Duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
     duckdb_fill,

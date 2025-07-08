@@ -5,14 +5,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
-import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
-from duckdb.duckdb.typing import DuckDBPyType
 
 import vtlengine.DataTypes as DataTypes
+from vtlengine.Duckdb.duckdb_utils import normalize_data
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 
@@ -247,8 +246,9 @@ class Dataset:
             return False
 
         # Round double values to avoid precision issues
-        self.data = self.round_doubles(self.data)
-        other.data = self.round_doubles(other.data)
+        self.data = normalize_data(self.data)
+        other.data = normalize_data(other.data)
+        # other.data = other.data.project()
 
         # Order by identifiers
         self_cols = set(self.data.columns)
@@ -370,26 +370,6 @@ class Dataset:
     @property
     def df(self) -> pd.DataFrame:
         return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
-
-    def round_doubles(self, data: DuckDBPyRelation) -> DuckDBPyRelation:
-        """
-        Rounds double values in the dataset to avoid precision issues.
-        """
-        NUM_DEC = 6
-
-        exprs = []
-        double_columns = [
-            col
-            for col, dtype in zip(data.columns, data.dtypes)
-            if isinstance(dtype, DuckDBPyType)
-            and dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")]
-        ]
-        for col in data.columns:
-            if col in double_columns:
-                exprs.append(f'ROUND({col}, {NUM_DEC}) AS "{col}"')
-            else:
-                exprs.append(f'"{col}"')
-        return data.project(", ".join(exprs))
 
 
 @dataclass

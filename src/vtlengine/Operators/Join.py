@@ -10,7 +10,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils.duckdb_utils import duckdb_merge, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
 
 
 class Join(Operator):

@@ -1,23 +1,11 @@
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
+from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb.typing import DuckDBPyType
 
 from vtlengine.connection import con
-
-
-def empty_relation(
-    cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
-) -> DuckDBPyRelation:
-    """
-    Returns an empty DuckDB relation.
-
-    If `cols` is provided, it will create an empty relation with those columns.
-    """
-    if cols:
-        return con.from_df(pd.DataFrame(columns=list(cols)))
-    query = "SELECT 1 LIMIT 0"
-    return query if as_query else con.sql(query)
 
 
 def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
@@ -179,4 +167,63 @@ def duckdb_select(
     """
     cols = set(cols)
     query = ", ".join(cols)
+    return query if as_query else data.project(query)
+
+
+def empty_relation(
+    cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
+) -> DuckDBPyRelation:
+    """
+    Returns an empty DuckDB relation.
+
+    If `cols` is provided, it will create an empty relation with those columns.
+    """
+    if cols:
+        return con.from_df(pd.DataFrame(columns=list(cols)))
+    query = "SELECT 1 LIMIT 0"
+    return query if as_query else con.sql(query)
+
+
+def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRelation:
+    """
+    Normalizes the data by launching a remove_null_str and round_doubles operations.
+    """
+    if as_query:
+        return remove_null_str(data, as_query=True) + f", {round_doubles(data, as_query=True)}"
+    return remove_null_str(round_doubles(data))
+
+
+def remove_null_str(data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False) -> DuckDBPyRelation:
+    """
+    Removes rows where specified columns contain null or empty string values.
+
+    If no columns are specified, it checks all str columns.
+    """
+    cols = data.columns if cols is None else set(cols)
+    str_columns = [
+        col for col, dtype in zip(data.columns, data.dtypes)
+        if col in cols and isinstance(dtype, DuckDBPyType)
+           and dtype in [duckdb.type("VARCHAR"), duckdb.type("STRING")]
+    ]
+    return duckdb_fillna(data, "''", str_columns, as_query=as_query) if str_columns else data
+
+
+def round_doubles(data: DuckDBPyRelation, num_dec: int = 6, as_query: bool = False) -> DuckDBPyRelation:
+    """
+    Rounds double values in the dataset to avoid precision issues.
+    """
+    exprs = []
+    double_columns = [
+        col
+        for col, dtype in zip(data.columns, data.dtypes)
+        if isinstance(dtype, DuckDBPyType)
+        and dtype in [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")]
+    ]
+    for col in data.columns:
+        if col in double_columns:
+            exprs.append(f'ROUND({col}, {num_dec}) AS "{col}"')
+        else:
+            exprs.append(f'"{col}"')
+
+    query = ", ".join(exprs)
     return query if as_query else data.project(query)

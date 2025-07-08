@@ -20,7 +20,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
-from vtlengine.Utils.duckdb_utils import empty_relation
+from vtlengine.Duckdb.duckdb_utils import empty_relation
 
 
 class Unary(Operator.Unary):
