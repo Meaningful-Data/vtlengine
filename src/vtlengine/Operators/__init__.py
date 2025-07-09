@@ -61,11 +61,15 @@ def apply_unary_op(op: Any, me_name: str, value: Any) -> str:
     return f'{op_token}({me_name}) AS "{value}"'
 
 
-def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> str:
+def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
+    op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
+
+    left = left or "NULL"
+    right = right or "NULL"
 
     if token_position == LEFT:
         return f'{op_token}({left}, {right}) AS "{me_name}"'
@@ -595,7 +599,7 @@ class Binary(Operator):
                 if use_right_as_base
                 else (f"{me.name}_x", f"{me.name}_y")
             )
-            transformations.append(apply_bin_op(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
@@ -653,7 +657,7 @@ class Binary(Operator):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
             left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
-            transformations.append(apply_bin_op(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
         result_dataset.data = result_data.project(final_query)
@@ -683,7 +687,7 @@ class Binary(Operator):
             )
 
         transformations.append(
-            apply_bin_op(cls.op, result_component.name, left_operand.name, right_operand.name)
+            apply_bin_op(cls, result_component.name, left_operand.name, right_operand.name)
         )
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
@@ -712,7 +716,7 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        exprs.append(apply_bin_op(cls.op, result_component.name, component.name, scalar_value))
+        exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
         final_query = ", ".join(exprs)
         result_component.data = comp_data.project(final_query)
         return result_component
@@ -730,7 +734,7 @@ class Binary(Operator):
         transformations = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
             transformations.append(
-                apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0])
+                apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
             )
 
         result_dataset.data = result_data.project(", ".join(transformations))
@@ -751,7 +755,7 @@ class Binary(Operator):
 
         result_component.data = result_data.project(
             apply_bin_op(
-                cls.op, result_component.name, component.name, scalar_set.values.columns[0]
+                cls, result_component.name, component.name, scalar_set.values.columns[0]
             )
         )
         return result_component

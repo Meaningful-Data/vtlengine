@@ -48,28 +48,6 @@ class Binary(Operator.Binary):
 
     type_to_check = Number
 
-    @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        if isinstance(x, int) and isinstance(y, int):
-            if cls.op == DIV and y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            if cls.op == RANDOM:
-                return cls.py_op(x, y)
-        x = float(x)
-        y = float(y)
-        # Handles precision to avoid floating point errors
-        if cls.op == DIV and y == 0:
-            raise SemanticError("2-1-15-6", op=cls.op, value=y)
-
-        decimal_value = cls.py_op(Decimal(x), Decimal(y))
-        getcontext().prec = 10
-        result = float(decimal_value)
-        if result.is_integer():
-            return int(result)
-        return result
-
 
 class UnPlus(Unary):
     """
