@@ -30,13 +30,17 @@ class RoleSetter(Unary):
 
     @classmethod
     def evaluate(cls, operand: Any, data_size: int = 0) -> DataComponent:
+        # TODO: I cant find another way to do it lazily,
+        #  instead Im trying the lightweight way I found to do it.
         if (
             isinstance(operand, DataComponent)
             and operand.data is not None
             and not operand.nullable
-            and any(operand.data.isnull())
         ):
-            raise SemanticError("1-1-1-16")
+            null_count = operand.data.filter(f"{operand.name} IS NULL").count("*").fetchone()[0]
+            if null_count > 0:
+                raise SemanticError("1-1-1-16")
+
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
             query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
