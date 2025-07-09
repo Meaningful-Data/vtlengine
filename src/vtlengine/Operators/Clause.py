@@ -22,6 +22,7 @@ from vtlengine.Duckdb.duckdb_utils import (
     duckdb_select,
     empty_relation,
 )
+from vtlengine.connection import con
 
 
 class Calc(Operator):
@@ -311,14 +312,23 @@ class Unpivot(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names(),
-                value_vars=dataset.get_measures_names(),
-                var_name=operands[0],
-                value_name="NEW_COLUMN",
+            con.register("__data_to_melt__", dataset.data)
+
+            query = f"""
+            SELECT
+              {', '.join(dataset.get_identifiers_names())},
+              variable AS "{operands[0]}",
+              value AS "{operands[1]}"
+            FROM (
+              SELECT * FROM __data_to_melt__
+              UNPIVOT (
+                value FOR variable IN ({', '.join(dataset.get_measures_names())})
+              )
             )
-            result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
+            WHERE value IS NOT NULL
+            """
+            result_dataset.data = con.query(query)
+
         return result_dataset
 
 
