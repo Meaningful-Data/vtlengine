@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Union
 
 from duckdb.duckdb import DuckDBPyRelation
 
+from vtlengine.Duckdb.duckdb_utils import empty_relation
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.Exceptions import InputValidationException, SemanticError
@@ -204,13 +205,7 @@ def load_datapoints(
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         # Empty dataset as table
-        column_defs = ", ".join([f'"{name}" VARCHAR' for name in components])
-        rel = con.query(
-            f"SELECT {
-                ', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))
-            } LIMIT 0"
-        )
-        return rel
+        return empty_relation([name for name in components])
 
     elif isinstance(csv_path, (str, Path)):
         path_str = str(csv_path)
