@@ -18,9 +18,9 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
+from vtlengine.Duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
-from vtlengine.Duckdb.duckdb_utils import empty_relation
 
 
 class Unary(Operator.Unary):

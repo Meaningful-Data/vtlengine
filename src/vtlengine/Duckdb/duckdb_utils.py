@@ -193,7 +193,9 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     return remove_null_str(round_doubles(data))
 
 
-def remove_null_str(data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False) -> DuckDBPyRelation:
+def remove_null_str(
+    data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
+) -> DuckDBPyRelation:
     """
     Removes rows where specified columns contain null or empty string values.
 
@@ -201,14 +203,18 @@ def remove_null_str(data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]
     """
     cols = data.columns if cols is None else set(cols)
     str_columns = [
-        col for col, dtype in zip(data.columns, data.dtypes)
-        if col in cols and isinstance(dtype, DuckDBPyType)
-           and dtype in [duckdb.type("VARCHAR"), duckdb.type("STRING")]
+        col
+        for col, dtype in zip(data.columns, data.dtypes)
+        if col in cols
+        and isinstance(dtype, DuckDBPyType)
+        and dtype in [duckdb.type("VARCHAR"), duckdb.type("STRING")]
     ]
     return duckdb_fillna(data, "''", str_columns, as_query=as_query) if str_columns else data
 
 
-def round_doubles(data: DuckDBPyRelation, num_dec: int = 6, as_query: bool = False) -> DuckDBPyRelation:
+def round_doubles(
+    data: DuckDBPyRelation, num_dec: int = 6, as_query: bool = False
+) -> DuckDBPyRelation:
     """
     Rounds double values in the dataset to avoid precision issues.
     """

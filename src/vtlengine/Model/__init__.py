@@ -11,9 +11,9 @@ import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.Duckdb.duckdb_utils import normalize_data
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
+from vtlengine.Duckdb.duckdb_utils import normalize_data
 
 
 def __duckdb_repr__(self: Any) -> str:

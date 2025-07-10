@@ -30,10 +30,10 @@ from vtlengine.DataTypes import (
     Number,
     unary_implicit_promotion,
 )
+from vtlengine.Duckdb.duckdb_utils import duckdb_fillna, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Duckdb.duckdb_utils import empty_relation, duckdb_fillna
 
 return_integer_operators = [MAX, MIN, SUM]
 

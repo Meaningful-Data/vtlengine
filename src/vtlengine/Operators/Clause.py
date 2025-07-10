@@ -3,6 +3,7 @@ from typing import List, Type, Union
 
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     Boolean,
     ScalarType,
@@ -10,10 +11,6 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
     unary_implicit_promotion,
 )
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Operators import Operator
-from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
@@ -22,7 +19,10 @@ from vtlengine.Duckdb.duckdb_utils import (
     duckdb_select,
     empty_relation,
 )
-from vtlengine.connection import con
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Operators import Operator
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class Calc(Operator):
@@ -316,13 +316,13 @@ class Unpivot(Operator):
 
             query = f"""
             SELECT
-              {', '.join(dataset.get_identifiers_names())},
+              {", ".join(dataset.get_identifiers_names())},
               variable AS "{operands[0]}",
               value AS "{operands[1]}"
             FROM (
               SELECT * FROM __data_to_melt__
               UNPIVOT (
-                value FOR variable IN ({', '.join(dataset.get_measures_names())})
+                value FOR variable IN ({", ".join(dataset.get_measures_names())})
               )
             )
             WHERE value IS NOT NULL

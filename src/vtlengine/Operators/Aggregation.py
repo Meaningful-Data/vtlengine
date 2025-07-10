@@ -34,10 +34,10 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
+from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Unary
-from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
 
 
 def extract_grouping_identifiers(

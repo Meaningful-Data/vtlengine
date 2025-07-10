@@ -2,7 +2,6 @@ import _random
 import math
 import operator
 import warnings
-from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -27,10 +26,10 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
+from vtlengine.Duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
-from vtlengine.Duckdb.duckdb_utils import empty_relation
 
 
 class Unary(Operator.Unary):
