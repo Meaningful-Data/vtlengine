@@ -61,7 +61,7 @@ def apply_unary_op(op: Any, me_name: str, value: Any) -> str:
     return f'{op_token}({me_name}) AS "{value}"'
 
 
-def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any, as_query: bool = True) -> str:
+def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -72,11 +72,8 @@ def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any, as_query:
     right = right or "NULL"
 
     if token_position == LEFT:
-        query = f'{op_token}({left}, {right}) AS "{me_name}"'
-    else:
-        query = f'({left} {op_token} {right}) AS "{me_name}"'
-
-    return query if as_query else con.sql(f"SELECT {query}")
+        return f'{op_token}({left}, {right}) AS "{me_name}"'
+    return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
 def _cast_time_types(data_type: Any, value: Any) -> Union[int, str]:
