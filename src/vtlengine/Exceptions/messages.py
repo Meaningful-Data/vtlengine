@@ -23,6 +23,7 @@ centralised_messages = {
     "0-1-3-4": "Dataset {short_urn} not found in mapping dictionary.",
     "0-1-3-5": "Dataset {dataset_name} not found in the input datasets.",
     "0-1-3-6": "Input name {missing} not found in the input datasets.",
+    "0-1-3-7": "Invalid input datasets type: {type_}. Expected a sequence of PandasDataset.",
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
