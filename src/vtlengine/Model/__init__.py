@@ -242,6 +242,14 @@ class Dataset:
             print("Column mismatch")
             return False
 
+        if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
+            # If both data are pandas DataFrames, compare them directly
+            return self.data.equals(other.data)
+        elif isinstance(self.data, pd.DataFrame):
+            self._to_duckdb()
+        elif isinstance(other.data, pd.DataFrame):
+            other._to_duckdb()
+
         # Order by identifiers
         identifiers = self.get_identifiers_names()
         sorted_self = self.data.order(", ".join(identifiers))
@@ -353,6 +361,16 @@ class Dataset:
             f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
             f")"
         )
+
+    def _to_duckdb(self) -> DuckDBPyRelation:
+        """
+        Convert the dataset to a DuckDB relation.
+        """
+        if isinstance(self.data, DuckDBPyRelation) or self.data is None:
+            return
+        # Casting the pandas df to DuckDB relation
+        dtypes = {name: component.data_type().sql_type for name, component in self.components.items()}
+        self.data = con.from_df(self.data)
 
     @property
     def df(self) -> pd.DataFrame:
