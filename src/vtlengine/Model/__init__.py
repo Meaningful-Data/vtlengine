@@ -252,10 +252,8 @@ class Dataset:
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
         if diff.limit(1).df().shape[0] > 0:
-            print("Data structure mismatch")
             diff.show()
             return False
-
         return True
 
     def get_component(self, component_name: str) -> Component:
