@@ -30,7 +30,7 @@ from vtlengine.DataTypes import (
     Number,
     unary_implicit_promotion,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_fillna, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_fillna, empty_relation, get_col_type
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -248,9 +248,14 @@ class Analytic(Operator.Unary):
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
-            transformations = identifier_names
-            transformations.append(duckdb_fillna(rel, value=-1, cols=measure_names, as_query=True))
-            rel = rel.project(", ".join(transformations))
+            exprs = identifier_names
+            measures_types = {m: get_col_type(rel, m) for m in measure_names}
+            exprs.append(
+                duckdb_fillna(
+                    rel, value=-1, cols=measure_names, types=measures_types, as_query=True
+                )
+            )
+            rel = rel.project(", ".join(exprs))
         return con.query(query)
 
     @classmethod

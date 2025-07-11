@@ -70,6 +70,7 @@ def duckdb_fillna(
     data: DuckDBPyRelation,
     value: Any,
     cols: Optional[Union[str, List[str]]] = None,
+    types: Optional[Union[str, List[str], Dict[str, str]]] = None,
     as_query: bool = False,
 ) -> DuckDBPyRelation:
     """
@@ -77,13 +78,37 @@ def duckdb_fillna(
 
     If no columns are specified, all columns will be filled.
     """
+
+    exprs = []
     cols = set(cols) if cols else data.columns
-    fill_exprs = [f'COALESCE({col}, {value}) AS "{col}"' for col in cols]
-    query = ", ".join(fill_exprs) if fill_exprs else ""
+    for idx, col in enumerate(cols):
+        type_ = (
+            (
+                types
+                if isinstance(types, str)
+                else types[0]
+                if isinstance(types, list) and len(types) == 1
+                else types[idx]
+                if isinstance(types, list) and len(types) == len(cols)
+                else types.get(col)
+                if isinstance(types, dict)
+                else None
+            )
+            if types
+            else None
+        )
+
+        if isinstance(types, list) and len(types) not in (1, len(cols)):
+            raise ValueError("Length of types must match length of columns.")
+
+        value = f"CAST({value} AS {type_})" if type_ else value
+        exprs.append(f'COALESCE({col}, {value}) AS "{col}"')
+
+    query = ", ".join(exprs) if exprs else ""
 
     if as_query:
         return query
-    return data.project(", ".join(fill_exprs)) if query else data
+    return data.project(", ".join(exprs)) if query else data
 
 
 # TODO: implement other merge types: left, outer...
@@ -182,6 +207,10 @@ def empty_relation(
         return con.from_df(pd.DataFrame(columns=list(cols)))
     query = "SELECT 1 LIMIT 0"
     return query if as_query else con.sql(query)
+
+
+def get_col_type(rel, col_name):
+    return rel.types[rel.columns.index(col_name)]
 
 
 def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRelation:
