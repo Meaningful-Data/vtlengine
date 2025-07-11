@@ -50,9 +50,7 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
     @classmethod
-    def _handle_data_types(
-        cls, rel: DuckDBPyRelation, measures: List[Component], mode: str
-    ):
+    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component], mode: str):
         if cls.op == COUNT:
             return rel
 
