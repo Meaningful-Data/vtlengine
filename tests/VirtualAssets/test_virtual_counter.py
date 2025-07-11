@@ -30,8 +30,8 @@ def test_analytic_generates_virtual_dataset_name():
     result = Analytic.validate(
         operand=ds, partitioning=[], ordering=None, window=None, params=None, component_name=None
     )
-    assert result.name == "@VDS_1"
-    assert result.name.startswith("@VDS_")
+    assert result.name == "__VDS_1__"
+    assert result.name.startswith("__VDS_")
 
 
 def test_analytic_generates_virtual_dataset_name_2_ds():
@@ -58,9 +58,9 @@ def test_analytic_generates_virtual_dataset_name_2_ds():
     result_2 = Analytic.validate(
         operand=ds_2, partitioning=[], ordering=None, window=None, params=None, component_name=None
     )
-    assert result_1.name == "@VDS_1"
-    assert result_2.name == "@VDS_2"
-    assert result_1.name.startswith("@VDS_")
+    assert result_1.name == "__VDS_1__"
+    assert result_2.name == "__VDS_2__"
+    assert result_1.name.startswith("__VDS_")
     vc = VirtualCounter
     assert vc.dataset_count == 2
 
@@ -79,8 +79,8 @@ def test_binary_generates_virtual_dataset_name():
     scalar_right = Scalar(name="test", value=0, data_type=Number)
 
     result = Nvl.validate(ds_left, scalar_right)
-    assert result.name == "@VDS_1"
-    assert result.name.startswith("@VDS_")
+    assert result.name == "__VDS_1__"
+    assert result.name.startswith("__VDS_")
     assert VirtualCounter.dataset_count == 1
     assert VirtualCounter.component_count == 1
 
@@ -97,7 +97,7 @@ def test_binary_generates_virtual_component_name():
     right_scalar = Scalar(name="test", value=0, data_type=Number)
 
     result = Nvl.validate(left_comp, right_scalar)
-    assert result.name == "@VDC_1"
+    assert result.name == "__VDC_1__"
     assert result.role == Role.MEASURE
     assert VirtualCounter.dataset_count == 1
     assert VirtualCounter.component_count == 1
@@ -117,8 +117,8 @@ def test_unary_generates_virtual_dataset_name():
 
     result = Unary.validate(ds_left)
 
-    assert result.name == "@VDS_1"
-    assert result.name.startswith("@VDS_")
+    assert result.name == "__VDS_1__"
+    assert result.name.startswith("__VDS_")
     assert VirtualCounter.dataset_count == 1
     assert VirtualCounter.component_count == 0
 
@@ -135,7 +135,7 @@ def test_unary_generates_virtual_component_name():
     )
     result = Unary.validate(left_comp)
 
-    assert result.name == "@VDC_1"
+    assert result.name == "__VDC_1__"
     assert result.role == Role.MEASURE
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 1
@@ -152,7 +152,7 @@ def test_components_generates_virtual_component():
         nullable=True,
     )
     result = Analytic.component_validation(operand)
-    assert result.name == "@VDC_1"
+    assert result.name == "__VDC_1__"
     assert VirtualCounter.component_count == 1
 
 
@@ -172,8 +172,8 @@ def test_multiple_components_increments_counter():
     for i in range(1, 6):
         result = Analytic.component_validation(operand)
         results.append(result)
-        expected_names.append(f"@VDC_{i}")
-        assert result.name == f"@VDC_{i}"
+        expected_names.append(f"__VDC_{i}__")
+        assert result.name == f"__VDC_{i}__"
     all_names = [comp.name for comp in results]
     assert all_names == expected_names
     assert VirtualCounter.component_count == 5
@@ -209,12 +209,12 @@ def test_virtual_counter_with_run():
     call_vdc = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
     def mock_new_dc_name():
-        dc = f"@VDC_{len(call_vdc) + 1}"
+        dc = f"__VDC_{len(call_vdc) + 1}__"
         call_vdc.append(dc)
         return dc
 
@@ -258,7 +258,7 @@ def test_virtual_counter_aggregate():
     call_vds = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
@@ -267,7 +267,7 @@ def test_virtual_counter_aggregate():
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     assert len(call_vds) == 1
-    assert set(call_vds) == {"@VDS_1"}
+    assert set(call_vds) == {"__VDS_1__"}
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 
@@ -298,7 +298,7 @@ def test_virtual_counter_analytic():
     call_vds = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
@@ -323,12 +323,12 @@ def test_virtual_counter_run_with_udo():
     call_vdc = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
     def mock_new_dc_name():
-        dc = f"@VDC_{len(call_vdc) + 1}"
+        dc = f"__VDC_{len(call_vdc) + 1}__"
         call_vdc.append(dc)
         return dc
 
