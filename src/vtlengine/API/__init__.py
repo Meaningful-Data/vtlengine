@@ -37,7 +37,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, DataComponent
+from vtlengine.Model import DataComponent, Dataset
 
 pd.options.mode.chained_assignment = None
 

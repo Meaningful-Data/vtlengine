@@ -24,15 +24,11 @@ from vtlengine.DataTypes import (
     Integer,
     Number,
     String,
-    TimeInterval,
-    TimePeriod,
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     PERIOD_IND_MAPPING_REVERSE,
-    TimeIntervalHandler,
-    TimePeriodHandler,
 )
 from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError
@@ -54,8 +50,9 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
     @classmethod
-    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component],
-                                mode: str) -> DuckDBPyRelation:
+    def _handle_data_types(
+        cls, rel: DuckDBPyRelation, measures: List[Component], mode: str
+    ) -> DuckDBPyRelation:
         if cls.op == COUNT:
             return rel
 

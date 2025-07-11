@@ -371,13 +371,7 @@ class Dataset:
             data = repr(self.data).replace("<NA>", "None")
         elif isinstance(self.data, DuckDBPyRelation):
             data = self.data.limit(10).df()
-        return (
-            f"Dataset("
-            f"name={self.name}, "
-            f"components={list(self.components.keys())},"
-            f"data={data}"
-            f")"
-        )
+        return f"Dataset(name={self.name}, components={list(self.components.keys())},data={data})"
 
     def _to_duckdb(self) -> DuckDBPyRelation:
         """
@@ -386,7 +380,9 @@ class Dataset:
         if isinstance(self.data, DuckDBPyRelation) or self.data is None:
             return
         # Casting the pandas df to DuckDB relation
-        dtypes = {name: component.data_type().sql_type for name, component in self.components.items()}
+        dtypes = {
+            name: component.data_type().sql_type for name, component in self.components.items()
+        }
         self.data = con.from_df(self.data)
 
     @property

@@ -1,10 +1,10 @@
 from enum import Enum
 from typing import Union
 
+from vtlengine.connection import con
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Model import Dataset, Scalar
-from vtlengine.connection import con
 
 
 class TimePeriodRepresentation(Enum):
@@ -63,8 +63,7 @@ def format_time_period_external_representation(
             exprs.append(f'_format_vtl_representation({comp.name}) AS "{comp.name}"')
         else:
             exprs.append(comp.name)
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     dataset.data = dataset.data.project(query)
-
 
     return
