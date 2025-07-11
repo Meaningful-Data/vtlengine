@@ -9,6 +9,7 @@ import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
+from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
@@ -244,7 +245,7 @@ class Dataset:
 
         if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
             # If both data are pandas DataFrames, compare them directly
-            return self.data.equals(other.data)
+            return assert_frame_equal(self.data, other.data, check_dtype=False) is None
         elif isinstance(self.data, pd.DataFrame):
             self._to_duckdb()
         elif isinstance(other.data, pd.DataFrame):
@@ -354,11 +355,16 @@ class Dataset:
         return json.dumps(result, indent=2)
 
     def __repr__(self) -> str:
+        data = "None"
+        if isinstance(self.data, pd.DataFrame):
+            data = repr(self.data).replace("<NA>", "None")
+        elif isinstance(self.data, DuckDBPyRelation):
+            data = self.data.limit(10).df()
         return (
             f"Dataset("
             f"name={self.name}, "
             f"components={list(self.components.keys())},"
-            f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
+            f"data={data}"
             f")"
         )
 
