@@ -54,71 +54,47 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
     @classmethod
-    def _handle_data_types(cls, data: pd.DataFrame, measures: List[Component], mode: str) -> None:
-        to_replace: List[Optional[str]]
-        new_value: List[Optional[str]]
+    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component],
+                                mode: str) -> DuckDBPyRelation:
         if cls.op == COUNT:
-            return
-        if mode == "input":
-            to_replace = [None]
-            new_value = [""]
-        else:
-            to_replace = [""]
-            new_value = [None]
+            return rel
 
+        exprs = [f'"{col}"' for col in rel.columns]
         for measure in measures:
+            col = f'"{measure.name}"'
+            expr = col
+
             if measure.data_type == Date:
-                if cls.op == MIN:
-                    if mode == "input":
-                        # Invalid date only for null values
-                        new_value = ["9999-99-99"]
-                    else:
-                        to_replace = ["9999-99-99"]
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type == TimePeriod:
-                if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(lambda x: TimePeriodHandler(str(x)), na_action="ignore")
-                    )
+                if cls.op == MIN and mode == "input":
+                    expr = f"CASE WHEN {col} IS NULL THEN '9999-99-99' ELSE {col} END"
+                elif cls.op == MIN and mode == "result":
+                    expr = f"CASE WHEN {col} = '9999-99-99' THEN NULL ELSE {col} END"
+                elif mode == "input":
+                    expr = f"CASE WHEN {col} IS NULL THEN '' ELSE {col} END"
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
-            elif measure.data_type == TimeInterval:
-                if mode == "input":
-                    data[measure.name] = (
-                        data[measure.name]
-                        .astype(object)
-                        .map(
-                            lambda x: TimeIntervalHandler.from_iso_format(str(x)),
-                            na_action="ignore",
-                        )
-                    )
-                else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
+                    expr = f"CASE WHEN {col} = '' THEN NULL ELSE {col} END"
+
             elif measure.data_type == String:
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)
-            elif measure.data_type == Duration:
                 if mode == "input":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING[x],  # type: ignore[index]
-                        na_action="ignore",
-                    )
+                    expr = f"CASE WHEN {col} IS NULL THEN '' ELSE {col} END"
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: PERIOD_IND_MAPPING_REVERSE[x],  # type: ignore[index]
-                        na_action="ignore",
-                    )
+                    expr = f"CASE WHEN {col} = '' THEN NULL ELSE {col} END"
+
             elif measure.data_type == Boolean:
                 if mode == "result":
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: Boolean().cast(x), na_action="ignore"
-                    )
-                    data[measure.name] = data[measure.name].astype(object)
+                    expr = f"CAST({col} AS BOOLEAN)"
+
+            elif measure.data_type == Duration:
+                if mode == "input":
+                    for k, v in PERIOD_IND_MAPPING.items():
+                        expr = f"CASE WHEN {col} = '{k}' THEN '{v}' ELSE {col} END"
+                else:
+                    for k, v in PERIOD_IND_MAPPING_REVERSE.items():
+                        expr = f"CASE WHEN {col} = '{v}' THEN '{k}' ELSE {col} END"
+
+            exprs.append(f'{expr} AS "{measure.name}"')
+
+        return rel.project(", ".join(exprs))
 
     @classmethod
     def validate(  # type: ignore[override]
