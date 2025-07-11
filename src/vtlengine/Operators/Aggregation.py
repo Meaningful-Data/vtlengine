@@ -52,11 +52,11 @@ class Aggregation(Unary):
     @classmethod
     def _handle_data_types(
         cls, rel: DuckDBPyRelation, measures: List[Component], mode: str
-    ) -> DuckDBPyRelation:
+    ):
         if cls.op == COUNT:
             return rel
 
-        exprs = [f'"{col}"' for col in rel.columns]
+        exprs = [f'"{col}"' for col in rel.columns if col not in [m.name for m in measures]]
         for measure in measures:
             col = f'"{measure.name}"'
             expr = col
@@ -91,7 +91,7 @@ class Aggregation(Unary):
 
             exprs.append(f'{expr} AS "{measure.name}"')
 
-        return rel.project(", ".join(exprs))
+        rel.project(", ".join(exprs))
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -236,10 +236,11 @@ class Aggregation(Unary):
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
             if condition:
                 result_rel = result_rel.filter(condition)
+
         cls._handle_data_types(result_rel, operand.get_measures(), "input")
         result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
-
         cls._handle_data_types(result_rel, operand.get_measures(), "result")
+
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
         aux_rel = aux_rel.project(", ".join(grouping_keys)).distinct()

@@ -244,17 +244,17 @@ def _id_type_promotion_join_keys(
         left_data = left_data.project(cast_expr)
         right_data = right_data.project(cast_expr)
     elif {"String", "Integer", "Number"} & {left_type_name, right_type_name}:
-        transformations = [
+        exprs = [
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in left_data.columns
         ]
-        left_data = left_data.project(", ".join(transformations))
+        left_data = left_data.project(", ".join(exprs))
 
-        transformations = [
+        exprs = [
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in right_data.columns
         ]
-        right_data = right_data.project(", ".join(transformations))
+        right_data = right_data.project(", ".join(exprs))
 
     return left_data, right_data
 
@@ -731,13 +731,13 @@ class Binary(Operator):
             else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
         )
 
-        transformations = [f'"{d}"' for d in dataset.get_identifiers_names()]
+        exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            transformations.append(
+            exprs.append(
                 apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
             )
 
-        result_dataset.data = result_data.project(", ".join(transformations))
+        result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -937,11 +937,11 @@ class Unary(Operator):
         result_dataset = cls.dataset_validation(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
 
-        transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
-            transformations.append(apply_unary_op(cls.op, measure_name, measure_name))
+            exprs.append(apply_unary_op(cls.op, measure_name, measure_name))
 
-        result_dataset.data = result_data.project(", ".join(transformations))
+        result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
