@@ -37,7 +37,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset
+from vtlengine.Model import Dataset, DataComponent
 
 pd.options.mode.chained_assignment = None
 
@@ -331,6 +331,14 @@ def run(
     if output_folder is None:
         for dataset in result.values():
             format_time_period_external_representation(dataset, time_period_representation)
+
+    # Recasting to pandas-like objects
+    for operand in result.values():
+        if isinstance(operand, Dataset):
+            operand.data = operand.data.df()
+        elif isinstance(operand, DataComponent):
+            df = operand.data.df()
+            operand.data = df.squeeze() if len(df.columns) == 1 else df
 
     # Returning only persistent datasets
     if return_only_persistent:

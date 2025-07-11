@@ -9,6 +9,7 @@ import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from duckdb.duckdb import DuckDBPyRelation
+from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
@@ -203,6 +204,7 @@ class Dataset:
     def __post_init__(self) -> None:
         if isinstance(self.data, pd.DataFrame):
             self.data = con.from_df(self.data)
+
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -245,10 +247,17 @@ class Dataset:
             print("Column mismatch")
             return False
 
+        if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
+            # If both data are pandas DataFrames, compare them directly
+            return assert_frame_equal(self.data, other.data, check_dtype=False) is None
+        elif isinstance(self.data, pd.DataFrame):
+            self._to_duckdb()
+        elif isinstance(other.data, pd.DataFrame):
+            other._to_duckdb()
+
         # Round double values to avoid precision issues
         self.data = normalize_data(self.data)
         other.data = normalize_data(other.data)
-        # other.data = other.data.project()
 
         # Order by identifiers
         self_cols = set(self.data.columns)
@@ -263,10 +272,8 @@ class Dataset:
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
         if diff.limit(1).df().shape[0] > 0:
-            print("Data structure mismatch")
             diff.show()
             return False
-
         return True
 
     def get_component(self, component_name: str) -> Component:
@@ -359,13 +366,28 @@ class Dataset:
         return json.dumps(result, indent=2)
 
     def __repr__(self) -> str:
+        data = "None"
+        if isinstance(self.data, pd.DataFrame):
+            data = repr(self.data).replace("<NA>", "None")
+        elif isinstance(self.data, DuckDBPyRelation):
+            data = self.data.limit(10).df()
         return (
             f"Dataset("
             f"name={self.name}, "
             f"components={list(self.components.keys())},"
-            f"data={self.data.limit(10).df() if self.data is not None else 'None'}"
+            f"data={data}"
             f")"
         )
+
+    def _to_duckdb(self) -> DuckDBPyRelation:
+        """
+        Convert the dataset to a DuckDB relation.
+        """
+        if isinstance(self.data, DuckDBPyRelation) or self.data is None:
+            return
+        # Casting the pandas df to DuckDB relation
+        dtypes = {name: component.data_type().sql_type for name, component in self.components.items()}
+        self.data = con.from_df(self.data)
 
     @property
     def df(self) -> pd.DataFrame:
