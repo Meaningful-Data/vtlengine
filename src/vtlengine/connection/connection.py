@@ -3,7 +3,7 @@ import os
 from typing import Optional
 
 import duckdb
-import psutil
+# import psutil
 
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
 BASE_MEMORY_LIMIT = "1GB"
