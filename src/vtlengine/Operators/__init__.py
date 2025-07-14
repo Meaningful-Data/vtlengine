@@ -35,10 +35,10 @@ from vtlengine.DataTypes.TimeHandling import (
     TimePeriodHandler,
 )
 from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
+from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -602,6 +602,7 @@ class Binary(Operator):
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
+        a = result_data.df()
         result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
