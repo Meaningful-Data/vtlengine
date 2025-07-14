@@ -3,6 +3,7 @@ from typing import Any, Optional, Union
 
 import duckdb
 import pandas as pd
+import pyarrow as pa
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import (
@@ -34,7 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation, duckdb_drop
 from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -750,12 +751,16 @@ class Binary(Operator):
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
-            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+            else con.from_arrow(
+                pa.table({"__values__": scalar_set.values})
+            )
         )
 
+        result_data = duckdb_concat(result_data, scalar_set.values)
         result_component.data = result_data.project(
             apply_bin_op(cls, result_component.name, component.name, scalar_set.values.columns[0])
         )
+        result_component.data = duckdb_drop(result_component.data, scalar_set.values.columns[0])
         return result_component
 
     @classmethod
