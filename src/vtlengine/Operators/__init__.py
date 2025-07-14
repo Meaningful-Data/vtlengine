@@ -729,7 +729,9 @@ class Binary(Operator):
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
-            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+            else con.from_arrow(
+                pa.table({"__values__": scalar_set.values})
+            )
         )
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
@@ -738,6 +740,7 @@ class Binary(Operator):
                 apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
             )
 
+        result_data = duckdb_concat(result_data, scalar_set.values)
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -760,7 +763,6 @@ class Binary(Operator):
         result_component.data = result_data.project(
             apply_bin_op(cls, result_component.name, component.name, scalar_set.values.columns[0])
         )
-        result_component.data = duckdb_drop(result_component.data, scalar_set.values.columns[0])
         return result_component
 
     @classmethod
