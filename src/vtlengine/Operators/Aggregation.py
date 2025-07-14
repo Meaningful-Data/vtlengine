@@ -50,7 +50,7 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
     @classmethod
-    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component], mode: str):
+    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component], mode: str) -> DuckDBPyRelation:
         if cls.op == COUNT:
             return rel
 
@@ -79,17 +79,19 @@ class Aggregation(Unary):
                 if mode == "result":
                     expr = f"CAST({col} AS BOOLEAN)"
 
+
             elif measure.data_type == Duration:
-                if mode == "input":
-                    for k, v in PERIOD_IND_MAPPING.items():
-                        expr = f"CASE WHEN {col} = '{k}' THEN '{v}' ELSE {col} END"
-                else:
-                    for k, v in PERIOD_IND_MAPPING_REVERSE.items():
-                        expr = f"CASE WHEN {col} = '{v}' THEN '{k}' ELSE {col} END"
+                expr = "CASE"
+                mapping = PERIOD_IND_MAPPING if mode == "input" else PERIOD_IND_MAPPING_REVERSE
+                type_to_cast = "INTEGER" if mode == "input" else "VARCHAR"
+
+                for k, v in mapping.items():
+                    k, v = (f"'{k}'", v) if mode == "input" else (k, f"'{v}'")
+                    expr += f" WHEN {col} = {k} THEN {v}"
+                expr += f" ELSE CAST({col} AS {type_to_cast}) END"
 
             exprs.append(f'{expr} AS "{measure.name}"')
-
-        rel.project(", ".join(exprs))
+        return rel.project(", ".join(exprs))
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -235,9 +237,9 @@ class Aggregation(Unary):
             if condition:
                 result_rel = result_rel.filter(condition)
 
-        cls._handle_data_types(result_rel, operand.get_measures(), "input")
+        result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "input")
         result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
-        cls._handle_data_types(result_rel, operand.get_measures(), "result")
+        result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "result")
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
