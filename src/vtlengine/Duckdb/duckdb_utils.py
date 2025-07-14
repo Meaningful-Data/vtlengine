@@ -38,9 +38,11 @@ def duckdb_drop(
     data: DuckDBPyRelation, cols_to_drop: Union[str, List[str]], as_query: bool = False
 ) -> DuckDBPyRelation:
     """
-    Drops a column from a DuckDB relation.
+    Drops (remove) a column from a DuckDB relation.
 
     If no columns are specified, returns an empty relation.
+
+    Its behavior is similar to pandas dataframe drop method.
     """
     cols = set(data.columns) - set(cols_to_drop)
     if not cols:
@@ -118,6 +120,10 @@ def duckdb_merge(
 ) -> DuckDBPyRelation:
     """
     Merges two DuckDB relations on specified join keys and mode.
+
+    If either relation is None, it will be treated as an empty relation.
+
+    The resulting relation will have columns from both relations, with suffixes added
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
@@ -167,7 +173,7 @@ def duckdb_merge(
 def duckdb_rename(
     data: DuckDBPyRelation, name_dict: Dict[str, str], as_query: bool = False
 ) -> DuckDBPyRelation:
-    """Renames a column in a DuckDB relation."""
+    """Renames columns in a DuckDB relation."""
     cols = set(data.columns)
     for old_name, new_name in name_dict.items():
         if old_name not in cols:
@@ -194,6 +200,12 @@ def duckdb_select(
 
 
 def duration_handler(col: str, reverse: bool = False) -> str:
+    """
+    Returns a CASE expression to handle duration columns in DuckDB.
+
+    It allows for converting between string representations and integer indices.
+    """
+
     expr = "CASE"
     mapping = PERIOD_IND_MAPPING_REVERSE if reverse else PERIOD_IND_MAPPING
     type_to_cast = "VARCHAR" if reverse else "INTEGER"
@@ -218,7 +230,10 @@ def empty_relation(
     return query if as_query else con.sql(query)
 
 
-def get_col_type(rel, col_name):
+def get_col_type(rel: DuckDBPyRelation, col_name: str):
+    """
+    Returns the specified column type from the DuckDB relation.
+    """
     return rel.types[rel.columns.index(col_name)]
 
 
