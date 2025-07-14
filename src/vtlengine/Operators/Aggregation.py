@@ -30,7 +30,7 @@ from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     PERIOD_IND_MAPPING_REVERSE,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation, duration_handler
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Unary
@@ -81,14 +81,7 @@ class Aggregation(Unary):
 
 
             elif measure.data_type == Duration:
-                expr = "CASE"
-                mapping = PERIOD_IND_MAPPING if mode == "input" else PERIOD_IND_MAPPING_REVERSE
-                type_to_cast = "INTEGER" if mode == "input" else "VARCHAR"
-
-                for k, v in mapping.items():
-                    k, v = (f"'{k}'", v) if mode == "input" else (k, f"'{v}'")
-                    expr += f" WHEN {col} = {k} THEN {v}"
-                expr += f" ELSE CAST({col} AS {type_to_cast}) END"
+                expr = duration_handler(col, reverse=(mode == "result"))
 
             exprs.append(f'{expr} AS "{measure.name}"')
         return rel.project(", ".join(exprs))

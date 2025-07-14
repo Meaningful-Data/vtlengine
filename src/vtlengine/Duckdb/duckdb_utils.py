@@ -5,6 +5,7 @@ from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation
 from duckdb.duckdb.typing import DuckDBPyType
 
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 from vtlengine.connection import con
 
 
@@ -192,6 +193,17 @@ def duckdb_select(
     cols = set(cols)
     query = ", ".join(cols)
     return query if as_query else data.project(query)
+
+
+def duration_handler(col: str, reverse: bool = False) -> str:
+    expr = "CASE"
+    mapping = PERIOD_IND_MAPPING_REVERSE if reverse else PERIOD_IND_MAPPING
+    type_to_cast = "VARCHAR" if reverse else "INTEGER"
+    for k, v in mapping.items():
+        k, v = (k, f"'{v}'") if reverse else (f"'{k}'", v)
+        expr += f" WHEN {col} = {k} THEN {v}"
+    expr += f" ELSE CAST({col} AS {type_to_cast}) END"
+    return expr
 
 
 def empty_relation(
