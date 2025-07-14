@@ -334,9 +334,9 @@ def run(
 
     # Recasting to pandas-like objects
     for operand in result.values():
-        if isinstance(operand, Dataset):
+        if isinstance(operand, Dataset) and operand.data is not None:
             operand.data = operand.data.df()
-        elif isinstance(operand, DataComponent):
+        elif isinstance(operand, DataComponent) and operand.data is not None:
             df = operand.data.df()
             operand.data = df.squeeze() if len(df.columns) == 1 else df
 
