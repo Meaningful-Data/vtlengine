@@ -411,7 +411,9 @@ def run_sdmx(  # noqa: C901
     mapping_dict = {}
     input_names = _extract_input_datasets(script)
 
-    if not isinstance(datasets, Sequence) or any(not isinstance(ds, PandasDataset) for ds in datasets):
+    if not isinstance(datasets, Sequence) or any(
+        not isinstance(ds, PandasDataset) for ds in datasets
+    ):
         type_ = type(datasets).__name__
         if isinstance(datasets, Sequence):
             object_typing = {type(o).__name__ for o in datasets}

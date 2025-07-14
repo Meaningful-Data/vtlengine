@@ -9,7 +9,8 @@ All exceptions exposed by the Vtl engine.
 
 centralised_messages = {
     # Input Validation errors
-    "0-1-1-1": "invalid script format type: {format_}. Input must be a string, TransformationScheme or Path object",
+    "0-1-1-1": "invalid script format type: {format_}. Input must be a string, "
+    "TransformationScheme or Path object",
     "0-1-2-1": "Invalid json structure because additional properties have been supplied "
     "on file {filename}.",
     "0-1-2-2": "Errors found on file {filename}: {errors}",
