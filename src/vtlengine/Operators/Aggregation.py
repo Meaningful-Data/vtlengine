@@ -26,11 +26,7 @@ from vtlengine.DataTypes import (
     String,
     unary_implicit_promotion,
 )
-from vtlengine.DataTypes.TimeHandling import (
-    PERIOD_IND_MAPPING,
-    PERIOD_IND_MAPPING_REVERSE,
-)
-from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation, duration_handler
+from vtlengine.Duckdb.duckdb_utils import duckdb_merge, duration_handler, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Unary
@@ -50,7 +46,9 @@ def extract_grouping_identifiers(
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
     @classmethod
-    def _handle_data_types(cls, rel: DuckDBPyRelation, measures: List[Component], mode: str) -> DuckDBPyRelation:
+    def _handle_data_types(
+        cls, rel: DuckDBPyRelation, measures: List[Component], mode: str
+    ) -> DuckDBPyRelation:
         if cls.op == COUNT:
             return rel
 
@@ -78,7 +76,6 @@ class Aggregation(Unary):
             elif measure.data_type == Boolean:
                 if mode == "result":
                     expr = f"CAST({col} AS BOOLEAN)"
-
 
             elif measure.data_type == Duration:
                 expr = duration_handler(col, reverse=(mode == "result"))

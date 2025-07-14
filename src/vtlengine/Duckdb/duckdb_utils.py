@@ -5,8 +5,8 @@ from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation
 from duckdb.duckdb.typing import DuckDBPyType
 
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 from vtlengine.connection import con
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
 
 def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
