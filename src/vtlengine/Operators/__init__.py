@@ -602,7 +602,6 @@ class Binary(Operator):
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
-        a = result_data.df()
         result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
