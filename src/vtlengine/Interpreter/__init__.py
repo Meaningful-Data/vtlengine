@@ -42,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,

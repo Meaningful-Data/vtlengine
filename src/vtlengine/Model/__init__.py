@@ -264,9 +264,6 @@ class Dataset:
         sorted_self = self.data.project(", ".join(self_cols))
         sorted_other = other.data.project(", ".join(self_cols))
 
-        print(sorted_self)
-        print(sorted_other)
-
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
         # Loading only the first row to check if there are any internal structure differences
