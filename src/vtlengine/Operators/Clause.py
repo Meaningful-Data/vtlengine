@@ -370,20 +370,16 @@ class Sub(Operator):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         operand_names = [operand.name for operand in operands]
-        if dataset.data is not None and len(dataset.data) > 0:
-            # Filter the Dataframe
-            # by intersecting the indexes of the Data Component with True values
-            true_indexes = set()
-            is_first = True
+
+        if dataset.data is not None:
+            filter_exprs = []
             for operand in operands:
                 if operand.data is not None:
-                    if is_first:
-                        true_indexes = set(operand.data[operand.data == True].index)
-                        is_first = False
-                    else:
-                        true_indexes.intersection_update(
-                            set(operand.data[operand.data == True].index)
-                        )
-            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
+                    filter_exprs.append(f"{operand.name} = TRUE")
+
+            if filter_exprs:
+                filter_query = " AND ".join(filter_exprs)
+                result_dataset.data = result_dataset.data.filter(filter_query)
+
         result_dataset.data = duckdb_drop(result_dataset.data, operand_names)
         return result_dataset
