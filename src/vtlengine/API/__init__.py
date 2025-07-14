@@ -35,7 +35,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset
+from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
 
@@ -180,7 +180,7 @@ def semantic_analysis(
     ast = create_ast(vtl)
 
     # Loading datasets
-    structures = load_datasets(data_structures)
+    datasets, scalars = load_datasets(data_structures)
 
     # Handling of library items
     vd = None
@@ -192,9 +192,10 @@ def semantic_analysis(
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
-        datasets=structures,
+        datasets=datasets,
         value_domains=vd,
         external_routines=ext_routines,
+        scalars=scalars,
         only_semantic=True,
     )
     result = interpreter.visit(ast)
@@ -210,6 +211,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -276,6 +278,8 @@ def run(
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
+        scalar_values: Dict with the scalar values to be used in the VTL script. \
+
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -292,7 +296,9 @@ def run(
     ast = create_ast(vtl)
 
     # Loading datasets and datapoints
-    datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
+    datasets, scalars, path_dict = load_datasets_with_data(
+        data_structures, datapoints, scalar_values
+    )
 
     # Handling of library items
     vd = None
@@ -322,17 +328,19 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
+        scalars=scalars,
     )
     result = interpreter.visit(ast)
 
     # Applying time period output format
     if output_folder is None:
-        for dataset in result.values():
-            format_time_period_external_representation(dataset, time_period_representation)
+        for obj in result.values():
+            if isinstance(obj, (Dataset, Scalar)):
+                format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
     if return_only_persistent:
-        return _return_only_persistent_datasets(result, ast)
+        return _return_only_persistent_datasets(result, ast)  # type: ignore[return-value]
     return result
 
 

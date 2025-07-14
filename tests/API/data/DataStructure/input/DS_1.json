@@ -23,5 +23,11 @@
                 }
             ]
         }
-    ]
+    ],
+    "scalars": [
+                {
+                    "name": "sc_1",
+                    "type": "Integer"
+                }
+            ]
 }
