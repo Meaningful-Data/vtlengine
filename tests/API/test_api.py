@@ -1606,7 +1606,10 @@ def test_check_script_with_string_input():
 
 
 def test_check_script_invalid_input_type():
-    with pytest.raises(Exception, match="invalid script format type: int. Input must be a string, TransformationScheme or Path object"):
+    with pytest.raises(
+        Exception,
+        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+    ):
         _check_script(12345)
 
 
