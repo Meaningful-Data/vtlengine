@@ -30,8 +30,6 @@ def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRe
     left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
     right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
 
-    print("Left columns:", left.columns)
-    print("Right columns:", right.columns)
     condition = "base.__row_id__ = other.__row_id__"
     return left.join(right, condition=condition, how="inner").project(", ".join(cols))
 
