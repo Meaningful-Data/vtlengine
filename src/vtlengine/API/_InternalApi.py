@@ -21,9 +21,10 @@ from vtlengine import AST as AST
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
+from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import InputValidationException, check_key
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_duckdb
 from vtlengine.Model import (
     Component as VTL_Component,
 )
@@ -238,7 +239,22 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name}")
-            datasets[dataset_name].data = _validate_pandas(
+            # Handling pandas entry data from test files (avoiding test data load refactor)
+            if isinstance(data, pd.DataFrame):
+                comps = datasets[dataset_name].components
+                sql_types = {
+                    c.name: c.data_type().sql_type
+                    for c in comps.values()
+                    if c.name in list(data.columns)
+                }
+
+                query = ", ".join(
+                    f"TRY_CAST({col} AS {sql_type}) AS {col}" for col, sql_type in sql_types.items()
+                )
+
+                data = con.from_df(data).project(query)
+
+            datasets[dataset_name].data = _validate_duckdb(
                 datasets[dataset_name].components, data, dataset_name
             )
         for dataset_name in datasets:

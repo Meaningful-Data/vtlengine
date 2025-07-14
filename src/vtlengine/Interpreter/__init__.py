@@ -42,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -238,6 +239,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            if isinstance(result, Dataset):
+                # TODO: add parquet, csv or tem tables storage using a flag
+                con.register(result.name, result.data)
 
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None

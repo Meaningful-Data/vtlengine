@@ -4,6 +4,7 @@ from typing import Union
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Model import Dataset, Scalar
+from vtlengine.connection import con
 
 
 class TimePeriodRepresentation(Enum):
@@ -21,6 +22,9 @@ class TimePeriodRepresentation(Enum):
 
 def _format_vtl_representation(value: str) -> str:
     return TimePeriodHandler(value).vtl_representation()
+
+
+con.create_function("_format_vtl_representation", _format_vtl_representation)
 
 
 def format_time_period_external_representation(
@@ -46,10 +50,21 @@ def format_time_period_external_representation(
     # VTL Representation
     if dataset.data is None or len(dataset.data) == 0:
         return
+
+    # for comp in dataset.components.values():
+    #     if comp.data_type == TimePeriod:
+    #         dataset.data[comp.name] = dataset.data[comp.name].map(
+    #             _format_vtl_representation, na_action="ignore"
+    #         )
+
+    exprs = []
     for comp in dataset.components.values():
         if comp.data_type == TimePeriod:
-            dataset.data[comp.name] = dataset.data[comp.name].map(
-                _format_vtl_representation, na_action="ignore"
-            )
+            exprs.append(f'_format_vtl_representation({comp.name}) AS "{comp.name}"')
+        else:
+            exprs.append(comp.name)
+    query = ', '.join(exprs)
+    dataset.data = dataset.data.project(query)
+
 
     return
