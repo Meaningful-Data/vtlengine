@@ -411,11 +411,11 @@ def run_sdmx(  # noqa: C901
     mapping_dict = {}
     input_names = _extract_input_datasets(script)
 
-    if not isinstance(datasets, Sequence) or any(  # type: ignore[redundant-expr]
+    if not isinstance(datasets, (list, set)) or any(  # type: ignore[redundant-expr]
         not isinstance(ds, PandasDataset) for ds in datasets
     ):
         type_ = type(datasets).__name__
-        if isinstance(datasets, Sequence):
+        if isinstance(datasets, (list, set)):
             object_typing = {type(o).__name__ for o in datasets}
             type_ = f"{type_}[{', '.join(object_typing)}]"
         raise SemanticError("0-1-3-7", type_=type_)
