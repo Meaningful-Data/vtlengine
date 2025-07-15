@@ -248,7 +248,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
                     if c.name in list(data.columns)
                 }
 
-                query = ", ".join(
+                query = ', '.join(
                     f"TRY_CAST({col} AS {sql_type}) AS {col}" for col, sql_type in sql_types.items()
                 )
 

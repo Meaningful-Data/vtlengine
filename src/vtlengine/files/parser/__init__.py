@@ -46,7 +46,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
         [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
     )
     if comps_missing:
-        comps_missing = ", ".join(comps_missing)
+        comps_missing = ', '.join(comps_missing)
         raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
 
 
@@ -65,7 +65,7 @@ def _sanitize_duckdb_columns(
         and "DATAFLOW" not in components
     ):
         modified_data = modified_data.project(
-            ", ".join([f'"{col}"' for col in column_names if col != "DATAFLOW"])
+            ', '.join([f'"{col}"' for col in column_names if col != "DATAFLOW"])
         )
         column_names = modified_data.columns
 
@@ -76,7 +76,7 @@ def _sanitize_duckdb_columns(
         if "ACTION" in column_names:
             modified_data = modified_data.filter("ACTION != 'D'")
 
-        modified_data = modified_data.project(", ".join([f'"{col}"' for col in remaining_cols]))
+        modified_data = modified_data.project(', '.join([f'"{col}"' for col in remaining_cols]))
         column_names = modified_data.columns
 
     # Validate identifiers
@@ -85,7 +85,7 @@ def _sanitize_duckdb_columns(
 
     if missing:
         file = csv_path if isinstance(csv_path, str) else csv_path.name
-        raise InputValidationException(code="0-1-1-7", ids=", ".join(missing), file=file)
+        raise InputValidationException(code="0-1-1-7", ids=', '.join(missing), file=file)
 
     # Add missing nullable columns
     for comp_name, comp in components.items():
@@ -128,7 +128,7 @@ def _validate_duckdb(
         else:
             exprs.append(col)
 
-    final_query = ", ".join(exprs)
+    final_query = ', '.join(exprs)
     data = data.project(final_query)
 
     return data
@@ -145,7 +145,7 @@ def check_nulls(
     ]
     query = (
         "SELECT "
-        + ", ".join(
+        + ', '.join(
             [
                 f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count"
                 for col in non_nullable
@@ -175,7 +175,7 @@ def check_duplicates(
     #             SELECT COUNT(*) > 0 from (
     #                 SELECT COUNT(*) as count
     #                 FROM data
-    #                 GROUP BY {", ".join(id_names)}
+    #                 GROUP BY {', '.join(id_names)}
     #                 HAVING COUNT(*) > 1
     #             ) AS duplicates
     #             """
@@ -250,7 +250,7 @@ def _fill_dataset_empty_data(dataset: Dataset) -> None:
         dataset.data = con.query("SELECT NULL LIMIT 0")
         return
 
-    column_defs = ", ".join(
+    column_defs = ', '.join(
         [
             f'NULL::{comp.data_type().sql_type} AS "{name}"'
             for name, comp in dataset.components.items()

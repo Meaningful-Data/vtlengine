@@ -316,13 +316,13 @@ class Unpivot(Operator):
 
             query = f"""
             SELECT
-              {", ".join(dataset.get_identifiers_names())},
+              {', '.join(dataset.get_identifiers_names())},
               variable AS "{operands[0]}",
               value AS "{operands[1]}"
             FROM (
               SELECT * FROM __data_to_melt__
               UNPIVOT (
-                value FOR variable IN ({", ".join(dataset.get_measures_names())})
+                value FOR variable IN ({', '.join(dataset.get_measures_names())})
               )
             )
             WHERE value IS NOT NULL

@@ -67,7 +67,7 @@ class Aggregation(Unary):
     #             expr = duration_handler(col, reverse=(mode == "result"))
     #
     #         exprs.append(f'{expr} AS "{measure.name}"')
-    #     return rel.project(", ".join(exprs))
+    #     return rel.project(', '.join(exprs))
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -143,7 +143,7 @@ class Aggregation(Unary):
             [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
         )
         if grouping_names is not None and len(grouping_names) > 0:
-            grouping = "GROUP BY " + ", ".join(grouping_names)
+            grouping = "GROUP BY " + ', '.join(grouping_names)
         else:
             grouping = ""
 
@@ -207,7 +207,7 @@ class Aggregation(Unary):
         grouping_keys = result.get_identifiers_names()
         result_rel = operand.data if operand.data is not None else empty_relation()
         measure_names = operand.get_measures_names()
-        result_rel = result_rel.project(", ".join(grouping_keys + measure_names))
+        result_rel = result_rel.project(', '.join(grouping_keys + measure_names))
         if cls.op == COUNT:
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
             if condition:
@@ -219,14 +219,14 @@ class Aggregation(Unary):
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
-        aux_rel = aux_rel.project(", ".join(grouping_keys)).distinct()
+        aux_rel = aux_rel.project(', '.join(grouping_keys)).distinct()
         if len(grouping_keys) == 0:
             aux_rel = result_rel
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())
             aux_rel = aux_rel.filter(condition)
             if cls.op == COUNT and len(result_rel) == 0:
                 aux_rel = aux_rel.project(
-                    ", ".join(result.get_measures_names() + ['0 AS "int_var"'])
+                    ', '.join(result.get_measures_names() + ['0 AS "int_var"'])
                 )
         elif len(aux_rel) == 0:
             aux_rel = con.from_df(pd.DataFrame(columns=result.get_components_names()))

@@ -291,13 +291,13 @@ def _id_type_promotion_join_keys(
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in left_data.columns
         ]
-        left_data = left_data.project(", ".join(exprs))
+        left_data = left_data.project(', '.join(exprs))
 
         exprs = [
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in right_data.columns
         ]
-        right_data = right_data.project(", ".join(exprs))
+        right_data = right_data.project(', '.join(exprs))
 
     return left_data, right_data
 
@@ -644,7 +644,7 @@ class Binary(Operator):
             )
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = f"{', '.join(transformations)}"
+        final_query = ', '.join(transformations)
         result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
@@ -687,22 +687,21 @@ class Binary(Operator):
         result_data = dataset.data
 
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
-        if isinstance(scalar_value, str):
-            scalar_value = f"'{scalar_value}'"
+        scalar_value = handle_sql_scalar(scalar_value)
 
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
             if me.data_type in TIME_TYPES:
                 transformations.append(
-                    f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
+                    f'cast_time_types("{me.data_type.__name__}", "{me.name}") AS "{me.name}"'
                 )
             if me.data_type == Duration and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
-            left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
+            left, right = (f'"{me.name}"', scalar_value) if dataset_left else (scalar_value, f'"{me.name}"')
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = f"{', '.join(transformations)}"
+        final_query = ', '.join(transformations)
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -720,19 +719,19 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
+                f'cast_time_types("{left_operand.data_type.__name__}", "{left_operand.name}") '
                 f'AS "{left_operand.name}"'
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
+                f'cast_time_types("{right_operand.data_type.__name__}", "{right_operand.name}") '
                 f'AS "{right_operand.name}"'
             )
 
         transformations.append(
-            apply_bin_op(cls, result_component.name, left_operand.name, right_operand.name)
+            apply_bin_op(cls, result_component.name, f'"{left_operand.name}"', f'"{right_operand.name}"')
         )
-        final_query = f"{', '.join(transformations)}"
+        final_query = ', '.join(transformations)
         result_data = result_data.project(final_query)
         result_component.data = result_data.project(result_component.name)
         return result_component
@@ -760,7 +759,7 @@ class Binary(Operator):
             scalar_value = f"'{scalar_value}'"
 
         exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
-        final_query = ", ".join(exprs)
+        final_query = ', '.join(exprs)
         result_component.data = comp_data.project(final_query)
         return result_component
 
@@ -781,7 +780,7 @@ class Binary(Operator):
             )
 
         result_data = duckdb_concat(result_data, scalar_set.values)
-        result_dataset.data = result_data.project(", ".join(exprs))
+        result_dataset.data = result_data.project(', '.join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -986,7 +985,7 @@ class Unary(Operator):
         for measure_name in operand.get_measures_names():
             exprs.append(apply_unary_op(cls, measure_name, measure_name))
 
-        result_dataset.data = result_data.project(", ".join(exprs))
+        result_dataset.data = result_data.project(', '.join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 

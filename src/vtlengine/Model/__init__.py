@@ -262,8 +262,8 @@ class Dataset:
 
         # Order by identifiers
         self_cols = set(self.data.columns)
-        sorted_self = self.data.project(", ".join(self_cols))
-        sorted_other = other.data.project(", ".join(self_cols))
+        sorted_self = self.data.project(', '.join(self_cols))
+        sorted_other = other.data.project(', '.join(self_cols))
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))

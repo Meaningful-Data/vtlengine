@@ -6,7 +6,7 @@ import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
-from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation, duckdb_rename
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -157,7 +157,7 @@ class Join(Operator):
             if op.data is not None:
                 for column in op.data.columns:
                     if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + "#" + column})
+                        op.data = duckdb_rename(op.data, {column: op.name + "#" + column})
         result.data = cls.reference_dataset.data
 
         join_keys = using if using else result.get_identifiers_names()

@@ -25,13 +25,13 @@ def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRe
     common_cols = set(left.columns).intersection(set(right.columns))
     cols_left = "*"
     if common_cols:
-        cols_left += f" EXCLUDE ({', '.join(common_cols)})"
+        cols_left += f" EXCLUDE ({', '.join(quote_cols(common_cols))})"
 
     left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
     right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
 
-    condition = "base.__row_id__ = other.__row_id__"
-    return left.join(right, condition=condition, how="inner").project(", ".join(cols))
+    condition = 'base.__row_id__ = other.__row_id__'
+    return left.join(right, condition=condition, how="inner").project(', '.join(quote_cols(cols)))
 
 
 def duckdb_drop(
@@ -47,7 +47,7 @@ def duckdb_drop(
     cols = set(data.columns) - set(cols_to_drop)
     if not cols:
         return empty_relation(as_query=as_query)
-    query = ", ".join(cols)
+    query = ', '.join(quote_cols(cols))
     return query if as_query else data.project(query)
 
 
@@ -101,14 +101,14 @@ def duckdb_fillna(
         if isinstance(types, list) and len(types) not in (1, len(cols_set)):
             raise ValueError("Length of types must match length of columns.")
 
-        value = f"CAST({value} AS {type_})" if type_ else value
+        value = f'CAST({value} AS {type_})' if type_ else value
         exprs.append(f'COALESCE({col}, {value}) AS "{col}"')
 
-    query = ", ".join(exprs) if exprs else ""
+    query = ', '.join(exprs) if exprs else ''
 
     if as_query:
         return query
-    return data.project(", ".join(exprs)) if query else data
+    return data.project(', '.join(exprs)) if query else data
 
 
 # TODO: implement other merge types: left, outer...
@@ -137,52 +137,48 @@ def duckdb_merge(
     base_proj_cols = []
     for c in base_relation.columns:
         if c in common_cols:
-            base_proj_cols.append(f"{c} AS {c}{suffixes[0]}")
+            base_proj_cols.append(f'"{c}" AS "{c}{suffixes[0]}"')
         else:
-            base_proj_cols.append(c)
-    base_relation = base_relation.project(", ".join(base_proj_cols))
+            base_proj_cols.append(f'"{c}"')
+    base_relation = base_relation.project(', '.join(base_proj_cols))
 
     other_proj_cols = []
     for c in other_relation.columns:
         if c in common_cols:
-            other_proj_cols.append(f"{c} AS {c}{suffixes[1]}")
+            other_proj_cols.append(f'"{c}" AS "{c}{suffixes[1]}"')
         else:
-            other_proj_cols.append(c)
-    other_relation = other_relation.project(", ".join(other_proj_cols))
+            other_proj_cols.append(f'"{c}"')
+    other_relation = other_relation.project(', '.join(other_proj_cols))
 
-    base_alias = "base"
-    other_alias = "other"
+    base_alias = 'base'
+    other_alias = 'other'
     base_relation = base_relation.set_alias(base_alias)
     other_relation = other_relation.set_alias(other_alias)
 
-    join_condition = " AND ".join([f"{base_alias}.{k} = {other_alias}.{k}" for k in join_keys])
+    join_condition = ' AND '.join([f'{base_alias}.{k} = {other_alias}.{k}' for k in join_keys])
     joined = base_relation.join(
         other_relation,
         condition=join_condition,
         how=how,
     )
 
-    keep_cols = []
-    for c in joined.columns:
-        if c in join_keys:
-            c = f"{base_alias}.{c}"
-        keep_cols.append(c)
-
-    return joined.project(", ".join(set(keep_cols)))
+    keep_cols = {f'{base_alias}.{c}' if c in join_keys else f'"{c}"' for c in joined.columns}
+    return joined.project(', '.join(set(keep_cols)))
 
 
 def duckdb_rename(
     data: DuckDBPyRelation, name_dict: Dict[str, str], as_query: bool = False
 ) -> DuckDBPyRelation:
     """Renames columns in a DuckDB relation."""
+    cols_set = set()
     cols = set(data.columns)
     for old_name, new_name in name_dict.items():
         if old_name not in cols:
             raise ValueError(f"Column '{old_name}' not found in relation.")
         cols.remove(old_name)
-        cols.add(f'{old_name} AS "{new_name}"')
-    query = ", ".join(cols)
-    return query if as_query else data.project(", ".join(cols))
+        cols_set.add(f'"{old_name}" AS "{new_name}"')
+    query = ', '.join(quote_cols(cols) | cols_set)
+    return query if as_query else data.project(query)
 
 
 def duckdb_select(
@@ -196,7 +192,7 @@ def duckdb_select(
     If `as_query` is True, returns the SQL query string instead of the relation.
     """
     cols = set(cols)
-    query = ", ".join(cols)
+    query = ', '.join(quote_cols(cols))
     return query if as_query else data.project(query)
 
 
@@ -252,6 +248,14 @@ def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> A
     return query if as_query else data.aggregate(query).fetchone()[0]
 
 
+def quote_cols(cols: Union[str, List[str]]) -> str:
+    """
+    Quotes column names for use in SQL queries.
+    """
+    cols_set = set(cols)
+    return {f'"{c}"' for c in cols_set}
+
+
 def remove_null_str(
     data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
 ) -> DuckDBPyRelation:
@@ -290,5 +294,5 @@ def round_doubles(
         else:
             exprs.append(f'"{col}"')
 
-    query = ", ".join(exprs)
+    query = ', '.join(exprs)
     return query if as_query else data.project(query)
