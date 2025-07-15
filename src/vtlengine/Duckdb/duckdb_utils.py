@@ -1,15 +1,15 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import pandas as pd
 from duckdb import duckdb
-from duckdb.duckdb import DuckDBPyRelation
-from duckdb.duckdb.typing import DuckDBPyType
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
 
-def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
+def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:  # type: ignore[import-untyped]
     """
     Concatenates two DuckDB relations by row, ensuring that columns are aligned.
 
@@ -80,8 +80,8 @@ def duckdb_fillna(
     """
 
     exprs = []
-    cols = set(cols) if cols else data.columns
-    for idx, col in enumerate(cols):
+    cols_set: Set[str] = set(cols) if cols is not None else data.columns
+    for idx, col in enumerate(cols_set):
         type_ = (
             (
                 types
@@ -89,7 +89,7 @@ def duckdb_fillna(
                 else types[0]
                 if isinstance(types, list) and len(types) == 1
                 else types[idx]
-                if isinstance(types, list) and len(types) == len(cols)
+                if isinstance(types, list) and len(types) == len(cols_set)
                 else types.get(col)
                 if isinstance(types, dict)
                 else None
@@ -98,7 +98,7 @@ def duckdb_fillna(
             else None
         )
 
-        if isinstance(types, list) and len(types) not in (1, len(cols)):
+        if isinstance(types, list) and len(types) not in (1, len(cols_set)):
             raise ValueError("Length of types must match length of columns.")
 
         value = f"CAST({value} AS {type_})" if type_ else value
@@ -115,7 +115,7 @@ def duckdb_fillna(
 def duckdb_merge(
     base_relation: Optional[DuckDBPyRelation],
     other_relation: Optional[DuckDBPyRelation],
-    join_keys: list[str],
+    join_keys: Optional[List[str]],
     how: str = "inner",
 ) -> DuckDBPyRelation:
     """
@@ -127,6 +127,7 @@ def duckdb_merge(
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
+    join_keys = join_keys if join_keys is not None else []
 
     suffixes = ["_x", "_y"]
     base_cols = set(base_relation.columns)
@@ -185,7 +186,7 @@ def duckdb_rename(
 
 
 def duckdb_select(
-    data: DuckDBPyRelation, cols: Union[str, List[str]] = "*", as_query: bool = False
+    data: DuckDBPyRelation, cols: Union[str, List[str], Any] = "*", as_query: bool = False
 ) -> DuckDBPyRelation:
     """
     Selects specific columns from a DuckDB relation.
@@ -230,7 +231,7 @@ def empty_relation(
     return query if as_query else con.sql(query)
 
 
-def get_col_type(rel: DuckDBPyRelation, col_name: str):
+def get_col_type(rel: DuckDBPyRelation, col_name: str):  # type: ignore[import-untyped]
     """
     Returns the specified column type from the DuckDB relation.
     """

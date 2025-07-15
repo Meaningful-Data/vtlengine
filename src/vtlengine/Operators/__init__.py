@@ -1,6 +1,6 @@
 from copy import copy
 from decimal import Decimal
-from typing import Any, Optional, Union
+from typing import Any, Optional, Type, Union
 
 import pandas as pd
 import pyarrow as pa
@@ -25,7 +25,10 @@ from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Duration,
     ScalarType,
+    TimeInterval,
+    TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -55,7 +58,7 @@ only_semantic = False
 
 
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
-TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
+TIME_TYPES = [TimeInterval, TimePeriod, Duration]
 
 
 def handle_sql_scalar(value: Any) -> Any:
@@ -68,13 +71,13 @@ def handle_sql_scalar(value: Any) -> Any:
     return value
 
 
-def apply_unary_op(cls: "Operator", me_name: str, value: Any) -> str:
+def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
     return f'{op_token}({me_name}) AS "{value}"'
 
 
-def apply_unary_op_scalar(cls: "Operator", value: Any) -> Any:
+def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
@@ -83,7 +86,7 @@ def apply_unary_op_scalar(cls: "Operator", value: Any) -> Any:
     return float(result) if isinstance(result, Decimal) else result
 
 
-def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
+def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -104,7 +107,7 @@ def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
     return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
-def apply_bin_op_scalar(cls: "Operator", left: Any, right: Any) -> Any:
+def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -627,7 +630,7 @@ class Binary(Operator):
         # Measures are the same, using left operand measures names
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in left_operand.get_measures():
-            if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type.__name__ in TIME_TYPES:
+            if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type in TIME_TYPES:
                 transformations.append(f"""
                     cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
                     cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
@@ -687,7 +690,7 @@ class Binary(Operator):
 
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
-            if me.data_type.__name__ in TIME_TYPES:
+            if me.data_type in TIME_TYPES:
                 transformations.append(
                     f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
                 )
@@ -713,12 +716,12 @@ class Binary(Operator):
         result_data = duckdb_concat(left_operand.data, right_operand.data)
 
         transformations = ["*"]
-        if left_operand.data_type.__name__ in TIME_TYPES:
+        if left_operand.data_type in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
                 f'AS "{left_operand.name}"'
             )
-        if right_operand.data_type.__name__ in TIME_TYPES:
+        if right_operand.data_type in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
                 f'AS "{right_operand.name}"'
@@ -740,7 +743,7 @@ class Binary(Operator):
         comp_data = component.data if component.data is not None else empty_relation()
 
         exprs = []
-        if component.data_type.__name__ in TIME_TYPES:
+        if component.data_type in TIME_TYPES:
             exprs.append(
                 f'cast_time_types("{component.data_type.__name__}", {component.name}) '
                 f'AS "{component.name}"'
