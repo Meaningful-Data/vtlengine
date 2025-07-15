@@ -63,7 +63,7 @@ def format_time_period_external_representation(
             exprs.append(f'_format_vtl_representation({comp.name}) AS "{comp.name}"')
         else:
             exprs.append(comp.name)
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     dataset.data = dataset.data.project(query)
 
     return

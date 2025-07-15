@@ -303,7 +303,7 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError(
                 "1-4-1-5",
                 type="Datapoint Ruleset",
-                names=', '.join(not_unique),
+                names=", ".join(not_unique),
                 ruleset_name=node.name,
             )
 
@@ -675,7 +675,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                id_cols_data = self.regular_aggregation_dataset.data.project(', '.join(id_columns))
+                id_cols_data = self.regular_aggregation_dataset.data.project(", ".join(id_columns))
                 data = duckdb_merge(
                     id_cols_data,
                     result.data,
@@ -914,7 +914,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role != Role.MEASURE
             }
             if dataset.data is not None:
-                dataset.data = dataset.data.project(', '.join(dataset.get_identifiers_names()))
+                dataset.data = dataset.data.project(", ".join(dataset.get_identifiers_names()))
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])

@@ -72,7 +72,7 @@ class Membership(Binary):
                     data=left_operand.data[right_operand],
                 )
             result_dataset.data = left_operand.data.project(
-                ', '.join(list(result_dataset.components.keys()))
+                ", ".join(list(result_dataset.components.keys()))
             )
         return result_dataset
 

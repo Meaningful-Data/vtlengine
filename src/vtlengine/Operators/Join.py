@@ -6,7 +6,7 @@ import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
-from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation, duckdb_rename
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys

@@ -208,7 +208,7 @@ class Analytic(Operator.Unary):
             window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
 
         # Partitioning
-        partition = "PARTITION BY " + ', '.join(partitioning) if len(partitioning) > 0 else ""
+        partition = "PARTITION BY " + ", ".join(partitioning) if len(partitioning) > 0 else ""
 
         # Ordering
         order_str = ""
@@ -243,8 +243,8 @@ class Analytic(Operator.Unary):
                 f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             )
 
-        measures_sql = ', '.join(measure_queries)
-        identifiers_sql = ', '.join(identifier_names)
+        measures_sql = ", ".join(measure_queries)
+        identifiers_sql = ", ".join(identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
@@ -255,7 +255,7 @@ class Analytic(Operator.Unary):
                     rel, value=-1, cols=measure_names, types=measures_types, as_query=True
                 )
             )
-            rel = rel.project(', '.join(exprs))
+            rel = rel.project(", ".join(exprs))
         return con.query(query)
 
     @classmethod
@@ -285,7 +285,7 @@ class Analytic(Operator.Unary):
             ordering=ordering or [],
             window=window,
             params=params,
-        ).order(', '.join(operand.get_identifiers_names()))
+        ).order(", ".join(operand.get_identifiers_names()))
 
         return result
 
