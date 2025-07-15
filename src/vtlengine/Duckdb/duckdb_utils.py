@@ -246,6 +246,11 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     return remove_null_str(round_doubles(data))
 
 
+def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False):
+    query = f"COUNT(*) FILTER (WHERE {name} IS NULL) AS null_count"
+    return query if as_query else data.aggregate(query).fetchone()[0]
+
+
 def remove_null_str(
     data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
 ) -> DuckDBPyRelation:

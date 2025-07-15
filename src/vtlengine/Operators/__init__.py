@@ -1,4 +1,5 @@
 from copy import copy
+from decimal import getcontext, Decimal
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -17,7 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR,
+    XOR, LOG,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -34,7 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation
+from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation, duckdb_rename
 from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -56,9 +57,29 @@ DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
 
 
-def apply_unary_op(op: Any, me_name: str, value: Any) -> str:
+def handle_sql_scalar(value: Any) -> Any:
+    if value is None:
+        value = "NULL"
+    elif isinstance(value, str):
+        value = f"'{value}'"
+    elif isinstance(value, (int, float)):
+        value = int(value) if value.is_integer() else value
+    return value
+
+
+def apply_unary_op(cls: "Operator", me_name: str, value: Any) -> str:
+    op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
     return f'{op_token}({me_name}) AS "{value}"'
+
+
+def apply_unary_op_scalar(cls: "Operator", value: Any) -> Any:
+    op = cls.op
+    op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, _ = op_token
+    result = con.sql(f'SELECT {op_token}({handle_sql_scalar(value)})').fetchone()[0]
+    return float(result) if isinstance(result, Decimal) else result
 
 
 def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
@@ -71,9 +92,32 @@ def apply_bin_op(cls: "Operator", me_name: str, left: Any, right: Any) -> str:
     left = left or "NULL"
     right = right or "NULL"
 
+    if cls.op == LOG:
+        # SQL log handle operands on a different way as math.log,
+        # it works as log(right, left), so we need to swap them
+        # also we could do it as ln(left) / ln(right) following
+        # the mathematical equivalence between log and ln
+        right, left = (left, right)
     if token_position == LEFT:
         return f'{op_token}({left}, {right}) AS "{me_name}"'
     return f'({left} {op_token} {right}) AS "{me_name}"'
+
+
+def apply_bin_op_scalar(cls: "Operator", left: Any, right: Any) -> Any:
+    op = cls.op
+    token_position = MIDDLE
+    op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, token_position = op_token
+
+    left = handle_sql_scalar(left)
+    right = handle_sql_scalar(right)
+
+    if cls.op == LOG:
+        right, left = (left, right)
+    query = f'{op_token}({left}, {right})' if token_position == LEFT else f'({left} {op_token} {right})'
+    result = con.sql('SELECT ' + query).fetchone()[0]
+    return float(result) if isinstance(result, Decimal) else result
 
 
 def _cast_time_types(data_type: Any, value: Any) -> Union[int, str]:
@@ -154,17 +198,8 @@ class Operator:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
-
-            exprs = []
-            column_to_rename = None
-            for column in columns:
-                if column not in set(components):
-                    column_to_rename = column
-                else:
-                    exprs.append(f'"{column}"')
-            if column_to_rename:
-                exprs.append(f'"{column_to_rename}" AS "{measure_name}"')
-            result.data = result.data.project(", ".join(exprs))
+            rename_dict = {c: measure_name for c in columns if c not in set(components)}
+            result.data = duckdb_rename(result.data, rename_dict)
 
     @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
@@ -628,7 +663,7 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = cls.op_func(left_operand.value, right_operand.value)
+        result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
         return result_scalar
 
     @classmethod
@@ -941,7 +976,7 @@ class Unary(Operator):
 
         exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
-            exprs.append(apply_unary_op(cls.op, measure_name, measure_name))
+            exprs.append(apply_unary_op(cls, measure_name, measure_name))
 
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
@@ -950,7 +985,8 @@ class Unary(Operator):
     @classmethod
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(operand)
-        result_scalar.value = cls.op_func(operand.value)
+        # result_scalar.value = cls.op_func(operand.value)
+        result_scalar.value = apply_unary_op_scalar(cls, operand.value)
         return result_scalar
 
     @classmethod
@@ -958,6 +994,6 @@ class Unary(Operator):
         result_component = cls.component_validation(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
         result_component.data = result_data.project(
-            apply_unary_op(cls.op, operand.name, result_component.name)
+            apply_unary_op(cls, operand.name, result_component.name)
         )
         return result_component

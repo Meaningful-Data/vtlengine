@@ -1,6 +1,8 @@
 from copy import copy
 from typing import Any, Union
 
+from vtlengine.DataTypes import String
+from vtlengine.Duckdb.duckdb_utils import null_counter
 from vtlengine.connection import con
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
@@ -33,12 +35,16 @@ class RoleSetter(Unary):
         # TODO: I cant find another way to do it lazily,
         #  instead Im trying the lightweight way I found to do it.
         if isinstance(operand, DataComponent) and operand.data is not None and not operand.nullable:
-            null_count = operand.data.filter(f"{operand.name} IS NULL").count("*").fetchone()[0]
+            null_count = null_counter(operand.data, operand.name)
             if null_count > 0:
                 raise SemanticError("1-1-1-16")
 
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
+            if operand.value is None:
+                operand.value = "NULL"
+            if operand.data_type == String:
+                operand.value = f"'{operand.value}'"
             query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
             result.data = con.query(query)
         else:

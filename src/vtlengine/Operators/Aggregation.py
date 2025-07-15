@@ -41,6 +41,33 @@ def extract_grouping_identifiers(
 
 # noinspection PyMethodOverriding
 class Aggregation(Unary):
+    # @classmethod
+    # def _handle_data_types(
+    #         cls, rel: DuckDBPyRelation, measures: List[Component], mode: str
+    # ) -> DuckDBPyRelation:
+    #     if cls.op == COUNT:
+    #         return rel
+    #
+    #     exprs = [f'"{col}"' for col in rel.columns if col not in [m.name for m in measures]]
+    #     for measure in measures:
+    #         col = f'"{measure.name}"'
+    #         expr = col
+    #
+    #         if measure.data_type == Date:
+    #             if cls.op == MIN and mode == "input":
+    #                 expr = f"CASE WHEN {col} IS NULL THEN '9999-99-99' ELSE {col} END"
+    #             elif cls.op == MIN and mode == "result":
+    #                 expr = f"CASE WHEN {col} = '9999-99-99' THEN NULL ELSE {col} END"
+    #             elif mode == "input":
+    #                 expr = f"CASE WHEN {col} IS NULL THEN '' ELSE {col} END"
+    #             else:
+    #                 expr = f"CASE WHEN {col} = '' THEN NULL ELSE {col} END"
+    #
+    #         elif measure.data_type == Duration:
+    #             expr = duration_handler(col, reverse=(mode == "result"))
+    #
+    #         exprs.append(f'{expr} AS "{measure.name}"')
+    #     return rel.project(", ".join(exprs))
 
     @classmethod
     def validate(  # type: ignore[override]
@@ -186,7 +213,9 @@ class Aggregation(Unary):
             if condition:
                 result_rel = result_rel.filter(condition)
 
+        # result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "input")
         result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
+        # result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "result")
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
