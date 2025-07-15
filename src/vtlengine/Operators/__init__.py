@@ -67,7 +67,7 @@ def handle_sql_scalar(value: Any) -> Any:
     elif isinstance(value, str):
         value = f"'{value}'"
     elif isinstance(value, (int, float)):
-        value = int(value) if value.is_integer() else value
+        value = int(value) if float(value).is_integer() else value
     return value
 
 
