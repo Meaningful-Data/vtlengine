@@ -3,6 +3,7 @@ import os
 from typing import Optional
 
 import duckdb
+
 # import psutil
 
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
@@ -65,4 +66,4 @@ class ConnectionManager:
                 cls._connection.rollback()
         except Exception as e:
             # No rollback needed
-            contextlib.suppress(e)
+            contextlib.suppress(e)  # type: ignore[arg-type]
