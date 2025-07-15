@@ -53,7 +53,7 @@ python = ">=3.9,<4.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4"
 pytest-cov = "^6.2.1"
-pytest-xdist = "^3.7.0"
+pytest-xdist = "^3.8.0"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.16.1"
 pandas-stubs = "2.2.2.240807"
