@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -35,3 +35,7 @@ jobs:
       run: poetry run ruff check src tests
     - name: Run type checks
       run: poetry run mypy
+    - name: Run tests
+      run: poetry run pytest --cov
+    - name: Check coverage
+      run: poetry run coverage report --fail-under=90
