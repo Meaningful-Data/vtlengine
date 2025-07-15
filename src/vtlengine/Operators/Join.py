@@ -136,7 +136,7 @@ class Join(Operator):
         if result.data is not None and sorted(result.get_components_names()) != sorted(
             result.data.columns
         ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
+            missing = list(set(result.get_components_names()) - set(result.data.columns))
             if len(missing) == 0:
                 missing.append("None")
             raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)

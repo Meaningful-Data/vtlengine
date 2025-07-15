@@ -111,7 +111,6 @@ def duckdb_fillna(
     return data.project(', '.join(exprs)) if query else data
 
 
-# TODO: implement other merge types: left, outer...
 def duckdb_merge(
     base_relation: Optional[DuckDBPyRelation],
     other_relation: Optional[DuckDBPyRelation],
@@ -121,9 +120,7 @@ def duckdb_merge(
     """
     Merges two DuckDB relations on specified join keys and mode.
 
-    If either relation is None, it will be treated as an empty relation.
-
-    The resulting relation will have columns from both relations, with suffixes added
+    Supports: inner, left, right, full (outer) and cross joins.
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
@@ -150,20 +147,41 @@ def duckdb_merge(
             other_proj_cols.append(f'"{c}"')
     other_relation = other_relation.project(', '.join(other_proj_cols))
 
+    if how == "cross":
+        return base_relation.join(other_relation, how="cross")
+
     base_alias = 'base'
     other_alias = 'other'
     base_relation = base_relation.set_alias(base_alias)
     other_relation = other_relation.set_alias(other_alias)
 
-    join_condition = ' AND '.join([f'{base_alias}.{k} = {other_alias}.{k}' for k in join_keys])
+    join_condition = ' AND '.join(
+        [f'{base_alias}."{k}" = {other_alias}."{k}"' for k in join_keys]
+    )
+
     joined = base_relation.join(
         other_relation,
         condition=join_condition,
         how=how,
     )
 
-    keep_cols = {f'{base_alias}.{c}' if c in join_keys else f'"{c}"' for c in joined.columns}
-    return joined.project(', '.join(set(keep_cols)))
+    coalesced_cols = [
+        f'COALESCE({base_alias}."{k}", {other_alias}."{k}") AS "{k}"'
+        for k in join_keys
+    ]
+
+    other_proj = []
+    for c in base_cols:
+        if c not in join_keys:
+            other_proj.append(f'{base_alias}."{c}"')
+    for c in other_cols:
+        if c not in join_keys:
+            other_proj.append(f'{other_alias}."{c}"')
+
+    final_cols = coalesced_cols + other_proj
+
+    return joined.project(', '.join(final_cols))
+
 
 
 def duckdb_rename(
