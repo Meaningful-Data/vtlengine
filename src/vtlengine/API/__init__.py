@@ -411,7 +411,7 @@ def run_sdmx(  # noqa: C901
     mapping_dict = {}
     input_names = _extract_input_datasets(script)
 
-    if not isinstance(datasets, (list, set)) or any(  # type: ignore[redundant-expr]
+    if not isinstance(datasets, (list, set)) or any(
         not isinstance(ds, PandasDataset) for ds in datasets
     ):
         type_ = type(datasets).__name__
