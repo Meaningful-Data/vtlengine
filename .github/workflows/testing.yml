@@ -35,10 +35,3 @@ jobs:
       run: poetry run ruff check src tests
     - name: Run type checks
       run: poetry run mypy
-
-#     TODO: Temporarily disabled due to unresolved issues with the inability to execute
-#           the test suite until the DuckDB implementation is fully completed.
-#    - name: Run tests
-#      run: poetry run pytest --cov
-#    - name: Check coverage
-#      run: poetry run coverage report --fail-under=90
