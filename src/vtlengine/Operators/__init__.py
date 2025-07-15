@@ -1,5 +1,5 @@
 from copy import copy
-from decimal import getcontext, Decimal
+from decimal import Decimal
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -13,12 +13,13 @@ from vtlengine.AST.Grammar.tokens import (
     FLOOR,
     GT,
     GTE,
+    LOG,
     LT,
     LTE,
     NEQ,
     OR,
     ROUND,
-    XOR, LOG,
+    XOR,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -35,7 +36,7 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, empty_relation, duckdb_rename
+from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
 from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -78,7 +79,7 @@ def apply_unary_op_scalar(cls: "Operator", value: Any) -> Any:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f'SELECT {op_token}({handle_sql_scalar(value)})').fetchone()[0]
+    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]
     return float(result) if isinstance(result, Decimal) else result
 
 
@@ -115,8 +116,10 @@ def apply_bin_op_scalar(cls: "Operator", left: Any, right: Any) -> Any:
 
     if cls.op == LOG:
         right, left = (left, right)
-    query = f'{op_token}({left}, {right})' if token_position == LEFT else f'({left} {op_token} {right})'
-    result = con.sql('SELECT ' + query).fetchone()[0]
+    query = (
+        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
+    )
+    result = con.sql("SELECT " + query).fetchone()[0]
     return float(result) if isinstance(result, Decimal) else result
 
 
