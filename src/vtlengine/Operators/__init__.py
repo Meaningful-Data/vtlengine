@@ -1,9 +1,10 @@
 from copy import copy
-from typing import Any, Optional, Union
+from decimal import Decimal
+from typing import Any, Optional, Type, Union
 
-import duckdb
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation
+import pyarrow as pa  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -12,6 +13,7 @@ from vtlengine.AST.Grammar.tokens import (
     FLOOR,
     GT,
     GTE,
+    LOG,
     LT,
     LTE,
     NEQ,
@@ -23,7 +25,10 @@ from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Duration,
     ScalarType,
+    TimeInterval,
+    TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -34,11 +39,11 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
+from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Utils._to_sql import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Utils.duckdb_utils import duckdb_concat, duckdb_merge
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
@@ -53,45 +58,96 @@ only_semantic = False
 
 
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
-TIME_TYPES = ["TimeInterval", "TimePeriod", "Duration"]
+TIME_TYPES = [TimeInterval, TimePeriod, Duration]
 
 
-def apply_unary_op(op: Any, me_name: str, value: Any) -> str:
+def handle_sql_scalar(value: Any) -> Any:
+    if value is None:
+        value = "NULL"
+    elif isinstance(value, str):
+        value = f"'{value}'"
+    elif isinstance(value, (int, float)):
+        value = int(value) if float(value).is_integer() else value
+    return value
+
+
+def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
+    op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, _ = op_token
     return f'{op_token}({me_name}) AS "{value}"'
 
 
-def apply_bin_op(op: Any, me_name: str, left: Any, right: Any) -> str:
+def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
+    op = cls.op
+    op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, _ = op_token
+    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
+    return float(result) if isinstance(result, Decimal) else result
+
+
+def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
+    op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
+    left = left or "NULL"
+    right = right or "NULL"
+
+    if cls.op == LOG:
+        # SQL log handle operands on a different way as math.log,
+        # it works as log(right, left), so we need to swap them
+        # also we could do it as ln(left) / ln(right) following
+        # the mathematical equivalence between log and ln
+        right, left = (left, right)
     if token_position == LEFT:
         return f'{op_token}({left}, {right}) AS "{me_name}"'
     return f'({left} {op_token} {right}) AS "{me_name}"'
 
 
-def _cast_time_types(data_type: Any, value: Any) -> Union[int, str]:
-    if data_type.__name__ == "TimeInterval":
-        return TimeIntervalHandler.from_iso_format(value)
-    elif data_type.__name__ == "TimePeriod":
-        return TimePeriodHandler(value)
-    elif data_type.__name__ == "Duration":
+def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
+    op = cls.op
+    token_position = MIDDLE
+    op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, token_position = op_token
+
+    left = handle_sql_scalar(left)
+    right = handle_sql_scalar(right)
+
+    if cls.op == LOG:
+        right, left = (left, right)
+    query = (
+        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
+    )
+    result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
+    return float(result) if isinstance(result, Decimal) else result
+
+
+def _cast_time_types(data_type: Any, value: Any) -> Union[str, int]:
+    if data_type == TimeInterval:
+        return TimeIntervalHandler.from_iso_format(value)  # type: ignore[return-value]
+    elif data_type == TimePeriod:
+        return TimePeriodHandler(value)  # type: ignore[return-value]
+    elif data_type == Duration:
         if value not in PERIOD_IND_MAPPING:
             raise Exception(f"Duration {value} is not valid")
         return PERIOD_IND_MAPPING[value]
     return str(value)
 
 
-def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> Union[str, int]:
+def cast_time_types_scalar(op: str, data_type: Type["ScalarType"], value: str) -> Any:
     if op not in BINARY_COMPARISON_OPERATORS:
         return value
-    if data_type.__name__ == "TimeInterval":
+    if data_type == TimeInterval:
         return TimeIntervalHandler.from_iso_format(value)
-    elif data_type.__name__ == "TimePeriod":
+    elif data_type == TimePeriod:
         return TimePeriodHandler(value)
-    elif data_type.__name__ == "Duration":
+    elif data_type == Duration:
         if value not in PERIOD_IND_MAPPING:
             raise Exception(f"Duration {value} is not valid")
         return PERIOD_IND_MAPPING[value]
@@ -100,7 +156,7 @@ def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> Union[
 
 def _handle_str_number(x: Union[str, int, float]) -> str:
     if isinstance(x, int):
-        return x
+        return str(x)
     try:
         x = float(x)
         if x.is_integer():
@@ -150,17 +206,8 @@ class Operator:
             measure_name = result.get_measures_names()[0]
             components = list(result.components.keys())
             columns = list(result.data.columns) if result.data is not None else []
-
-            transformations = []
-            column_to_rename = None
-            for column in columns:
-                if column not in set(components):
-                    column_to_rename = column
-                else:
-                    transformations.append(f'"{column}"')
-            if column_to_rename:
-                transformations.append(f'"{column_to_rename}" AS "{measure_name}"')
-            result.data = result.data.project(", ".join(transformations))
+            rename_dict = {c: measure_name for c in columns if c not in set(components)}
+            result.data = duckdb_rename(result.data, rename_dict)
 
     @classmethod
     def validate_dataset_type(cls, *args: Any) -> None:
@@ -240,17 +287,17 @@ def _id_type_promotion_join_keys(
         left_data = left_data.project(cast_expr)
         right_data = right_data.project(cast_expr)
     elif {"String", "Integer", "Number"} & {left_type_name, right_type_name}:
-        transformations = [
+        exprs = [
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in left_data.columns
         ]
-        left_data = left_data.project(", ".join(transformations))
+        left_data = left_data.project(", ".join(exprs))
 
-        transformations = [
+        exprs = [
             f"handle_str_number({join_key}) AS {join_key}" if col == join_key else col
             for col in right_data.columns
         ]
-        right_data = right_data.project(", ".join(transformations))
+        right_data = right_data.project(", ".join(exprs))
 
     return left_data, right_data
 
@@ -571,7 +618,7 @@ class Binary(Operator):
             # Merge the data
             if base_operand_data is None or other_operand_data is None:
                 # TODO: Check if this is the right way to handle empty data and if its lazy
-                result_data = duckdb.from_df(pd.DataFrame())
+                result_data = empty_relation()
             else:
                 result_data = duckdb_merge(
                     base_operand_data,
@@ -585,7 +632,7 @@ class Binary(Operator):
         # Measures are the same, using left operand measures names
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in left_operand.get_measures():
-            if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type.__name__ in TIME_TYPES:
+            if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type in TIME_TYPES:
                 transformations.append(f"""
                     cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
                     cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
@@ -595,7 +642,7 @@ class Binary(Operator):
                 if use_right_as_base
                 else (f"{me.name}_x", f"{me.name}_y")
             )
-            transformations.append(apply_bin_op(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
@@ -624,7 +671,7 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = cls.op_func(left_operand.value, right_operand.value)
+        result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
         return result_scalar
 
     @classmethod
@@ -634,23 +681,26 @@ class Binary(Operator):
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
 
         if dataset.data is None:
-            result_dataset.data = duckdb.from_df(pd.DataFrame())
+            result_dataset.data = empty_relation(result_dataset.get_components_names())
             return result_dataset
 
         result_data = dataset.data
+
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
+        if isinstance(scalar_value, str):
+            scalar_value = f"'{scalar_value}'"
 
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
-            if me.data_type.__name__ in TIME_TYPES:
+            if me.data_type in TIME_TYPES:
                 transformations.append(
                     f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
                 )
-            if me.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
+            if me.data_type == Duration and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
             left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
-            transformations.append(apply_bin_op(cls.op, me.name, left, right))
+            transformations.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = f"{', '.join(transformations)}"
         result_dataset.data = result_data.project(final_query)
@@ -663,24 +713,24 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
         if left_operand.data is None or right_operand.data is None:
-            return duckdb.from_df(pd.DataFrame())
+            return empty_relation()
 
         result_data = duckdb_concat(left_operand.data, right_operand.data)
 
         transformations = ["*"]
-        if left_operand.data_type.__name__ in TIME_TYPES:
+        if left_operand.data_type in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
                 f'AS "{left_operand.name}"'
             )
-        if right_operand.data_type.__name__ in TIME_TYPES:
+        if right_operand.data_type in TIME_TYPES:
             transformations.append(
                 f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
                 f'AS "{right_operand.name}"'
             )
 
         transformations.append(
-            apply_bin_op(cls.op, result_component.name, left_operand.name, right_operand.name)
+            apply_bin_op(cls, result_component.name, left_operand.name, right_operand.name)
         )
         final_query = f"{', '.join(transformations)}"
         result_data = result_data.project(final_query)
@@ -692,11 +742,11 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = component.data or duckdb.from_df(pd.DataFrame())
+        comp_data = component.data if component.data is not None else empty_relation()
 
-        transformations = []
-        if component.data_type.__name__ in TIME_TYPES:
-            transformations.append(
+        exprs = []
+        if component.data_type in TIME_TYPES:
+            exprs.append(
                 f'cast_time_types("{component.data_type.__name__}", {component.name}) '
                 f'AS "{component.name}"'
             )
@@ -706,31 +756,32 @@ class Binary(Operator):
             scalar_value, int
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
+        if isinstance(scalar_value, str):
+            scalar_value = f"'{scalar_value}'"
 
-        transformations.append(
-            apply_bin_op(cls.op, result_component.name, component.name, scalar_value)
-        )
-        final_query = f"{', '.join(transformations)}"
+        exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
+        final_query = ", ".join(exprs)
         result_component.data = comp_data.project(final_query)
         return result_component
 
     @classmethod
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
-        result_data = dataset.data or duckdb.from_df(pd.DataFrame())
+        result_data = dataset.data if dataset.data is not None else empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
-            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+            else con.from_arrow(pa.table({"__values__": scalar_set.values}))
         )
 
-        transformations = [f'"{d}"' for d in dataset.get_identifiers_names()]
+        exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            transformations.append(
-                apply_bin_op(cls.op, measure_name, measure_name, scalar_set.values.columns[0])
+            exprs.append(
+                apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
             )
 
-        result_dataset.data = result_data.project(", ".join(transformations))
+        result_data = duckdb_concat(result_data, scalar_set.values)
+        result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
@@ -739,17 +790,16 @@ class Binary(Operator):
         cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
-        result_data = component.data or duckdb.from_df(pd.DataFrame())
+        result_data = component.data if component.data is not None else empty_relation()
         scalar_set.values = (
             scalar_set.values
             if isinstance(scalar_set.values, DuckDBPyRelation)
-            else (con.from_arrow_table(duckdb.arrow(scalar_set.values)))
+            else con.from_arrow(pa.table({"__values__": scalar_set.values}))
         )
 
+        result_data = duckdb_concat(result_data, scalar_set.values)
         result_component.data = result_data.project(
-            apply_bin_op(
-                cls.op, result_component.name, component.name, scalar_set.values.columns[0]
-            )
+            apply_bin_op(cls, result_component.name, component.name, scalar_set.values.columns[0])
         )
         return result_component
 
@@ -930,27 +980,28 @@ class Unary(Operator):
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(operand)
-        result_data = operand.data or duckdb.from_df(pd.DataFrame())
+        result_data = operand.data if operand.data is not None else empty_relation()
 
-        transformations = [f'"{d}"' for d in operand.get_identifiers_names()]
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
-            transformations.append(apply_unary_op(cls.op, measure_name, measure_name))
+            exprs.append(apply_unary_op(cls, measure_name, measure_name))
 
-        result_dataset.data = result_data.project(", ".join(transformations))
+        result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(operand)
-        result_scalar.value = cls.op_func(operand.value)
+        # result_scalar.value = cls.op_func(operand.value)
+        result_scalar.value = apply_unary_op_scalar(cls, operand.value)
         return result_scalar
 
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
-        result_data = operand.data or duckdb.from_df(pd.DataFrame())
+        result_data = operand.data if operand.data is not None else empty_relation()
         result_component.data = result_data.project(
-            apply_unary_op(cls.op, operand.name, result_component.name)
+            apply_unary_op(cls, operand.name, result_component.name)
         )
         return result_component

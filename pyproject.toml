@@ -31,6 +31,7 @@ dependencies = [
     "sqlglot>=22.2.0,<23.0",
     "antlr4-python3-runtime>=4.9.2,<4.10",
     "pandas>=2.1.4,<3.0",
+    "pyarrow>=17.0.0,<20.0.0",
     "networkx>=2.8,<3.0",
     "numpy>=1.23.2,<2 ; python_version < '3.13'",
     "numpy>=2.1.0; python_version >= '3.13'",

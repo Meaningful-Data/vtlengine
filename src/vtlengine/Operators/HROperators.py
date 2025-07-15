@@ -138,7 +138,8 @@ class HRBinNumeric(Operators.Binary):
 
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
-        result_data = cls.apply_operation_two_series(left.data, right.data)
+        # TODO: remove type ignore on HROperators issue
+        result_data = cls.apply_operation_two_series(left.data, right.data)  # type: ignore[attr-defined]
         return DataComponent(
             name=f"{left.name}{cls.op}{right.name}",
             data=result_data,

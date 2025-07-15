@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
@@ -37,7 +37,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, DataComponent
+from vtlengine.Model import DataComponent, Dataset
 
 pd.options.mode.chained_assignment = None
 
@@ -334,9 +334,9 @@ def run(
 
     # Recasting to pandas-like objects
     for operand in result.values():
-        if isinstance(operand, Dataset):
+        if isinstance(operand, Dataset) and operand.data is not None:
             operand.data = operand.data.df()
-        elif isinstance(operand, DataComponent):
+        elif isinstance(operand, DataComponent) and operand.data is not None:
             df = operand.data.df()
             operand.data = df.squeeze() if len(df.columns) == 1 else df
 

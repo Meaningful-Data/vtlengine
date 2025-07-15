@@ -1,8 +1,7 @@
 from copy import copy
 from typing import List, Optional
 
-import duckdb
-import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing
@@ -24,12 +23,14 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_POP,
     VAR_SAMP,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Integer,
     Number,
     unary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_fillna, empty_relation, get_col_type
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -159,14 +160,14 @@ class Analytic(Operator.Unary):
     @classmethod
     def analyticfunc(
         cls,
-        df: pd.DataFrame,
+        rel: DuckDBPyRelation,
         partitioning: List[str],
         identifier_names: List[str],
         measure_names: List[str],
         ordering: List[OrderBy],
         window: Optional[Windowing],
         params: Optional[List[int]] = None,
-    ) -> pd.DataFrame:
+    ) -> DuckDBPyRelation:
         """Annotation class
 
         It is used to analyze the attributes specified bellow
@@ -231,24 +232,31 @@ class Analytic(Operator.Unary):
             else:
                 measure_query = f"{cls.sql_op}({measure})"
             if cls.op == COUNT and len(measure_names) == 1:
-                measure_query += f" {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                measure_query += f' {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             elif cls.op in return_integer_operators and cls.return_integer:
-                measure_query = f"CAST({measure_query} {analytic_str} AS INTEGER) as {measure}"
+                measure_query = f'CAST({measure_query} {analytic_str} AS INTEGER) as "{measure}"'
             else:
                 measure_query += f" {analytic_str} as {measure}"
             measure_queries.append(measure_query)
         if cls.op == COUNT and len(measure_names) == 0:
             measure_queries.append(
-                f"COUNT(*) {analytic_str} as {COMP_NAME_MAPPING[cls.return_type]}"
+                f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
             )
 
         measures_sql = ", ".join(measure_queries)
         identifiers_sql = ", ".join(identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
+        query = f"SELECT {identifiers_sql} , {measures_sql} FROM rel"
 
         if cls.op == COUNT:
-            df[measure_names] = df[measure_names].fillna(-1)
-        return duckdb.query(query).to_df().astype(object)
+            exprs = identifier_names
+            measures_types = {m: get_col_type(rel, m) for m in measure_names}
+            exprs.append(
+                duckdb_fillna(
+                    rel, value=-1, cols=measure_names, types=measures_types, as_query=True
+                )
+            )
+            rel = rel.project(", ".join(exprs))
+        return con.query(query)
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -261,7 +269,7 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        df = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        rel = operand.data if operand.data is not None else empty_relation()
         identifier_names = operand.get_identifiers_names()
 
         if component_name is not None:
@@ -270,17 +278,14 @@ class Analytic(Operator.Unary):
             measure_names = operand.get_measures_names()
 
         result.data = cls.analyticfunc(
-            df=df,
+            rel=rel,
             partitioning=partitioning,
             identifier_names=identifier_names,
             measure_names=measure_names,
             ordering=ordering or [],
             window=window,
             params=params,
-        )
-
-        # if cls.return_type == Integer:
-        #     result.data[measure_names] = result.data[measure_names].astype('Int64')
+        ).order(", ".join(operand.get_identifiers_names()))
 
         return result
 

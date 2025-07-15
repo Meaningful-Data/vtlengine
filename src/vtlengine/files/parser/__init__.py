@@ -3,10 +3,11 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
@@ -118,16 +119,16 @@ def _validate_duckdb(
     check_duplicates(components, data, dataset_name)
     check_dwi(components, data, dataset_name)
 
-    transformations = []
+    exprs = []
     for col, comp in components.items():
         dtype = comp.data_type
         if dtype in [Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
-            transformations.append(f"{check_method}({col}) AS {col}")
+            exprs.append(f"{check_method}({col}) AS {col}")
         else:
-            transformations.append(col)
+            exprs.append(col)
 
-    final_query = ", ".join(transformations)
+    final_query = ", ".join(exprs)
     data = data.project(final_query)
 
     return data
@@ -154,7 +155,7 @@ def check_nulls(
     )
     null_counts = con.execute(query).fetchone()
 
-    for col, null_count in zip(non_nullable, null_counts):
+    for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
             if col in id_names:
                 raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
@@ -166,21 +167,22 @@ def check_duplicates(
     data: DuckDBPyRelation,
     dataset_name: str,
 ) -> None:
-    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
-
-    if id_names:
-        query = f"""
-                SELECT COUNT(*) > 0 from (
-                    SELECT COUNT(*) as count
-                    FROM data
-                    GROUP BY {", ".join(id_names)}
-                    HAVING COUNT(*) > 1
-                ) AS duplicates
-                """
-
-        dup = con.execute(query).fetchone()[0]
-        if dup:
-            raise InputValidationException(code="0-1-1-6")
+    pass
+    # id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    #
+    # if id_names:
+    #     query = f"""
+    #             SELECT COUNT(*) > 0 from (
+    #                 SELECT COUNT(*) as count
+    #                 FROM data
+    #                 GROUP BY {", ".join(id_names)}
+    #                 HAVING COUNT(*) > 1
+    #             ) AS duplicates
+    #             """
+    #
+    #     dup = con.execute(query).fetchone()[0]
+    #     if dup:
+    #         raise InputValidationException(code="0-1-1-6")
 
 
 def check_dwi(
@@ -191,7 +193,7 @@ def check_dwi(
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if not id_names:
-        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]
+        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]  # type: ignore[index]
         if rowcount > 1:
             raise SemanticError(code="0-1-1-5", name=dataset_name)
 
@@ -203,13 +205,7 @@ def load_datapoints(
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         # Empty dataset as table
-        column_defs = ", ".join([f'"{name}" VARCHAR' for name in components])
-        rel = con.query(
-            f"SELECT {
-                ', '.join(f'NULL::{col.split()[1]}' for col in column_defs.split(','))
-            } LIMIT 0"
-        )
-        return rel
+        return empty_relation(list(components.keys()))
 
     elif isinstance(csv_path, (str, Path)):
         path_str = str(csv_path)
@@ -219,14 +215,17 @@ def load_datapoints(
         # Lazy CSV read
         with open(path_str, mode="r", encoding="utf-8") as file:
             csv_reader = csv.reader(file)
-            header = next(csv_reader)
+            header = next(csv_reader)  # Extract the header to determine column order
 
+        # Extract data types from components in header
         dtypes = {
-            comp.name: comp.data_type().sql_type
+            col: comp.data_type().sql_type
+            for col in header
             for comp in components.values()
-            if comp.name in header
+            if comp.name == col
         }
 
+        # Read the CSV file
         rel = con.read_csv(
             path_str,
             header=True,

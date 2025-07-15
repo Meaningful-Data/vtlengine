@@ -6,6 +6,7 @@ import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -133,7 +134,7 @@ class Join(Operator):
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
+            result.data.columns
         ):
             missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
             if len(missing) == 0:
@@ -154,17 +155,17 @@ class Join(Operator):
         )
         for op in operands:
             if op.data is not None:
-                for column in op.data.columns.tolist():
+                for column in op.data.columns:
                     if column in common_measures and column not in using:
                         op.data = op.data.rename(columns={column: op.name + "#" + column})
-        result.data = copy(cls.reference_dataset.data)
+        result.data = cls.reference_dataset.data
 
         join_keys = using if using else result.get_identifiers_names()
 
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [key for key in join_keys if key in op.data.columns]
                     if (op.data is not None)
                     else []
                 )
@@ -179,16 +180,11 @@ class Join(Operator):
                         op.data,
                     )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                        on=merge_join_keys,
+                    result.data = duckdb_merge(
+                        result.data, op.data, join_keys=merge_join_keys, how=cls.how
                     )
                 else:
-                    result.data = pd.DataFrame()
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
+                    result.data = empty_relation()
         return result
 
     @classmethod

@@ -27,6 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
@@ -62,8 +63,8 @@ class Binary(Operator.Binary):
         if cls.op == DIV and y == 0:
             raise SemanticError("2-1-15-6", op=cls.op, value=y)
 
-        decimal_value = cls.py_op(Decimal(x), Decimal(y))
         getcontext().prec = 10
+        decimal_value = cls.py_op(Decimal(x), Decimal(y))
         result = float(decimal_value)
         if result.is_integer():
             return int(result)
@@ -285,7 +286,7 @@ class Parameterized(Unary):
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
         result = cls.validate(operand, param)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        result.data = operand.data if operand.data is not None else empty_relation()
         for measure_name in result.get_measures_names():
             try:
                 if isinstance(param, DataComponent):

@@ -8,12 +8,13 @@ from typing import Any, Dict, List, Optional, Type, Union
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
+from vtlengine.duckdb.duckdb_utils import normalize_data
 
 
 def __duckdb_repr__(self: Any) -> str:
@@ -201,6 +202,9 @@ class Dataset:
     data: Optional[DuckDBPyRelation] = None
 
     def __post_init__(self) -> None:
+        if isinstance(self.data, pd.DataFrame):
+            self.data = con.from_df(self.data)
+
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -245,16 +249,21 @@ class Dataset:
 
         if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
             # If both data are pandas DataFrames, compare them directly
-            return assert_frame_equal(self.data, other.data, check_dtype=False) is None
+            assert_frame_equal(self.data, other.data, check_dtype=False)
+            return True
         elif isinstance(self.data, pd.DataFrame):
             self._to_duckdb()
         elif isinstance(other.data, pd.DataFrame):
             other._to_duckdb()
 
+        # Round double values to avoid precision issues
+        self.data = normalize_data(self.data)
+        other.data = normalize_data(other.data)
+
         # Order by identifiers
-        identifiers = self.get_identifiers_names()
-        sorted_self = self.data.order(", ".join(identifiers))
-        sorted_other = other.data.order(", ".join(identifiers))
+        self_cols = set(self.data.columns)
+        sorted_self = self.data.project(", ".join(self_cols))
+        sorted_other = other.data.project(", ".join(self_cols))
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
@@ -360,13 +369,7 @@ class Dataset:
             data = repr(self.data).replace("<NA>", "None")
         elif isinstance(self.data, DuckDBPyRelation):
             data = self.data.limit(10).df()
-        return (
-            f"Dataset("
-            f"name={self.name}, "
-            f"components={list(self.components.keys())},"
-            f"data={data}"
-            f")"
-        )
+        return f"Dataset(name={self.name}, components={list(self.components.keys())},data={data})"
 
     def _to_duckdb(self) -> DuckDBPyRelation:
         """
@@ -375,7 +378,9 @@ class Dataset:
         if isinstance(self.data, DuckDBPyRelation) or self.data is None:
             return
         # Casting the pandas df to DuckDB relation
-        dtypes = {name: component.data_type().sql_type for name, component in self.components.items()}
+        # dtypes = {
+        #     name: component.data_type().sql_type for name, component in self.components.items()
+        # }
         self.data = con.from_df(self.data)
 
     @property

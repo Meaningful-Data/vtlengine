@@ -1,10 +1,17 @@
 import contextlib
+import os
 from typing import Optional
 
 import duckdb
 
-BASE_DATABASE = ":memory:"
-BASE_MEMORY_LIMIT = "4GB"
+# import psutil
+
+BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
+BASE_MEMORY_LIMIT = "1GB"
+# TODO: uncomment the following line to use the memory limit by env-var
+# total_memory = psutil.virtual_memory().total
+# memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
+# BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", memory_limit)
 
 
 class ConnectionManager:
@@ -59,4 +66,4 @@ class ConnectionManager:
                 cls._connection.rollback()
         except Exception as e:
             # No rollback needed
-            contextlib.suppress(e)
+            contextlib.suppress(e)  # type: ignore[arg-type]
