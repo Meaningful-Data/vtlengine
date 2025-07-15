@@ -39,8 +39,8 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
-from vtlengine.Duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
+from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter

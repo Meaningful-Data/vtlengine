@@ -7,7 +7,7 @@ from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
-from vtlengine.Duckdb.duckdb_utils import empty_relation
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks

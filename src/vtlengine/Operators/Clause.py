@@ -11,7 +11,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
     unary_implicit_promotion,
 )
-from vtlengine.Duckdb.duckdb_utils import (
+from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
     duckdb_fill,

@@ -14,7 +14,7 @@ from pandas._testing import assert_frame_equal
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.Duckdb.duckdb_utils import normalize_data
+from vtlengine.duckdb.duckdb_utils import normalize_data
 
 
 def __duckdb_repr__(self: Any) -> str:

@@ -22,7 +22,7 @@ from vtlengine.DataTypes import (
     Number,
     unary_implicit_promotion,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_merge, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Unary

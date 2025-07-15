@@ -49,7 +49,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation

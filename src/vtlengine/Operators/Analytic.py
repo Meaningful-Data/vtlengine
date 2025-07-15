@@ -30,7 +30,7 @@ from vtlengine.DataTypes import (
     Number,
     unary_implicit_promotion,
 )
-from vtlengine.Duckdb.duckdb_utils import duckdb_fillna, empty_relation, get_col_type
+from vtlengine.duckdb.duckdb_utils import duckdb_fillna, empty_relation, get_col_type
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
