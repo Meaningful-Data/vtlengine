@@ -659,7 +659,7 @@ class InterpreterAnalyzer(ASTTemplate):
         id_columns = (
             self.regular_aggregation_dataset.get_identifiers_names()
             if (self.regular_aggregation_dataset is not None)
-            else None
+            else []
         )
 
         # # Extracting the component we need (only measure)

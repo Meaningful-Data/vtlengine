@@ -746,7 +746,11 @@ class Time_Aggregation(Time):
         time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
         result.data[time_measure.name] = result.data[time_measure.name].map(
             lambda x: cls._execute_time_aggregation(
-                x, time_measure.data_type, period_from, period_to, conf
+                x,
+                time_measure.data_type,
+                period_from,
+                period_to,
+                conf,  # type: ignore[arg-type]
             ),
             na_action="ignore",
         )

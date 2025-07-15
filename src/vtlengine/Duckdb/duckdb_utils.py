@@ -9,7 +9,7 @@ from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
 
-def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:  # type: ignore[import-untyped]
+def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
     """
     Concatenates two DuckDB relations by row, ensuring that columns are aligned.
 
@@ -231,7 +231,7 @@ def empty_relation(
     return query if as_query else con.sql(query)
 
 
-def get_col_type(rel: DuckDBPyRelation, col_name: str):  # type: ignore[import-untyped]
+def get_col_type(rel: DuckDBPyRelation, col_name: str) -> DuckDBPyType:
     """
     Returns the specified column type from the DuckDB relation.
     """
@@ -247,7 +247,7 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     return remove_null_str(round_doubles(data))
 
 
-def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False):
+def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:
     query = f"COUNT(*) FILTER (WHERE {name} IS NULL) AS null_count"
     return query if as_query else data.aggregate(query).fetchone()[0]
 
@@ -260,11 +260,11 @@ def remove_null_str(
 
     If no columns are specified, it checks all str columns.
     """
-    cols = data.columns if cols is None else set(cols)
+    cols_set = data.columns if cols is None else set(cols)
     str_columns = [
         col
         for col, dtype in zip(data.columns, data.dtypes)
-        if col in cols
+        if col in cols_set
         and isinstance(dtype, DuckDBPyType)
         and dtype in [duckdb.type("VARCHAR"), duckdb.type("STRING")]
     ]

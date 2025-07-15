@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
@@ -249,7 +249,8 @@ class Dataset:
 
         if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
             # If both data are pandas DataFrames, compare them directly
-            return assert_frame_equal(self.data, other.data, check_dtype=False) is None
+            assert_frame_equal(self.data, other.data, check_dtype=False)
+            return True
         elif isinstance(self.data, pd.DataFrame):
             self._to_duckdb()
         elif isinstance(other.data, pd.DataFrame):

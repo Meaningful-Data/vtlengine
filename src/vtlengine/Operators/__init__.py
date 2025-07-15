@@ -3,8 +3,8 @@ from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
 import pandas as pd
-import pyarrow as pa
-from duckdb.duckdb import DuckDBPyRelation
+import pyarrow as pa  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -74,6 +74,8 @@ def handle_sql_scalar(value: Any) -> Any:
 def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+    if isinstance(op_token, tuple):
+        op_token, _ = op_token
     return f'{op_token}({me_name}) AS "{value}"'
 
 
@@ -82,7 +84,7 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]
+    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
 
@@ -122,30 +124,30 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     query = (
         f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
     )
-    result = con.sql("SELECT " + query).fetchone()[0]
+    result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
 
-def _cast_time_types(data_type: Any, value: Any) -> Union[int, str]:
-    if data_type.__name__ == "TimeInterval":
-        return TimeIntervalHandler.from_iso_format(value)
-    elif data_type.__name__ == "TimePeriod":
-        return TimePeriodHandler(value)
-    elif data_type.__name__ == "Duration":
+def _cast_time_types(data_type: Any, value: Any) -> Union[str, int]:
+    if data_type == TimeInterval:
+        return TimeIntervalHandler.from_iso_format(value)  # type: ignore[return-value]
+    elif data_type == TimePeriod:
+        return TimePeriodHandler(value)  # type: ignore[return-value]
+    elif data_type == Duration:
         if value not in PERIOD_IND_MAPPING:
             raise Exception(f"Duration {value} is not valid")
         return PERIOD_IND_MAPPING[value]
     return str(value)
 
 
-def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> Union[str, int]:
+def cast_time_types_scalar(op: str, data_type: Type["ScalarType"], value: str) -> Any:
     if op not in BINARY_COMPARISON_OPERATORS:
         return value
-    if data_type.__name__ == "TimeInterval":
+    if data_type == TimeInterval:
         return TimeIntervalHandler.from_iso_format(value)
-    elif data_type.__name__ == "TimePeriod":
+    elif data_type == TimePeriod:
         return TimePeriodHandler(value)
-    elif data_type.__name__ == "Duration":
+    elif data_type == Duration:
         if value not in PERIOD_IND_MAPPING:
             raise Exception(f"Duration {value} is not valid")
         return PERIOD_IND_MAPPING[value]
@@ -154,7 +156,7 @@ def cast_time_types_scalar(op: str, data_type: ScalarType, value: str) -> Union[
 
 def _handle_str_number(x: Union[str, int, float]) -> str:
     if isinstance(x, int):
-        return x
+        return str(x)
     try:
         x = float(x)
         if x.is_integer():
@@ -694,7 +696,7 @@ class Binary(Operator):
                 transformations.append(
                     f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
                 )
-            if me.data_type.__name__.__str__() == "Duration" and not isinstance(scalar_value, int):
+            if me.data_type == Duration and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
             left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)

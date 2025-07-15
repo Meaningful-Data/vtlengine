@@ -2,7 +2,7 @@ from copy import copy
 from typing import Any, List, Optional
 
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AVG,

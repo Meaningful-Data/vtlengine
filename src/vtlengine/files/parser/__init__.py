@@ -3,7 +3,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
@@ -155,7 +155,7 @@ def check_nulls(
     )
     null_counts = con.execute(query).fetchone()
 
-    for col, null_count in zip(non_nullable, null_counts):
+    for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
             if col in id_names:
                 raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
@@ -193,7 +193,7 @@ def check_dwi(
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if not id_names:
-        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]
+        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]  # type: ignore[index]
         if rowcount > 1:
             raise SemanticError(code="0-1-1-5", name=dataset_name)
 
@@ -205,7 +205,7 @@ def load_datapoints(
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         # Empty dataset as table
-        return empty_relation(components)
+        return empty_relation(list(components.keys()))
 
     elif isinstance(csv_path, (str, Path)):
         path_str = str(csv_path)
