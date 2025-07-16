@@ -168,10 +168,10 @@ def duckdb_merge(
     ]
 
     other_proj = []
-    for c in base_cols:
+    for c in base_relation.columns:
         if c not in join_keys:
             other_proj.append(f'{base_alias}."{c}"')
-    for c in other_cols:
+    for c in other_relation.columns:
         if c not in join_keys:
             other_proj.append(f'{other_alias}."{c}"')
 
@@ -308,5 +308,10 @@ def round_doubles(
         else:
             exprs.append(f'"{col}"')
 
-    query = ", ".join(exprs)
+    query = ', '.join(exprs)
     return query if as_query else data.project(query)
+
+
+def clean_execution_graph(rel: DuckDBPyRelation):
+    df = rel.df()
+    return con.from_df(df)

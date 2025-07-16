@@ -3,18 +3,20 @@ import json
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation, OutOfMemoryException  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.duckdb.duckdb_utils import normalize_data
+from vtlengine.duckdb.duckdb_utils import normalize_data, clean_execution_graph
 
 
 def __duckdb_repr__(self: Any) -> str:
@@ -256,6 +258,9 @@ class Dataset:
         elif isinstance(other.data, pd.DataFrame):
             other._to_duckdb()
 
+        # Ensuring the dataset is materialized
+        self.data = clean_execution_graph(self.data)
+        other.data = clean_execution_graph(other.data)
         # Round double values to avoid precision issues
         self.data = normalize_data(self.data)
         other.data = normalize_data(other.data)
@@ -269,7 +274,7 @@ class Dataset:
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
-        if diff.limit(1).df().shape[0] > 0:
+        if diff.limit(1).execute().fetchone() is not None:
             diff.show()
             return False
         return True
