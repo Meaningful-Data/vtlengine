@@ -644,7 +644,7 @@ def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
     if not isinstance(script, (str, TransformationScheme, Path)):
         raise SemanticError("0-1-1-1", format_=type(script).__name__)
     if isinstance(script, TransformationScheme):
-        from pysdmx.toolkit.vtl.generate_vtl_script import (
+        from pysdmx.toolkit.vtl import (
             generate_vtl_script,
         )
 
