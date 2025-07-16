@@ -1,8 +1,12 @@
 import contextlib
+import inspect
 import os
 from typing import Optional
 
 import duckdb
+from duckdb.functional import FunctionNullHandling
+
+import vtlengine.duckdb.duckdb_custom_functions as custom_functions
 
 # import psutil
 
@@ -45,6 +49,7 @@ class ConnectionManager:
             cls._connection.execute(f"SET memory_limit='{cls._memory_limit}'")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
+            cls.register_functions()
         return cls._connection
 
     @classmethod
@@ -67,3 +72,25 @@ class ConnectionManager:
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)  # type: ignore[arg-type]
+
+    @classmethod
+    def register_functions(cls) -> None:
+        """
+        Registers custom functions with the DuckDB connection.
+        """
+        if cls._connection is None:
+            cls.get_connection()
+        else:
+            # Register custom functions here, definitions can be
+            # found in duckdb_custom_functions.py:
+            for func_name in dir(custom_functions):
+                func_ref = getattr(custom_functions, func_name)
+                if func_name.startswith("__") or not inspect.isfunction(func_ref):
+                    continue
+                cls._connection.create_function(
+                    func_name,
+                    func_ref,  # type: ignore[arg-type]
+                    null_handling=FunctionNullHandling.SPECIAL,
+                )
+                # duckdb.create_function expects a function,
+                # we are using FunctionType which works the same

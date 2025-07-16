@@ -27,7 +27,8 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.duckdb_utils import empty_relation
+from vtlengine.duckdb.duckdb_custom_functions import round_duck
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
@@ -243,6 +244,14 @@ class Parameterized(Unary):
     perform the operation. Similar to Unary, but in the end, the param validation is added.
     """
 
+    sql_op: str = Unary.op
+
+    @classmethod
+    def apply_parametrized_op(
+        cls, me_name: str, param_name: Union[str, int], output_column_name: Any
+    ) -> str:
+        return f'{cls.sql_op}({me_name}, {param_name}) AS "{output_column_name}"'
+
     @classmethod
     def validate(
         cls,
@@ -270,43 +279,26 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @classmethod
-    def op_func(cls, x: Any, param: Optional[Any]) -> Any:
-        return None if pd.isnull(x) else cls.py_op(x, param)
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.op_func)
-
-    @classmethod
-    def apply_operation_series_scalar(cls, series: Any, param: Any) -> Any:
-        return series.map(lambda x: cls.op_func(x, param))
+    def op_func(cls, x: Optional[Union[int, float]], param: Optional[Any]) -> Any:
+        return None if x is None else cls.py_op(x, param)
 
     @classmethod
     def dataset_evaluation(
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
-        result = cls.validate(operand, param)
-        result.data = operand.data if operand.data is not None else empty_relation()
-        for measure_name in result.get_measures_names():
-            try:
-                if isinstance(param, DataComponent):
-                    result.data[measure_name] = cls.apply_operation_two_series(
-                        result.data[measure_name], param.data
-                    )
-                else:
-                    param_value = param.value if param is not None else None
-                    result.data[measure_name] = cls.apply_operation_series_scalar(
-                        result.data[measure_name], param_value
-                    )
-            except ValueError:
-                raise SemanticError(
-                    "2-1-15-1",
-                    op=cls.op,
-                    comp_name=measure_name,
-                    dataset_name=operand.name,
-                ) from None
-        result.data = result.data[result.get_components_names()]
-        return result
+        result_dataset = cls.validate(operand, param)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
+        if param is None:
+            param_value = "NULL"
+        else:
+            param_value = param.name if isinstance(param, DataComponent) else param.value
+        for measure_name in operand.get_measures_names():
+            exprs.append(cls.apply_parametrized_op(measure_name, param_value, measure_name))
+
+        result_dataset.data = result_data.project(", ".join(exprs))
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
 
     @classmethod
     def component_evaluation(
@@ -314,16 +306,19 @@ class Parameterized(Unary):
         operand: DataComponent,
         param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> DataComponent:
-        result = cls.validate(operand, param)
-        if operand.data is None:
-            operand.data = pd.Series()
-        result.data = operand.data.copy()
+        result_component = cls.validate(operand, param)
+        result_data = operand.data if operand.data is not None else empty_relation()
         if isinstance(param, DataComponent):
-            result.data = cls.apply_operation_two_series(operand.data, param.data)
+            operand_data = duckdb_concat(operand.data, param.data)
+            result_component.data = operand_data.project(
+                cls.apply_parametrized_op(operand.name, param.name, result_component.name)
+            )
         else:
-            param_value = param.value if param is not None else None
-            result.data = cls.apply_operation_series_scalar(operand.data, param_value)
-        return result
+            param_value = "NULL" if param is None else param.value
+            result_component.data = result_data.project(
+                cls.apply_parametrized_op(operand.name, param_value, result_component.name)
+            )
+        return result_component
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Optional[Any] = None) -> Scalar:
@@ -353,22 +348,32 @@ class Round(Parameterized):
 
     op = ROUND
     return_type = Integer
+    sql_op = "round_duck"
 
-    @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param):
-            multiplier = 10**param
+    # @staticmethod
+    # def py_op(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
+    #     multiplier = 1.0
+    #     if decimals is not None:
+    #         multiplier = 10**decimals
+    #
+    #     if value >= 0.0:
+    #         rounded_value = math.floor(value * multiplier + 0.5) / multiplier
+    #     else:
+    #         rounded_value = math.ceil(value * multiplier - 0.5) / multiplier
+    #
+    #     if decimals is not None:
+    #         return rounded_value
+    #
+    #     return int(rounded_value)
 
-        if x >= 0.0:
-            rounded_value = math.floor(x * multiplier + 0.5) / multiplier
-        else:
-            rounded_value = math.ceil(x * multiplier - 0.5) / multiplier
-
-        if param is not None:
-            return rounded_value
-
-        return int(rounded_value)
+    @staticmethod
+    def py_op(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
+        """
+        Custom round function for DuckDB that handles None values and rounding.
+        If decimals is None, it returns the value as is.
+        If value is None, it returns None.
+        """
+        return round_duck(value, decimals)
 
 
 class Trunc(Parameterized):
