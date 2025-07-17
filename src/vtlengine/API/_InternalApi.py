@@ -248,8 +248,8 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
                     if c.name in list(data.columns)
                 }
 
-                query = ", ".join(
-                    f"TRY_CAST({col} AS {sql_type}) AS {col}" for col, sql_type in sql_types.items()
+                query = ', '.join(
+                    f'TRY_CAST("{col}" AS {sql_type}) AS "{col}"' for col, sql_type in sql_types.items()
                 )
 
                 data = con.from_df(data).project(query)
