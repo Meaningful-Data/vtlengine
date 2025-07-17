@@ -143,6 +143,8 @@ def check_nulls(
         for comp in components.values()
         if not comp.nullable or comp.role == Role.IDENTIFIER
     ]
+    if not non_nullable:
+        return
     query = (
         'SELECT '
         + ', '.join(
