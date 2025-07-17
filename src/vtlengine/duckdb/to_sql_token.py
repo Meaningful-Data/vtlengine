@@ -1,6 +1,6 @@
 from typing import Dict, Union
 
-from vtlengine.AST.Grammar.tokens import LOG, MOD, POWER, XOR, ISNULL
+from vtlengine.AST.Grammar.tokens import LOG, MOD, POWER, XOR, ISNULL, CHARSET_MATCH
 
 # Could it be the operator sql token or a tuple of (sql token, token position)
 # default is taken as MIDDLE on Operator apply_operation method
@@ -14,6 +14,7 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     # Numeric operators
     MOD: "%",
     POWER: "^",
-    LOG: ("log", LEFT),
-    XOR: ("XOR", LEFT),
+    LOG: (LOG, LEFT),
+    XOR: (XOR, LEFT),
+    CHARSET_MATCH: ('REGEXP_MATCHES', LEFT)
 }
