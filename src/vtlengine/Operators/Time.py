@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
-
+import duckdb
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import (
     DATE_ADD,
@@ -41,6 +41,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.connection import con, ConnectionManager
 
 
 class Time(Operators.Operator):
@@ -952,7 +953,7 @@ class Date_Add(Parametrized):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
+            cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
@@ -961,26 +962,69 @@ class Date_Add(Parametrized):
         if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
             result.value = cls.py_op(operand.value, shift, period, is_tp)
         elif (
-            isinstance(result, DataComponent)
-            and isinstance(operand, DataComponent)
-            and operand.data is not None
+                isinstance(result, DataComponent)
+                and isinstance(operand, DataComponent)
+                and operand.data is not None
         ):
             result.data = operand.data.map(
                 lambda x: cls.py_op(x, shift, period, is_tp), na_action="ignore"
             )
         elif (
-            isinstance(result, Dataset)
-            and isinstance(operand, Dataset)
-            and operand.data is not None
+                isinstance(result, Dataset)
+                and isinstance(operand, Dataset)
+                and operand.data is not None
         ):
-            result.data = operand.data.copy()
-            for measure in operand.get_measures():
-                if measure.data_type in [Date, TimePeriod]:
-                    result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.py_op(str(x), shift, period, measure.data_type == TimePeriod),
-                        na_action="ignore",
-                    )
-                    measure.data_type = Date
+            rel = operand.data
+            period_map = {
+                "D": "day",
+                "W": "week",
+                "M": "month",
+                "Q": "quarter",
+                "S": "semester",
+                "A": "year",
+            }
+            date_cols = [
+                comp.name
+                for comp in operand.components.values()
+                if comp.data_type in [Date, TimePeriod]
+            ]
+            if not date_cols:
+                result.data = rel
+                return result
+            projected_cols = []
+            for col in rel.columns:
+                tp_cols = [
+                    comp.name
+                    for comp in operand.components.values()
+                    if comp.data_type == TimePeriod
+                ]
+                if col in date_cols:
+                    unit = period_map.get(period)
+                    if unit is None:
+                        raise ValueError(f"{period} not supported")
+
+                    if col in tp_cols:
+                        convert_expr = (
+                            f"(DATE(LEFT(\"{col}\", 4) || '-01-01') + "
+                            f"INTERVAL (CAST(SUBSTR(\"{col}\", 7, 3) AS INTEGER) - 1) DAY)"
+                        )
+                    else:
+                        convert_expr = f'CAST("{col}" AS DATE)'
+
+                    if period == "S":
+                        expr = f"{convert_expr} + INTERVAL {6 * shift} MONTH AS \"{col}\""
+                    else:
+                        expr = f"date_add({convert_expr}, INTERVAL '{shift} {unit}') AS \"{col}\""
+                else:
+                    expr = f'"{col}"'
+                projected_cols.append(expr)
+
+            query = f"SELECT {', '.join(projected_cols)} FROM rel"
+            conn = ConnectionManager.get_connection()
+            result.data = conn.query(query)
+            for comp in result.components.values():
+                if comp.name in date_cols:
+                    comp.data_type = Date
 
         if isinstance(result, (Scalar, DataComponent)):
             result.data_type = Date
@@ -989,8 +1033,7 @@ class Date_Add(Parametrized):
     @classmethod
     def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
         if is_tp:
-            tp_value = TimePeriodHandler(date_str)
-            date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+            date = cls._timeperiod_to_date(date_str)
         else:
             date = datetime.strptime(date_str, "%Y-%m-%d")
 
@@ -1002,10 +1045,16 @@ class Date_Add(Parametrized):
         new_year = date.year + (date.month - 1 + month_shift) // 12
         new_month = (date.month - 1 + month_shift) % 12 + 1
         last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime(
-            "%Y-%m-%d"
-        )
+        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime("%Y-%m-%d")
 
+    @classmethod
+    def _timeperiod_to_date(cls, tp_str: str) -> datetime.date:
+        """
+        Converts a TimePeriod string to a date object.
+        """
+        tp_value = TimePeriodHandler(tp_str)
+        date_obj = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+        return date_obj
 
 class SimpleUnaryTime(Operators.Unary):
     @classmethod
