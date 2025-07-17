@@ -6,7 +6,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp

@@ -4,14 +4,12 @@ from datetime import date, datetime
 from typing import Union
 
 from duckdb import duckdb
+from duckdb.duckdb import DuckDBPyConnection
 
-from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandler
 
-# TODO: check if pyarrow execution has lower times
 
-
-def load_time_checks() -> None:
+def load_time_checks(con: DuckDBPyConnection) -> None:
     # Register the functions with DuckDB
     con.create_function("check_duration", check_duration, return_type=duckdb.type("VARCHAR"))
     con.create_function("check_timeinterval", check_time, return_type=duckdb.type("VARCHAR"))

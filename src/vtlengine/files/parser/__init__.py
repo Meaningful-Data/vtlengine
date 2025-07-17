@@ -10,10 +10,10 @@ from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.files.parser._time_checking import load_time_checks
 
-load_time_checks()
+load_time_checks(con)
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:

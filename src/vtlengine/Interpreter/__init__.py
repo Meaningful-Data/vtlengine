@@ -1155,14 +1155,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     if comp_name in self.aggregation_grouping or comp.role == Role.MEASURE
                 }
 
-                self.aggregation_dataset.data = (
-                    self.aggregation_dataset.data[
-                        self.aggregation_dataset.get_identifiers_names()
-                        + self.aggregation_dataset.get_measures_names()
-                    ]
-                    if (self.aggregation_dataset.data is not None)
-                    else None
-                )
+                self.aggregation_dataset.data = duckdb_select(
+                    self.aggregation_dataset.data,
+                    self.aggregation_dataset.get_identifiers_names()
+                    + self.aggregation_dataset.get_measures_names(),
+                ) if (self.aggregation_dataset.data is not None) else None
             result = self.visit(node.params)
             measure = result.get_measures()[0]
             if measure.data_type != Boolean:
