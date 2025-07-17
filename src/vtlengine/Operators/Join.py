@@ -6,7 +6,7 @@ import pandas as pd
 
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
-from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, empty_relation, duckdb_select
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -343,8 +343,6 @@ class CrossJoin(Join):
                         if column in common
                     },
                 )
-        # if result.data is not None:
-        #     result.data.reset_index(drop=True, inplace=True)
         return result
 
     @classmethod
@@ -402,7 +400,7 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
+        data = duckdb_select(dataset.data, list(components.keys())) if dataset.data is not None else empty_relation()
 
         for component in components.values():
             component.name = (
@@ -411,13 +409,13 @@ class Apply(Operator):
                 else component.name
             )
         components = {component.name: component for component in components.values()}
-        data.rename(
-            columns={
+        data = duckdb_rename(
+            data,
+            {
                 column: column[len(prefix) :]
                 for column in data.columns
                 if column.startswith(prefix)
             },
-            inplace=True,
         )
         return Dataset(name=name, components=components, data=data)
 
@@ -430,6 +428,10 @@ class Apply(Operator):
         right.components = {
             comp.name: comp for comp in right.components.values() if comp.name in common
         }
-        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
-        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
+        left.data = (
+            duckdb_select(left.data, list(common)) if left.data is not None else empty_relation()
+        )
+        right.data = (
+            duckdb_select(right.data, list(common)) if right.data is not None else empty_relation()
+        )
         return left, right
