@@ -273,7 +273,7 @@ def _id_type_promotion_join_keys(
     left_data: Optional[DuckDBPyRelation] = None,
     right_data: Optional[DuckDBPyRelation] = None,
 ) -> tuple[Optional[DuckDBPyRelation], Optional[DuckDBPyRelation]]:
-    if not left_data or not right_data:
+    if left_data is None or right_data is None:
         return left_data, right_data
 
     left_type_name = c_left.data_type.__name__

@@ -236,7 +236,8 @@ def empty_relation(
     If `cols` is provided, it will create an empty relation with those columns.
     """
     if cols:
-        return con.from_df(pd.DataFrame(columns=list(cols)))
+        df = pd.DataFrame(columns=list(cols) if isinstance(cols, (list, set)) else [cols])
+        return con.from_df(pd.DataFrame(df))
     query = "SELECT 1 LIMIT 0"
     return query if as_query else con.sql(query)
 
@@ -304,7 +305,7 @@ def round_doubles(
     ]
     for col in data.columns:
         if col in double_columns:
-            exprs.append(f'ROUND({col}, {num_dec}) AS "{col}"')
+            exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
         else:
             exprs.append(f'"{col}"')
 

@@ -219,7 +219,7 @@ class Aggregation(Unary):
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
-        aux_rel = aux_rel.project(", ".join(grouping_keys)).distinct()
+        aux_rel = aux_rel.project(", ".join(grouping_keys) or "*").distinct()
         if len(grouping_keys) == 0:
             aux_rel = result_rel
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())
