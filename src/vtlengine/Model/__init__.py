@@ -16,7 +16,7 @@ from pandas._testing import assert_frame_equal
 import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.duckdb.duckdb_utils import normalize_data, clean_execution_graph
+from vtlengine.duckdb.duckdb_utils import normalize_data, clean_execution_graph, quote_cols
 
 
 def __duckdb_repr__(self: Any) -> str:
@@ -266,9 +266,9 @@ class Dataset:
         other.data = normalize_data(other.data)
 
         # Order by identifiers
-        self_cols = set(self.data.columns)
-        sorted_self = self.data.project(", ".join(self_cols))
-        sorted_other = other.data.project(", ".join(self_cols))
+        self_cols = quote_cols(self.data.columns)
+        sorted_self = self.data.project(', '.join(self_cols))
+        sorted_other = other.data.project(', '.join(self_cols))
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))

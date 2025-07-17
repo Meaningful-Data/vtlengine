@@ -112,7 +112,7 @@ def _validate_duckdb(
             if not components[col].nullable:
                 raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
-            data = data.project(f"*, NULL AS {col}")
+            data = data.project(f'*, NULL AS "{col}"')
 
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
@@ -123,12 +123,12 @@ def _validate_duckdb(
     for col, comp in components.items():
         dtype = comp.data_type
         if dtype in [Duration, TimeInterval, TimePeriod]:
-            check_method = f"check_{dtype.__name__}".lower()
-            exprs.append(f"{check_method}({col}) AS {col}")
+            check_method = f'check_{dtype.__name__}'.lower()
+            exprs.append(f'{check_method}("{col}") AS "{col}"')
         else:
-            exprs.append(col)
+            exprs.append(f'"{col}"')
 
-    final_query = ", ".join(exprs)
+    final_query = ', '.join(exprs)
     data = data.project(final_query)
 
     return data
@@ -144,14 +144,14 @@ def check_nulls(
         if not comp.nullable or comp.role == Role.IDENTIFIER
     ]
     query = (
-        "SELECT "
-        + ", ".join(
+        'SELECT '
+        + ', '.join(
             [
-                f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count"
+                f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
                 for col in non_nullable
             ]
         )
-        + " FROM data"
+        + ' FROM data'
     )
     null_counts = con.execute(query).fetchone()
 

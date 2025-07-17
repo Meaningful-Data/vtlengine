@@ -324,26 +324,27 @@ class CrossJoin(Join):
 
         for op in operands:
             if op.data is None:
-                op.data = pd.DataFrame(columns=op.get_components_names())
+                op.data = empty_relation(op.get_components_names())
             if op is operands[0]:
                 result.data = op.data
-            else:
-                if result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                    )
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={
-                        column: op.name + "#" + column
-                        for column in result.data.columns.tolist()
-                        if column in common
-                    }
+            elif result.data is not None:
+                result.data = duckdb_merge(
+                    result.data,
+                    op.data,
+                    join_keys=common,
+                    how=cls.how,  # type: ignore[arg-type]
                 )
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
+            if result.data is not None:
+                result.data = duckdb_rename(
+                    result.data,
+                    {
+                        column: op.name + "#" + column
+                        for column in result.data.columns
+                        if column in common
+                    },
+                )
+        # if result.data is not None:
+        #     result.data.reset_index(drop=True, inplace=True)
         return result
 
     @classmethod

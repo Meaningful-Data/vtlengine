@@ -101,14 +101,14 @@ def duckdb_fillna(
         if isinstance(types, list) and len(types) not in (1, len(cols_set)):
             raise ValueError("Length of types must match length of columns.")
 
-        value = f"CAST({value} AS {type_})" if type_ else value
-        exprs.append(f'COALESCE({col}, {value}) AS "{col}"')
+        value = f'CAST({value} AS {type_})' if type_ else value
+        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"')
 
-    query = ", ".join(exprs) if exprs else ""
+    query = ', '.join(exprs) if exprs else ''
 
     if as_query:
         return query
-    return data.project(", ".join(exprs)) if query else data
+    return data.project(', '.join(exprs)) if query else data
 
 
 def duckdb_merge(
@@ -148,7 +148,7 @@ def duckdb_merge(
     other_relation = other_relation.project(", ".join(other_proj_cols))
 
     if how == "cross":
-        return base_relation.join(other_relation, how="cross")
+        return base_relation.cross(other_relation)
 
     base_alias = "base"
     other_alias = "other"
