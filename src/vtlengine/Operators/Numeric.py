@@ -27,11 +27,12 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.duckdb_custom_functions import round_duck
+from vtlengine.duckdb.duckdb_custom_functions import round_duck, trunc_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
+
 
 
 class Unary(Operator.Unary):
@@ -349,6 +350,7 @@ class Round(Parameterized):
     op = ROUND
     return_type = Integer
     sql_op = "round_duck"
+    py_op = round_duck
 
     # @staticmethod
     # def py_op(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
@@ -366,14 +368,7 @@ class Round(Parameterized):
     #
     #     return int(rounded_value)
 
-    @staticmethod
-    def py_op(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
-        """
-        Custom round function for DuckDB that handles None values and rounding.
-        If decimals is None, it returns the value as is.
-        If value is None, it returns None.
-        """
-        return round_duck(value, decimals)
+
 
 
 class Trunc(Parameterized):
@@ -382,30 +377,31 @@ class Trunc(Parameterized):
     """  # noqa E501
 
     op = TRUNC
+    sql_op = "trunc_duck"
+    py_op = trunc_duck
 
-    @classmethod
-    def py_op(cls, x: float, param: Optional[float]) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param) and param is not None:
-            multiplier = 10**param
+    # @classmethod
+    # def py_op(cls, x: float, param: Optional[float]) -> Any:
+    #     multiplier = 1.0
+    #     if not pd.isnull(param) and param is not None:
+    #         multiplier = 10**param
+    #
+    #     truncated_value = int(x * multiplier) / multiplier
+    #
+    #     if not pd.isnull(param):
+    #         return truncated_value
+    #
+    #     return int(truncated_value)
 
-        truncated_value = int(x * multiplier) / multiplier
-
-        if not pd.isnull(param):
-            return truncated_value
-
-        return int(truncated_value)
 
 
-class PseudoRandom(_random.Random):
-    def __init__(self, seed: Union[int, float]) -> None:
-        super().__init__()
-        self.seed(seed)
 
 
 class Random(Parameterized):
     op = RANDOM
     return_type = Number
+    sql_op = "round_duck"
+    py_op = round_duck
 
     @classmethod
     def validate(cls, seed: Any, index: Any = None) -> Any:
@@ -420,9 +416,9 @@ class Random(Parameterized):
             )
         return super().validate(seed, index)
 
-    @classmethod
-    def py_op(cls, seed: Union[int, float], index: int) -> float:
-        instance: PseudoRandom = PseudoRandom(seed)
-        for _ in range(index):
-            instance.random()
-        return instance.random().__round__(6)
+    # @classmethod
+    # def py_op(cls, seed: Union[int, float], index: int) -> float:
+    #    instance: PseudoRandom = PseudoRandom(seed)
+    #    for _ in range(index):
+    #        instance.random()
+    #    return instance.random().__round__(6)
