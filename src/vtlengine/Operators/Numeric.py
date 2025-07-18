@@ -26,7 +26,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.custom_functions.Numeric import round_duck, trunc_duck
+from vtlengine.duckdb.custom_functions.Numeric import round_duck, trunc_duck, random_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -364,8 +364,8 @@ class Trunc(Parameterized):
 class Random(Parameterized):
     op = RANDOM
     return_type = Number
-    sql_op = "round_duck"
-    py_op = round_duck
+    sql_op = "random_duck"
+    py_op = random_duck
 
     @classmethod
     def validate(cls, seed: Any, index: Any = None) -> Any:
