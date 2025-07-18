@@ -1,6 +1,7 @@
 import _random
 from typing import Optional, Union
 
+
 def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
     """
     Custom round function for DuckDB that handles None values and rounding.
@@ -31,16 +32,14 @@ def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     based on the number of decimals.
     If decimals are not provided, the function truncates the value like decimals = 0.
 
-    Parameters:
-        value (Optional[Union[int, float]]): The numeric value to be truncated. Can be None,
-        an integer, or a float.
-
-        decimals (Optional[int]): The number of decimal places to truncate the value to.
-        If None, the value will be truncated to the nearest integer.
+    Args:
+        value (Optional[Union[int, float]]): The numeric value to truncate.
+        decimals (Optional[int]): The number of decimal places to truncate to.
+          If None, truncates to the nearest integer.
 
     Returns:
-        Optional[float]: The truncated float value if decimals are specified. Returns
-        an integer if decimals are not specified. Returns None if the input value is None.
+        Optional[float]: The truncated value, or None if the input value is None.
+        If decimals is None, returns an integer.
     """
 
     if value is None:
@@ -58,12 +57,26 @@ def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
 
     return int(truncated_value)
 
+
 class PseudoRandom(_random.Random):
     def __init__(self, seed: Union[int, float]) -> None:
         super().__init__()
         self.seed(seed)
 
-def random_duck(seed: Optional[Union[int, float]], index : int) -> Optional[float]:
+
+def random_duck(seed: float, index: int) -> Optional[float]:
+    """Generates a pseudo-random number based on a seed and an index.
+
+    It initializes a PseudoRandom instance with the seed,
+    and generates a random number after advancing the random state by the specified index.
+
+    Args:
+        seed (float): The seed for the random number generator.
+        index (int): The number of times to advance the random state before generating a number.
+
+    Returns:
+        A pseudo-random number rounded to 6 decimal places.
+    """
     instance: PseudoRandom = PseudoRandom(seed)
     for _ in range(index):
         instance.random()

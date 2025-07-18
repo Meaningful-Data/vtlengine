@@ -1,4 +1,3 @@
-import _random
 import math
 import operator
 import warnings
@@ -27,12 +26,11 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.duckdb_custom_functions import round_duck, trunc_duck
+from vtlengine.duckdb.custom_functions.Numeric import round_duck, trunc_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
-
 
 
 class Unary(Operator.Unary):
@@ -352,24 +350,6 @@ class Round(Parameterized):
     sql_op = "round_duck"
     py_op = round_duck
 
-    # @staticmethod
-    # def py_op(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
-    #     multiplier = 1.0
-    #     if decimals is not None:
-    #         multiplier = 10**decimals
-    #
-    #     if value >= 0.0:
-    #         rounded_value = math.floor(value * multiplier + 0.5) / multiplier
-    #     else:
-    #         rounded_value = math.ceil(value * multiplier - 0.5) / multiplier
-    #
-    #     if decimals is not None:
-    #         return rounded_value
-    #
-    #     return int(rounded_value)
-
-
-
 
 class Trunc(Parameterized):
     """
@@ -379,22 +359,6 @@ class Trunc(Parameterized):
     op = TRUNC
     sql_op = "trunc_duck"
     py_op = trunc_duck
-
-    # @classmethod
-    # def py_op(cls, x: float, param: Optional[float]) -> Any:
-    #     multiplier = 1.0
-    #     if not pd.isnull(param) and param is not None:
-    #         multiplier = 10**param
-    #
-    #     truncated_value = int(x * multiplier) / multiplier
-    #
-    #     if not pd.isnull(param):
-    #         return truncated_value
-    #
-    #     return int(truncated_value)
-
-
-
 
 
 class Random(Parameterized):
@@ -415,10 +379,3 @@ class Random(Parameterized):
                 UserWarning,
             )
         return super().validate(seed, index)
-
-    # @classmethod
-    # def py_op(cls, seed: Union[int, float], index: int) -> float:
-    #    instance: PseudoRandom = PseudoRandom(seed)
-    #    for _ in range(index):
-    #        instance.random()
-    #    return instance.random().__round__(6)

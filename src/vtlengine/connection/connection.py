@@ -6,8 +6,6 @@ from typing import Optional
 import duckdb
 from duckdb.functional import FunctionNullHandling
 
-import vtlengine.duckdb.duckdb_custom_functions as custom_functions
-
 # import psutil
 
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
@@ -83,6 +81,8 @@ class ConnectionManager:
         else:
             # Register custom functions here, definitions can be
             # found in duckdb_custom_functions.py:
+            import vtlengine.duckdb.custom_functions as custom_functions
+
             for func_name in dir(custom_functions):
                 func_ref = getattr(custom_functions, func_name)
                 if func_name.startswith("__") or not inspect.isfunction(func_ref):
