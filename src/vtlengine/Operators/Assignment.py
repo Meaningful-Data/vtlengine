@@ -24,5 +24,5 @@ class Assignment(Binary):
         if isinstance(result, DataComponent) and result.data is not None:
             col_name = result.data.columns[0]
             if col_name != left_operand:
-                result.data = result.data.project(f'{col_name} AS "{left_operand}"')
+                result.data = result.data.project(f'"{col_name}" AS "{left_operand}"')
         return result
