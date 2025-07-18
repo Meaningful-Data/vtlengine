@@ -380,11 +380,11 @@ class Sub(Operator):
                     op_names.append(op_name)
                     operand_relation = operand.data.project(f'"{operand.name}" AS {op_name}')
                     result_dataset.data = duckdb_concat(result_dataset.data, operand_relation)
-                    filter_exprs.append(f'{op_name} = TRUE')
+                    filter_exprs.append(f"{op_name} = TRUE")
 
             if filter_exprs:
                 filter_query = " AND ".join(filter_exprs)
-                clean_query = f'* EXCLUDE({", ".join(op_names)})'
+                clean_query = f"* EXCLUDE({', '.join(op_names)})"
                 result_dataset.data = result_dataset.data.filter(filter_query).project(clean_query)
 
         result_dataset.data = duckdb_drop(result_dataset.data, operand_names)

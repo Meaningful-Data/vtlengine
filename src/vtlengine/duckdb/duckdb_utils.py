@@ -8,15 +8,14 @@ from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
-
 TYPES_DICT = {
-        'STRING': [duckdb.type("VARCHAR"), duckdb.type("STRING")],
-        'INTEGER': [duckdb.type("INTEGER"), duckdb.type("BIGINT")],
-        'DOUBLE': [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")],
-        'NUMBER': [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")],
-        'BOOLEAN': [duckdb.type("BOOLEAN")],
-        'DATE': [duckdb.type("DATE")],
-    }
+    "STRING": [duckdb.type("VARCHAR"), duckdb.type("STRING")],
+    "INTEGER": [duckdb.type("INTEGER"), duckdb.type("BIGINT")],
+    "DOUBLE": [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")],
+    "NUMBER": [duckdb.type("DOUBLE"), duckdb.type("FLOAT"), duckdb.type("REAL")],
+    "BOOLEAN": [duckdb.type("BOOLEAN")],
+    "DATE": [duckdb.type("DATE")],
+}
 
 
 def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
@@ -89,7 +88,7 @@ def duckdb_fillna(
     If no columns are specified, all columns will be filled.
     """
 
-    exprs = ['*']
+    exprs = ["*"]
     cols_set: Set[str] = set(cols) if cols is not None else data.columns
     for idx, col in enumerate(cols_set):
         type_ = (
@@ -111,10 +110,10 @@ def duckdb_fillna(
         if isinstance(types, list) and len(types) not in (1, len(cols_set)):
             raise ValueError("Length of types must match length of columns.")
 
-        value = f'CAST({value} AS {type_})' if type_ else value
+        value = f"CAST({value} AS {type_})" if type_ else value
         exprs.append(f'COALESCE("{col}", {value}) AS "{col}"')
 
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
 
@@ -260,10 +259,12 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    query_set = {f'"{c}"' for c in data.columns if c not in get_cols_by_types(data, ['DOUBLE', 'STRING'])}
+    query_set = {
+        f'"{c}"' for c in data.columns if c not in get_cols_by_types(data, ["DOUBLE", "STRING"])
+    }
     query_set.add(remove_null_str(data, as_query=True))
     query_set.add(round_doubles(data, as_query=True))
-    query = ', '.join(query_set).replace('*, ', '').replace(', *', '')
+    query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
     return query if as_query else data.project(query)
 
 
@@ -288,9 +289,9 @@ def remove_null_str(
 
     If no columns are specified, it checks all str columns.
     """
-    str_columns = get_cols_by_types(data, 'STRING')
+    str_columns = get_cols_by_types(data, "STRING")
     if not str_columns:
-        return data if not as_query else '*'
+        return data if not as_query else "*"
     query = duckdb_fillna(data, "''", str_columns, as_query=True)
     return query if as_query else data.project(query)
 
@@ -301,11 +302,11 @@ def round_doubles(
     """
     Rounds double values in the dataset to avoid precision issues.
     """
-    exprs = ['*']
-    double_columns = get_cols_by_types(data, 'DOUBLE')
+    exprs = ["*"]
+    double_columns = get_cols_by_types(data, "DOUBLE")
     for col in double_columns:
         exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
 
@@ -315,15 +316,17 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str]]) -> Se
     types = {t.upper() for t in types}
 
     for type_ in types:
-        type_columns = set([
-            col
-            for col, dtype in zip(rel.columns, rel.dtypes)
-            if isinstance(dtype, DuckDBPyType)
-               and dtype in TYPES_DICT.get(type_, [])
-        ])
+        type_columns = set(
+            [
+                col
+                for col, dtype in zip(rel.columns, rel.dtypes)
+                if isinstance(dtype, DuckDBPyType) and dtype in TYPES_DICT.get(type_, [])
+            ]
+        )
         cols.update(type_columns)
 
     return cols
+
 
 def clean_execution_graph(rel: DuckDBPyRelation):
     df = rel.df()

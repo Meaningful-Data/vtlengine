@@ -703,7 +703,7 @@ class Binary(Operator):
             )
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = ', '.join(transformations)
+        final_query = ", ".join(transformations)
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -735,7 +735,7 @@ class Binary(Operator):
                 cls, result_component.name, f'"{left_operand.name}"', f'"{right_operand.name}"'
             )
         )
-        final_query = ', '.join(transformations)
+        final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
         result_component.data = result_data.project(result_component.name)
         return result_component
@@ -784,7 +784,7 @@ class Binary(Operator):
             )
 
         result_data = duckdb_concat(result_data, scalar_set.values)
-        result_dataset.data = result_data.project(', '.join(exprs))
+        result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
 

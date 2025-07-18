@@ -2,11 +2,9 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-
 from vtlengine.AST import BinOp
 from vtlengine.DataTypes import binary_implicit_promotion
-from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, empty_relation, duckdb_select
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -332,7 +330,7 @@ class CrossJoin(Join):
                     result.data,
                     op.data,
                     join_keys=common,
-                    how=cls.how,  # type: ignore[arg-type]
+                    how=cls.how,
                 )
             if result.data is not None:
                 result.data = duckdb_rename(
@@ -400,7 +398,11 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        data = duckdb_select(dataset.data, list(components.keys())) if dataset.data is not None else empty_relation()
+        data = (
+            duckdb_select(dataset.data, list(components.keys()))
+            if dataset.data is not None
+            else empty_relation()
+        )
 
         for component in components.values():
             component.name = (
@@ -411,11 +413,7 @@ class Apply(Operator):
         components = {component.name: component for component in components.values()}
         data = duckdb_rename(
             data,
-            {
-                column: column[len(prefix) :]
-                for column in data.columns
-                if column.startswith(prefix)
-            },
+            {column: column[len(prefix) :] for column in data.columns if column.startswith(prefix)},
         )
         return Dataset(name=name, components=components, data=data)
 

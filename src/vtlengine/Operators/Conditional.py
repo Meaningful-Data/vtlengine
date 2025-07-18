@@ -11,11 +11,11 @@ from vtlengine.DataTypes import (
     Null,
     binary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_fillna, duckdb_select
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.duckdb_utils import duckdb_fillna, duckdb_select
 
 
 class If(Operator):

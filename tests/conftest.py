@@ -23,4 +23,4 @@ def pytest_runtest_makereport(item, call: pytest.CallInfo):
             call.excinfo = Skipped(msg=msg)
             call.excinfo.value = xfail.Exception(msg=except_msg)
         except Exception as e:
-            pass
+            raise e

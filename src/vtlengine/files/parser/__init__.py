@@ -10,8 +10,8 @@ from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.Model import Component, Dataset, Role
 from vtlengine.files.parser._time_checking import load_time_checks
+from vtlengine.Model import Component, Dataset, Role
 
 load_time_checks(con)
 
@@ -123,12 +123,12 @@ def _validate_duckdb(
     for col, comp in components.items():
         dtype = comp.data_type
         if dtype in [Duration, TimeInterval, TimePeriod]:
-            check_method = f'check_{dtype.__name__}'.lower()
+            check_method = f"check_{dtype.__name__}".lower()
             exprs.append(f'{check_method}("{col}") AS "{col}"')
         else:
             exprs.append(f'"{col}"')
 
-    final_query = ', '.join(exprs)
+    final_query = ", ".join(exprs)
     data = data.project(final_query)
 
     return data
@@ -146,14 +146,14 @@ def check_nulls(
     if not non_nullable:
         return
     query = (
-        'SELECT '
-        + ', '.join(
+        "SELECT "
+        + ", ".join(
             [
                 f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
                 for col in non_nullable
             ]
         )
-        + ' FROM data'
+        + " FROM data"
     )
     null_counts = con.execute(query).fetchone()
 
