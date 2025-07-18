@@ -376,7 +376,7 @@ class Sub(Operator):
             op_names = []
             for operand in operands:
                 if operand.data is not None:
-                    op_name = f'"__{operand.name}__operand_bool__"'
+                    op_name = f'"__{operand.name}@operand_bool__"'
                     op_names.append(op_name)
                     operand_relation = operand.data.project(f'"{operand.name}" AS {op_name}')
                     result_dataset.data = duckdb_concat(result_dataset.data, operand_relation)
