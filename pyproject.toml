@@ -58,7 +58,7 @@ line-profiler-pycharm = "^1.2.0"
 mypy = "1.16.1"
 pandas-stubs = "2.2.2.240807"
 ruff = "^0.12.3"
-types-jsonschema = "4.24.0.20250528"
+types-jsonschema = "4.24.0.20250708"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.4.7"
