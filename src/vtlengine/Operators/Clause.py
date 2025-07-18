@@ -373,13 +373,19 @@ class Sub(Operator):
 
         if dataset.data is not None:
             filter_exprs = []
+            op_names = []
             for operand in operands:
                 if operand.data is not None:
-                    filter_exprs.append(f"{operand.name} = TRUE")
+                    op_name = f'"__{operand.name}__operand_bool__"'
+                    op_names.append(op_name)
+                    operand_relation = operand.data.project(f'"{operand.name}" AS {op_name}')
+                    result_dataset.data = duckdb_concat(result_dataset.data, operand_relation)
+                    filter_exprs.append(f'{op_name} = TRUE')
 
             if filter_exprs:
                 filter_query = " AND ".join(filter_exprs)
-                result_dataset.data = result_dataset.data.filter(filter_query)
+                clean_query = f'* EXCLUDE({", ".join(op_names)})'
+                result_dataset.data = result_dataset.data.filter(filter_query).project(clean_query)
 
         result_dataset.data = duckdb_drop(result_dataset.data, operand_names)
         return result_dataset
