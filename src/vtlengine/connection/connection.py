@@ -5,6 +5,8 @@ from typing import Optional
 
 import duckdb
 
+from vtlengine.duckdb.custom_methods import load_custom_methods
+
 # import psutil
 
 BASE_PATH = Path(__file__).resolve().parents[3]
@@ -61,6 +63,9 @@ class ConnectionManager:
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
+
+            # Custom ops loading
+            load_custom_methods(cls._connection)
         return cls._connection
 
     @classmethod
