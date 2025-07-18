@@ -1,4 +1,4 @@
-from duckdb.duckdb import DuckDBPyConnection
+from duckdb.duckdb import DuckDBPyConnection  # type: ignore[import-untyped]
 
 from vtlengine.duckdb.custom_methods.clause import load_clause_methods
 

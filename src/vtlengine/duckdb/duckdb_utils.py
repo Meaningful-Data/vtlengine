@@ -78,8 +78,8 @@ def duckdb_fill(
 def duckdb_fillna(
     data: DuckDBPyRelation,
     value: Any,
-    cols: Optional[Union[str, List[str]]] = None,
-    types: Optional[Union[str, List[str], Dict[str, str]]] = None,
+    cols: Optional[Union[str, List[str], Set[str]]] = None,
+    types: Optional[Union[str, List[str], Set[str], Dict[str, str]]] = None,
     as_query: bool = False,
 ) -> DuckDBPyRelation:
     """
@@ -310,7 +310,7 @@ def round_doubles(
     return query if as_query else data.project(query)
 
 
-def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str]]) -> Set[str]:
+def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
     cols = set()
     types = {types} if isinstance(types, str) else set(types)
     types = {t.upper() for t in types}
@@ -328,6 +328,6 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str]]) -> Se
     return cols
 
 
-def clean_execution_graph(rel: DuckDBPyRelation):
+def clean_execution_graph(rel: DuckDBPyRelation) -> DuckDBPyRelation:
     df = rel.df()
     return con.from_df(df)

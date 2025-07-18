@@ -1,6 +1,6 @@
 from typing import Any
 
-from duckdb.duckdb import DuckDBPyConnection
+from duckdb.duckdb import DuckDBPyConnection  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import ISNULL
 
