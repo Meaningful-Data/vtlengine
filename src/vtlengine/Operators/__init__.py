@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR,
+    XOR, YEAR, MONTH, DAYOFMONTH, DAYOFYEAR,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -32,14 +32,14 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
-    unary_implicit_promotion,
+    unary_implicit_promotion, Date,
 )
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation, timeperiod_to_date
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -84,8 +84,32 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
-    return float(result) if isinstance(result, Decimal) else result
+
+    temporal_ops = [YEAR, MONTH, DAYOFMONTH, DAYOFYEAR]
+
+    def is_timeperiod_str(v):
+        if not isinstance(v, str):
+            return False
+        return v.endswith(("Q1", "Q2", "Q3", "Q4")) or ("M" in v and len(v) >= 6)
+
+    if op in temporal_ops:
+        if is_timeperiod_str(value):
+            handler = TimePeriodHandler(value)
+            if op in (YEAR, MONTH):
+                date_obj = handler.start_date(as_date=True)
+            else:
+                date_obj = handler.end_date(as_date=True)
+
+            date_str = date_obj.isoformat()
+            sql_expr = f"SELECT {op_token}(CAST('{date_str}' AS DATE))"
+        else:
+            value_str = handle_sql_scalar(value)
+            sql_expr = f"SELECT {op_token}(CAST({value_str} AS DATE))"
+    else:
+        value_str = handle_sql_scalar(value)
+        sql_expr = f"SELECT {op_token}({value_str})"
+
+    return con.sql(sql_expr).fetchone()[0]
 
 
 def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:

@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Set, Union
 
 import pandas as pd
@@ -292,3 +293,25 @@ def round_doubles(
 
     query = ", ".join(exprs)
     return query if as_query else data.project(query)
+
+def timeperiod_to_date(tp_str: str) -> str:
+    if tp_str.endswith("Q1"):
+        return tp_str[:4] + "-03-31"
+    elif tp_str.endswith("Q2"):
+        return tp_str[:4] + "-06-30"
+    elif tp_str.endswith("Q3"):
+        return tp_str[:4] + "-09-30"
+    elif tp_str.endswith("Q4"):
+        return tp_str[:4] + "-12-31"
+    elif tp_str.startswith("P"):
+        raise ValueError(f"Unsupported period format: {tp_str}")
+    elif "M" in tp_str:
+        year = int(tp_str[:4])
+        month = int(tp_str[-2:])
+        if month == 12:
+            return f"{year}-12-31"
+        else:
+            last_day = (date(year, month + 1, 1) - timedelta(days=1)).day
+            return f"{year}-{month}-{last_day}"
+    else:
+        return tp_str

@@ -1075,11 +1075,51 @@ class SimpleUnaryTime(Operators.Unary):
         return super().validate(operand)
 
     @classmethod
+    def get_sql_expr(cls, input_col: str, output_col: str) -> str:
+        raise NotImplementedError("Subclasses must implement get_sql_expr")
+
+    @classmethod
     def evaluate(
-        cls, operand: Union[Dataset, DataComponent, Scalar]
+            cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls.validate(operand)
-        return super().evaluate(operand)
+
+        if not isinstance(operand, Dataset):
+            return super().evaluate(operand)
+
+        if operand.data is None:
+            raise ValueError("No data in Dataset")
+
+        identifiers = operand.get_identifiers_names()
+        attributes = operand.get_attributes_names()
+        measures = operand.get_measures_names()
+
+        candidate_cols = attributes + measures
+        if not candidate_cols:
+            raise ValueError(f"No columns on {cls.op}")
+
+        input_col = candidate_cols[0]
+        output_col = input_col
+
+        sql_query = (
+            f"SELECT {', '.join(identifiers)}, {cls.get_sql_expr(input_col, output_col)} "
+            f"FROM {operand.name}"
+        )
+
+        new_relation = con.sql(sql_query)
+
+        new_components = operand.components.copy()
+        if input_col in new_components:
+            new_components[input_col] = new_components[input_col].copy()
+            new_components[input_col].data_type = cls.return_type
+
+        new_dataset = Dataset(
+            name=f"{cls.op}_{operand.name}",
+            components=new_components,
+            data=new_relation,
+        )
+
+        return new_dataset
 
 
 class Year(SimpleUnaryTime):
@@ -1088,6 +1128,10 @@ class Year(SimpleUnaryTime):
     @classmethod
     def py_op(cls, value: str) -> int:
         return int(value[:4])
+
+    @classmethod
+    def get_sql_expr(cls, input_col: str, output_col: str) -> str:
+        return f"EXTRACT(year FROM CAST({input_col} AS DATE)) AS \"{output_col}\""
 
     return_type = Integer
 
@@ -1104,6 +1148,10 @@ class Month(SimpleUnaryTime):
         result = TimePeriodHandler(value).start_date(as_date=True)
         return result.month  # type: ignore[union-attr]
 
+    @classmethod
+    def get_sql_expr(cls, input_col: str, output_col: str) -> str:
+        return f"EXTRACT(month FROM CAST({input_col} AS DATE)) AS \"{output_col}\""
+
 
 class Day_of_Month(SimpleUnaryTime):
     op = DAYOFMONTH
@@ -1116,6 +1164,10 @@ class Day_of_Month(SimpleUnaryTime):
 
         result = TimePeriodHandler(value).end_date(as_date=True)
         return result.day  # type: ignore[union-attr]
+
+    @classmethod
+    def get_sql_expr(cls, input_col: str, output_col: str) -> str:
+        return f"EXTRACT(day FROM CAST({input_col} AS DATE)) AS \"{output_col}\""
 
 
 class Day_of_Year(SimpleUnaryTime):
@@ -1135,6 +1187,12 @@ class Day_of_Year(SimpleUnaryTime):
             day=result.day,  # type: ignore[union-attr]
         )
         return datetime_value.timetuple().tm_yday
+
+    @classmethod
+    def get_sql_expr(cls, input_col: str, output_col: str) -> str:
+        return (
+            f"EXTRACT(doy FROM CAST({input_col} AS DATE)) AS \"{output_col}\""
+        )
 
 
 class Day_to_Year(Operators.Unary):
