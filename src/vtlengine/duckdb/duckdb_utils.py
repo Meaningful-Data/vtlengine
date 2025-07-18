@@ -211,6 +211,7 @@ def duckdb_select(
 
     If `as_query` is True, returns the SQL query string instead of the relation.
     """
+    data = clean_execution_graph(data)
     cols = {cols} if isinstance(cols, str) else set(cols)
     query = ", ".join(quote_cols(cols))
     return query if as_query else data.project(query)

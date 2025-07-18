@@ -55,10 +55,10 @@ class ConnectionManager:
             config_dict = {
                 "memory_limit": cls._memory_limit,
                 "temp_directory": cls._temp_directory,
+                "preserve_insertion_order": True,
             }
             cls._connection = duckdb.connect(database=cls._database, config=config_dict)
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
-            # cls._connection.execute("SET preserve_insertion_order=false;")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
         return cls._connection

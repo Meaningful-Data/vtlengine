@@ -818,7 +818,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    data = self.regular_aggregation_dataset.data[node.value]
+                    data = duckdb_select(self.regular_aggregation_dataset.data, node.value)
                 else:
                     data = None
                 return DataComponent(
