@@ -61,37 +61,27 @@ class If(Operator):
         true_branch: Union[DataComponent, Scalar],
         false_branch: Union[DataComponent, Scalar],
     ) -> DuckDBPyRelation:
-        result = None
-        if condition.data is not None:
-            cond_expr = f'"{condition.data.columns[0]}"'
-            if isinstance(true_branch, Scalar):
-                true_expr = (
-                    f"{repr(true_branch.value)}" if true_branch.value is not None else "NULL"
-                )
-            else:
-                true_expr = f'"{true_branch.data.columns[0]}"'
-            if isinstance(false_branch, Scalar):
-                false_expr = (
-                    f"{repr(false_branch.value)}" if false_branch.value is not None else "NULL"
-                )
-            else:
-                false_expr = f'"{false_branch.data.columns[0]}"'
 
-            base = condition.data
-            if not isinstance(true_branch, Scalar):
-                base = duckdb_concat(base, true_branch.data)
-            if not isinstance(false_branch, Scalar):
-                base = duckdb_concat(base, false_branch.data)
-
-            if_expr = (
-                f"CASE WHEN {cond_expr} "
-                f"THEN {true_expr} "
-                f"ELSE {false_expr} END "
-                f'AS "{condition.name}"'
+        def get_expr(branch: Any) -> str:
+            return f"{repr(branch.value)}" if isinstance(branch, Scalar) and branch.value is not None else (
+                "NULL" if isinstance(branch, Scalar) else f'"{branch.data.columns[0]}"'
             )
-            result = base.project(if_expr)
 
-        return result if result is not None else empty_relation()
+        if condition.data is None:
+            return empty_relation()
+
+        cond_col = f'"{condition.data.columns[0]}"'
+        true_expr = get_expr(true_branch)
+        false_expr = get_expr(false_branch)
+
+        base = condition.data
+        if not isinstance(true_branch, Scalar):
+            base = duckdb_concat(base, true_branch.data)
+        if not isinstance(false_branch, Scalar):
+            base = duckdb_concat(base, false_branch.data)
+
+        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{condition.name}"'
+        return base.project(expr)
 
     @classmethod
     def dataset_level_evaluation(
