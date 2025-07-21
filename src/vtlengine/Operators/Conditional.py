@@ -3,6 +3,7 @@ from typing import Any, List, Union
 
 import numpy as np
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -11,7 +12,12 @@ from vtlengine.DataTypes import (
     Null,
     binary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_fillna, duckdb_select
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_fillna,
+    duckdb_select,
+    empty_relation,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
@@ -50,21 +56,42 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(
-        cls, condition: DataComponent, true_branch: Any, false_branch: Any
-    ) -> Any:
+        cls,
+        condition: DataComponent,
+        true_branch: Union[DataComponent, Scalar],
+        false_branch: Union[DataComponent, Scalar],
+    ) -> DuckDBPyRelation:
         result = None
         if condition.data is not None:
+            cond_expr = f'"{condition.data.columns[0]}"'
             if isinstance(true_branch, Scalar):
-                true_data = pd.Series(true_branch.value, index=condition.data.index)
+                true_expr = (
+                    f"{repr(true_branch.value)}" if true_branch.value is not None else "NULL"
+                )
             else:
-                true_data = true_branch.data.reindex(condition.data.index)
+                true_expr = f'"{true_branch.data.columns[0]}"'
             if isinstance(false_branch, Scalar):
-                false_data = pd.Series(false_branch.value, index=condition.data.index)
+                false_expr = (
+                    f"{repr(false_branch.value)}" if false_branch.value is not None else "NULL"
+                )
             else:
-                false_data = false_branch.data.reindex(condition.data.index)
-            result = np.where(condition.data, true_data, false_data)
+                false_expr = f'"{false_branch.data.columns[0]}"'
 
-        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
+            base = condition.data
+            if not isinstance(true_branch, Scalar):
+                base = duckdb_concat(base, true_branch.data)
+            if not isinstance(false_branch, Scalar):
+                base = duckdb_concat(base, false_branch.data)
+
+            if_expr = (
+                f"CASE WHEN {cond_expr} "
+                f"THEN {true_expr} "
+                f"ELSE {false_expr} END "
+                f'AS "{condition.name}"'
+            )
+            result = base.project(if_expr)
+
+        return result if result is not None else empty_relation()
 
     @classmethod
     def dataset_level_evaluation(
