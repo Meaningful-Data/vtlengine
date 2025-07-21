@@ -95,8 +95,8 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left = left or "NULL"
-    right = right or "NULL"
+    left = left if left is not None else "NULL"
+    right = right if right is not None else "NULL"
 
     if cls.op == LOG:
         # SQL log handle operands on a different way as math.log,
