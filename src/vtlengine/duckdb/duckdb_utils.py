@@ -88,8 +88,11 @@ def duckdb_fillna(
     If no columns are specified, all columns will be filled.
     """
 
-    exprs = ["*"]
-    cols_set: Set[str] = set(cols) if cols is not None else data.columns
+    exprs = []
+    if cols is None:
+        cols_set = set(data.columns)
+    else:
+        cols_set = {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
         type_ = (
             (
@@ -111,9 +114,9 @@ def duckdb_fillna(
             raise ValueError("Length of types must match length of columns.")
 
         value = f"CAST({value} AS {type_})" if type_ else value
-        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"')
+        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"'.replace('""', '"'))
 
-    query = ", ".join(exprs)
+    query = ', '.join(exprs)
     return query if as_query else data.project(query)
 
 

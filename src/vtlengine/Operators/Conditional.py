@@ -74,7 +74,7 @@ class If(Operator):
         true_expr = get_expr(true_branch)
         false_expr = get_expr(false_branch)
 
-        base = condition.data
+        base = duckdb_fillna(condition.data, "TRUE", cond_col)
         if not isinstance(true_branch, Scalar):
             base = duckdb_concat(base, true_branch.data)
         if not isinstance(false_branch, Scalar):
