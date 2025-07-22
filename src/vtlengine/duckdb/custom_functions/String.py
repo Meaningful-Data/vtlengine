@@ -52,6 +52,13 @@ def instr_duck(
 
     return position
 
+def instr_check_param_value(value: Optional[int], position: int) -> Optional[int]:
+    if position == 2 and value is not None and value < 1:
+        raise SemanticError("1-1-18-4", op="instr", param_type="Start", correct_type=">= 1")
+    elif position == 3 and value is not None and value < 1:
+        raise SemanticError("1-1-18-4", op="instr", param_type="Occurrence", correct_type=">= 1")
+    return value
+
 
 def replace_duck(x: str, param1: Optional[str], param2: Optional[str]) -> str:
     if param1 is None:

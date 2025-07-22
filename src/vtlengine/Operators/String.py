@@ -17,7 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
-from vtlengine.duckdb.custom_functions.String import instr_duck, replace_duck, substr_duck
+from vtlengine.duckdb.custom_functions.String import instr_duck, replace_duck, substr_duck, instr_check_param_value
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -309,6 +309,7 @@ class Instr(Parameterized):
     return_type = Integer
     sql_op = "instr_duck"
     py_op = instr_duck
+    check_param_value = instr_check_param_value
 
     @classmethod
     def validate(
@@ -364,18 +365,12 @@ class Instr(Parameterized):
                     param_type="Occurrence",
                     correct_type="Integer",
                 )
-        if isinstance(param, DataComponent):
-            if param.data is not None:
-                param.data.map(lambda x: cls.check_param_value(x, position))
-        else:
-            cls.check_param_value(param.value, position)
-
-    @classmethod
-    def check_param_value(cls, param: Any, position: int) -> None:
-        if position == 2 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif position == 3 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1")
+        if position >= 2:
+            if isinstance(param, DataComponent):
+                if param.data is not None:
+                    param.data = param.data.project(f'instr_check_param_value({param.name}, {position}) as "{param.name}"')
+            else:
+                cls.check_param_value(param.value, position)
 
     @classmethod
     def apply_instr_op(
