@@ -75,7 +75,9 @@ def substr_duck(
     x: str,
     start: Optional[int] = None,
     length: Optional[int] = None,
-) -> str:
+) -> Optional[str]:
+    if x is None:
+        return None
     if start is None and length is None:
         return x
     if start is None:
