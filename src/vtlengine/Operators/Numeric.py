@@ -26,7 +26,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.custom_functions.Numeric import round_duck, trunc_duck, random_duck
+from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -204,9 +204,10 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
+    def py_op(cls, x: Union[int, float], param: Union[int, float]) -> Optional[float]:
+        if param is None:
             return None
+        # TODO: change this to a Runtime error
         if param <= 0:
             raise SemanticError("2-1-15-3", op=cls.op, value=param)
 
