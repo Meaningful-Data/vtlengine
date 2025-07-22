@@ -154,24 +154,11 @@ class Parameterized(Unary):
         )
 
     @classmethod
-    def apply_operation_two_series(cls, *args: Any) -> Any:
-        left_series, right_series = args
-
-        return left_series.combine(right_series, cls.op_func)
-
-    @classmethod
-    def apply_operation_series_scalar(cls, *args: Any) -> Any:
-        series, param1, param2 = args
-
-        return series.map(lambda x: cls.op_func(x, param1, param2))
-
-    @classmethod
     def dataset_evaluation(
         cls,
-        operand: Dataset,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
+        *args: Any,
     ) -> Dataset:
+        operand, param1, param2 = (args + (None, None))[:3]
         result_dataset = cls.validate(operand, param1, param2)
         result_data = operand.data if operand.data is not None else empty_relation()
 
@@ -206,7 +193,7 @@ class Parameterized(Unary):
 
         result = cls.validate(operand, param1, param2)
         result.data = operand.data if operand.data is not None else empty_relation()
-        #TODO: Fix this with duckdb
+        # TODO: Fix this with duckdb
         # if isinstance(param1, DataComponent) or isinstance(param2, DataComponent):
         #     result.data = cls.apply_operation_series(result.data, param1, param2)
         # else:
@@ -227,7 +214,9 @@ class Parameterized(Unary):
         result = cls.validate(operand, param1, param2)
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
-        result.value = None if operand is None else cls.py_op(operand, param_value1, param_value2)
+        result.value = (
+            None if operand.value is None else cls.py_op(operand.value, param_value1, param_value2)
+        )
         return result
 
     @classmethod
@@ -323,17 +312,6 @@ class Replace(Parameterized):
     sql_op = "duck_replace"
     py_op = duck_replace
 
-    # @classmethod
-    # def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
-    #     if pd.isnull(param1):
-    #         return ""
-    #     elif pd.isnull(param2):
-    #         param2 = ""
-    #     x = str(x)
-    #     if param1 is not None and param2 is not None:
-    #         return x.replace(param1, param2)
-    #     return x
-
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
         if not param:
@@ -427,26 +405,17 @@ class Instr(Parameterized):
     @classmethod
     def apply_instr_op(
         cls,
-        me_name: str,
-        param1_name: str,
-        param2_name: Union[str, int],
-        param3_name: Union[str, int],
+        operand: str,
+        param_1: str,
+        param_2: Union[str, int],
+        param_3: Union[str, int],
         output_column_name: Any,
     ) -> str:
-        param1_val = f"'{param1_name}'" if isinstance(param1_name, str) else str(param1_name)
-        return (
-            f"{cls.sql_op}({me_name}, {param1_val}, {param2_name}, {param3_name}) "
-            f'AS "{output_column_name}"'
-        )
+        return f'{cls.sql_op}({operand}, {param_1}, {param_2}, {param_3}) AS "{output_column_name}"'
 
     @classmethod
-    def dataset_evaluation(  # type: ignore[override]
-        cls,
-        operand: Dataset,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ) -> Dataset:
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand, param1, param2, param3 = args[:4]
         result_dataset = cls.validate(operand, param1, param2, param3)
         result_data = operand.data if operand.data is not None else empty_relation()
 
@@ -489,19 +458,20 @@ class Instr(Parameterized):
     ) -> DataComponent:
         result = cls.validate(operand, param1, param2, param3)
         result.data = operand.data if operand.data is not None else empty_relation()
-        if (
-            isinstance(param1, DataComponent)
-            or isinstance(param2, DataComponent)
-            or isinstance(param3, DataComponent)
-        ):
-            result.data = cls.apply_operation_series(operand.data, param1, param2, param3)
-        else:
-            param_value1 = None if param1 is None else param1.value
-            param_value2 = None if param2 is None else param2.value
-            param_value3 = None if param3 is None else param3.value
-            result.data = cls.apply_operation_series_scalar(
-                operand.data, param_value1, param_value2, param_value3
-            )
+        # TODO: Fix this with duckdb
+        # if (
+        #     isinstance(param1, DataComponent)
+        #     or isinstance(param2, DataComponent)
+        #     or isinstance(param3, DataComponent)
+        # ):
+        #     result.data = cls.apply_operation_series(operand.data, param1, param2, param3)
+        # else:
+        #     param_value1 = None if param1 is None else param1.value
+        #     param_value2 = None if param2 is None else param2.value
+        #     param_value3 = None if param3 is None else param3.value
+        #     result.data = cls.apply_operation_series_scalar(
+        #         operand.data, param_value1, param_value2, param_value3
+        #     )
         return result
 
     @classmethod
@@ -516,7 +486,7 @@ class Instr(Parameterized):
         param_value1 = None if param1 is None else param1.value
         param_value2 = None if param2 is None else param2.value
         param_value3 = None if param3 is None else param3.value
-        result.value = cls.py_op(str_value=operand, str_to_find=param_value1, start=param_value2, occurrence=param_value3)
+        result.value = cls.py_op(operand.value, param_value1, param_value2, param_value3)
         return result
 
     @classmethod
@@ -533,7 +503,6 @@ class Instr(Parameterized):
             return cls.component_evaluation(operand, param1, param2, param3)
         if isinstance(operand, Scalar):
             return cls.scalar_evaluation(operand, param1, param2, param3)
-
 
     # @classmethod
     # def py_op(

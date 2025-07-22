@@ -5,7 +5,10 @@ from vtlengine.Exceptions import SemanticError
 
 
 def duck_instr(
-    str_value: str, str_to_find: str, start: Optional[int], occurrence: Optional[int] = 0
+    str_value: Optional[str],
+    str_to_find: Optional[str],
+    start: Optional[int],
+    occurrence: Optional[int] = 0,
 ) -> int:
     if str_value is None or str_to_find is None:
         return 0
@@ -54,6 +57,6 @@ def duck_replace(x: str, param1: Optional[str], param2: Optional[str]) -> str:
     elif param2 is None:
         param2 = ""
     x = str(x)
-    if param1 is not None and param2 is not None:
+    if param2 is not None:
         return x.replace(param1, param2)
     return x
