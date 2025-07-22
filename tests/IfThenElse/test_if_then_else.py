@@ -74,11 +74,14 @@ class IfThenElseTest(TestIfThenElse):
         Git Branch: #166-review-if-then-else-for-component-component.
         Goal: Check the result of if-then-else for component-component.
         """
-        code = "1-1-1-3"
-        number_inputs = 1
-        references_names = ["1"]
+        # code = "1-1-1-3"
+        # number_inputs = 1
+        # references_names = ["1"]
+        #
+        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # Ignored due this would need an explicit cast to execute with the current VTL standard
+        pass
 
     def test_4(self):
         """

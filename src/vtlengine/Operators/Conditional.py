@@ -100,13 +100,10 @@ class If(Operator):
             measures = true_branch.get_measures_names()
             true_branch.data = duckdb_rename(true_branch.data, {m: f"__{m}@true_branch__" for m in measures})
             base = duckdb_concat(base, true_branch.data, ids)
-            base_ = base.df()
         if not isinstance(false_branch, Scalar):
             measures = false_branch.get_measures_names()
             false_branch.data = duckdb_rename(false_branch.data, {m: f"__{m}@false_branch__" for m in measures})
             base = duckdb_concat(base, false_branch.data, ids)
-            base_ = base.df()
-
 
         exprs = []
         for comp_name in result.get_components_names():
@@ -120,65 +117,6 @@ class If(Operator):
 
         result.data = base.project(", ".join(exprs))
         return result
-
-    # @classmethod
-    # def dataset_level_evaluation(
-    #     cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
-    # ) -> Dataset:
-    #     ids = condition.get_identifiers_names()
-    #     condition_measure = condition.get_measures_names()[0]
-    #     true_data = condition.data[condition.data[condition_measure] == True]
-    #     false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
-    #
-    #     if isinstance(true_branch, Dataset):
-    #         if len(true_data) > 0 and true_branch.data is not None:
-    #             true_data = pd.merge(
-    #                 true_data,
-    #                 true_branch.data,
-    #                 on=ids,
-    #                 how="right",
-    #                 suffixes=("_condition", ""),
-    #             )
-    #         else:
-    #             true_data = pd.DataFrame(columns=true_branch.get_components_names())
-    #     else:
-    #         true_data[condition_measure] = true_data[condition_measure].apply(
-    #             lambda x: true_branch.value
-    #         )
-    #     if isinstance(false_branch, Dataset):
-    #         if len(false_data) > 0 and false_branch.data is not None:
-    #             false_data = pd.merge(
-    #                 false_data,
-    #                 false_branch.data,
-    #                 on=ids,
-    #                 how="right",
-    #                 suffixes=("_condition", ""),
-    #             )
-    #         else:
-    #             false_data = pd.DataFrame(columns=false_branch.get_components_names())
-    #     else:
-    #         false_data[condition_measure] = false_data[condition_measure].apply(
-    #             lambda x: false_branch.value
-    #         )
-    #
-    #     result.data = (
-    #         pd.concat([true_data, false_data], ignore_index=True)
-    #         .drop_duplicates()
-    #         .sort_values(by=ids)
-    #     )
-    #     if isinstance(result, Dataset):
-    #         drop_columns = [
-    #             column for column in result.data.columns if column not in result.components
-    #         ]
-    #         result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
-    #     if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
-    #         result.get_measures()[0].data_type = true_branch.data_type
-    #         result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
-    #         if result.data is not None:
-    #             result.data = result.data.rename(
-    #                 columns={condition_measure: result.get_measures()[0].name}
-    #             )
-    #     return result
 
     @classmethod
     def validate(  # noqa: C901
