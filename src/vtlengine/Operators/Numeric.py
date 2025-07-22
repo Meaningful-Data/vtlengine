@@ -204,9 +204,10 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
+    def py_op(cls, x: Union[int, float], param: Union[int, float]) -> Optional[float]:
+        if param is None:
             return None
+        # TODO: change this to a Runtime error
         if param <= 0:
             raise SemanticError("2-1-15-3", op=cls.op, value=param)
 

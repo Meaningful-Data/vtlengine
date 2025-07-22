@@ -17,7 +17,7 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
-from vtlengine.duckdb.custom_functions.String import duck_instr, duck_replace
+from vtlengine.duckdb.custom_functions.String import instr_duck, replace_duck, substr_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -127,15 +127,6 @@ class Parameterized(Unary):
             cls.check_param(param2, 2)
         return super().validate(operand)
 
-    # @classmethod
-    # def op_func(cls, *args: Any) -> Any:
-    #     x: Optional[Any]
-    #     param1: Optional[Any]
-    #     param2: Optional[Any]
-    #     x, param1, param2 = (args + (None, None))[:3]
-    #
-    #     x = "" if pd.isnull(x) else x
-    #     return cls.py_op(x, param1, param2)
     @staticmethod
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
         if isinstance(param, DataComponent):
@@ -148,10 +139,7 @@ class Parameterized(Unary):
     def apply_parametrized_op(
         cls, me_name: str, param_name_1: str, param_name_2: str, output_column_name: Any
     ) -> str:
-        return (
-            f"{cls.sql_op}({me_name}, {param_name_1}, {param_name_2}) AS "
-            f'"{output_column_name}"'
-        )
+        return f'{cls.sql_op}({me_name}, {param_name_1}, {param_name_2}) AS "{output_column_name}"'
 
     @classmethod
     def dataset_evaluation(
@@ -188,13 +176,12 @@ class Parameterized(Unary):
         operand, param1, param2 = (args + (None, None))[:3]
 
         result = cls.validate(operand, param1, param2)
-        result.data = operand.data if operand.data is not None else empty_relation()
 
         param1_value = cls.handle_param_value(param1)
         param2_value = cls.handle_param_value(param2)
 
         # Combining data from operand and parameters into a single DuckdbPyRelation
-        all_data = operand.data
+        all_data = operand.data if operand.data is not None else empty_relation()
 
         for param in args[1:]:
             if isinstance(param, DataComponent):
@@ -260,26 +247,13 @@ class Parameterized(Unary):
 class Substr(Parameterized):
     op = SUBSTR
     return_type = String
+    sql_op = "substr_duck"
+    py_op = substr_duck
 
     @classmethod
     def validate_params(cls, params: Any) -> None:
         if len(params) != 2:
             raise SemanticError("1-1-18-7", op=cls.op, number=len(params), expected=2)
-
-    @classmethod
-    def py_op(cls, x: str, param1: Any, param2: Any) -> Any:
-        param1 = None if pd.isnull(param1) else int(param1)
-        param2 = None if pd.isnull(param2) else int(param2)
-        if param1 is None and param2 is None:
-            return x
-        if param1 is None:
-            param1 = 0
-        elif param1 != 0:
-            param1 -= 1
-        elif param1 > (len(x)):
-            return ""
-        param2 = len(x) if param2 is None or param1 + param2 > len(x) else param1 + param2
-        return x[param1:param2]
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -310,8 +284,8 @@ class Substr(Parameterized):
 class Replace(Parameterized):
     op = REPLACE
     return_type = String
-    sql_op = "duck_replace"
-    py_op = duck_replace
+    sql_op = "replace_duck"
+    py_op = replace_duck
 
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -333,8 +307,8 @@ class Replace(Parameterized):
 class Instr(Parameterized):
     op = INSTR
     return_type = Integer
-    sql_op = "duck_instr"
-    py_op = duck_instr
+    sql_op = "instr_duck"
+    py_op = instr_duck
 
     @classmethod
     def validate(
@@ -453,7 +427,7 @@ class Instr(Parameterized):
         param3_value = cls.handle_param_value(param3)
 
         # Combining data from operand and parameters into a single DuckdbPyRelation
-        all_data = operand.data
+        all_data = operand.data if operand.data is not None else empty_relation()
 
         for param in args[1:]:
             if isinstance(param, DataComponent):
@@ -466,13 +440,11 @@ class Instr(Parameterized):
         return result
 
     @classmethod
-    def scalar_evaluation(
-        cls, *args: Any
-    ) -> Scalar:
+    def scalar_evaluation(cls, *args: Any) -> Scalar:
         operand: Scalar
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
-        param3: Optional[Union[DataComponent, Scalar]]
+        param1: Optional[Scalar]
+        param2: Optional[Scalar]
+        param3: Optional[Scalar]
         operand, param1, param2, param3 = args[:4]
         result = cls.validate(operand, param1, param2, param3)
         param_value1 = None if param1 is None else param1.value

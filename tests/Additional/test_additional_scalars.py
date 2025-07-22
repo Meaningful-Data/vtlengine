@@ -23,11 +23,11 @@ class AdditionalScalarsTests(TestHelper):
 
 
 string_params = [
-    ("substr(null, null, null)", ""),
-    ("substr(null)", ""),
+    ("substr(null, null, null)", None),
+    ("substr(null)", None),
     ('substr("abc", null, null)', "abc"),
-    ("substr(null, 1, 2)", ""),
-    ("substr(null, _, 2)", ""),
+    ("substr(null, 1, 2)", None),
+    ("substr(null, _, 2)", None),
     ('substr("abc", null)', "abc"),
     ('substr("abc", null, 2)', "ab"),
     ('substr("abc", 3, null)', "c"),
@@ -40,13 +40,13 @@ string_params = [
     ('substr("abcdefghijklmnopqrstuvwxyz", _, 300)', "abcdefghijklmnopqrstuvwxyz"),
     ('substr("abcdefghijklmnopqrstuvwxyz", 400, 200)', ""),
     ('substr("", 4, 2)', ""),
-    ("replace(null, null, null)", ""),
-    ("replace(null, null)", ""),
+    ("replace(null, null, null)", None),
+    ("replace(null, null)", None),
     ('replace("abc", null, null)', ""),
     ('replace("abc", null)', ""),
-    ('replace(null, "a", "b")', ""),
-    ('replace(null, null, "b")', ""),
-    ('replace(null, "a", null)', ""),
+    ('replace(null, "a", "b")', None),
+    ('replace(null, null, "b")', None),
+    ('replace(null, "a", null)', None),
     ('replace("abc", null, "b")', ""),
     ('replace("abc", "a", null)', "bc"),
     ('replace("Hello world", "Hello", "Hi")', "Hi world"),
@@ -132,7 +132,7 @@ numeric_params = [
     ("log(8, 2)", 3.0),
     ("log(8.0, 2)", 3.0),
     ("log(1024, 2)", 10.0),
-    ("log(1024, 10)", 3.0102999566398116),
+    ("log(1024, 10)", 3.010299956639812),
     ("log(2.0, 2)", 1.0),
     ("log(null, null)", None),
     ("log(null, 1)", None),
@@ -204,9 +204,11 @@ string_exception_param = [
     ('instr("abcdecfrxcwsd", "c", _, -3)', "1-1-18-4"),
 ]
 
+# TODO: change this for runtime errors
 numeric_exception_param = [
-    ("log(5.0, -8)", "2-1-15-3"),
-    ("log(0.0, 6)", "math domain error"),
+    ("log(5.0, -8)", "Out of Range Error: cannot take logarithm of a negative number"),
+    ("log(0.0, 6)", "Out of Range Error: cannot take logarithm of zero"),
+    ("log(-2, 6)", "Out of Range Error: cannot take logarithm of a negative number"),
 ]
 
 ds_param = [

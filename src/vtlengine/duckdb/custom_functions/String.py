@@ -4,13 +4,15 @@ from typing import Optional
 from vtlengine.Exceptions import SemanticError
 
 
-def duck_instr(
+def instr_duck(
     str_value: Optional[str],
     str_to_find: Optional[str],
     start: Optional[int],
     occurrence: Optional[int] = 0,
-) -> int:
-    if str_value is None or str_to_find is None:
+) -> Optional[int]:
+    if str_value is None:
+        return None
+    if str_to_find is None:
         return 0
     else:
         str_value = str(str_value)
@@ -51,7 +53,7 @@ def duck_instr(
     return position
 
 
-def duck_replace(x: str, param1: Optional[str], param2: Optional[str]) -> str:
+def replace_duck(x: str, param1: Optional[str], param2: Optional[str]) -> str:
     if param1 is None:
         return ""
     elif param2 is None:
@@ -60,3 +62,20 @@ def duck_replace(x: str, param1: Optional[str], param2: Optional[str]) -> str:
     if param2 is not None:
         return x.replace(param1, param2)
     return x
+
+
+def substr_duck(
+    x: str,
+    start: Optional[int] = None,
+    length: Optional[int] = None,
+) -> str:
+    if start is None and length is None:
+        return x
+    if start is None:
+        start = 0
+    elif start != 0:
+        start -= 1
+    elif start > (len(x)):
+        return ""
+    param2 = len(x) if length is None or start + length > len(x) else start + length
+    return x[start:param2]
