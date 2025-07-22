@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR,
+    XOR, YEAR, MONTH, DAYOFMONTH, DAYOFYEAR,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -70,8 +70,22 @@ def handle_sql_scalar(value: Any) -> Any:
         value = int(value) if float(value).is_integer() else value
     return value
 
+def normalize_time_scalar(op_token: str, value: Any) -> Any:
+    if isinstance(value, TimePeriod) or (isinstance(value, str) and value[:4].isdigit()):
+        tp = TimePeriodHandler(value)
+        if op_token in [YEAR, MONTH]:
+            date_value = tp.start_date()
+        elif op_token in [DAYOFYEAR, DAYOFMONTH]:
+            date_value = tp.end_date()
+        else:
+            date_value = tp.start_date()
+        return date_value
+    return value
 
 def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
+    if hasattr(cls, "sql_expression"):
+        expr = cls.sql_expression(me_name)
+        return f"{expr} AS \"{value}\""
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
@@ -84,7 +98,14 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
+
+    time_operators = [YEAR, MONTH, DAYOFMONTH, DAYOFYEAR]
+    if op_token in time_operators:
+        value = normalize_time_scalar(op_token, value)
+        sql_expr = f"{op_token}(CAST({handle_sql_scalar(value)} AS DATE))"
+    else:
+        sql_expr = f"{op_token}({handle_sql_scalar(value)})"
+    result = con.sql(f"SELECT {sql_expr}").fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
 
