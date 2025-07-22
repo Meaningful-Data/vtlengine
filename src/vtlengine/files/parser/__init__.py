@@ -13,7 +13,7 @@ from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
 
-load_time_checks()
+load_time_checks(con)
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -112,7 +112,7 @@ def _validate_duckdb(
             if not components[col].nullable:
                 raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
-            data = data.project(f"*, NULL AS {col}")
+            data = data.project(f'*, NULL AS "{col}"')
 
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
@@ -124,9 +124,9 @@ def _validate_duckdb(
         dtype = comp.data_type
         if dtype in [Duration, TimeInterval, TimePeriod]:
             check_method = f"check_{dtype.__name__}".lower()
-            exprs.append(f"{check_method}({col}) AS {col}")
+            exprs.append(f'{check_method}("{col}") AS "{col}"')
         else:
-            exprs.append(col)
+            exprs.append(f'"{col}"')
 
     final_query = ", ".join(exprs)
     data = data.project(final_query)
@@ -143,11 +143,13 @@ def check_nulls(
         for comp in components.values()
         if not comp.nullable or comp.role == Role.IDENTIFIER
     ]
+    if not non_nullable:
+        return
     query = (
         "SELECT "
         + ", ".join(
             [
-                f"COUNT(CASE WHEN {col} IS NULL THEN 1 END) AS {col}_null_count"
+                f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
                 for col in non_nullable
             ]
         )
@@ -175,7 +177,7 @@ def check_duplicates(
     #             SELECT COUNT(*) > 0 from (
     #                 SELECT COUNT(*) as count
     #                 FROM data
-    #                 GROUP BY {", ".join(id_names)}
+    #                 GROUP BY {', '.join(id_names)}
     #                 HAVING COUNT(*) > 1
     #             ) AS duplicates
     #             """

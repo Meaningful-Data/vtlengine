@@ -11,6 +11,7 @@ from vtlengine.DataTypes import (
     Null,
     binary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_fillna, duckdb_select
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
@@ -243,11 +244,11 @@ class Nvl(Binary):
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
-                    result.data = left.data.fillna(right.value)
+                    result.data = duckdb_fillna(left.data, right.value)
                 else:
                     result.data = left.data.fillna(right.data)
                 if isinstance(result, Dataset):
-                    result.data = result.data[result.get_components_names()]
+                    result.data = duckdb_select(result.data, result.get_components_names())
         return result
 
     @classmethod
