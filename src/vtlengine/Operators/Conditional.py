@@ -6,7 +6,6 @@ import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.DataTypes import (
-    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
@@ -15,8 +14,9 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_fillna,
+    duckdb_rename,
     duckdb_select,
-    empty_relation, duckdb_merge, duckdb_rename,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
@@ -61,10 +61,11 @@ class If(Operator):
         true_branch: Union[DataComponent, Scalar],
         false_branch: Union[DataComponent, Scalar],
     ) -> DuckDBPyRelation:
-
         def get_expr(branch: Any) -> str:
-            return f"{repr(branch.value)}" if isinstance(branch, Scalar) and branch.value is not None else (
-                "NULL" if isinstance(branch, Scalar) else f'"{branch.data.columns[0]}"'
+            return (
+                f"{repr(branch.value)}"
+                if isinstance(branch, Scalar) and branch.value is not None
+                else ("NULL" if isinstance(branch, Scalar) else f'"{branch.data.columns[0]}"')
             )
 
         if condition.data is None:
@@ -85,24 +86,24 @@ class If(Operator):
 
     @classmethod
     def dataset_level_evaluation(
-            cls,
-            result: Any,
-            condition: Any,
-            true_branch: Any,
-            false_branch: Any
+        cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
     ) -> Any:
         ids = condition.get_identifiers_names()
-        cond_col = f'{condition.get_measures_names()[0]}'
+        cond_col = f"{condition.get_measures_names()[0]}"
 
         base = duckdb_fillna(condition.data, "FALSE", cond_col)
 
         if not isinstance(true_branch, Scalar):
             measures = true_branch.get_measures_names()
-            true_branch.data = duckdb_rename(true_branch.data, {m: f"__{m}@true_branch__" for m in measures})
+            true_branch.data = duckdb_rename(
+                true_branch.data, {m: f"__{m}@true_branch__" for m in measures}
+            )
             base = duckdb_concat(base, true_branch.data, ids)
         if not isinstance(false_branch, Scalar):
             measures = false_branch.get_measures_names()
-            false_branch.data = duckdb_rename(false_branch.data, {m: f"__{m}@false_branch__" for m in measures})
+            false_branch.data = duckdb_rename(
+                false_branch.data, {m: f"__{m}@false_branch__" for m in measures}
+            )
             base = duckdb_concat(base, false_branch.data, ids)
 
         exprs = []
@@ -110,9 +111,23 @@ class If(Operator):
             if comp_name in ids:
                 expr = f'"{comp_name}"'
             else:
-                true_expr = f'"__{comp_name}@true_branch__"' if not isinstance(true_branch, Scalar) else repr(true_branch.value) if true_branch.value is not None else "NULL"
-                false_expr = f'"__{comp_name}@false_branch__"' if not isinstance(false_branch, Scalar) else repr(false_branch.value) if false_branch.value is not None else "NULL"
-                expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
+                true_expr = (
+                    f'"__{comp_name}@true_branch__"'
+                    if not isinstance(true_branch, Scalar)
+                    else repr(true_branch.value)
+                    if true_branch.value is not None
+                    else "NULL"
+                )
+                false_expr = (
+                    f'"__{comp_name}@false_branch__"'
+                    if not isinstance(false_branch, Scalar)
+                    else repr(false_branch.value)
+                    if false_branch.value is not None
+                    else "NULL"
+                )
+                expr = (
+                    f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
+                )
             exprs.append(expr)
 
         result.data = base.project(", ".join(exprs))
@@ -302,23 +317,13 @@ class Case(Operator):
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
         for condition in conditions:
-            if isinstance(condition, Dataset) and condition.data is not None:
-                condition.data.fillna(False, inplace=True)
-                condition_measure = condition.get_measures_names()[0]
-                if condition.data[condition_measure].dtype != bool:
-                    condition.data[condition_measure] = condition.data[condition_measure].astype(
-                        bool
-                    )
-            elif (
-                isinstance(
-                    condition,
-                    DataComponent,
+            if isinstance(condition, (Dataset, DataComponent)) and condition.data is not None:
+                condition_measure = (
+                    condition.get_measures_names()[0]
+                    if isinstance(condition, Dataset)
+                    else condition.name
                 )
-                and condition.data is not None
-            ):
-                condition.data.fillna(False, inplace=True)
-                if condition.data.dtype != bool:
-                    condition.data = condition.data.astype(bool)
+                condition.data = duckdb_fillna(condition.data, False, condition_measure)
             elif isinstance(condition, Scalar) and condition.value is None:
                 condition.value = False
 
@@ -328,58 +333,25 @@ class Case(Operator):
                 if conditions[i].value:
                     result.value = thenOps[i].value
 
-        if isinstance(result, DataComponent):
-            result.data = pd.Series(None, index=conditions[0].data.index)
-
-            for i, condition in enumerate(conditions):
-                value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data.notna(),
-                    np.where(condition.data, value, result.data),
-                    result.data,
+        case_query = "CASE "
+        for i, condition in enumerate(conditions):
+            if isinstance(condition, Scalar):
+                cond_value = repr(condition.value) if condition.value is not None else "NULL"
+                then_value = repr(thenOps[i].value) if thenOps[i].value is not None else "NULL"
+                case_query += f"WHEN {cond_value} THEN {then_value} "
+            else:
+                cond_value = (
+                    condition.get_measures_names()[0]
+                    if isinstance(condition, Dataset)
+                    else condition.name
                 )
-
-            condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
-            else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
-            result.data = pd.Series(
-                np.where(condition_mask_else, else_value, result.data),
-                index=conditions[0].data.index,
-            )
-
-        if isinstance(result, Dataset):
-            identifiers = result.get_identifiers_names()
-            columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = (
-                conditions[0].data[identifiers]
-                if conditions[0].data is not None
-                else pd.DataFrame(columns=identifiers)
-            )
-
-            for i in range(len(conditions)):
-                condition = conditions[i]
-                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                condition_mask = condition.data[bool_col]
-
-                result.data.loc[condition_mask, columns] = (
-                    thenOps[i].value
-                    if isinstance(thenOps[i], Scalar)
-                    else thenOps[i].data.loc[condition_mask, columns]
-                )
-
-            condition_mask_else = ~np.logical_or.reduce(
-                [
-                    condition.data[
-                        next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                    ].astype(bool)
-                    for condition in conditions
-                ]
-            )
-
-            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index, unused-ignore]
-                elseOp.value
-                if isinstance(elseOp, Scalar)
-                else elseOp.data.loc[condition_mask_else, columns]
-            )
+                then_value = thenOps[i].name
+            case_query += f'WHEN "{cond_value}" THEN "{then_value}" '
+        if isinstance(elseOp, Scalar):
+            else_value = repr(condition.value) if condition.value is not None else "NULL"
+        else:
+            else_value = elseOp.name
+        case_query += f'ELSE "{else_value}" END AS "{result.name}"'
 
         return result
 

@@ -18,7 +18,9 @@ TYPES_DICT = {
 }
 
 
-def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None) -> DuckDBPyRelation:
+def duckdb_concat(
+    left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
+) -> DuckDBPyRelation:
     """
     Concatenates two DuckDB relations by row, ensuring that columns are aligned.
 
@@ -96,10 +98,7 @@ def duckdb_fillna(
     """
 
     exprs = []
-    if cols is None:
-        cols_set = set(data.columns)
-    else:
-        cols_set = {cols} if isinstance(cols, str) else set(cols)
+    cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
         type_ = (
             (
@@ -124,7 +123,7 @@ def duckdb_fillna(
         exprs.append(f'COALESCE("{col}", {value}) AS "{col}"'.replace('""', '"'))
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
 

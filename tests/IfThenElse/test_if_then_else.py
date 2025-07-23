@@ -308,7 +308,7 @@ class IfThenElseTest(TestIfThenElse):
         #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-        #Ignored due this would need an explicit cast to execute with the current VTL standard
+        # Ignored due this would need an explicit cast to execute with the current VTL standard
         pass
 
     def test_15(self):
