@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Any, List, Union
 
-import numpy as np
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
 
