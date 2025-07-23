@@ -278,16 +278,12 @@ class Parameterized(Unary):
 
         return super().validate(operand)
 
-    @classmethod
-    def op_func(cls, x: Optional[Union[int, float]], param: Optional[Any]) -> Any:
-        return None if x is None else cls.py_op(x, param)
-
     @staticmethod
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
         if isinstance(param, DataComponent):
             return param.name
         elif isinstance(param, Scalar) and param.value is not None:
-            return f"'{param.value}'"
+            return param.value
         return "NULL"
 
     @classmethod
@@ -324,8 +320,8 @@ class Parameterized(Unary):
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Optional[Any] = None) -> Scalar:
         result = cls.validate(operand, param)
-        param_value = cls.handle_param_value(param)
-        result.value = cls.op_func(operand.value, param_value)
+        param_value = None if param is None or param.value is None else param.value
+        result.value = cls.py_op(operand.value, param_value)
         return result
 
     @classmethod

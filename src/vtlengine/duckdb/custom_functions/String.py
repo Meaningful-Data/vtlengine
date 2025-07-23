@@ -60,8 +60,6 @@ def instr_duck(
             correct_type="Integer",
         )
 
-
-
     occurrences_list = [m.start() for m in re.finditer(str_to_find, str_value[start:])]
 
     length = len(occurrences_list)

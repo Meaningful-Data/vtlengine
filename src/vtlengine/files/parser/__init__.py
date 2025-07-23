@@ -237,7 +237,7 @@ def load_datapoints(
             ignore_errors=True,
             date_format="%Y-%m-%d",
             allow_quoted_nulls=False,
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         # Type validation and normalization

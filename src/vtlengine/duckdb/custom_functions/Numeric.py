@@ -22,7 +22,7 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
         return None
     multiplier = 1.0
     if decimals is not None:
-        multiplier = 10 ** decimals
+        multiplier = 10**decimals
 
     if value >= 0.0:
         rounded_value = math.floor(value * multiplier + 0.5) / multiplier

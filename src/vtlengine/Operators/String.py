@@ -431,9 +431,9 @@ class Instr(Parameterized):
 
         # Validation and handling parameters
         result = cls.validate(operand, param1, param2, param3)
-        param_value1 = cls.handle_param_value(param1)
-        param_value2 = cls.handle_param_value(param2)
-        param_value3 = cls.handle_param_value(param3)
+        param_value1 = None if param1 is None else param1.value
+        param_value2 = None if param2 is None else param2.value
+        param_value3 = None if param3 is None else param3.value
 
         # Evaluating the operation
         result.value = cls.py_op(operand.value, param_value1, param_value2, param_value3)
