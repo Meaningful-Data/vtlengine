@@ -17,7 +17,11 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, String, check_unary_implicit_promotion
-from vtlengine.duckdb.custom_functions.String import instr_duck, replace_duck, substr_duck, instr_check_param_value
+from vtlengine.duckdb.custom_functions.String import (
+    instr_duck,
+    replace_duck,
+    substr_duck,
+)
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -128,10 +132,13 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @staticmethod
-    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
+    # could be here the bug
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
         if isinstance(param, DataComponent):
+            print(param.name)
             return param.name
-        elif isinstance(param, Scalar):
+        elif isinstance(param, Scalar) and param.value is not None:
+            print(param)
             return f"'{param.value}'"
         return "NULL"
 
@@ -155,8 +162,8 @@ class Parameterized(Unary):
 
         expr = [f"{d}" for d in operand.get_identifiers_names()]
 
-        param1_value = "NULL" if param1 is None else f"'{param1.value}'"
-        param2_value = "NULL" if param2 is None else f"'{param2.value}'"
+        param1_value = "NULL" if param1 is None or param1.value is None else f"'{param1.value}'"
+        param2_value = "NULL" if param2 is None or param2.value is None else f"'{param2.value}'"
 
         for measure_name in operand.get_measures_names():
             expr.append(
@@ -228,21 +235,6 @@ class Parameterized(Unary):
     def check_param_value(cls, *args: Any) -> None:
         raise Exception("Method should be implemented by inheritors")
 
-    @classmethod
-    def generate_series_from_param(cls, *args: Any) -> Any:
-        param: Optional[Union[DataComponent, Scalar]] = None
-        length: int
-        if len(args) == 2:
-            param, length = args
-        else:
-            length = args[0]
-
-        if param is None:
-            return pd.Series(index=range(length), dtype=object)
-        if isinstance(param, Scalar):
-            return pd.Series(data=[param.value], index=range(length))
-        return param.data
-
 
 class Substr(Parameterized):
     op = SUBSTR
@@ -266,18 +258,15 @@ class Substr(Parameterized):
         if not check_unary_implicit_promotion(data_type, Integer):
             raise SemanticError("1-1-18-4", op=cls.op, param_type=cls.op, correct_type="Integer")
 
-        if isinstance(param, DataComponent):
-            if param.data is not None:
-                param.data.map(lambda x: cls.check_param_value(x, position))
-        else:
+        if isinstance(param, Scalar):
             cls.check_param_value(param.value, position)
 
     @classmethod
     def check_param_value(cls, param: Optional[Any], position: int) -> None:
         if param is not None:
-            if not pd.isnull(param) and not param >= 1 and position == 1:
+            if param is not None and not param >= 1 and position == 1:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-            elif not pd.isnull(param) and not param >= 0 and position == 2:
+            elif param is not None and not param >= 0 and position == 2:
                 raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
 
 
@@ -309,7 +298,6 @@ class Instr(Parameterized):
     return_type = Integer
     sql_op = "instr_duck"
     py_op = instr_duck
-    check_param_value = instr_check_param_value
 
     @classmethod
     def validate(
@@ -365,12 +353,14 @@ class Instr(Parameterized):
                     param_type="Occurrence",
                     correct_type="Integer",
                 )
-        if position >= 2:
-            if isinstance(param, DataComponent):
-                if param.data is not None:
-                    param.data = param.data.project(f'instr_check_param_value({param.name}, {position}) as "{param.name}"')
-            else:
-                cls.check_param_value(param.value, position)
+        if position >= 2 and isinstance(param, Scalar) and param is not None:
+            if position == 2 and param.value is not None and param.value < 1:
+                raise SemanticError("1-1-18-4", op="instr", param_type="Start", correct_type=">= 1")
+            elif position == 3 and param.value is not None and param.value < 1:
+                raise SemanticError(
+                    "1-1-18-4", op="instr", param_type="Occurrence", correct_type=">= 1"
+                )
+        return None
 
     @classmethod
     def apply_instr_op(
@@ -391,9 +381,9 @@ class Instr(Parameterized):
 
         expr = [f"{d}" for d in operand.get_identifiers_names()]
 
-        param_value1 = "NULL" if param1 is None else f"'{param1.value}'"
-        param_value2 = "NULL" if param2 is None else f"'{param2.value}'"
-        param_value3 = "NULL" if param3 is None else f"'{param3.value}'"
+        param_value1 = "NULL" if param1 is None or param1.value is None else f"'{param1.value}'"
+        param_value2 = "NULL" if param2 is None or param2.value is None else f"'{param2.value}'"
+        param_value3 = "NULL" if param3 is None or param3.value is None else f"'{param3.value}'"
 
         for measure_name in operand.get_measures_names():
             expr.append(

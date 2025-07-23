@@ -1,6 +1,10 @@
 from vtlengine.duckdb.custom_functions.Null_checking import isnull_duck as isnull
 from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
-from vtlengine.duckdb.custom_functions.String import instr_duck, replace_duck, substr_duck, instr_check_param_value
+from vtlengine.duckdb.custom_functions.String import (
+    instr_duck,
+    replace_duck,
+    substr_duck,
+)
 
 __all__ = [
     "isnull",
@@ -10,5 +14,4 @@ __all__ = [
     "instr_duck",
     "replace_duck",
     "substr_duck",
-    "instr_check_param_value",
 ]

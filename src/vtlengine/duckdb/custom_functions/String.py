@@ -21,28 +21,46 @@ def instr_duck(
     if start is None:
         start = 1
 
-    if isinstance(start, (int, float)):
+    if occurrence is None:
+        occurrence = 1
+
+    if start < 1:
+        raise SemanticError(
+            "1-1-18-4",
+            op="instr",
+            param_type="Start",
+            correct_type=">=1",
+        )
+
+    if isinstance(start, int):
         start = int(start - 1)
     else:
         raise SemanticError(
             "1-1-18-4",
-            # op=cls.op,
-            param_type="Start",
+            op="instr",
+            param_type="Occurrence",
             correct_type="Integer",
         )
 
-    if occurrence is None:
-        occurrence = 1
+    if occurrence < 1:
+        raise SemanticError(
+            "1-1-18-4",
+            op="instr",
+            param_type="Occurrence",
+            correct_type=">= 1",
+        )
 
-    if isinstance(occurrence, (int, float)):
+    if isinstance(occurrence, int):
         occurrence = int(occurrence - 1)
     else:
         raise SemanticError(
             "1-1-18-4",
-            # op=cls.op,
+            op="instr",
             param_type="Occurrence",
             correct_type="Integer",
         )
+
+
 
     occurrences_list = [m.start() for m in re.finditer(str_to_find, str_value[start:])]
 
@@ -52,23 +70,15 @@ def instr_duck(
 
     return position
 
-def instr_check_param_value(value: Optional[int], position: int) -> Optional[int]:
-    if position == 2 and value is not None and value < 1:
-        raise SemanticError("1-1-18-4", op="instr", param_type="Start", correct_type=">= 1")
-    elif position == 3 and value is not None and value < 1:
-        raise SemanticError("1-1-18-4", op="instr", param_type="Occurrence", correct_type=">= 1")
-    return value
 
-
-def replace_duck(x: str, param1: Optional[str], param2: Optional[str]) -> str:
+def replace_duck(x: str, param1: Optional[str], param2: Optional[str]) -> Optional[str]:
+    if x is None:
+        return None
     if param1 is None:
         return ""
-    elif param2 is None:
+    if param2 is None:
         param2 = ""
-    x = str(x)
-    if param2 is not None:
-        return x.replace(param1, param2)
-    return x
+    return x.replace(param1, param2)
 
 
 def substr_duck(
@@ -80,6 +90,12 @@ def substr_duck(
         return None
     if start is None and length is None:
         return x
+
+    if length is not None and length < 0:
+        raise SemanticError("1-1-18-4", op="substr", param_type="Lengh", correct_type=">= 0")
+    if start is not None and start < 1:
+        raise SemanticError("1-1-18-4", op="substr", param_type="Start", correct_type=">= 1")
+
     if start is None:
         start = 0
     elif start != 0:
