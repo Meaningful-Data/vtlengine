@@ -10,6 +10,22 @@ def instr_duck(
     start: Optional[int],
     occurrence: Optional[int] = 0,
 ) -> Optional[int]:
+    """
+    Custom instr function for DuckDB that handles None values and find a string in others.
+    Applied on Instr operator in VTL.
+    If str_value is None return None
+    If str_to_find is None return 0
+    If start or occurrence is None both are set to 1
+
+    Args:
+        str_value: Optional[str], value to find in
+        str_to_find: Optional[str], value to find
+        start: Optional[int], position of the string to start
+        occurrence: Optional[int] = 0, the occurrence of the pattern to search
+
+    Returns:
+        Optional[int]: The position in the input string of a specified string.
+    """
     if str_value is None:
         return None
     if str_to_find is None:
@@ -69,25 +85,59 @@ def instr_duck(
     return position
 
 
-def replace_duck(x: str, param1: Optional[str], param2: Optional[str]) -> Optional[str]:
-    if x is None:
+def replace_duck(value: str, pattern1: Optional[str], pattern2: Optional[str]) -> Optional[str]:
+    """
+    Custom replace function for DuckDB that handles None values and replace a string in others.
+    Applied on Replace operator in VTL.
+    If value is None return None
+    If pattern1 is None return ""
+    If pattern is None set as ""
+
+    Args:
+        value: str: the operand
+        pattern1: Optional[str]: the pattern to be replaced
+        pattern2: Optional[str]: the replacing pattern
+
+    Returns:
+        Optional[str]: The modified string
+    """
+
+    if value is None:
         return None
-    if param1 is None:
+    if pattern1 is None:
         return ""
-    if param2 is None:
-        param2 = ""
-    return x.replace(param1, param2)
+    if pattern2 is None:
+        pattern2 = ""
+    return value.replace(pattern1, pattern2)
 
 
 def substr_duck(
-    x: str,
+    value: str,
     start: Optional[int] = None,
     length: Optional[int] = None,
 ) -> Optional[str]:
-    if x is None:
+    """
+    Custom substr function for DuckDB that handles None values and extracts a substring.
+    Applied on Substr operator in VTL.
+    If value is None return None
+    If start is None return the same string
+    If length is None return the same string
+
+    Args:
+        value: str: the operand
+        start: Optional[int] = None: the starting digit (first character)
+                of the string to be extracted
+        length: Optional[int] = None: the length (number of characters)
+                of the string to be extracted
+
+    Returns:
+        Optional[str]: The substring
+    """
+
+    if value is None:
         return None
     if start is None and length is None:
-        return x
+        return value
 
     if length is not None and length < 0:
         raise SemanticError("1-1-18-4", op="substr", param_type="Lengh", correct_type=">= 0")
@@ -98,7 +148,7 @@ def substr_duck(
         start = 0
     elif start != 0:
         start -= 1
-    elif start > (len(x)):
+    elif start > (len(value)):
         return ""
-    param2 = len(x) if length is None or start + length > len(x) else start + length
-    return x[start:param2]
+    param2 = len(value) if length is None or start + length > len(value) else start + length
+    return value[start:param2]
