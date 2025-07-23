@@ -248,7 +248,7 @@ class Parameterized(Unary):
 
     @classmethod
     def apply_parametrized_op(
-        cls, input_column_name: str, param_name: Union[str, int], output_column_name: str
+        cls, input_column_name: str, param_name: Union[str, int, float], output_column_name: str
     ) -> str:
         """
         Applies the parametrized operation to the operand and returns a SQL expression.
@@ -288,9 +288,9 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @staticmethod
-    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Union[str, int, float]:
         if isinstance(param, DataComponent):
-            return param.name
+            return f'"{param.name}"'
         elif isinstance(param, Scalar) and param.value is not None:
             return param.value
         return "NULL"

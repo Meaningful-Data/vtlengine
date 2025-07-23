@@ -123,7 +123,7 @@ class Parameterized(Unary):
     @staticmethod
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
         if isinstance(param, DataComponent):
-            return param.name
+            return f'"{param.name}"'
         elif isinstance(param, Scalar) and param.value is not None:
             return f"'{param.value}'"
         return "NULL"
