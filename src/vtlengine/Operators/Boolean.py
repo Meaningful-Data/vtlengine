@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 import pandas as pd
 
@@ -15,6 +15,11 @@ class Unary(Operator.Unary):
 class Binary(Operator.Binary):
     type_to_check = Boolean
     return_type = Boolean
+
+    @classmethod
+    def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
+        # TODO: Change this or remove this to use duckdb functions in Boolean
+        return Operator.apply_bin_op(cls, me_name, left, right)
 
 
 class And(Binary):
