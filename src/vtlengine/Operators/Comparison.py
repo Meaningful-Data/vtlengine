@@ -19,10 +19,10 @@ from vtlengine.AST.Grammar.tokens import (
     NOT_IN,
 )
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
+from vtlengine.duckdb.custom_functions import isnull_duck
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.custom_functions import isnull_duck
 
 
 class Unary(Operator.Unary):

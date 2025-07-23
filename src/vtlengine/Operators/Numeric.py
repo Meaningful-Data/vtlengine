@@ -247,9 +247,7 @@ class Parameterized(Unary):
     sql_op: str = Unary.op
 
     @classmethod
-    def apply_parametrized_op(
-        cls, me_name: str, param_name: Union[str, int], output_column_name: Any
-    ) -> str:
+    def apply_parametrized_op(cls, me_name: str, param_name: str, output_column_name: str) -> str:
         return f'{cls.sql_op}({me_name}, {param_name}) AS "{output_column_name}"'
 
     @classmethod
@@ -279,7 +277,7 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @staticmethod
-    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
         if isinstance(param, DataComponent):
             return param.name
         elif isinstance(param, Scalar) and param.value is not None:

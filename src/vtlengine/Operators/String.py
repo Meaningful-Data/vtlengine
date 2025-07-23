@@ -121,7 +121,7 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @staticmethod
-    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
         if isinstance(param, DataComponent):
             return param.name
         elif isinstance(param, Scalar) and param.value is not None:
@@ -191,7 +191,7 @@ class Parameterized(Unary):
         operand: Scalar
         param1: Optional[Scalar]
         param2: Optional[Scalar]
-        operand, param1, param2 = (args + (None, None))[:3]
+        operand, param1, param2 = args[:3]
 
         result = cls.validate(operand, param1, param2)
         param_value1 = None if param1 is None else param1.value
