@@ -90,7 +90,7 @@ def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    return f'{op_token}({me_name}) AS "{value}"'
+    return f'{op_token}("{me_name}") AS "{value}"'
 
 
 def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
@@ -294,7 +294,7 @@ def _id_type_promotion_join_keys(
     left_data: Optional[DuckDBPyRelation] = None,
     right_data: Optional[DuckDBPyRelation] = None,
 ) -> tuple[Optional[DuckDBPyRelation], Optional[DuckDBPyRelation]]:
-    if not left_data or not right_data:
+    if left_data is None or right_data is None:
         return left_data, right_data
 
     left_type_name = c_left.data_type.__name__
@@ -665,7 +665,7 @@ class Binary(Operator):
             )
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = f"{', '.join(transformations)}"
+        final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
@@ -708,22 +708,23 @@ class Binary(Operator):
         result_data = dataset.data
 
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
-        if isinstance(scalar_value, str):
-            scalar_value = f"'{scalar_value}'"
+        scalar_value = handle_sql_scalar(scalar_value)
 
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
             if me.data_type in TIME_TYPES:
                 transformations.append(
-                    f'cast_time_types("{me.data_type.__name__}", {me.name}) AS "{me.name}"'
+                    f'cast_time_types("{me.data_type.__name__}", "{me.name}") AS "{me.name}"'
                 )
             if me.data_type == Duration and not isinstance(scalar_value, int):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
 
-            left, right = (me.name, scalar_value) if dataset_left else (scalar_value, me.name)
+            left, right = (
+                (f'"{me.name}"', scalar_value) if dataset_left else (scalar_value, f'"{me.name}"')
+            )
             transformations.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = f"{', '.join(transformations)}"
+        final_query = ", ".join(transformations)
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -741,19 +742,21 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{left_operand.data_type.__name__}", {left_operand.name}) '
+                f'cast_time_types("{left_operand.data_type.__name__}", "{left_operand.name}") '
                 f'AS "{left_operand.name}"'
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{right_operand.data_type.__name__}", {right_operand.name}) '
+                f'cast_time_types("{right_operand.data_type.__name__}", "{right_operand.name}") '
                 f'AS "{right_operand.name}"'
             )
 
         transformations.append(
-            apply_bin_op(cls, result_component.name, left_operand.name, right_operand.name)
+            apply_bin_op(
+                cls, result_component.name, f'"{left_operand.name}"', f'"{right_operand.name}"'
+            )
         )
-        final_query = f"{', '.join(transformations)}"
+        final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
         result_component.data = result_data.project(result_component.name)
         return result_component
