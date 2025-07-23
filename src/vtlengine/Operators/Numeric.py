@@ -247,8 +247,19 @@ class Parameterized(Unary):
     sql_op: str = Unary.op
 
     @classmethod
-    def apply_parametrized_op(cls, me_name: str, param_name: str, output_column_name: str) -> str:
-        return f'{cls.sql_op}({me_name}, {param_name}) AS "{output_column_name}"'
+    def apply_parametrized_op(
+        cls, input_column_name: str, param_name: Union[str, int], output_column_name: str
+    ) -> str:
+        """
+        Applies the parametrized operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            param_name (str): The name of the parameter (or value) to be used in the operation.
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return f'{cls.sql_op}({input_column_name}, {param_name}) AS "{output_column_name}"'
 
     @classmethod
     def validate(

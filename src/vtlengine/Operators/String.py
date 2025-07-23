@@ -130,9 +130,24 @@ class Parameterized(Unary):
 
     @classmethod
     def apply_parametrized_op(
-        cls, me_name: str, param_name_1: str, param_name_2: str, output_column_name: Any
+        cls, input_column_name: str, param_name_1: str, param_name_2: str, output_column_name: Any
     ) -> str:
-        return f'{cls.sql_op}({me_name}, {param_name_1}, {param_name_2}) AS "{output_column_name}"'
+        """
+        Applies the parametrized operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            param_name_1 (str): The name of the first parameter (or value)
+              to be used in the operation.
+            param_name_2 (str): The name of the second parameter (or value)
+              to be used in the operation.
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return (
+            f"{cls.sql_op}({input_column_name}, {param_name_1}, "
+            f'{param_name_2}) AS "{output_column_name}"'
+        )
 
     @classmethod
     def dataset_evaluation(
@@ -351,13 +366,29 @@ class Instr(Parameterized):
     @classmethod
     def apply_instr_op(
         cls,
-        operand: str,
+        input_column_name: str,
         param_1: str,
         param_2: Union[str, int],
         param_3: Union[str, int],
         output_column_name: Any,
     ) -> str:
-        return f'{cls.sql_op}({operand}, {param_1}, {param_2}, {param_3}) AS "{output_column_name}"'
+        """
+        Applies the parametrized operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            param_1 (str): The name of the first parameter (or value) to be used in the operation.
+            param_2 (Union[str, int]): The name of the second parameter (or value) to be
+              used in the operation.
+            param_3 (Union[str, int]): The name of the third parameter (or value) to be
+              used in the operation.
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return (
+            f"{cls.sql_op}({input_column_name}, {param_1}, {param_2}, {param_3}) "
+            f'AS "{output_column_name}"'
+        )
 
     @classmethod
     def dataset_evaluation(cls, *args: Any) -> Dataset:
