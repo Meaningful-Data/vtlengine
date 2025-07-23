@@ -1,4 +1,5 @@
 import _random
+import math
 from typing import Optional, Union
 
 
@@ -19,9 +20,19 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     """
     if value is None:
         return None
-    if decimals is None:
-        return int(round(value, 0))
-    return round(value, decimals)
+    multiplier = 1.0
+    if decimals is not None:
+        multiplier = 10 ** decimals
+
+    if value >= 0.0:
+        rounded_value = math.floor(value * multiplier + 0.5) / multiplier
+    else:
+        rounded_value = math.ceil(value * multiplier - 0.5) / multiplier
+
+    if decimals is not None:
+        return rounded_value
+
+    return int(rounded_value)
 
 
 def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:

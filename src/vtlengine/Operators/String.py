@@ -132,13 +132,10 @@ class Parameterized(Unary):
         return super().validate(operand)
 
     @staticmethod
-    # could be here the bug
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
         if isinstance(param, DataComponent):
-            print(param.name)
             return param.name
         elif isinstance(param, Scalar) and param.value is not None:
-            print(param)
             return f"'{param.value}'"
         return "NULL"
 
@@ -381,9 +378,9 @@ class Instr(Parameterized):
 
         expr = [f"{d}" for d in operand.get_identifiers_names()]
 
-        param_value1 = "NULL" if param1 is None or param1.value is None else f"'{param1.value}'"
-        param_value2 = "NULL" if param2 is None or param2.value is None else f"'{param2.value}'"
-        param_value3 = "NULL" if param3 is None or param3.value is None else f"'{param3.value}'"
+        param_value1 = cls.handle_param_value(param1)
+        param_value2 = cls.handle_param_value(param2)
+        param_value3 = cls.handle_param_value(param3)
 
         for measure_name in operand.get_measures_names():
             expr.append(
@@ -431,10 +428,14 @@ class Instr(Parameterized):
         param2: Optional[Scalar]
         param3: Optional[Scalar]
         operand, param1, param2, param3 = args[:4]
+
+        # Validation and handling parameters
         result = cls.validate(operand, param1, param2, param3)
-        param_value1 = None if param1 is None else param1.value
-        param_value2 = None if param2 is None else param2.value
-        param_value3 = None if param3 is None else param3.value
+        param_value1 = cls.handle_param_value(param1)
+        param_value2 = cls.handle_param_value(param2)
+        param_value3 = cls.handle_param_value(param3)
+
+        # Evaluating the operation
         result.value = cls.py_op(operand.value, param_value1, param_value2, param_value3)
         return result
 

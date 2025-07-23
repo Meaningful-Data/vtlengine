@@ -282,6 +282,14 @@ class Parameterized(Unary):
     def op_func(cls, x: Optional[Union[int, float]], param: Optional[Any]) -> Any:
         return None if x is None else cls.py_op(x, param)
 
+    @staticmethod
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Optional[str]:
+        if isinstance(param, DataComponent):
+            return param.name
+        elif isinstance(param, Scalar) and param.value is not None:
+            return f"'{param.value}'"
+        return "NULL"
+
     @classmethod
     def dataset_evaluation(
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
@@ -289,10 +297,7 @@ class Parameterized(Unary):
         result_dataset = cls.validate(operand, param)
         result_data = operand.data if operand.data is not None else empty_relation()
         exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
-        if param is None:
-            param_value = "NULL"
-        else:
-            param_value = param.name if isinstance(param, DataComponent) else param.value
+        param_value = cls.handle_param_value(param)
         for measure_name in operand.get_measures_names():
             exprs.append(cls.apply_parametrized_op(measure_name, param_value, measure_name))
 
@@ -308,22 +313,18 @@ class Parameterized(Unary):
     ) -> DataComponent:
         result_component = cls.validate(operand, param)
         result_data = operand.data if operand.data is not None else empty_relation()
+        param_value = cls.handle_param_value(param)
         if isinstance(param, DataComponent):
-            operand_data = duckdb_concat(operand.data, param.data)
-            result_component.data = operand_data.project(
-                cls.apply_parametrized_op(operand.name, param.name, result_component.name)
-            )
-        else:
-            param_value = "NULL" if param is None else param.value
-            result_component.data = result_data.project(
-                cls.apply_parametrized_op(operand.name, param_value, result_component.name)
-            )
+            result_data = duckdb_concat(operand.data, param.data)
+        result_component.data = result_data.project(
+            cls.apply_parametrized_op(operand.name, param_value, result_component.name)
+        )
         return result_component
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Optional[Any] = None) -> Scalar:
         result = cls.validate(operand, param)
-        param_value = param.value if param is not None else None
+        param_value = cls.handle_param_value(param)
         result.value = cls.op_func(operand.value, param_value)
         return result
 
