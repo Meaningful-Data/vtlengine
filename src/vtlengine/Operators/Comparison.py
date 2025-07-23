@@ -22,6 +22,7 @@ from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.custom_functions import isnull_duck
 
 
 class Unary(Operator.Unary):
@@ -39,15 +40,8 @@ class IsNull(Unary):
     """
 
     op = ISNULL
-    py_op = pd.isnull
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        return series.isnull()
-
-    @classmethod
-    def op_func(cls, x: Any) -> Any:
-        return pd.isnull(x)
+    py_op = isnull_duck
+    sql_op = "isnull_duck"
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:

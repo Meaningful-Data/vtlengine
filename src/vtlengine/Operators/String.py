@@ -55,18 +55,7 @@ class Length(Unary):
     op = LEN
     return_type = Integer
     py_op = len
-
-    @classmethod
-    def op_func(cls, x: Any) -> Any:
-        result = super().op_func(x)
-        if pd.isnull(result):
-            return 0
-        return result
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        """Applies the operation to a component"""
-        return series.map(cls.op_func)
+    sql_op = "len"
 
 
 class Lower(Unary):
