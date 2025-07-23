@@ -335,12 +335,12 @@ class Case(Operator):
 
         relations = []
         for condition in conditions:
-            if hasattr(condition, 'data') and condition.data is not None:
+            if hasattr(condition, "data") and condition.data is not None:
                 relations.append(condition.data)
         for thenOp in thenOps:
-            if hasattr(thenOp, 'data') and thenOp.data is not None:
+            if hasattr(thenOp, "data") and thenOp.data is not None:
                 relations.append(thenOp.data)
-        if hasattr(elseOp, 'data') and elseOp.data is not None:
+        if hasattr(elseOp, "data") and elseOp.data is not None:
             relations.append(elseOp.data)
 
         if relations:
@@ -362,7 +362,7 @@ class Case(Operator):
             else:
                 then_val = f'"{thenOps[i].name}"'
 
-            case_expr += f'WHEN {cond} THEN {then_val} '
+            case_expr += f"WHEN {cond} THEN {then_val} "
 
         if isinstance(elseOp, Scalar):
             else_val = f"{repr(elseOp.value)}"
@@ -372,7 +372,6 @@ class Case(Operator):
         case_expr += f'ELSE {else_val} END AS "{result.name}"'
 
         result.data = base.project(case_expr)
-
         return result
 
     @classmethod
