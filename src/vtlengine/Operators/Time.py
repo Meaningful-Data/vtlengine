@@ -1150,13 +1150,29 @@ class Year_to_Day(Operators.Unary):
     @classmethod
     def sql_expression(cls, operand_sql: str) -> str:
         return f"""
-        CASE
-            WHEN {operand_sql} IS NULL THEN NULL
-            ELSE
-                CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)Y') AS INTEGER) * 365 +
-                CAST(COALESCE(REGEXP_EXTRACT({operand_sql}, 'P(?:\\d+Y)?(\\d+)D'), '0') AS INTEGER)
-        END
-        """
+                CASE
+                    WHEN {operand_sql} IS NULL THEN NULL
+                    ELSE
+                        COALESCE(
+                            CAST(
+                                REPLACE(
+                                    SUBSTR(REGEXP_EXTRACT({operand_sql}, 'P\\d+Y'), 2),
+                                    'Y', ''
+                                ) AS INTEGER
+                            ),
+                            0
+                        ) * 365 +
+                        COALESCE(
+                            CAST(
+                                REPLACE(
+                                    REGEXP_EXTRACT({operand_sql}, '\\d+D'),
+                                    'D', ''
+                                ) AS INTEGER
+                            ),
+                            0
+                        )
+                END
+                """
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
@@ -1170,10 +1186,26 @@ class Month_to_Day(Operators.Unary):
     @classmethod
     def sql_expression(cls, operand_sql: str) -> str:
         return f"""
-        CASE
-            WHEN {operand_sql} IS NULL THEN NULL
-            ELSE
-                CAST(REGEXP_EXTRACT({operand_sql}, 'P(\\d+)M') AS INTEGER) * 30 +
-                CAST(COALESCE(REGEXP_EXTRACT({operand_sql}, 'P(?:\\d+M)?(\\d+)D'), '0') AS INTEGER)
-        END
-        """
+            CASE
+                WHEN {operand_sql} IS NULL THEN NULL
+                ELSE
+                    COALESCE(
+                        CAST(
+                            REPLACE(
+                                SUBSTR(REGEXP_EXTRACT({operand_sql}, 'P\\d+M'), 2),
+                                'M', ''
+                            ) AS INTEGER
+                        ),
+                        0
+                    ) * 30 +
+                    COALESCE(
+                        CAST(
+                            REPLACE(
+                                REGEXP_EXTRACT({operand_sql}, '\\d+D'),
+                                'D', ''
+                            ) AS INTEGER
+                        ),
+                        0
+                    )
+            END
+            """
