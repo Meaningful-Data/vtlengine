@@ -1,5 +1,5 @@
 Id_1,Id_2,Me_1,Me_2
 1,A,"hello","hi"
 2,B,"hello","hi"
-3,A,,"hi"
-4,B,"hello",
+3,A,"","hi"
+4,B,"hello",""
