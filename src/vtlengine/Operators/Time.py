@@ -911,6 +911,9 @@ class Date_Diff(SimpleBinaryTime):
 
         return abs((fecha2 - fecha1).days)
 
+    @classmethod
+    def sql_expression(cls, left_sql: str, right_sql: str) -> str:
+        return f"ABS(DATEDIFF('day', {left_sql}, {right_sql}))"
 
 class Date_Add(Parametrized):
     op = DATE_ADD

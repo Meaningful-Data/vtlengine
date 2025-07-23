@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR, YEAR, MONTH, DAYOFMONTH, DAYOFYEAR,
+    XOR, YEAR, MONTH, DAYOFMONTH, DAYOFYEAR, DATEDIFF,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -75,7 +75,7 @@ def normalize_time_scalar(op_token: str, value: Any) -> Any:
         tp = TimePeriodHandler(value)
         if op_token in [YEAR, MONTH]:
             date_value = tp.start_date()
-        elif op_token in [DAYOFYEAR, DAYOFMONTH]:
+        elif op_token in [DAYOFYEAR, DAYOFMONTH, DATEDIFF]:
             date_value = tp.end_date()
         else:
             date_value = tp.start_date()
@@ -119,6 +119,10 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
     left = left or "NULL"
     right = right or "NULL"
 
+    if hasattr(cls, "sql_expression"):
+        expr = cls.sql_expression(left, right)
+        return f"{expr} AS \"{me_name}\""
+
     if cls.op == LOG:
         # SQL log handle operands on a different way as math.log,
         # it works as log(right, left), so we need to swap them
@@ -137,15 +141,28 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left = handle_sql_scalar(left)
-    right = handle_sql_scalar(right)
+    if cls.op == DATEDIFF:
+        left = normalize_time_scalar(op_token, left)
+        right = normalize_time_scalar(op_token, right)
+        if isinstance(left, str) and left.startswith("'") and left.endswith("'"):
+            left = left[1:-1]
+        if isinstance(right, str) and right.startswith("'") and right.endswith("'"):
+            right = right[1:-1]
 
-    if cls.op == LOG:
-        right, left = (left, right)
-    query = (
-        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
-    )
-    result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
+        query = f"DATEDIFF('day', CAST('{left}' AS DATE), CAST('{right}' AS DATE))"
+    else:
+        left = handle_sql_scalar(left)
+        right = handle_sql_scalar(right)
+
+        if cls.op == LOG:
+            right, left = (left, right)
+
+        if token_position == LEFT:
+            query = f"{op_token}({left}, {right})"
+        else:
+            query = f"({left} {op_token} {right})"
+
+    result = con.sql("SELECT " + query).fetchone()[0]
     return float(result) if isinstance(result, Decimal) else result
 
 
@@ -742,13 +759,11 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{left_operand.data_type.__name__}", "{left_operand.name}") '
-                f'AS "{left_operand.name}"'
+                f"cast_time_types('{left_operand.data_type.__name__}', \"{left_operand.name}\") AS \"{left_operand.name}\""
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{right_operand.data_type.__name__}", "{right_operand.name}") '
-                f'AS "{right_operand.name}"'
+                f"cast_time_types('{right_operand.data_type.__name__}', \"{right_operand.name}\") AS \"{right_operand.name}\""
             )
 
         transformations.append(
