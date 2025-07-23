@@ -1,11 +1,11 @@
 import contextlib
+import inspect
 import os
 from pathlib import Path
 from typing import Optional
 
 import duckdb
-
-from vtlengine.duckdb.custom_methods import load_custom_methods
+from duckdb.functional import FunctionNullHandling
 
 # import psutil
 
@@ -63,9 +63,7 @@ class ConnectionManager:
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
-
-            # Custom ops loading
-            load_custom_methods(cls._connection)
+            cls.register_functions()
         return cls._connection
 
     @classmethod
@@ -88,3 +86,27 @@ class ConnectionManager:
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)  # type: ignore[arg-type]
+
+    @classmethod
+    def register_functions(cls) -> None:
+        """
+        Registers custom functions with the DuckDB connection.
+        """
+        if cls._connection is None:
+            cls.get_connection()
+        else:
+            # Register custom functions here, definitions can be
+            # found in duckdb_custom_functions.py:
+            import vtlengine.duckdb.custom_functions as custom_functions
+
+            for func_name in dir(custom_functions):
+                func_ref = getattr(custom_functions, func_name)
+                if func_name.startswith("__") or not inspect.isfunction(func_ref):
+                    continue
+                cls._connection.create_function(
+                    func_name,
+                    func_ref,  # type: ignore[arg-type]
+                    null_handling=FunctionNullHandling.SPECIAL,
+                )
+                # duckdb.create_function expects a function,
+                # we are using FunctionType which works the same
