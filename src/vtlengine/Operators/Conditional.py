@@ -333,25 +333,45 @@ class Case(Operator):
                     result.value = thenOps[i].value
                     return result
 
-        case_query = "CASE "
+        relations = []
+        for condition in conditions:
+            if hasattr(condition, 'data') and condition.data is not None:
+                relations.append(condition.data)
+        for thenOp in thenOps:
+            if hasattr(thenOp, 'data') and thenOp.data is not None:
+                relations.append(thenOp.data)
+        if hasattr(elseOp, 'data') and elseOp.data is not None:
+            relations.append(elseOp.data)
+
+        if relations:
+            base = relations[0]
+            for rel in relations[1:]:
+                base = duckdb_concat(base, rel)
+        else:
+            base = empty_relation()
+
+        case_expr = "CASE "
         for i, condition in enumerate(conditions):
             if isinstance(condition, Scalar):
-                cond_value = repr(condition.value) if condition.value is not None else "NULL"
-                then_value = repr(thenOps[i].value) if thenOps[i].value is not None else "NULL"
-                case_query += f"WHEN {cond_value} THEN {then_value} "
+                cond = f"{repr(condition.value)}"
             else:
-                cond_value = (
-                    condition.get_measures_names()[0]
-                    if isinstance(condition, Dataset)
-                    else condition.name
-                )
-                then_value = thenOps[i].name
-            case_query += f'WHEN "{cond_value}" THEN "{then_value}" '
+                cond = f'"{condition.get_measures_names()[0] if isinstance(condition, Dataset) else condition.name}"'
+
+            if isinstance(thenOps[i], Scalar):
+                then_val = f"{repr(thenOps[i].value)}"
+            else:
+                then_val = f'"{thenOps[i].name}"'
+
+            case_expr += f'WHEN {cond} THEN {then_val} '
+
         if isinstance(elseOp, Scalar):
-            else_value = repr(condition.value) if condition.value is not None else "NULL"
+            else_val = f"{repr(elseOp.value)}"
         else:
-            else_value = elseOp.name
-        case_query += f'ELSE "{else_value}" END AS "{result.name}"'
+            else_val = f'"{elseOp.name}"'
+
+        case_expr += f'ELSE {else_val} END AS "{result.name}"'
+
+        result.data = base.project(case_expr)
 
         return result
 
