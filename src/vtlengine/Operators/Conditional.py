@@ -356,19 +356,16 @@ class Case(Operator):
                 cond = f"{repr(condition.value)}"
             else:
                 cond = f'"{condition.get_measures_names()[0] if isinstance(condition, Dataset) else condition.name}"'
-
             if isinstance(thenOps[i], Scalar):
                 then_val = f"{repr(thenOps[i].value)}"
             else:
                 then_val = f'"{thenOps[i].name}"'
-
             case_expr += f"WHEN {cond} THEN {then_val} "
 
         if isinstance(elseOp, Scalar):
             else_val = f"{repr(elseOp.value)}"
         else:
             else_val = f'"{elseOp.name}"'
-
         case_expr += f'ELSE {else_val} END AS "{result.name}"'
 
         result.data = base.project(case_expr)
