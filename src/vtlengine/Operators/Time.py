@@ -41,6 +41,8 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.custom_functions import year_duck
+from vtlengine.duckdb.duckdb_utils import empty_relation
 
 
 class Time(Operators.Operator):
@@ -1032,15 +1034,58 @@ class SimpleUnaryTime(Operators.Unary):
         cls.validate(operand)
         return super().evaluate(operand)
 
+    @classmethod
+    def apply_unary(
+            cls, input_column_name: str, output_column_name: str
+    ) -> str:
+        """
+        Applies the operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return f'{cls.sql_op}({input_column_name}) AS "{output_column_name}"'
+
+    @classmethod
+    def dataset_evaluation(
+            cls, operand: Dataset
+    ) -> Dataset:
+        result_dataset = cls.validate(operand)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
+        for measure_name in operand.get_measures_names():
+            exprs.append(cls.apply_unary(measure_name, measure_name))
+
+        result_dataset.data = result_data.project(", ".join(exprs))
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
+
+    @classmethod
+    def component_evaluation(
+            cls,
+            operand: DataComponent
+    ) -> DataComponent:
+        result_component = cls.validate(operand)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        result_component.data = result_data.project(
+            cls.apply_unary(operand.name, result_component.name)
+        )
+        return result_component
+
+    @classmethod
+    def scalar_evaluation(cls, operand: Scalar) -> Scalar:
+        result = cls.validate(operand)
+        result.value = cls.py_op(operand.value)
+        return result
 
 class Year(SimpleUnaryTime):
     op = YEAR
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        return int(value[:4])
-
     return_type = Integer
+    sql_op = "year_duck"
+    py_op = year_duck
+
 
 
 class Month(SimpleUnaryTime):
