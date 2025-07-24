@@ -846,6 +846,8 @@ class Binary(Operator):
 
 
 class Unary(Operator):
+    sql_op: str = Operator.op
+
     @classmethod
     def op_func(cls, *args: Any) -> Any:
         x = args[0]

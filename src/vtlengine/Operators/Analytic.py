@@ -52,7 +52,6 @@ class Analytic(Operator.Unary):
     """
 
     return_integer = None
-    sql_op: Optional[str] = None
 
     @classmethod
     def validate(  # type: ignore[override]  # noqa: C901
