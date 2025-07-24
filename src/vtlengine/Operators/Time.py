@@ -41,7 +41,9 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.custom_functions import year_duck
+from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck
+from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
+    month_to_day_duck
 from vtlengine.duckdb.duckdb_utils import empty_relation
 
 
@@ -1091,95 +1093,46 @@ class Year(SimpleUnaryTime):
 class Month(SimpleUnaryTime):
     op = MONTH
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            return date.fromisoformat(value).month
-
-        result = TimePeriodHandler(value).start_date(as_date=True)
-        return result.month  # type: ignore[union-attr]
+    sql_op = "month_duck"
+    py_op = month_duck
 
 
 class Day_of_Month(SimpleUnaryTime):
     op = DAYOFMONTH
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            return date.fromisoformat(value).day
-
-        result = TimePeriodHandler(value).end_date(as_date=True)
-        return result.day  # type: ignore[union-attr]
+    sql_op = "day_of_month_duck"
+    py_op = day_of_month_duck
 
 
 class Day_of_Year(SimpleUnaryTime):
     op = DAYOFYEAR
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            day_y = datetime.strptime(value, "%Y-%m-%d")
-            return day_y.timetuple().tm_yday
-
-        result = TimePeriodHandler(value).end_date(as_date=True)
-        datetime_value = datetime(
-            year=result.year,  # type: ignore[union-attr]
-            month=result.month,  # type: ignore[union-attr]
-            day=result.day,  # type: ignore[union-attr]
-        )
-        return datetime_value.timetuple().tm_yday
+    sql_op = "day_of_year_duck"
+    py_op = day_of_year_duck
 
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
     return_type = Duration
-
-    @classmethod
-    def py_op(cls, value: int) -> str:
-        if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
-        years = 0
-        days_remaining = value
-        if value >= 365:
-            years = value // 365
-            days_remaining = value % 365
-        return f"P{int(years)}Y{int(days_remaining)}D"
+    sql_op = "day_to_year_duck"
+    py_op = day_to_year_duck
 
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
     return_type = Duration
-
-    @classmethod
-    def py_op(cls, value: int) -> str:
-        if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
-        months = 0
-        days_remaining = value
-        if value >= 30:
-            months = value // 30
-            days_remaining = value % 30
-        return f"P{int(months)}M{int(days_remaining)}D"
+    sql_op = "day_to_month_duck"
+    py_op = day_to_month_duck
 
 
 class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
-        return days
-
+    sql_op = "year_to_day_duck"
+    py_op = year_to_day_duck
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
-        return days
+    sql_op = "month_to_day_duck"
+    py_op = month_to_day_duck

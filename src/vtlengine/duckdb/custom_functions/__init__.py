@@ -5,7 +5,8 @@ from vtlengine.duckdb.custom_functions.String import (
     replace_duck,
     substr_duck,
 )
-from vtlengine.duckdb.custom_functions.Time import year_duck
+from vtlengine.duckdb.custom_functions.Time import year_duck, month_duck, day_of_month_duck, day_of_year_duck, \
+    day_to_year_duck, day_to_month_duck, year_to_day_duck, month_to_day_duck
 
 __all__ = [
     "isnull_duck",
@@ -16,4 +17,11 @@ __all__ = [
     "replace_duck",
     "substr_duck",
     "year_duck",
+    "month_duck",
+    "day_of_month_duck",
+    "day_of_year_duck",
+    "day_to_year_duck",
+    "day_to_month_duck",
+    "year_to_day_duck",
+    "month_to_day_duck",
 ]
