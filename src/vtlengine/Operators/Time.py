@@ -2,7 +2,6 @@ import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
-import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operators
@@ -42,8 +41,6 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.connection import con
-from vtlengine.duckdb.duckdb_utils import empty_relation
 
 
 class Time(Operators.Operator):
@@ -214,7 +211,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Dataset, DataComponent, Scalar, str]
+        cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -397,11 +394,11 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_periods_rows(
-            cls,
-            group_df: Any,
-            period: str,
-            years: List[int],
-            vals: Optional[List[int]] = None,
+        cls,
+        group_df: Any,
+        period: str,
+        years: List[int],
+        vals: Optional[List[int]] = None,
     ) -> List[Any]:
         rows = []
         for year in years:
@@ -414,7 +411,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def create_period_row(
-            cls, group_df: Any, period: str, year: int, val: Optional[int] = None
+        cls, group_df: Any, period: str, year: int, val: Optional[int] = None
     ) -> Any:
         row = group_df.iloc[0].copy()
         row[cls.time_id] = f"{year}" if period == "A" else f"{year}-{period}{val:d}"
@@ -494,7 +491,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_time_intervals(
-            cls, data: pd.DataFrame, fill_type: str, frequency: str
+        cls, data: pd.DataFrame, fill_type: str, frequency: str
     ) -> pd.DataFrame:
         result_data = cls.time_filler(data, fill_type, frequency)
         not_na = result_data[cls.measures].notna().any(axis=1)
@@ -601,7 +598,7 @@ class Time_Shift(Binary):
 
     @classmethod
     def shift_period(
-            cls, period_str: str, shift_value: int, frequency: Optional[int] = None
+        cls, period_str: str, shift_value: int, frequency: Optional[int] = None
     ) -> str:
         period_type = cls._get_period(period_str)
 
@@ -655,7 +652,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_validation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -695,11 +692,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_validation(
-            cls,
-            operand: DataComponent,
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: DataComponent,
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time component")
@@ -712,7 +709,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -721,12 +718,12 @@ class Time_Aggregation(Time):
 
     @classmethod
     def _execute_time_aggregation(
-            cls,
-            value: str,
-            data_type: Type[ScalarType],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        value: str,
+        data_type: Type[ScalarType],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> str:
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
@@ -742,7 +739,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def dataset_evaluation(
-            cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -762,11 +759,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-            cls,
-            operand: DataComponent,
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: DataComponent,
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is not None:
@@ -780,7 +777,7 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_evaluation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
         result.value = cls._execute_time_aggregation(
@@ -790,11 +787,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def validate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -806,11 +803,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def evaluate(
-            cls,
-            operand: Union[Dataset, DataComponent, Scalar],
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: Union[Dataset, DataComponent, Scalar],
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
         if isinstance(operand, Dataset):
@@ -861,9 +858,9 @@ class SimpleBinaryTime(Operators.Binary):
 
     @classmethod
     def validate(
-            cls,
-            left_operand: Union[Dataset, DataComponent, Scalar],
-            right_operand: Union[Dataset, DataComponent, Scalar],
+        cls,
+        left_operand: Union[Dataset, DataComponent, Scalar],
+        right_operand: Union[Dataset, DataComponent, Scalar],
     ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(left_operand, Dataset) or isinstance(right_operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
@@ -878,9 +875,9 @@ class SimpleBinaryTime(Operators.Binary):
 
     @classmethod
     def evaluate(
-            cls,
-            left_operand: Union[Dataset, DataComponent, Scalar],
-            right_operand: Union[Dataset, DataComponent, Scalar],
+        cls,
+        left_operand: Union[Dataset, DataComponent, Scalar],
+        right_operand: Union[Dataset, DataComponent, Scalar],
     ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(left_operand, Dataset) or isinstance(right_operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
@@ -911,16 +908,13 @@ class Date_Diff(SimpleBinaryTime):
 
         return abs((fecha2 - fecha1).days)
 
-    @classmethod
-    def sql_expression(cls, left_sql: str, right_sql: str) -> str:
-        return f"ABS(DATEDIFF('day', {left_sql}, {right_sql}))"
 
 class Date_Add(Parametrized):
     op = DATE_ADD
 
     @classmethod
     def validate(
-            cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
+        cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
         dataset_name = VirtualCounter._new_ds_name()
         expected_types = [Integer, String]
@@ -958,7 +952,7 @@ class Date_Add(Parametrized):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
+        cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
@@ -967,17 +961,17 @@ class Date_Add(Parametrized):
         if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
             result.value = cls.py_op(operand.value, shift, period, is_tp)
         elif (
-                isinstance(result, DataComponent)
-                and isinstance(operand, DataComponent)
-                and operand.data is not None
+            isinstance(result, DataComponent)
+            and isinstance(operand, DataComponent)
+            and operand.data is not None
         ):
             result.data = operand.data.map(
                 lambda x: cls.py_op(x, shift, period, is_tp), na_action="ignore"
             )
         elif (
-                isinstance(result, Dataset)
-                and isinstance(operand, Dataset)
-                and operand.data is not None
+            isinstance(result, Dataset)
+            and isinstance(operand, Dataset)
+            and operand.data is not None
         ):
             result.data = operand.data.copy()
             for measure in operand.get_measures():
@@ -1016,16 +1010,16 @@ class Date_Add(Parametrized):
 class SimpleUnaryTime(Operators.Unary):
     @classmethod
     def validate(
-            cls, operand: Union[Dataset, DataComponent, Scalar]
+        cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
         # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check)
         if operand.data_type == TimeInterval or operand.data_type not in (
-                Date,
-                TimePeriod,
-                Duration,
+            Date,
+            TimePeriod,
+            Duration,
         ):
             raise SemanticError("1-1-19-10", op=cls.op)
 
@@ -1033,7 +1027,7 @@ class SimpleUnaryTime(Operators.Unary):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Dataset, DataComponent, Scalar]
+        cls, operand: Union[Dataset, DataComponent, Scalar]
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls.validate(operand)
         return super().evaluate(operand)
@@ -1109,14 +1103,6 @@ class Day_to_Year(Operators.Unary):
             days_remaining = value % 365
         return f"P{int(years)}Y{int(days_remaining)}D"
 
-    @classmethod
-    def sql_expression(cls, operand: str) -> str:
-        return (
-            f"CASE WHEN {operand} >= 0 THEN "
-            f"'P' || CAST(FLOOR({operand} / 365) AS INT) || 'Y' || ({operand} % 365)::INT || 'D' "
-            f"ELSE NULL END"
-        )
-
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
@@ -1133,13 +1119,6 @@ class Day_to_Month(Operators.Unary):
             days_remaining = value % 30
         return f"P{int(months)}M{int(days_remaining)}D"
 
-    @classmethod
-    def sql_expression(cls, operand: str) -> str:
-        return (f"CASE WHEN {operand} >= 0 THEN "
-                f"'P' || CAST(FLOOR({operand} / 30) AS INT) || 'M' || ({operand} % 30)::INT || 'D' "
-                f"ELSE NULL END"
-                )
-
 
 class Year_to_Day(Operators.Unary):
     op = YEARTODAY
@@ -1150,32 +1129,6 @@ class Year_to_Day(Operators.Unary):
         days = Duration.to_days(value)
         return days
 
-    @classmethod
-    def sql_expression(cls, operand_sql: str) -> str:
-        return f"""
-                CASE
-                    WHEN {operand_sql} IS NULL THEN NULL
-                    ELSE
-                        COALESCE(
-                            CAST(
-                                REPLACE(
-                                    SUBSTR(REGEXP_EXTRACT({operand_sql}, 'P\\d+Y'), 2),
-                                    'Y', ''
-                                ) AS INTEGER
-                            ),
-                            0
-                        ) * 365 +
-                        COALESCE(
-                            CAST(
-                                REPLACE(
-                                    REGEXP_EXTRACT({operand_sql}, '\\d+D'),
-                                    'D', ''
-                                ) AS INTEGER
-                            ),
-                            0
-                        )
-                END
-                """
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
@@ -1185,30 +1138,3 @@ class Month_to_Day(Operators.Unary):
     def py_op(cls, value: str) -> int:
         days = Duration.to_days(value)
         return days
-
-    @classmethod
-    def sql_expression(cls, operand_sql: str) -> str:
-        return f"""
-            CASE
-                WHEN {operand_sql} IS NULL THEN NULL
-                ELSE
-                    COALESCE(
-                        CAST(
-                            REPLACE(
-                                SUBSTR(REGEXP_EXTRACT({operand_sql}, 'P\\d+M'), 2),
-                                'M', ''
-                            ) AS INTEGER
-                        ),
-                        0
-                    ) * 30 +
-                    COALESCE(
-                        CAST(
-                            REPLACE(
-                                REGEXP_EXTRACT({operand_sql}, '\\d+D'),
-                                'D', ''
-                            ) AS INTEGER
-                        ),
-                        0
-                    )
-            END
-            """
