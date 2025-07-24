@@ -331,7 +331,7 @@ class Case(Operator):
             for i in range(len(conditions)):
                 if conditions[i].value:
                     result.value = thenOps[i].value
-                    return result
+                    # return result
 
         relations = []
         for condition in conditions:
