@@ -1,7 +1,7 @@
 from typing import Dict, Union
 
 from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, LOG, MOD, NOT_IN, POWER, XOR, YEAR, MONTH, DAYOFMONTH, \
-    DAYOFYEAR, DAYTOYEAR, DAYTOMONTH, YEARTODAY, MONTHTODAY
+    DAYOFYEAR, DAYTOYEAR, DAYTOMONTH, YEARTODAY, MONTHTODAY, DATEDIFF
 
 # Could it be the operator sql token or a tuple of (sql token, token position)
 # default is taken as MIDDLE on Operator apply_operation method
@@ -27,5 +27,6 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     DAYTOMONTH: "day_to_month_duck",
     YEARTODAY: "year_to_day_duck",
     MONTHTODAY: "month_to_day_duck",
+    DATEDIFF: "date_diff_duck",
 
 }

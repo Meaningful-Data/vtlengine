@@ -41,7 +41,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck
+from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck
 from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
     month_to_day_duck
 from vtlengine.duckdb.duckdb_utils import empty_relation
@@ -894,23 +894,8 @@ class Date_Diff(SimpleBinaryTime):
     op = DATEDIFF
     type_to_check = TimeInterval
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, x: Any, y: Any) -> int:
-        if (x.count("/") >= 1) or (y.count("/") >= 1):
-            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-
-        if x.count("-") == 2:
-            fecha1 = datetime.strptime(x, "%Y-%m-%d").date()
-        else:
-            fecha1 = TimePeriodHandler(x).end_date(as_date=True)  # type: ignore[assignment]
-
-        if y.count("-") == 2:
-            fecha2 = datetime.strptime(y, "%Y-%m-%d").date()
-        else:
-            fecha2 = TimePeriodHandler(y).end_date(as_date=True)  # type: ignore[assignment]
-
-        return abs((fecha2 - fecha1).days)
+    sql_op = "date_diff_duck"
+    py_op = date_diff_duck
 
 
 class Date_Add(Parametrized):

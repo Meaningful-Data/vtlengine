@@ -4,7 +4,7 @@ from typing import Any, Optional, Type, Union
 
 import pandas as pd
 import pyarrow as pa  # type: ignore[import-untyped]
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation, query  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR,
+    XOR, DATEDIFF,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -104,6 +104,10 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
         # also we could do it as ln(left) / ln(right) following
         # the mathematical equivalence between log and ln
         right, left = (left, right)
+    if cls.op == DATEDIFF:
+        # DATEDIFF in SQL is a function that takes two dates and returns the difference
+        # in days, so we need to handle it differently
+        return f'{op_token}({left}, {right}) AS "{me_name}"'
     if token_position == LEFT:
         return f'{op_token}({left}, {right}) AS "{me_name}"'
     return f'({left} {op_token} {right}) AS "{me_name}"'
@@ -119,11 +123,14 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     left = handle_sql_scalar(left)
     right = handle_sql_scalar(right)
 
-    if cls.op == LOG:
-        right, left = (left, right)
-    query = (
-        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
-    )
+    if cls.op == DATEDIFF:
+        query = f"{op_token}({left}, {right})"
+    else:
+        if cls.op == LOG:
+            right, left = (left, right)
+        query = (
+            f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
+        )
     result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
