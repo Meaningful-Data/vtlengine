@@ -75,7 +75,7 @@ def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
     if hasattr(cls, "apply_unary_op"):
-        return cls.apply_unary_op(value,me_name)
+        return cls.apply_unary_op(value, me_name)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     return f'{op_token}("{me_name}") AS "{value}"'
@@ -87,7 +87,6 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
 
-
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
@@ -95,7 +94,6 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 
 
 def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
-
     if hasattr(cls, "apply_bin_op"):
         return cls.apply_bin_op(me_name, left, right)
 
@@ -127,7 +125,6 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
-
 
     left = handle_sql_scalar(left)
     right = handle_sql_scalar(right)

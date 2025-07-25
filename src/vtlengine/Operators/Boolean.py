@@ -1,10 +1,9 @@
-from typing import Any, Type, Optional
-
-from pandas.io.stata import excessive_string_length_error
+from typing import Optional
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import AND, NOT, OR, XOR
 from vtlengine.DataTypes import Boolean
+
 
 class Unary(Operator.Unary):
     type_to_check = Boolean
@@ -14,21 +13,20 @@ class Unary(Operator.Unary):
     def apply_unary_op_scalar(cls, value: Optional[bool]) -> str:
         return cls.py_op(value)
 
+
 class Binary(Operator.Binary):
     type_to_check = Boolean
     return_type = Boolean
 
     @classmethod
     def apply_bin_op(cls, me_name: Optional[str], left: str, right: str) -> str:
-
         if me_name is None:
             return f"{cls.duck_op(left, right)}"
-        return f"{cls.duck_op(left, right)} AS \"{me_name}\""
+        return f'{cls.duck_op(left, right)} AS "{me_name}"'
 
     @classmethod
     def apply_bin_op_scalar(cls, left: Optional[bool], right: Optional[bool]) -> str:
         return cls.py_op(left, right)
-
 
     @classmethod
     def duck_op(cls, left: str, right: str) -> str:
@@ -40,7 +38,6 @@ class And(Binary):
 
     @classmethod
     def duck_op(cls, left: str, right: str) -> str:
-
         query = f"""
                 CASE
                     WHEN {left} IS FALSE OR {right} IS FALSE THEN FALSE
@@ -108,8 +105,7 @@ class Not(Unary):
         if measure_name is None:
             return f"{cls.duck_op(operand)}"
         else:
-            return f"{cls.duck_op(operand)} AS \"{measure_name}\""
-
+            return f'{cls.duck_op(operand)} AS "{measure_name}"'
 
     @classmethod
     def duck_op(cls, operand: str) -> str:
