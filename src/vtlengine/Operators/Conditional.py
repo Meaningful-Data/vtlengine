@@ -15,7 +15,7 @@ from vtlengine.duckdb.duckdb_utils import (
     duckdb_fillna,
     duckdb_rename,
     duckdb_select,
-    empty_relation,
+    empty_relation, clean_execution_graph,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
@@ -314,17 +314,23 @@ class Case(Operator):
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
+        def get_measures(op: Union[DataComponent, Dataset, Scalar]) -> List[str]:
+            if isinstance(op, DataComponent):
+                return [op.data.columns[0]]
+            if isinstance(op, Dataset):
+                return op.get_measures_names()
+            return []
+
+        def get_condition_measure(op: Union[DataComponent, Dataset, Scalar]) -> str:
+            return op.get_measures_names()[0] if isinstance(op, Dataset) else op.name
+
         result = cls.validate(conditions, thenOps, elseOp)
-        for condition in conditions:
-            if isinstance(condition, (Dataset, DataComponent)) and condition.data is not None:
-                condition_measure = (
-                    condition.get_measures_names()[0]
-                    if isinstance(condition, Dataset)
-                    else condition.name
-                )
-                condition.data = duckdb_fillna(condition.data, False, condition_measure)
-            elif isinstance(condition, Scalar) and condition.value is None:
-                condition.value = False
+        for op in conditions:
+            if isinstance(op, (Dataset, DataComponent)) and op.data is not None:
+                condition_measure = get_condition_measure(op)
+                op.data = duckdb_fillna(op.data, False, condition_measure)
+            elif isinstance(op, Scalar) and op.value is None:
+                op.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
@@ -334,14 +340,10 @@ class Case(Operator):
                     return result
 
         relations = []
-        for condition in conditions:
-            if hasattr(condition, "data") and condition.data is not None:
-                relations.append(condition.data)
-        for thenOp in thenOps:
-            if hasattr(thenOp, "data") and thenOp.data is not None:
-                relations.append(thenOp.data)
-        if hasattr(elseOp, "data") and elseOp.data is not None:
-            relations.append(elseOp.data)
+        for op in conditions + thenOps + [elseOp]:
+            if hasattr(op, "data") and op.data is not None:
+                op.data = duckdb_rename(op.data, {col: f'{op.name}.{col}' for col in op.data.columns})
+                relations.append(op.data)
 
         if relations:
             base = relations[0]
@@ -350,25 +352,44 @@ class Case(Operator):
         else:
             base = empty_relation()
 
-        case_expr = "CASE "
-        for i, condition in enumerate(conditions):
-            if isinstance(condition, Scalar):
-                cond = f"{repr(condition.value)}"
-            else:
-                cond = f'"{condition.get_measures_names()[0] if isinstance(condition, Dataset) else condition.name}"'
-            if isinstance(thenOps[i], Scalar):
-                then_val = f"{repr(thenOps[i].value)}"
-            else:
-                then_val = f'"{thenOps[i].name}"'
-            case_expr += f"WHEN {cond} THEN {then_val} "
-
-        if isinstance(elseOp, Scalar):
-            else_val = f"{repr(elseOp.value)}"
+        dataset_level = any(isinstance(op, Dataset) for op in thenOps + [elseOp])
+        exprs = []
+        if dataset_level:
+            columns = next(get_measures(thenOp) for thenOp in thenOps if isinstance(thenOp, Dataset))
+            ids = next(op.get_identifiers_names() for op in thenOps if isinstance(op, Dataset))
+            exprs.extend(ids)
+            for col in columns:
+                expr = "CASE "
+                for cond, thenOp in zip(conditions, thenOps):
+                    cond_col = f'"{cond.name}.{get_condition_measure(cond)}"'
+                    if isinstance(thenOp, Scalar):
+                        then_value = repr(thenOp.value) if thenOp.value is not None else "NULL"
+                    else:
+                        then_value = f'"{thenOp.name}.{col}"'
+                    expr += f'WHEN {cond_col} THEN {then_value} '
+                if isinstance(elseOp, Scalar):
+                    else_value = repr(elseOp.value) if elseOp.value is not None else "NULL"
+                else:
+                    else_value = f'"{elseOp.name}.{col}"'
+                expr += f'ELSE {else_value} END AS "{col}"'
+                exprs.append(expr)
         else:
-            else_val = f'"{elseOp.name}"'
-        case_expr += f'ELSE {else_val} END AS "{result.name}"'
+            expr = "CASE "
+            for cond, thenOp in zip(conditions, thenOps):
+                cond_col = f'"{cond.name}.{get_condition_measure(cond)}"'
+                if isinstance(thenOp, Scalar):
+                    then_value = repr(thenOp.value) if thenOp.value is not None else "NULL"
+                else:
+                    then_value = f'"{get_measures(thenOp)[0]}"'
+                expr += f'WHEN {cond_col} THEN {then_value} '
+            if isinstance(elseOp, Scalar):
+                else_value = repr(elseOp.value) if elseOp.value is not None else "NULL"
+            else:
+                else_value = f'"{get_measures(elseOp)[0]}"'
+            expr += f'ELSE {else_value} END AS "result"'
+            exprs.append(expr)
 
-        result.data = base.project(case_expr)
+        result.data = base.project(', '.join(exprs))
         return result
 
     @classmethod
