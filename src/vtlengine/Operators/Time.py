@@ -41,7 +41,8 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck
+from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck, \
+    date_add_duck
 from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
     month_to_day_duck
 from vtlengine.duckdb.duckdb_utils import empty_relation
@@ -900,6 +901,8 @@ class Date_Diff(SimpleBinaryTime):
 
 class Date_Add(Parametrized):
     op = DATE_ADD
+    sql_op = "date_add_duck"
+    py_op = date_add_duck
 
     @classmethod
     def validate(
@@ -941,59 +944,41 @@ class Date_Add(Parametrized):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
+            cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
-        is_tp = isinstance(operand, (Scalar, DataComponent)) and operand.data_type == TimePeriod
 
-        if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
-            result.value = cls.py_op(operand.value, shift, period, is_tp)
+        if isinstance(operand, Scalar) and operand.value is not None:
+            result.value = cls.py_op(operand.value, shift, period)
+
         elif (
-            isinstance(result, DataComponent)
-            and isinstance(operand, DataComponent)
-            and operand.data is not None
+                isinstance(result, DataComponent)
+                and isinstance(operand, DataComponent)
+                and operand.data is not None
         ):
-            result.data = operand.data.map(
-                lambda x: cls.py_op(x, shift, period, is_tp), na_action="ignore"
-            )
+            expr = f'{cls.sql_op}("{operand.name}", \'{period}\', {shift}) AS "{result.name}"'
+            result.data = operand.data.project(expr)
+
         elif (
-            isinstance(result, Dataset)
-            and isinstance(operand, Dataset)
-            and operand.data is not None
+                isinstance(result, Dataset)
+                and isinstance(operand, Dataset)
+                and operand.data is not None
         ):
-            result.data = operand.data.copy()
+            exprs = [f'"{id_}"' for id_ in operand.get_identifiers_names()]
             for measure in operand.get_measures():
                 if measure.data_type in [Date, TimePeriod]:
-                    result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.py_op(str(x), shift, period, measure.data_type == TimePeriod),
-                        na_action="ignore",
+                    exprs.append(
+                        f'{cls.sql_op}("{measure.name}", \'{period}\', {shift}) AS "{measure.name}"'
                     )
                     measure.data_type = Date
+                else:
+                    exprs.append(f'"{measure.name}"')
+            result.data = operand.data.project(", ".join(exprs))
 
         if isinstance(result, (Scalar, DataComponent)):
             result.data_type = Date
         return result
-
-    @classmethod
-    def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
-        if is_tp:
-            tp_value = TimePeriodHandler(date_str)
-            date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
-        else:
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-
-        if period in ["D", "W"]:
-            days_shift = shift * (7 if period == "W" else 1)
-            return (date + timedelta(days=days_shift)).strftime("%Y-%m-%d")
-
-        month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
-        new_year = date.year + (date.month - 1 + month_shift) // 12
-        new_month = (date.month - 1 + month_shift) % 12 + 1
-        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime(
-            "%Y-%m-%d"
-        )
 
 
 class SimpleUnaryTime(Operators.Unary):

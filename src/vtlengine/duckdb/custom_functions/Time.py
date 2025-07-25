@@ -1,8 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Union, Optional
 
 from vtlengine.DataTypes import Duration
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date
 from vtlengine.Exceptions import SemanticError
 
 
@@ -122,3 +122,23 @@ def date_diff_duck(x: Union[str, date], y: Union[str, date]) -> Optional[int]:
             y = TimePeriodHandler(y).end_date(as_date=True)
 
     return abs((y - x).days)
+
+
+def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
+    if isinstance(value, str):
+        tp_value = TimePeriodHandler(value)
+        date_value = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+    else:
+        date_value = value
+
+    if period in ["D", "W"]:
+        days_shift = shift * (7 if period == "W" else 1)
+        new_date = date_value + timedelta(days=days_shift)
+    else:
+        month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
+        new_year = date_value.year + (date_value.month - 1 + month_shift) // 12
+        new_month = (date_value.month - 1 + month_shift) % 12 + 1
+        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
+        new_date = date_value.replace(year=new_year, month=new_month, day=min(date_value.day, last_day))
+
+    return new_date
