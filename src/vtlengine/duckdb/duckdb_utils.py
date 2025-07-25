@@ -313,13 +313,15 @@ def round_doubles(
     """
     Rounds double values in the dataset to avoid precision issues.
     """
-    exprs = ["*"]
+    exprs = []
     double_columns = get_cols_by_types(data, "DOUBLE")
-    for col in double_columns:
-        exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
+    for col in data.columns:
+        if col in double_columns:
+            exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
+        else:
+            exprs.append(f'"{col}"')
     query = ", ".join(exprs)
     return query if as_query else data.project(query)
-
 
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
     cols = set()
