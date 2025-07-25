@@ -74,6 +74,8 @@ def handle_sql_scalar(value: Any) -> Any:
 def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+    if hasattr(cls, "apply_unary_op"):
+        return cls.apply_unary_op(value,me_name)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     return f'{op_token}("{me_name}") AS "{value}"'
@@ -82,6 +84,10 @@ def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
 def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+
+    if hasattr(cls, "apply_unary_op"):
+        return con.sql(f"SELECT{cls.apply_unary_op(None, value)}").fetchone()[0]
+
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
@@ -89,6 +95,10 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 
 
 def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
+
+    if hasattr(cls, "apply_bin_op"):
+        return cls.apply_bin_op(me_name, left, right)
+
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -124,6 +134,10 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     query = (
         f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
     )
+
+    if hasattr(cls, "apply_bin_op"):
+        query = cls.apply_bin_op(None, left, right)
+
     result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
