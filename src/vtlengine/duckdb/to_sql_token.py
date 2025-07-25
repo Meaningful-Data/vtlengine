@@ -27,6 +27,6 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     DAYTOMONTH: "day_to_month_duck",
     YEARTODAY: "year_to_day_duck",
     MONTHTODAY: "month_to_day_duck",
-    DATEDIFF: "date_diff_duck",
+    DATEDIFF: ("date_diff_duck", LEFT),
 
 }

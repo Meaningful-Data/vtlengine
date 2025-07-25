@@ -110,17 +110,13 @@ def date_diff_duck(x: Union[str, date], y: Union[str, date]) -> Optional[int]:
     if x is None or y is None:
         return None
     if isinstance(x, str):
-        if "/" in x:
-            raise ValueError("Invalid time dataset for date_diff")
-        if "-" in x:
+        if x.count("-") == 2:
             x = datetime.strptime(x, "%Y-%m-%d").date()
         else:
             x = TimePeriodHandler(x).end_date(as_date=True)
 
     if isinstance(y, str):
-        if "/" in y:
-            raise ValueError("Invalid time dataset for date_diff")
-        if "-" in y:
+        if y.count("-") == 2:
             y = datetime.strptime(y, "%Y-%m-%d").date()
         else:
             y = TimePeriodHandler(y).end_date(as_date=True)
