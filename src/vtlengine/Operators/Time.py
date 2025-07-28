@@ -45,7 +45,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck, \
     date_add_duck, time_agg_duck
 from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
-    month_to_day_duck
+    month_to_day_duck, period_ind_duck
 from vtlengine.duckdb.duckdb_utils import empty_relation
 
 
@@ -188,6 +188,8 @@ class Parameterized(Time):
 
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
+    sql_op = "period_ind_duck"
+    py_op = period_ind_duck
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
@@ -203,7 +205,7 @@ class Period_indicator(Unary):
             }
             result_components["duration_var"] = Component(
                 name="duration_var",
-                data_type=Duration,
+                data_type=String, # This is not correct. Must be Duration, but for now we are going to set it as String
                 role=Role.MEASURE,
                 nullable=True,
             )
@@ -217,7 +219,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-        cls, operand: Union[Dataset, DataComponent, Scalar, str]
+            cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -227,16 +229,27 @@ class Period_indicator(Unary):
             return result
         if isinstance(operand, DataComponent):
             if operand.data is not None:
-                result.data = operand.data.map(cls._get_period, na_action="ignore")
+                result.data = operand.data.project(
+                    f'{cls.sql_op}("{operand.name}") AS "{operand.name}"'
+                )
             return result
+
+        # Dataset handling
         cls.time_id = cls._get_time_id(operand)
-        result.data = (
-            operand.data.copy()[result.get_identifiers_names()]
-            if (operand.data is not None)
-            else pd.Series()
+
+        if operand.data is None:
+            result.data = None
+            return result
+
+        select_exprs = []
+
+        for comp in operand.components.values():
+            if comp.role == Role.IDENTIFIER:
+                select_exprs.append(f'"{comp.name}"')
+        select_exprs.append(
+            f'{cls.sql_op}("{cls.time_id}") AS "duration_var"'
         )
-        period_series: Any = result.data[cls.time_id].map(cls._get_period)
-        result.data["duration_var"] = period_series
+        result.data = operand.data.project(", ".join(select_exprs))
         return result
 
 

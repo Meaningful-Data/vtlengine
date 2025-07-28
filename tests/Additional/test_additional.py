@@ -3439,6 +3439,7 @@ class TimeOperatorsTest(AdditionalHelper):
         """
         Basic behaviour for datasets.
         """
+        # TODO: Change data structure's data type result to Duration when it is implemented. At the moment, it is set to String.
         text = """DS_r := period_indicator(DS_1);"""
         code = "7-1"
         number_inputs = 1

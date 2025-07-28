@@ -6,6 +6,22 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date, 
 from vtlengine.Exceptions import SemanticError
 
 
+
+def _time_period_access(v: Any, to_param: str) -> str:
+    v = TimePeriodHandler(v)
+    if v.period_indicator == to_param:
+        return str(v)
+    v.change_indicator(to_param)
+    return str(v)
+
+
+def _date_access(value: date, to_param: str, start: bool) -> date:
+    period_value = date_to_period(value, to_param)
+    if start:
+        return period_value.start_date(as_date=True)
+    return period_value.end_date(as_date=True)
+
+
 def year_duck(value: Optional[Union[date, str]])-> Optional[int]:
     """
     Extracts the year from a date or time value.
@@ -155,17 +171,16 @@ def time_agg_duck(value: Optional[Union[str, date]],
     else:
         return _time_period_access(value, period_to)
 
+def period_ind_duck(value: str) -> Optional[str]:
+    """
+    Returns the period indicator for a given time period string.
 
-def _time_period_access(v: Any, to_param: str) -> str:
-    v = TimePeriodHandler(v)
-    if v.period_indicator == to_param:
-        return str(v)
-    v.change_indicator(to_param)
-    return str(v)
+    Args:
+        value (str): The time period string.
 
-
-def _date_access(value: date, to_param: str, start: bool) -> date:
-    period_value = date_to_period(value, to_param)
-    if start:
-        return period_value.start_date(as_date=True)
-    return period_value.end_date(as_date=True)
+    Returns:
+        str: The period indicator, or None if the input is None.
+    """
+    if value is None:
+        return None
+    return TimePeriodHandler(value).period_indicator
