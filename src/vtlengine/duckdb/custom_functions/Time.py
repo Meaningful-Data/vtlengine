@@ -1,10 +1,9 @@
 from datetime import date, datetime, timedelta
-from typing import Union, Optional, Type, Any
+from typing import Any, Optional, Union
 
-from vtlengine.DataTypes import Duration, ScalarType, TimePeriod, Date
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date, date_to_period
+from vtlengine.DataTypes import Duration
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, date_to_period, period_to_date
 from vtlengine.Exceptions import SemanticError
-
 
 
 def _time_period_access(v: Any, to_param: str) -> str:
@@ -22,7 +21,7 @@ def _date_access(value: date, to_param: str, start: bool) -> date:
     return period_value.end_date(as_date=True)
 
 
-def year_duck(value: Optional[Union[date, str]])-> Optional[int]:
+def year_duck(value: Optional[Union[date, str]]) -> Optional[int]:
     """
     Extracts the year from a date or time value.
     If the input value is None or NaN, it returns None.
@@ -40,7 +39,8 @@ def year_duck(value: Optional[Union[date, str]])-> Optional[int]:
         return int(value[:4])
     return value.year
 
-def month_duck(value: Optional[Union[date, str]])-> Optional[int]:
+
+def month_duck(value: Optional[Union[date, str]]) -> Optional[int]:
     if value is None:
         return None
 
@@ -52,9 +52,10 @@ def month_duck(value: Optional[Union[date, str]])-> Optional[int]:
             return date.fromisoformat(value).month
         else:
             result = TimePeriodHandler(value).start_date(as_date=True)
-            return result.month
+            return result.month  # type: ignore[union-attr]
 
-def day_of_month_duck(value: Optional[Union[date, str]])-> Optional[int]:
+
+def day_of_month_duck(value: Optional[Union[date, str]]) -> Optional[int]:
     if value is None:
         return None
 
@@ -66,9 +67,10 @@ def day_of_month_duck(value: Optional[Union[date, str]])-> Optional[int]:
             return date.fromisoformat(value).day
         else:
             result = TimePeriodHandler(value).end_date(as_date=True)
-            return result.day
+            return result.day  # type: ignore[union-attr]
 
-def day_of_year_duck(value: Optional[Union[date, str]])-> Optional[int]:
+
+def day_of_year_duck(value: Optional[Union[date, str]]) -> Optional[int]:
     if value is None:
         return None
 
@@ -80,7 +82,8 @@ def day_of_year_duck(value: Optional[Union[date, str]])-> Optional[int]:
             return date.fromisoformat(value).timetuple().tm_yday
         else:
             result = TimePeriodHandler(value).end_date(as_date=True)
-            return result.timetuple().tm_yday
+            return result.timetuple().tm_yday  # type: ignore[union-attr]
+
 
 def day_to_year_duck(value: int) -> Optional[str]:
     if value is None:
@@ -95,6 +98,7 @@ def day_to_year_duck(value: int) -> Optional[str]:
             days_remaining = value % 365
         return f"P{int(years)}Y{int(days_remaining)}D"
 
+
 def day_to_month_duck(value: int) -> Optional[str]:
     if value is None:
         return None
@@ -108,12 +112,14 @@ def day_to_month_duck(value: int) -> Optional[str]:
             days_remaining = value % 30
         return f"P{int(months)}M{int(days_remaining)}D"
 
+
 def year_to_day_duck(value: str) -> Optional[int]:
     if value is None:
         return None
     if isinstance(value, str):
         days = Duration.to_days(value)
         return days
+
 
 def month_to_day_duck(value: str) -> Optional[int]:
     if value is None:
@@ -122,8 +128,11 @@ def month_to_day_duck(value: str) -> Optional[int]:
         days = Duration.to_days(value)
         return days
 
+
 def date_diff_duck(x: Union[str, date], y: Union[str, date]) -> Optional[int]:
-    if x is None or y is None:
+    if x is None:
+        return None
+    if y is None:
         return None
     if isinstance(x, str):
         if x.count("-") == 2:
@@ -137,13 +146,15 @@ def date_diff_duck(x: Union[str, date], y: Union[str, date]) -> Optional[int]:
         else:
             y = TimePeriodHandler(y).end_date(as_date=True)
 
-    return abs((y - x).days)
+    return abs((y - x).days)  # type: ignore[operator]
 
 
 def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
     if isinstance(value, str):
         tp_value = TimePeriodHandler(value)
-        date_value = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
+        date_value = period_to_date(
+            tp_value.year, tp_value.period_indicator, tp_value.period_number
+        )
     else:
         date_value = value
 
@@ -155,14 +166,16 @@ def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
         new_year = date_value.year + (date_value.month - 1 + month_shift) // 12
         new_month = (date_value.month - 1 + month_shift) % 12 + 1
         last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        new_date = date_value.replace(year=new_year, month=new_month, day=min(date_value.day, last_day))
+        new_date = date_value.replace(
+            year=new_year, month=new_month, day=min(date_value.day, last_day)
+        )
 
     return new_date
 
-def time_agg_duck(value: Optional[Union[str, date]],
-                  period_from: Optional[str],
-                  period_to: str,
-                  conf: str) -> Optional[str]:
+
+def time_agg_duck(
+    value: Optional[Union[str, date]], period_from: Optional[str], period_to: str, conf: str
+) -> Optional[str]:
     if value is None:
         return None
     if isinstance(value, date):
@@ -170,6 +183,7 @@ def time_agg_duck(value: Optional[Union[str, date]],
         return _date_access(value, period_to, start).isoformat()
     else:
         return _time_period_access(value, period_to)
+
 
 def period_ind_duck(value: str) -> Optional[str]:
     """

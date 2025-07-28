@@ -4,7 +4,7 @@ from typing import Any, Optional, Type, Union
 
 import pandas as pd
 import pyarrow as pa  # type: ignore[import-untyped]
-from duckdb.duckdb import DuckDBPyRelation, query  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR, DATEDIFF,
+    XOR,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -724,12 +724,12 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types(\'{left_operand.data_type.__name__}\', "{left_operand.name}") '
+                f"cast_time_types('{left_operand.data_type.__name__}', \"{left_operand.name}\") "
                 f'AS "{left_operand.name}"'
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types(\'{right_operand.data_type.__name__}\', "{right_operand.name}") '
+                f"cast_time_types('{right_operand.data_type.__name__}', \"{right_operand.name}\") "
                 f'AS "{right_operand.name}"'
             )
 

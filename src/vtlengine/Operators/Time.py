@@ -1,8 +1,7 @@
 import re
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Type, Union
+from datetime import date
+from typing import Any, Dict, List, Optional, Union
 
-import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operators
@@ -27,7 +26,6 @@ from vtlengine.DataTypes import (
     Date,
     Duration,
     Integer,
-    ScalarType,
     String,
     TimeInterval,
     TimePeriod,
@@ -36,17 +34,27 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
-    date_to_period,
-    period_to_date,
 )
+from vtlengine.duckdb.custom_functions import (
+    date_add_duck,
+    date_diff_duck,
+    day_of_month_duck,
+    time_agg_duck,
+    year_duck,
+    year_to_day_duck,
+)
+from vtlengine.duckdb.custom_functions.Time import (
+    day_of_year_duck,
+    day_to_month_duck,
+    day_to_year_duck,
+    month_duck,
+    month_to_day_duck,
+    period_ind_duck,
+)
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck, \
-    date_add_duck, time_agg_duck
-from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
-    month_to_day_duck, period_ind_duck
-from vtlengine.duckdb.duckdb_utils import empty_relation
 
 
 class Time(Operators.Operator):
@@ -205,7 +213,8 @@ class Period_indicator(Unary):
             }
             result_components["duration_var"] = Component(
                 name="duration_var",
-                data_type=String, # This is not correct. Must be Duration, but for now we are going to set it as String
+                data_type=String,  # This is not correct. Must be Duration,
+                # but for now we are going to set it as String
                 role=Role.MEASURE,
                 nullable=True,
             )
@@ -219,7 +228,7 @@ class Period_indicator(Unary):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Dataset, DataComponent, Scalar, str]
+        cls, operand: Union[Dataset, DataComponent, Scalar, str]
     ) -> Union[Dataset, DataComponent, Scalar, str]:
         result = cls.validate(operand)
         if isinstance(operand, str):
@@ -246,9 +255,7 @@ class Period_indicator(Unary):
         for comp in operand.components.values():
             if comp.role == Role.IDENTIFIER:
                 select_exprs.append(f'"{comp.name}"')
-        select_exprs.append(
-            f'{cls.sql_op}("{cls.time_id}") AS "duration_var"'
-        )
+        select_exprs.append(f'{cls.sql_op}("{cls.time_id}") AS "duration_var"')
         result.data = operand.data.project(", ".join(select_exprs))
         return result
 
@@ -730,7 +737,9 @@ class Time_Aggregation(Time):
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
     @classmethod
-    def dataset_evaluation(cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str) -> Dataset:
+    def dataset_evaluation(
+        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
+    ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
         if operand.data is None:
             result.data = None
@@ -744,11 +753,13 @@ class Time_Aggregation(Time):
                 if comp.name == time_measure.name:
                     if comp.data_type == Date:
                         select_exprs.append(
-                            f'CAST({cls.sql_op}("{comp.name}", NULL, \'{period_to}\', \'{conf or ""}\') AS DATE) AS "{comp.name}"'
+                            f"CAST({cls.sql_op}(\"{comp.name}\", NULL, '{period_to}', "
+                            f"'{conf or ''}') AS DATE) AS \"{comp.name}\""
                         )
                     else:
                         select_exprs.append(
-                            f'{cls.sql_op}("{comp.name}", NULL, \'{period_to}\', \'{conf or ""}\') AS "{comp.name}"'
+                            f"{cls.sql_op}(\"{comp.name}\", NULL, '{period_to}', '{conf or ''}') "
+                            f'AS "{comp.name}"'
                         )
                 else:
                     select_exprs.append(f'"{comp.name}"')
@@ -757,11 +768,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def component_evaluation(
-            cls,
-            operand: DataComponent,
-            period_from: Optional[str],
-            period_to: str,
-            conf: str,
+        cls,
+        operand: DataComponent,
+        period_from: Optional[str],
+        period_to: str,
+        conf: str,
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
         if operand.data is None:
@@ -769,17 +780,23 @@ class Time_Aggregation(Time):
             return result
 
         result.data = operand.data.project(
-            f"{cls.sql_op}(\"{operand.name}\", NULL, '{period_to}', '{conf or ''}') AS \"{operand.name}\""
+            f'{cls.sql_op}("{operand.name}", NULL, '
+            f"'{period_to}', '{conf or ''}') AS \"{operand.name}\""
         )
 
         return result
 
     @classmethod
     def scalar_evaluation(
-            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
-        result.value = cls.py_op(operand.value, operand.data_type, period_from, period_to, conf)
+        result.value = cls.py_op(
+            operand.value,
+            period_from,
+            period_to,
+            conf,
+        )
         return result
 
     @classmethod
@@ -921,26 +938,26 @@ class Date_Add(Parametrized):
 
     @classmethod
     def evaluate(
-            cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
+        cls, operand: Union[Scalar, DataComponent, Dataset], param_list: List[Scalar]
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
 
         if isinstance(operand, Scalar) and operand.value is not None:
-            result.value = cls.py_op(operand.value, shift, period)
+            result.value = cls.py_op(operand.value, shift, period)  # type: ignore[union-attr]
 
         elif (
-                isinstance(result, DataComponent)
-                and isinstance(operand, DataComponent)
-                and operand.data is not None
+            isinstance(result, DataComponent)
+            and isinstance(operand, DataComponent)
+            and operand.data is not None
         ):
             expr = f'{cls.sql_op}("{operand.name}", \'{period}\', {shift}) AS "{result.name}"'
             result.data = operand.data.project(expr)
 
         elif (
-                isinstance(result, Dataset)
-                and isinstance(operand, Dataset)
-                and operand.data is not None
+            isinstance(result, Dataset)
+            and isinstance(operand, Dataset)
+            and operand.data is not None
         ):
             exprs = [f'"{id_}"' for id_ in operand.get_identifiers_names()]
             for measure in operand.get_measures():
@@ -984,9 +1001,7 @@ class SimpleUnaryTime(Operators.Unary):
         return super().evaluate(operand)
 
     @classmethod
-    def apply_unary(
-            cls, input_column_name: str, output_column_name: str
-    ) -> str:
+    def apply_unary(cls, input_column_name: str, output_column_name: str) -> str:
         """
         Applies the operation to the operand and returns a SQL expression.
 
@@ -998,43 +1013,38 @@ class SimpleUnaryTime(Operators.Unary):
         return f'{cls.sql_op}({input_column_name}) AS "{output_column_name}"'
 
     @classmethod
-    def dataset_evaluation(
-            cls, operand: Dataset
-    ) -> Dataset:
+    def dataset_evaluation(cls, operand: Dataset) -> Dataset:
         result_dataset = cls.validate(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
         exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
         for measure_name in operand.get_measures_names():
             exprs.append(cls.apply_unary(measure_name, measure_name))
 
-        result_dataset.data = result_data.project(", ".join(exprs))
-        cls.modify_measure_column(result_dataset)
-        return result_dataset
+        result_dataset.data = result_data.project(", ".join(exprs))  # type: ignore[union-attr]
+        cls.modify_measure_column(result_dataset)  # type: ignore[arg-type]
+        return result_dataset  # type: ignore[return-value]
 
     @classmethod
-    def component_evaluation(
-            cls,
-            operand: DataComponent
-    ) -> DataComponent:
+    def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.validate(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
-        result_component.data = result_data.project(
+        result_component.data = result_data.project(  # type: ignore[union-attr]
             cls.apply_unary(operand.name, result_component.name)
         )
-        return result_component
+        return result_component  # type: ignore[return-value]
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result = cls.validate(operand)
-        result.value = cls.py_op(operand.value)
-        return result
+        result.value = cls.py_op(operand.value)  # type: ignore[union-attr]
+        return result  # type: ignore[return-value]
+
 
 class Year(SimpleUnaryTime):
     op = YEAR
     return_type = Integer
     sql_op = "year_duck"
     py_op = year_duck
-
 
 
 class Month(SimpleUnaryTime):
@@ -1077,6 +1087,7 @@ class Year_to_Day(Operators.Unary):
     return_type = Integer
     sql_op = "year_to_day_duck"
     py_op = year_to_day_duck
+
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY

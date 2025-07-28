@@ -130,6 +130,7 @@ def iso_duration_to_indicator(value: str) -> str:
     else:
         raise ValueError(f"Invalid Duration: {value}")
 
+
 def check_duration(value: str) -> str:
     indicator = iso_duration_to_indicator(value)
     if indicator not in PERIOD_IND_MAPPING:
