@@ -2,7 +2,7 @@ from copy import copy
 from typing import Any, List, Union
 
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
@@ -316,9 +316,9 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         def get_measures(op: Union[DataComponent, Dataset, Scalar]) -> List[str]:
-            if isinstance(op, DataComponent):
+            if isinstance(op, DataComponent) and op.data is not None:
                 return [op.data.columns[0]]
-            if isinstance(op, Dataset):
+            if isinstance(op, Dataset) and op.data is not None:
                 return op.get_measures_names()
             return []
 
@@ -338,7 +338,8 @@ class Case(Operator):
             for i in range(len(conditions)):
                 if conditions[i].value:
                     result.value = thenOps[i].value
-                    return result
+                    break
+            return result
 
         measure = get_condition_measure(conditions[0])
         base = duckdb_rename(conditions[0].data, {measure: f"cond_0.{measure}"})

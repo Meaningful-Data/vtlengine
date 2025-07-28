@@ -32,10 +32,10 @@ def duckdb_concat(
     if left is None or right is None:
         return empty_relation()
 
-    on = {on} if isinstance(on, str) else set(on) if on is not None else set()
+    set_on = {on} if isinstance(on, str) else set(on) if on is not None else set()
 
     cols = set(left.columns) | set(right.columns)
-    common_cols = set(left.columns).intersection(set(right.columns)) - on
+    common_cols = set(left.columns).intersection(set(right.columns)) - set_on
     cols_left = "*"
     if common_cols:
         cols_left += f" EXCLUDE ({', '.join(quote_cols(common_cols))})"
@@ -43,9 +43,9 @@ def duckdb_concat(
     left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
     right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
 
-    if on:
-        cols_left = ", ".join(quote_cols(cols - on) | {f'base."{c}" AS "{c}"' for c in on})
-        join_condition = " AND ".join([f'base."{col}" = other."{col}"' for col in on])
+    if set_on:
+        cols_left = ", ".join(quote_cols(cols - set_on) | {f'base."{c}" AS "{c}"' for c in set_on})
+        join_condition = " AND ".join([f'base."{col}" = other."{col}"' for col in set_on])
         return left.join(right, condition=join_condition, how="inner").project(cols_left)
 
     condition = "base.__row_id__ = other.__row_id__"
