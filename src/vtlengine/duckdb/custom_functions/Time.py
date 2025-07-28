@@ -6,21 +6,6 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, date_to_period, 
 from vtlengine.Exceptions import SemanticError
 
 
-def _time_period_access(v: Any, to_param: str) -> str:
-    v = TimePeriodHandler(v)
-    if v.period_indicator == to_param:
-        return str(v)
-    v.change_indicator(to_param)
-    return str(v)
-
-
-def _date_access(value: date, to_param: str, start: bool) -> date:
-    period_value = date_to_period(value, to_param)
-    if start:
-        return period_value.start_date(as_date=True)
-    return period_value.end_date(as_date=True)
-
-
 def year_duck(value: Optional[Union[date, str]]) -> Optional[int]:
     """
     Extracts the year from a date or time value.
@@ -276,13 +261,27 @@ def time_agg_duck(
         str | None: The aggregated date or time value as a string in ISO format,
         or None if the input value is None.
     """
+
+    def time_period_access(v: Any, to_param: str) -> str:
+        v = TimePeriodHandler(v)
+        if v.period_indicator == to_param:
+            return str(v)
+        v.change_indicator(to_param)
+        return str(v)
+
+    def date_access(value: date, to_param: str, start: bool) -> date:
+        period_value = date_to_period(value, to_param)
+        if start:
+            return period_value.start_date(as_date=True)
+        return period_value.end_date(as_date=True)
+
     if value is None:
         return None
     if isinstance(value, date):
         start = conf == "first"
-        return _date_access(value, period_to, start).isoformat()
+        return date_access(value, period_to, start).isoformat()
     else:
-        return _time_period_access(value, period_to)
+        return time_period_access(value, period_to)
 
 
 def period_ind_duck(value: str) -> Optional[str]:
