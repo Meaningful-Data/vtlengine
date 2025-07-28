@@ -44,12 +44,12 @@ def duckdb_concat(
     right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
 
     if set_on:
-        cols_left = ', '.join(quote_cols(cols - set_on) | {f'base."{c}" AS "{c}"' for c in set_on})
-        join_condition = ' AND '.join([f'base."{col}" = other."{col}"' for col in set_on])
+        cols_left = ", ".join(quote_cols(cols - set_on) | {f'base."{c}" AS "{c}"' for c in set_on})
+        join_condition = " AND ".join([f'base."{col}" = other."{col}"' for col in set_on])
         return left.join(right, condition=join_condition, how="inner").project(cols_left)
 
-    condition = 'base.__row_id__ = other.__row_id__'
-    return left.join(right, condition=condition, how="inner").project(', '.join(quote_cols(cols)))
+    condition = "base.__row_id__ = other.__row_id__"
+    return left.join(right, condition=condition, how="inner").project(", ".join(quote_cols(cols)))
 
 
 def duckdb_drop(
@@ -322,7 +322,7 @@ def round_doubles(
             exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
         else:
             exprs.append(f'"{col}"')
-    query = ', '.join(exprs)
+    query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
 
