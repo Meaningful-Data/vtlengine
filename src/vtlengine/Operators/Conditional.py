@@ -94,15 +94,15 @@ class If(Operator):
         base = duckdb_fillna(condition.data, "FALSE", cond_col)
 
         if not isinstance(true_branch, Scalar):
-            measures = true_branch.get_measures_names()
+            comps = [c for c in true_branch.get_components_names() if c not in ids]
             true_branch.data = duckdb_rename(
-                true_branch.data, {m: f"__{m}@true_branch__" for m in measures}
+                true_branch.data, {m: f"__{m}@true_branch__" for m in comps}
             )
             base = duckdb_concat(base, true_branch.data, ids)
         if not isinstance(false_branch, Scalar):
-            measures = false_branch.get_measures_names()
+            comps = [c for c in false_branch.get_components_names() if c not in ids]
             false_branch.data = duckdb_rename(
-                false_branch.data, {m: f"__{m}@false_branch__" for m in measures}
+                false_branch.data, {m: f"__{m}@false_branch__" for m in comps}
             )
             base = duckdb_concat(base, false_branch.data, ids)
 
