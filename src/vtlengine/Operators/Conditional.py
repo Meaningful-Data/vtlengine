@@ -11,11 +11,12 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
+    clean_execution_graph,
     duckdb_concat,
     duckdb_fillna,
     duckdb_rename,
     duckdb_select,
-    empty_relation, clean_execution_graph,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
@@ -339,57 +340,50 @@ class Case(Operator):
                     result.value = thenOps[i].value
                     return result
 
-        relations = []
-        for op in conditions + thenOps + [elseOp]:
+        measure = get_condition_measure(conditions[0])
+        base = duckdb_rename(conditions[0].data, {measure: f"cond_0.{measure}"})
+        for i, cond in enumerate(conditions[1:]):
+            measure = get_condition_measure(cond)
+            cond_ = duckdb_rename(cond.data, {measure: f"cond_{i + 1}.{measure}"})
+            base = duckdb_concat(base, cond_)
+        else_condition_query = f'*, NOT({
+            " OR ".join(f'"{col}"' for col in base.columns if col.startswith("cond_"))
+        }) AS "cond_else"'
+        base = base.project(else_condition_query)
+
+        operands = thenOps + [elseOp]
+        for i, op in enumerate(operands):
             if hasattr(op, "data") and op.data is not None:
-                op.data = duckdb_rename(op.data, {col: f'{op.name}.{col}' for col in op.data.columns})
-                relations.append(op.data)
+                op_data = duckdb_rename(op.data, {col: f"op_{i}.{col}" for col in op.data.columns})
+                base = duckdb_concat(base, op_data)
 
-        if relations:
-            base = relations[0]
-            for rel in relations[1:]:
-                base = duckdb_concat(base, rel)
-        else:
-            base = empty_relation()
+        base = clean_execution_graph(base)
 
-        dataset_level = any(isinstance(op, Dataset) for op in thenOps + [elseOp])
-        exprs = []
-        if dataset_level:
-            columns = next(get_measures(thenOp) for thenOp in thenOps if isinstance(thenOp, Dataset))
-            ids = next(op.get_identifiers_names() for op in thenOps if isinstance(op, Dataset))
-            exprs.extend(ids)
-            for col in columns:
-                expr = "CASE "
-                for cond, thenOp in zip(conditions, thenOps):
-                    cond_col = f'"{cond.name}.{get_condition_measure(cond)}"'
-                    if isinstance(thenOp, Scalar):
-                        then_value = repr(thenOp.value) if thenOp.value is not None else "NULL"
-                    else:
-                        then_value = f'"{thenOp.name}.{col}"'
-                    expr += f'WHEN {cond_col} THEN {then_value} '
-                if isinstance(elseOp, Scalar):
-                    else_value = repr(elseOp.value) if elseOp.value is not None else "NULL"
-                else:
-                    else_value = f'"{elseOp.name}.{col}"'
-                expr += f'ELSE {else_value} END AS "{col}"'
-                exprs.append(expr)
-        else:
+        ids = next((op.get_identifiers_names() for op in operands if isinstance(op, Dataset)), [])
+        exprs = [f'"{id_}"' for id_ in ids]
+        columns = base.columns
+        measures = next(
+            (get_measures(op) for op in operands if isinstance(op, (Dataset, DataComponent))),
+            ["result"],
+        )
+        for col in measures:
             expr = "CASE "
-            for cond, thenOp in zip(conditions, thenOps):
-                cond_col = f'"{cond.name}.{get_condition_measure(cond)}"'
-                if isinstance(thenOp, Scalar):
-                    then_value = repr(thenOp.value) if thenOp.value is not None else "NULL"
+            # CASE op ends whenever the first cond is matched, so in order to match the
+            # VTL specification, we need to reverse the order of the operands
+            for i, op in enumerate(reversed(operands)):
+                i = len(operands) - 1 - i  # Reverse index to match conditions
+                cond_col = next(
+                    (col for col in columns if col.startswith(f"cond_{i}")), "cond_else"
+                )
+                if isinstance(op, Scalar):
+                    value = repr(op.value) if op.value is not None else "NULL"
                 else:
-                    then_value = f'"{get_measures(thenOp)[0]}"'
-                expr += f'WHEN {cond_col} THEN {then_value} '
-            if isinstance(elseOp, Scalar):
-                else_value = repr(elseOp.value) if elseOp.value is not None else "NULL"
-            else:
-                else_value = f'"{get_measures(elseOp)[0]}"'
-            expr += f'ELSE {else_value} END AS "result"'
+                    value = f'"op_{i}.{col}"'
+                expr += f'WHEN "{cond_col}" THEN {value} '
+            expr += f'END AS "{col}"'
             exprs.append(expr)
 
-        result.data = base.project(', '.join(exprs))
+        result.data = base.project(", ".join(exprs))
         return result
 
     @classmethod

@@ -323,6 +323,7 @@ def round_doubles(
     query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
+
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
     cols = set()
     types = {types} if isinstance(types, str) else set(types)
