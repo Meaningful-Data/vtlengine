@@ -2,6 +2,7 @@ import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operators
@@ -42,7 +43,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.duckdb.custom_functions import year_duck, day_of_month_duck, year_to_day_duck, date_diff_duck, \
-    date_add_duck
+    date_add_duck, time_agg_duck
 from vtlengine.duckdb.custom_functions.Time import month_duck, day_of_year_duck, day_to_year_duck, day_to_month_duck, \
     month_to_day_duck
 from vtlengine.duckdb.duckdb_utils import empty_relation
@@ -640,6 +641,8 @@ class Time_Shift(Binary):
 
 class Time_Aggregation(Time):
     op = TIME_AGG
+    sql_op = "time_agg_duck"
+    py_op = time_agg_duck
 
     @classmethod
     def _check_duration(cls, value: str) -> None:
@@ -652,15 +655,12 @@ class Time_Aggregation(Time):
         if period_from is not None:
             cls._check_duration(period_from)
             if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
-                # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
     @classmethod
     def dataset_validation(
         cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
-        # TODO: Review with VTL TF as this makes no sense
-
         count_time_types = 0
         for measure in operand.get_measures():
             if measure.data_type in cls.TIME_DATA_TYPES:
@@ -680,11 +680,6 @@ class Time_Aggregation(Time):
                 op=cls.op,
                 comp_type="dataset",
                 param="single time identifier",
-            )
-
-        if count_time_types != 1:
-            raise SemanticError(
-                "1-1-19-9", op=cls.op, comp_type="dataset", param="single time measure"
             )
 
         result_components = {
@@ -722,72 +717,56 @@ class Time_Aggregation(Time):
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
     @classmethod
-    def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Type[ScalarType],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
-    ) -> str:
-        if data_type == TimePeriod:  # Time period
-            return _time_period_access(value, period_to)
-
-        elif data_type == Date:
-            start = conf == "first"
-            # Date
-            if period_to == "D":
-                return value
-            return _date_access(value, period_to, start)
-        else:
-            raise NotImplementedError
-
-    @classmethod
-    def dataset_evaluation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
-    ) -> Dataset:
+    def dataset_evaluation(cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
-        result.data[time_measure.name] = result.data[time_measure.name].map(
-            lambda x: cls._execute_time_aggregation(
-                x,  # type: ignore[arg-type]
-                time_measure.data_type,
-                period_from,
-                period_to,
-                conf,
-            ),
-            na_action="ignore",
-        )
+        if operand.data is None:
+            result.data = None
+            return result
 
+        time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
+
+        select_exprs = []
+        for comp in operand.components.values():
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE]:
+                if comp.name == time_measure.name:
+                    if comp.data_type == Date:
+                        select_exprs.append(
+                            f'CAST({cls.sql_op}("{comp.name}", NULL, \'{period_to}\', \'{conf or ""}\') AS DATE) AS "{comp.name}"'
+                        )
+                    else:
+                        select_exprs.append(
+                            f'{cls.sql_op}("{comp.name}", NULL, \'{period_to}\', \'{conf or ""}\') AS "{comp.name}"'
+                        )
+                else:
+                    select_exprs.append(f'"{comp.name}"')
+        result.data = operand.data.project(", ".join(select_exprs))
         return result
 
     @classmethod
     def component_evaluation(
-        cls,
-        operand: DataComponent,
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
+            cls,
+            operand: DataComponent,
+            period_from: Optional[str],
+            period_to: str,
+            conf: str,
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
-        if operand.data is not None:
-            result.data = operand.data.map(
-                lambda x: cls._execute_time_aggregation(
-                    x, operand.data_type, period_from, period_to, conf
-                ),
-                na_action="ignore",
-            )
+        if operand.data is None:
+            result.data = None
+            return result
+
+        result.data = operand.data.project(
+            f"{cls.sql_op}(\"{operand.name}\", NULL, '{period_to}', '{conf or ''}') AS \"{operand.name}\""
+        )
+
         return result
 
     @classmethod
     def scalar_evaluation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
+            cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
-        result.value = cls._execute_time_aggregation(
-            operand.value, operand.data_type, period_from, period_to, conf
-        )
+        result.value = cls.py_op(operand.value, operand.data_type, period_from, period_to, conf)
         return result
 
     @classmethod
@@ -821,21 +800,6 @@ class Time_Aggregation(Time):
             return cls.component_evaluation(operand, period_from, period_to, conf)
         else:
             return cls.scalar_evaluation(operand, period_from, period_to, conf)
-
-
-def _time_period_access(v: Any, to_param: str) -> Any:
-    v = TimePeriodHandler(v)
-    if v.period_indicator == to_param:
-        return str(v)
-    v.change_indicator(to_param)
-    return str(v)
-
-
-def _date_access(v: str, to_param: str, start: bool) -> Any:
-    period_value = date_to_period(date.fromisoformat(v), to_param)
-    if start:
-        return period_value.start_date()
-    return period_value.end_date()
 
 
 class Current_Date(Time):

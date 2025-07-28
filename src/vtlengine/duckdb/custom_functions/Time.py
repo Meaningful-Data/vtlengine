@@ -1,8 +1,8 @@
 from datetime import date, datetime, timedelta
-from typing import Union, Optional
+from typing import Union, Optional, Type, Any
 
-from vtlengine.DataTypes import Duration
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date
+from vtlengine.DataTypes import Duration, ScalarType, TimePeriod, Date
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, period_to_date, date_to_period
 from vtlengine.Exceptions import SemanticError
 
 
@@ -142,3 +142,30 @@ def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
         new_date = date_value.replace(year=new_year, month=new_month, day=min(date_value.day, last_day))
 
     return new_date
+
+def time_agg_duck(value: Optional[Union[str, date]],
+                  period_from: Optional[str],
+                  period_to: str,
+                  conf: str) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, date):
+        start = conf == "first"
+        return _date_access(value, period_to, start).isoformat()
+    else:
+        return _time_period_access(value, period_to)
+
+
+def _time_period_access(v: Any, to_param: str) -> str:
+    v = TimePeriodHandler(v)
+    if v.period_indicator == to_param:
+        return str(v)
+    v.change_indicator(to_param)
+    return str(v)
+
+
+def _date_access(value: date, to_param: str, start: bool) -> date:
+    period_value = date_to_period(value, to_param)
+    if start:
+        return period_value.start_date(as_date=True)
+    return period_value.end_date(as_date=True)
