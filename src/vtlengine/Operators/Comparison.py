@@ -236,37 +236,8 @@ class Between(Operator.Operator):
     """
 
     @classmethod
-    def op_func(
-        cls,
-        x: Optional[Union[int, float, bool, str]],
-        y: Optional[Union[int, float, bool, str]],
-        z: Optional[Union[int, float, bool, str]],
-    ) -> Optional[bool]:
-        return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
-        )
-
-    @classmethod
     def apply_between_op(cls, input_column_name: str, from_: Any, to: Any) -> str:
         return f"{cls.sql_op}({input_column_name}, {from_}, {to})"
-
-    @classmethod
-    def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
-        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(
-            to_data, pd.Series
-        )
-        if control_any_series_from_to:
-            if not isinstance(from_data, pd.Series):
-                from_data = pd.Series(from_data, index=series.index, dtype=object)
-            if not isinstance(to_data, pd.Series):
-                to_data = pd.Series(to_data, index=series.index)
-            df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
-            return df.apply(
-                lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
-                axis=1,
-            )
-
-        return series.map(lambda x: cls.op_func(x, from_data, to_data))
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
