@@ -1,6 +1,6 @@
 from typing import Dict, Union
 
-from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, LOG, MOD, NOT_IN, POWER, XOR, ISNULL
+from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, ISNULL, LOG, MOD, NOT_IN, POWER, XOR
 
 # Could it be the operator sql token or a tuple of (sql token, token position)
 # default is taken as MIDDLE on Operator apply_operation method
