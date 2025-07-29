@@ -18,26 +18,35 @@ TYPES_DICT = {
 }
 
 
-def duckdb_concat(left: DuckDBPyRelation, right: DuckDBPyRelation) -> DuckDBPyRelation:
+def duckdb_concat(
+    left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
+) -> DuckDBPyRelation:
     """
     Concatenates two DuckDB relations by row, ensuring that columns are aligned.
 
     If either relation is None, returns an empty relation.
 
-    Its behavior is similar to pandas dataframe-series assignment.
+    If `on` is specified, only rows with matching values in the `on` columns are concatenated.
     """
 
     if left is None or right is None:
         return empty_relation()
 
+    set_on = {on} if isinstance(on, str) else set(on) if on is not None else set()
+
     cols = set(left.columns) | set(right.columns)
-    common_cols = set(left.columns).intersection(set(right.columns))
+    common_cols = set(left.columns).intersection(set(right.columns)) - set_on
     cols_left = "*"
     if common_cols:
         cols_left += f" EXCLUDE ({', '.join(quote_cols(common_cols))})"
 
     left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
     right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
+
+    if set_on:
+        cols_left = ", ".join(quote_cols(cols - set_on) | {f'base."{c}" AS "{c}"' for c in set_on})
+        join_condition = " AND ".join([f'base."{col}" = other."{col}"' for col in set_on])
+        return left.join(right, condition=join_condition, how="inner").project(cols_left)
 
     condition = "base.__row_id__ = other.__row_id__"
     return left.join(right, condition=condition, how="inner").project(", ".join(quote_cols(cols)))
@@ -88,8 +97,8 @@ def duckdb_fillna(
     If no columns are specified, all columns will be filled.
     """
 
-    exprs = ["*"]
-    cols_set: Set[str] = set(cols) if cols is not None else data.columns
+    exprs = []
+    cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
         type_ = (
             (
@@ -111,8 +120,9 @@ def duckdb_fillna(
             raise ValueError("Length of types must match length of columns.")
 
         value = f"CAST({value} AS {type_})" if type_ else value
-        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"')
+        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"'.replace('""', '"'))
 
+    exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
     query = ", ".join(exprs)
     return query if as_query else data.project(query)
 
@@ -263,6 +273,8 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     query_set = {
         f'"{c}"' for c in data.columns if c not in get_cols_by_types(data, ["DOUBLE", "STRING"])
     }
+    if query_set == set(data.columns):
+        return "*" if as_query else data
     query_set.add(remove_null_str(data, as_query=True))
     query_set.add(round_doubles(data, as_query=True))
     query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
@@ -303,10 +315,13 @@ def round_doubles(
     """
     Rounds double values in the dataset to avoid precision issues.
     """
-    exprs = ["*"]
+    exprs = []
     double_columns = get_cols_by_types(data, "DOUBLE")
-    for col in double_columns:
-        exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
+    for col in data.columns:
+        if col in double_columns:
+            exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
+        else:
+            exprs.append(f'"{col}"')
     query = ", ".join(exprs)
     return query if as_query else data.project(query)
 

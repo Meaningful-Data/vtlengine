@@ -103,8 +103,8 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left = left or "NULL"
-    right = right or "NULL"
+    left = left if left is not None else "NULL"
+    right = right if right is not None else "NULL"
 
     if cls.op == LOG:
         # SQL log handle operands on a different way as math.log,
@@ -700,10 +700,10 @@ class Binary(Operator):
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         scalar_value = handle_sql_scalar(scalar_value)
 
-        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        exprs = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
             if me.data_type in TIME_TYPES:
-                transformations.append(
+                exprs.append(
                     f'cast_time_types("{me.data_type.__name__}", "{me.name}") AS "{me.name}"'
                 )
             if me.data_type == Duration and not isinstance(scalar_value, int):
@@ -712,9 +712,9 @@ class Binary(Operator):
             left, right = (
                 (f'"{me.name}"', scalar_value) if dataset_left else (scalar_value, f'"{me.name}"')
             )
-            transformations.append(apply_bin_op(cls, me.name, left, right))
+            exprs.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = ", ".join(transformations)
+        final_query = ", ".join(exprs)
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
