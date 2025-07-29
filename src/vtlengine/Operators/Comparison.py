@@ -18,6 +18,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
+from vtlengine.connection import con
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
 from vtlengine.duckdb.custom_functions import between_duck, isnull_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
@@ -434,7 +435,7 @@ class ExistIn(Operator.Operator):
     # noinspection PyTypeChecker
     @classmethod
     def validate(
-        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[bool]
     ) -> Any:
         dataset_name = VirtualCounter._new_ds_name()
         left_identifiers = dataset_1.get_identifiers_names()
@@ -454,62 +455,52 @@ class ExistIn(Operator.Operator):
 
     @classmethod
     def evaluate(
-        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[bool]
     ) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
 
-        # Checking the subset
-        left_id_names = dataset_1.get_identifiers_names()
-        right_id_names = dataset_2.get_identifiers_names()
-        is_subset_left = set(left_id_names).issubset(right_id_names)
+        id_names = dataset_1.get_identifiers_names()
+        op1_name = dataset_1.name
+        op2_name = dataset_2.name
 
-        # Identifiers for the result dataset
-        reference_identifiers_names = left_id_names
+        con.register(op1_name, dataset_1.data)
+        con.register(op2_name, dataset_2.data)
 
-        # Checking if the left dataset is a subset of the right dataset
-        common_columns = left_id_names if is_subset_left else right_id_names
+        ids_str = ", ".join(id_names)
+        select_str = ", ".join([f"{op1_name}.{col}" for col in id_names])
+        case_expr = "CASE WHEN bool_var IS NULL THEN False ELSE True END AS bool_var"
 
-        # Check if the common identifiers are equal between the two datasets
-        if dataset_1.data is not None and dataset_2.data is not None:
-            true_results = pd.merge(
-                dataset_1.data,
-                dataset_2.data,
-                how="inner",
-                left_on=common_columns,
-                right_on=common_columns,
-            )
-            true_results = true_results[reference_identifiers_names]
+        retain_all_query = f"""
+                SELECT {select_str.replace(op1_name, "__vds_exists__")}, {case_expr}
+                FROM {op1_name} __vds_exists__
+                LEFT JOIN (
+                    SELECT * FROM (
+                        SELECT *, True AS bool_var FROM {op1_name}
+                    ) SEMI JOIN {op2_name} USING ({ids_str})
+                )
+                USING ({ids_str})
+            """
+
+        retain_true_query = f"""
+                SELECT * FROM (
+                    SELECT {select_str}, True AS bool_var FROM {op1_name}
+                ) SEMI JOIN {op2_name} USING ({ids_str})
+            """
+
+        retain_false_query = f"""
+                SELECT * FROM (
+                    SELECT {select_str}, False AS bool_var FROM {op1_name}
+                ) ANTI JOIN {op2_name} USING ({ids_str})
+            """
+
+        if retain_element is None:
+            query = retain_all_query
+        elif retain_element is False:
+            query = retain_false_query
         else:
-            true_results = pd.DataFrame(columns=reference_identifiers_names)
+            query = retain_true_query
 
-        # Check for empty values
-        if true_results.empty:
-            true_results["bool_var"] = None
-        else:
-            true_results["bool_var"] = True
-        if dataset_1.data is None:
-            dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
-        final_result = pd.merge(
-            dataset_1.data,
-            true_results,
-            how="left",
-            left_on=reference_identifiers_names,
-            right_on=reference_identifiers_names,
-        )
-        final_result = final_result[reference_identifiers_names + ["bool_var"]]
-
-        # No null values are returned, only True or False
-        final_result["bool_var"] = final_result["bool_var"].fillna(False)
-
-        # Adding to the result dataset
-        result_dataset.data = final_result
-
-        # Retain only the elements that are specified (True or False)
-        if retain_element is not None:
-            result_dataset.data = result_dataset.data[
-                result_dataset.data["bool_var"] == retain_element
-            ]
-            result_dataset.data = result_dataset.data.reset_index(drop=True)
+        result_dataset.data = con.query(query).df()
 
         return result_dataset
 
