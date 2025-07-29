@@ -287,6 +287,7 @@ class Parameterized(Unary):
 
         return super().validate(operand)
 
+    # TODO refactor this to utils.py
     @staticmethod
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Union[str, int, float]:
         if isinstance(param, DataComponent):

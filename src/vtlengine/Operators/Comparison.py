@@ -3,6 +3,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
+import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -19,7 +20,8 @@ from vtlengine.AST.Grammar.tokens import (
     NOT_IN,
 )
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
-from vtlengine.duckdb.custom_functions import isnull_duck
+from vtlengine.duckdb.custom_functions import between_duck, isnull_duck
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -218,6 +220,8 @@ class Match(Binary):
 
 class Between(Operator.Operator):
     return_type = Boolean
+    sql_op = "between_duck"
+    py_op = between_duck
     """
     This comparison operator has the following class methods.
 
@@ -241,6 +245,10 @@ class Between(Operator.Operator):
         return (
             None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
         )
+
+    @classmethod
+    def apply_between_op(cls, input_column_name: str, from_: Any, to: Any) -> str:
+        return f"{cls.sql_op}({input_column_name}, {from_}, {to})"
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
@@ -328,56 +336,181 @@ class Between(Operator.Operator):
 
         return result
 
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Any:
+        if isinstance(param, DataComponent):
+            return f'"{param.name}"'
+        elif isinstance(param, Scalar):
+            return "NULL" if param.value is None else param.value
+        return "NULL"
+
     @classmethod
     def evaluate(
         cls,
-        operand: Union[DataComponent, Scalar],
+        operand: Operator.ALL_MODEL_DATA_TYPES,
         from_: Union[DataComponent, Scalar],
         to: Union[DataComponent, Scalar],
     ) -> Any:
-        result = cls.validate(operand, from_, to)
-        from_data = from_.data if isinstance(from_, DataComponent) else from_.value
-        to_data = to.data if isinstance(to, DataComponent) else to.value
-
-        if (
-            isinstance(from_data, pd.Series)
-            and isinstance(to_data, pd.Series)
-            and len(from_data) != len(to_data)
-        ):
-            raise ValueError("From and To must have the same length")
-
         if isinstance(operand, Dataset):
-            result.data = operand.data.copy()
-            for measure_name in operand.get_measures_names():
-                result.data[measure_name] = cls.apply_operation_component(
-                    operand.data[measure_name], from_data, to_data
-                )
-                if len(result.get_measures()) == 1:
-                    result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
-                    result.data = result.data.drop(columns=[measure_name])
-            result.data = result.data[result.get_components_names()]
+            return cls.dataset_evaluation(operand, from_, to)
         if isinstance(operand, DataComponent):
-            result.data = cls.apply_operation_component(operand.data, from_data, to_data)
-        if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
-            if operand.value is None or from_data is None or to_data is None:
-                result.value = None
-            else:
-                result.value = from_data <= operand.value <= to_data
-        elif isinstance(operand, Scalar) and (
-            isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
-        ):  # From or To is a DataComponent, or both
-            if isinstance(from_data, pd.Series):
-                series = pd.Series(operand.value, index=from_data.index, dtype=object)
-            elif isinstance(to_data, pd.Series):
-                series = pd.Series(operand.value, index=to_data.index, dtype=object)
-            result_series = cls.apply_operation_component(series, from_data, to_data)
-            result = DataComponent(
-                name=operand.name,
-                data=result_series,
-                data_type=cls.return_type,
-                role=Role.MEASURE,
-            )
+            return cls.component_evaluation(operand, from_, to)
+        if isinstance(operand, Scalar):
+            return cls.scalar_evaluation(operand, from_, to)
+
+    @classmethod
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand, from_, to = args[:3]
+
+        result_dataset = cls.validate(operand, from_, to)
+        result_data = operand.data if operand.data is not None else empty_relation()
+
+        expr = [f"{d}" for d in operand.get_identifiers_names()]
+        print(expr)
+
+        from_value = cls.handle_param_value(from_)
+        to_value = cls.handle_param_value(to)
+
+        for measure_name in operand.get_measures_names():
+            expr.append(cls.apply_between_op(measure_name, from_value, to_value))
+
+
+        result_dataset.data = result_data.project(", ".join(expr))
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
+
+    @classmethod
+    def scalar_evaluation(cls, *args) -> Any:
+        operand, from_, to = args[:3]
+
+        result = cls.validate(operand,from_,to)
+
+        if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to,Scalar):
+            from_value = cls.handle_param_value(from_)
+            to_value = cls.handle_param_value(to)
+            operand_value = None if operand is None else operand.value
+            result.value =  cls.py_op(operand_value, from_value, to_value)
+            return result
+
+        if isinstance(from_, DataComponent) or isinstance(to, DataComponent):
+            return cls.component_evaluation(operand,from_,to)
+
+        # if isinstance(from_, DataComponent) and isinstance(to, DataComponent) and len(from_.data) != len(to.data) :
+        #     raise ValueError("From and To must have the same length")
+        #
+        # if isinstance(from_, DataComponent):
+        #     reference = from_
+        # elif isinstance(to, DataComponent):
+        #     reference = to
+        #
+        # ref_length = len(reference.data.to_df())
+        #
+        # if isinstance(operand, Scalar):
+        #     series = pd.Series(operand.value, index=range(ref_length), dtype=object)
+        #     operand = DataComponent(
+        #         name=operand.name,
+        #         data=duckdb.from_df(pd.DataFrame({operand.name: series})),
+        #         data_type=operand.data_type,
+        #         role=Role.MEASURE,
+        #     )
+        #
+        # if isinstance(from_, Scalar):
+        #     series = pd.Series(from_.value, index=range(ref_length), dtype=object)
+        #     from_ = DataComponent(
+        #         name=from_.name,
+        #         data=duckdb.from_df(pd.DataFrame({from_.name: series})),
+        #         data_type=from_.data_type,
+        #         role=Role.MEASURE,
+        #     )
+        #
+        # if isinstance(to, Scalar):
+        #     series = pd.Series(to.value, index=range(ref_length), dtype=object)
+        #     to = DataComponent(
+        #         name=to.name,
+        #         data=duckdb.from_df(pd.DataFrame({to.name: series})),
+        #         data_type=to.data_type,
+        #         role=Role.MEASURE,
+        #     )
+
+
+
+    @classmethod
+    def component_evaluation(cls, *args: Union[DataComponent, Scalar]):
+        operand, from_, to = args[:3]
+
+        result = cls.validate(operand, from_, to, )
+        from_value = cls.handle_param_value(from_)
+        to_value = cls.handle_param_value(to)
+
+        if isinstance(operand, DataComponent) and operand.data is not None:
+            all_data = operand.data
+        else:
+            all_data = empty_relation()
+
+        for param in args[1:]:
+            if isinstance(param, DataComponent):
+                all_data = duckdb_concat(all_data, param.data)
+
+        result.data = all_data.project(
+            cls.apply_between_op(cls.handle_param_value(operand), from_value, to_value)
+        )
+
+        print(result)
         return result
+
+
+    # @classmethod
+    # def evaluate(
+    #     cls,
+    #     operand: Union[DataComponent, Scalar],
+    #     from_: Union[DataComponent, Scalar],
+    #     to: Union[DataComponent, Scalar],
+    # ) -> Any:
+    #     result = cls.validate(operand, from_, to)
+    #     from_data = from_.data if isinstance(from_, DataComponent) else from_.value
+    #     to_data = to.data if isinstance(to, DataComponent) else to.value
+    #
+    #     if (
+    #         isinstance(from_data, pd.Series)
+    #         and isinstance(to_data, pd.Series)
+    #         and len(from_data) != len(to_data)
+    #     ):
+    #         raise ValueError("From and To must have the same length")
+    #
+    #     if isinstance(operand, Dataset):
+    #         result.data = operand.data.copy()
+    #         for measure_name in operand.get_measures_names():
+    #             result.data[measure_name] = cls.apply_operation_component(
+    #                 operand.data[measure_name], from_data, to_data
+    #             )
+    #             if len(result.get_measures()) == 1:
+    #                 result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
+    #                 result.data = result.data.drop(columns=[measure_name])
+    #         result.data = result.data[result.get_components_names()]
+    #
+    #     if isinstance(operand, DataComponent):
+    #         result.data = cls.apply_operation_component(operand.data, from_data, to_data)
+    #
+    #     if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
+    #         if operand.value is None or from_data is None or to_data is None:
+    #             result.value = None
+    #         else:
+    #             result.value = from_data <= operand.value <= to_data
+    #
+    #     elif isinstance(operand, Scalar) and (
+    #         isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
+    #     ):  # From or To is a DataComponent, or both
+    #         if isinstance(from_data, pd.Series):
+    #             series = pd.Series(operand.value, index=from_data.index, dtype=object)
+    #         elif isinstance(to_data, pd.Series):
+    #             series = pd.Series(operand.value, index=to_data.index, dtype=object)
+    #         result_series = cls.apply_operation_component(series, from_data, to_data)
+    #         result = DataComponent(
+    #             name=operand.name,
+    #             data=result_series,
+    #             data_type=cls.return_type,
+    #             role=Role.MEASURE,
+    #         )
+    #     return result
 
 
 class ExistIn(Operator.Operator):
