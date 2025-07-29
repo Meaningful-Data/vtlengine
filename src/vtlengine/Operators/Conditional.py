@@ -11,7 +11,6 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
-    clean_execution_graph,
     duckdb_concat,
     duckdb_fillna,
     duckdb_rename,
@@ -359,8 +358,6 @@ class Case(Operator):
             if hasattr(op, "data") and op.data is not None:
                 op_data = duckdb_rename(op.data, {col: f"op_{i}.{col}" for col in op.data.columns})
                 base = duckdb_concat(base, op_data)
-
-        base = clean_execution_graph(base)
 
         ids = next((op.get_identifiers_names() for op in operands if isinstance(op, Dataset)), [])
         exprs = [f'"{id_}"' for id_ in ids]
