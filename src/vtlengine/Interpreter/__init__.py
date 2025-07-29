@@ -497,7 +497,7 @@ class InterpreterAnalyzer(ASTTemplate):
         grouping_op = node.grouping_op
         if node.grouping is not None:
             if grouping_op == "group all":
-                data = None if self.only_semantic else copy(operand.data)
+                data = None if self.only_semantic else operand.data
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
                 )
@@ -1018,40 +1018,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            if condition.value:
-                return self.visit(node.thenOp)
-            else:
-                return self.visit(node.elseOp)
+            return self.visit(node.thenOp if condition.value else node.elseOp)
 
-        # Analysis for data component and dataset
-        else:
-            if self.condition_stack is None:
-                self.condition_stack = []
-            if self.then_condition_dataset is None:
-                self.then_condition_dataset = []
-            if self.else_condition_dataset is None:
-                self.else_condition_dataset = []
-            self.generate_then_else_datasets(copy(condition))
-
-        self.condition_stack.append(THEN_ELSE["then"])
         self.is_from_if = True
-        self.nested_condition = "T" if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
-        if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
-            self.then_condition_dataset.pop()
-            self.condition_stack.pop()
-
-        self.condition_stack.append(THEN_ELSE["else"])
-        self.is_from_if = True
-        self.nested_condition = "E" if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
-        if isinstance(elseOp, Scalar) or (
-            not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)
-        ):
-            if len(self.else_condition_dataset) > 0:
-                self.else_condition_dataset.pop()
-            if len(self.condition_stack) > 0:
-                self.condition_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 

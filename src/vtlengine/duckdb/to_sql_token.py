@@ -1,25 +1,6 @@
 from typing import Dict, Union
 
-from vtlengine.AST.Grammar.tokens import (
-    CHARSET_MATCH,
-    DATE_ADD,
-    DATEDIFF,
-    DAYOFMONTH,
-    DAYOFYEAR,
-    DAYTOMONTH,
-    DAYTOYEAR,
-    LOG,
-    MOD,
-    MONTH,
-    MONTHTODAY,
-    NOT_IN,
-    PERIOD_INDICATOR,
-    POWER,
-    TIME_AGG,
-    XOR,
-    YEAR,
-    YEARTODAY,
-)
+from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, ISNULL, LOG, MOD, NOT_IN, POWER, XOR
 
 # Could it be the operator sql token or a tuple of (sql token, token position)
 # default is taken as MIDDLE on Operator apply_operation method
@@ -37,16 +18,5 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     XOR: (XOR, LEFT),
     CHARSET_MATCH: ("REGEXP_MATCHES", LEFT),
     NOT_IN: "NOT IN",
-    YEAR: "year_duck",
-    MONTH: "month_duck",
-    DAYOFMONTH: "day_of_month_duck",
-    DAYOFYEAR: "day_of_year_duck",
-    DAYTOYEAR: "day_to_year_duck",
-    DAYTOMONTH: "day_to_month_duck",
-    YEARTODAY: "year_to_day_duck",
-    MONTHTODAY: "month_to_day_duck",
-    DATEDIFF: ("date_diff_duck", LEFT),
-    DATE_ADD: ("date_add_duck", LEFT),
-    TIME_AGG: "time_agg_duck",
-    PERIOD_INDICATOR: "period_ind_duck",
+    ISNULL: ("isnull_duck", LEFT),
 }

@@ -1,17 +1,22 @@
 from copy import copy
 from typing import Any, List, Union
 
-import numpy as np
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (
-    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
     binary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_fillna, duckdb_select
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_fillna,
+    duckdb_rename,
+    duckdb_select,
+    empty_relation,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
@@ -50,79 +55,81 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(
-        cls, condition: DataComponent, true_branch: Any, false_branch: Any
-    ) -> Any:
-        result = None
-        if condition.data is not None:
-            if isinstance(true_branch, Scalar):
-                true_data = pd.Series(true_branch.value, index=condition.data.index)
-            else:
-                true_data = true_branch.data.reindex(condition.data.index)
-            if isinstance(false_branch, Scalar):
-                false_data = pd.Series(false_branch.value, index=condition.data.index)
-            else:
-                false_data = false_branch.data.reindex(condition.data.index)
-            result = np.where(condition.data, true_data, false_data)
+        cls,
+        condition: DataComponent,
+        true_branch: Union[DataComponent, Scalar],
+        false_branch: Union[DataComponent, Scalar],
+    ) -> DuckDBPyRelation:
+        def get_expr(branch: Any) -> str:
+            return (
+                f"{repr(branch.value)}"
+                if isinstance(branch, Scalar) and branch.value is not None
+                else ("NULL" if isinstance(branch, Scalar) else f'"{branch.data.columns[0]}"')
+            )
 
-        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
+        if condition.data is None:
+            return empty_relation()
+
+        cond_col = f'"{condition.data.columns[0]}"'
+        true_expr = get_expr(true_branch)
+        false_expr = get_expr(false_branch)
+
+        base = duckdb_fillna(condition.data, "TRUE", cond_col)
+        if not isinstance(true_branch, Scalar):
+            base = duckdb_concat(base, true_branch.data)
+        if not isinstance(false_branch, Scalar):
+            base = duckdb_concat(base, false_branch.data)
+
+        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{condition.name}"'
+        return base.project(expr)
 
     @classmethod
     def dataset_level_evaluation(
         cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
-    ) -> Dataset:
+    ) -> Any:
         ids = condition.get_identifiers_names()
-        condition_measure = condition.get_measures_names()[0]
-        true_data = condition.data[condition.data[condition_measure] == True]
-        false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
+        cond_col = f"{condition.get_measures_names()[0]}"
 
-        if isinstance(true_branch, Dataset):
-            if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(
-                    true_data,
-                    true_branch.data,
-                    on=ids,
-                    how="right",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                true_data = pd.DataFrame(columns=true_branch.get_components_names())
-        else:
-            true_data[condition_measure] = true_data[condition_measure].apply(
-                lambda x: true_branch.value
-            )
-        if isinstance(false_branch, Dataset):
-            if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(
-                    false_data,
-                    false_branch.data,
-                    on=ids,
-                    how="right",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                false_data = pd.DataFrame(columns=false_branch.get_components_names())
-        else:
-            false_data[condition_measure] = false_data[condition_measure].apply(
-                lambda x: false_branch.value
-            )
+        base = duckdb_fillna(condition.data, "FALSE", cond_col)
 
-        result.data = (
-            pd.concat([true_data, false_data], ignore_index=True)
-            .drop_duplicates()
-            .sort_values(by=ids)
-        )
-        if isinstance(result, Dataset):
-            drop_columns = [
-                column for column in result.data.columns if column not in result.components
-            ]
-            result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
-        if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
-            result.get_measures()[0].data_type = true_branch.data_type
-            result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={condition_measure: result.get_measures()[0].name}
+        if not isinstance(true_branch, Scalar):
+            comps = [c for c in true_branch.get_components_names() if c not in ids]
+            true_branch.data = duckdb_rename(
+                true_branch.data, {m: f"__{m}@true_branch__" for m in comps}
+            )
+            base = duckdb_concat(base, true_branch.data, ids)
+        if not isinstance(false_branch, Scalar):
+            comps = [c for c in false_branch.get_components_names() if c not in ids]
+            false_branch.data = duckdb_rename(
+                false_branch.data, {m: f"__{m}@false_branch__" for m in comps}
+            )
+            base = duckdb_concat(base, false_branch.data, ids)
+
+        exprs = []
+        for comp_name in result.get_components_names():
+            if comp_name in ids:
+                expr = f'"{comp_name}"'
+            else:
+                true_expr = (
+                    f'"__{comp_name}@true_branch__"'
+                    if not isinstance(true_branch, Scalar)
+                    else repr(true_branch.value)
+                    if true_branch.value is not None
+                    else "NULL"
                 )
+                false_expr = (
+                    f'"__{comp_name}@false_branch__"'
+                    if not isinstance(false_branch, Scalar)
+                    else repr(false_branch.value)
+                    if false_branch.value is not None
+                    else "NULL"
+                )
+                expr = (
+                    f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
+                )
+            exprs.append(expr)
+
+        result.data = base.project(", ".join(exprs))
         return result
 
     @classmethod
@@ -307,87 +314,76 @@ class Case(Operator):
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
+        def get_measures(op: Union[DataComponent, Dataset, Scalar]) -> List[str]:
+            if isinstance(op, DataComponent) and op.data is not None:
+                return [op.data.columns[0]]
+            if isinstance(op, Dataset) and op.data is not None:
+                return op.get_measures_names()
+            return []
+
+        def get_condition_measure(op: Union[DataComponent, Dataset, Scalar]) -> str:
+            return op.get_measures_names()[0] if isinstance(op, Dataset) else op.name
+
         result = cls.validate(conditions, thenOps, elseOp)
-        for condition in conditions:
-            if isinstance(condition, Dataset) and condition.data is not None:
-                condition.data.fillna(False, inplace=True)
-                condition_measure = condition.get_measures_names()[0]
-                if condition.data[condition_measure].dtype != bool:
-                    condition.data[condition_measure] = condition.data[condition_measure].astype(
-                        bool
-                    )
-            elif (
-                isinstance(
-                    condition,
-                    DataComponent,
-                )
-                and condition.data is not None
-            ):
-                condition.data.fillna(False, inplace=True)
-                if condition.data.dtype != bool:
-                    condition.data = condition.data.astype(bool)
-            elif isinstance(condition, Scalar) and condition.value is None:
-                condition.value = False
+        for op in conditions:
+            if isinstance(op, (Dataset, DataComponent)) and op.data is not None:
+                condition_measure = get_condition_measure(op)
+                op.data = duckdb_fillna(op.data, False, condition_measure)
+            elif isinstance(op, Scalar) and op.value is None:
+                op.value = False
 
         if isinstance(result, Scalar):
             result.value = elseOp.value
             for i in range(len(conditions)):
                 if conditions[i].value:
                     result.value = thenOps[i].value
+                    break
+            return result
 
-        if isinstance(result, DataComponent):
-            result.data = pd.Series(None, index=conditions[0].data.index)
+        measure = get_condition_measure(conditions[0])
+        base = duckdb_rename(conditions[0].data, {measure: f"cond_0.{measure}"})
+        for i, cond in enumerate(conditions[1:]):
+            measure = get_condition_measure(cond)
+            cond_ = duckdb_rename(cond.data, {measure: f"cond_{i + 1}.{measure}"})
+            base = duckdb_concat(base, cond_)
+        else_condition_query = f"""
+        *, NOT({
+            " OR ".join(f'"{col}"' for col in base.columns if col.startswith("cond_"))
+        }) AS "cond_else"
+        """
+        base = base.project(else_condition_query)
 
-            for i, condition in enumerate(conditions):
-                value = thenOps[i].value if isinstance(thenOps[i], Scalar) else thenOps[i].data
-                result.data = np.where(
-                    condition.data.notna(),
-                    np.where(condition.data, value, result.data),
-                    result.data,
+        operands = thenOps + [elseOp]
+        for i, op in enumerate(operands):
+            if hasattr(op, "data") and op.data is not None:
+                op_data = duckdb_rename(op.data, {col: f"op_{i}.{col}" for col in op.data.columns})
+                base = duckdb_concat(base, op_data)
+
+        ids = next((op.get_identifiers_names() for op in operands if isinstance(op, Dataset)), [])
+        exprs = [f'"{id_}"' for id_ in ids]
+        columns = base.columns
+        measures = next(
+            (get_measures(op) for op in operands if isinstance(op, (Dataset, DataComponent))),
+            ["result"],
+        )
+        for col in measures:
+            expr = "CASE "
+            # CASE op ends whenever the first cond is matched, so in order to match the
+            # VTL specification, we need to reverse the order of the operands
+            for i, op in enumerate(reversed(operands)):
+                i = len(operands) - 1 - i  # Reverse index to match conditions
+                cond_col = next(
+                    (col for col in columns if col.startswith(f"cond_{i}")), "cond_else"
                 )
+                if isinstance(op, Scalar):
+                    value = repr(op.value) if op.value is not None else "NULL"
+                else:
+                    value = f'"op_{i}.{col}"'
+                expr += f'WHEN "{cond_col}" THEN {value} '
+            expr += f'END AS "{col}"'
+            exprs.append(expr)
 
-            condition_mask_else = ~np.any([condition.data for condition in conditions], axis=0)
-            else_value = elseOp.value if isinstance(elseOp, Scalar) else elseOp.data
-            result.data = pd.Series(
-                np.where(condition_mask_else, else_value, result.data),
-                index=conditions[0].data.index,
-            )
-
-        if isinstance(result, Dataset):
-            identifiers = result.get_identifiers_names()
-            columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = (
-                conditions[0].data[identifiers]
-                if conditions[0].data is not None
-                else pd.DataFrame(columns=identifiers)
-            )
-
-            for i in range(len(conditions)):
-                condition = conditions[i]
-                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                condition_mask = condition.data[bool_col]
-
-                result.data.loc[condition_mask, columns] = (
-                    thenOps[i].value
-                    if isinstance(thenOps[i], Scalar)
-                    else thenOps[i].data.loc[condition_mask, columns]
-                )
-
-            condition_mask_else = ~np.logical_or.reduce(
-                [
-                    condition.data[
-                        next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                    ].astype(bool)
-                    for condition in conditions
-                ]
-            )
-
-            result.data.loc[condition_mask_else, columns] = (  # type: ignore[index, unused-ignore]
-                elseOp.value
-                if isinstance(elseOp, Scalar)
-                else elseOp.data.loc[condition_mask_else, columns]
-            )
-
+        result.data = base.project(", ".join(exprs))
         return result
 
     @classmethod
