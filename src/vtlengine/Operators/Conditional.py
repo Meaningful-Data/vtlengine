@@ -347,12 +347,11 @@ class Case(Operator):
             measure = get_condition_measure(cond)
             cond_ = duckdb_rename(cond.data, {measure: f"cond_{i + 1}.{measure}"})
             base = duckdb_concat(base, cond_)
-        else_condition_query = (
-            f"*, NOT("
-            f'{
-                " OR ".join(f'"{col}"' for col in base.columns if col.startswith("cond_"))
-            }) AS "cond_else"'
-        )
+        else_condition_query = f"""
+        *, NOT({
+            " OR ".join(f'"{col}"' for col in base.columns if col.startswith("cond_"))
+        }) AS "cond_else"
+        """
         base = base.project(else_condition_query)
 
         operands = thenOps + [elseOp]
