@@ -124,14 +124,14 @@ class Validation(Operator):
         result_data = None
         for rule_name, rule_data in rule_info.items():
             rule_output = rule_data["output"]
+            error_code = repr(rule_data.get("errorcode", "NULL") or "NULL")
+            error_level = repr(rule_data.get("errorlevel", "NULL") or "NULL")
             rule_output = rule_output.project(
-                f'*, "{rule_name}" AS ruleid, '
-                f"CASE WHEN bool_var = False THEN {rule_data['errorcode']} ELSE "
-                f"NULL END AS errorcode, "
-                f"CASE WHEN bool_var = False THEN {rule_data['errorlevel']} ELSE "
-                f"NULL END AS errorlevel"
+                f'*, {repr(rule_name) or "NULL"} AS "ruleid", '
+                f'CASE WHEN CAST("bool_var" AS STRING) = \'False\' THEN {error_code} ELSE NULL END AS "errorcode", '
+                f'CASE WHEN CAST("bool_var" AS STRING) = \'False\' THEN {error_level} ELSE NULL END AS "errorlevel"'
             )
-            result_data = rule_output if result_data is None else result_data.union_all(rule_output)
+            result_data = rule_output if result_data is None else duckdb_concat(result_data, rule_output)
         return result_data
 
     @classmethod

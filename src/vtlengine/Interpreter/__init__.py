@@ -1341,20 +1341,16 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            if self.ruleset_dataset.data is None:
-                self.rule_data = None
-            else:
-                self.rule_data = self.ruleset_dataset.data.copy()
+            self.rule_data = None if self.ruleset_dataset.data is None else self.ruleset_dataset.data
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
-                aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
-                aux["bool_var"] = validation_data.data
-                validation_data = aux
+                expr = ", ".join(self.ruleset_dataset.get_components_names())
+                validation_data = self.rule_data.project(f"{expr}, {validation_data.data} AS bool_var")
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
-            validation_data = validation_data[validation_data["bool_var"] == False]
+            validation_data = validation_data.filter("bool_var = False")
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1386,27 +1382,28 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
-            nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
-            # If no filtering indexes, then all datapoints are valid on DPR and HR
-            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
-                self.rule_data["bool_var"] = True
-                self.rule_data.loc[nan_indexes, "bool_var"] = None
-                return self.rule_data
-            non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
 
-            original_data = self.rule_data.copy()
-            self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
+            filtering_data = self.rule_data.filter(f'"{filter_comp.name}" = True')
+            if filtering_data.count("*") == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                self.rule_data = self.rule_data.project("*, True AS bool_var")
+                self.rule_data = self.rule_data.project("*, NULL AS bool_var").filter(f"{filter_comp.name} IS NULL")
+                return self.rule_data
+
+            nan_data = self.rule_data.filter(f'"{filter_comp.name}" IS NULL')
+            non_filtering_data = self.rule_data.filter(f"{filter_comp.name} != True")
+
+            self.rule_data = filtering_data
             result_validation = self.visit(node.right)
+
             if self.is_from_hr_agg or self.is_from_hr_val:
-                # We only need to filter rule_data on DPR
                 return result_validation
-            self.rule_data["bool_var"] = result_validation.data
-            original_data = original_data.merge(
-                self.rule_data, how="left", on=original_data.columns.tolist()
+
+            self.rule_data = self.rule_data.project(f"*, {result_validation.name} AS bool_var")
+
+            original_data = duckdb_concat(
+                self.rule_data,
+                duckdb_concat(non_filtering_data.project("*, True AS bool_var"), nan_data.project("*, NULL AS bool_var"))
             )
-            original_data.loc[non_filtering_indexes, "bool_var"] = True
-            original_data.loc[nan_indexes, "bool_var"] = None
             return original_data
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
