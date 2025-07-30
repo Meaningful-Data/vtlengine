@@ -49,7 +49,8 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select, \
+    clean_execution_graph
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
@@ -1341,7 +1342,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = None if self.ruleset_dataset.data is None else self.ruleset_dataset.data
+            self.rule_data = self.ruleset_dataset.data
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
@@ -1382,29 +1383,30 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-
-            filtering_data = self.rule_data.filter(f'"{filter_comp.name}" = True')
-            if filtering_data.count("*") == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
-                self.rule_data = self.rule_data.project("*, True AS bool_var")
-                self.rule_data = self.rule_data.project("*, NULL AS bool_var").filter(f"{filter_comp.name} IS NULL")
+            if not (self.is_from_hr_agg or self.is_from_hr_val):
+                self.rule_data = self.rule_data.project(
+                    f'*, CASE '
+                    f'WHEN "{filter_comp.name}" IS NULL THEN NULL '
+                    f'ELSE TRUE END AS bool_var'
+                )
                 return self.rule_data
 
-            nan_data = self.rule_data.filter(f'"{filter_comp.name}" IS NULL')
-            non_filtering_data = self.rule_data.filter(f"{filter_comp.name} != True")
-
-            self.rule_data = filtering_data
-            result_validation = self.visit(node.right)
-
-            if self.is_from_hr_agg or self.is_from_hr_val:
-                return result_validation
-
-            self.rule_data = self.rule_data.project(f"*, {result_validation.name} AS bool_var")
-
-            original_data = duckdb_concat(
-                self.rule_data,
-                duckdb_concat(non_filtering_data.project("*, True AS bool_var"), nan_data.project("*, NULL AS bool_var"))
+            right = self.visit(node.right)
+            if isinstance(right, Scalar):
+                right_value = repr(right.value)
+                cols = '*'
+            else:
+                self.rule_data = duckdb_concat(self.rule_data, right.data)
+                right_value = right.name
+                cols = f'* EXCLUDE {right_value}'
+            self.rule_data = self.rule_data.project(
+                f'{cols}, CASE '
+                f'WHEN {filter_comp.name} = True THEN {right_value} '
+                f'WHEN {filter_comp.name} IS NULL THEN NULL '
+                f'ELSE TRUE END AS bool_var'
             )
-            return original_data
+            return self.rule_data
+
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
             if self.ruleset_mode in ("partial_null", "partial_zero"):
@@ -1713,10 +1715,10 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value].copy()
+            df = self.hr_agg_rules_computed[node.value]
             return Dataset(name=name, components=result_components, data=df)
 
-        df = self.rule_data.copy()
+        df = self.rule_data
         if condition is not None:
             df = df.loc[condition].reset_index(drop=True)
 

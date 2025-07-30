@@ -275,10 +275,14 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     }
     if query_set == set(data.columns):
         return "*" if as_query else data
-    query_set.add(remove_null_str(data, as_query=True))
-    query_set.add(round_doubles(data, as_query=True))
-    query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
-    return query if as_query else data.project(query)
+
+    if as_query:
+        query_set.add(remove_null_str(data, as_query=as_query))
+        query_set.add(round_doubles(data, as_query=as_query))
+        return ", ".join(query_set).replace("*, ", "").replace(", *", "")
+    data = remove_null_str(data, as_query=as_query)
+    return round_doubles(data, as_query=as_query)
+
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:

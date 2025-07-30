@@ -11,7 +11,7 @@ from vtlengine.DataTypes import (
     String,
     check_unary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_select, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_select, empty_relation, clean_execution_graph
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
@@ -121,18 +121,22 @@ class Check(Operator):
 class Validation(Operator):
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
-        result_data = None
+        rel_list = []
         for rule_name, rule_data in rule_info.items():
-            rule_output = rule_data["output"]
-            error_code = repr(rule_data.get("errorcode", "NULL") or "NULL")
-            error_level = repr(rule_data.get("errorlevel", "NULL") or "NULL")
-            rule_output = rule_output.project(
-                f'*, {repr(rule_name) or "NULL"} AS "ruleid", '
-                f'CASE WHEN CAST("bool_var" AS STRING) = \'False\' THEN {error_code} ELSE NULL END AS "errorcode", '
-                f'CASE WHEN CAST("bool_var" AS STRING) = \'False\' THEN {error_level} ELSE NULL END AS "errorlevel"'
-            )
-            result_data = rule_output if result_data is None else duckdb_concat(result_data, rule_output)
-        return result_data
+            rel = rule_data["output"]
+            errorcode = repr(rule_data.get("errorcode", "NULL") or "NULL")
+            errorlevel = repr(rule_data.get("errorlevel", "NULL") or "NULL")
+            query = f"""*, 
+                {rule_name} AS ruleid,
+                CASE WHEN bool_var = FALSE THEN {errorcode} ELSE NULL END AS errorcode,
+                CASE WHEN bool_var = FALSE THEN {errorlevel} ELSE NULL END AS errorlevel
+            """
+            rel_list.append(rel.project(query))
+
+        result = rel_list[0]
+        for rel in rel_list[1:]:
+            result = result.union(rel)
+        return result
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
