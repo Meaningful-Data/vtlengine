@@ -41,7 +41,7 @@ class IsNull(Unary):
     It has different class methods to allow performing the operation with different datatypes.
     """
 
-    op = ISNULL
+    op = "isnull_duck"
     py_op = isnull_duck
     sql_op = "isnull_duck"
 
