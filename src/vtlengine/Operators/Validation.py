@@ -15,6 +15,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.duckdb_utils import empty_relation, duckdb_concat, duckdb_select
 
 
 # noinspection PyTypeChecker
@@ -88,24 +89,32 @@ class Check(Operator):
             validation_element, imbalance_element, error_code, error_level, invalid
         )
         if validation_element.data is None:
-            validation_element.data = pd.DataFrame()
+            validation_element.data = empty_relation()
+        error_code = repr(error_code) if error_code is not None else "NULL"
+        error_level = repr(error_level) if error_level is not None else "NULL"
+
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
-        result.data = validation_element.data.loc[:, columns_to_keep]
-        if imbalance_element is not None and imbalance_element.data is not None:
-            imbalance_measure_name = imbalance_element.get_measures_names()[0]
-            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
-        else:
-            result.data["imbalance"] = None
+        result.data = validation_element.data.project(
+            ", ".join([f'"{col}"' for col in columns_to_keep])
+        )
 
-        result.data["errorcode"] = error_code
-        result.data["errorlevel"] = error_level
+        if imbalance_element is not None and imbalance_element.data is not None:
+            measure = imbalance_element.get_measures_names()[0]
+            result.data = duckdb_concat(result.data, duckdb_select(imbalance_element.data, measure))
+            result.data = result.data.project(f'* EXCLUDE "{measure}", "{measure}" AS "imbalance"')
+        else:
+            result.data = result.data.project(f'*, NULL AS "imbalance"')
+
+        result.data = result.data.project(
+            f'*, {error_code} AS errorcode, {error_level} AS "errorlevel"'
+        )
+
         if invalid:
-            # TODO: Is this always bool_var?? In any case this does the trick for more use cases
             validation_measure_name = validation_element.get_measures_names()[0]
-            result.data = result.data[result.data[validation_measure_name] == False]
-            result.data.reset_index(drop=True, inplace=True)
+            result.data = result.data.filter(f'"{validation_measure_name}" = False')
+
         return result
 
 
