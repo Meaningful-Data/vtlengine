@@ -186,9 +186,7 @@ class Validation(Operator):
             validation_measures.append("imbalance")
 
         if output == "invalid":
-            result.data = result.data.filter("bool_var = False").project(
-                ", ".join(identifiers + ["ruleid", "errorcode", "errorlevel"])
-            )
+            result.data = result.data.filter("bool_var = FALSE")
         elif output == "all":
             result.data = result.data.project(", ".join(identifiers + validation_measures))
         else:  # output == 'all_measures'

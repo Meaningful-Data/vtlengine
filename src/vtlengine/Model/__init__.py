@@ -273,8 +273,8 @@ class Dataset:
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
         if diff.limit(1).execute().fetchone() is not None:
-            print("\n", self.data)
-            print("\n", other.data)
+            print("\nSELF\n", self.data)
+            print("\nOTHER\n", other.data)
             diff.show()
             return False
         return True
