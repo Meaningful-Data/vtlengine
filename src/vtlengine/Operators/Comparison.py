@@ -157,11 +157,13 @@ class In(Binary):
         return operator.contains(y, x)
 
     @classmethod
-    def apply_bin_op(cls, left_operand: Any, right_operand: Union[ScalarSet, str]) -> str:
+    def apply_bin_op(cls, output_column: str, left: str, right: Union[list, str]) -> str:
         negate = "NOT" if cls.op == NOT_IN else ""
-        if isinstance(right_operand, ScalarSet):
-            return f"{left_operand} {negate} ({', '.join(map(str, right_operand.values))})"
-        return f"{left_operand} {negate} IN ({right_operand})"
+
+        if isinstance(right, str):
+            return f"{negate} {left} = any (SELECT {right} where {right} is not null) as {output_column}"
+        scalar_values = ", ".join([f"\'{x}\'" if isinstance(x, str) else str(x).lower() for x in right])
+        return f"{left} {negate} IN ({scalar_values}) AS {output_column}"
 
 
 class NotIn(In):

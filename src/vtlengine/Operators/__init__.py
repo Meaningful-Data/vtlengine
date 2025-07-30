@@ -773,19 +773,13 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data if dataset.data is not None else empty_relation()
-        scalar_set.values = (
-            scalar_set.values
-            if isinstance(scalar_set.values, DuckDBPyRelation)
-            else con.from_arrow(pa.table({"__values__": scalar_set.values}))
-        )
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
             exprs.append(
-                apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
+                apply_bin_op(cls, measure_name, measure_name, scalar_set.values)
             )
 
-        result_data = duckdb_concat(result_data, scalar_set.values)
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
