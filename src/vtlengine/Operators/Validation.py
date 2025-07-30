@@ -193,17 +193,17 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = pd.DataFrame()
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
+        result_data = None
         for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data["output"]
-            rule_df["ruleid"] = rule_name
-            rule_df["errorcode"] = rule_data["errorcode"]
-            rule_df["errorlevel"] = rule_data["errorlevel"]
-            df = pd.concat([df, rule_df], ignore_index=True)
-        if df is None:
-            df = pd.DataFrame()
-        return df
+            rule_output = rule_data["output"]
+            rule_output = rule_output.project(
+                f'*, "{rule_name}" AS ruleid, '
+                f'{rule_data["errorcode"]} AS errorcode, '
+                f'{rule_data["errorlevel"]} AS errorlevel'
+            )
+            result_data = rule_output if result_data is None else result_data.union_all(rule_output)
+        return result_data
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
