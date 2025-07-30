@@ -1,5 +1,6 @@
 import operator
 import re
+import uuid
 from copy import copy
 from typing import Any, Optional, Union
 
@@ -431,8 +432,8 @@ class ExistIn(Operator.Operator):
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
 
         id_names = dataset_1.get_identifiers_names()
-        op1_name = dataset_1.name
-        op2_name = dataset_2.name
+        op1_name = VirtualCounter._new_temp_view_name()
+        op2_name = VirtualCounter._new_temp_view_name()
 
         con.register(op1_name, dataset_1.data)
         con.register(op2_name, dataset_2.data)
@@ -471,8 +472,7 @@ class ExistIn(Operator.Operator):
         else:
             query = retain_true_query
 
-        result_dataset.data = con.query(query).df()
-
+        result_dataset.data = con.query(query)
         return result_dataset
 
     @staticmethod
