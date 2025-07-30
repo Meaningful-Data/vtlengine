@@ -98,32 +98,6 @@ class Binary(Operator.Binary):
         return cls.py_op(x, y)
 
     @classmethod
-    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if pd.isnull(scalar):
-            return pd.Series(None, index=series.index)
-
-        first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
-        if first_non_null is not None:
-            scalar, first_non_null = cls._cast_values(scalar, first_non_null)
-
-            series_type = pd.api.types.infer_dtype(series, skipna=True)
-            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
-
-            if series_type != first_non_null_type:
-                if isinstance(first_non_null, str):
-                    series = series.astype(str)
-                elif isinstance(first_non_null, (int, float)):
-                    series = series.astype(float)
-
-        op = cls.py_op if cls.py_op is not None else cls.op_func
-        if series_left:
-            result = series.map(lambda x: op(x, scalar), na_action="ignore")
-        else:
-            result = series.map(lambda x: op(scalar, x), na_action="ignore")
-
-        return result
-
-    @classmethod
     def apply_return_type_dataset(
         cls,
         result_dataset: Dataset,
@@ -142,8 +116,6 @@ class Binary(Operator.Binary):
             )
             result_dataset.delete_component(measure.name)
             result_dataset.add_component(component)
-            if result_dataset.data is not None:
-                result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
 
 class Equal(Binary):
@@ -180,29 +152,28 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
-        if right_series.data_type == Null:
-            return pd.Series(None, index=left_series.index)
-
-        return left_series.map(lambda x: x in right_series, na_action="ignore")
-
-    @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
         if y.data_type == Null:
             return None
         return operator.contains(y, x)
 
+    @classmethod
+    def apply_bin_op(cls, output_column: str, left: str, right: Union[list, str]) -> str:
+        negate = "NOT" if cls.op == NOT_IN else ""
 
-class NotIn(Binary):
+        if isinstance(right, str):
+            return f"{negate} {left} = any (SELECT {right} where {right} is not null) as {output_column}"
+        scalar_values = ", ".join([f"\'{x}\'" if isinstance(x, str) else str(x).lower() for x in right])
+        return f"{left} {negate} IN ({scalar_values}) AS {output_column}"
+
+
+class NotIn(In):
     op = NOT_IN
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        series_result = In.apply_operation_two_series(left_series, right_series)
-        return series_result.map(lambda x: not x, na_action="ignore")
-
-    @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
+        if y.data_type == Null:
+            return None
         return not operator.contains(y, x)
 
 
@@ -212,11 +183,9 @@ class Match(Binary):
 
     @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
-        if pd.isnull(x) or pd.isnull(y):
+        if x is None or y is None:
             return None
-        if isinstance(x, pd.Series):
-            return x.str.fullmatch(y)
-        return bool(re.fullmatch(str(y), str(x)))
+        return bool(re.fullmatch(y, x))
 
 
 class Between(Operator.Operator):

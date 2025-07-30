@@ -89,6 +89,8 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 
 
 def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
+    if hasattr(cls, "apply_bin_op"):
+        return cls.apply_bin_op(me_name, left, right)
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -307,7 +309,7 @@ class Binary(Operator):
     def op_func(cls, *args: Any) -> Any:
         x, y = args
 
-        if pd.isnull(x) or pd.isnull(y):
+        if x is None or y is None:
             return None
         return cls.py_op(x, y)
 
@@ -771,19 +773,13 @@ class Binary(Operator):
     def dataset_set_evaluation(cls, dataset: Dataset, scalar_set: ScalarSet) -> Dataset:
         result_dataset = cls.dataset_set_validation(dataset, scalar_set)
         result_data = dataset.data if dataset.data is not None else empty_relation()
-        scalar_set.values = (
-            scalar_set.values
-            if isinstance(scalar_set.values, DuckDBPyRelation)
-            else con.from_arrow(pa.table({"__values__": scalar_set.values}))
-        )
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
             exprs.append(
-                apply_bin_op(cls, measure_name, measure_name, scalar_set.values.columns[0])
+                apply_bin_op(cls, measure_name, measure_name, scalar_set.values)
             )
 
-        result_data = duckdb_concat(result_data, scalar_set.values)
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -794,22 +790,16 @@ class Binary(Operator):
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_data = component.data if component.data is not None else empty_relation()
-        scalar_set.values = (
-            scalar_set.values
-            if isinstance(scalar_set.values, DuckDBPyRelation)
-            else con.from_arrow(pa.table({"__values__": scalar_set.values}))
-        )
 
-        result_data = duckdb_concat(result_data, scalar_set.values)
         result_component.data = result_data.project(
-            apply_bin_op(cls, result_component.name, component.name, scalar_set.values.columns[0])
+            apply_bin_op(cls, result_component.name, component.name, scalar_set.values)
         )
         return result_component
 
     @classmethod
     def scalar_set_evaluation(cls, scalar: Scalar, scalar_set: ScalarSet) -> Scalar:
         result_scalar = cls.scalar_set_validation(scalar, scalar_set)
-        result_scalar.value = cls.op_func(scalar.value, scalar_set)
+        result_scalar.value = cls.py_op(scalar.value, scalar_set)
         return result_scalar
 
     @classmethod
