@@ -100,16 +100,17 @@ class Check(Operator):
             ", ".join([f'"{col}"' for col in columns_to_keep])
         )
 
+        exprs = [f'"{col}"' for col in columns_to_keep]
         if imbalance_element is not None and imbalance_element.data is not None:
             measure = imbalance_element.get_measures_names()[0]
             result.data = duckdb_concat(result.data, duckdb_select(imbalance_element.data, measure))
-            result.data = result.data.project(f'* EXCLUDE "{measure}", "{measure}" AS "imbalance"')
+            exprs.append(f'"{measure}" AS "imbalance"')
         else:
-            result.data = result.data.project('*, NULL AS "imbalance"')
+            exprs.append('NULL AS "imbalance"')
+        exprs.append(f'{error_code} AS "errorcode", {error_level} AS "errorlevel"')
 
-        result.data = result.data.project(
-            f'*, {error_code} AS errorcode, {error_level} AS "errorlevel"'
-        )
+        query = ", ".join(exprs)
+        result.data = result.data.project(query)
 
         if invalid:
             validation_measure_name = validation_element.get_measures_names()[0]
