@@ -76,8 +76,8 @@ class If(Operator):
     ) -> Dataset:
         ids = condition.get_identifiers_names()
         condition_measure = condition.get_measures_names()[0]
-        true_data = condition.data[condition.data[condition_measure] == True]
-        false_data = condition.data[condition.data[condition_measure] != True].fillna(False)
+        true_data = condition.data[condition.data[condition_measure].dropna() == True]
+        false_data = condition.data[condition.data[condition_measure] != True]
 
         if isinstance(true_branch, Dataset):
             if len(true_data) > 0 and true_branch.data is not None:
@@ -85,7 +85,7 @@ class If(Operator):
                     true_data,
                     true_branch.data,
                     on=ids,
-                    how="right",
+                    how="left",
                     suffixes=("_condition", ""),
                 )
             else:
@@ -100,7 +100,7 @@ class If(Operator):
                     false_data,
                     false_branch.data,
                     on=ids,
-                    how="right",
+                    how="left",
                     suffixes=("_condition", ""),
                 )
             else:
@@ -114,12 +114,12 @@ class If(Operator):
             pd.concat([true_data, false_data], ignore_index=True)
             .drop_duplicates()
             .sort_values(by=ids)
-        )
+        ).reset_index(drop=True)
         if isinstance(result, Dataset):
             drop_columns = [
                 column for column in result.data.columns if column not in result.components
             ]
-            result.data = result.data.dropna(subset=drop_columns).drop(columns=drop_columns)
+            result.data = result.data.drop(columns=drop_columns)
         if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
             result.get_measures()[0].data_type = true_branch.data_type
             result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
