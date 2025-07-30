@@ -2,6 +2,7 @@ from copy import copy
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -85,36 +86,26 @@ class Check(Operator):
         error_level: Optional[int],
         invalid: bool,
     ) -> Dataset:
-        result = cls.validate(
-            validation_element, imbalance_element, error_code, error_level, invalid
-        )
+        result = cls.validate(validation_element, imbalance_element, error_code, error_level, invalid)
         if validation_element.data is None:
             validation_element.data = empty_relation()
-        error_code = repr(error_code) if error_code is not None else "NULL"
-        error_level = repr(error_level) if error_level is not None else "NULL"
 
-        columns_to_keep = (
-            validation_element.get_identifiers_names() + validation_element.get_measures_names()
-        )
-        result.data = validation_element.data.project(
-            ", ".join([f'"{col}"' for col in columns_to_keep])
-        )
+        error_code, error_level = (repr(error_code) or "NULL"), (repr(error_level) or "NULL")
+        columns_to_keep = validation_element.get_identifiers_names() + validation_element.get_measures_names()
+        result.data = validation_element.data.project(", ".join(f'"{col}"' for col in columns_to_keep))
 
         exprs = [f'"{col}"' for col in columns_to_keep]
-        if imbalance_element is not None and imbalance_element.data is not None:
+        if imbalance_element and imbalance_element.data:
             measure = imbalance_element.get_measures_names()[0]
             result.data = duckdb_concat(result.data, duckdb_select(imbalance_element.data, measure))
             exprs.append(f'"{measure}" AS "imbalance"')
         else:
             exprs.append('NULL AS "imbalance"')
-        exprs.append(f'{error_code} AS "errorcode", {error_level} AS "errorlevel"')
+        exprs.extend([f'{error_code} AS "errorcode"', f'{error_level} AS "errorlevel"'])
 
-        query = ", ".join(exprs)
-        result.data = result.data.project(query)
-
+        result.data = result.data.project(", ".join(exprs))
         if invalid:
-            validation_measure_name = validation_element.get_measures_names()[0]
-            result.data = result.data.filter(f'"{validation_measure_name}" = False')
+            result.data = result.data.filter(f'"{validation_element.get_measures_names()[0]}" = False')
 
         return result
 
@@ -122,19 +113,17 @@ class Check(Operator):
 # noinspection PyTypeChecker
 class Validation(Operator):
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        rule_list_df = []
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
+        result_data = None
         for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data["output"]
-            rule_df["ruleid"] = rule_name
-            rule_df["errorcode"] = rule_df["bool_var"].map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = rule_df["bool_var"].map({False: rule_data["errorlevel"]})
-            rule_list_df.append(rule_df)
-
-        if len(rule_list_df) == 1:
-            return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
-        return df
+            rule_output = rule_data["output"]
+            rule_output = rule_output.project(
+                f'*, "{rule_name}" AS ruleid, '
+                f'CASE WHEN bool_var = False THEN {rule_data["errorcode"]} ELSE NULL END AS errorcode, '
+                f'CASE WHEN bool_var = False THEN {rule_data["errorlevel"]} ELSE NULL END AS errorlevel'
+            )
+            result_data = rule_output if result_data is None else result_data.union_all(rule_output)
+        return result_data
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
@@ -174,28 +163,25 @@ class Validation(Operator):
         result = cls.validate(dataset_element, rule_info, output)
         result.data = cls._generate_result_data(rule_info)
 
-        result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
-        result.data = result.data.drop_duplicates(
-            subset=result.get_identifiers_names() + ["ruleid"]
-        ).reset_index(drop=True)
+        identifiers = result.get_identifiers_names()
+        result.data = result.data.filter(" AND ".join(f'"{id_}" IS NOT NULL' for id_ in identifiers)).distinct()
+
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
         if "imbalance" in result.components:
             validation_measures.append("imbalance")
-        if output == "invalid":
-            result.data = result.data[result.data["bool_var"] == False]
-            result.data = result.data.drop(columns=["bool_var"])
-            result.data.reset_index(drop=True, inplace=True)
-        elif output == "all":
-            result.data = result.data[result.get_identifiers_names() + validation_measures]
-        else:  # output == 'all_measures'
-            result.data = result.data[
-                result.get_identifiers_names()
-                + dataset_element.get_measures_names()
-                + validation_measures
-            ]
 
-        result.data = result.data[result.get_components_names()]
+        if output == "invalid":
+            result.data = result.data.filter("bool_var = False").project(
+                ", ".join(identifiers + ["ruleid", "errorcode", "errorlevel"])
+            )
+        elif output == "all":
+            result.data = result.data.project(", ".join(identifiers + validation_measures))
+        else:  # output == 'all_measures'
+            result.data = result.data.project(
+                ", ".join(identifiers + dataset_element.get_measures_names() + validation_measures)
+            )
+
+        result.data = result.data.project(", ".join(result.get_components_names()))
         return result
 
 
