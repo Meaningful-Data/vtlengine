@@ -1,7 +1,7 @@
 from copy import copy
 from typing import Any, Dict, Optional
 
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -91,7 +91,7 @@ class Check(Operator):
         if validation_element.data is None:
             validation_element.data = empty_relation()
 
-        error_code, error_level = (repr(error_code) or "NULL"), (repr(error_level) or "NULL")
+        error_code_, error_level_ = (repr(error_code) or "NULL"), (repr(error_level) or "NULL")
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
@@ -106,7 +106,7 @@ class Check(Operator):
             exprs.append(f'"{measure}" AS "imbalance"')
         else:
             exprs.append('NULL AS "imbalance"')
-        exprs.extend([f'{error_code} AS "errorcode"', f'{error_level} AS "errorlevel"'])
+        exprs.extend([f'{error_code_} AS "errorcode"', f'{error_level_} AS "errorlevel"'])
 
         result.data = result.data.project(", ".join(exprs))
         if invalid:
