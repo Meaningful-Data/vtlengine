@@ -11,11 +11,11 @@ from vtlengine.DataTypes import (
     String,
     check_unary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_select, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.duckdb_utils import empty_relation, duckdb_concat, duckdb_select
 
 
 # noinspection PyTypeChecker
@@ -105,7 +105,7 @@ class Check(Operator):
             result.data = duckdb_concat(result.data, duckdb_select(imbalance_element.data, measure))
             result.data = result.data.project(f'* EXCLUDE "{measure}", "{measure}" AS "imbalance"')
         else:
-            result.data = result.data.project(f'*, NULL AS "imbalance"')
+            result.data = result.data.project('*, NULL AS "imbalance"')
 
         result.data = result.data.project(
             f'*, {error_code} AS errorcode, {error_level} AS "errorlevel"'
