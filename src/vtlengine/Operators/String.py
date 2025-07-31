@@ -120,6 +120,7 @@ class Parameterized(Unary):
             cls.check_param(param2, 2)
         return super().validate(operand)
 
+    # TODO refactor this to utils.py
     @staticmethod
     def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> str:
         if isinstance(param, DataComponent):

@@ -12,6 +12,7 @@ from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 base_path = Path(__file__).parent
 input_dp_dir = base_path / "data/DataSet/input"
@@ -174,6 +175,9 @@ def load_dataset(dataPoints, dataStructures, dp_dir, param):
     return datasets
 
 
+# TODO: review any test that has double data type, may fail on different executions
+
+
 @pytest.mark.parametrize("param", params)
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     # try:
@@ -182,7 +186,11 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast)
-    assert result == reference_datasets
+    try:
+        assert result == reference_datasets
+    except Exception as e:
+        VirtualCounter.reset_temp_views()
+        raise e
     # except NotImplementedError:
     #     pass
 
@@ -196,7 +204,11 @@ def test_reference_defined_operators(
     reference_datasets = load_dataset(*reference_datasets, dp_dir=reference_dp_dir, param=param)
     interpreter = InterpreterAnalyzer(input_datasets, value_domains=value_domains)
     result = interpreter.visit(ast_defined_operators)
-    assert result == reference_datasets
+    try:
+        assert result == reference_datasets
+    except Exception as e:
+        VirtualCounter.reset_temp_views()
+        raise e
 
 
 @pytest.mark.parametrize("param", exceptions_tests)
