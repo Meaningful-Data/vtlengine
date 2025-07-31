@@ -417,7 +417,7 @@ class Cast(Operator.Unary):
     ) -> Scalar:
         from_type = operand.data_type
         result_scalar = cls.scalar_validation(operand, to_type, mask)
-        if pd.isna(operand.value):
+        if operand.value is None:
             return Scalar(name=result_scalar.name, data_type=to_type, value=None)
         if mask:
             casted_data = cls.cast_value(operand.value, operand.data_type, to_type, mask)
