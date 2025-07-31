@@ -2,6 +2,8 @@ import uuid
 from copy import copy
 from typing import List
 
+from vtlengine.connection import con
+
 
 class VirtualCounter:
     _instance = None
@@ -28,6 +30,11 @@ class VirtualCounter:
 
     @classmethod
     def reset_temp_views(cls) -> None:
+        for view in cls.temp_views:
+            try:
+                con.unregister_view(view)
+            except Exception as e:
+                print(f"Error dropping view {view}: {e}")
         cls.temp_views = []
 
     # TODO: DuckDB have problem operating columns with @ in their names
