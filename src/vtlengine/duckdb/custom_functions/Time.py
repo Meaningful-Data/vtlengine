@@ -241,7 +241,7 @@ def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
         new_date = date_value.replace(
             year=new_year, month=new_month, day=min(date_value.day, last_day)
         )
-
+    new_date = date(new_date.year, new_date.month, new_date.day)
     return new_date
 
 
