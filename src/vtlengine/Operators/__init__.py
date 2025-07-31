@@ -731,12 +731,12 @@ class Binary(Operator):
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{left_operand.data_type.__name__}", "{left_operand.name}") '
+                f"cast_time_types('{left_operand.data_type.__name__}', \"{left_operand.name}\") "
                 f'AS "{left_operand.name}"'
             )
         if right_operand.data_type in TIME_TYPES:
             transformations.append(
-                f'cast_time_types("{right_operand.data_type.__name__}", "{right_operand.name}") '
+                f"cast_time_types('{right_operand.data_type.__name__}', \"{right_operand.name}\") "
                 f'AS "{right_operand.name}"'
             )
 
