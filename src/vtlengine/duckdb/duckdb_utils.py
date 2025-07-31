@@ -270,14 +270,7 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    query_set = {
-        f'"{c}"' for c in data.columns if c not in get_cols_by_types(data, ["DOUBLE", "STRING"])
-    }
-    if query_set == set(data.columns):
-        return "*" if as_query else data
-    query_set.add(round_doubles(data, as_query=True))
-    query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
-    return query if as_query else data.project(query)
+    return round_doubles(data, as_query=as_query)
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:
