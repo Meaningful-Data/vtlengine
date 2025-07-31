@@ -1,7 +1,20 @@
 from typing import Dict, Union
 
-from vtlengine.AST.Grammar.tokens import CHARSET_MATCH, ISNULL, LOG, MOD, NOT_IN, POWER, XOR, DAYOFMONTH, DAYTOMONTH, \
-    MONTHTODAY, YEARTODAY, DAYTOYEAR, DATEDIFF
+from vtlengine.AST.Grammar.tokens import (
+    CHARSET_MATCH,
+    DATEDIFF,
+    DAYOFMONTH,
+    DAYTOMONTH,
+    DAYTOYEAR,
+    ISNULL,
+    LOG,
+    MOD,
+    MONTHTODAY,
+    NOT_IN,
+    POWER,
+    XOR,
+    YEARTODAY,
+)
 
 # Could it be the operator sql token or a tuple of (sql token, token position)
 # default is taken as MIDDLE on Operator apply_operation method
