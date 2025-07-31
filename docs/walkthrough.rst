@@ -409,7 +409,7 @@ Example 5: Run with Scalar Values
     from vtlengine import run
     import pandas as pd
 
-        script = """
+    script = """
         DS_r <- DS_1[filter Me_1 = Sc_1];
         Sc_r <- Sc_1 + 10;
     """
@@ -436,25 +436,21 @@ Example 5: Run with Scalar Values
     datapoints = {"DS_1": data_df}
     scalars = {"Sc_1": 20}
 
-    # Folder where CSVs will be saved
-    output_folder = Path("output_csvs")
-    output_folder.mkdir(exist_ok=True)
-
     run_result = run(
         script=script,
         data_structures=data_structures,
         datapoints=datapoints,
         scalar_values=scalars,
-        output_folder=output_folder,
         return_only_persistent=True
     )
 
     print(run_result["DS_r"].data)
-    print(run_result["Sc_r"].data)
+    print(run_result["Sc_r"].value)
 
 
+Returns:
 
-.. csv-table:: Returns:
+.. csv-table::
     :file: _static/DS_r_run_with_scalars.csv
     :header-rows: 1
 

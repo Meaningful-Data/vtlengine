@@ -235,7 +235,7 @@ def _handle_scalars_values(
     # Handling scalar values with the scalar dict
     for name, value in scalar_values.items():
         if name not in scalars:
-            raise Exception(f"Not found scalar {name}")
+            raise Exception(f"Not found scalar {name} in datastructures")
         # Casting value to scalar data type
         scalars[name].value = scalars[name].data_type.cast(value)
 
@@ -270,7 +270,7 @@ def load_datasets_with_data(
         # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
-                raise Exception(f"Not found dataset {dataset_name}")
+                raise Exception(f"Not found dataset {dataset_name} in datastructures.")
             datasets[dataset_name].data = _validate_pandas(
                 datasets[dataset_name].components, data, dataset_name
             )
@@ -285,7 +285,7 @@ def load_datasets_with_data(
     dict_datapoints = _load_datapoints_path(datapoints)
     for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
-            raise Exception(f"Not found dataset {dataset_name}")
+            raise Exception(f"Not found dataset {dataset_name} in datastructures.")
 
     _handle_scalars_values(scalars, scalar_values)
 

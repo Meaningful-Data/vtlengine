@@ -212,7 +212,7 @@ def run(
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-) -> Dict[str, Dataset]:
+) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
     the vtl operation over the data.
@@ -340,7 +340,7 @@ def run(
 
     # Returning only persistent datasets
     if return_only_persistent:
-        return _return_only_persistent_datasets(result, ast)  # type: ignore[return-value]
+        return _return_only_persistent_datasets(result, ast)
     return result
 
 
@@ -353,7 +353,7 @@ def run_sdmx(  # noqa: C901
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-) -> Dict[str, Dataset]:
+) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
 
