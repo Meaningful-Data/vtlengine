@@ -275,7 +275,6 @@ def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRe
     }
     if query_set == set(data.columns):
         return "*" if as_query else data
-    query_set.add(remove_null_str(data, as_query=True))
     query_set.add(round_doubles(data, as_query=True))
     query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
     return query if as_query else data.project(query)
@@ -292,21 +291,6 @@ def quote_cols(cols: Union[str, List[str], Set[str]]) -> Set[str]:
     """
     cols_set = set(cols)
     return {f'"{c}"' for c in cols_set}
-
-
-def remove_null_str(
-    data: DuckDBPyRelation, cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
-) -> DuckDBPyRelation:
-    """
-    Removes rows where specified columns contain null or empty string values.
-
-    If no columns are specified, it checks all str columns.
-    """
-    str_columns = get_cols_by_types(data, "STRING")
-    if not str_columns:
-        return data if not as_query else "*"
-    query = duckdb_fillna(data, "''", str_columns, as_query=True)
-    return query if as_query else data.project(query)
 
 
 def round_doubles(

@@ -38,6 +38,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import DataComponent, Dataset
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 pd.options.mode.chained_assignment = None
 
@@ -339,6 +340,9 @@ def run(
         elif isinstance(operand, DataComponent) and operand.data is not None:
             df = operand.data.df()
             operand.data = df.squeeze() if len(df.columns) == 1 else df
+
+    # Remove temporary views if any
+    VirtualCounter.reset_temp_views()
 
     # Returning only persistent datasets
     if return_only_persistent:
