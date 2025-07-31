@@ -149,7 +149,7 @@ def duckdb_merge(
 
     base_proj_cols = []
     for c in base_relation.columns:
-        if c in common_cols:
+        if c in common_cols and how != "left":
             base_proj_cols.append(f'"{c}" AS "{c}{suffixes[0]}"')
         else:
             base_proj_cols.append(f'"{c}"')
@@ -157,7 +157,7 @@ def duckdb_merge(
 
     other_proj_cols = []
     for c in other_relation.columns:
-        if c in common_cols:
+        if c in common_cols and how != "left":
             other_proj_cols.append(f'"{c}" AS "{c}{suffixes[1]}"')
         else:
             other_proj_cols.append(f'"{c}"')
