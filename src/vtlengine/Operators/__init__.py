@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
 import pandas as pd
-import pyarrow as pa  # type: ignore[import-untyped]
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
@@ -776,9 +775,7 @@ class Binary(Operator):
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            exprs.append(
-                apply_bin_op(cls, measure_name, measure_name, scalar_set.values)
-            )
+            exprs.append(apply_bin_op(cls, measure_name, measure_name, scalar_set.values))
 
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)

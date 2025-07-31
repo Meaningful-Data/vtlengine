@@ -1,10 +1,7 @@
 import operator
 import re
-import uuid
 from copy import copy
-from typing import Any, Optional, Union
-
-import pandas as pd
+from typing import Any, List, Optional, Union
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -92,7 +89,7 @@ class Binary(Operator.Binary):
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
-        if pd.isnull(x) or pd.isnull(y):
+        if x is None or y is None:
             return None
         x, y = cls._cast_values(x, y)
         return cls.py_op(x, y)
@@ -152,18 +149,27 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def py_op(cls, x: Any, y: Any) -> Any:
-        if y.data_type == Null:
+    def py_op(
+        cls, x: Optional[Union[str, int, float, bool]], y: ScalarSet
+    ) -> Any:
+        if y.data_type == Null or x is None:
             return None
-        return operator.contains(y, x)
+        return operator.contains(y, x) # type: ignore[arg-type]
 
     @classmethod
-    def apply_bin_op(cls, output_column: str, left: str, right: Union[list, str]) -> str:
+    def apply_bin_op(
+        cls, output_column: str, left: str, right: Union[List[Union[str, int, float, bool]], str]
+    ) -> str:
         negate = "NOT" if cls.op == NOT_IN else ""
 
         if isinstance(right, str):
-            return f"{negate} {left} = any (SELECT {right} where {right} is not null) as {output_column}"
-        scalar_values = ", ".join([f"\'{x}\'" if isinstance(x, str) else str(x).lower() for x in right])
+            return (f"{negate} {left} = any ("
+                    f"SELECT {right} "
+                    f"where {right} is not null"
+                    f") as {output_column}")
+        scalar_values = ", ".join(
+            [f"'{x}'" if isinstance(x, str) else str(x).lower() for x in right]
+        )
         return f"{left} {negate} IN ({scalar_values}) AS {output_column}"
 
 
@@ -328,9 +334,7 @@ class Between(Operator.Operator):
 
         result = cls.validate(operand, from_, to)
 
-        from_value = cls.handle_param_value(from_)
-        to_value = cls.handle_param_value(to)
-        result.value = cls.py_op(operand.value, from_value, to_value)
+        result.value = cls.py_op(operand.value, from_.value, to.value)
         return result
 
     @classmethod
@@ -403,6 +407,7 @@ class ExistIn(Operator.Operator):
         id_names = dataset_1.get_identifiers_names()
         op1_name = VirtualCounter._new_temp_view_name()
         op2_name = VirtualCounter._new_temp_view_name()
+        vds_exists = VirtualCounter._new_temp_view_name()
 
         con.register(op1_name, dataset_1.data)
         con.register(op2_name, dataset_2.data)
@@ -412,8 +417,8 @@ class ExistIn(Operator.Operator):
         case_expr = "CASE WHEN bool_var IS NULL THEN False ELSE True END AS bool_var"
 
         retain_all_query = f"""
-                SELECT {select_str.replace(op1_name, "__vds_exists__")}, {case_expr}
-                FROM {op1_name} __vds_exists__
+                SELECT {select_str.replace(op1_name, vds_exists)}, {case_expr}
+                FROM {op1_name} {vds_exists}
                 LEFT JOIN (
                     SELECT * FROM (
                         SELECT *, True AS bool_var FROM {op1_name}
