@@ -129,9 +129,6 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     left = handle_sql_scalar(left)
     right = handle_sql_scalar(right)
 
-    # if cls.op == DATEDIFF:
-    #     query = f"{op_token}({left}, {right})"
-    # else:
     if cls.op == LOG:
         right, left = (left, right)
     query = (
