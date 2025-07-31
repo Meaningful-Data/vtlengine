@@ -18,5 +18,5 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     XOR: (XOR, LEFT),
     CHARSET_MATCH: ("REGEXP_MATCHES", LEFT),
     NOT_IN: "NOT IN",
-    ISNULL: "isnull_duck",
+    ISNULL: ("isnull_duck", LEFT),
 }

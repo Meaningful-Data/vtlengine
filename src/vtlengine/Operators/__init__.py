@@ -73,14 +73,19 @@ def handle_sql_scalar(value: Any) -> Any:
 def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+    if hasattr(cls, "apply_unary_op"):
+        return cls.apply_unary_op(value, me_name)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     return f'{op_token}("{me_name}") AS "{value}"'
 
 
 def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
+    if hasattr(cls, "apply_unary_op_scalar"):
+        return cls.apply_unary_op_scalar(value)
     op = cls.op
     op_token = TO_SQL_TOKEN.get(op, op)
+
     if isinstance(op_token, tuple):
         op_token, _ = op_token
     result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
@@ -90,14 +95,15 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> str:
     if hasattr(cls, "apply_bin_op"):
         return cls.apply_bin_op(me_name, left, right)
+
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
     if isinstance(op_token, tuple):
         op_token, token_position = op_token
 
-    left = left or "NULL"
-    right = right or "NULL"
+    left = left if left is not None else "NULL"
+    right = right if right is not None else "NULL"
 
     if cls.op == LOG:
         # SQL log handle operands on a different way as math.log,
@@ -111,6 +117,8 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
 
 
 def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
+    if hasattr(cls, "apply_bin_op_scalar"):
+        return cls.apply_bin_op_scalar(left, right)
     op = cls.op
     token_position = MIDDLE
     op_token = TO_SQL_TOKEN.get(op, op)
@@ -125,6 +133,7 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     query = (
         f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
     )
+
     result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
@@ -690,10 +699,10 @@ class Binary(Operator):
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         scalar_value = handle_sql_scalar(scalar_value)
 
-        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        exprs = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in dataset.get_measures():
             if me.data_type in TIME_TYPES:
-                transformations.append(
+                exprs.append(
                     f'cast_time_types("{me.data_type.__name__}", "{me.name}") AS "{me.name}"'
                 )
             if me.data_type == Duration and not isinstance(scalar_value, int):
@@ -702,9 +711,9 @@ class Binary(Operator):
             left, right = (
                 (f'"{me.name}"', scalar_value) if dataset_left else (scalar_value, f'"{me.name}"')
             )
-            transformations.append(apply_bin_op(cls, me.name, left, right))
+            exprs.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = ", ".join(transformations)
+        final_query = ", ".join(exprs)
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
