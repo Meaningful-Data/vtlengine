@@ -26,13 +26,12 @@ class VirtualCounter:
     def reset(cls) -> None:
         cls.dataset_count = 0
         cls.component_count = 0
-        cls.reset_temp_views()
 
     @classmethod
     def reset_temp_views(cls) -> None:
         for view in cls.temp_views:
             try:
-                con.unregister_view(view)
+                con.unregister(view)
             except Exception as e:
                 print(f"Error dropping view {view}: {e}")
         cls.temp_views = []

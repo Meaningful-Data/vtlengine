@@ -17,8 +17,9 @@ from vtlengine.AST.Grammar.tokens import (
     NOT_IN,
 )
 from vtlengine.connection import con
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String
 from vtlengine.duckdb.custom_functions import between_duck, isnull_duck
+from vtlengine.duckdb.custom_functions.Comparison import _comparison_cast_values
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
@@ -65,33 +66,12 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(
-        cls,
-        x: Optional[Union[int, float, str, bool]],
-        y: Optional[Union[int, float, str, bool]],
-    ) -> Any:
-        # Cast values to compatible types for comparison
-        try:
-            if isinstance(x, str) and isinstance(y, bool):
-                y = String.cast(y)
-            elif isinstance(x, bool) and isinstance(y, str):
-                x = String.cast(x)
-            elif isinstance(x, str) and isinstance(y, (int, float)):
-                x = Number.cast(x)
-            elif isinstance(x, (int, float)) and isinstance(y, str):
-                y = Number.cast(y)
-        except ValueError:
-            x = str(x)
-            y = str(y)
-
-        return x, y
-
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
         if x is None or y is None:
             return None
-        x, y = cls._cast_values(x, y)
+        x, y = _comparison_cast_values(x, y)
         return cls.py_op(x, y)
 
     @classmethod
@@ -149,12 +129,10 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def py_op(
-        cls, x: Optional[Union[str, int, float, bool]], y: ScalarSet
-    ) -> Any:
+    def py_op(cls, x: Optional[Union[str, int, float, bool]], y: ScalarSet) -> Any:
         if y.data_type == Null or x is None:
             return None
-        return operator.contains(y, x) # type: ignore[arg-type]
+        return operator.contains(y, x)  # type: ignore[arg-type]
 
     @classmethod
     def apply_bin_op(
@@ -163,10 +141,12 @@ class In(Binary):
         negate = "NOT" if cls.op == NOT_IN else ""
 
         if isinstance(right, str):
-            return (f"{negate} {left} = any ("
-                    f"SELECT {right} "
-                    f"where {right} is not null"
-                    f") as {output_column}")
+            return (
+                f"{negate} {left} = any ("
+                f"SELECT {right} "
+                f"where {right} is not null"
+                f") as {output_column}"
+            )
         scalar_values = ", ".join(
             [f"'{x}'" if isinstance(x, str) else str(x).lower() for x in right]
         )

@@ -24,6 +24,7 @@ from vtlengine.Model import (
     Scalar,
     ValueDomain,
 )
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
 class TestHelper(TestCase):
@@ -184,7 +185,11 @@ class TestHelper(TestCase):
 
         # cls._override_structures(code, result, reference_datasets)
         # cls._override_data(code, result, reference_datasets)
-        assert result == reference_datasets
+        try:
+            assert result == reference_datasets
+        except Exception as e:
+            VirtualCounter.reset_temp_views()
+            raise e
 
     @classmethod
     def _override_structures(cls, code, result, reference_datasets):
