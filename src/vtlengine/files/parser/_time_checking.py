@@ -110,10 +110,32 @@ def check_time_period(value: Union[str, int, date]) -> str:
     raise ValueError
 
 
+def iso_duration_to_indicator(value: str) -> str:
+    pattern = r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$"
+    match = re.match(pattern, value)
+    if not match:
+        raise ValueError(f"Not valid Duration format: {value}")
+
+    years, months, days = match.groups()
+    years = int(years) if years else 0
+    months = int(months) if months else 0
+    days = int(days) if days else 0
+
+    if years > 0:
+        return "A"
+    elif months > 0:
+        return "M"
+    elif days > 0:
+        return "D"
+    else:
+        raise ValueError(f"Invalid Duration: {value}")
+
+
 def check_duration(value: str) -> str:
-    if value not in PERIOD_IND_MAPPING:
+    indicator = iso_duration_to_indicator(value)
+    if indicator not in PERIOD_IND_MAPPING:
         raise ValueError(
-            f"Duration {value} is not a valid duration. "
+            f"Duration {value} converted to {indicator} is not a valid duration. "
             f"Valid durations are: {', '.join(PERIOD_IND_MAPPING)}."
         )
     return value
