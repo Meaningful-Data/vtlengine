@@ -171,66 +171,54 @@ def duckdb_merge(
     how: str = "inner",
 ) -> DuckDBPyRelation:
     """
-    Merges two DuckDB relations on specified join keys and mode.
+    Merges two DuckDB relations using SQL syntax and temporary views.
 
-    Supports: inner, left, right, full (outer) and cross joins.
+    Supports: inner, left, full, and cross joins.
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
     join_keys = join_keys if join_keys is not None else []
 
-    suffixes = ["_x", "_y"]
+    from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+    base_name = VirtualCounter._new_temp_view_name()
+    other_name = VirtualCounter._new_temp_view_name()
+    con.register(base_name, base_relation)
+    con.register(other_name, other_relation)
+
+    if how == "cross":
+        return con.sql(f"SELECT * FROM {base_name} CROSS JOIN {other_name}")
+    elif how == "outer":
+        how = "FULL OUTER"
+
+    if not join_keys:
+        raise ValueError("Join keys required for non-cross joins")
+
+    using_clause = ", ".join(f'"{k}"' for k in join_keys)
+
     base_cols = set(base_relation.columns)
     other_cols = set(other_relation.columns)
     common_cols = (base_cols & other_cols) - set(join_keys)
 
-    base_proj_cols = []
-    for c in base_relation.columns:
-        if c in common_cols and how != "left":
-            base_proj_cols.append(f'"{c}" AS "{c}{suffixes[0]}"')
-        else:
-            base_proj_cols.append(f'"{c}"')
-    base_relation = base_relation.project(", ".join(base_proj_cols))
+    select_cols = [f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys]
 
-    other_proj_cols = []
-    for c in other_relation.columns:
-        if c in common_cols and how != "left":
-            other_proj_cols.append(f'"{c}" AS "{c}{suffixes[1]}"')
-        else:
-            other_proj_cols.append(f'"{c}"')
-    other_relation = other_relation.project(", ".join(other_proj_cols))
+    for col in base_relation.columns:
+        if col not in join_keys:
+            suffix = "_x" if col in common_cols else ""
+            select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
-    if how == "cross":
-        return base_relation.cross(other_relation)
+    for col in other_relation.columns:
+        if col not in join_keys:
+            suffix = "_y" if col in common_cols else ""
+            select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
 
-    base_alias = "base"
-    other_alias = "other"
-    base_relation = base_relation.set_alias(base_alias)
-    other_relation = other_relation.set_alias(other_alias)
+    query = f"""
+        SELECT {', '.join(select_cols)}
+        FROM {base_name}
+        {how.upper()} JOIN {other_name}
+        USING ({using_clause})
+    """
 
-    join_condition = " AND ".join([f'{base_alias}."{k}" = {other_alias}."{k}"' for k in join_keys])
-
-    joined = base_relation.join(
-        other_relation,
-        condition=join_condition,
-        how=how,
-    )
-
-    coalesced_cols = [
-        f'COALESCE({base_alias}."{k}", {other_alias}."{k}") AS "{k}"' for k in join_keys
-    ]
-
-    other_proj = []
-    for c in base_relation.columns:
-        if c not in join_keys:
-            other_proj.append(f'{base_alias}."{c}"')
-    for c in other_relation.columns:
-        if c not in join_keys:
-            other_proj.append(f'{other_alias}."{c}"')
-
-    final_cols = coalesced_cols + other_proj
-
-    return joined.project(", ".join(final_cols))
+    return con.sql(query)
 
 
 def duckdb_rename(
