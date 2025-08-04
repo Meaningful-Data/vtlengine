@@ -180,6 +180,7 @@ def duckdb_merge(
     join_keys = join_keys if join_keys is not None else []
 
     from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
     base_name = VirtualCounter._new_temp_view_name()
     other_name = VirtualCounter._new_temp_view_name()
     con.register(base_name, base_relation)
@@ -212,7 +213,7 @@ def duckdb_merge(
             select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
 
     query = f"""
-        SELECT {', '.join(select_cols)}
+        SELECT {", ".join(select_cols)}
         FROM {base_name}
         {how.upper()} JOIN {other_name}
         USING ({using_clause})
@@ -296,7 +297,7 @@ def normalize_data(
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    double_cols = {c for c in get_cols_by_types(self_data, "DOUBLE")}
+    double_cols = set(get_cols_by_types(self_data, "DOUBLE"))
     if not len(double_cols):
         return self_data, other_data
 
@@ -304,27 +305,24 @@ def normalize_data(
     base = empty_relation()
     for col in double_cols:
         base = duckdb_concat(
-            base, duckdb_concat(
+            base,
+            duckdb_concat(
                 self_data.project(f'"{col}" AS "self_{col}"'),
-                other_data.project(f'"{col}" AS "other_{col}"')
-            )
+                other_data.project(f'"{col}" AS "other_{col}"'),
+            ),
         )
         round_exprs.append(f'round_to_ref("self_{col}", "other_{col}") AS "self_{col}"')
         round_exprs.append(f'round_to_ref("other_{col}", "self_{col}") AS "other_{col}"')
 
     base = base.project(", ".join(round_exprs))
-    self_data = duckdb_concat(self_data, base.project(', '.join(f"self_{col} AS {col}" for col in double_cols)))
-    other_data = duckdb_concat(other_data, base.project(', '.join(f"other_{col} AS {col}" for col in double_cols)))
+    self_data = duckdb_concat(
+        self_data, base.project(", ".join(f"self_{col} AS {col}" for col in double_cols))
+    )
+    other_data = duckdb_concat(
+        other_data, base.project(", ".join(f"other_{col} AS {col}" for col in double_cols))
+    )
 
-    exprs = []
-    for col in self_data.columns:
-        if col in double_cols:
-            ...
-        else:
-            exprs.append(f'"{col}"')
-
-    query = ", ".join(exprs)
-    return round_doubles(self_data), round_doubles(other_data)
+    return self_data, other_data
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:

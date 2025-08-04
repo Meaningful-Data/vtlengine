@@ -50,9 +50,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
-    clean_execution_graph,
     duckdb_concat,
-    duckdb_drop,
     duckdb_merge,
     duckdb_rename,
     duckdb_select,
@@ -1392,7 +1390,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.rule_data is None:
                 return None
 
-            self.rule_data = duckdb_concat(self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"'))
+            self.rule_data = duckdb_concat(
+                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
+            )
             filtered = self.rule_data.filter('"bool_var" = TRUE')
             data = self.rule_data.project(
                 '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
@@ -1409,8 +1409,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We only need to filter rule_data on DPR
                 return result_validation
 
-            self.rule_data = duckdb_concat(self.rule_data, result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'))
-            data = duckdb_merge(data, self.rule_data, how="left", join_keys=data.columns)
+            self.rule_data = duckdb_concat(
+                self.rule_data,
+                result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
+            )
+            self.rule_data = duckdb_rename(self.rule_data, {"bool_var": "bool_var_temp"})
+
+            keys = [c for c in self.rule_data.columns if c != "bool_var_temp"]
+            data = duckdb_merge(data, self.rule_data, how="left", join_keys=keys)
+            data = data.project(
+                ", ".join(keys)
+                + ', CASE WHEN "bool_var_temp" != TRUE THEN '
+                  '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
+            )
             return data
 
         elif node.op in HR_COMP_MAPPING:
