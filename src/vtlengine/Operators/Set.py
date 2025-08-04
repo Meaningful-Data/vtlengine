@@ -70,23 +70,25 @@ class Union(Set):
         for i in range(len(operands)):
             name = VirtualCounter._new_temp_view_name()
             con.register(name, operands[i].data)
-            queries.append(f"SELECT {cols_str}, {i} AS prioridad FROM {name}")
+            queries.append(f"SELECT {cols_str}, {i} AS priority FROM {name}")
 
         union_query = " UNION ALL ".join(queries)
+        vds_union_int = VirtualCounter._new_temp_view_name()
+        vds_union_final = VirtualCounter._new_temp_view_name()
 
         final_query = f"""
-                    WITH unioned AS (
-                        {union_query}
-                    ),
-                    pole AS (
-                        SELECT *,
-                            ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY prioridad ASC) AS rn
-                        FROM unioned
-                    )
-                    SELECT {cols_str}
-                    FROM pole
-                    WHERE rn = 1
-                """
+            WITH {vds_union_final} AS (
+                {union_query}
+            ),
+            {vds_union_int} AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY priority ASC) AS rn
+                FROM {vds_union_final}
+            )
+            SELECT {cols_str}
+            FROM {vds_union_int}
+            WHERE rn = 1
+        """
 
         result.data = con.query(final_query)
         return result
@@ -121,8 +123,8 @@ class Symdiff(Set):
         id_names = operands[0].get_identifiers_names()
         ids_str = ", ".join(id_names)
 
-        ds1 = operands[0]
-        ds2 = operands[1]
+        ds1, ds2 = operands
+
         name1 = VirtualCounter._new_temp_view_name()
         name2 = VirtualCounter._new_temp_view_name()
 
@@ -132,35 +134,34 @@ class Symdiff(Set):
         col_names = list(operands[0].data.columns)
         cols_str = ", ".join(col_names)
 
+        vds_symdiff_final = VirtualCounter._new_temp_view_name()
+        vds_symdiff_int = VirtualCounter._new_temp_view_name()
+
         diff1 = f"""
-                    SELECT {name1}.*, 0 AS prioridad
+                    SELECT {name1}.*, 1 AS priority
                     FROM {name1}
-                    LEFT JOIN {name2}
-                    ON {" AND ".join([f"{name1}.{col} = {name2}.{col}" for col in id_names])}
-                    WHERE {name2}.{id_names[0]} IS NULL
+                    ANTI JOIN {name2} USING ({",".join([f"{col}" for col in id_names])})
                 """
 
         diff2 = f"""
-                    SELECT {name2}.*, 1 AS prioridad
+                    SELECT {name2}.*, 2 AS priority
                     FROM {name2}
-                    LEFT JOIN {name1}
-                    ON {" AND ".join([f"{name2}.{col} = {name1}.{col}" for col in id_names])}
-                    WHERE {name1}.{id_names[0]} IS NULL
+                    ANTI JOIN {name1} USING ({",".join([f"{col}" for col in id_names])})
                 """
 
         final_query = f"""
-                    WITH symdiff AS (
+                    WITH {vds_symdiff_final} AS (
                         {diff1}
                         UNION ALL
                         {diff2}
                     ),
-                    pole AS (
+                    {vds_symdiff_int} AS (
                         SELECT *,
-                            ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY prioridad ASC) AS rn
-                        FROM symdiff
+                            ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY priority ASC) AS rn
+                        FROM {vds_symdiff_final}
                     )
                     SELECT {cols_str}
-                    FROM pole
+                    FROM {vds_symdiff_int}
                     WHERE rn = 1
                 """
 
