@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -144,10 +145,10 @@ class InterpreterAnalyzer(ASTTemplate):
     then_condition_dataset: Optional[List[Any]] = None
     else_condition_dataset: Optional[List[Any]] = None
     ruleset_dataset: Optional[Dataset] = None
-    rule_data: Optional[pd.DataFrame] = None
+    rule_data: Optional[DuckDBPyRelation] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
-    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
+    hr_agg_rules_computed: Optional[Dict[str, DuckDBPyRelation]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
@@ -1418,9 +1419,8 @@ class InterpreterAnalyzer(ASTTemplate):
             keys = [c for c in self.rule_data.columns if c != "bool_var_temp"]
             data = duckdb_merge(data, self.rule_data, how="left", join_keys=keys)
             data = data.project(
-                ", ".join(keys)
-                + ', CASE WHEN "bool_var_temp" != TRUE THEN '
-                  '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
+                ", ".join(keys) + ', CASE WHEN "bool_var_temp" != TRUE THEN '
+                '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
             )
             return data
 
