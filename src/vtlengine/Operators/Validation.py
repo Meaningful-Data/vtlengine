@@ -95,7 +95,9 @@ class Check(Operator):
         if validation_element.data is None:
             validation_element.data = empty_relation()
 
-        error_code_, error_level_ = (repr(error_code) or "NULL"), (repr(error_level) or "NULL")
+        error_code_ = repr(error_code) if error_code is not None else "NULL"
+        error_level_ = repr(error_level) if error_level is not None else "NULL"
+
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
@@ -128,7 +130,7 @@ class Validation(Operator):
         rel_list = []
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
-            rule_name = repr(rule_name) if rule_name is not None else "NULL"
+            rule_name = repr(rule_name) if isinstance(rule_name, str) else rule_name
             errorcode = repr(rule_data.get("errorcode")) if rule_data.get("errorcode") else "NULL"
             errorlevel = repr(rule_data.get("errorlevel")) if rule_data.get("errorlevel") else "NULL"
             query = f"""
@@ -180,7 +182,9 @@ class Validation(Operator):
     @classmethod
     def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = cls.validate(dataset_element, rule_info, output)
+        print(result.data)
         result.data = cls._generate_result_data(rule_info)
+        print(result.data)
 
         identifiers = result.get_identifiers_names()
         result.data = result.data.filter(
@@ -190,6 +194,7 @@ class Validation(Operator):
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
         if "imbalance" in result.components:
             validation_measures.append("imbalance")
+        print(result.data)
 
         if output == "invalid":
             result.data = result.data.filter("bool_var = FALSE")
@@ -201,6 +206,7 @@ class Validation(Operator):
             )
 
         result.data = result.data.project(", ".join(result.get_components_names()))
+        print(result.data)
         return result
 
 
