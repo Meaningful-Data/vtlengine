@@ -128,14 +128,14 @@ class Validation(Operator):
         rel_list = []
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
-            rule_name = repr(rule_name or "NULL")
-            errorcode = repr(rule_data.get("errorcode", "NULL") or "NULL")
-            errorlevel = repr(rule_data.get("errorlevel", "NULL") or "NULL")
+            rule_name = repr(rule_name) if rule_name is not None else "NULL"
+            errorcode = repr(rule_data.get("errorcode")) if rule_data.get("errorcode") else "NULL"
+            errorlevel = repr(rule_data.get("errorlevel")) if rule_data.get("errorlevel") else "NULL"
             query = f"""
             *,
             {rule_name} AS ruleid,
-            CASE WHEN bool_var = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
-            CASE WHEN bool_var = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
+            CASE WHEN "bool_var" = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
+            CASE WHEN "bool_var" = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
             """
             rel_list.append(rel.project(query))
 
