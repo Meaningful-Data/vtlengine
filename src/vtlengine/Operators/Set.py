@@ -3,11 +3,11 @@ from typing import Any, Dict, List
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge
 
 
 class Set(Operator):
@@ -63,10 +63,16 @@ class Union(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        for operand in operands:
+            operand.data = (
+                operand.data
+                if operand.data is not None
+                else empty_relation(cols=list(operand.components.keys()))
+            )
         queries = []
         id_names = operands[0].get_identifiers_names()
         ids_str = ", ".join(id_names)
-        col_names = list(operands[0].data.columns)
+        col_names = list(operands[0].components.keys())
         cols_str = ", ".join(col_names)
 
         for i, operand in enumerate(operands):
@@ -78,6 +84,10 @@ class Union(Set):
         vds_union_int = VirtualCounter._new_temp_view_name()
         vds_union_final = VirtualCounter._new_temp_view_name()
 
+        # Here we create a final query that will select the first row for each identifier
+        # based on the priority assigned in the previous step.
+        # This ensures that we get a single row for each identifier in the final result.
+        # The priority is used to determine which row to keep in case of duplicates.
         final_query = f"""
             WITH {vds_union_final} AS (
                 {union_query}
@@ -103,7 +113,8 @@ class Intersection(Set):
 
         id_names = operands[0].get_identifiers_names()
         ids_str = ", ".join(id_names)
-        col_names = list(operands[0].data.columns)
+        col_names = list(operands[0].components.keys())
+
         cols_str = ", ".join(col_names)
 
         queries = []
@@ -124,7 +135,6 @@ class Intersection(Set):
             """
             ref_name = copy.copy(name)
             queries.append(query)
-
 
         # We use here a UNION ALL to ensure that we keep all rows from the intersection
         # even if they have the same identifiers but different values in other columns.
@@ -174,13 +184,13 @@ class Symdiff(Set):
         final_query = f"""
             (
                 SELECT {name1}.* FROM {name1}
-                ANTI JOIN {name2} 
+                ANTI JOIN {name2}
                 USING ({ids_str})
             )
             UNION ALL
             (
                 SELECT {name2}.* FROM {name2}
-                ANTI JOIN {name1} 
+                ANTI JOIN {name1}
                 USING ({ids_str})
             )
         """
