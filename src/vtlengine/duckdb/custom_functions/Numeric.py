@@ -35,6 +35,33 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     return int(rounded_value)
 
 
+def count_decimals(val: Optional[Union[int, float]]) -> int:
+    s = f"{val:.16f}".rstrip("0")
+    return len(s.split(".")[1]) if "." in s else 0
+
+
+def round_to_ref(
+    x: Optional[Union[int, float]], ref: Optional[Union[int, float]]
+) -> Optional[float]:
+    """
+    Rounds a numeric value to match the number of decimal places of a reference value.
+    If x is None or ref is None, it returns x.
+    If x has more decimal places than ref, it rounds x to the number of decimal places in ref.
+    If ref is None, it returns x unchanged.
+    Args:
+        x (float): The value to round.
+        ref (float): The reference value to match decimal places.
+
+    Returns:
+        float: The rounded value of x, or x if x is None or ref is None.
+    """
+    if x is None or ref is None:
+        return x
+    dec_x = count_decimals(x)
+    dec_ref = count_decimals(ref)
+    return round(x, dec_ref) if dec_x > dec_ref else x
+
+
 def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
     """
     Truncates a numeric value to a specified number of decimals.

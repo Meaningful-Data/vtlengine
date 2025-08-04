@@ -49,8 +49,14 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select, \
-    clean_execution_graph, duckdb_drop
+from vtlengine.duckdb.duckdb_utils import (
+    clean_execution_graph,
+    duckdb_concat,
+    duckdb_drop,
+    duckdb_merge,
+    duckdb_rename,
+    duckdb_select,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
@@ -1347,11 +1353,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
                 expr = ", ".join(self.ruleset_dataset.get_components_names())
-                validation_data = self.rule_data.project(f"{expr}, {validation_data.name} AS bool_var")
+                validation_data = self.rule_data.project(
+                    f"{expr}, {validation_data.name} AS bool_var"
+                )
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
-            validation_data = validation_data.filter('bool_var = FALSE')
+            validation_data = validation_data.filter("bool_var = FALSE")
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1383,21 +1391,28 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            self.rule_data = duckdb_concat(self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"'))
+            self.rule_data = duckdb_concat(
+                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
+            )
             filtering = self.rule_data.filter('"bool_var" = TRUE')
             if not len(filtering) and not (self.is_from_hr_agg or self.is_from_hr_val):
-                return self.rule_data.project(f'* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL THEN NULL ELSE "bool_var" END AS "bool_var"')
+                return self.rule_data.project(
+                    '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
+                    'THEN NULL ELSE "bool_var" END AS "bool_var"'
+                )
 
             data = self.rule_data
             non_filtering = data.filter('"bool_var" != TRUE')
-            self.rule_data = data.filter('bool_var = TRUE')
+            self.rule_data = data.filter("bool_var = TRUE")
             result_validation = self.visit(node.right)
 
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
 
-            validation_bool = result_validation.data.project(f'{result_validation.data.columns[0]} AS bool_var')
+            validation_bool = result_validation.data.project(
+                f"{result_validation.data.columns[0]} AS bool_var"
+            )
             self.rule_data = duckdb_concat(duckdb_drop(self.rule_data, "bool_var"), validation_bool)
             data = duckdb_merge(data, self.rule_data, join_keys=data.columns, how="left")
 

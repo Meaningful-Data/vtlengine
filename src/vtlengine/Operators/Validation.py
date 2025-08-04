@@ -11,7 +11,11 @@ from vtlengine.DataTypes import (
     String,
     check_unary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_select, empty_relation, clean_execution_graph
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_select,
+    empty_relation,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator
@@ -126,10 +130,11 @@ class Validation(Operator):
             rel = rule_data["output"]
             errorcode = repr(rule_data.get("errorcode", "NULL") or "NULL")
             errorlevel = repr(rule_data.get("errorlevel", "NULL") or "NULL")
-            query = f"""*, 
-                {rule_name} AS ruleid,
-                CASE WHEN bool_var = FALSE THEN {errorcode} ELSE NULL END AS errorcode,
-                CASE WHEN bool_var = FALSE THEN {errorlevel} ELSE NULL END AS errorlevel
+            query = f"""
+            *,
+            {rule_name} AS ruleid,
+            CASE WHEN bool_var = FALSE THEN {errorcode} ELSE NULL END AS errorcode,
+            CASE WHEN bool_var = FALSE THEN {errorlevel} ELSE NULL END AS errorlevel
             """
             rel_list.append(rel.project(query))
 
