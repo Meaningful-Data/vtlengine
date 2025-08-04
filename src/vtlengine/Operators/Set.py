@@ -174,6 +174,9 @@ class Setdiff(Set):
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
 
+        id_names = operands[0].get_identifiers_names()
+        ids_str = ", ".join(id_names)
+
         ds1, ds2 = operands
         name1 = VirtualCounter._new_temp_view_name()
         name2 = VirtualCounter._new_temp_view_name()
@@ -181,10 +184,16 @@ class Setdiff(Set):
         con.register(name1, ds1.data)
         con.register(name2, ds2.data)
 
-        query = f"""
-            SELECT * FROM {name1}
-            EXCEPT
-            SELECT * FROM {name2}
-        """
-        result.data = con.query(query)
+        diff = f"""
+                    SELECT {name1}.*
+                    FROM {name1}
+                    ANTI JOIN {name2} USING ({",".join([f"{col}" for col in id_names])})
+                """
+
+        # query = f"""
+        #     SELECT * FROM {name1}
+        #     EXCEPT
+        #     SELECT * FROM {name2}
+        # """
+        result.data = con.query(diff)
         return result
