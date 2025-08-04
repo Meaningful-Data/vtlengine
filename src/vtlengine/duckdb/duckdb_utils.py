@@ -203,12 +203,12 @@ def duckdb_merge(
 
     for col in base_relation.columns:
         if col not in join_keys:
-            suffix = "_x" if col in common_cols else ""
+            suffix = "_x" if col in common_cols and how != "left" else ""
             select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
     for col in other_relation.columns:
         if col not in join_keys:
-            suffix = "_y" if col in common_cols else ""
+            suffix = "_y" if col in common_cols and how != "left" else ""
             select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
 
     query = f"""
@@ -217,7 +217,6 @@ def duckdb_merge(
         {how.upper()} JOIN {other_name}
         USING ({using_clause})
     """
-
     return con.sql(query)
 
 

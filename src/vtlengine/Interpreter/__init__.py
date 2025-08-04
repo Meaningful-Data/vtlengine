@@ -1391,33 +1391,26 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            self.rule_data = duckdb_concat(
-                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
-            )
-            filtering = self.rule_data.filter('"bool_var" = TRUE')
-            if not len(filtering) and not (self.is_from_hr_agg or self.is_from_hr_val):
-                return self.rule_data.project(
-                    '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
-                    'THEN NULL ELSE "bool_var" END AS "bool_var"'
-                )
 
-            data = self.rule_data
-            non_filtering = data.filter('"bool_var" != TRUE')
-            self.rule_data = data.filter("bool_var = TRUE")
+            self.rule_data = duckdb_concat(self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"'))
+            filtered = self.rule_data.filter('"bool_var" = TRUE')
+            data = self.rule_data.project(
+                '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
+                'THEN NULL ELSE TRUE END AS "bool_var"'
+            )
+
+            if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
+                return data
+
+            self.rule_data = filtered
             result_validation = self.visit(node.right)
 
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
 
-            validation_bool = result_validation.data.project(
-                f"{result_validation.data.columns[0]} AS bool_var"
-            )
-            self.rule_data = duckdb_concat(duckdb_drop(self.rule_data, "bool_var"), validation_bool)
-            data = duckdb_merge(data, self.rule_data, join_keys=data.columns, how="left")
-
-            non_filtering.project('* EXCLUDE "bool_var", TRUE AS "bool_var"')
-            data = duckdb_merge(non_filtering, data, join_keys=data.columns, how="left")
+            self.rule_data = duckdb_concat(self.rule_data, result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'))
+            data = duckdb_merge(data, self.rule_data, how="left", join_keys=data.columns)
             return data
 
         elif node.op in HR_COMP_MAPPING:
