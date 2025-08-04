@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Dict, List
 
 from vtlengine.connection import con
@@ -6,6 +7,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge
 
 
 class Set(Operator):
@@ -67,9 +69,9 @@ class Union(Set):
         col_names = list(operands[0].data.columns)
         cols_str = ", ".join(col_names)
 
-        for i in range(len(operands)):
+        for i, operand in enumerate(operands):
             name = VirtualCounter._new_temp_view_name()
-            con.register(name, operands[i].data)
+            con.register(name, operand.data)
             queries.append(f"SELECT {cols_str}, {i} AS priority FROM {name}")
 
         union_query = " UNION ALL ".join(queries)
@@ -99,19 +101,57 @@ class Intersection(Set):
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
 
+        id_names = operands[0].get_identifiers_names()
+        ids_str = ", ".join(id_names)
         col_names = list(operands[0].data.columns)
         cols_str = ", ".join(col_names)
 
-        list_names = []
-        for ds in operands:
-            temp_name = VirtualCounter._new_temp_view_name()
-            con.register(temp_name, ds.data)
-            list_names.append(temp_name)
+        queries = []
 
-        sub_query = [f"SELECT {cols_str} FROM {name}" for name in list_names]
-        query = " INTERSECT ".join(sub_query)
+        ref_name = None
 
-        result.data = con.query(query)
+        for i, operand in enumerate(operands):
+            name = VirtualCounter._new_temp_view_name()
+            con.register(name, operand.data)
+            if ref_name is None:
+                ref_name = copy.copy(name)
+                continue
+
+            query = f"""
+                SELECT {ref_name}.*, {i} AS priority
+                FROM {ref_name}
+                INNER JOIN {name} USING ({",".join([f"{col}" for col in id_names])})
+            """
+            ref_name = copy.copy(name)
+            queries.append(query)
+
+
+        # We use here a UNION ALL to ensure that we keep all rows from the intersection
+        # even if they have the same identifiers but different values in other columns.
+        intersect_queries = " UNION ALL ".join(queries)
+
+        vds_intersection_final = VirtualCounter._new_temp_view_name()
+        vds_intersection_int = VirtualCounter._new_temp_view_name()
+
+        # Here we create a final query that will select the first row for each identifier
+        # based on the priority assigned in the previous step.
+        # This ensures that we get a single row for each identifier in the final result.
+        # The priority is used to determine which row to keep in case of duplicates.
+        final_query = f"""
+            WITH {vds_intersection_final} AS (
+                {intersect_queries}
+            ),
+            {vds_intersection_int} AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY priority ASC) AS rn
+                FROM {vds_intersection_final}
+            )
+            SELECT {cols_str}
+            FROM {vds_intersection_int}
+            WHERE rn = 1
+        """
+
+        result.data = con.query(final_query)
         return result
 
 
@@ -131,39 +171,19 @@ class Symdiff(Set):
         con.register(name1, ds1.data)
         con.register(name2, ds2.data)
 
-        col_names = list(operands[0].data.columns)
-        cols_str = ", ".join(col_names)
-
-        vds_symdiff_final = VirtualCounter._new_temp_view_name()
-        vds_symdiff_int = VirtualCounter._new_temp_view_name()
-
-        diff1 = f"""
-                    SELECT {name1}.*, 1 AS priority
-                    FROM {name1}
-                    ANTI JOIN {name2} USING ({",".join([f"{col}" for col in id_names])})
-                """
-
-        diff2 = f"""
-                    SELECT {name2}.*, 2 AS priority
-                    FROM {name2}
-                    ANTI JOIN {name1} USING ({",".join([f"{col}" for col in id_names])})
-                """
-
         final_query = f"""
-                    WITH {vds_symdiff_final} AS (
-                        {diff1}
-                        UNION ALL
-                        {diff2}
-                    ),
-                    {vds_symdiff_int} AS (
-                        SELECT *,
-                            ROW_NUMBER() OVER (PARTITION BY {ids_str} ORDER BY priority ASC) AS rn
-                        FROM {vds_symdiff_final}
-                    )
-                    SELECT {cols_str}
-                    FROM {vds_symdiff_int}
-                    WHERE rn = 1
-                """
+            (
+                SELECT {name1}.* FROM {name1}
+                ANTI JOIN {name2} 
+                USING ({ids_str})
+            )
+            UNION ALL
+            (
+                SELECT {name2}.* FROM {name2}
+                ANTI JOIN {name1} 
+                USING ({ids_str})
+            )
+        """
 
         result.data = con.query(final_query)
         return result
@@ -187,13 +207,8 @@ class Setdiff(Set):
         diff = f"""
                     SELECT {name1}.*
                     FROM {name1}
-                    ANTI JOIN {name2} USING ({",".join([f"{col}" for col in id_names])})
+                    ANTI JOIN {name2} USING ({ids_str})
                 """
 
-        # query = f"""
-        #     SELECT * FROM {name1}
-        #     EXCEPT
-        #     SELECT * FROM {name2}
-        # """
         result.data = con.query(diff)
         return result
