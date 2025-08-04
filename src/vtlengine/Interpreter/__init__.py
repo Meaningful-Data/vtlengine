@@ -1416,9 +1416,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = duckdb_concat(duckdb_drop(self.rule_data, "bool_var"), validation_bool)
             data = duckdb_merge(data, self.rule_data, join_keys=data.columns, how="left")
 
-            non_filtering.project('* EXCLUDE bool_var, TRUE AS "bool_var"')
-            keys = [c for c in data.columns if c != "bool_var"]
-            data = duckdb_merge(non_filtering, data, join_keys=keys, how="left")
+            non_filtering.project('* EXCLUDE "bool_var", TRUE AS "bool_var"')
+            data = duckdb_merge(non_filtering, data, join_keys=data.columns, how="left")
             return data
 
         elif node.op in HR_COMP_MAPPING:
