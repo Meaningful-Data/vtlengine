@@ -132,7 +132,9 @@ class Validation(Operator):
             rel = rule_data["output"]
             rule_name = repr(rule_name) if isinstance(rule_name, str) else rule_name
             errorcode = repr(rule_data.get("errorcode")) if rule_data.get("errorcode") else "NULL"
-            errorlevel = repr(rule_data.get("errorlevel")) if rule_data.get("errorlevel") else "NULL"
+            errorlevel = (
+                repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
+            )
             query = f"""
             *,
             {rule_name} AS ruleid,
