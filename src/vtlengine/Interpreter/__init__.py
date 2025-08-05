@@ -49,6 +49,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
@@ -249,6 +250,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if result is None:
                 continue
+
+            # if isinstance(result, Dataset):
+            #     # TODO: add parquet, csv or tem tables storage using a flag
+            #     con.register(result.name, result.data)
 
             # Removing output dataset
             vtlengine.Exceptions.dataset_output = None
@@ -491,8 +496,10 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:
-                    data_to_keep = operand.data[operand.get_identifiers_names()]
-                    data_to_keep[op_comp.name] = op_comp.data
+                    # data_to_keep = operand.data[operand.get_identifiers_names()]
+                    # data_to_keep[op_comp.name] = op_comp.data
+                    data_to_keep = duckdb_select(operand.data, operand.get_identifiers_names())
+                    data_to_keep = duckdb_concat(data_to_keep, op_comp.data)
                 else:
                     data_to_keep = None
                 operand = Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
@@ -514,7 +521,7 @@ class InterpreterAnalyzer(ASTTemplate):
         grouping_op = node.grouping_op
         if node.grouping is not None:
             if grouping_op == "group all":
-                data = None if self.only_semantic else copy(operand.data)
+                data = None if self.only_semantic else operand.data
                 self.aggregation_dataset = Dataset(
                     name=operand.name, components=operand.components, data=data
                 )
@@ -600,7 +607,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[dataset_components.keys()]
+                    # data = self.regular_aggregation_dataset.data[dataset_components.keys()]
+                    data = duckdb_select(
+                        self.regular_aggregation_dataset.data, dataset_components.keys()
+                    )
 
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,
@@ -673,7 +683,7 @@ class InterpreterAnalyzer(ASTTemplate):
         id_columns = (
             self.regular_aggregation_dataset.get_identifiers_names()
             if (self.regular_aggregation_dataset is not None)
-            else None
+            else []
         )
 
         # # Extracting the component we need (only measure)
@@ -689,13 +699,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = pd.merge(
-                    self.regular_aggregation_dataset.data[id_columns],
+                id_cols_data = self.regular_aggregation_dataset.data.project(", ".join(id_columns))
+                data = duckdb_merge(
+                    id_cols_data,
                     result.data,
-                    on=id_columns,
+                    id_columns,
                     how="inner",
-                )
-                data = joined_result[measure_name]
+                ).project(measure_name)
             else:
                 data = None
 
@@ -832,7 +842,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    data = self.regular_aggregation_dataset.data[node.value]
+                    data = duckdb_select(self.regular_aggregation_dataset.data, node.value)
                 else:
                     data = None
                 return DataComponent(
@@ -931,7 +941,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role != Role.MEASURE
             }
             if dataset.data is not None:
-                dataset.data = dataset.data[dataset.get_identifiers_names()]
+                dataset.data = dataset.data.project(", ".join(dataset.get_identifiers_names()))
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
@@ -946,6 +956,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             role = role_info[role_key]
                 else:
                     role = role_info[operand.name]
+                data = duckdb_rename(data, {measure.name: operand.name})
                 aux_operands.append(
                     DataComponent(
                         name=operand.name,
@@ -995,9 +1006,17 @@ class InterpreterAnalyzer(ASTTemplate):
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 if result.data is not None:
-                    result.data.rename(
-                        columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
-                        inplace=True,
+                    # result.data.rename(
+                    #     columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
+                    #     inplace=True,
+                    # )
+                    result.data = duckdb_rename(
+                        result.data,
+                        {
+                            col: col[col.find("#") + 1 :]
+                            for col in result.data.columns
+                            if "#" in col
+                        },
                     )
                 result.components = {
                     comp_name[comp_name.find("#") + 1 :]: comp
@@ -1005,8 +1024,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 }
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
-                if result.data is not None:
-                    result.data.reset_index(drop=True, inplace=True)
+                # if result.data is not None:
+                #     result.data.reset_index(drop=True, inplace=True)
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
@@ -1026,40 +1045,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            if condition.value:
-                return self.visit(node.thenOp)
-            else:
-                return self.visit(node.elseOp)
+            return self.visit(node.thenOp if condition.value else node.elseOp)
 
-        # Analysis for data component and dataset
-        else:
-            if self.condition_stack is None:
-                self.condition_stack = []
-            if self.then_condition_dataset is None:
-                self.then_condition_dataset = []
-            if self.else_condition_dataset is None:
-                self.else_condition_dataset = []
-            self.generate_then_else_datasets(copy(condition))
-
-        self.condition_stack.append(THEN_ELSE["then"])
         self.is_from_if = True
-        self.nested_condition = "T" if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
-        if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
-            self.then_condition_dataset.pop()
-            self.condition_stack.pop()
-
-        self.condition_stack.append(THEN_ELSE["else"])
-        self.is_from_if = True
-        self.nested_condition = "E" if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
-        if isinstance(elseOp, Scalar) or (
-            not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)
-        ):
-            if len(self.else_condition_dataset) > 0:
-                self.else_condition_dataset.pop()
-            if len(self.condition_stack) > 0:
-                self.condition_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -1164,10 +1154,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 }
 
                 self.aggregation_dataset.data = (
-                    self.aggregation_dataset.data[
+                    duckdb_select(
+                        self.aggregation_dataset.data,
                         self.aggregation_dataset.get_identifiers_names()
-                        + self.aggregation_dataset.get_measures_names()
-                    ]
+                        + self.aggregation_dataset.get_measures_names(),
+                    )
                     if (self.aggregation_dataset.data is not None)
                     else None
                 )
@@ -1398,9 +1389,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_HRule(self, node: AST.HRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = (
-                None if self.ruleset_dataset.data is None else self.ruleset_dataset.data.copy()
-            )
+            self.rule_data = self.ruleset_dataset.data
         rule_result = self.visit(node.rule)
         if rule_result is None:
             self.is_from_rule = False
@@ -1572,7 +1561,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ):
                 raise ValueError("Only one boolean measure is allowed on condition dataset")
             name = condition.get_measures_names()[0]
-            if condition.data is None or condition.data.empty:
+            if condition.data is None or len(condition.data) == 0:
                 data = None
             else:
                 data = condition.data[name]

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
@@ -29,13 +30,15 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
+from vtlengine.connection import con
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import DataComponent, Dataset
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 pd.options.mode.chained_assignment = None
 
@@ -180,7 +183,7 @@ def semantic_analysis(
     ast = create_ast(vtl)
 
     # Loading datasets
-    datasets, scalars = load_datasets(data_structures)
+    structures = load_datasets(data_structures)
 
     # Handling of library items
     vd = None
@@ -192,10 +195,9 @@ def semantic_analysis(
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
-        datasets=datasets,
+        datasets=structures,
         value_domains=vd,
         external_routines=ext_routines,
-        scalars=scalars,
         only_semantic=True,
     )
     result = interpreter.visit(ast)
@@ -205,14 +207,13 @@ def semantic_analysis(
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
+    datapoints: Union[Dict[str, DuckDBPyRelation], str, Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path]] = None,
     external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-) -> Dict[str, Union[Dataset, Scalar]]:
+) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute
     the vtl operation over the data.
@@ -278,8 +279,6 @@ def run(
 
         output_folder: Path or S3 URI to the output folder. (default: None)
 
-        scalar_values: Dict with the scalar values to be used in the VTL script. \
-
 
     Returns:
        The datasets are produced without data if the output folder is defined.
@@ -296,9 +295,7 @@ def run(
     ast = create_ast(vtl)
 
     # Loading datasets and datapoints
-    datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures, datapoints, scalar_values
-    )
+    datasets, path_dict = load_datasets_with_data(data_structures, datapoints)
 
     # Handling of library items
     vd = None
@@ -328,15 +325,24 @@ def run(
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
-        scalars=scalars,
     )
     result = interpreter.visit(ast)
 
     # Applying time period output format
     if output_folder is None:
-        for obj in result.values():
-            if isinstance(obj, (Dataset, Scalar)):
-                format_time_period_external_representation(obj, time_period_representation)
+        for dataset in result.values():
+            format_time_period_external_representation(dataset, time_period_representation)
+
+    # Recasting to pandas-like objects
+    for operand in result.values():
+        if isinstance(operand, Dataset) and operand.data is not None:
+            operand.data = operand.data.df()
+        elif isinstance(operand, DataComponent) and operand.data is not None:
+            df = operand.data.df()
+            operand.data = df.squeeze() if len(df.columns) == 1 else df
+
+    # Remove temporary views if any
+    VirtualCounter.reset_temp_views()
 
     # Returning only persistent datasets
     if return_only_persistent:
@@ -353,7 +359,7 @@ def run_sdmx(  # noqa: C901
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-) -> Dict[str, Union[Dataset, Scalar]]:
+) -> Dict[str, Dataset]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
 
@@ -411,16 +417,8 @@ def run_sdmx(  # noqa: C901
     mapping_dict = {}
     input_names = _extract_input_datasets(script)
 
-    if not isinstance(datasets, (list, set)) or any(
-        not isinstance(ds, PandasDataset) for ds in datasets
-    ):
-        type_ = type(datasets).__name__
-        if isinstance(datasets, (list, set)):
-            object_typing = {type(o).__name__ for o in datasets}
-            type_ = f"{type_}[{', '.join(object_typing)}]"
-        raise SemanticError("0-1-3-7", type_=type_)
-
     # Mapping handling
+
     if mappings is None:
         if len(datasets) != 1:
             raise SemanticError("0-1-3-3")
@@ -476,7 +474,8 @@ def run_sdmx(  # noqa: C901
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures.append(vtl_structure)
-        datapoints[dataset_name] = dataset.data
+        # datapoints[dataset_name] = dataset.data
+        datapoints[dataset_name] = con.from_df(dataset.data)
 
     missing = []
     for input_name in input_names:

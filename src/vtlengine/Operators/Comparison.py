@@ -1,13 +1,7 @@
 import operator
 import re
 from copy import copy
-from typing import Any, Optional, Union
-
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
-import pandas as pd
+from typing import Any, List, Optional, Union
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
@@ -22,7 +16,11 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, Number, String
+from vtlengine.connection import con
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String
+from vtlengine.duckdb.custom_functions import between_duck, isnull_duck
+from vtlengine.duckdb.custom_functions.Comparison import _comparison_cast_values
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -43,15 +41,8 @@ class IsNull(Unary):
     """
 
     op = ISNULL
-    py_op = pd.isnull
-
-    @classmethod
-    def apply_operation_component(cls, series: Any) -> Any:
-        return series.isnull()
-
-    @classmethod
-    def op_func(cls, x: Any) -> Any:
-        return pd.isnull(x)
+    py_op = isnull_duck
+    sql_op = "isnull_duck"
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
@@ -75,60 +66,13 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    def _cast_values(
-        cls,
-        x: Optional[Union[int, float, str, bool]],
-        y: Optional[Union[int, float, str, bool]],
-    ) -> Any:
-        # Cast values to compatible types for comparison
-        try:
-            if isinstance(x, str) and isinstance(y, bool):
-                y = String.cast(y)
-            elif isinstance(x, bool) and isinstance(y, str):
-                x = String.cast(x)
-            elif isinstance(x, str) and isinstance(y, (int, float)):
-                x = Number.cast(x)
-            elif isinstance(x, (int, float)) and isinstance(y, str):
-                y = Number.cast(y)
-        except ValueError:
-            x = str(x)
-            y = str(y)
-
-        return x, y
-
     @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
-        if pd.isnull(x) or pd.isnull(y):
+        if x is None or y is None:
             return None
-        x, y = cls._cast_values(x, y)
+        x, y = _comparison_cast_values(x, y)
         return cls.py_op(x, y)
-
-    @classmethod
-    def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
-        if pd.isnull(scalar):
-            return pd.Series(None, index=series.index)
-
-        first_non_null = series.dropna().iloc[0] if not series.dropna().empty else None
-        if first_non_null is not None:
-            scalar, first_non_null = cls._cast_values(scalar, first_non_null)
-
-            series_type = pd.api.types.infer_dtype(series, skipna=True)
-            first_non_null_type = pd.api.types.infer_dtype([first_non_null])
-
-            if series_type != first_non_null_type:
-                if isinstance(first_non_null, str):
-                    series = series.astype(str)
-                elif isinstance(first_non_null, (int, float)):
-                    series = series.astype(float)
-
-        op = cls.py_op if cls.py_op is not None else cls.op_func
-        if series_left:
-            result = series.map(lambda x: op(x, scalar), na_action="ignore")
-        else:
-            result = series.map(lambda x: op(scalar, x), na_action="ignore")
-
-        return result
 
     @classmethod
     def apply_return_type_dataset(
@@ -149,8 +93,6 @@ class Binary(Operator.Binary):
             )
             result_dataset.delete_component(measure.name)
             result_dataset.add_component(component)
-            if result_dataset.data is not None:
-                result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
 
 
 class Equal(Binary):
@@ -187,29 +129,37 @@ class In(Binary):
     op = IN
 
     @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
-        if right_series.data_type == Null:
-            return pd.Series(None, index=left_series.index)
+    def py_op(cls, x: Optional[Union[str, int, float, bool]], y: ScalarSet) -> Any:
+        if y.data_type == Null or x is None:
+            return None
+        return operator.contains(y, x)  # type: ignore[arg-type]
 
-        return left_series.map(lambda x: x in right_series, na_action="ignore")
+    @classmethod
+    def apply_bin_op(
+        cls, output_column: str, left: str, right: Union[List[Union[str, int, float, bool]], str]
+    ) -> str:
+        negate = "NOT" if cls.op == NOT_IN else ""
+
+        if isinstance(right, str):
+            return (
+                f"{negate} {left} = any ("
+                f"SELECT {right} "
+                f"where {right} is not null"
+                f") as {output_column}"
+            )
+        scalar_values = ", ".join(
+            [f"'{x}'" if isinstance(x, str) else str(x).lower() for x in right]
+        )
+        return f"{left} {negate} IN ({scalar_values}) AS {output_column}"
+
+
+class NotIn(In):
+    op = NOT_IN
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
         if y.data_type == Null:
             return None
-        return operator.contains(y, x)
-
-
-class NotIn(Binary):
-    op = NOT_IN
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        series_result = In.apply_operation_two_series(left_series, right_series)
-        return series_result.map(lambda x: not x, na_action="ignore")
-
-    @classmethod
-    def py_op(cls, x: Any, y: Any) -> Any:
         return not operator.contains(y, x)
 
 
@@ -219,15 +169,15 @@ class Match(Binary):
 
     @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
-        if pd.isnull(x) or pd.isnull(y):
+        if x is None or y is None:
             return None
-        if isinstance(x, pd.Series):
-            return x.str.fullmatch(y)
-        return bool(re.fullmatch(str(y), str(x)))
+        return bool(re.fullmatch(y, x))
 
 
 class Between(Operator.Operator):
     return_type = Boolean
+    sql_op = "between_duck"
+    py_op = between_duck
     """
     This comparison operator has the following class methods.
 
@@ -242,33 +192,8 @@ class Between(Operator.Operator):
     """
 
     @classmethod
-    def op_func(
-        cls,
-        x: Optional[Union[int, float, bool, str]],
-        y: Optional[Union[int, float, bool, str]],
-        z: Optional[Union[int, float, bool, str]],
-    ) -> Optional[bool]:
-        return (
-            None if (pd.isnull(x) or pd.isnull(y) or pd.isnull(z)) else y <= x <= z  # type: ignore[operator]
-        )
-
-    @classmethod
-    def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
-        control_any_series_from_to = isinstance(from_data, pd.Series) or isinstance(
-            to_data, pd.Series
-        )
-        if control_any_series_from_to:
-            if not isinstance(from_data, pd.Series):
-                from_data = pd.Series(from_data, index=series.index, dtype=object)
-            if not isinstance(to_data, pd.Series):
-                to_data = pd.Series(to_data, index=series.index)
-            df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
-            return df.apply(
-                lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
-                axis=1,
-            )
-
-        return series.map(lambda x: cls.op_func(x, from_data, to_data))
+    def apply_between_op(cls, input_column_name: str, from_: Any, to: Any) -> str:
+        return f"{cls.sql_op}({input_column_name}, {from_}, {to})"
 
     @classmethod
     def apply_return_type_dataset(cls, result_dataset: Dataset, operand: Dataset) -> None:
@@ -338,55 +263,88 @@ class Between(Operator.Operator):
 
         return result
 
+    @staticmethod
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Any:
+        if isinstance(param, DataComponent):
+            return f'"{param.name}"'
+        elif isinstance(param, Scalar):
+            return "NULL" if param.value is None else param.value
+        return "NULL"
+
     @classmethod
     def evaluate(
         cls,
-        operand: Union[DataComponent, Scalar],
+        operand: Operator.ALL_MODEL_DATA_TYPES,
         from_: Union[DataComponent, Scalar],
         to: Union[DataComponent, Scalar],
     ) -> Any:
-        result = cls.validate(operand, from_, to)
-        from_data = from_.data if isinstance(from_, DataComponent) else from_.value
-        to_data = to.data if isinstance(to, DataComponent) else to.value
-
-        if (
-            isinstance(from_data, pd.Series)
-            and isinstance(to_data, pd.Series)
-            and len(from_data) != len(to_data)
-        ):
-            raise ValueError("From and To must have the same length")
-
         if isinstance(operand, Dataset):
-            result.data = operand.data.copy()
-            for measure_name in operand.get_measures_names():
-                result.data[measure_name] = cls.apply_operation_component(
-                    operand.data[measure_name], from_data, to_data
-                )
-                if len(result.get_measures()) == 1:
-                    result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
-                    result.data = result.data.drop(columns=[measure_name])
-            result.data = result.data[result.get_components_names()]
-        if isinstance(operand, DataComponent):
-            result.data = cls.apply_operation_component(operand.data, from_data, to_data)
-        if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
-            if operand.value is None or from_data is None or to_data is None:
-                result.value = None
-            else:
-                result.value = from_data <= operand.value <= to_data
-        elif isinstance(operand, Scalar) and (
-            isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
-        ):  # From or To is a DataComponent, or both
-            if isinstance(from_data, pd.Series):
-                series = pd.Series(operand.value, index=from_data.index, dtype=object)
-            elif isinstance(to_data, pd.Series):
-                series = pd.Series(operand.value, index=to_data.index, dtype=object)
-            result_series = cls.apply_operation_component(series, from_data, to_data)
-            result = DataComponent(
-                name=operand.name,
-                data=result_series,
-                data_type=cls.return_type,
-                role=Role.MEASURE,
-            )
+            return cls.dataset_evaluation(operand, from_, to)
+        if (
+            isinstance(operand, DataComponent)
+            or isinstance(from_, DataComponent)
+            or isinstance(to, DataComponent)
+        ):
+            return cls.component_evaluation(operand, from_, to)
+
+        return cls.scalar_evaluation(operand, from_, to)
+
+    @classmethod
+    def dataset_evaluation(cls, *args: Any) -> Dataset:
+        operand, from_, to = args[:3]
+
+        result_dataset = cls.validate(operand, from_, to)
+        result_data = operand.data if operand.data is not None else empty_relation()
+
+        expr = [f"{d}" for d in operand.get_identifiers_names()]
+
+        from_value = cls.handle_param_value(from_)
+        to_value = cls.handle_param_value(to)
+
+        for measure_name in operand.get_measures_names():
+            expr.append(cls.apply_between_op(measure_name, from_value, to_value))
+
+        result_dataset.data = result_data.project(", ".join(expr))
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
+
+    @classmethod
+    def scalar_evaluation(cls, *args: Scalar) -> Scalar:
+        operand, from_, to = args[:3]
+
+        result = cls.validate(operand, from_, to)
+
+        result.value = cls.py_op(operand.value, from_.value, to.value)
+        return result
+
+    @classmethod
+    def component_evaluation(cls, *args: Union[DataComponent, Scalar]) -> DataComponent:
+        operand, from_, to = args[:3]
+
+        result = cls.validate(
+            operand,
+            from_,
+            to,
+        )
+        operand_value = cls.handle_param_value(operand)
+        from_value = cls.handle_param_value(from_)
+        to_value = cls.handle_param_value(to)
+
+        # Any component can drive the evaluation,
+        # so we need to concat all component data into the same relation
+        all_data = None
+
+        for param in args:
+            if isinstance(param, DataComponent):
+                if all_data is None:
+                    all_data = param.data if param.data is not None else empty_relation()
+                else:
+                    all_data = duckdb_concat(all_data, param.data)
+
+        result.data = all_data.project(  # type: ignore[union-attr]
+            cls.apply_between_op(operand_value, from_value, to_value)
+        )
+
         return result
 
 
@@ -402,7 +360,7 @@ class ExistIn(Operator.Operator):
     # noinspection PyTypeChecker
     @classmethod
     def validate(
-        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[bool]
     ) -> Any:
         dataset_name = VirtualCounter._new_ds_name()
         left_identifiers = dataset_1.get_identifiers_names()
@@ -422,63 +380,53 @@ class ExistIn(Operator.Operator):
 
     @classmethod
     def evaluate(
-        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
+        cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[bool]
     ) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
 
-        # Checking the subset
-        left_id_names = dataset_1.get_identifiers_names()
-        right_id_names = dataset_2.get_identifiers_names()
-        is_subset_left = set(left_id_names).issubset(right_id_names)
+        id_names = dataset_1.get_identifiers_names()
+        op1_name = VirtualCounter._new_temp_view_name()
+        op2_name = VirtualCounter._new_temp_view_name()
+        vds_exists = VirtualCounter._new_temp_view_name()
 
-        # Identifiers for the result dataset
-        reference_identifiers_names = left_id_names
+        con.register(op1_name, dataset_1.data)
+        con.register(op2_name, dataset_2.data)
 
-        # Checking if the left dataset is a subset of the right dataset
-        common_columns = left_id_names if is_subset_left else right_id_names
+        ids_str = ", ".join(id_names)
+        select_str = ", ".join([f"{op1_name}.{col}" for col in id_names])
+        case_expr = "CASE WHEN bool_var IS NULL THEN False ELSE True END AS bool_var"
 
-        # Check if the common identifiers are equal between the two datasets
-        if dataset_1.data is not None and dataset_2.data is not None:
-            true_results = pd.merge(
-                dataset_1.data,
-                dataset_2.data,
-                how="inner",
-                left_on=common_columns,
-                right_on=common_columns,
-            )
-            true_results = true_results[reference_identifiers_names]
+        retain_all_query = f"""
+                SELECT {select_str.replace(op1_name, vds_exists)}, {case_expr}
+                FROM {op1_name} {vds_exists}
+                LEFT JOIN (
+                    SELECT * FROM (
+                        SELECT *, True AS bool_var FROM {op1_name}
+                    ) SEMI JOIN {op2_name} USING ({ids_str})
+                )
+                USING ({ids_str})
+            """
+
+        retain_true_query = f"""
+                SELECT * FROM (
+                    SELECT {select_str}, True AS bool_var FROM {op1_name}
+                ) SEMI JOIN {op2_name} USING ({ids_str})
+            """
+
+        retain_false_query = f"""
+                SELECT * FROM (
+                    SELECT {select_str}, False AS bool_var FROM {op1_name}
+                ) ANTI JOIN {op2_name} USING ({ids_str})
+            """
+
+        if retain_element is None:
+            query = retain_all_query
+        elif retain_element is False:
+            query = retain_false_query
         else:
-            true_results = pd.DataFrame(columns=reference_identifiers_names)
+            query = retain_true_query
 
-        # Check for empty values
-        if true_results.empty:
-            true_results["bool_var"] = None
-        else:
-            true_results["bool_var"] = True
-        if dataset_1.data is None:
-            dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
-        final_result = pd.merge(
-            dataset_1.data,
-            true_results,
-            how="left",
-            left_on=reference_identifiers_names,
-            right_on=reference_identifiers_names,
-        )
-        final_result = final_result[reference_identifiers_names + ["bool_var"]]
-
-        # No null values are returned, only True or False
-        final_result["bool_var"] = final_result["bool_var"].fillna(False)
-
-        # Adding to the result dataset
-        result_dataset.data = final_result
-
-        # Retain only the elements that are specified (True or False)
-        if retain_element is not None:
-            result_dataset.data = result_dataset.data[
-                result_dataset.data["bool_var"] == retain_element
-            ]
-            result_dataset.data = result_dataset.data.reset_index(drop=True)
-
+        result_dataset.data = con.query(query)
         return result_dataset
 
     @staticmethod
