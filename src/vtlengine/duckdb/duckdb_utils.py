@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 from duckdb import duckdb
@@ -32,24 +32,61 @@ def duckdb_concat(
     if left is None or right is None:
         return empty_relation()
 
-    set_on = {on} if isinstance(on, str) else set(on) if on is not None else set()
+    from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
-    cols = set(left.columns) | set(right.columns)
-    common_cols = set(left.columns).intersection(set(right.columns)) - set_on
-    cols_left = "*"
-    if common_cols:
-        cols_left += f" EXCLUDE ({', '.join(quote_cols(common_cols))})"
+    l_name = VirtualCounter._new_temp_view_name()
+    r_name = VirtualCounter._new_temp_view_name()
+    con.register(l_name, left)
+    con.register(r_name, right)
 
-    left = left.project(f"{cols_left}, ROW_NUMBER() OVER () AS __row_id__").set_alias("base")
-    right = right.project("*, ROW_NUMBER() OVER () AS __row_id__").set_alias("other")
+    left_cols = set(left.columns)
+    right_cols = set(right.columns)
+    common_cols = left_cols & right_cols
 
-    if set_on:
-        cols_left = ", ".join(quote_cols(cols - set_on) | {f'base."{c}" AS "{c}"' for c in set_on})
-        join_condition = " AND ".join([f'base."{col}" = other."{col}"' for col in set_on])
-        return left.join(right, condition=join_condition, how="inner").project(cols_left)
+    select_parts = []
+    for col in left_cols | right_cols:
+        if col in common_cols:
+            presence_col = on[0] if on else "__row_id__"
+            select_parts.append(
+                f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
+                f'ELSE l."{col}" END AS "{col}"'
+            )
+        elif col in left_cols:
+            select_parts.append(f'l."{col}"')
+        else:
+            select_parts.append(f'r."{col}"')
 
-    condition = "base.__row_id__ = other.__row_id__"
-    return left.join(right, condition=condition, how="inner").project(", ".join(quote_cols(cols)))
+    select_clause = ",\n".join(select_parts)
+
+    if on is None:
+        with_clause = f"""
+        l AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {l_name}),
+        r AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {r_name})
+        """
+        on_clause = "l.__row_id__ = r.__row_id__"
+    else:
+        with_clause = f"""
+        l AS (SELECT * FROM {l_name}),
+        r AS (SELECT * FROM {r_name})
+        """
+        on = [on] if isinstance(on, str) else on
+        on_clause = " AND ".join([f'l."{col}" = r."{col}"' for col in on])
+
+    query = f"""
+        WITH {with_clause}
+        SELECT {select_clause}
+        FROM l
+        FULL OUTER JOIN r
+        ON {on_clause}
+    """
+
+    order_clause = ""
+    if on:
+        order_cols = ", ".join([f'COALESCE(r."{col}", l."{col}")' for col in on])
+        order_clause = f"ORDER BY {order_cols}"
+
+    final_query = query.format(select_clause=select_clause) + "\n" + order_clause
+    return con.sql(final_query)
 
 
 def duckdb_drop(
@@ -134,66 +171,54 @@ def duckdb_merge(
     how: str = "inner",
 ) -> DuckDBPyRelation:
     """
-    Merges two DuckDB relations on specified join keys and mode.
+    Merges two DuckDB relations using SQL syntax and temporary views.
 
-    Supports: inner, left, right, full (outer) and cross joins.
+    Supports: inner, left, full, and cross joins.
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
     join_keys = join_keys if join_keys is not None else []
 
-    suffixes = ["_x", "_y"]
+    from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+    base_name = VirtualCounter._new_temp_view_name()
+    other_name = VirtualCounter._new_temp_view_name()
+    con.register(base_name, base_relation)
+    con.register(other_name, other_relation)
+
+    if how == "cross":
+        return con.sql(f"SELECT * FROM {base_name} CROSS JOIN {other_name}")
+    elif how == "outer":
+        how = "FULL OUTER"
+
+    if not join_keys:
+        raise ValueError("Join keys required for non-cross joins")
+
+    using_clause = ", ".join(f'"{k}"' for k in join_keys)
+
     base_cols = set(base_relation.columns)
     other_cols = set(other_relation.columns)
     common_cols = (base_cols & other_cols) - set(join_keys)
 
-    base_proj_cols = []
-    for c in base_relation.columns:
-        if c in common_cols:
-            base_proj_cols.append(f'"{c}" AS "{c}{suffixes[0]}"')
-        else:
-            base_proj_cols.append(f'"{c}"')
-    base_relation = base_relation.project(", ".join(base_proj_cols))
+    select_cols = [f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys]
 
-    other_proj_cols = []
-    for c in other_relation.columns:
-        if c in common_cols:
-            other_proj_cols.append(f'"{c}" AS "{c}{suffixes[1]}"')
-        else:
-            other_proj_cols.append(f'"{c}"')
-    other_relation = other_relation.project(", ".join(other_proj_cols))
+    for col in base_relation.columns:
+        if col not in join_keys:
+            suffix = "_x" if col in common_cols and how != "left" else ""
+            select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
-    if how == "cross":
-        return base_relation.cross(other_relation)
+    for col in other_relation.columns:
+        if col not in join_keys:
+            suffix = "_y" if col in common_cols and how != "left" else ""
+            select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
 
-    base_alias = "base"
-    other_alias = "other"
-    base_relation = base_relation.set_alias(base_alias)
-    other_relation = other_relation.set_alias(other_alias)
-
-    join_condition = " AND ".join([f'{base_alias}."{k}" = {other_alias}."{k}"' for k in join_keys])
-
-    joined = base_relation.join(
-        other_relation,
-        condition=join_condition,
-        how=how,
-    )
-
-    coalesced_cols = [
-        f'COALESCE({base_alias}."{k}", {other_alias}."{k}") AS "{k}"' for k in join_keys
-    ]
-
-    other_proj = []
-    for c in base_relation.columns:
-        if c not in join_keys:
-            other_proj.append(f'{base_alias}."{c}"')
-    for c in other_relation.columns:
-        if c not in join_keys:
-            other_proj.append(f'{other_alias}."{c}"')
-
-    final_cols = coalesced_cols + other_proj
-
-    return joined.project(", ".join(final_cols))
+    query = f"""
+        SELECT {", ".join(select_cols)}
+        FROM {base_name}
+        {how.upper()} JOIN {other_name}
+        USING ({using_clause})
+    """
+    return con.sql(query)
 
 
 def duckdb_rename(
@@ -266,18 +291,38 @@ def get_col_type(rel: DuckDBPyRelation, col_name: str) -> DuckDBPyType:
     return rel.types[rel.columns.index(col_name)]
 
 
-def normalize_data(data: DuckDBPyRelation, as_query: bool = False) -> DuckDBPyRelation:
+def normalize_data(
+    self_data: DuckDBPyRelation, other_data: DuckDBPyRelation
+) -> Tuple[DuckDBPyRelation, DuckDBPyRelation]:
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    query_set = {
-        f'"{c}"' for c in data.columns if c not in get_cols_by_types(data, ["DOUBLE", "STRING"])
-    }
-    if query_set == set(data.columns):
-        return "*" if as_query else data
-    query_set.add(round_doubles(data, as_query=True))
-    query = ", ".join(query_set).replace("*, ", "").replace(", *", "")
-    return query if as_query else data.project(query)
+    double_cols = set(get_cols_by_types(self_data, "DOUBLE"))
+    if not len(double_cols):
+        return self_data, other_data
+
+    round_exprs = []
+    base = empty_relation()
+    for col in double_cols:
+        base = duckdb_concat(
+            base,
+            duckdb_concat(
+                self_data.project(f'"{col}" AS "self_{col}"'),
+                other_data.project(f'"{col}" AS "other_{col}"'),
+            ),
+        )
+        round_exprs.append(f'round_to_ref("self_{col}", "other_{col}") AS "self_{col}"')
+        round_exprs.append(f'round_to_ref("other_{col}", "self_{col}") AS "other_{col}"')
+
+    base = base.project(", ".join(round_exprs))
+    self_data = duckdb_concat(
+        self_data, base.project(", ".join(f"self_{col} AS {col}" for col in double_cols))
+    )
+    other_data = duckdb_concat(
+        other_data, base.project(", ".join(f"other_{col} AS {col}" for col in double_cols))
+    )
+
+    return self_data, other_data
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:

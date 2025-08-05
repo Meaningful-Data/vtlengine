@@ -260,8 +260,7 @@ class Dataset:
         self.data = clean_execution_graph(self.data)
         other.data = clean_execution_graph(other.data)
         # Round double values to avoid precision issues
-        self.data = normalize_data(self.data)
-        other.data = normalize_data(other.data)
+        self.data, other.data = normalize_data(self.data, other.data)
 
         # Order by identifiers
         self_cols = quote_cols(self.data.columns)
@@ -273,8 +272,8 @@ class Dataset:
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
         if diff.limit(1).execute().fetchone() is not None:
-            print("\n", self.data)
-            print("\n", other.data)
+            print("\nSELF\n", self.data)
+            print("\nOTHER\n", other.data)
             diff.show()
             return False
         return True
