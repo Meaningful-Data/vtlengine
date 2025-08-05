@@ -840,8 +840,8 @@ class Expr(VtlVisitor):
                 Parser.DayOfYearAtomContext,
                 Parser.DayToYearAtomContext,
                 Parser.DayToMonthAtomContext,
-                Parser.YearToDayAtomContext,
-                Parser.MonthToDayAtomContext,
+                Parser.YearTodayAtomContext,
+                Parser.MonthTodayAtomContext,
             ),
         ):
             return self.visitTimeUnaryAtom(ctx)
@@ -1901,10 +1901,7 @@ class Expr(VtlVisitor):
 
         left_node = Terminals().visitVarID(ctx_list[0])
         op_node = ctx_list[1].getSymbol().text
-        if isinstance(ctx_list[2], Parser.ScalarItemContext):
-            right_node = Terminals().visitScalarItem(ctx_list[2])
-        else:
-            right_node = Terminals().visitVarID(ctx_list[2])
+        right_node = Terminals().visitScalarItem(ctx_list[2])
         return BinOp(left=left_node, op=op_node, right=right_node, **extract_token_info(ctx))
 
     def visitOptionalExpr(self, ctx: Parser.OptionalExprContext):

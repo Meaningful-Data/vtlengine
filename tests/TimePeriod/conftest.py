@@ -14,7 +14,6 @@ def load_datasets(base_path, code, folder_type):
 
     num_inputs = len([f for f in os.listdir(input_path) if f.startswith(f"{code}-")])
     datasets = {}
-    scalars = {}
 
     for i in range(1, num_inputs + 1):
         with open(input_path / f"{code}-{i}.json", "r") as file:
@@ -24,11 +23,9 @@ def load_datasets(base_path, code, folder_type):
             datapoint = {ds_name: pd.read_csv(datapoints_path / f"{code}-{i}.csv")}
         else:
             datapoint = None
-        datasets_single, scalars_single, _ = load_datasets_with_data(datastructure, datapoint)
-        datasets = {**datasets, **datasets_single}
-        scalars = {**scalars, **scalars_single}
+        datasets.update(load_datasets_with_data(datastructure, datapoint)[0])
 
-    return datasets, scalars
+    return datasets
 
 
 @pytest.fixture
