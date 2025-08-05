@@ -1,5 +1,6 @@
 import _random
 import math
+from decimal import Decimal
 from typing import Optional, Union
 
 
@@ -35,14 +36,14 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     return int(rounded_value)
 
 
-def count_decimals(val: Optional[Union[int, float]]) -> int:
-    s = f"{val:.16f}".rstrip("0")
-    return len(s.split(".")[1]) if "." in s else 0
+def count_decimals(x: Optional[float]) -> int:
+    if x is None:
+        return 0
+    d = Decimal(x).normalize()
+    return -int(d.as_tuple().exponent) if int(d.as_tuple().exponent) < 0 else 0
 
 
-def round_to_ref(
-    x: Optional[Union[int, float]], ref: Optional[Union[int, float]]
-) -> Optional[float]:
+def round_to_ref(x: Optional[float], ref: Optional[float]) -> Optional[float]:
     """
     Rounds a numeric value to match the number of decimal places of a reference value.
     If x is None or ref is None, it returns x.
