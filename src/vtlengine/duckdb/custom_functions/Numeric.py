@@ -39,7 +39,7 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
 def count_decimals(x: Optional[float]) -> int:
     if x is None:
         return 0
-    d = Decimal(x).normalize()
+    d = Decimal(str(x)).normalize()
     return -int(d.as_tuple().exponent) if int(d.as_tuple().exponent) < 0 else 0
 
 
