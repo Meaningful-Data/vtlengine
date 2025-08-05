@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from vtlengine.AST import BinOp
+from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -276,6 +277,7 @@ class Join(Operator):
 
 
 class InnerJoin(Join):
+    op = INNER_JOIN
     how = "inner"
 
     @classmethod
@@ -296,10 +298,12 @@ class InnerJoin(Join):
 
 
 class LeftJoin(Join):
+    op = LEFT_JOIN
     how = "left"
 
 
 class FullJoin(Join):
+    op = FULL_JOIN
     how = "outer"
 
     @classmethod
@@ -320,6 +324,7 @@ class FullJoin(Join):
 
 
 class CrossJoin(Join):
+    op = CROSS_JOIN
     how = "cross"
 
     @classmethod
