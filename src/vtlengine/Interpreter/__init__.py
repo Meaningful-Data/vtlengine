@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -49,7 +50,12 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, duckdb_select
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_merge,
+    duckdb_rename,
+    duckdb_select,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
@@ -139,10 +145,10 @@ class InterpreterAnalyzer(ASTTemplate):
     then_condition_dataset: Optional[List[Any]] = None
     else_condition_dataset: Optional[List[Any]] = None
     ruleset_dataset: Optional[Dataset] = None
-    rule_data: Optional[pd.DataFrame] = None
+    rule_data: Optional[DuckDBPyRelation] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
-    hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
+    hr_agg_rules_computed: Optional[Dict[str, DuckDBPyRelation]] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     hr_partial_is_valid: Optional[List[bool]] = None
@@ -1341,20 +1347,18 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            if self.ruleset_dataset.data is None:
-                self.rule_data = None
-            else:
-                self.rule_data = self.ruleset_dataset.data.copy()
+            self.rule_data = self.ruleset_dataset.data
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
-                aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
-                aux["bool_var"] = validation_data.data
-                validation_data = aux
+                expr = ", ".join(self.ruleset_dataset.get_components_names())
+                validation_data = self.rule_data.project(
+                    f"{expr}, {validation_data.name} AS bool_var"
+                )
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
-            validation_data = validation_data[validation_data["bool_var"] == False]
+            validation_data = validation_data.filter("bool_var = FALSE")
         self.rule_data = None
         self.is_from_rule = False
         return validation_data
@@ -1386,28 +1390,40 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-            filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
-            nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
-            # If no filtering indexes, then all datapoints are valid on DPR and HR
-            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
-                self.rule_data["bool_var"] = True
-                self.rule_data.loc[nan_indexes, "bool_var"] = None
-                return self.rule_data
-            non_filtering_indexes = list(set(filter_comp.data.index) - set(filtering_indexes))
 
-            original_data = self.rule_data.copy()
-            self.rule_data = self.rule_data.iloc[filtering_indexes].reset_index(drop=True)
+            self.rule_data = duckdb_concat(
+                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
+            )
+            filtered = self.rule_data.filter('"bool_var" = TRUE')
+            data = self.rule_data.project(
+                '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
+                'THEN NULL ELSE TRUE END AS "bool_var"'
+            )
+
+            if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
+                return data
+
+            self.rule_data = filtered
             result_validation = self.visit(node.right)
+
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
-            self.rule_data["bool_var"] = result_validation.data
-            original_data = original_data.merge(
-                self.rule_data, how="left", on=original_data.columns.tolist()
+
+            self.rule_data = duckdb_concat(
+                self.rule_data,
+                result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
             )
-            original_data.loc[non_filtering_indexes, "bool_var"] = True
-            original_data.loc[nan_indexes, "bool_var"] = None
-            return original_data
+            self.rule_data = duckdb_rename(self.rule_data, {"bool_var": "bool_var_temp"})
+
+            keys = [c for c in self.rule_data.columns if c != "bool_var_temp"]
+            data = duckdb_merge(data, self.rule_data, how="left", join_keys=keys)
+            data = data.project(
+                ", ".join(keys) + ', CASE WHEN "bool_var_temp" != TRUE THEN '
+                '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
+            )
+            return data
+
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
             if self.ruleset_mode in ("partial_null", "partial_zero"):
@@ -1716,10 +1732,10 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value].copy()
+            df = self.hr_agg_rules_computed[node.value]
             return Dataset(name=name, components=result_components, data=df)
 
-        df = self.rule_data.copy()
+        df = self.rule_data
         if condition is not None:
             df = df.loc[condition].reset_index(drop=True)
 
