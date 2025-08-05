@@ -130,7 +130,7 @@ class Validation(Operator):
         rel_list = []
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
-            rule_name = repr(rule_name) if isinstance(rule_name, str) else rule_name
+            rule_name = repr(rule_name)
             errorcode = repr(rule_data.get("errorcode"))
             errorlevel = (
                 repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
