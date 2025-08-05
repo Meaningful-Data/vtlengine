@@ -184,9 +184,7 @@ class Validation(Operator):
     @classmethod
     def evaluate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = cls.validate(dataset_element, rule_info, output)
-        print(result.data)
         result.data = cls._generate_result_data(rule_info)
-        print(result.data)
 
         identifiers = result.get_identifiers_names()
         result.data = result.data.filter(
@@ -196,7 +194,6 @@ class Validation(Operator):
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
         if "imbalance" in result.components:
             validation_measures.append("imbalance")
-        print(result.data)
 
         if output == "invalid":
             result.data = result.data.filter("bool_var = FALSE")
@@ -208,7 +205,6 @@ class Validation(Operator):
             )
 
         result.data = result.data.project(", ".join(result.get_components_names()))
-        print(result.data)
         return result
 
 
