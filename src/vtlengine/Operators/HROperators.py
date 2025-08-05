@@ -10,6 +10,7 @@ from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation, duckdb_drop
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -30,37 +31,45 @@ class HRComparison(Operators.Binary):
         return None if pd.isnull(x) or pd.isnull(y) else x - y
 
     @staticmethod
-    def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        result = pd.Series(True, index=left_series.index)
-
+    def hr_func(left_rel: Any, right_rel: Any, hr_mode: str) -> Any:
+        l_name = left_rel.columns[0]
+        r_name = right_rel.columns[0]
+        mask_null_expr = None
         if hr_mode in ("partial_null", "partial_zero"):
-            mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
-            if hr_mode == "partial_null":
-                mask_null = mask_remove & left_series.notnull()
-            else:
-                mask_null = mask_remove & (left_series != 0)
-            result[mask_remove] = "REMOVE_VALUE"
-            result[mask_null] = None
+            expr = f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{r_name}" IS NOT NULL THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
+            mask_null_expr = (
+                f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{l_name}" IS NOT NULL THEN NULL ELSE \'REMOVE_VALUE\' END AS "mask_null"'
+                if hr_mode == "partial_null"
+                else f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{l_name}" != 0 THEN NULL ELSE \'REMOVE_VALUE\' END AS "mask_null"'
+            )
         elif hr_mode == "non_null":
-            mask_remove = left_series.isnull() | right_series.isnull()
-            result[mask_remove] = "REMOVE_VALUE"
+            expr = f'CASE WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
         elif hr_mode == "non_zero":
-            mask_remove = (left_series == 0) & (right_series == 0)
-            result[mask_remove] = "REMOVE_VALUE"
+            expr = f'CASE WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
+        else:
+            raise ValueError(f"Unsupported hr_mode: {hr_mode}")
 
-        return result
+        # Combine the relations and apply the masks
+        combined_relation = duckdb_concat(left_rel, right_rel)
+        exprs = [f'"{l_name}"', f'"{r_name}"', expr]
+        if mask_null_expr:
+            exprs.append(mask_null_expr)
+
+        query = ', '.join(exprs)
+        result_relation = combined_relation.project(query)
+
+        return result_relation
 
     @classmethod
-    def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
+    def apply_hr_func(cls, left_rel: Any, right_rel: Any, hr_mode: str, func: Any) -> Any:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
         # original series.
-        left_series, right_series = left_series.align(right_series)
-        remove_result = cls.hr_func(left_series, right_series, hr_mode)
-        mask_valid = remove_result == True
-        result = pd.Series(remove_result, index=left_series.index)
-        result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
+        # TODO check if this is necessary with relations
+        result = cls.hr_func(left_rel, right_rel, hr_mode)
+        mask_valid = result == True
+        result.loc[mask_valid] = left_rel[mask_valid].combine(right_rel[mask_valid], func)
         return result
 
     @classmethod
@@ -85,7 +94,7 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
@@ -99,8 +108,7 @@ class HRComparison(Operators.Binary):
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = result.data[result.data["bool_var"] != "REMOVE_VALUE"]
-        result.data.drop(measure_name, axis=1, inplace=True)
+        result.data = duckdb_drop(result.data.filter("bool_var != 'REMOVE_VALUE'"), measure_name)
         return result
 
 
@@ -139,7 +147,12 @@ class HRBinNumeric(Operators.Binary):
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
         # TODO: remove type ignore on HROperators issue
-        result_data = cls.apply_operation_two_series(left.data, right.data)  # type: ignore[attr-defined]
+        l_name = left.data.columns[0]
+        r_name = right.data.columns[0]
+        name = f"{l_name}{cls.op}{r_name}"
+        result_data = duckdb_concat(left.data, right.data)
+        result_data = result_data.project(Operators.apply_bin_op(cls, name, l_name, r_name))
+
         return DataComponent(
             name=f"{left.name}{cls.op}{right.name}",
             data=result_data,
@@ -194,7 +207,7 @@ class HAAssignment(Operators.Binary):
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         if right.data is not None:
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
         result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
@@ -235,7 +248,7 @@ class Hierarchy(Operators.Operator):
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         if len(computed_dict) == 0:
-            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+            computed_data = empty_relation(dataset.get_components_names())
         else:
             computed_data = cls.generate_computed_data(computed_dict)
         if output == "computed":
@@ -244,9 +257,5 @@ class Hierarchy(Operators.Operator):
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(
-            subset=dataset.get_identifiers_names(), keep="last", inplace=True
-        )
-        result.data.reset_index(drop=True, inplace=True)
+        result.data = duckdb_concat(dataset.data, computed_data).distinct()
         return result

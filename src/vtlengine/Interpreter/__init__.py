@@ -1732,22 +1732,22 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value]
-            return Dataset(name=name, components=result_components, data=df)
+            rel = self.hr_agg_rules_computed[node.value].copy()
+            return Dataset(name=name, components=result_components, data=rel)
 
-        df = self.rule_data
+        rel = self.rule_data
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            rel = rel.loc[condition].reset_index(drop=True)
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in df[hr_component].values:
+        if node.value in rel[hr_component]:
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
-            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
+            code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
+            code_data = code_data.merge(rel[rest_identifiers], how="right", on=rest_identifiers)
             code_data = code_data.drop_duplicates().reset_index(drop=True)
 
             # If the value is in the dataset, we create a new row
@@ -1765,7 +1765,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
                 code_data.loc[fill_indexes, measure_name] = 0
             code_data[hr_component] = node.value
-            df = code_data
+            rel = code_data
         else:
             # If the value is not in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1777,18 +1777,18 @@ class InterpreterAnalyzer(ASTTemplate):
                     pass
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
-            df = df.head(1)
-            df[hr_component] = node.value
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                df[measure_name] = 0
-            else:  # For non_null, partial_null and always_null
-                df[measure_name] = None
+
+            value = repr(node.value) if node.value is not None else "NULL"
+            rel = rel.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')
+
+            value = 0 if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero") else "NULL"
+            rel = rel.project(f'* EXCLUDE "{measure_name}", {value} AS "{measure_name}"')
         if self.hr_partial_is_valid is not None and self.ruleset_mode in (
             "partial_null",
             "partial_zero",
         ):
             self.hr_partial_is_valid.append(partial_is_valid)
-        return Dataset(name=name, components=result_components, data=df)
+        return Dataset(name=name, components=result_components, data=rel)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
