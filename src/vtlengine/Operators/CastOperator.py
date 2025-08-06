@@ -2,6 +2,7 @@ from copy import copy
 from typing import Any, Optional, Type, Union
 
 import pandas as pd
+from attr import attributes
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
@@ -23,6 +24,8 @@ from vtlengine.DataTypes.TimeHandling import str_period_to_date
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.connection import con
+from vtlengine.duckdb.duckdb_utils import empty_relation
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -31,7 +34,6 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
 class Cast(Operator.Unary):
     op = CAST
-
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
@@ -387,25 +389,21 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> Dataset:
-        from_type = operand.get_measures()[0].data_type
+        to_type_sql = to_type().sql_type
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
         new_measure = result_dataset.get_measures()[0]
-        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-
-        if original_measure.name != new_measure.name:
-            result_dataset.data.rename(
-                columns={original_measure.name: new_measure.name}, inplace=True
-            )
-        measure_data = result_dataset.data[new_measure.name]
+        identifiers = operand.get_identifiers_names()
+        attributes = operand.get_attributes_names()
+        non_measures_string = ",".join(identifiers + attributes)
+        op_name = VirtualCounter()._new_temp_view_name()
+        operand_data = operand.data if operand.data is not None else empty_relation(list(operand.components.keys()))
+        con.register(op_name, operand_data)
         if mask:
-            result_dataset.data[new_measure.name] = cls.cast_mask_component(
-                measure_data, from_type, to_type, mask
-            )
+            pass
         else:
-            result_dataset.data[new_measure.name] = cls.cast_component(
-                measure_data, from_type, to_type
-            )
+            query = f"SELECT {non_measures_string}, CAST ({original_measure.name} AS {to_type_sql}) AS {new_measure.name} FROM {op_name}"
+            result_dataset.data = con.query(query)
         return result_dataset
 
     @classmethod
@@ -435,11 +433,14 @@ class Cast(Operator.Unary):
         to_type: Type[ScalarType],
         mask: Optional[str] = None,
     ) -> DataComponent:
-        from_type = operand.data_type
+        to_type_sql = to_type().sql_type
         result_component = cls.component_validation(operand, to_type, mask)
+        operand_data = operand.data if operand.data is not None else empty_relation(operand.name)
         if mask:
-            casted_data = cls.cast_mask_component(operand.data, from_type, to_type, mask)
+            pass
         else:
-            casted_data = cls.cast_component(operand.data, from_type, to_type)
-        result_component.data = casted_data
-        return result_component
+            query = f"CAST ({operand.name} AS {to_type_sql}) AS {result_component.name}"
+            result_component.data = operand_data.project(
+                query
+            )
+            return result_component
