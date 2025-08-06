@@ -51,7 +51,7 @@ class HRComparison(Operators.Binary):
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
-        exprs = [f'"{l_name}"', f'"{r_name}"', expr]
+        exprs = [expr]
         if mask_null_expr:
             exprs.append(mask_null_expr)
 
@@ -68,6 +68,7 @@ class HRComparison(Operators.Binary):
         # original series.
         # TODO check if this is necessary with relations
         result = cls.hr_func(left_rel, right_rel, hr_mode)
+        print(result)
         mask_valid = result == True
         result.loc[mask_valid] = left_rel[mask_valid].combine(right_rel[mask_valid], func)
         return result
@@ -259,3 +260,4 @@ class Hierarchy(Operators.Operator):
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
         result.data = duckdb_concat(dataset.data, computed_data).distinct()
         return result
+
