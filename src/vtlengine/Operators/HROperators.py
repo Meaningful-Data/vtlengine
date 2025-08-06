@@ -3,6 +3,7 @@ from copy import copy
 from typing import Any, Dict
 
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
@@ -11,6 +12,7 @@ from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation, duckdb_drop
+from vtlengine.duckdb.to_sql_token import TO_SQL_TOKEN, MIDDLE
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -31,46 +33,76 @@ class HRComparison(Operators.Binary):
         return None if pd.isnull(x) or pd.isnull(y) else x - y
 
     @staticmethod
-    def hr_func(left_rel: Any, right_rel: Any, hr_mode: str) -> Any:
+    def hr_func(left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str) -> DuckDBPyRelation:
         l_name = left_rel.columns[0]
         r_name = right_rel.columns[0]
-        mask_null_expr = None
-        if hr_mode in ("partial_null", "partial_zero"):
-            expr = f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{r_name}" IS NOT NULL THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
-            mask_null_expr = (
-                f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{l_name}" IS NOT NULL THEN NULL ELSE \'REMOVE_VALUE\' END AS "mask_null"'
-                if hr_mode == "partial_null"
-                else f'CASE WHEN "{r_name}" = \'REMOVE_VALUE\' AND "{l_name}" != 0 THEN NULL ELSE \'REMOVE_VALUE\' END AS "mask_null"'
-            )
+        RM_val = "'REMOVE_VALUE'"
+        expr = f'"{l_name}", "{r_name}"'
+        
+        if hr_mode == "partial_null":
+            expr += f""",
+                    CASE
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" IS NOT NULL THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL THEN {RM_val}
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+
+        elif hr_mode == "partial_zero":
+            expr += f""",
+                    CASE
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0 THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL THEN {RM_val}
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+
         elif hr_mode == "non_null":
-            expr = f'CASE WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
+            expr += f""",
+                    CASE
+                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN 'REMOVE_VALUE'
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+
         elif hr_mode == "non_zero":
-            expr = f'CASE WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN \'REMOVE_VALUE\' ELSE NULL END AS "mask_remove"'
-        else:
-            raise ValueError(f"Unsupported hr_mode: {hr_mode}")
+            expr += f""",
+                    CASE
+                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN "{RM_val}"
+                        ELSE 'true'
+                    END AS hr_mask
+                """
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
-        exprs = [expr]
-        if mask_null_expr:
-            exprs.append(mask_null_expr)
-
-        query = ', '.join(exprs)
-        result_relation = combined_relation.project(query)
-
-        return result_relation
+        return combined_relation.project(expr)
 
     @classmethod
-    def apply_hr_func(cls, left_rel: Any, right_rel: Any, hr_mode: str, func: Any) -> Any:
+    def apply_hr_func(cls, left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str, func: Any) -> DuckDBPyRelation:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
         # original series.
         # TODO check if this is necessary with relations
         result = cls.hr_func(left_rel, right_rel, hr_mode)
+
+        position = MIDDLE
+        sql_token = TO_SQL_TOKEN.get(func, func)
+        if isinstance(sql_token, tuple):
+            sql_token, position = sql_token
+        if position == MIDDLE:
+            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+        else:
+            sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
+
+        result = result.project(f"""
+                    CASE 
+                        WHEN hr_mask = 'true' 
+                        THEN CAST({sql_func} AS VARCHAR)
+                        ELSE hr_mask
+                    END AS result
+                """)
         print(result)
-        mask_valid = result == True
-        result.loc[mask_valid] = left_rel[mask_valid].combine(right_rel[mask_valid], func)
         return result
 
     @classmethod
@@ -100,7 +132,7 @@ class HRComparison(Operators.Binary):
 
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op_func
+                left.data[measure_name], right.data, hr_mode, cls.op
             )
             result.data["imbalance"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, cls.imbalance_func
