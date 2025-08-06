@@ -217,16 +217,27 @@ class Check_Hierarchy(Validation):
 
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
-        result_data = None
+        rel_list = []
         for rule_name, rule_data in rule_info.items():
-            rule_output = rule_data["output"]
-            rule_output = rule_output.project(
-                f'*, "{rule_name}" AS ruleid, '
-                f"{rule_data['errorcode']} AS errorcode, "
-                f"{rule_data['errorlevel']} AS errorlevel"
+            rel = rule_data["output"]
+            rule_name = repr(rule_name)
+            errorcode = repr(rule_data.get("errorcode"))
+            errorlevel = (
+                repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
             )
-            result_data = rule_output if result_data is None else result_data.union_all(rule_output)
-        return result_data
+
+            query = f"""
+                *,
+                {rule_name} AS ruleid,
+                CASE WHEN "bool_var" = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
+                CASE WHEN "bool_var" = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
+                """
+            rel_list.append(rel.project(query))
+
+        result = rel_list[0]
+        for rel in rel_list[1:]:
+            result = result.union(rel)
+        return result
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
@@ -264,3 +275,4 @@ class Check_Hierarchy(Validation):
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():
                 dataset.delete_component(x.name)
+

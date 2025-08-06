@@ -1450,8 +1450,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if left_operand.data is None:
                     result.data = None
                 else:
-                    left_original_measure_data = left_operand.data[left_measure.name]
-                    result.data[left_measure.name] = left_original_measure_data
+                    result.data = duckdb_concat(result.data, left_operand.data[left_measure.name])
                 result.components[left_measure.name] = left_measure
                 return result
         else:

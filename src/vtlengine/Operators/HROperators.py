@@ -12,7 +12,7 @@ from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation, duckdb_drop
-from vtlengine.duckdb.to_sql_token import TO_SQL_TOKEN, MIDDLE
+from vtlengine.duckdb.to_sql_token import TO_SQL_TOKEN, MIDDLE, LEFT
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -28,9 +28,6 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 
 class HRComparison(Operators.Binary):
-    @classmethod
-    def imbalance_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else x - y
 
     @staticmethod
     def hr_func(left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str) -> DuckDBPyRelation:
@@ -68,7 +65,7 @@ class HRComparison(Operators.Binary):
         elif hr_mode == "non_zero":
             expr += f""",
                     CASE
-                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN "{RM_val}"
+                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_val}
                         ELSE 'true'
                     END AS hr_mask
                 """
@@ -78,7 +75,7 @@ class HRComparison(Operators.Binary):
         return combined_relation.project(expr)
 
     @classmethod
-    def apply_hr_func(cls, left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str, func: Any) -> DuckDBPyRelation:
+    def apply_hr_func(cls, left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str, func: str, col_name: str) -> DuckDBPyRelation:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
@@ -86,7 +83,7 @@ class HRComparison(Operators.Binary):
         # TODO check if this is necessary with relations
         result = cls.hr_func(left_rel, right_rel, hr_mode)
 
-        position = MIDDLE
+        position = MIDDLE if func != "imbalance_func" else LEFT
         sql_token = TO_SQL_TOKEN.get(func, func)
         if isinstance(sql_token, tuple):
             sql_token, position = sql_token
@@ -100,9 +97,8 @@ class HRComparison(Operators.Binary):
                         WHEN hr_mask = 'true' 
                         THEN CAST({sql_func} AS VARCHAR)
                         ELSE hr_mask
-                    END AS result
+                    END AS "{col_name}"
                 """)
-        print(result)
         return result
 
     @classmethod
@@ -131,12 +127,13 @@ class HRComparison(Operators.Binary):
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
-            result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op
+            bool_var = cls.apply_hr_func(
+                left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
             )
-            result.data["imbalance"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.imbalance_func
+            imbalance = cls.apply_hr_func(
+                left.data[measure_name], right.data, hr_mode, "imbalance_func", "imbalance"
             )
+            result.data = duckdb_concat(result.data, duckdb_concat(bool_var, imbalance))
 
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
