@@ -80,7 +80,6 @@ class HRComparison(Operators.Binary):
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
         # original series.
-        # TODO check if this is necessary with relations
         result = cls.hr_func(left_rel, right_rel, hr_mode)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
@@ -250,7 +249,6 @@ class HAAssignment(Operators.Binary):
         if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
             return "REMOVE_VALUE"
         return x
-
 
 class Hierarchy(Operators.Operator):
     op = HIERARCHY
