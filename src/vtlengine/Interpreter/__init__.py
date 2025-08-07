@@ -591,16 +591,25 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 operand_comp = self.visit(node.operand)
                 component_name = operand_comp.name
+                id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
+                attribute_names = self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
-                for name in measure_names:
-                    if name != operand_comp.name:
-                        dataset_components.pop(name)
+                for name in measure_names + attribute_names:
+                    dataset_components.pop(name)
+
+                dataset_components[operand_comp.name] = Component(
+                    name=operand_comp.name,
+                    data_type=operand_comp.data_type,
+                    role=operand_comp.role,
+                    nullable=operand_comp.nullable,
+                )
 
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[dataset_components.keys()]
+                    data = self.regular_aggregation_dataset.data[id_names].copy()
+                    data[operand_comp.name] = operand_comp.data
 
                 operand = Dataset(
                     name=self.regular_aggregation_dataset.name,
