@@ -1,11 +1,9 @@
 from copy import copy
 from typing import Any, Optional, Type, Union
 
-import pandas as pd
-from attr import attributes
-
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import CAST
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     EXPLICIT_WITH_MASK_TYPE_PROMOTION_MAPPING,
@@ -21,11 +19,10 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes.TimeHandling import str_period_to_date
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.connection import con
-from vtlengine.duckdb.duckdb_utils import empty_relation
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
@@ -34,6 +31,7 @@ ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
 class Cast(Operator.Unary):
     op = CAST
+
     # CASTS VALUES
     # Converts the value from one type to another in a way that is according to the mask
     @classmethod
@@ -397,12 +395,19 @@ class Cast(Operator.Unary):
         attributes = operand.get_attributes_names()
         non_measures_string = ",".join(identifiers + attributes)
         op_name = VirtualCounter()._new_temp_view_name()
-        operand_data = operand.data if operand.data is not None else empty_relation(list(operand.components.keys()))
+        operand_data = (
+            operand.data
+            if operand.data is not None
+            else empty_relation(list(operand.components.keys()))
+        )
         con.register(op_name, operand_data)
         if mask:
             pass
         else:
-            query = f"SELECT {non_measures_string}, CAST ({original_measure.name} AS {to_type_sql}) AS {new_measure.name} FROM {op_name}"
+            query = (
+                f"SELECT {non_measures_string}, CAST ({original_measure.name} "
+                f"AS {to_type_sql}) AS {new_measure.name} FROM {op_name}"
+            )
             result_dataset.data = con.query(query)
         return result_dataset
 
@@ -440,7 +445,5 @@ class Cast(Operator.Unary):
             pass
         else:
             query = f"CAST ({operand.name} AS {to_type_sql}) AS {result_component.name}"
-            result_component.data = operand_data.project(
-                query
-            )
-            return result_component
+            result_component.data = operand_data.project(query)
+        return result_component
