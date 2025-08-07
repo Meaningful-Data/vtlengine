@@ -69,6 +69,8 @@ class HRComparison(Operators.Binary):
                         ELSE 'true'
                     END AS hr_mask
                 """
+        else:
+            expr += f", 'true' AS hr_mask"
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
@@ -238,17 +240,14 @@ class HAAssignment(Operators.Binary):
         measure_name = left.get_measures_names()[0]
         result.data = left.data if left.data is not None else empty_relation()
         if right.data is not None:
-            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
-        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
+            result.data = duckdb_concat(
+                result.data,
+                right.data.project(
+                    f'handle_mode("{right.data.columns[0]}", {repr(hr_mode)}) AS "{measure_name}"'
+                )
+            )
+        result.data = result.data.filter(f'"{measure_name}" != \'REMOVE_VALUE\'')
         return result
-
-    @classmethod
-    def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
-        if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
-            return "REMOVE_VALUE"
-        return x
 
 class Hierarchy(Operators.Operator):
     op = HIERARCHY

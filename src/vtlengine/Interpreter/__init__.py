@@ -519,7 +519,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     and comp_grouped.data is not None
                     and len(comp_grouped.data) > 0
                 ):
-                    operand.data[comp_grouped.name] = comp_grouped.data
+                    operand.data = duckdb_concat(operand.data, comp_grouped.data)
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
             if node.having_clause is not None:
@@ -1762,12 +1762,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
                     pass
-                elif code_data[hr_component].isnull().any():
+                elif code_data.filter(f'"{hr_component}" IS NULL').fetchone() is not None:
                     partial_is_valid = False
 
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                fill_indexes = code_data[code_data[hr_component].isnull()].index
-                code_data.loc[fill_indexes, measure_name] = 0
+                code_data = code_data.project(
+                    f'* EXCLUDE "{measure_name}", '
+                    f'CASE WHEN "{hr_component}" IS NULL THEN 0 ELSE {measure_name} END AS "{measure_name}"'
+                )
             # code_data[hr_component] = node.value
             value = repr(node.value) if node.value is not None else "NULL"
             code_data = code_data.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')

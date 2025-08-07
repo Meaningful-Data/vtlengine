@@ -26,11 +26,13 @@ from vtlengine.duckdb.custom_functions.Time import (
 )
 from vtlengine.duckdb.custom_functions.HR import (
     imbalance_func,
+    handle_mode,
 )
 
 __all__ = [
     # HR functions
     "imbalance_func",
+    "handle_mode",
     # Numeric functions
     "random_duck",
     "trunc_duck",
