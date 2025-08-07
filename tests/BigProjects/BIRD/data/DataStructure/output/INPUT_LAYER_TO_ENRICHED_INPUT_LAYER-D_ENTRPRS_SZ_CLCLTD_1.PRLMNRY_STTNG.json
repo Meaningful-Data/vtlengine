@@ -37,7 +37,7 @@
           "name": "ENTRPRS_SZ_PRLMNRY_T",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

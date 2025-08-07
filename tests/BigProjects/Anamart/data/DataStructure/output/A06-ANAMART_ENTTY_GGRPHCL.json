@@ -31,13 +31,13 @@
           "name": "IS_DMSTC",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IS_EA_ACTIVITY",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

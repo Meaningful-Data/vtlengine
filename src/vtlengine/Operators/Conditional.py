@@ -157,15 +157,19 @@ class If(Operator):
                     op=cls.op,
                     type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
-            if not isinstance(left, Scalar) or not isinstance(right, Scalar):
-                nullable = condition.nullable
-            else:
-                if left.data_type == Null or right.data_type == Null:
-                    nullable = True
-            if isinstance(left, DataComponent):
-                nullable |= left.nullable
-            if isinstance(right, DataComponent):
-                nullable |= right.nullable
+
+            if (
+                isinstance(left, Scalar)
+                and isinstance(right, Scalar)
+                and (left.value is None or right.value is None)
+            ):
+                nullable = True
+            if isinstance(left, DataComponent) and isinstance(right, DataComponent):
+                nullable = left.nullable or right.nullable
+            elif isinstance(left, DataComponent):
+                nullable = left.nullable or right.value is None
+            elif isinstance(right, DataComponent):
+                nullable = left.value is None or right.nullable
             return DataComponent(
                 name=comp_name,
                 data=None,
@@ -433,11 +437,9 @@ class Case(Operator):
                     raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
 
             nullable = any(
-                (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
-                for thenOp in ops
+                (op.nullable if isinstance(op, DataComponent) else op.data_type == Null)
+                for op in ops
             )
-            nullable |= any(condition.nullable for condition in conditions)
-
             data_type = ops[0].data_type
             for op in ops[1:]:
                 data_type = binary_implicit_promotion(data_type, op.data_type)
