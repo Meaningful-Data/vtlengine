@@ -1738,16 +1738,21 @@ class InterpreterAnalyzer(ASTTemplate):
         if condition is not None:
             rel = rel.loc[condition].reset_index(drop=True)
 
-        measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in rel[hr_component]:
+        measure_name = self.ruleset_dataset.get_measures_names()[0]
+        if rel.filter(f"{hr_component} = '{node.value}'").fetchone():
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
-            code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(rel[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = rel.filter(f"{hr_component} = '{node.value}'")
+            code_data = duckdb_merge(
+                code_data,
+                duckdb_select(rel, rest_identifiers),
+                how="right",
+                join_keys=rest_identifiers
+            ).distinct()
+
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1763,7 +1768,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
                 code_data.loc[fill_indexes, measure_name] = 0
-            code_data[hr_component] = node.value
+            # code_data[hr_component] = node.value
+            value = repr(node.value) if node.value is not None else "NULL"
+            code_data = code_data.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')
             rel = code_data
         else:
             # If the value is not in the dataset, we create a new row
