@@ -161,15 +161,15 @@ class If(Operator):
             if (
                 isinstance(left, Scalar)
                 and isinstance(right, Scalar)
-                and (left.value is None or right.value is None)
+                and (left.data_type == Null or right.data_type == Null)
             ):
                 nullable = True
             if isinstance(left, DataComponent) and isinstance(right, DataComponent):
                 nullable = left.nullable or right.nullable
             elif isinstance(left, DataComponent):
-                nullable = left.nullable or right.value is None
+                nullable = left.nullable or right.data_type == Null
             elif isinstance(right, DataComponent):
-                nullable = left.value is None or right.nullable
+                nullable = left.data_type == Null or right.nullable
             return DataComponent(
                 name=comp_name,
                 data=None,
