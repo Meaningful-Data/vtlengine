@@ -215,30 +215,6 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
-        rel_list = []
-        for rule_name, rule_data in rule_info.items():
-            rel = rule_data["output"]
-            rule_name = repr(rule_name)
-            errorcode, errorlevel = (
-                repr(rule_data.get(key)) if rule_data.get(key) is not None else "NULL"
-                for key in ("errorcode", "errorlevel")
-            )
-
-            query = f"""
-                *,
-                {rule_name} AS ruleid,
-                CASE WHEN "bool_var" = FALSE THEN {errorcode} END AS "errorcode",
-                CASE WHEN "bool_var" = FALSE THEN {errorlevel} END AS "errorlevel"
-                """
-            rel_list.append(rel.project(query))
-
-        result = rel_list[0]
-        for rel in rel_list[1:]:
-            result = duckdb_concat(rel, result, on=["ruleid"])
-        return result
-
-    @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = super().validate(dataset_element, rule_info, output)
         result.components["imbalance"] = Component(
