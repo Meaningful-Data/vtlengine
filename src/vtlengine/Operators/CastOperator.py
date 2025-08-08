@@ -402,7 +402,7 @@ class Cast(Operator.Unary):
         )
         con.register(op_name, operand_data)
         if mask:
-            pass
+            raise NotImplementedError("Mask casting for Dataset is not implemented yet.")
         else:
             query = (
                 f"SELECT {non_measures_string}, CAST ({original_measure.name} "
