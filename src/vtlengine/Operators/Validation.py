@@ -14,7 +14,7 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_select,
-    empty_relation,
+    empty_relation, clean_execution_graph, duckdb_merge,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -137,14 +137,14 @@ class Validation(Operator):
             query = f"""
             *,
             {rule_name} AS ruleid,
-            CASE WHEN "bool_var" = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
-            CASE WHEN "bool_var" = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
+            CASE WHEN "bool_var" = FALSE THEN {errorcode} END AS "errorcode",
+            CASE WHEN "bool_var" = FALSE THEN {errorlevel} END AS "errorlevel"
             """
             rel_list.append(rel.project(query))
 
         result = rel_list[0]
         for rel in rel_list[1:]:
-            result = result.union(rel)
+            result = duckdb_concat(rel, result, on=["ruleid"])
         return result
 
     @classmethod
@@ -220,22 +220,22 @@ class Check_Hierarchy(Validation):
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
             rule_name = repr(rule_name)
-            errorcode = repr(rule_data.get("errorcode"))
-            errorlevel = (
-                repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
+            errorcode, errorlevel = (
+                repr(rule_data.get(key)) if rule_data.get(key) is not None else "NULL"
+                for key in ("errorcode", "errorlevel")
             )
 
             query = f"""
                 *,
                 {rule_name} AS ruleid,
-                CASE WHEN "bool_var" = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
-                CASE WHEN "bool_var" = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
+                CASE WHEN "bool_var" = FALSE THEN {errorcode} END AS "errorcode",
+                CASE WHEN "bool_var" = FALSE THEN {errorlevel} END AS "errorlevel"
                 """
             rel_list.append(rel.project(query))
 
         result = rel_list[0]
         for rel in rel_list[1:]:
-            result = result.union(rel)
+            result = duckdb_concat(rel, result)
         return result
 
     @classmethod
