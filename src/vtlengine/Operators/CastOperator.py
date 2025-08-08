@@ -442,7 +442,7 @@ class Cast(Operator.Unary):
         result_component = cls.component_validation(operand, to_type, mask)
         operand_data = operand.data if operand.data is not None else empty_relation(operand.name)
         if mask:
-            pass
+            raise NotImplementedError("Mask casting for DataComponent is not implemented yet.")
         else:
             query = f"CAST ({operand.name} AS {to_type_sql}) AS {result_component.name}"
             result_component.data = operand_data.project(query)

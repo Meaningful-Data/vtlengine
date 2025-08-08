@@ -228,6 +228,7 @@ ds_param = [
     ("4-6", "DS_1[calc Me_4:= Me_1 * null]"),
     ("4-6", "DS_1[calc Me_4:= null * Me_1]"),
     ("7-27", "DS_1[calc Me_2:=current_date()]"),
+    ("13-9", "DS_1[aggr attribute Me_2 := sum(Me_1) group by Id_1]"),
     ("17-1", "cast(DS_1, string)"),
     ("17-2", "DS_1[calc Me_2 := cast(Me_1, string)]"),
     ("17-3", "DS_1[calc Me_1 := cast(Me_1, string)]"),
