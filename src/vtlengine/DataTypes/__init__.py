@@ -117,7 +117,9 @@ class String(ScalarType):
         return "VARCHAR"
 
     @classmethod
-    def implicit_cast(cls, value: Any, from_type: Any) -> str:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Optional[str]:
+        if value is None:
+            return None
         # if pd.isna(value):
         #     return cls.default
         if from_type in {
@@ -140,7 +142,9 @@ class String(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value: Any, from_type: Any) -> str:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Optional[str]:
+        if value is None:
+            return None
         if from_type in {TimePeriod, Date, String}:
             return str(value)
 

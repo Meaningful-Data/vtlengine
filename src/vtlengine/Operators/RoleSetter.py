@@ -43,7 +43,7 @@ class RoleSetter(Unary):
         if isinstance(operand, Scalar):
             if operand.value is None:
                 operand.value = "NULL"
-            if operand.data_type == String:
+            elif operand.data_type == String:
                 operand.value = f"'{operand.value}'"
             query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
             result.data = con.query(query)
