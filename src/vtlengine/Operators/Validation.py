@@ -101,9 +101,7 @@ class Check(Operator):
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
-        result.data = validation_element.data.project(
-            ", ".join(f'"{col}"' for col in columns_to_keep)
-        )
+        result.data = duckdb_select(validation_element.data, columns_to_keep)
 
         exprs = [f'"{col}"' for col in columns_to_keep]
         if imbalance_element and imbalance_element.data:
@@ -131,7 +129,11 @@ class Validation(Operator):
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
             rule_name = repr(rule_name)
-            errorcode = repr(rule_data.get("errorcode"))
+            errorcode = (
+                repr(rule_data.get("errorcode"))
+                if rule_data.get("errorcode") is not None
+                else "NULL"
+            )
             errorlevel = (
                 repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
             )
@@ -275,4 +277,3 @@ class Check_Hierarchy(Validation):
         if len(dataset.get_attributes()) > 0:
             for x in dataset.get_attributes():
                 dataset.delete_component(x.name)
-

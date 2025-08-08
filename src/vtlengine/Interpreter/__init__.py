@@ -1750,9 +1750,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 code_data,
                 duckdb_select(rel, rest_identifiers),
                 how="right",
-                join_keys=rest_identifiers
+                join_keys=rest_identifiers,
             ).distinct()
-
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1772,7 +1771,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             # code_data[hr_component] = node.value
             value = repr(node.value) if node.value is not None else "NULL"
-            code_data = code_data.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')
+            code_data = code_data.project(
+                f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"'
+            )
             rel = code_data
         else:
             # If the value is not in the dataset, we create a new row
@@ -1789,7 +1790,9 @@ class InterpreterAnalyzer(ASTTemplate):
             value = repr(node.value) if node.value is not None else "NULL"
             rel = rel.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')
 
-            value = 0 if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero") else "NULL"
+            value = (
+                0 if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero") else "NULL"
+            )
             rel = rel.project(f'* EXCLUDE "{measure_name}", {value} AS "{measure_name}"')
         if self.hr_partial_is_valid is not None and self.ruleset_mode in (
             "partial_null",

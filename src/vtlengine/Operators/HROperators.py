@@ -28,14 +28,15 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 
 class HRComparison(Operators.Binary):
-
     @staticmethod
-    def hr_func(left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str) -> DuckDBPyRelation:
+    def hr_func(
+        left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str
+    ) -> DuckDBPyRelation:
         l_name = left_rel.columns[0]
         r_name = right_rel.columns[0]
         RM_val = "'REMOVE_VALUE'"
         expr = f'"{l_name}", "{r_name}"'
-        
+
         if hr_mode == "partial_null":
             expr += f""",
                     CASE
@@ -77,7 +78,14 @@ class HRComparison(Operators.Binary):
         return combined_relation.project(expr)
 
     @classmethod
-    def apply_hr_func(cls, left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str, func: str, col_name: str) -> DuckDBPyRelation:
+    def apply_hr_func(
+        cls,
+        left_rel: DuckDBPyRelation,
+        right_rel: DuckDBPyRelation,
+        hr_mode: str,
+        func: str,
+        col_name: str,
+    ) -> DuckDBPyRelation:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
@@ -244,10 +252,11 @@ class HAAssignment(Operators.Binary):
                 result.data,
                 right.data.project(
                     f'handle_mode("{right.data.columns[0]}", {repr(hr_mode)}) AS "{measure_name}"'
-                )
+                ),
             )
-        result.data = result.data.filter(f'"{measure_name}" != \'REMOVE_VALUE\'')
+        result.data = result.data.filter(f"\"{measure_name}\" != 'REMOVE_VALUE'")
         return result
+
 
 class Hierarchy(Operators.Operator):
     op = HIERARCHY
@@ -286,4 +295,3 @@ class Hierarchy(Operators.Operator):
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
         result.data = duckdb_concat(dataset.data, computed_data).distinct()
         return result
-
