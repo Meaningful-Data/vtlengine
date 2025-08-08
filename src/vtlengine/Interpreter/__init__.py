@@ -1767,7 +1767,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 code_data = code_data.project(
                     f'* EXCLUDE "{measure_name}", '
-                    f'CASE WHEN "{hr_component}" IS NULL THEN 0 ELSE {measure_name} END AS "{measure_name}"'
+                    f'CASE WHEN "{hr_component}" IS NULL THEN 0 ELSE {measure_name} '
+                    f'END AS "{measure_name}"'
                 )
             # code_data[hr_component] = node.value
             value = repr(node.value) if node.value is not None else "NULL"

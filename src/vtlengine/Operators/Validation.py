@@ -14,7 +14,7 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_select,
-    empty_relation, clean_execution_graph, duckdb_merge,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role

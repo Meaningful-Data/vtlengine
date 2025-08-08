@@ -9,10 +9,10 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, empty_relation
+from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation, duckdb_drop
-from vtlengine.duckdb.to_sql_token import TO_SQL_TOKEN, MIDDLE, LEFT
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -40,8 +40,11 @@ class HRComparison(Operators.Binary):
         if hr_mode == "partial_null":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" IS NOT NULL THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL THEN {RM_val}
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND
+                             "{l_name}" IS NOT NULL
+                        THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
+                        THEN {RM_val}
                         ELSE 'true'
                     END AS hr_mask
                 """
@@ -49,8 +52,10 @@ class HRComparison(Operators.Binary):
         elif hr_mode == "partial_zero":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0 THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL THEN {RM_val}
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
+                        THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
+                        THEN {RM_val}
                         ELSE 'true'
                     END AS hr_mask
                 """
@@ -71,7 +76,7 @@ class HRComparison(Operators.Binary):
                     END AS hr_mask
                 """
         else:
-            expr += f", 'true' AS hr_mask"
+            expr += ", 'true' AS hr_mask"
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
@@ -102,8 +107,8 @@ class HRComparison(Operators.Binary):
             sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
 
         result = result.project(f"""
-                    CASE 
-                        WHEN hr_mask = 'true' 
+                    CASE
+                        WHEN hr_mask = 'true'
                         THEN CAST({sql_func} AS VARCHAR)
                         ELSE hr_mask
                     END AS "{col_name}"

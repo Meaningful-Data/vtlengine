@@ -1,4 +1,8 @@
 from vtlengine.duckdb.custom_functions.Comparison import between_duck, isnull_duck
+from vtlengine.duckdb.custom_functions.HR import (
+    handle_mode,
+    imbalance_func,
+)
 from vtlengine.duckdb.custom_functions.Numeric import (
     random_duck,
     round_duck,
@@ -23,10 +27,6 @@ from vtlengine.duckdb.custom_functions.Time import (
     time_agg_duck,
     year_duck,
     year_to_day_duck,
-)
-from vtlengine.duckdb.custom_functions.HR import (
-    imbalance_func,
-    handle_mode,
 )
 
 __all__ = [
