@@ -101,9 +101,7 @@ class Check(Operator):
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
-        result.data = validation_element.data.project(
-            ", ".join(f'"{col}"' for col in columns_to_keep)
-        )
+        result.data = duckdb_select(validation_element.data, columns_to_keep)
 
         exprs = [f'"{col}"' for col in columns_to_keep]
         if imbalance_element and imbalance_element.data:
@@ -131,21 +129,22 @@ class Validation(Operator):
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
             rule_name = repr(rule_name)
-            errorcode = repr(rule_data.get("errorcode"))
-            errorlevel = (
-                repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
+            errorcode, errorlevel = (
+                repr(rule_data.get(key)) if rule_data.get(key) is not None else "NULL"
+                for key in ("errorcode", "errorlevel")
             )
+
             query = f"""
             *,
             {rule_name} AS ruleid,
-            CASE WHEN "bool_var" = FALSE THEN {errorcode} ELSE NULL END AS "errorcode",
-            CASE WHEN "bool_var" = FALSE THEN {errorlevel} ELSE NULL END AS "errorlevel"
+            CASE WHEN "bool_var" = FALSE THEN {errorcode} END AS "errorcode",
+            CASE WHEN "bool_var" = FALSE THEN {errorlevel} END AS "errorlevel"
             """
             rel_list.append(rel.project(query))
 
         result = rel_list[0]
         for rel in rel_list[1:]:
-            result = result.union(rel)
+            result = duckdb_concat(rel, result, on=["ruleid"])
         return result
 
     @classmethod
@@ -214,19 +213,6 @@ class Check_Datapoint(Validation):
 
 class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
-
-    @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
-        result_data = None
-        for rule_name, rule_data in rule_info.items():
-            rule_output = rule_data["output"]
-            rule_output = rule_output.project(
-                f'*, "{rule_name}" AS ruleid, '
-                f"{rule_data['errorcode']} AS errorcode, "
-                f"{rule_data['errorlevel']} AS errorlevel"
-            )
-            result_data = rule_output if result_data is None else result_data.union_all(rule_output)
-        return result_data
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
