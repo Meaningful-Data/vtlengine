@@ -69,7 +69,8 @@ class Calc(Operator):
 
         for operand in operands:
             if isinstance(operand, Scalar):
-                relation = relation.project(f"*, {operand.value} AS {operand.name}")
+                value = "NULL" if operand.value is None else operand.value
+                relation = relation.project(f"*, {value} AS {operand.name}")
             else:
                 relation = duckdb_concat(relation, operand.data)
 
