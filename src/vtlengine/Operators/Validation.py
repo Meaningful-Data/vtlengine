@@ -129,14 +129,11 @@ class Validation(Operator):
         for rule_name, rule_data in rule_info.items():
             rel = rule_data["output"]
             rule_name = repr(rule_name)
-            errorcode = (
-                repr(rule_data.get("errorcode"))
-                if rule_data.get("errorcode") is not None
-                else "NULL"
+            errorcode, errorlevel = (
+                repr(rule_data.get(key)) if rule_data.get(key) is not None else "NULL"
+                for key in ("errorcode", "errorlevel")
             )
-            errorlevel = (
-                repr(rule_data.get("errorlevel")) if (rule_data.get("errorlevel")) else "NULL"
-            )
+
             query = f"""
             *,
             {rule_name} AS ruleid,
