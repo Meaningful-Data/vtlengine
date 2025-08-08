@@ -235,7 +235,7 @@ class Check_Hierarchy(Validation):
 
         result = rel_list[0]
         for rel in rel_list[1:]:
-            result = duckdb_concat(rel, result)
+            result = duckdb_concat(rel, result, on=["ruleid"])
         return result
 
     @classmethod
