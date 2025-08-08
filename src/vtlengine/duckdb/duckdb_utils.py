@@ -31,6 +31,8 @@ def duckdb_concat(
 
     if left is None or right is None:
         return empty_relation()
+    if on is not None:
+        on = [on] if isinstance(on, str) else on
 
     from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -69,7 +71,6 @@ def duckdb_concat(
         l AS (SELECT * FROM {l_name}),
         r AS (SELECT * FROM {r_name})
         """
-        on = [on] if isinstance(on, str) else on
         on_clause = " AND ".join([f'l."{col}" = r."{col}"' for col in on])
 
     query = f"""
