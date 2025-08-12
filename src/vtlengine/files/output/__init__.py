@@ -21,8 +21,6 @@ def save_datapoints(
         dataset.data = pd.DataFrame()
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
-    if isinstance(dataset.data, DuckDBPyRelation):
-        dataset.data = dataset.data.df()
     if isinstance(output_path, str):
         __check_s3_extra()
         if output_path.endswith("/"):
@@ -35,4 +33,5 @@ def save_datapoints(
         # print(f"Dataset {dataset.name} saved to {s3_file_output}")
         # print(f"Time to save data on s3 URI: {end - start}")
     else:
-        dataset.data.to_csv(output_path / f"{dataset.name}.csv", index=False)
+        dataset.data.to_csv(str(output_path / f"{dataset.name}.csv"))
+    del dataset.data

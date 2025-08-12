@@ -258,6 +258,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
 
+        if self.output_path is not None:
+            # Removing data from results
+            for value in results.values():
+                if isinstance(value, Dataset) and value.data is not None:
+                    value.data = None
+
         return results
 
     # Definition Language
