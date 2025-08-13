@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import os
 from pathlib import Path
+from time import time
 from typing import Optional
 
 import duckdb
@@ -20,10 +21,14 @@ BASE_MEMORY_LIMIT = "4GB"
 # memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
 # BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", memory_limit)
 PLAN_FORMAT = "optimized_only"
+LOGS_PATH = Path(os.getenv("DUCKDB_LOGS_DIRECTORY", BASE_PATH / "logs"))
+if not LOGS_PATH.exists():
+    LOGS_PATH.mkdir(parents=True, exist_ok=True)
+LOGS_FILE = LOGS_PATH / f"logs_{time()}.json"
 CONFIG = {
     "enable_profiling": "json",
     "profiling_mode": "detailed",
-    "profiling_output": str(BASE_PATH / "logs" / "logs.json"),
+    "profiling_output": LOGS_FILE,
     "settings": [
         "BLOCKED_THREAD_TIME",
         "EXTRA_INFO",

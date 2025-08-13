@@ -1,9 +1,6 @@
 from pathlib import Path
 from typing import Optional, Union
 
-import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
-
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -18,7 +15,7 @@ def save_datapoints(
     output_path: Union[str, Path],
 ) -> None:
     if dataset.data is None:
-        dataset.data = pd.DataFrame()
+        return
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
     if isinstance(output_path, str):
@@ -34,4 +31,5 @@ def save_datapoints(
         # print(f"Time to save data on s3 URI: {end - start}")
     else:
         dataset.data.to_csv(str(output_path / f"{dataset.name}.csv"))
+    dataset.data.close()
     del dataset.data
