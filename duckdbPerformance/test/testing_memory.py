@@ -1,7 +1,6 @@
 import csv
 import os
 import shutil
-import subprocess
 import threading
 import time
 from datetime import datetime
@@ -9,8 +8,16 @@ from pathlib import Path
 
 import psutil
 
-from vtlengine import run
-from vtlengine.connection import ConnectionManager
+id_ = str(int(time.time())).split(".")[0]
+duckdb_logs_path = Path(__file__).parent.parent / "logs" / f"logs_{id_}.json"
+if not duckdb_logs_path.parent.exists():
+    duckdb_logs_path.parent.mkdir(parents=True, exist_ok=True)
+
+os.environ["DUCKDB_LOGS"] = str(duckdb_logs_path)
+from vtlengine import run  # noqa: E402
+from vtlengine.API import create_ast  # noqa: E402
+from vtlengine.AST.ASTString import ASTString  # noqa: E402
+from vtlengine.connection import ConnectionManager  # noqa: E402
 
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data" / "BIG_DATA"
@@ -21,6 +28,7 @@ RESULTS_FILE = BASE_DIR / "test" / "test_results.csv"
 def monitor_memory(
     pid, stop_event, peak_rss_holder, peak_duck_holder, peaks_log, conn, check_interval=1.0
 ):
+    mem_duck = 0
     process = psutil.Process(pid)
     peak_rss = 0
 
@@ -33,14 +41,17 @@ def monitor_memory(
         if mem_rss > peak_rss:
             peak_rss = mem_rss
 
-        try:
-            mem_df = conn.execute(
-                "SELECT SUM(CAST(memory_usage_bytes AS BIGINT)) AS total_bytes FROM duckdb_memory()"
-            ).fetchdf()
-            mem_duck = int(mem_df["total_bytes"].iloc[0] or 0)
-        except Exception as e:
-            print(f"Error fetching DuckDB memory usage: {e}")
-            mem_duck = 0
+        # try:
+        #     mem_df = conn.execute(
+        #         "SELECT SUM(CAST(memory_usage_bytes AS BIGINT))
+        #         AS total_bytes FROM duckdb_memory()"
+        #     ).fetchdf()
+        #     mem_duck = int(mem_df["total_bytes"].iloc[0] or 0)
+        # except Exception as e:
+        #     print(f"Error fetching DuckDB memory usage: {e}")
+        #     mem_duck = 0
+        # TODO: Add here monitoring every interval
+        #   Ensure the Duckdb is also monitored here without using the connection
         if mem_rss > peak_rss_holder[0] or mem_duck > peak_duck_holder[0]:
             timestamp = time.time() - peaks_log["start_time"]
             if mem_rss > peak_rss_holder[0]:
@@ -58,6 +69,7 @@ def monitor_memory(
 
 def ensure_clean_folder(path: Path):
     path.mkdir(parents=True, exist_ok=True)
+    # TODO: Remove only csv files in the folder
     for f in path.iterdir():
         try:
             if f.is_file():
@@ -78,11 +90,12 @@ def list_output_files(output_folder: Path):
 def execute_test(
     csv_path: Path, ds_path: Path, script: str, base_memory_limit: str, output_folder: Path
 ):
-    con = ConnectionManager.get_connection()
+    # con = ConnectionManager.get_connection()
     print(
         f"Executing test:\n CSV: {csv_path}\n JSON: {ds_path}\n "
         f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}"
     )
+
     ConnectionManager.configure(memory_limit=base_memory_limit)
     ensure_clean_folder(output_folder)
     peak_rss_holder = [0]
@@ -91,7 +104,7 @@ def execute_test(
     stop_event = threading.Event()
     monitor_thread = threading.Thread(
         target=monitor_memory,
-        args=(os.getpid(), stop_event, peak_rss_holder, peak_duck_holder, peaks_log, con, 1.0),
+        args=(os.getpid(), stop_event, peak_rss_holder, peak_duck_holder, peaks_log, None, 1.0),
         daemon=True,
     )
     monitor_thread.start()
@@ -107,9 +120,10 @@ def execute_test(
 
     output_files = list_output_files(output_folder)
 
-    snapshot_file = output_folder / f"usage_snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    with open(snapshot_file, "w") as f:
-        subprocess.run(["top", "-b", "-n", "1"], stdout=f)  # noqa: S603,S607
+    # snapshot_file = output_folder /
+    # f"usage_snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    # with open(snapshot_file, "w") as f:
+    #     subprocess.run(["top", "-b", "-n", "1"], stdout=f)  # noqa: S603,S607
 
     save_results(
         file_csv=csv_path.name,
@@ -120,6 +134,7 @@ def execute_test(
         peak_duck_mb=peak_duck_holder[0] / (1024**2),
         output_files="; ".join(output_files),
         peaks_list=peaks_log["records"],
+        script=script,
     )
 
     print("\n--- SUMMARY ---")
@@ -128,7 +143,7 @@ def execute_test(
     print(f"Peak DuckDB: {peak_duck_holder[0] / (1024**2):.2f} MB")
     print(f"Output files: {output_files}")
     print(f"Run result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
-    print(f"Top snapshot saved to: {snapshot_file}")
+    # print(f"Top snapshot saved to: {snapshot_file}")
 
 
 def save_results(
@@ -140,15 +155,17 @@ def save_results(
     peak_duck_mb,
     output_files,
     peaks_list,
+    script,
 ):
     file_exists = RESULTS_FILE.exists()
-    with open(RESULTS_FILE, mode="a", newline="") as f:
+    with open(RESULTS_FILE, mode="a+", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow(
                 [
+                    "ID",
                     "Date",
-                    "CSV",
+                    "VTL Script",
                     "JSON",
                     "Memory Limit",
                     "Duration (s)",
@@ -159,9 +176,13 @@ def save_results(
                 ]
             )
         peaks_str = "; ".join([f"{t:.2f}s:{rss:.2f}/{duck:.2f}" for t, rss, duck in peaks_list])
+
+        script = "".join(ASTString(pretty=False).render(create_ast(script)).splitlines())
         writer.writerow(
             [
+                id_,
                 datetime.now().isoformat(timespec="seconds"),
+                script,
                 Path(file_csv).name,
                 Path(file_json).name,
                 mem_limit,
