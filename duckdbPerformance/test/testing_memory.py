@@ -1,6 +1,5 @@
 import csv
 import os
-import shutil
 import threading
 import time
 from datetime import datetime
@@ -8,7 +7,7 @@ from pathlib import Path
 
 import psutil
 
-id_ = str(int(time.time())).split(".")[0]
+id_ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 duckdb_logs_path = Path(__file__).parent.parent / "logs" / f"logs_{id_}.json"
 if not duckdb_logs_path.parent.exists():
     duckdb_logs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,23 +66,18 @@ def monitor_memory(
         time.sleep(check_interval)
 
 
-def ensure_clean_folder(path: Path):
-    path.mkdir(parents=True, exist_ok=True)
-    # TODO: Remove only csv files in the folder
-    for f in path.iterdir():
-        try:
-            if f.is_file():
-                f.unlink()
-            elif f.is_dir():
-                shutil.rmtree(f)
-        except Exception as e:
-            print(e)
+def remove_outputs(output_folder: Path):
+    if not output_folder.exists():
+        return
 
+    # Remove only csv files
+    for file in output_folder.glob("*.csv"):
+        os.remove(file)
 
 def list_output_files(output_folder: Path):
     if not output_folder.exists():
         return ["Output folder does not exist"]
-    files = list(output_folder.glob("*"))
+    files = list(output_folder.glob("*.csv"))
     return [f"{f.name} ({f.stat().st_size / (1024**2):.2f} MB)" for f in files]
 
 
@@ -97,7 +91,7 @@ def execute_test(
     )
 
     ConnectionManager.configure(memory_limit=base_memory_limit)
-    ensure_clean_folder(output_folder)
+    remove_outputs(output_folder)
     peak_rss_holder = [0]
     peak_duck_holder = [0]
     peaks_log = {"records": [], "start_time": time.time()}
