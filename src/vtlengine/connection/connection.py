@@ -20,6 +20,28 @@ BASE_MEMORY_LIMIT = "4GB"
 # memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
 # BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", memory_limit)
 PLAN_FORMAT = "optimized_only"
+CONFIG = {
+    "enable_profiling": "json",
+    "profiling_mode": "detailed",
+    "profiling_output": str(BASE_PATH / "logs" / "logs.json"),
+    "settings": [
+        "BLOCKED_THREAD_TIME",
+        "EXTRA_INFO",
+        "LATENCY",
+        "OPERATOR_CARDINALITY",
+        "OPERATOR_ROWS_SCANNED",
+        "OPERATOR_TIMING",
+        "OPERATOR_TYPE",
+        "QUERY_NAME",
+        "RESULT_SET_SIZE",
+        "ROWS_RETURNED",
+        "CPU_TIME",
+        "CUMULATIVE_CARDINALITY",
+        "CUMULATIVE_ROWS_SCANNED",
+        "SYSTEM_PEAK_BUFFER_MEMORY",
+        "SYSTEM_PEAK_TEMP_DIR_SIZE",
+    ],
+}
 
 
 class ConnectionManager:
@@ -29,6 +51,7 @@ class ConnectionManager:
     _plan_format = PLAN_FORMAT
     _temp_directory: str = BASE_TEMP_DIRECTORY
     _threads = None
+    _config = CONFIG
 
     @classmethod
     def configure(
@@ -64,6 +87,7 @@ class ConnectionManager:
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
+            cls._connection.execute(cls.profiling_set())
             cls.register_functions()
         return cls._connection
 
@@ -115,3 +139,15 @@ class ConnectionManager:
                 )
                 # duckdb.create_function expects a function,
                 # we are using FunctionType which works the same
+
+    @classmethod
+    def profiling_set(cls):
+        pragmas = []
+        for key, value in cls._config.items():
+            if key == "settings":
+                settings_str = "{" + ",".join(f'"{m}": "true"' for m in value) + "}"
+                pragmas.append(f"PRAGMA custom_profiling_settings = '{settings_str}';")
+            else:
+                pragmas.append(f"PRAGMA {key} = '{value}';")
+
+        return "\n".join(pragmas)
