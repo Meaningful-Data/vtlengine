@@ -26,7 +26,7 @@ RESULTS_FILE = BASE_DIR / "test" / "test_results.csv"
 
 
 def monitor_memory(
-    pid, stop_event, peak_rss_holder, peak_duck_holder, peaks_log, conn, check_interval=0.001
+    pid, stop_event, peak_rss_holder, peak_duck_holder, peaks_log, conn, check_interval=1.0
 ):
     mem_duck = 0
     process = psutil.Process(pid)
@@ -71,6 +71,67 @@ def monitor_memory(
         time.sleep(check_interval)
 
 
+class MemAnalyzer:
+    def __init__(self, pid=None, interval_s: float = 0.1, keep_series: bool = True):
+        self.pid = pid or os.getpid()
+        self.interval_s = interval_s
+        self.keep_series = keep_series
+        self.proc = psutil.Process(self.pid)
+        self._stop = threading.Event()
+        self._thr = None
+        self.t0 = 0.0
+        self.t1 = 0.0
+        self.peak_rss = 0
+        self.rss_start = None
+        self.rss_end = None
+        self.series = []  # (perf_abs, t_rel_s, rss_bytes, duck_bytes)
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.stop()
+        return False
+
+    def start(self):
+        if self._thr is not None:
+            return
+        self._stop.clear()
+        self.t0 = time.perf_counter()
+        self._thr = threading.Thread(target=self._loop, name="PsutilMemSampler", daemon=True)
+        self._thr.start()
+
+    def stop(self):
+        if self._thr is None:
+            return
+        self._stop.set()
+        self._thr.join()
+        self.t1 = time.perf_counter()
+
+    def _loop(self):
+        self._sample_once()
+        while not self._stop.wait(self.interval_s):
+            self._sample_once()
+
+    def _sample_once(self):
+        try:
+            rss = self.proc.memory_info().rss
+        except psutil.Error:
+            self._stop.set()
+            return
+        if self.rss_start is None:
+            self.rss_start = rss
+        self.rss_end = rss
+        if rss > self.peak_rss:
+            self.peak_rss = rss
+        if self.keep_series:
+            perf_abs = time.perf_counter()
+            t_rel = perf_abs - self.t0
+            duck = 0  # si queréis, aquí podéis integrar duckdb_memory()
+            self.series.append((perf_abs, t_rel, rss, duck))
+
+
 def remove_outputs(output_folder: Path):
     if not output_folder.exists():
         return
@@ -98,55 +159,48 @@ def execute_test(
     ConnectionManager.configure(memory_limit=base_memory_limit)
     output_folder.mkdir(parents=True, exist_ok=True)
     remove_outputs(output_folder)
-    peak_rss_holder = [0]
-    peak_duck_holder = [0]
-    peaks_log = {"records": [], "start_time": time.time(), "series": [], "perf0": time.perf_counter()}
-    stop_event = threading.Event()
-    monitor_thread = threading.Thread(
-        target=monitor_memory,
-        args=(os.getpid(), stop_event, peak_rss_holder, peak_duck_holder, peaks_log, None, 1.0),
-        daemon=True,
-    )
-    monitor_thread.start()
 
-    start_time = time.time()
-    result = run(
-        script=script, data_structures=ds_path, datapoints=csv_path, output_folder=output_folder
-    )
-    duration = time.time() - start_time
+    with MemAnalyzer(pid=os.getpid(), interval_s=0.01, keep_series=True) as ma:
+        start_time = time.time()
+        result = run(
+            script=script, data_structures=ds_path, datapoints=csv_path, output_folder=output_folder
+        )
+        duration = time.time() - start_time
 
-    stop_event.set()
-    monitor_thread.join(timeout=5.0)
+    # picos con MemAnalyzer
+    peak_rss_mb = ma.peak_rss / (1024**2)
+    # si se quiere timestamp del pico:
+    if ma.series:
+        peak_idx = max(range(len(ma.series)), key=lambda i: ma.series[i][2])
+        peak_rel = ma.series[peak_idx][1]
+    else:
+        peak_idx = 0
+        peak_rel = 0.0
 
     mem_series_path = output_folder / f"mem_series_{id_}.csv"
     with open(mem_series_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["perf", "t_rel_s", "rss_bytes", "duck_bytes"])
-        w.writerows(peaks_log["series"])
+        w.writerows(ma.series)
 
     output_files = list_output_files(output_folder)
-
-    # snapshot_file = output_folder /
-    # f"usage_snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    # with open(snapshot_file, "w") as f:
-    #     subprocess.run(["top", "-b", "-n", "1"], stdout=f)  # noqa: S603,S607
 
     save_results(
         file_csv=csv_path.name,
         file_json=ds_path.name,
         mem_limit=base_memory_limit,
         duration_sec=duration,
-        peak_rss_mb=peak_rss_holder[0] / (1024**2),
-        peak_duck_mb=peak_duck_holder[0] / (1024**2),
+        peak_rss_mb=peak_rss_mb,
+        peak_duck_mb=0.0,
         output_files="; ".join(output_files),
-        peaks_list=peaks_log["records"],
+        peaks_list=[(peak_rel, peak_rss_mb, 0.0)],
         script=script,
     )
 
     print("\n--- SUMMARY ---")
     print(f"Duration: {duration:.2f} s")
-    print(f"Peak RSS: {peak_rss_holder[0] / (1024**2):.2f} MB")
-    print(f"Peak DuckDB: {peak_duck_holder[0] / (1024**2):.2f} MB")
+    print(f"Peak RSS: {peak_rss_mb:.2f} MB")
+    print(f"Peak DuckDB: {0.0:.2f} MB")
     print(f"Output files: {output_files}")
     print(f"Run result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
     # print(f"Top snapshot saved to: {snapshot_file}")
@@ -214,7 +268,7 @@ if __name__ == "__main__":
     if os.path.exists(ds_file):
         print("check data_s")
 
-    vtl_script = """            
-                    DS_r <- DS_2[calc result:= Me_1 * 10];
-                """
+    vtl_script = """
+        DS_r <- DS_2[calc result:= Me_1 * 10];
+    """
     execute_test(csv_file, ds_file, vtl_script, base_memory_limit="4GB", output_folder=OUTPUT_DIR)
