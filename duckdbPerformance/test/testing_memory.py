@@ -40,23 +40,9 @@ def monitor_memory(
         if mem_rss > peak_rss:
             peak_rss = mem_rss
 
-        # try:
-        #     mem_df = conn.execute(
-        #         "SELECT SUM(CAST(memory_usage_bytes AS BIGINT))
-        #         AS total_bytes FROM duckdb_memory()"
-        #     ).fetchdf()
-        #     mem_duck = int(mem_df["total_bytes"].iloc[0] or 0)
-        # except Exception as e:
-        #     print(f"Error fetching DuckDB memory usage: {e}")
-        #     mem_duck = 0
-        # TODO: Add here monitoring every interval
-        #   Ensure the Duckdb is also monitored here without using the connection
-        # if mem_rss > peak_rss_holder[0] or mem_duck > peak_duck_holder[0]:
         timestamp = time.time() - peaks_log["start_time"]
         if mem_rss > peak_rss_holder[0]:
             peak_rss_holder[0] = mem_rss
-        # if mem_duck > peak_duck_holder[0]:
-        #     peak_duck_holder[0] = mem_duck
         peaks_log["records"].append((timestamp, mem_rss / (1024**2), mem_duck / (1024**2)))
         print(
             f"[{timestamp:.2f}s] New peak -> RSS: {mem_rss / (1024**2):.2f} MB | "
@@ -84,7 +70,6 @@ def list_output_files(output_folder: Path):
 def execute_test(
     csv_path: Path, ds_path: Path, script: str, base_memory_limit: str, output_folder: Path
 ):
-    # con = ConnectionManager.get_connection()
     print(
         f"Executing test:\n CSV: {csv_path}\n JSON: {ds_path}\n "
         f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}"
@@ -114,11 +99,6 @@ def execute_test(
 
     output_files = list_output_files(output_folder)
 
-    # snapshot_file = output_folder /
-    # f"usage_snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    # with open(snapshot_file, "w") as f:
-    #     subprocess.run(["top", "-b", "-n", "1"], stdout=f)  # noqa: S603,S607
-
     save_results(
         file_csv=csv_path.name,
         file_json=ds_path.name,
@@ -137,7 +117,6 @@ def execute_test(
     print(f"Peak DuckDB: {peak_duck_holder[0] / (1024**2):.2f} MB")
     print(f"Output files: {output_files}")
     print(f"Run result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
-    # print(f"Top snapshot saved to: {snapshot_file}")
 
 
 def save_results(
@@ -195,10 +174,10 @@ def save_results(
             writer.writerow([f"{t:.2f}", f"{rss:.2f}", f"{duck:.2f}"])
 
 if __name__ == "__main__":
-    ds_name = "DS_2"
+    ds_name = "DS_3"
     csv_file = DATA_DIR / "dp" / f"{ds_name}.csv"
     ds_file = DATA_DIR / "ds" / f"{ds_name}.json"
     vtl_script = """
-    DS_r <- DS_2;
+    DS_r <- DS_3;
     """
     execute_test(csv_file, ds_file, vtl_script, base_memory_limit="4GB", output_folder=OUTPUT_DIR)
