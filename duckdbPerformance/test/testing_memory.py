@@ -51,17 +51,17 @@ def monitor_memory(
         #     mem_duck = 0
         # TODO: Add here monitoring every interval
         #   Ensure the Duckdb is also monitored here without using the connection
-        if mem_rss > peak_rss_holder[0] or mem_duck > peak_duck_holder[0]:
-            timestamp = time.time() - peaks_log["start_time"]
-            if mem_rss > peak_rss_holder[0]:
-                peak_rss_holder[0] = mem_rss
-            if mem_duck > peak_duck_holder[0]:
-                peak_duck_holder[0] = mem_duck
-            peaks_log["records"].append((timestamp, mem_rss / (1024**2), mem_duck / (1024**2)))
-            print(
-                f"[{timestamp:.2f}s] New peak -> RSS: {mem_rss / (1024**2):.2f} MB | "
-                f"DuckDB: {mem_duck / (1024**2):.2f} MB"
-            )
+        # if mem_rss > peak_rss_holder[0] or mem_duck > peak_duck_holder[0]:
+        timestamp = time.time() - peaks_log["start_time"]
+        if mem_rss > peak_rss_holder[0]:
+            peak_rss_holder[0] = mem_rss
+        # if mem_duck > peak_duck_holder[0]:
+        #     peak_duck_holder[0] = mem_duck
+        peaks_log["records"].append((timestamp, mem_rss / (1024**2), mem_duck / (1024**2)))
+        print(
+            f"[{timestamp:.2f}s] New peak -> RSS: {mem_rss / (1024**2):.2f} MB | "
+            f"DuckDB: {mem_duck / (1024**2):.2f} MB"
+        )
 
         time.sleep(check_interval)
 
@@ -160,18 +160,18 @@ def save_results(
                     "ID",
                     "Date",
                     "VTL Script",
+                    "CSV File",
                     "JSON",
                     "Memory Limit",
                     "Duration (s)",
                     "Peak RSS (MB)",
                     "Peak DuckDB (MB)",
                     "Output Files",
-                    "Memory Peaks (t_s:RSS/DUCK_MB)",
+                    "Memory Detail CSV",
                 ]
             )
-        peaks_str = "; ".join([f"{t:.2f}s:{rss:.2f}/{duck:.2f}" for t, rss, duck in peaks_list])
-
         script = "".join(ASTString(pretty=False).render(create_ast(script)).splitlines())
+        detail_file = RESULTS_FILE.parent / f"{id_}_memory_detail.csv"
         writer.writerow(
             [
                 id_,
@@ -184,14 +184,20 @@ def save_results(
                 f"{peak_rss_mb:.2f}",
                 f"{peak_duck_mb:.2f}",
                 output_files,
-                peaks_str,
+                detail_file.name
             ]
         )
 
+    with open(detail_file, mode="w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Time (s)", "RSS (MB)", "DuckDB (MB)"])
+        for t, rss, duck in peaks_list:
+            writer.writerow([f"{t:.2f}", f"{rss:.2f}", f"{duck:.2f}"])
 
 if __name__ == "__main__":
-    csv_file = DATA_DIR / "dp" / "DS_2.csv"
-    ds_file = DATA_DIR / "ds" / "DS_2.json"
+    ds_name = "DS_2"
+    csv_file = DATA_DIR / "dp" / f"{ds_name}.csv"
+    ds_file = DATA_DIR / "ds" / f"{ds_name}.json"
     vtl_script = """
     DS_r <- DS_2;
     """
