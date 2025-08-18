@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import csv
 import json
@@ -7,7 +6,7 @@ import re
 from pathlib import Path
 
 BYTES_IN_MB = 1024 ** 2
-BASE = Path(__file__).parent.parent
+BASE = Path(__file__).resolve().parent.parent
 OUT_DIR = BASE / "output"
 
 def latest(pattern):
@@ -37,7 +36,6 @@ def seconds(x):
     except Exception:
         return 0.0
 
-
 def node_duration(n, dflt=0.0):
     dur = seconds(n.get("operator_timing", 0.0))
     if dur == 0.0 and n.get("children"):
@@ -51,7 +49,6 @@ def flatten_windows(node, end_perf, path=None, depth=0):
     typ  = node.get("operator_type", "ROOT")
     dur  = node_duration(node, dflt=seconds(node.get("latency", 0.0)))
     start = end_perf - dur
-
     rows = [{
         "path": " / ".join(path + [name]),
         "name": name,
@@ -61,7 +58,6 @@ def flatten_windows(node, end_perf, path=None, depth=0):
         "dur": dur,
         "depth": depth,
     }]
-
     children = node.get("children", []) or []
     if children:
         cur_end = end_perf
@@ -74,30 +70,25 @@ def active_op_at(perf, windows):
     cands = [w for w in windows if w["start"] <= perf <= w["end"]]
     return max(cands, key=lambda w: (w["depth"], w["dur"])) if cands else None
 
-
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     mem_csv = latest("mem_series_*.csv")
     if not mem_csv:
-        print("No hay mem_series_*.csv en output/")
+        print("No mem_series_*.csv found in output/")
         return 1
 
     m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
     run_id = m.group(1) if m else "latest"
 
-    finish = OUT_DIR / f"finish_{run_id}.json"
+    finish = OUT_DIR / "finish.json"
     if not finish.exists():
-        finish = OUT_DIR / "finish.json" if (OUT_DIR / "finish.json").exists() else latest("finish*.json")
-    if not finish:
-        print("No se encontró finish*.json en output/")
+        print("output/finish.json not found")
         return 1
 
-    profile = OUT_DIR / f"logs_{run_id}.json"
+    profile = OUT_DIR / "logs.json"
     if not profile.exists():
-        profile = OUT_DIR / "logs.json" if (OUT_DIR / "logs.json").exists() else latest("logs*.json")
-    if not profile:
-        print("No se encontró logs*.json en output/")
+        print("output/logs.json not found")
         return 1
 
     series = read_mem_series(mem_csv)
@@ -105,13 +96,13 @@ def main():
     fin    = load_json(finish)
 
     if "perf_end" not in fin:
-        print("finish.json no contiene 'perf_end'")
+        print("finish.json is missing 'perf_end'")
         return 1
 
     perf_end = float(fin["perf_end"])
     latency  = seconds(prof.get("latency", 0.0)) or node_duration({"children": prof.get("children", [])}, 0.0)
     if latency <= 0.0:
-        print("No se pudo determinar la latencia total")
+        print("Could not determine total DuckDB latency")
         return 1
 
     perf_start = perf_end - latency
@@ -124,12 +115,10 @@ def main():
         "latency": latency,
     }
     windows = flatten_windows(root, perf_end)
-    # Ajustar raíz
     windows[0]["start"] = perf_start
     windows[0]["end"]   = perf_end
     windows[0]["dur"]   = latency
 
-    # --- serie temporal anotada ---
     timeline_path = OUT_DIR / f"memory_timeline_{run_id}.csv"
     with timeline_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -152,9 +141,8 @@ def main():
                 is_duckdb, op_name, op_type, op_path, op_depth
             ])
 
-    print("OK timeline →", timeline_path)
+    print("OK timeline ->", timeline_path)
     return 0
-
 
 if __name__ == "__main__":
     main()
