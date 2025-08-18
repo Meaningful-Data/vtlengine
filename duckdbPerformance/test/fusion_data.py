@@ -79,12 +79,12 @@ def main():
     m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
     run_id = m.group(1) if m else "latest"
 
-    finish = OUT_DIR / "finish.json"
+    finish = OUT_DIR / "logs" / "finish.json"
     if not finish.exists():
         print("output/finish.json not found")
         return 1
 
-    profile = OUT_DIR / "logs.json"
+    profile = OUT_DIR / "logs" / "logs.json"
     if not profile.exists():
         print("output/logs.json not found")
         return 1

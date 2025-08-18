@@ -23,7 +23,7 @@ PLAN_FORMAT = "optimized_only"
 CONFIG = {
     "enable_profiling": "json",
     "profiling_mode": "detailed",
-    "profiling_output": str(BASE_PATH / "duckdbPerformance" / "output" / "logs.json"),
+    "profiling_output": str(BASE_PATH / "duckdbPerformance" / "output" / "logs" / "logs.json"),
     "settings": [
         "BLOCKED_THREAD_TIME",
         "EXTRA_INFO",

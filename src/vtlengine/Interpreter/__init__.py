@@ -1975,7 +1975,7 @@ class InterpreterAnalyzer(ASTTemplate):
             except Exception:
                 root = here.parent
 
-        outdir = root / "output"
+        outdir = root / "output" / "logs"
         outdir.mkdir(parents=True, exist_ok=True)
         outpath = outdir / "finish.json"
 
