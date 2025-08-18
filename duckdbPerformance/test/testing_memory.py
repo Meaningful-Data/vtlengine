@@ -130,9 +130,7 @@ def execute_test(csv_path: Path, ds_path: Path, script: str, base_memory_limit: 
         mem_limit=base_memory_limit,
         duration_sec=duration,
         peak_rss_mb=peak_rss_mb,
-        peak_duck_mb=0.0,
         output_files="; ".join(output_files),
-        peaks_list=[(peak_rel, peak_rss_mb, 0.0)],
         script=script,
     )
     print("\n--- SUMMARY ---")
@@ -148,9 +146,7 @@ def save_results(
     mem_limit,
     duration_sec,
     peak_rss_mb,
-    peak_duck_mb,
     output_files,
-    peaks_list,
     script,
 ):
     file_exists = RESULTS_FILE.exists()
@@ -162,16 +158,14 @@ def save_results(
                     "ID",
                     "Date",
                     "VTL Script",
+                    "CSV File",
                     "JSON",
                     "Memory Limit",
                     "Duration (s)",
                     "Peak RSS (MB)",
-                    "Peak DuckDB (MB)",
                     "Output Files",
-                    "Memory Peaks (t_s:RSS/DUCK_MB)",
                 ]
             )
-        peaks_str = "; ".join([f"{t:.2f}s:{rss:.2f}/{duck:.2f}" for t, rss, duck in peaks_list])
         script = "".join(ASTString(pretty=False).render(create_ast(script)).splitlines())
         writer.writerow(
             [
@@ -183,9 +177,7 @@ def save_results(
                 mem_limit,
                 f"{duration_sec:.2f}",
                 f"{peak_rss_mb:.2f}",
-                f"{peak_duck_mb:.2f}",
                 output_files,
-                peaks_str,
             ]
         )
 
