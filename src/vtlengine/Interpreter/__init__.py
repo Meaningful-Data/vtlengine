@@ -1,6 +1,8 @@
+import gc
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
@@ -264,6 +266,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if isinstance(value, Dataset) and value.data is not None:
                     value.data = None
 
+        self._write_duckdb_finish_marker_local()
         return results
 
     # Definition Language
@@ -1944,3 +1947,40 @@ class InterpreterAnalyzer(ASTTemplate):
             period_to=node.period_to,
             conf=node.conf,
         )
+
+    @staticmethod
+    def _write_duckdb_finish_marker_local():
+        import json, os, time
+        from pathlib import Path
+
+        perf_end = time.perf_counter()
+        payload = {
+            "perf_end": perf_end,
+        }
+
+        here = Path(__file__).resolve()
+
+        root = None
+        for parent in [here] + list(here.parents):
+            if (parent / "output" ).exists():
+                root = parent
+                break
+            if (parent / "duckdbPerformance" / "output").exists():
+                root = parent / "duckdbPerformance"
+                break
+
+        if root is None:
+            try:
+                root = here.parents[3]
+            except Exception:
+                root = here.parent
+
+        outdir = root / "output"
+        outdir.mkdir(parents=True, exist_ok=True)
+        outpath = outdir / "finish.json"
+
+        try:
+            with open(outpath, "w") as f:
+                json.dump(payload, f)
+        except Exception:
+            pass
