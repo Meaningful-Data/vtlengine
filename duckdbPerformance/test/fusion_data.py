@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 BYTES_IN_MB = 1024 ** 2
-BASE = Path(__file__).resolve().parent.parent
-OUT_DIR = BASE / "output"
+BASE = Path(__file__).parent.parent
+OUT_DIR = BASE / "data" / "output"
 
 def latest(pattern):
     files = list(OUT_DIR.glob(pattern))
@@ -81,12 +81,12 @@ def main():
     m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
     run_id = m.group(1) if m else "latest"
 
-    finish = OUT_DIR / "finish.json"
+    finish = OUT_DIR / "logging" / "finish.json"
     if not finish.exists():
         print("output/finish.json not found")
         return 1
 
-    profile = OUT_DIR / "logs.json"
+    profile = OUT_DIR /"logging"/ "logs.json"
     if not profile.exists():
         print("output/logs.json not found")
         return 1
@@ -146,3 +146,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    print(OUT_DIR)

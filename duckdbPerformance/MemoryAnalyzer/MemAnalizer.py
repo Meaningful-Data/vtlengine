@@ -1,28 +1,22 @@
 import os
-import threading
 import time
-from typing import List, Optional, Tuple
+import threading
 import psutil
 
-
 class MemAnalyzer:
-    def __init__(
-        self, pid: Optional[int] = None, interval_s: float = 0.1, keep_series: bool = False
-    ):
+    def __init__(self, pid=None, interval_s: float = 0.1, keep_series: bool = True):
         self.pid = pid or os.getpid()
         self.interval_s = interval_s
         self.keep_series = keep_series
         self.proc = psutil.Process(self.pid)
-
         self._stop = threading.Event()
-        self._thr: Optional[threading.Thread] = None
-
+        self._thr = None
         self.t0 = 0.0
         self.t1 = 0.0
         self.peak_rss = 0
-        self.rss_start: Optional[int] = None
-        self.rss_end: Optional[int] = None
-        self.series: List[Tuple[float, int]] = []
+        self.rss_start = None
+        self.rss_end = None
+        self.series = []
 
     def __enter__(self):
         self.start()
@@ -58,11 +52,15 @@ class MemAnalyzer:
         except psutil.Error:
             self._stop.set()
             return
+
         if self.rss_start is None:
             self.rss_start = rss
         self.rss_end = rss
         if rss > self.peak_rss:
             self.peak_rss = rss
+
         if self.keep_series:
-            t_ms = (time.perf_counter() - self.t0)
-            self.series.append((t_ms, rss))
+            perf_abs = time.perf_counter()
+            t_rel = perf_abs - self.t0
+            duck_bytes = 0
+            self.series.append((perf_abs, t_rel, rss, duck_bytes))

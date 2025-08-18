@@ -7,6 +7,8 @@ from pathlib import Path
 
 import psutil
 
+from duckdbPerformance.MemoryAnalyzer.MemAnalizer import MemAnalyzer
+
 id_ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 duckdb_logs_path = Path(__file__).parent.parent / "logs" / f"logs_{id_}.json"
 if not duckdb_logs_path.parent.exists():
@@ -70,68 +72,6 @@ def monitor_memory(
 
         time.sleep(check_interval)
 
-
-class MemAnalyzer:
-    def __init__(self, pid=None, interval_s: float = 0.1, keep_series: bool = True):
-        self.pid = pid or os.getpid()
-        self.interval_s = interval_s
-        self.keep_series = keep_series
-        self.proc = psutil.Process(self.pid)
-        self._stop = threading.Event()
-        self._thr = None
-        self.t0 = 0.0
-        self.t1 = 0.0
-        self.peak_rss = 0
-        self.rss_start = None
-        self.rss_end = None
-        self.series = []  # (perf_abs, t_rel_s, rss_bytes, duck_bytes)
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        self.stop()
-        return False
-
-    def start(self):
-        if self._thr is not None:
-            return
-        self._stop.clear()
-        self.t0 = time.perf_counter()
-        self._thr = threading.Thread(target=self._loop, name="PsutilMemSampler", daemon=True)
-        self._thr.start()
-
-    def stop(self):
-        if self._thr is None:
-            return
-        self._stop.set()
-        self._thr.join()
-        self.t1 = time.perf_counter()
-
-    def _loop(self):
-        self._sample_once()
-        while not self._stop.wait(self.interval_s):
-            self._sample_once()
-
-    def _sample_once(self):
-        try:
-            rss = self.proc.memory_info().rss
-        except psutil.Error:
-            self._stop.set()
-            return
-        if self.rss_start is None:
-            self.rss_start = rss
-        self.rss_end = rss
-        if rss > self.peak_rss:
-            self.peak_rss = rss
-        if self.keep_series:
-            perf_abs = time.perf_counter()
-            t_rel = perf_abs - self.t0
-            duck = 0  # si queréis, aquí podéis integrar duckdb_memory()
-            self.series.append((perf_abs, t_rel, rss, duck))
-
-
 def remove_outputs(output_folder: Path):
     if not output_folder.exists():
         return
@@ -145,7 +85,6 @@ def list_output_files(output_folder: Path):
         return ["Output folder does not exist"]
     files = list(output_folder.glob("*.csv"))
     return [f"{f.name} ({f.stat().st_size / (1024**2):.2f} MB)" for f in files]
-
 
 def execute_test(
     csv_path: Path, ds_path: Path, script: str, base_memory_limit: str, output_folder: Path
@@ -167,9 +106,7 @@ def execute_test(
         )
         duration = time.time() - start_time
 
-    # picos con MemAnalyzer
     peak_rss_mb = ma.peak_rss / (1024**2)
-    # si se quiere timestamp del pico:
     if ma.series:
         peak_idx = max(range(len(ma.series)), key=lambda i: ma.series[i][2])
         peak_rel = ma.series[peak_idx][1]
@@ -203,7 +140,6 @@ def execute_test(
     print(f"Peak DuckDB: {0.0:.2f} MB")
     print(f"Output files: {output_files}")
     print(f"Run result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
-    # print(f"Top snapshot saved to: {snapshot_file}")
 
 
 def save_results(
