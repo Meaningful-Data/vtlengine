@@ -106,22 +106,30 @@ def execute_test(csv_path: Path, ds_path: Path, script: str, base_memory_limit: 
     ConnectionManager.configure(memory_limit=base_memory_limit)
     output_folder.mkdir(parents=True, exist_ok=True)
     remove_outputs(output_folder)
+
     with MemAnalyzer(pid=os.getpid(), interval_s=0.01, keep_series=True) as ma:
         start_time = time.time()
         result = run(script=script, data_structures=ds_path, datapoints=csv_path, output_folder=output_folder)
         duration = time.time() - start_time
     peak_rss_mb = ma.peak_rss / (1024**2)
+    peak_rel = 0.0
     if ma.series:
         peak_idx = max(range(len(ma.series)), key=lambda i: ma.series[i][2])
         peak_rel = ma.series[peak_idx][1]
-    else:
-        peak_rel = 0.0
     mem_series_path = output_folder / f"mem_series_{id_}.csv"
     with open(mem_series_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["perf", "t_rel_s", "rss_bytes", "duck_bytes"])
         w.writerows(ma.series)
+
     output_files = list_output_files(output_folder)
+
+    import fusion_data
+    fusion_data.main()
+    timeline_files = list(output_folder.glob("memory_timeline_*.csv"))
+    timeline_file = max(timeline_files, key=lambda f: f.stat().st_mtime) if timeline_files else None
+    timeline_file_str = timeline_file.name if timeline_file else "Not found"
+
     save_results(
         file_csv=csv_path.name,
         file_json=ds_path.name,
@@ -130,6 +138,7 @@ def execute_test(csv_path: Path, ds_path: Path, script: str, base_memory_limit: 
         peak_rss_mb=peak_rss_mb,
         output_files="; ".join(output_files),
         script=script,
+        memory_timeline=timeline_file_str
     )
     print("\n--- SUMMARY ---")
     print(f"Duration: {duration:.2f} s")
@@ -146,6 +155,7 @@ def save_results(
     peak_rss_mb,
     output_files,
     script,
+    memory_timeline=None,
 ):
     file_exists = RESULTS_FILE.exists()
     with open(RESULTS_FILE, mode="a+", newline="") as f:
@@ -162,6 +172,7 @@ def save_results(
                     "Duration (s)",
                     "Peak RSS (MB)",
                     "Output Files",
+                    "Memory Timeline",
                 ]
             )
         script = "".join(ASTString(pretty=False).render(create_ast(script)).splitlines())
@@ -176,8 +187,10 @@ def save_results(
                 f"{duration_sec:.2f}",
                 f"{peak_rss_mb:.2f}",
                 output_files,
+                memory_timeline,
             ]
         )
+
 
 
 if __name__ == "__main__":
