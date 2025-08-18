@@ -150,7 +150,7 @@ def generate_big_ass_csv(dtypes: Dict[str, str], length: int = None, chunk_size:
 
 
 if __name__ == "__main__":
-    print("Generando archivo de ~10GB")
+    print("Generating BIG_ASS CSV file")
     generate_big_ass_csv(
         dtypes={
             "Id_1": "Integer",
