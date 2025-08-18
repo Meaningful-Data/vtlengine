@@ -197,5 +197,5 @@ if __name__ == "__main__":
     csv_file = DATA_DIR / "dp" / "DS_2.csv"
     ds_file = DATA_DIR / "ds" / "DS_2.json"
     vtl_script = "DS_r <- DS_2[calc result:= Me_1 * 10];"
-    execute_test(csv_file, ds_file, vtl_script, base_memory_limit="4GB", output_folder=OUTPUT_DIR)
+    execute_test(csv_file, ds_file, vtl_script, base_memory_limit="2GB", output_folder=OUTPUT_DIR)
     __import__("fusion_data").main()

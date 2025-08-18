@@ -5,7 +5,7 @@ from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
-from vtlengine.connection import con
+from vtlengine.connection import ConnectionManager
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
 TYPES_DICT = {
@@ -36,8 +36,8 @@ def duckdb_concat(
 
     l_name = VirtualCounter._new_temp_view_name()
     r_name = VirtualCounter._new_temp_view_name()
-    con.register(l_name, left)
-    con.register(r_name, right)
+    ConnectionManager.get_connection().register(l_name, left)
+    ConnectionManager.get_connection().register(r_name, right)
 
     left_cols = set(left.columns)
     right_cols = set(right.columns)
@@ -86,7 +86,7 @@ def duckdb_concat(
         order_clause = f"ORDER BY {order_cols}"
 
     final_query = query.format(select_clause=select_clause) + "\n" + order_clause
-    return con.sql(final_query)
+    return ConnectionManager.get_connection().sql(final_query)
 
 
 def duckdb_drop(
@@ -183,11 +183,11 @@ def duckdb_merge(
 
     base_name = VirtualCounter._new_temp_view_name()
     other_name = VirtualCounter._new_temp_view_name()
-    con.register(base_name, base_relation)
-    con.register(other_name, other_relation)
+    ConnectionManager.get_connection().register(base_name, base_relation)
+    ConnectionManager.get_connection().register(other_name, other_relation)
 
     if how == "cross":
-        return con.sql(f"SELECT * FROM {base_name} CROSS JOIN {other_name}")
+        return ConnectionManager.get_connection().sql(f"SELECT * FROM {base_name} CROSS JOIN {other_name}")
     elif how == "outer":
         how = "FULL OUTER"
 
@@ -218,7 +218,7 @@ def duckdb_merge(
         {how.upper()} JOIN {other_name}
         USING ({using_clause})
     """
-    return con.sql(query)
+    return ConnectionManager.get_connection().sql(query)
 
 
 def duckdb_rename(
@@ -279,9 +279,9 @@ def empty_relation(
     """
     if cols:
         df = pd.DataFrame(columns=list(cols) if isinstance(cols, (list, set)) else [cols])
-        return con.from_df(pd.DataFrame(df))
+        return ConnectionManager.get_connection().from_df(pd.DataFrame(df))
     query = "SELECT 1 LIMIT 0"
-    return query if as_query else con.sql(query)
+    return query if as_query else ConnectionManager.get_connection().sql(query)
 
 
 def get_col_type(rel: DuckDBPyRelation, col_name: str) -> DuckDBPyType:
@@ -375,4 +375,4 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[st
 
 def clean_execution_graph(rel: DuckDBPyRelation) -> DuckDBPyRelation:
     df = rel.df()
-    return con.from_df(df)
+    return ConnectionManager.get_connection().from_df(df)

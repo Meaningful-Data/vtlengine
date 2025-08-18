@@ -64,25 +64,42 @@ class ConnectionManager:
     ) -> None:
         """
         Configures the database path and memory limit for DuckDB.
+        If memory_limit is None, empty, or 'UNLIMITED', disables memory limit (DuckDB will use all available RAM).
         """
         cls._database = database
-        cls._memory_limit = memory_limit
+        if memory_limit is None or str(memory_limit).strip().upper() in ("", "UNLIMITED"):
+            cls._memory_limit = None
+        else:
+            cls._memory_limit = memory_limit
         cls._plan_format = plan_format
         cls._temp_directory = temp_directory
         if threads is not None:
             cls._threads = threads
+        if cls._connection is not None:
+            cls.close_connection()
+            cls._connection = None
 
     @classmethod
     def get_connection(cls) -> duckdb.DuckDBPyConnection:
         """
         Returns a local DuckDB connection. Creates one if it doesn't exist.
         """
+        if cls._connection is not None:
+            try:
+                cls._connection.execute("SELECT 1;")
+            except Exception as e:
+                if "Connection already closed" in str(e):
+                    cls._connection = None
+                else:
+                    raise
         if cls._connection is None:
             config_dict = {
-                "memory_limit": cls._memory_limit,
                 "temp_directory": cls._temp_directory,
                 "preserve_insertion_order": True,
             }
+            if cls._memory_limit:
+                config_dict["memory_limit"] = cls._memory_limit
+            print(f"Creating connection with memory_limit={cls._memory_limit}")
             cls._connection = duckdb.connect(database=cls._database, config=config_dict)
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
