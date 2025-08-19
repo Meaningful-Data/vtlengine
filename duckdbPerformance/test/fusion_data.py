@@ -34,19 +34,27 @@ def seconds(x):
     except Exception:
         return 0.0
 
-def node_duration(n, dflt=0.0):
-    dur = seconds(n.get("operator_timing", 0.0))
-    if dur == 0.0 and n.get("children"):
-        s = sum(node_duration(c, 0.0) for c in n["children"])
-        dur = s if s > 0 else 0.0
-    return dur if dur > 0 else dflt
+def raw_dur(node):
+    t = seconds(node.get("operator_timing", 0.0))
+    if t > 0.0:
+        return t
+    t = seconds(node.get("cpu_time", 0.0))
+    if t > 0.0:
+        return t
+    ch = node.get("children", []) or []
+    if not ch:
+        return 0.0
+    return sum(raw_dur(c) for c in ch)
 
-def flatten_windows(node, end_perf, path=None, depth=0):
+def flatten_windows(node, end_perf, path=None, depth=0, target_dur=None):
     path = path or []
     name = node.get("operator_name", node.get("query_name", "ROOT"))
     typ  = node.get("operator_type", "ROOT")
-    dur  = node_duration(node, dflt=seconds(node.get("latency", 0.0)))
+
+    dur_base = raw_dur(node)
+    dur = target_dur if target_dur is not None else (seconds(node.get("latency", 0.0)) or dur_base)
     start = end_perf - dur
+
     rows = [{
         "path": " / ".join(path + [name]),
         "name": name,
@@ -56,12 +64,22 @@ def flatten_windows(node, end_perf, path=None, depth=0):
         "dur": dur,
         "depth": depth,
     }]
+
     children = node.get("children", []) or []
     if children:
+        child_raw = [raw_dur(c) for c in children]
+        sum_raw = sum(child_raw)
+
+        if sum_raw > 0.0:
+            child_scaled = [d * (dur / sum_raw) for d in child_raw]
+        else:
+            child_scaled = [dur / len(children)] * len(children)
+
         cur_end = end_perf
-        for ch in reversed(children):
-            rows += flatten_windows(ch, cur_end, path + [name], depth + 1)
-            cur_end -= node_duration(ch, 0.0)
+        for ch, ch_dur in zip(reversed(children), reversed(child_scaled)):
+            rows += flatten_windows(ch, cur_end, path + [name], depth + 1, target_dur=ch_dur)
+            cur_end -= ch_dur
+
     return rows
 
 def active_op_at(perf, windows):
@@ -81,12 +99,12 @@ def main():
 
     finish = OUT_DIR / "logs" / "finish.json"
     if not finish.exists():
-        print("output/finish.json not found")
+        print("output/logs/finish.json not found")
         return 1
 
     profile = OUT_DIR / "logs" / "logs.json"
     if not profile.exists():
-        print("output/logs.json not found")
+        print("output/logs/logs.json not found")
         return 1
 
     series = read_mem_series(mem_csv)
@@ -98,12 +116,10 @@ def main():
         return 1
 
     perf_end = float(fin["perf_end"])
-    latency  = seconds(prof.get("latency", 0.0)) or node_duration({"children": prof.get("children", [])}, 0.0)
+    latency  = seconds(prof.get("latency", 0.0)) or raw_dur({"children": prof.get("children", [])})
     if latency <= 0.0:
         print("Could not determine total DuckDB latency")
         return 1
-
-    perf_start = perf_end - latency
 
     root = {
         "operator_name": prof.get("query_name", "DUCKDB_QUERY"),
@@ -112,15 +128,14 @@ def main():
         "children": prof.get("children", []),
         "latency": latency,
     }
-    windows = flatten_windows(root, perf_end)
-    windows[0]["start"] = perf_start
-    windows[0]["end"]   = perf_end
-    windows[0]["dur"]   = latency
+
+    windows = flatten_windows(root, perf_end, target_dur=latency)
 
     timeline_path = OUT_DIR / f"memory_timeline_{run_id}.csv"
     with timeline_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["perf_s","perf_ms","t_rel_s","t_rel_ms","rss_mb","is_duckdb","op_name","op_type","op_path","op_depth"])
+        perf_start = perf_end - latency
         for m in series:
             op = active_op_at(m["perf"], windows)
             if op:
@@ -130,11 +145,13 @@ def main():
             else:
                 is_duckdb = 0
                 op_name = op_type = op_path = ""; op_depth = ""
+
+            t_rel = m["perf"] - perf_start
             w.writerow([
                 f"{m['perf']:.6f}",
                 int(round(m["perf"] * 1000)),
-                f"{m['t_rel_s']:.6f}",
-                int(round(m["t_rel_s"] * 1000)),
+                f"{t_rel:.6f}",
+                int(round(t_rel * 1000)),
                 f"{m['rss'] / BYTES_IN_MB:.2f}",
                 is_duckdb, op_name, op_type, op_path, op_depth
             ])
