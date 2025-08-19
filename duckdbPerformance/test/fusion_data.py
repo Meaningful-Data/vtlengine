@@ -50,11 +50,9 @@ def flatten_windows(node, end_perf, path=None, depth=0, target_dur=None):
     path = path or []
     name = node.get("operator_name", node.get("query_name", "ROOT"))
     typ  = node.get("operator_type", "ROOT")
-
     dur_base = raw_dur(node)
     dur = target_dur if target_dur is not None else (seconds(node.get("latency", 0.0)) or dur_base)
     start = end_perf - dur
-
     rows = [{
         "path": " / ".join(path + [name]),
         "name": name,
@@ -64,22 +62,18 @@ def flatten_windows(node, end_perf, path=None, depth=0, target_dur=None):
         "dur": dur,
         "depth": depth,
     }]
-
     children = node.get("children", []) or []
     if children:
         child_raw = [raw_dur(c) for c in children]
         sum_raw = sum(child_raw)
-
         if sum_raw > 0.0:
             child_scaled = [d * (dur / sum_raw) for d in child_raw]
         else:
             child_scaled = [dur / len(children)] * len(children)
-
         cur_end = end_perf
         for ch, ch_dur in zip(reversed(children), reversed(child_scaled)):
             rows += flatten_windows(ch, cur_end, path + [name], depth + 1, target_dur=ch_dur)
             cur_end -= ch_dur
-
     return rows
 
 def active_op_at(perf, windows):
@@ -88,39 +82,31 @@ def active_op_at(perf, windows):
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-
     mem_csv = latest("mem_series_*.csv")
     if not mem_csv:
         print("No mem_series_*.csv found in output/")
         return 1
-
     m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
     run_id = m.group(1) if m else "latest"
-
     finish = OUT_DIR / "logs" / "finish.json"
     if not finish.exists():
         print("output/logs/finish.json not found")
         return 1
-
     profile = OUT_DIR / "logs" / "logs.json"
     if not profile.exists():
         print("output/logs/logs.json not found")
         return 1
-
     series = read_mem_series(mem_csv)
     prof   = load_json(profile)
     fin    = load_json(finish)
-
     if "perf_end" not in fin:
         print("finish.json is missing 'perf_end'")
         return 1
-
     perf_end = float(fin["perf_end"])
     latency  = seconds(prof.get("latency", 0.0)) or raw_dur({"children": prof.get("children", [])})
     if latency <= 0.0:
         print("Could not determine total DuckDB latency")
         return 1
-
     root = {
         "operator_name": prof.get("query_name", "DUCKDB_QUERY"),
         "operator_type": "ROOT",
@@ -128,14 +114,12 @@ def main():
         "children": prof.get("children", []),
         "latency": latency,
     }
-
     windows = flatten_windows(root, perf_end, target_dur=latency)
-
+    perf0 = series[0]["perf"]
     timeline_path = OUT_DIR / f"memory_timeline_{run_id}.csv"
     with timeline_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["perf_s","perf_ms","t_rel_s","t_rel_ms","rss_mb","is_duckdb","op_name","op_type","op_path","op_depth"])
-        perf_start = perf_end - latency
         for m in series:
             op = active_op_at(m["perf"], windows)
             if op:
@@ -145,8 +129,7 @@ def main():
             else:
                 is_duckdb = 0
                 op_name = op_type = op_path = ""; op_depth = ""
-
-            t_rel = m["perf"] - perf_start
+            t_rel = m["perf"] - perf0
             w.writerow([
                 f"{m['perf']:.6f}",
                 int(round(m["perf"] * 1000)),
@@ -155,7 +138,6 @@ def main():
                 f"{m['rss'] / BYTES_IN_MB:.2f}",
                 is_duckdb, op_name, op_type, op_path, op_depth
             ])
-
     print("OK timeline ->", timeline_path)
     return 0
 
