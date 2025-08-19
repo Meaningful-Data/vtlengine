@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
-from vtlengine.connection import ConnectionManager
+from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
@@ -13,7 +13,7 @@ from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
 
-load_time_checks(ConnectionManager.get_connection())
+load_time_checks(con)
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -155,7 +155,7 @@ def check_nulls(
         )
         + " FROM data"
     )
-    null_counts = ConnectionManager.get_connection().execute(query).fetchone()
+    null_counts = con.execute(query).fetchone()
 
     for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
@@ -182,7 +182,7 @@ def check_duplicates(
     #             ) AS duplicates
     #             """
     #
-    #     dup = ConnectionManager.get_connection().execute(query).fetchone()[0]
+    #     dup = con.execute(query).fetchone()[0]
     #     if dup:
     #         raise InputValidationException(code="0-1-1-6")
 
@@ -195,7 +195,7 @@ def check_dwi(
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if not id_names:
-        rowcount = ConnectionManager.get_connection().execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]  # type: ignore[index]
+        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]  # type: ignore[index]
         if rowcount > 1:
             raise SemanticError(code="0-1-1-5", name=dataset_name)
 
@@ -228,7 +228,7 @@ def load_datapoints(
         }
 
         # Read the CSV file
-        rel = ConnectionManager.get_connection().read_csv(
+        rel = con.read_csv(
             path_str,
             header=True,
             columns=dtypes,
@@ -251,7 +251,7 @@ def load_datapoints(
 
 def _fill_dataset_empty_data(dataset: Dataset) -> None:
     if not dataset.components:
-        dataset.data = ConnectionManager.get_connection().query("SELECT NULL LIMIT 0")
+        dataset.data = con.query("SELECT NULL LIMIT 0")
         return
 
     column_defs = ", ".join(
@@ -260,4 +260,4 @@ def _fill_dataset_empty_data(dataset: Dataset) -> None:
             for name, comp in dataset.components.items()
         ]
     )
-    dataset.data = ConnectionManager.get_connection().query(f"SELECT {column_defs} LIMIT 0")
+    dataset.data = con.query(f"SELECT {column_defs} LIMIT 0")
