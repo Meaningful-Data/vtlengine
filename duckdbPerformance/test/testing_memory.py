@@ -98,24 +98,49 @@ def list_output_files(output_folder: Path):
     return [f"{f.name} ({f.stat().st_size / (1024**2):.2f} MB)" for f in files]
 
 
-def execute_test(csv_path: Path, ds_path: Path, script: str, base_memory_limit: str, output_folder: Path):
+def execute_test(csv_paths: list[Path], ds_paths: list[Path], script: str, base_memory_limit: str, output_folder: Path):
+    csv_names = "; ".join(p.name for p in csv_paths)
+    json_names = "; ".join(p.name for p in ds_paths)
+
     print(
-        f"Executing test:\n CSV: {csv_path}\n JSON: {ds_path}\n "
+        f"Executing test:\n CSVs: {csv_names}\n JSONs: {json_names}\n "
         f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}"
     )
     ConnectionManager.configure(memory_limit=base_memory_limit)
     output_folder.mkdir(parents=True, exist_ok=True)
     remove_outputs(output_folder)
 
+    stop_timer = threading.Event()
+    proc = psutil.Process(os.getpid())
+
+    def timer_loop():
+        start = time.time()
+        while not stop_timer.wait(1):
+            elapsed = time.time() - start
+            try:
+                rss = proc.memory_info().rss / (1024**2)
+                print(f"[Timer] {elapsed:.1f} s | Memory: {rss:.2f} MB")
+            except psutil.Error:
+                print(f"[Timer] {elapsed:.1f} s | (Unable to read memory info)")
+
+    timer_thread = threading.Thread(target=timer_loop, daemon=True)
+    timer_thread.start()
+
     with MemAnalyzer(pid=os.getpid(), interval_s=0.01, keep_series=True) as ma:
         start_time = time.time()
-        result = run(script=script, data_structures=ds_path, datapoints=csv_path, output_folder=output_folder)
+        result = run(script=script, data_structures=ds_paths, datapoints=csv_paths, output_folder=output_folder)
         duration = time.time() - start_time
+
+    stop_timer.set()
+    timer_thread.join(timeout=1)
+
     peak_rss_mb = ma.peak_rss / (1024**2)
-    peak_rel = 0.0
     if ma.series:
         peak_idx = max(range(len(ma.series)), key=lambda i: ma.series[i][2])
         peak_rel = ma.series[peak_idx][1]
+    else:
+        peak_rel = 0.0
+
     mem_series_path = output_folder / f"mem_series_{id_}.csv"
     with open(mem_series_path, "w", newline="") as f:
         w = csv.writer(f)
@@ -131,8 +156,8 @@ def execute_test(csv_path: Path, ds_path: Path, script: str, base_memory_limit: 
     timeline_file_str = timeline_file.name if timeline_file else "Not found"
 
     save_results(
-        file_csv=csv_path.name,
-        file_json=ds_path.name,
+        file_csv=csv_names,
+        file_json=json_names,
         mem_limit=base_memory_limit,
         duration_sec=duration,
         peak_rss_mb=peak_rss_mb,
@@ -166,8 +191,8 @@ def save_results(
                     "ID",
                     "Date",
                     "VTL Script",
-                    "CSV File",
-                    "JSON",
+                    "CSV Files",
+                    "JSON Files",
                     "Memory Limit",
                     "Duration (s)",
                     "Peak RSS (MB)",
@@ -181,8 +206,8 @@ def save_results(
                 id_,
                 datetime.now().isoformat(timespec="seconds"),
                 script,
-                Path(file_csv).name,
-                Path(file_json).name,
+                file_csv,
+                file_json,
                 mem_limit,
                 f"{duration_sec:.2f}",
                 f"{peak_rss_mb:.2f}",
@@ -192,10 +217,9 @@ def save_results(
         )
 
 
-
 if __name__ == "__main__":
-    csv_file = DATA_DIR / "dp" / "DS_2.csv"
-    ds_file = DATA_DIR / "ds" / "DS_2.json"
-    vtl_script = "DS_r <- DS_2[calc result:= Me_1 * 10];"
-    execute_test(csv_file, ds_file, vtl_script, base_memory_limit="2GB", output_folder=OUTPUT_DIR)
+    csv_file = [(DATA_DIR / "dp" / "DS_10.csv"), (DATA_DIR / "dp" / "DS_9.csv")]
+    ds_file = [DATA_DIR / "ds" / "DS_10.json", DATA_DIR / "ds" / "DS_9.json"]
+    vtl_script = "DS_r <- DS_10 > DS_9;"
+    execute_test(csv_file, ds_file, vtl_script, base_memory_limit="1GB", output_folder=OUTPUT_DIR)
     __import__("fusion_data").main()
