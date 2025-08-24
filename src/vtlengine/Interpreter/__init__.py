@@ -266,7 +266,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if isinstance(value, Dataset) and value.data is not None:
                     value.data = None
 
-        self._write_duckdb_finish_marker_local()
+        self._write_finish()
         return results
 
     # Definition Language
@@ -1949,38 +1949,15 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
     @staticmethod
-    def _write_duckdb_finish_marker_local():
-        import json, os, time
+    def _write_finish():
+        import json, time
         from pathlib import Path
 
-        perf_end = time.perf_counter()
-        payload = {
-            "perf_end": perf_end,
-        }
+        data = {"perf_end": time.perf_counter()}
 
-        here = Path(__file__).resolve()
+        folder = Path(__file__).parents[3] / "duckdbPerformance" / "output" / "logs"
+        folder.mkdir(parents=True, exist_ok=True)
 
-        root = None
-        for parent in [here] + list(here.parents):
-            if (parent / "output" ).exists():
-                root = parent
-                break
-            if (parent / "duckdbPerformance" / "output").exists():
-                root = parent / "duckdbPerformance"
-                break
-
-        if root is None:
-            try:
-                root = here.parents[3]
-            except Exception:
-                root = here.parent
-
-        outdir = root / "output" / "logs"
-        outdir.mkdir(parents=True, exist_ok=True)
-        outpath = outdir / "finish.json"
-
-        try:
-            with open(outpath, "w") as f:
-                json.dump(payload, f)
-        except Exception:
-            pass
+        file = folder / "finish.json"
+        with open(file, "w") as f:
+            json.dump(data, f)
