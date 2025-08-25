@@ -7,8 +7,8 @@ BYTES_IN_MB = 1024 ** 2
 BASE = Path(__file__).resolve().parent.parent
 OUT_DIR = BASE / "output"
 
-def latest(pattern):
-    files = list(OUT_DIR.glob(pattern))
+def latest(pattern, out_dir=OUT_DIR):
+    files = list(out_dir.glob(pattern))
     return max(files, key=lambda p: p.stat().st_mtime) if files else None
 
 def load_json(p):
@@ -46,6 +46,7 @@ def raw_dur(node):
         return 0.0
     return sum(raw_dur(c) for c in ch)
 
+
 def flatten_windows(node, end_perf, path=None, depth=0, target_dur=None):
     path = path or []
     name = node.get("operator_name", node.get("query_name", "ROOT"))
@@ -80,43 +81,19 @@ def active_op_at(perf, windows):
     cands = [w for w in windows if w["start"] <= perf <= w["end"]]
     return max(cands, key=lambda w: (w["depth"], w["dur"])) if cands else None
 
-def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    mem_csv = latest("mem_series_*.csv")
-    if not mem_csv:
-        print("No mem_series_*.csv found in output/")
-        return 1
-    m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
-    run_id = m.group(1) if m else "latest"
-    finish = OUT_DIR / "logs" / "finish.json"
-    if not finish.exists():
-        print("output/logs/finish.json not found")
-        return 1
-    profile = OUT_DIR / "logs" / "logs.json"
-    if not profile.exists():
-        print("output/logs/logs.json not found")
-        return 1
-    series = read_mem_series(mem_csv)
-    prof   = load_json(profile)
-    fin    = load_json(finish)
-    if "perf_end" not in fin:
-        print("finish.json is missing 'perf_end'")
-        return 1
-    perf_end = float(fin["perf_end"])
-    latency  = seconds(prof.get("latency", 0.0)) or raw_dur({"children": prof.get("children", [])})
-    if latency <= 0.0:
-        print("Could not determine total DuckDB latency")
-        return 1
-    root = {
+
+def build_root(prof, latency):
+    return {
         "operator_name": prof.get("query_name", "DUCKDB_QUERY"),
         "operator_type": "ROOT",
         "operator_timing": latency,
         "children": prof.get("children", []),
         "latency": latency,
     }
-    windows = flatten_windows(root, perf_end, target_dur=latency)
+
+def generate_timeline(series, windows, run_id, out_dir=OUT_DIR):
     perf0 = series[0]["perf"]
-    timeline_path = OUT_DIR / f"memory_timeline_{run_id}.csv"
+    timeline_path = out_dir / f"memory_timeline_{run_id}.csv"
     with timeline_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["perf_s","perf_ms","t_rel_s","t_rel_ms","rss_mb","is_duckdb","op_name","op_type","op_path","op_depth"])
@@ -125,10 +102,13 @@ def main():
             if op:
                 is_duckdb = 1
                 op_name = "DUCKDB_QUERY" if op["type"] == "ROOT" else op["name"]
-                op_type = op["type"]; op_path = op["path"]; op_depth = op["depth"]
+                op_type = op["type"]
+                op_path = op["path"]
+                op_depth = op["depth"]
             else:
                 is_duckdb = 0
-                op_name = op_type = op_path = ""; op_depth = ""
+                op_name = op_type = op_path = ""
+                op_depth = ""
             t_rel = m["perf"] - perf0
             w.writerow([
                 f"{m['perf']:.6f}",
@@ -138,8 +118,41 @@ def main():
                 f"{m['rss'] / BYTES_IN_MB:.2f}",
                 is_duckdb, op_name, op_type, op_path, op_depth
             ])
-    print("OK timeline ->", timeline_path)
-    return 0
+    return timeline_path
 
-if __name__ == "__main__":
-    main()
+def run_pipeline():
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    mem_csv = latest("mem_series_*.csv")
+    if not mem_csv:
+        raise FileNotFoundError("No mem_series_*.csv found in output/")
+
+    m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
+    run_id = m.group(1) if m else "latest"
+
+    finish = OUT_DIR / "logs" / "finish.json"
+    if not finish.exists():
+        raise FileNotFoundError("output/logs/finish.json not found")
+
+    profile = OUT_DIR / "logs" / "logs.json"
+    if not profile.exists():
+        raise FileNotFoundError("output/logs/logs.json not found")
+
+    series = read_mem_series(mem_csv)
+    prof   = load_json(profile)
+    fin    = load_json(finish)
+
+    if "perf_end" not in fin:
+        raise ValueError("finish.json is missing 'perf_end'")
+
+    perf_end = float(fin["perf_end"])
+    latency  = seconds(prof.get("latency", 0.0)) or raw_dur({"children": prof.get("children", [])})
+    if latency <= 0.0:
+        raise ValueError("Could not determine total DuckDB latency")
+
+    root = build_root(prof, latency)
+    windows = flatten_windows(root, perf_end, target_dur=latency)
+
+    timeline_path = generate_timeline(series, windows, run_id)
+    print("OK timeline ->", timeline_path)
+    return timeline_path

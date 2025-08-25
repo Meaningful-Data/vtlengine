@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import psutil
+
 from vtlengine import run
 from vtlengine.API import create_ast
 from vtlengine.AST.ASTString import ASTString
@@ -84,11 +85,11 @@ class MemAnalyzer:
             self.series.append((perf_abs, t_rel, rss, 0))
 
 
-def remove_outputs(output_folder: Path):
-    if not output_folder.exists():
-        return
-    for file in output_folder.glob("*.csv"):
-        os.remove(file)
+# def remove_outputs(output_folder: Path):
+#     if not output_folder.exists():
+#         return
+#     for file in output_folder.glob("*.csv"):
+#         os.remove(file)
 
 
 def list_output_files(output_folder: Path):
@@ -104,11 +105,10 @@ def execute_test(csv_paths: list[Path], ds_paths: list[Path], script: str, base_
 
     print(
         f"Executing test:\n CSVs: {csv_names}\n JSONs: {json_names}\n "
-        f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}"
+        f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}", flush=True
     )
     ConnectionManager.configure(memory_limit=base_memory_limit)
     output_folder.mkdir(parents=True, exist_ok=True)
-    remove_outputs(output_folder)
 
     stop_timer = threading.Event()
     proc = psutil.Process(os.getpid())
@@ -119,7 +119,7 @@ def execute_test(csv_paths: list[Path], ds_paths: list[Path], script: str, base_
             elapsed = time.time() - start
             try:
                 rss = proc.memory_info().rss / (1024**2)
-                print(f"[Timer] {elapsed:.1f} s | Memory: {rss:.2f} MB")
+                print(f"[Timer] {elapsed:.1f} s | Memory: {rss:.2f} MB", flush=True)
             except psutil.Error:
                 print(f"[Timer] {elapsed:.1f} s | (Unable to read memory info)")
 
@@ -149,11 +149,9 @@ def execute_test(csv_paths: list[Path], ds_paths: list[Path], script: str, base_
 
     output_files = list_output_files(output_folder)
 
-    import fusion_data
-    fusion_data.main()
-    timeline_files = list(output_folder.glob("memory_timeline_*.csv"))
-    timeline_file = max(timeline_files, key=lambda f: f.stat().st_mtime) if timeline_files else None
-    timeline_file_str = timeline_file.name if timeline_file else "Not found"
+    from duckdbPerformance.test.fusion_data import run_pipeline
+    timeline_path = run_pipeline()
+    timeline_file_str = timeline_path.name if timeline_path else "Not found"
 
     save_results(
         file_csv=csv_names,
@@ -216,10 +214,9 @@ def save_results(
             ]
         )
 
-
-if __name__ == "__main__":
-    csv_file = [(DATA_DIR / "dp" / "DS_10.csv"), (DATA_DIR / "dp" / "DS_9.csv")]
-    ds_file = [DATA_DIR / "ds" / "DS_10.json", DATA_DIR / "ds" / "DS_9.json"]
-    vtl_script = "DS_r <- DS_10 > DS_9;"
-    execute_test(csv_file, ds_file, vtl_script, base_memory_limit="1GB", output_folder=OUTPUT_DIR)
-    __import__("fusion_data").main()
+#
+# if __name__ == "__main__":
+#     csv_file = [(DATA_DIR / "dp" / "DS_9.csv")]
+#     ds_file = [DATA_DIR / "ds" / "DS_9.json"]
+#     vtl_script = ("DS_r <- DS_9 + 10;")
+#     execute_test(csv_file, ds_file, vtl_script, base_memory_limit="1GB", output_folder=OUTPUT_DIR)
