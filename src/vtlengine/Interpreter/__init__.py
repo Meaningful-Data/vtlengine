@@ -1,8 +1,6 @@
-import gc
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from time import perf_counter
 from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
@@ -266,7 +264,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if isinstance(value, Dataset) and value.data is not None:
                     value.data = None
 
-        self._write_finish()
+        self._write_finish()  # type: ignore[no-untyped-call]
         return results
 
     # Definition Language
@@ -1949,8 +1947,9 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
     @staticmethod
-    def _write_finish():
-        import json, time
+    def _write_finish():  # type: ignore[no-untyped-def]
+        import json
+        import time
         from pathlib import Path
 
         data = {"perf_end": time.perf_counter()}

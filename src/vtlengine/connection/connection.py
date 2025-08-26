@@ -55,12 +55,12 @@ class ConnectionManager:
 
     @classmethod
     def configure(
-            cls,
-            database: str = BASE_DATABASE,
-            memory_limit: str = BASE_MEMORY_LIMIT,
-            plan_format: str = PLAN_FORMAT,
-            temp_directory: str = BASE_TEMP_DIRECTORY,
-            threads: Optional[int] = None,
+        cls,
+        database: str = BASE_DATABASE,
+        memory_limit: str = BASE_MEMORY_LIMIT,
+        plan_format: str = PLAN_FORMAT,
+        temp_directory: str = BASE_TEMP_DIRECTORY,
+        threads: Optional[int] = None,
     ) -> None:
         """
         Configures the database path and memory limit for DuckDB.
@@ -87,7 +87,7 @@ class ConnectionManager:
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
-            cls._connection.execute(cls.profiling_set())
+            cls._connection.execute(cls.profiling_set())  # type: ignore[no-untyped-call]
             cls.register_functions()
         return cls._connection
 
@@ -141,7 +141,7 @@ class ConnectionManager:
                 # we are using FunctionType which works the same
 
     @classmethod
-    def profiling_set(cls):
+    def profiling_set(cls):  # type: ignore[no-untyped-def]
         pragmas = []
         for key, value in cls._config.items():
             if key == "settings":

@@ -1,7 +1,9 @@
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-from pathlib import Path
+
 
 def plot_last_memory_timeline(output_dir: Path):
     timeline_files = list(output_dir.glob("memory_timeline_*.csv"))
@@ -38,18 +40,35 @@ def plot_last_memory_timeline(output_dir: Path):
         elif row["is_duckdb"] == 0 and in_duckdb:
             end_t = row["t_rel_s"]
             mem_increase = max_rss - start_rss
-            ax.axvspan(start_t, end_t, alpha=0.2, color="orange",
-                       label=f"DuckDB running (+{mem_increase:.2f} MB)")
+            ax.axvspan(
+                start_t,
+                end_t,
+                alpha=0.2,
+                color="orange",
+                label=f"DuckDB running (+{mem_increase:.2f} MB)",
+            )
             in_duckdb = False
 
     if in_duckdb:
         end_t = df["t_rel_s"].iloc[-1]
         mem_increase = max_rss - start_rss
-        ax.axvspan(start_t, end_t, alpha=0.2, color="orange",
-                   label=f"DuckDB running (+{mem_increase:.2f} MB)")
+        ax.axvspan(
+            start_t,
+            end_t,
+            alpha=0.2,
+            color="orange",
+            label=f"DuckDB running (+{mem_increase:.2f} MB)",
+        )
 
-    ax.text(peak_time, peak_mem, f"Peak {peak_mem:.2f} MB\nt= {peak_time:.2f}s",
-            ha="left", va="bottom", fontsize=9, weight="bold")
+    ax.text(
+        peak_time,
+        peak_mem,
+        f"Peak {peak_mem:.2f} MB\nt= {peak_time:.2f}s",
+        ha="left",
+        va="bottom",
+        fontsize=9,
+        weight="bold",
+    )
 
     ax.set_title("Memory evolution")
     ax.set_xlabel("Relative time (s)")
@@ -60,4 +79,3 @@ def plot_last_memory_timeline(output_dir: Path):
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     print(f"Graph saved at: {out_path}")
-

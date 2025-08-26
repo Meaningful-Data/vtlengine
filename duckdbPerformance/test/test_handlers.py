@@ -1,5 +1,6 @@
 import csv
 import os
+import shutil
 import threading
 import time
 from datetime import datetime
@@ -7,6 +8,8 @@ from pathlib import Path
 
 import psutil
 
+from duckdbPerformance.performance_utils.mem_gra import plot_last_memory_timeline
+from duckdbPerformance.test.fusion_data import run_pipeline
 from vtlengine import run
 from vtlengine.API import create_ast
 from vtlengine.AST.ASTString import ASTString
@@ -85,11 +88,14 @@ class MemAnalyzer:
             self.series.append((perf_abs, t_rel, rss, 0))
 
 
-# def remove_outputs(output_folder: Path):
-#     if not output_folder.exists():
-#         return
-#     for file in output_folder.glob("*.csv"):
-#         os.remove(file)
+def remove_outputs(output_folder: Path):
+    for item in output_folder.iterdir():
+        if item.name in ("logs", ".gitignore"):
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
 
 
 def list_output_files(output_folder: Path):
@@ -99,78 +105,82 @@ def list_output_files(output_folder: Path):
     return [f"{f.name} ({f.stat().st_size / (1024**2):.2f} MB)" for f in files]
 
 
-def execute_test(csv_paths: list[Path], ds_paths: list[Path], script: str, base_memory_limit: str, output_folder: Path):
-    csv_names = "; ".join(p.name for p in csv_paths)
-    json_names = "; ".join(p.name for p in ds_paths)
-
-    print(
-        f"Executing test:\n CSVs: {csv_names}\n JSONs: {json_names}\n "
-        f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}", flush=True
-    )
-    ConnectionManager.configure(memory_limit=base_memory_limit)
+def execute_test(csv_paths_list, ds_paths_list, scripts_list, base_memory_limit, output_folder):
     output_folder.mkdir(parents=True, exist_ok=True)
+    for idx, (csv_paths, ds_paths, script) in enumerate(
+        zip(csv_paths_list, ds_paths_list, scripts_list), start=1
+    ):
+        id_ = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+        csv_names = "; ".join(p.name for p in csv_paths)
+        json_names = "; ".join(p.name for p in ds_paths)
 
-    stop_timer = threading.Event()
-    proc = psutil.Process(os.getpid())
+        print(
+            f"\nExecuting test {idx}:\n CSVs: {csv_names}\n JSONs: {json_names}\n"
+            f"Memory limit: {base_memory_limit}\n Output folder: {output_folder}",
+            flush=True,
+        )
 
-    def timer_loop():
-        start = time.time()
-        while not stop_timer.wait(1):
-            elapsed = time.time() - start
-            try:
-                rss = proc.memory_info().rss / (1024**2)
-                print(f"[Timer] {elapsed:.1f} s | Memory: {rss:.2f} MB", flush=True)
-            except psutil.Error:
-                print(f"[Timer] {elapsed:.1f} s | (Unable to read memory info)")
+        ConnectionManager.configure(memory_limit=base_memory_limit)
 
-    timer_thread = threading.Thread(target=timer_loop, daemon=True)
-    timer_thread.start()
+        stop_timer = threading.Event()
+        proc = psutil.Process()
 
-    with MemAnalyzer(pid=os.getpid(), interval_s=0.01, keep_series=True) as ma:
-        start_time = time.time()
-        result = run(script=script, data_structures=ds_paths, datapoints=csv_paths, output_folder=output_folder)
-        duration = time.time() - start_time
+        def timer_loop():
+            start = time.time()
+            while not stop_timer.wait(1):
+                elapsed = time.time() - start
+                try:
+                    rss = proc.memory_info().rss / (1024**2)
+                    print(f"[Timer] {elapsed:.1f}s | Memory: {rss:.2f} MB", flush=True)
+                except psutil.Error:
+                    print(f"[Timer] {elapsed:.1f}s | Memory info unavailable", flush=True)
 
-    stop_timer.set()
-    timer_thread.join(timeout=1)
+        timer_thread = threading.Thread(target=timer_loop, daemon=True)
+        timer_thread.start()
 
-    peak_rss_mb = ma.peak_rss / (1024**2)
-    if ma.series:
-        peak_idx = max(range(len(ma.series)), key=lambda i: ma.series[i][2])
-        peak_rel = ma.series[peak_idx][1]
-    else:
-        peak_rel = 0.0
+        with MemAnalyzer(interval_s=0.01, keep_series=True) as ma:
+            start_time = time.time()
+            result = run(  # noqa: F841
+                script=script,
+                data_structures=ds_paths,
+                datapoints=csv_paths,
+                output_folder=output_folder,
+            )
+            duration = time.time() - start_time
 
-    mem_series_path = output_folder / f"mem_series_{id_}.csv"
-    with open(mem_series_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["perf", "t_rel_s", "rss_bytes", "duck_bytes"])
-        w.writerows(ma.series)
+        stop_timer.set()
+        timer_thread.join(timeout=1)
 
-    output_files = list_output_files(output_folder)
+        mem_series_file = output_folder / f"mem_series_{idx}_{id_}.csv"
+        with open(mem_series_file, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["perf", "t_rel_s", "rss_bytes", "duck_bytes"])
+            w.writerows(ma.series)
 
-    from duckdbPerformance.test.fusion_data import run_pipeline
-    timeline_path = run_pipeline()
-    timeline_file_str = timeline_path.name if timeline_path else "Not found"
+        timeline_path = run_pipeline()
+        timeline_file_str = timeline_path.name if timeline_path else "Not found"
 
-    save_results(
-        file_csv=csv_names,
-        file_json=json_names,
-        mem_limit=base_memory_limit,
-        duration_sec=duration,
-        peak_rss_mb=peak_rss_mb,
-        output_files="; ".join(output_files),
-        script=script,
-        memory_timeline=timeline_file_str
-    )
-    print("\n--- SUMMARY ---")
-    print(f"Duration: {duration:.2f} s")
-    print(f"Peak RSS: {peak_rss_mb:.2f} MB")
-    print(f"Output files: {output_files}")
-    print(f"Run result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+        save_results(
+            id_,
+            file_csv=csv_names,
+            file_json=json_names,
+            mem_limit=base_memory_limit,
+            duration_sec=duration,
+            peak_rss_mb=ma.peak_rss / (1024**2),
+            output_files="; ".join(list_output_files(output_folder)),
+            script=script,
+            memory_timeline=timeline_file_str,
+        )
+        plot_last_memory_timeline(output_dir=output_folder)
+        print(f"--- SUMMARY {idx} ---")
+        print(
+            f"Duration: {duration:.2f}s | Peak RSS: "
+            f"{ma.peak_rss / (1024**2):.2f} MB | Timeline: {timeline_file_str}"
+        )
 
 
 def save_results(
+    id_,
     file_csv,
     file_json,
     mem_limit,
@@ -213,6 +223,7 @@ def save_results(
                 memory_timeline,
             ]
         )
+
 
 #
 # if __name__ == "__main__":

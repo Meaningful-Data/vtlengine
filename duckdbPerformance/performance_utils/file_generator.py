@@ -7,7 +7,7 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-base_path = Path(__file__).parent / "data"
+base_path = Path(__file__).parent.parent / "data"
 BASIC_PATH = base_path / "BASIC_DATA"
 BIG_PATH = base_path / "BIG_DATA"
 DP_PATH = BIG_PATH / "dp"
@@ -162,3 +162,4 @@ if __name__ == "__main__":
         length=2_000_000,
         chunk_size=2_000_000,
     )
+
