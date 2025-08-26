@@ -588,9 +588,6 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = "GL_473_1"
-        number_inputs = 1
-        references_names = ["1", "2", "3", "4"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -600,9 +597,6 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = "GL_473_2"
-        number_inputs = 1
-        references_names = ["1", "2"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -612,9 +606,6 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = "GL_474_1"
-        number_inputs = 1
-        references_names = ["1", "2"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -652,9 +643,6 @@ class UdoTest(UDOHelper):
         Description: UDO with SDMX-CSV 1.0
         Goal: Check Result.
         """
-        code = "GL_475_1"
-        number_inputs = 1
-        references_names = ["1", "2", "3", "4"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

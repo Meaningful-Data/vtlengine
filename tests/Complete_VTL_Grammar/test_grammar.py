@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from vtlengine import API, DataTypes, run
+from vtlengine import API, DataTypes
 from vtlengine.DataTypes import Null
 from vtlengine.Model import Dataset, Scalar
 
@@ -18,7 +18,7 @@ vtl_path = base_path / "vtl"
 
 
 def test_grammar():
-    refactor_results = False
+    pass
     # script_name = "test_grammar.vtl"
     # with open(vtl_path / script_name, "r") as file:
     #     script = file.read()

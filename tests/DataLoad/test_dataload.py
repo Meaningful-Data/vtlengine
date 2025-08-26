@@ -128,9 +128,6 @@ class DataLoadTest(DataLoadHelper):
 
     def test_7(self):
         """ """
-        code = "DataLoad-7"
-        number_inputs = 1
-        references_names = ["DS_r"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -316,9 +313,6 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Result.
         """
-        code = "GL_81-18"
-        number_inputs = 1
-        references_names = ["DS_r"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -732,9 +726,6 @@ class DataLoadTest(DataLoadHelper):
         Git Branch: feat-199-DWI-loading
         Goal: Check Result.
         """
-        code = "GL_91-44"
-        number_inputs = 1
-        references_names = ["DS_r"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

@@ -720,9 +720,6 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of sub after sub in one statement.
         """
-        code = "1-1-1-36"
-        number_inputs = 1
-        references_names = ["1"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -975,8 +972,5 @@ class ClauseAfterClauseOperatorsTest(TestClauseAfterClause):
         Git Branch: #test-213-clause-after-clause.
         Goal: Check the result of aggr after sub in one statement.
         """
-        code = "1-1-1-49"
-        number_inputs = 1
-        references_names = ["1"]
 
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
