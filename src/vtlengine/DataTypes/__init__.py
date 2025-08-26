@@ -60,6 +60,10 @@ class ScalarType:
     def instance_is_included(self, set_: Set[Any]) -> bool:
         return self.__class__ in set_
 
+    @property
+    def sql_type(self) -> str:
+        return "VARCHAR"
+
     @classmethod
     def is_included(cls, set_: Set[Any]) -> bool:
         return cls in set_
@@ -108,8 +112,14 @@ class String(ScalarType):
 
     default = ""
 
+    @property
+    def sql_type(self) -> str:
+        return "VARCHAR"
+
     @classmethod
-    def implicit_cast(cls, value: Any, from_type: Any) -> str:
+    def implicit_cast(cls, value: Any, from_type: Any) -> Optional[str]:
+        if value is None:
+            return None
         # if pd.isna(value):
         #     return cls.default
         if from_type in {
@@ -132,7 +142,9 @@ class String(ScalarType):
         )
 
     @classmethod
-    def explicit_cast(cls, value: Any, from_type: Any) -> str:
+    def explicit_cast(cls, value: Any, from_type: Any) -> Optional[str]:
+        if value is None:
+            return None
         if from_type in {TimePeriod, Date, String}:
             return str(value)
 
@@ -155,6 +167,10 @@ class Number(ScalarType):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+    @property
+    def sql_type(self) -> str:
+        return "DOUBLE"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
@@ -213,6 +229,10 @@ class Integer(Number):
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
+
+    @property
+    def sql_type(self) -> str:
+        return "INTEGER"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> int:
@@ -330,6 +350,10 @@ class Date(TimeInterval):
     """ """
 
     default = None
+
+    @property
+    def sql_type(self) -> str:
+        return "DATE"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
@@ -467,6 +491,10 @@ class Boolean(ScalarType):
 
     default = None
 
+    @property
+    def sql_type(self) -> str:
+        return "BOOLEAN"
+
     @classmethod
     def cast(cls, value: Any) -> Optional[bool]:
         if pd.isnull(value):
@@ -517,6 +545,10 @@ class Boolean(ScalarType):
 
 class Null(ScalarType):
     """ """
+
+    @property
+    def sql_type(self) -> str:
+        return "NULL"
 
     @classmethod
     def is_null_type(cls) -> bool:

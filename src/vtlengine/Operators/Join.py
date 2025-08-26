@@ -2,15 +2,10 @@ from copy import copy
 from functools import reduce
 from typing import Any, Dict, List, Optional
 
-# if os.environ.get("SPARK"):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
-import pandas as pd
-
 from vtlengine.AST import BinOp
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import binary_implicit_promotion
+from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
@@ -138,9 +133,9 @@ class Join(Operator):
     def evaluate(cls, operands: List[Dataset], using: List[str]) -> Dataset:
         result = cls.execute([copy(operand) for operand in operands], using)
         if result.data is not None and sorted(result.get_components_names()) != sorted(
-            result.data.columns.tolist()
+            result.data.columns
         ):
-            missing = list(set(result.get_components_names()) - set(result.data.columns.tolist()))
+            missing = list(set(result.get_components_names()) - set(result.data.columns))
             if len(missing) == 0:
                 missing.append("None")
             raise SemanticError("1-1-1-10", comp_name=missing[0], dataset_name=result.name)
@@ -159,17 +154,17 @@ class Join(Operator):
         )
         for op in operands:
             if op.data is not None:
-                for column in op.data.columns.tolist():
+                for column in op.data.columns:
                     if column in common_measures and column not in using:
-                        op.data = op.data.rename(columns={column: op.name + "#" + column})
-        result.data = copy(cls.reference_dataset.data)
+                        op.data = duckdb_rename(op.data, {column: op.name + "#" + column})
+        result.data = cls.reference_dataset.data
 
         join_keys = using if using else result.get_identifiers_names()
 
         for op in operands:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [key for key in join_keys if key in op.data.columns]
                     if (op.data is not None)
                     else []
                 )
@@ -184,16 +179,11 @@ class Join(Operator):
                         op.data,
                     )
                 if op.data is not None and result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                        on=merge_join_keys,
+                    result.data = duckdb_merge(
+                        result.data, op.data, join_keys=merge_join_keys, how=cls.how
                     )
                 else:
-                    result.data = pd.DataFrame()
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
+                    result.data = empty_relation()
         return result
 
     @classmethod
@@ -337,26 +327,25 @@ class CrossJoin(Join):
 
         for op in operands:
             if op.data is None:
-                op.data = pd.DataFrame(columns=op.get_components_names())
+                op.data = empty_relation(op.get_components_names())
             if op is operands[0]:
                 result.data = op.data
-            else:
-                if result.data is not None:
-                    result.data = pd.merge(
-                        result.data,
-                        op.data,
-                        how=cls.how,  # type: ignore[arg-type]
-                    )
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={
-                        column: op.name + "#" + column
-                        for column in result.data.columns.tolist()
-                        if column in common
-                    }
+            elif result.data is not None:
+                result.data = duckdb_merge(
+                    result.data,
+                    op.data,
+                    join_keys=common,
+                    how=cls.how,
                 )
-        if result.data is not None:
-            result.data.reset_index(drop=True, inplace=True)
+            if result.data is not None:
+                result.data = duckdb_rename(
+                    result.data,
+                    {
+                        column: op.name + "#" + column
+                        for column in result.data.columns
+                        if column in common
+                    },
+                )
         return result
 
     @classmethod
@@ -414,7 +403,11 @@ class Apply(Operator):
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
-        data = dataset.data[list(components.keys())] if dataset.data is not None else pd.DataFrame()
+        data = (
+            duckdb_select(dataset.data, list(components.keys()))
+            if dataset.data is not None
+            else empty_relation()
+        )
 
         for component in components.values():
             component.name = (
@@ -423,13 +416,9 @@ class Apply(Operator):
                 else component.name
             )
         components = {component.name: component for component in components.values()}
-        data.rename(
-            columns={
-                column: column[len(prefix) :]
-                for column in data.columns
-                if column.startswith(prefix)
-            },
-            inplace=True,
+        data = duckdb_rename(
+            data,
+            {column: column[len(prefix) :] for column in data.columns if column.startswith(prefix)},
         )
         return Dataset(name=name, components=components, data=data)
 
@@ -442,6 +431,10 @@ class Apply(Operator):
         right.components = {
             comp.name: comp for comp in right.components.values() if comp.name in common
         }
-        left.data = left.data[list(common)] if left.data is not None else pd.DataFrame()
-        right.data = right.data[list(common)] if right.data is not None else pd.DataFrame()
+        left.data = (
+            duckdb_select(left.data, list(common)) if left.data is not None else empty_relation()
+        )
+        right.data = (
+            duckdb_select(right.data, list(common)) if right.data is not None else empty_relation()
+        )
         return left, right

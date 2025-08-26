@@ -1,4 +1,3 @@
-import _random
 import math
 import operator
 import warnings
@@ -27,6 +26,8 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
+from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
@@ -62,8 +63,8 @@ class Binary(Operator.Binary):
         if cls.op == DIV and y == 0:
             raise SemanticError("2-1-15-6", op=cls.op, value=y)
 
-        decimal_value = cls.py_op(Decimal(x), Decimal(y))
         getcontext().prec = 10
+        decimal_value = cls.py_op(Decimal(x), Decimal(y))
         result = float(decimal_value)
         if result.is_integer():
             return int(result)
@@ -203,9 +204,10 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
+    def py_op(cls, x: Union[int, float], param: Union[int, float]) -> Optional[float]:
+        if param is None:
             return None
+        # TODO: change this to a Runtime error
         if param <= 0:
             raise SemanticError("2-1-15-3", op=cls.op, value=param)
 
@@ -242,6 +244,23 @@ class Parameterized(Unary):
     perform the operation. Similar to Unary, but in the end, the param validation is added.
     """
 
+    sql_op: str = Unary.op
+
+    @classmethod
+    def apply_parametrized_op(
+        cls, input_column_name: str, param_name: Union[str, int, float], output_column_name: str
+    ) -> str:
+        """
+        Applies the parametrized operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            param_name (str): The name of the parameter (or value) to be used in the operation.
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return f'{cls.sql_op}({input_column_name}, {param_name}) AS "{output_column_name}"'
+
     @classmethod
     def validate(
         cls,
@@ -268,44 +287,29 @@ class Parameterized(Unary):
 
         return super().validate(operand)
 
-    @classmethod
-    def op_func(cls, x: Any, param: Optional[Any]) -> Any:
-        return None if pd.isnull(x) else cls.py_op(x, param)
-
-    @classmethod
-    def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
-        return left_series.combine(right_series, cls.op_func)
-
-    @classmethod
-    def apply_operation_series_scalar(cls, series: Any, param: Any) -> Any:
-        return series.map(lambda x: cls.op_func(x, param))
+    # TODO refactor this to utils.py
+    @staticmethod
+    def handle_param_value(param: Optional[Union[DataComponent, Scalar]]) -> Union[str, int, float]:
+        if isinstance(param, DataComponent):
+            return f'"{param.name}"'
+        elif isinstance(param, Scalar) and param.value is not None:
+            return param.value
+        return "NULL"
 
     @classmethod
     def dataset_evaluation(
         cls, operand: Dataset, param: Optional[Union[DataComponent, Scalar]] = None
     ) -> Dataset:
-        result = cls.validate(operand, param)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        for measure_name in result.get_measures_names():
-            try:
-                if isinstance(param, DataComponent):
-                    result.data[measure_name] = cls.apply_operation_two_series(
-                        result.data[measure_name], param.data
-                    )
-                else:
-                    param_value = param.value if param is not None else None
-                    result.data[measure_name] = cls.apply_operation_series_scalar(
-                        result.data[measure_name], param_value
-                    )
-            except ValueError:
-                raise SemanticError(
-                    "2-1-15-1",
-                    op=cls.op,
-                    comp_name=measure_name,
-                    dataset_name=operand.name,
-                ) from None
-        result.data = result.data[result.get_components_names()]
-        return result
+        result_dataset = cls.validate(operand, param)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
+        param_value = cls.handle_param_value(param)
+        for measure_name in operand.get_measures_names():
+            exprs.append(cls.apply_parametrized_op(measure_name, param_value, measure_name))
+
+        result_dataset.data = result_data.project(", ".join(exprs))
+        cls.modify_measure_column(result_dataset)
+        return result_dataset
 
     @classmethod
     def component_evaluation(
@@ -313,22 +317,21 @@ class Parameterized(Unary):
         operand: DataComponent,
         param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> DataComponent:
-        result = cls.validate(operand, param)
-        if operand.data is None:
-            operand.data = pd.Series()
-        result.data = operand.data.copy()
+        result_component = cls.validate(operand, param)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        param_value = cls.handle_param_value(param)
         if isinstance(param, DataComponent):
-            result.data = cls.apply_operation_two_series(operand.data, param.data)
-        else:
-            param_value = param.value if param is not None else None
-            result.data = cls.apply_operation_series_scalar(operand.data, param_value)
-        return result
+            result_data = duckdb_concat(operand.data, param.data)
+        result_component.data = result_data.project(
+            cls.apply_parametrized_op(operand.name, param_value, result_component.name)
+        )
+        return result_component
 
     @classmethod
     def scalar_evaluation(cls, operand: Scalar, param: Optional[Any] = None) -> Scalar:
         result = cls.validate(operand, param)
-        param_value = param.value if param is not None else None
-        result.value = cls.op_func(operand.value, param_value)
+        param_value = None if param is None or param.value is None else param.value
+        result.value = cls.py_op(operand.value, param_value)
         return result
 
     @classmethod
@@ -352,22 +355,8 @@ class Round(Parameterized):
 
     op = ROUND
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, x: Any, param: Any) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param):
-            multiplier = 10**param
-
-        if x >= 0.0:
-            rounded_value = math.floor(x * multiplier + 0.5) / multiplier
-        else:
-            rounded_value = math.ceil(x * multiplier - 0.5) / multiplier
-
-        if param is not None:
-            return rounded_value
-
-        return int(rounded_value)
+    sql_op = "round_duck"
+    py_op = round_duck
 
 
 class Trunc(Parameterized):
@@ -376,30 +365,15 @@ class Trunc(Parameterized):
     """  # noqa E501
 
     op = TRUNC
-
-    @classmethod
-    def py_op(cls, x: float, param: Optional[float]) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param) and param is not None:
-            multiplier = 10**param
-
-        truncated_value = int(x * multiplier) / multiplier
-
-        if not pd.isnull(param):
-            return truncated_value
-
-        return int(truncated_value)
-
-
-class PseudoRandom(_random.Random):
-    def __init__(self, seed: Union[int, float]) -> None:
-        super().__init__()
-        self.seed(seed)
+    sql_op = "trunc_duck"
+    py_op = trunc_duck
 
 
 class Random(Parameterized):
     op = RANDOM
     return_type = Number
+    sql_op = "random_duck"
+    py_op = random_duck
 
     @classmethod
     def validate(cls, seed: Any, index: Any = None) -> Any:
@@ -413,10 +387,3 @@ class Random(Parameterized):
                 UserWarning,
             )
         return super().validate(seed, index)
-
-    @classmethod
-    def py_op(cls, seed: Union[int, float], index: int) -> float:
-        instance: PseudoRandom = PseudoRandom(seed)
-        for _ in range(index):
-            instance.random()
-        return instance.random().__round__(6)

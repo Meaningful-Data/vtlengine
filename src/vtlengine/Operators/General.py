@@ -41,8 +41,11 @@ class Membership(Binary):
                 nullable=component.nullable,
             )
             if left_operand.data is not None:
-                left_operand.data[right_operand] = left_operand.data[component.name]
-            left_operand.data[right_operand] = left_operand.data[component.name]
+                # left_operand.data[right_operand] = left_operand.data[component.name]
+                left_operand.data = left_operand.data.project(
+                    f'*, {component.name} AS "{right_operand}"'
+                )
+            # left_operand.data[right_operand] = left_operand.data[component.name]
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
@@ -68,7 +71,9 @@ class Membership(Binary):
                     nullable=left_operand.components[right_operand].nullable,
                     data=left_operand.data[right_operand],
                 )
-            result_dataset.data = left_operand.data[list(result_dataset.components.keys())]
+            result_dataset.data = left_operand.data.project(
+                ", ".join(list(result_dataset.components.keys()))
+            )
         return result_dataset
 
 
