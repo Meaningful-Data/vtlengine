@@ -203,7 +203,17 @@ def _validate_pandas(
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
         raise SemanticError("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
 
+    if id_names:
+        check_identifiers_duplicity(data, id_names, dataset_name)
+
     return data
+
+
+def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name: str) -> None:
+    dup_id_row = data.duplicated(subset=identifiers, keep=False)
+    if dup_id_row.any():
+        row_index = dup_id_row.idxmax() + 1
+        raise SemanticError("0-1-1-15", name=name, row_index=row_index)
 
 
 def load_datapoints(
