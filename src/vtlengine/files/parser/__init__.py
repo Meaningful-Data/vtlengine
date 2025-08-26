@@ -212,7 +212,7 @@ def _validate_pandas(
 def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name: str) -> None:
     dup_id_row = data.duplicated(subset=identifiers, keep=False)
     if dup_id_row.any():
-        row_index = dup_id_row.idxmax() + 1
+        row_index = int(dup_id_row.idxmax()) + 1
         raise SemanticError("0-1-1-15", name=name, row_index=row_index)
 
 
