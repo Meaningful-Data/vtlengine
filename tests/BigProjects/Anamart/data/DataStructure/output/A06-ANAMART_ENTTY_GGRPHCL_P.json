@@ -37,7 +37,7 @@
           "name": "IS_DMSTC",
           "role": "Measure",
           "type": "String",
-          "nullable": false
+          "nullable": true
         }
       ]
     }

@@ -169,22 +169,21 @@ def check_duplicates(
     data: DuckDBPyRelation,
     dataset_name: str,
 ) -> None:
-    pass
-    # id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
-    #
-    # if id_names:
-    #     query = f"""
-    #             SELECT COUNT(*) > 0 from (
-    #                 SELECT COUNT(*) as count
-    #                 FROM data
-    #                 GROUP BY {', '.join(id_names)}
-    #                 HAVING COUNT(*) > 1
-    #             ) AS duplicates
-    #             """
-    #
-    #     dup = con.execute(query).fetchone()[0]
-    #     if dup:
-    #         raise InputValidationException(code="0-1-1-6")
+    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+
+    if id_names:
+        query = f"""
+                SELECT COUNT(*) > 0 from (
+                    SELECT COUNT(*) as count
+                    FROM data
+                    GROUP BY {', '.join(id_names)}
+                    HAVING COUNT(*) > 1
+                ) AS duplicates
+                """
+
+        dup = con.execute(query).fetchone()[0]
+        if dup:
+            raise InputValidationException(code="0-1-1-6")
 
 
 def check_dwi(

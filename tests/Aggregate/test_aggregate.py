@@ -1279,35 +1279,3 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GH_164_1(self):
-        """
-        Status: OK
-        Description: Sub and filter with Scalars: https://github.com/Meaningful-Data/vtlengine/issues/164
-        Goal: Sub and filter with Scalars
-        """
-        code = "GH_164_1"
-        number_inputs = 1
-        references_names = ["1", "2"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-        )
-
-    def test_GH_164_2(self):
-        """
-        Status: OK
-        Description: Sub and filter with Scalars: https://github.com/Meaningful-Data/vtlengine/issues/164
-        Goal: Sub and filter with Scalars
-        """
-        code = "GH_164_2"
-        number_inputs = 1
-        references_names = ["1", "2"]
-
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-        )

@@ -3,7 +3,6 @@ from functools import reduce
 from typing import Any, Dict, List, Optional
 
 from vtlengine.AST import BinOp
-from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.duckdb.duckdb_utils import duckdb_merge, duckdb_rename, duckdb_select, empty_relation
 from vtlengine.Exceptions import SemanticError
@@ -267,7 +266,6 @@ class Join(Operator):
 
 
 class InnerJoin(Join):
-    op = INNER_JOIN
     how = "inner"
 
     @classmethod
@@ -288,12 +286,10 @@ class InnerJoin(Join):
 
 
 class LeftJoin(Join):
-    op = LEFT_JOIN
     how = "left"
 
 
 class FullJoin(Join):
-    op = FULL_JOIN
     how = "outer"
 
     @classmethod
@@ -314,7 +310,6 @@ class FullJoin(Join):
 
 
 class CrossJoin(Join):
-    op = CROSS_JOIN
     how = "cross"
 
     @classmethod
