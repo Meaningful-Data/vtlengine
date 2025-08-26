@@ -8,6 +8,7 @@ import pytest
 from vtlengine import DataTypes, run
 from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
+from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
 
 base_path = Path(__file__).parent
@@ -135,16 +136,16 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
 
 @patch("pandas.read_csv")
 def test_load_datapoints_s3(mock_read_csv):
-    pass
-    # load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
-    # mock_read_csv.assert_called_once_with(
-    #     input_path,
-    #     dtype={},
-    #     engine="c",
-    #     keep_default_na=False,
-    #     na_values=[""],
-    #     encoding_errors="replace",
-    # )
+    input_path = "s3://path/to/input/dataset.csv"
+    load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
+    mock_read_csv.assert_called_once_with(
+        input_path,
+        dtype={},
+        engine="c",
+        keep_default_na=False,
+        na_values=[""],
+        encoding_errors="replace",
+    )
 
 
 @patch("pandas.read_csv")
