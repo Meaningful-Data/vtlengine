@@ -223,11 +223,3 @@ def save_results(
                 memory_timeline,
             ]
         )
-
-
-#
-# if __name__ == "__main__":
-#     csv_file = [(DATA_DIR / "dp" / "DS_9.csv")]
-#     ds_file = [DATA_DIR / "ds" / "DS_9.json"]
-#     vtl_script = ("DS_r <- DS_9 + 10;")
-#     execute_test(csv_file, ds_file, vtl_script, base_memory_limit="1GB", output_folder=OUTPUT_DIR)
