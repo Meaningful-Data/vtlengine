@@ -1,15 +1,34 @@
+import os
+import shutil
+from pathlib import Path
+
 import pytest
-from test_handlers import DATA_DIR, OUTPUT_DIR, execute_test, remove_outputs
+
+DATAPOINTS_DIR = Path(__file__).parent.parent / "data" / "BIG_DATA" / "dp"
+DATASTRUCTURES_DIR = Path(__file__).parent.parent / "data" / "BIG_DATA" / "ds"
+OUTPUT_DIR = Path(__file__).parent.parent / "output"
 
 Params = [
     (
-        [[DATA_DIR / "dp" / "DS_9.csv"], [DATA_DIR / "dp" / "DS_10.csv"]],
-        [[DATA_DIR / "ds" / "DS_9.json"], [DATA_DIR / "ds" / "DS_10.json"]],
+        [
+            [DATAPOINTS_DIR / "DS_9.csv"],
+            [DATAPOINTS_DIR / "DS_10.csv"]],
+        [
+            [DATASTRUCTURES_DIR / "DS_9.json"],
+            [DATASTRUCTURES_DIR / "DS_10.json"]],
         ["DS_r <- DS_9 + 10;", "DS_r <- DS_10 * 2;"],
-        "2GB",  # base_memory_limit must be set also in ConnectionManager in connection.py.
-        # At the moment it is not possible to pass it directly.
+        "2GB",
     ),
 ]
+
+def remove_outputs(output_folder: Path):
+    for item in output_folder.iterdir():
+        if item.name in ("logs", ".gitignore"):
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -19,6 +38,8 @@ def clean_outputs_once():
 
 @pytest.mark.parametrize(("csv_files", "ds_files", "vtl_script", "base_memory_limit"), Params)
 def test_memory_usage(csv_files, ds_files, vtl_script, base_memory_limit):
+    os.environ['DUCKDB_MEMORY_LIMIT'] = base_memory_limit
+    from test_handlers import execute_test
     execute_test(
         csv_paths_list=csv_files,
         ds_paths_list=ds_files,
@@ -26,3 +47,19 @@ def test_memory_usage(csv_files, ds_files, vtl_script, base_memory_limit):
         base_memory_limit=base_memory_limit,
         output_folder=OUTPUT_DIR,
     )
+
+def main():
+    for param_list in Params:
+        csv_files, ds_files, vtl_script, base_memory_limit = param_list
+        os.environ['DUCKDB_MEMORY_LIMIT'] = base_memory_limit
+        from test_handlers import execute_test
+        execute_test(
+            csv_paths_list=csv_files,
+            ds_paths_list=ds_files,
+            scripts_list=vtl_script,
+            base_memory_limit=base_memory_limit,
+            output_folder=OUTPUT_DIR,
+        )
+
+if __name__ == '__main__':
+    main()
