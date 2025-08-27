@@ -2536,14 +2536,14 @@ files = [
 
 [[package]]
 name = "types-jsonschema"
-version = "4.25.0.20250720"
+version = "4.25.1.20250822"
 description = "Typing stubs for jsonschema"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "types_jsonschema-4.25.0.20250720-py3-none-any.whl", hash = "sha256:7d7897c715310d8bf9ae27a2cedba78bbb09e4cad83ce06d2aa79b73a88941df"},
-    {file = "types_jsonschema-4.25.0.20250720.tar.gz", hash = "sha256:765a3b6144798fe3161fd8cbe570a756ed3e8c0e5adb7c09693eb49faad39dbd"},
+    {file = "types_jsonschema-4.25.1.20250822-py3-none-any.whl", hash = "sha256:f82c2d7fa1ce1c0b84ba1de4ed6798469768188884db04e66421913a4e181294"},
+    {file = "types_jsonschema-4.25.1.20250822.tar.gz", hash = "sha256:aac69ed4b23f49aaceb7fcb834141d61b9e4e6a7f6008cb2f0d3b831dfa8464a"},
 ]
 
 [package.dependencies]
@@ -2872,4 +2872,4 @@ s3 = ["fsspec", "s3fs"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "5a026b6e9991f9f0c82d34a836c07e3ef6db9b13d2c0aa16cdfc963b62dea371"
+content-hash = "54abab8cae82c6590b8ebd94187d2d8517a104beb07f997c66983edd4bc0e85b"
