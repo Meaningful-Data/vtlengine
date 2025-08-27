@@ -31,6 +31,8 @@ def duckdb_concat(
 
     if left is None or right is None:
         return empty_relation()
+    if on is not None:
+        on = [on] if isinstance(on, str) else on
 
     from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -43,14 +45,25 @@ def duckdb_concat(
     right_cols = set(right.columns)
     common_cols = left_cols & right_cols
 
+    left_types = {col: left.dtypes[left.columns.index(col)] for col in left_cols}
+    right_types = {col: right.dtypes[right.columns.index(col)] for col in right_cols}
+
     select_parts = []
     for col in left_cols | right_cols:
         if col in common_cols:
             presence_col = on[0] if on else "__row_id__"
-            select_parts.append(
-                f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
-                f'ELSE l."{col}" END AS "{col}"'
-            )
+            l_type = left_types[col]
+            r_type = right_types[col]
+            if l_type != r_type:
+                select_parts.append(
+                    f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
+                    f'ELSE CAST(l."{col}" AS {r_type}) END AS "{col}"'
+                )
+            else:
+                select_parts.append(
+                    f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
+                    f'ELSE l."{col}" END AS "{col}"'
+                )
         elif col in left_cols:
             select_parts.append(f'l."{col}"')
         else:
@@ -69,7 +82,6 @@ def duckdb_concat(
         l AS (SELECT * FROM {l_name}),
         r AS (SELECT * FROM {r_name})
         """
-        on = [on] if isinstance(on, str) else on
         on_clause = " AND ".join([f'l."{col}" = r."{col}"' for col in on])
 
     query = f"""
@@ -137,6 +149,8 @@ def duckdb_fillna(
     exprs = []
     cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
+        col = col.replace('"', "")
+        col_type = data.dtypes[data.columns.index(col)]
         type_ = (
             (
                 types
@@ -153,11 +167,8 @@ def duckdb_fillna(
             else None
         )
 
-        if isinstance(types, list) and len(types) not in (1, len(cols_set)):
-            raise ValueError("Length of types must match length of columns.")
-
-        value = f"CAST({value} AS {type_})" if type_ else value
-        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"'.replace('""', '"'))
+        cast_type = type_ if type_ else cast_type = col_type
+        exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
     query = ", ".join(exprs)
