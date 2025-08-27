@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import string
 from pathlib import Path
@@ -14,137 +15,153 @@ DP_PATH = BIG_PATH / "dp"
 DS_PATH = BIG_PATH / "ds"
 BASE_LENGTH = int(1e6)
 MAX_NUM = int(1e6)
-MAX_STR = 20
+MAX_STR = 12
+ASCII_CHARS = 26
 IDENTIFIER = "Identifier"
 MEASURE = "Measure"
 
 
-def string_stream(max_len: int):
-    letters = string.ascii_uppercase
-    while True:
-        for letter in range(1, max_len + 1):
-            pow_l = 26**letter
-            for s in range(pow_l):
-                yield "".join(letters[(s // (26**i)) % 26] for i in range(letter - 1, -1, -1))
-
-
 def ensure_dirs():
-    DP_PATH.mkdir(parents=True, exist_ok=True)
-    DS_PATH.mkdir(parents=True, exist_ok=True)
+    for p in [BASIC_PATH, BIG_PATH, DP_PATH, DS_PATH]:
+        p.mkdir(parents=True, exist_ok=True)
 
 
 def get_suffix(length: int) -> str:
-    if length >= 1_000_000_000:
+    if length >= 1e9:
         return f"{int(length / 1e9)}G.csv"
-    elif length >= 1_000_000:
+    elif length >= 1e6:
         return f"{int(length / 1e6)}M.csv"
-    elif length >= 1_000:
+    elif length >= 1e3:
         return f"{int(length / 1e3)}K.csv"
     else:
         return f"{int(length)}.csv"
 
 
-def generate_datastructure(dtypes, file_name):
+def generate_datastructure(dtypes: Dict[str, str], file_name: str):
     comps = {}
     file_name = file_name.replace(".csv", ".json")
     file_name = DS_PATH / file_name
 
     for column, dtype in dtypes.items():
-        role = IDENTIFIER if column.lower().startswith("id") else MEASURE
-        nullable = str(role == MEASURE).lower() == "true"
-        role = role.capitalize()
-        vtl_dtype = dtype
-
+        role = "Identifier" if column.lower().startswith("id") else "Measure"
+        nullable = str(role == "Measure").lower()
         comps[column] = {
             "name": column,
-            "type": vtl_dtype,
+            "data_type": dtype,
             "role": role,
             "nullable": nullable,
         }
 
-    ds = {"datasets": [{"name": "DS_1", "DataStructure": list(comps.values())}]}
+    ds = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": list(comps.values())
+            }
+        ]
+    }
 
     with open(file_name, "w") as f:
         json.dump(ds, f, indent=4)
 
 
-def reverse_cast_mapping(python_type):
-    cast_mapping = {
-        "String": str,
-        "Number": float,
-        "Integer": int,
-        "TimeInterval": str,
-        "Date": str,
-        "TimePeriod": str,
-        "Duration": str,
-        "Boolean": bool,
-    }
-    reversed_mapping = {v: k for k, v in cast_mapping.items()}
-    return reversed_mapping.get(python_type, "Null")
+def int_to_str(n: int, length: int = 5) -> str:
+    if n == 0:
+        s = 'A'
+    else:
+        s = ''
+        while n > 0:
+            s = chr(65 + (n % ASCII_CHARS)) + s
+            n //= ASCII_CHARS
+    if len(s) < length:
+        s = 'A' * (length - len(s)) + s
+    return s
 
 
-def generate_big_ass_csv(dtypes: Dict[str, str], length: int = None, chunk_size: int = 1_000_000):
-    if not dtypes:
-        raise Exception("Need to pass dtype")
+def get_min_str_length(length: int) -> int:
+    return max(1, math.ceil(math.log(length, ASCII_CHARS)))
+
+
+def generate_unique_combinations(identifiers, dtypes, length, max_vals, min_str_length, offset=0):
+    factors = []
+    prod = 1
+    for base in reversed(max_vals):
+        factors.insert(0, prod)
+        prod *= base
+
+    idx = np.arange(offset, offset + length, dtype=np.int64)
+    data = {}
+    for i, col in enumerate(identifiers):
+        base = max_vals[i]
+        val = (idx // factors[i]) % base
+        if dtypes[col] == "Integer":
+            data[col] = val
+        elif dtypes[col] == "String":
+            data[col] = np.array([int_to_str(v, min_str_length) for v in val])
+    return data
+
+
+def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
     ensure_dirs()
 
     length = int(length or BASE_LENGTH)
-    if length > 12_000_000:
-        possible_str_number = 7
-    elif length > 5_000_000:
-        possible_str_number = 6
-    elif length > 470_000:
-        possible_str_number = 5
-    elif length > 18_000:
-        possible_str_number = 4
-    else:
-        possible_str_number = 3
+    identifiers = [col for col, dtype in dtypes.items() if col.lower().startswith("id")]
+    measures = [col for col in dtypes if col not in identifiers]
+    min_str_length = get_min_str_length(length)
+
+    max_vals = []
+    for col in identifiers:
+        if dtypes[col] == "Integer":
+            max_vals.append(MAX_NUM)
+        elif dtypes[col] == "String":
+            max_vals.append(ASCII_CHARS ** min_str_length)
+        else:
+            raise ValueError(f"Unsupported identifier dtype: {dtypes[col]}")
+
+    total_combos = np.prod(max_vals)
+    if length > total_combos:
+        raise ValueError(f"Cannot generate {length} unique rows with given identifiers. Maximum possible: {total_combos}")
 
     suffix = get_suffix(length)
-    generate_datastructure(dtypes, suffix)
-
     file_path = DP_PATH / f"BF_{suffix}"
-    header_written = False
+    if file_path.exists():
+        os.remove(file_path)
 
-    string_generators = {
-        col: string_stream(possible_str_number) for col, dt in dtypes.items() if dt == "String"
-    }
-
-    rows_written = 0
+    generate_datastructure(dtypes, suffix)
     col_names = list(dtypes.keys())
 
     print(f"Creating csv '{file_path}' with {length:,} rows (chunks: {chunk_size:,}).")
-
+    rows_written = 0
     while rows_written < length:
         cur_n = min(chunk_size, length - rows_written)
-        data = {}
+        unique_data = generate_unique_combinations(
+            identifiers, dtypes, cur_n, max_vals, min_str_length, offset=rows_written
+        )
 
-        for col, dt in dtypes.items():
+        for col in measures:
+            dt = dtypes[col]
             if dt == "Integer":
-                data[col] = np.random.randint(0, MAX_NUM, size=cur_n, dtype=np.int64)
+                unique_data[col] = np.random.randint(0, MAX_NUM, cur_n)
             elif dt == "Number":
-                data[col] = np.random.uniform(0, MAX_NUM, size=cur_n)
+                unique_data[col] = np.random.uniform(0, MAX_NUM, cur_n)
             elif dt == "Boolean":
-                data[col] = np.random.randint(0, 2, size=cur_n, dtype=bool)
+                unique_data[col] = np.random.choice([True, False], cur_n)
             elif dt == "String":
-                gen = string_generators[col]
-                data[col] = [next(gen) for _ in range(cur_n)]
+                unique_data[col] = np.random.choice(
+                    [''.join(np.random.choice(list(string.ascii_letters), MAX_STR)) for _ in range(1000)],
+                    cur_n
+                )
             else:
                 raise ValueError(f"Unsupported dtype: {dt}")
 
-        df = pd.DataFrame(data, columns=col_names)
-        df.fillna("", inplace=True)
-        df.fillna(0, inplace=True)
-        df.to_csv(file_path, mode="a", index=False, header=not header_written)
-        header_written = True
-
+        df = pd.DataFrame(unique_data, columns=col_names)
+        df.to_csv(file_path, mode="a", index=False, header=(rows_written == 0))
         rows_written += cur_n
-        print(f"  → Writen: {rows_written:,} / {length:,} rows")
+        print(f"  → Written: {rows_written:,} / {length:,} rows")
 
     size_bytes = os.path.getsize(file_path)
-    size_mb = size_bytes / (1024**2)
-    size_gb = size_bytes / (1024**3)
-
+    size_mb = size_bytes / (1024 ** 2)
+    size_gb = size_bytes / (1024 ** 3)
     print(f"Generated CSV: '{file_path}' with {length:,} rows.")
     print(f"Final size: {size_mb:.2f} MB ({size_gb:.2f} GB)")
 

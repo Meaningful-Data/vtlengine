@@ -5,14 +5,11 @@ import pandas as pd
 import seaborn as sns
 
 
-def plot_last_memory_timeline(output_dir: Path):
-    timeline_files = list(output_dir.glob("memory_timeline_*.csv"))
-    if not timeline_files:
-        print("No memory_timeline CSV found in output folder.")
+def plot_last_memory_timeline(timeline_file: Path, output_dir: Path):
+    if not timeline_file.exists():
+        print(f"No memory_timeline CSV found: {timeline_file}")
         return
-    latest_file = max(timeline_files, key=lambda f: f.stat().st_mtime)
-
-    df = pd.read_csv(latest_file).sort_values("t_rel_s").reset_index(drop=True)
+    df = pd.read_csv(timeline_file).sort_values("t_rel_s").reset_index(drop=True)
 
     duration = df["t_rel_s"].max() - df["t_rel_s"].min()
     peak_row = df.loc[df["rss_mb"].idxmax()]
@@ -75,7 +72,8 @@ def plot_last_memory_timeline(output_dir: Path):
     ax.set_ylabel("Memory (MB)")
     ax.legend()
 
-    out_path = latest_file.with_name(latest_file.stem + "_plot.png")
+    out_path = output_dir / f"{timeline_file.stem}_plot.png"
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
+    plt.close()
     print(f"Graph saved at: {out_path}")
