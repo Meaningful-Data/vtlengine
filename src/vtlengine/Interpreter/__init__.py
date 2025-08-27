@@ -519,7 +519,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     and comp_grouped.data is not None
                     and len(comp_grouped.data) > 0
                 ):
-                    operand.data[comp_grouped.name] = comp_grouped.data
+                    operand.data = duckdb_concat(operand.data, comp_grouped.data)
                 groupings = [comp_grouped.name]
                 self.aggregation_dataset = None
             if node.having_clause is not None:
@@ -1450,8 +1450,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if left_operand.data is None:
                     result.data = None
                 else:
-                    left_original_measure_data = left_operand.data[left_measure.name]
-                    result.data[left_measure.name] = left_original_measure_data
+                    result.data = duckdb_concat(result.data, left_operand.data[left_measure.name])
                 result.components[left_measure.name] = left_measure
                 return result
         else:
@@ -1732,23 +1731,27 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value]
-            return Dataset(name=name, components=result_components, data=df)
+            rel = self.hr_agg_rules_computed[node.value].copy()
+            return Dataset(name=name, components=result_components, data=rel)
 
-        df = self.rule_data
+        rel = self.rule_data
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            rel = rel.loc[condition].reset_index(drop=True)
 
-        measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in df[hr_component].values:
+        measure_name = self.ruleset_dataset.get_measures_names()[0]
+        if rel.filter(f"{hr_component} = '{node.value}'").fetchone():
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
-            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = rel.filter(f"{hr_component} = '{node.value}'")
+            code_data = duckdb_merge(
+                code_data,
+                duckdb_select(rel, rest_identifiers),
+                how="right",
+                join_keys=rest_identifiers,
+            ).distinct()
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1758,14 +1761,21 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
                     pass
-                elif code_data[hr_component].isnull().any():
+                elif code_data.filter(f'"{hr_component}" IS NULL').fetchone() is not None:
                     partial_is_valid = False
 
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                fill_indexes = code_data[code_data[hr_component].isnull()].index
-                code_data.loc[fill_indexes, measure_name] = 0
-            code_data[hr_component] = node.value
-            df = code_data
+                code_data = code_data.project(
+                    f'* EXCLUDE "{measure_name}", '
+                    f'CASE WHEN "{hr_component}" IS NULL THEN 0 ELSE {measure_name} '
+                    f'END AS "{measure_name}"'
+                )
+            # code_data[hr_component] = node.value
+            value = repr(node.value) if node.value is not None else "NULL"
+            code_data = code_data.project(
+                f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"'
+            )
+            rel = code_data
         else:
             # If the value is not in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1777,18 +1787,20 @@ class InterpreterAnalyzer(ASTTemplate):
                     pass
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
-            df = df.head(1)
-            df[hr_component] = node.value
-            if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                df[measure_name] = 0
-            else:  # For non_null, partial_null and always_null
-                df[measure_name] = None
+
+            value = repr(node.value) if node.value is not None else "NULL"
+            rel = rel.project(f'* EXCLUDE "{hr_component}", {value} AS "{hr_component}"')
+
+            value = (
+                0 if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero") else "NULL"
+            )
+            rel = rel.project(f'* EXCLUDE "{measure_name}", {value} AS "{measure_name}"')
         if self.hr_partial_is_valid is not None and self.ruleset_mode in (
             "partial_null",
             "partial_zero",
         ):
             self.hr_partial_is_valid.append(partial_is_valid)
-        return Dataset(name=name, components=result_components, data=df)
+        return Dataset(name=name, components=result_components, data=rel)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:

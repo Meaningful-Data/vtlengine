@@ -640,10 +640,10 @@ class Binary(Operator):
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
-        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        exprs = [f"{d}" for d in result_dataset.get_identifiers_names()]
         for me in left_operand.get_measures():
             if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type in TIME_TYPES:
-                transformations.append(f"""
+                exprs.append(f"""
                     cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
                     cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
                 """)
@@ -652,9 +652,9 @@ class Binary(Operator):
                 if use_right_as_base
                 else (f"{me.name}_x", f"{me.name}_y")
             )
-            transformations.append(apply_bin_op(cls, me.name, left, right))
+            exprs.append(apply_bin_op(cls, me.name, left, right))
 
-        final_query = ", ".join(transformations)
+        final_query = ", ".join(exprs)
         result_data = result_data.project(final_query)
 
         # Delete attributes from the result data
