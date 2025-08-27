@@ -288,7 +288,7 @@ flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1, Id_date));
 stock_to_flow_period_ds := flow_to_stock(drop_identifier(DS_1, Id_period));
 
 fill_time_series_date_single_ds := fill_time_series(drop_identifier(DS_1, Id_period), single);
-fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1, Id_date), all);
+//fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1, Id_date), all);
 timeshift_date_ds := timeshift(drop_identifier(DS_1, Id_period), 1);
 timeshift_period_ds := timeshift(drop_identifier(DS_1, Id_date), -2);
 datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
