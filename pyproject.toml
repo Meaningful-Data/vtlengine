@@ -35,8 +35,6 @@ dependencies = [
     "networkx>=2.8,<3.0",
     "numpy>=1.23.2,<2 ; python_version < '3.13'",
     "numpy>=2.1.0; python_version >= '3.13'",
-    "psutil (>=7.0.0,<8.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +59,8 @@ mypy = "1.16.0"
 pandas-stubs = "^2.1.4.231227"
 ruff = "^0.11.13"
 types-jsonschema = "4.24.0.20250528"
+psutil = ">=7.0.0,<8.0.0"
+seaborn = ">=0.13.2,<0.14.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.4.7"
