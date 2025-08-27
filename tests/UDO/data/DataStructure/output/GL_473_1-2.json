@@ -4,6 +4,12 @@
       "name": "conf_status",
       "DataStructure": [
         {
+          "name": "__index_id__",
+          "type": "Number",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
           "name": "FREQ",
           "role": "Identifier",
           "type": "String",
