@@ -22,6 +22,12 @@
           "nullable": true
         },
         {
+          "name": "__index_id__",
+          "type": "Number",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
           "name": "FREQ",
           "role": "Identifier",
           "type": "String",
