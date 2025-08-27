@@ -57,7 +57,7 @@ pytest-xdist = "^3.8.0"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.17.1"
 pandas-stubs = "2.2.2.240807"
-ruff = "^0.12.7"
+ruff = "^0.12.10"
 types-jsonschema = "4.25.0.20250720"
 
 [tool.poetry.group.docs.dependencies]
