@@ -176,12 +176,13 @@ def check_duplicates(
                 SELECT COUNT(*) > 0 from (
                     SELECT COUNT(*) as count
                     FROM data
-                    GROUP BY {', '.join(id_names)}
+                    GROUP BY {", ".join(id_names)}
                     HAVING COUNT(*) > 1
                 ) AS duplicates
                 """
 
-        dup = con.execute(query).fetchone()[0]
+        result = con.execute(query).fetchone()
+        dup = result[0] if result is not None else None
         if dup:
             raise InputValidationException(code="0-1-1-6")
 
