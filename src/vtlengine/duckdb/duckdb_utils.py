@@ -167,7 +167,7 @@ def duckdb_fillna(
             else None
         )
 
-        cast_type = type_ if type_ else cast_type = col_type
+        cast_type = type_ if type_ else col_type
         exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])

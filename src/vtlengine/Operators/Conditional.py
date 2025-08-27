@@ -48,7 +48,7 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if not isinstance(result, Scalar):
             if isinstance(condition, DataComponent):
-                result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+                result.data = cls.component_level_evaluation(condition, true_branch, false_branch, result.name)
             if isinstance(condition, Dataset):
                 result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
@@ -59,6 +59,7 @@ class If(Operator):
         condition: DataComponent,
         true_branch: Union[DataComponent, Scalar],
         false_branch: Union[DataComponent, Scalar],
+        comp_name: str
     ) -> DuckDBPyRelation:
         def get_expr(branch: Any) -> str:
             return (
@@ -80,7 +81,7 @@ class If(Operator):
         if not isinstance(false_branch, Scalar):
             base = duckdb_concat(base, false_branch.data)
 
-        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{condition.name}"'
+        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
         return base.project(expr)
 
     @classmethod
