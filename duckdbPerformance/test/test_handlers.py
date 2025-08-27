@@ -171,7 +171,7 @@ def execute_test(csv_paths, ds_paths, script, base_memory_limit, output_folder):
     if timeline_path:
         plot_last_memory_timeline(timeline_path, output_dir=output_folder)
 
-    print(f"--- SUMMARY ---")
+    print("--- SUMMARY ---")
     print(
         f"Duration: {duration:.2f}s | Peak RSS: "
         f"{ma.peak_rss / (1024**2):.2f} MB | Timeline: {timeline_file_str}"

@@ -52,14 +52,7 @@ def generate_datastructure(dtypes: Dict[str, str], file_name: str):
             "nullable": nullable,
         }
 
-    ds = {
-        "datasets": [
-            {
-                "name": "DS_1",
-                "DataStructure": list(comps.values())
-            }
-        ]
-    }
+    ds = {"datasets": [{"name": "DS_1", "DataStructure": list(comps.values())}]}
 
     with open(file_name, "w") as f:
         json.dump(ds, f, indent=4)
@@ -67,14 +60,14 @@ def generate_datastructure(dtypes: Dict[str, str], file_name: str):
 
 def int_to_str(n: int, length: int = 5) -> str:
     if n == 0:
-        s = 'A'
+        s = "A"
     else:
-        s = ''
+        s = ""
         while n > 0:
             s = chr(65 + (n % ASCII_CHARS)) + s
             n //= ASCII_CHARS
     if len(s) < length:
-        s = 'A' * (length - len(s)) + s
+        s = "A" * (length - len(s)) + s
     return s
 
 
@@ -114,13 +107,16 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
         if dtypes[col] == "Integer":
             max_vals.append(MAX_NUM)
         elif dtypes[col] == "String":
-            max_vals.append(ASCII_CHARS ** min_str_length)
+            max_vals.append(ASCII_CHARS**min_str_length)
         else:
             raise ValueError(f"Unsupported identifier dtype: {dtypes[col]}")
 
     total_combos = np.prod(max_vals)
     if length > total_combos:
-        raise ValueError(f"Cannot generate {length} unique rows with given identifiers. Maximum possible: {total_combos}")
+        raise ValueError(
+            f"Cannot generate {length} unique rows with given identifiers. "
+            f"Maximum possible: {total_combos}"
+        )
 
     suffix = get_suffix(length)
     file_path = DP_PATH / f"BF_{suffix}"
@@ -148,8 +144,11 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
                 unique_data[col] = np.random.choice([True, False], cur_n)
             elif dt == "String":
                 unique_data[col] = np.random.choice(
-                    [''.join(np.random.choice(list(string.ascii_letters), MAX_STR)) for _ in range(1000)],
-                    cur_n
+                    [
+                        "".join(np.random.choice(list(string.ascii_letters), MAX_STR))
+                        for _ in range(1000)
+                    ],
+                    cur_n,
                 )
             else:
                 raise ValueError(f"Unsupported dtype: {dt}")
@@ -160,8 +159,8 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
         print(f"  → Written: {rows_written:,} / {length:,} rows")
 
     size_bytes = os.path.getsize(file_path)
-    size_mb = size_bytes / (1024 ** 2)
-    size_gb = size_bytes / (1024 ** 3)
+    size_mb = size_bytes / (1024**2)
+    size_gb = size_bytes / (1024**3)
     print(f"Generated CSV: '{file_path}' with {length:,} rows.")
     print(f"Final size: {size_mb:.2f} MB ({size_gb:.2f} GB)")
 
@@ -179,4 +178,3 @@ if __name__ == "__main__":
         length=2_000_000,
         chunk_size=2_000_000,
     )
-

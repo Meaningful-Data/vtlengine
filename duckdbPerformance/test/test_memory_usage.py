@@ -9,16 +9,14 @@ DATASTRUCTURES_DIR = Path(__file__).parent.parent / "data" / "BIG_DATA" / "ds"
 OUTPUT_DIR = Path(__file__).parent.parent / "output"
 
 Params = [
-    (
-        DATAPOINTS_DIR / "DS_9.csv",
-        DATASTRUCTURES_DIR / "DS_9.json",
-        "DS_r <- DS_9 + 10;",
-        "1GB"),
+    (DATAPOINTS_DIR / "DS_9.csv", DATASTRUCTURES_DIR / "DS_9.json", "DS_r <- DS_9 + 10;", "1GB"),
     (
         DATAPOINTS_DIR / "DS_10.csv",
         DATASTRUCTURES_DIR / "DS_10.json",
         "DS_r <- DS_10 * 2;",
-        "1GB",)]
+        "1GB",
+    ),
+]
 
 
 def remove_outputs(output_folder: Path):
@@ -38,8 +36,9 @@ def clean_outputs_once():
 
 @pytest.mark.parametrize(("csv_files", "ds_files", "vtl_script", "base_memory_limit"), Params)
 def test_memory_usage(csv_files, ds_files, vtl_script, base_memory_limit):
-    os.environ['DUCKDB_MEMORY_LIMIT'] = base_memory_limit
+    os.environ["DUCKDB_MEMORY_LIMIT"] = base_memory_limit
     from test_handlers import execute_test
+
     execute_test(
         csv_paths=csv_files,
         ds_paths=ds_files,
@@ -52,8 +51,9 @@ def test_memory_usage(csv_files, ds_files, vtl_script, base_memory_limit):
 def main():
     for param_list in Params:
         csv_files, ds_files, vtl_script, base_memory_limit = param_list
-        os.environ['DUCKDB_MEMORY_LIMIT'] = base_memory_limit
+        os.environ["DUCKDB_MEMORY_LIMIT"] = base_memory_limit
         from test_handlers import execute_test
+
         execute_test(
             csv_paths=csv_files,
             ds_paths=ds_files,
@@ -63,5 +63,5 @@ def main():
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
