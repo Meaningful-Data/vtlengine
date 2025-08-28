@@ -173,12 +173,10 @@ def check_duplicates(
 
     if id_names:
         query = f"""
-                SELECT COUNT(*) > 0 from (
-                    SELECT COUNT(*) as count
+                    SELECT COUNT(*) > 0
                     FROM data
                     GROUP BY {", ".join(id_names)}
                     HAVING COUNT(*) > 1
-                ) AS duplicates
                 """
 
         result = con.execute(query).fetchone()
