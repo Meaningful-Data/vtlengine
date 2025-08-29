@@ -14,7 +14,7 @@ BASE_PATH = Path(__file__).resolve().parents[3]
 # BASE_DATABASE = str(Path(os.getenv("DUCKDB_DATABASE", BASE_PATH / "vtl_duckdb.db")).resolve())
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
 BASE_TEMP_DIRECTORY = str(Path(os.getenv("DUCKDB_TEMP_DIRECTORY", BASE_PATH / ".tmp")))
-BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", "512MB")
+BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", "4GB")
 # TODO: uncomment the following line to use the memory limit by env-var
 # total_memory = psutil.virtual_memory().total
 # memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
@@ -150,6 +150,9 @@ class ConnectionManager:
             if key == "settings":
                 settings_str = "{" + ",".join(f'"{m}": "true"' for m in value) + "}"
                 pragmas.append(f"PRAGMA custom_profiling_settings = '{settings_str}';")
+            elif key == "profiling_output":
+                if not os.path.exists(value):
+                    os.makedirs(os.path.dirname(value), exist_ok=True)
             else:
                 pragmas.append(f"PRAGMA {key} = '{value}';")
 
