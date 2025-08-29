@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 
 base_path = Path(__file__).parent.parent / "data"
-BASIC_PATH = base_path / "BASIC_DATA"
 BIG_PATH = base_path / "BIG_DATA"
 DP_PATH = BIG_PATH / "dp"
 DS_PATH = BIG_PATH / "ds"
@@ -22,7 +21,7 @@ MEASURE = "Measure"
 
 
 def ensure_dirs():
-    for p in [BASIC_PATH, BIG_PATH, DP_PATH, DS_PATH]:
+    for p in [BIG_PATH, DP_PATH, DS_PATH]:
         p.mkdir(parents=True, exist_ok=True)
 
 
@@ -47,7 +46,7 @@ def generate_datastructure(dtypes: Dict[str, str], file_name: str):
         nullable = str(role == "Measure").lower()
         comps[column] = {
             "name": column,
-            "data_type": dtype,
+            "type": dtype,
             "role": role,
             "nullable": nullable,
         }
@@ -111,7 +110,7 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
         else:
             raise ValueError(f"Unsupported identifier dtype: {dtypes[col]}")
 
-    total_combos = np.prod(max_vals)
+    total_combos = math.prod(max_vals)
     if length > total_combos:
         raise ValueError(
             f"Cannot generate {length} unique rows with given identifiers. "
@@ -170,11 +169,9 @@ if __name__ == "__main__":
     generate_big_ass_csv(
         dtypes={
             "Id_1": "Integer",
-            "Id_2": "String",
-            "Me_1": "Integer",
-            "Me_2": "String",
-            "Me_3": "Boolean",
+            "Id_2": "Integer",
+            "Me_1": "Integer"
         },
-        length=2_000_000,
-        chunk_size=2_000_000,
+        length=70_000_000,
+        chunk_size=4000000,
     )

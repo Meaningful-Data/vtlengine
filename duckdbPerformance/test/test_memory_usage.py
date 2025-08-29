@@ -9,13 +9,19 @@ DATASTRUCTURES_DIR = Path(__file__).parent.parent / "data" / "BIG_DATA" / "ds"
 OUTPUT_DIR = Path(__file__).parent.parent / "output"
 
 Params = [
-    (DATAPOINTS_DIR / "DS_9.csv", DATASTRUCTURES_DIR / "DS_9.json", "DS_r <- DS_9 + 10;", "1GB"),
-    (
-        DATAPOINTS_DIR / "DS_10.csv",
-        DATASTRUCTURES_DIR / "DS_10.json",
-        "DS_r <- DS_10 * 2;",
-        "1GB",
-    ),
+    (DATAPOINTS_DIR / "DS_1.csv", DATASTRUCTURES_DIR / "DS_1.json", "DS_r <- DS_1 + 10;", "512MB"),
+    # (
+    #     DATAPOINTS_DIR / "DS_8.csv",
+    #     DATASTRUCTURES_DIR / "DS_8.json",
+    #     "DS_r <- DS_8 * 2;",
+    #     "512MB",
+    # ),
+    # (
+    #     DATAPOINTS_DIR / "DS_8.csv",
+    #     DATASTRUCTURES_DIR / "DS_8.json",
+    #     "DS_r <- DS_8 >= 2;",
+    #     "512MB"
+    # )
 ]
 
 

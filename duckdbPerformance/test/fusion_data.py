@@ -151,23 +151,23 @@ def generate_timeline(series, windows, run_id, out_dir=OUT_DIR):
     return timeline_path
 
 
-def run_pipeline():
+def run_pipeline(run_id):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    mem_csv = latest("mem_series_*.csv")
+    mem_csv = latest(f"mem_series_{run_id}.csv")
     if not mem_csv:
-        raise FileNotFoundError("No mem_series_*.csv found in output/")
+        raise FileNotFoundError(f"{mem_csv} not found in output/")
 
     m = re.match(r"mem_series_(.+)\.csv$", mem_csv.name)
     run_id = m.group(1) if m else "latest"
 
-    finish = OUT_DIR / "logs" / "finish.json"
+    finish = OUT_DIR / "logs" / f"finish_{run_id}.json"
     if not finish.exists():
-        raise FileNotFoundError("output/logs/finish.json not found")
+        raise FileNotFoundError(f"output/logs/finish_{run_id}.json not found")
 
-    profile = OUT_DIR / "logs" / "logs.json"
+    profile = OUT_DIR / "logs" / f"logs_{run_id}.json"
     if not profile.exists():
-        raise FileNotFoundError("output/logs/logs.json not found")
+        raise FileNotFoundError(f"output/logs/logs_{run_id}.json not found")
 
     series = read_mem_series(mem_csv)
     prof = load_json(profile)
