@@ -154,7 +154,7 @@ def execute_test(csv_paths, ds_paths, script, base_memory_limit, output_folder):
         w.writerow(["perf", "t_rel_s", "rss_bytes", "duck_bytes"])
         w.writerows(ma.series)
 
-    timeline_path = run_pipeline(id_)
+    timeline_path = run_pipeline()
     timeline_file_str = timeline_path.name if timeline_path else "Not found"
 
     save_results(
