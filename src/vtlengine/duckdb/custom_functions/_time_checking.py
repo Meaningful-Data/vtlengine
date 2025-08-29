@@ -64,7 +64,7 @@ further_options_period_pattern = (
 )
 
 
-def check_time_period(value: Union[str, int, date]) -> str:
+def check_timeperiod(value: Union[str, int, date]) -> str:
     if isinstance(value, (int, date)):
         value = str(value)
 
