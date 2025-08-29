@@ -43,7 +43,7 @@ def generate_datastructure(dtypes: Dict[str, str], file_name: str):
 
     for column, dtype in dtypes.items():
         role = "Identifier" if column.lower().startswith("id") else "Measure"
-        nullable = str(role == "Measure").lower()
+        nullable = (role == MEASURE)
         comps[column] = {
             "name": column,
             "type": dtype,
