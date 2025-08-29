@@ -10,10 +10,7 @@ from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
-
-load_time_checks(con)
 
 
 def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
@@ -104,6 +101,7 @@ def _validate_duckdb(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
+    path_str: Optional[str] = None,
 ) -> DuckDBPyRelation:
     # Check for missing columns
     data_columns = data.columns
@@ -115,9 +113,10 @@ def _validate_duckdb(
             data = data.project(f'*, NULL AS "{col}"')
 
     # Check dataset integrity
-    check_nulls(components, data, dataset_name)
-    check_duplicates(components, data, dataset_name)
-    check_dwi(components, data, dataset_name)
+    data_to_check = f"read_csv('{str(path_str).replace('\\', '/')}')" if path_str is not None else data
+    check_nulls(components, data_to_check, dataset_name)
+    check_duplicates(components, data_to_check, dataset_name)
+    check_dwi(components, data_to_check, dataset_name)
 
     exprs = []
     for col, comp in components.items():
@@ -135,7 +134,9 @@ def _validate_duckdb(
 
 
 def check_nulls(
-    components: Dict[str, Component], data: DuckDBPyRelation, dataset_name: str
+    components: Dict[str, Component],
+    data: Union[DuckDBPyRelation, str, Path],
+    dataset_name: str
 ) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
     non_nullable = [
@@ -145,18 +146,17 @@ def check_nulls(
     ]
     if not non_nullable:
         return
-    query = (
-        "SELECT "
-        + ", ".join(
-            [
-                f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
-                for col in non_nullable
-            ]
-        )
-        + " FROM data"
-    )
-    null_counts = con.execute(query).fetchone()
 
+    select_exprs = [
+        f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
+        for col in non_nullable
+    ]
+    query = f"""
+    SELECT {', '.join(select_exprs)} 
+    FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
+    """
+
+    null_counts = con.execute(query).fetchone()
     for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
             if col in id_names:
@@ -166,34 +166,44 @@ def check_nulls(
 
 def check_duplicates(
     components: Dict[str, Component],
-    data: DuckDBPyRelation,
+    data: Union[DuckDBPyRelation, str, Path],
     dataset_name: str,
 ) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    if not id_names:
+        return
 
-    if id_names:
-        query = f"""
-                    SELECT COUNT(*) > 0
-                    FROM data
-                    GROUP BY {", ".join(id_names)}
-                    HAVING COUNT(*) > 1
-                """
+    query = f"""
+    SELECT EXISTS (
+        SELECT 1
+        FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
+        GROUP BY {', '.join(id_names)}
+        HAVING COUNT(*) > 1
+        LIMIT 1
+    ) AS has_duplicates
+    """
 
-        result = con.execute(query).fetchone()
-        dup = result[0] if result is not None else None
-        if dup:
-            raise InputValidationException(code="0-1-1-6")
+    res = con.execute(query).fetchone()
+    res = res[0] if res else None
+    if res:
+        raise SemanticError(code="0-1-1-6", name=dataset_name)
 
 
 def check_dwi(
     components: Dict[str, Component],
-    data: DuckDBPyRelation,
+    data: Union[DuckDBPyRelation, str, Path],
     dataset_name: str,
 ) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
+    query = f"""
+        SELECT COUNT(*) 
+        FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
+        LIMIT 2
+    """
+
     if not id_names:
-        rowcount = con.execute("SELECT COUNT(*) FROM data LIMIT 2").fetchone()[0]  # type: ignore[index]
+        rowcount = con.execute(query).fetchone()[0]  # type: ignore[index]
         if rowcount > 1:
             raise SemanticError(code="0-1-1-5", name=dataset_name)
 
@@ -239,7 +249,7 @@ def load_datapoints(
         )
 
         # Type validation and normalization
-        rel = _validate_duckdb(components, rel, dataset_name)
+        rel = _validate_duckdb(components, rel, dataset_name, path_str)
 
         return _sanitize_duckdb_columns(components, csv_path, rel)
 
