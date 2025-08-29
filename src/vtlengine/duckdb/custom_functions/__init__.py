@@ -1,4 +1,8 @@
-from vtlengine.duckdb.custom_functions._time_checking import check_time, check_timeperiod, check_duration
+from vtlengine.duckdb.custom_functions._time_checking import (
+    check_duration,
+    check_time,
+    check_timeperiod,
+)
 from vtlengine.duckdb.custom_functions.Comparison import between_duck, isnull_duck
 from vtlengine.duckdb.custom_functions.Numeric import (
     random_duck,

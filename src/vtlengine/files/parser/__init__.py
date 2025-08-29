@@ -113,7 +113,7 @@ def _validate_duckdb(
             data = data.project(f'*, NULL AS "{col}"')
 
     # Check dataset integrity
-    data_to_check = f"read_csv('{str(path_str).replace('\\', '/')}')" if path_str is not None else data
+    data_to_check = f"read_csv('{path_str}')" if path_str is not None else data
     check_nulls(components, data_to_check, dataset_name)
     check_duplicates(components, data_to_check, dataset_name)
     check_dwi(components, data_to_check, dataset_name)
@@ -134,9 +134,7 @@ def _validate_duckdb(
 
 
 def check_nulls(
-    components: Dict[str, Component],
-    data: Union[DuckDBPyRelation, str, Path],
-    dataset_name: str
+    components: Dict[str, Component], data: Union[DuckDBPyRelation, str, Path], dataset_name: str
 ) -> None:
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
     non_nullable = [
@@ -148,12 +146,11 @@ def check_nulls(
         return
 
     select_exprs = [
-        f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"'
-        for col in non_nullable
+        f'COUNT(CASE WHEN "{col}" IS NULL THEN 1 END) AS "{col}_null_count"' for col in non_nullable
     ]
     query = f"""
-    SELECT {', '.join(select_exprs)} 
-    FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
+    SELECT {", ".join(select_exprs)}
+    FROM {data if not isinstance(data, DuckDBPyRelation) else "data"}
     """
 
     null_counts = con.execute(query).fetchone()
@@ -176,8 +173,8 @@ def check_duplicates(
     query = f"""
     SELECT EXISTS (
         SELECT 1
-        FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
-        GROUP BY {', '.join(id_names)}
+        FROM {data if not isinstance(data, DuckDBPyRelation) else "data"}
+        GROUP BY {", ".join(id_names)}
         HAVING COUNT(*) > 1
         LIMIT 1
     ) AS has_duplicates
@@ -197,8 +194,8 @@ def check_dwi(
     id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     query = f"""
-        SELECT COUNT(*) 
-        FROM {data if not isinstance(data, DuckDBPyRelation) else 'data'}
+        SELECT COUNT(*)
+        FROM {data if not isinstance(data, DuckDBPyRelation) else "data"}
         LIMIT 2
     """
 

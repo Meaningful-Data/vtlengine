@@ -3,9 +3,6 @@ import re
 from datetime import date, datetime
 from typing import Union
 
-from duckdb import duckdb
-from duckdb.duckdb import DuckDBPyConnection  # type: ignore[import-untyped]
-
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandler
 
 
