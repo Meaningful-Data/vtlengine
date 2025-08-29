@@ -116,7 +116,7 @@ def _validate_duckdb(
 
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
-    check_duplicates(components, data, dataset_name)
+    # check_duplicates(components, data, dataset_name)
     check_dwi(components, data, dataset_name)
 
     exprs = []
