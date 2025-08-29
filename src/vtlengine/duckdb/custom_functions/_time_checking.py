@@ -9,13 +9,6 @@ from duckdb.duckdb import DuckDBPyConnection  # type: ignore[import-untyped]
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandler
 
 
-def load_time_checks(con: DuckDBPyConnection) -> None:
-    # Register the functions with DuckDB
-    con.create_function("check_duration", check_duration, return_type=duckdb.type("VARCHAR"))
-    con.create_function("check_timeinterval", check_time, return_type=duckdb.type("VARCHAR"))
-    con.create_function("check_timeperiod", check_time_period, return_type=duckdb.type("VARCHAR"))
-
-
 def dates_to_string(date1: date, date2: date) -> str:
     date1_str = date1.strftime("%Y-%m-%d")
     date2_str = date2.strftime("%Y-%m-%d")
