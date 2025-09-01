@@ -122,8 +122,8 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     if not isinstance(datapoint, (Path, str)):
         raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
     if isinstance(datapoint, str):
-        if "s3://" in datapoint:
-            __check_s3_extra()
+        if datapoint.startswith(("http:/", "https:/", "s3:/")):
+            # __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
