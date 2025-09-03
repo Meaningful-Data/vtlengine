@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -133,6 +133,7 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
     result = pd.read_csv(output_path / f"{dataset.name}.csv")
     pd.testing.assert_frame_equal(result, dataset.data, check_dtype=False)
 
+
 @patch("vtlengine.files.parser.con")
 def test_load_datapoints_s3(mock_read_csv):
     rel = MagicMock()
@@ -148,11 +149,14 @@ def test_load_datapoints_s3(mock_read_csv):
     args, kwargs = mock_read_csv.read_csv.call_args
     assert args[0] == input_path
 
+
 @patch("vtlengine.files.parser.con")
 def test_run_s3(mock_read_csv):
     rel = MagicMock()
     rel.columns = ["Id_1", "Id_2", "Me_1"]
-    rel.df.return_value = pd.DataFrame({"Id_1": ["a"], "Id_2": ["b"], "Me_1": ["test"]})
+    rel.df.return_value = pd.DataFrame(
+        {"Id_1": ["a"], "Id_2": ["b"], "Me_1": ["test"], "Me_3": ["test2"]}
+    )
     rel.fetchdf.return_value = rel.df.return_value
 
     mock_read_csv.read_csv.return_value = rel

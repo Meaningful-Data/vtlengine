@@ -4,7 +4,6 @@ from typing import Optional, Union
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
-from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
