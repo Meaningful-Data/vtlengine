@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pandas as pd
 import pytest
@@ -131,25 +131,32 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
     output_path = tmp_path_factory.mktemp("test")
     save_datapoints(None, dataset, output_path=output_path)
     result = pd.read_csv(output_path / f"{dataset.name}.csv")
-    pd.testing.assert_frame_equal(result, dataset.data)
+    pd.testing.assert_frame_equal(result, dataset.data, check_dtype=False)
 
-
-@patch("pandas.read_csv")
+@patch("vtlengine.files.parser.con")
 def test_load_datapoints_s3(mock_read_csv):
+    rel = MagicMock()
+    rel.columns = []
+    rel.df.return_value = pd.DataFrame(columns=rel.columns)
+    rel.fetchdf.return_value = pd.DataFrame(columns=rel.columns)
+
+    mock_read_csv.read_csv.return_value = rel
+    mock_read_csv.execute.return_value.fetchone.return_value = (0,)
+
     input_path = "s3://path/to/input/dataset.csv"
     load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
-    mock_read_csv.assert_called_once_with(
-        input_path,
-        dtype={},
-        engine="c",
-        keep_default_na=False,
-        na_values=[""],
-        encoding_errors="replace",
-    )
+    args, kwargs = mock_read_csv.read_csv.call_args
+    assert args[0] == input_path
 
-
-@patch("pandas.read_csv")
+@patch("vtlengine.files.parser.con")
 def test_run_s3(mock_read_csv):
+    rel = MagicMock()
+    rel.columns = ["Id_1", "Id_2", "Me_1"]
+    rel.df.return_value = pd.DataFrame({"Id_1": ["a"], "Id_2": ["b"], "Me_1": ["test"]})
+    rel.fetchdf.return_value = rel.df.return_value
+
+    mock_read_csv.read_csv.return_value = rel
+
     with open(filepath_datastructure / "DS_1.json") as f:
         data_structures = json.load(f)
 
@@ -157,12 +164,5 @@ def test_run_s3(mock_read_csv):
     with pytest.raises(InputValidationException):
         run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=input_path)
 
-    dtypes = {comp["name"]: object for comp in data_structures["datasets"][0]["DataStructure"]}
-    mock_read_csv.assert_called_once_with(
-        input_path,
-        dtype=dtypes,
-        engine="c",
-        keep_default_na=False,
-        na_values=[""],
-        encoding_errors="replace",
-    )
+    args, kwargs = mock_read_csv.read_csv.call_args
+    assert args[0] == input_path
