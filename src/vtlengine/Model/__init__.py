@@ -15,6 +15,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
+from .relation_proxy import RelationProxy
 
 
 def __duckdb_repr__(self: Any) -> str:
@@ -73,7 +74,7 @@ class DataComponent:
     """A component of a dataset with data"""
 
     name: str
-    data: Optional[DuckDBPyRelation]
+    data: Optional[Union[RelationProxy]]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
@@ -102,14 +103,13 @@ class DataComponent:
         if self.data is None or other.data is None:
             return False
 
-        # Compare column names
-        if self.data.columns != other.data.columns:
+        cols_self = [c for c in self.data.columns if c != "__index"]
+        cols_other = [c for c in other.data.columns if c != "__index"]
+        if cols_self != cols_other:
             return False
-
-        col = self.data.columns[0]
+        col = cols_self[0]
         sorted_self = self.data.order(col)
         sorted_other = other.data.order(col)
-
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
 
         # Lazy comparison: check if any difference exists
@@ -138,7 +138,15 @@ class DataComponent:
 
     @property
     def df(self) -> pd.DataFrame:
-        return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
+        if self.data is None:
+            return pd.DataFrame()
+        if isinstance(self.data, RelationProxy):
+            pdf = self.data.df(1000)
+        else:
+            pdf = self.data.limit(1000).df()
+            if "__index" in pdf.columns:
+                pdf = pdf.set_index("__index")
+        return pdf
 
 
 @dataclass
@@ -199,19 +207,20 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    data: Optional[DuckDBPyRelation] = None
+    data: Optional[Union[RelationProxy]] = None
 
     def __post_init__(self) -> None:
         if isinstance(self.data, pd.DataFrame):
             self.data = con.from_df(self.data)
 
         if self.data is not None:
-            if len(self.components) != len(self.data.columns):
+            data_cols = [c for c in self.data.columns if c != "__index"]
+            if len(self.components) != len(data_cols):
                 raise ValueError(
                     "The number of components must match the number of columns in the data"
                 )
             for name, _ in self.components.items():
-                if name not in self.data.columns:
+                if name not in data_cols:
                     raise ValueError(f"Component {name} not found in the data")
 
     def __eq__(self, other: Any) -> bool:
@@ -242,8 +251,9 @@ class Dataset:
         if self.data is None or other.data is None:
             return False
 
-        # Validate columns names match
-        if set(self.data.columns) != set(other.data.columns):
+        self_cols_set = set(c for c in self.data.columns if c != "__index")
+        other_cols_set = set(c for c in other.data.columns if c != "__index")
+        if self_cols_set != other_cols_set:
             print("Column mismatch")
             return False
 
@@ -263,7 +273,7 @@ class Dataset:
         self.data, other.data = normalize_data(self.data, other.data)
 
         # Order by identifiers
-        self_cols = quote_cols(self.data.columns)
+        self_cols = quote_cols([c for c in self.data.columns if c != "__index"])
         sorted_self = self.data.project(", ".join(self_cols))
         sorted_other = other.data.project(", ".join(self_cols))
 
@@ -341,7 +351,17 @@ class Dataset:
             "name": self.name,
             "components": {k: v.to_dict() for k, v in self.components.items()},
             "data": (
-                [dict(zip(self.data.columns, row)) for row in self.data.execute().fetchall()]
+                [
+                    {
+                        k: v
+                        for k, v in dict(zip(
+                            [c for c in self.data.columns if c != "__index"], row
+                        )).items()
+                    }
+                    for row in self.data.project(
+                        ", ".join(quote_cols([c for c in self.data.columns if c != '__index']))
+                    ).execute().fetchall()
+                ]
                 if self.data is not None
                 else None
             ),
@@ -371,25 +391,35 @@ class Dataset:
         data = "None"
         if isinstance(self.data, pd.DataFrame):
             data = repr(self.data).replace("<NA>", "None")
+        elif isinstance(self.data, RelationProxy):
+            data = self.data.df(10)
         elif isinstance(self.data, DuckDBPyRelation):
-            data = self.data.limit(10).df()
+            tmp = self.data.limit(10).df()
+            if "__index" in tmp.columns:
+                tmp = tmp.set_index("__index")
+            data = tmp
         return f"Dataset(name={self.name}, components={list(self.components.keys())},data={data})"
-
-    def _to_duckdb(self) -> DuckDBPyRelation:
-        """
-        Convert the dataset to a DuckDB relation.
-        """
-        if isinstance(self.data, DuckDBPyRelation) or self.data is None:
-            return
-        # Casting the pandas df to DuckDB relation
-        # dtypes = {
-        #     name: component.data_type().sql_type for name, component in self.components.items()
-        # }
-        self.data = con.from_df(self.data)
 
     @property
     def df(self) -> pd.DataFrame:
-        return self.data.limit(1000).df() if self.data is not None else pd.DataFrame()
+        if self.data is None:
+            return pd.DataFrame()
+        if isinstance(self.data, RelationProxy):
+            return self.data.df(1000)
+        pdf = self.data.limit(1000).df()
+        if "__index" in pdf.columns:
+            pdf = pdf.set_index("__index")
+        return pdf
+
+    def _to_duckdb(self) -> DuckDBPyRelation:
+        """
+        Convert underlying data to DuckDB relation if it is a pandas DataFrame.
+        (RelationProxy already wraps a DuckDBPyRelation.)
+        """
+        if self.data is None or isinstance(self.data, RelationProxy) or isinstance(self.data, DuckDBPyRelation):
+            return
+        self.data = con.from_df(self.data)
+
 
 
 @dataclass

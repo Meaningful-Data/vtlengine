@@ -37,7 +37,7 @@ class ConnectionManager:
         memory_limit: str = BASE_MEMORY_LIMIT,
         plan_format: str = PLAN_FORMAT,
         temp_directory: str = BASE_TEMP_DIRECTORY,
-        threads: Optional[int] = None,
+        threads: Optional[int] = 1,
     ) -> None:
         """
         Configures the database path and memory limit for DuckDB.

@@ -24,6 +24,9 @@ def save_datapoints(
     if isinstance(dataset.data, DuckDBPyRelation):
         dataset.data = dataset.data.df()
     if isinstance(output_path, str):
+        if "__index__" in dataset.data.columns:
+            dataset.data = dataset.data.drop(columns="__index__")
+
         __check_s3_extra()
         if output_path.endswith("/"):
             s3_file_output = output_path + f"{dataset.name}.csv"
