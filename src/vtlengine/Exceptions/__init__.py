@@ -9,6 +9,8 @@ All exceptions exposed by the Vtl engine.
 
 from typing import Any, List, Optional
 
+import duckdb
+
 from vtlengine.Exceptions.messages import centralised_messages
 
 dataset_output = None
@@ -106,13 +108,50 @@ class InterpreterError(VTLEngineException):
         super().__init__(message, None, None, code)
 
 
-class RuntimeError(VTLEngineException):
-    """ """
+class RunTimeError(VTLEngineException):
+    output_message = " Please check transformation with output dataset "
+    comp_code = None
 
     def __init__(
-        self, message: str, lino: Optional[str] = None, colno: Optional[str] = None
+        self,
+        code: str,
+        comp_code: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(message, lino, colno)
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + str(dataset_output)
+
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
+
+    @classmethod
+    def map_duckdb_error(cls, e: "duckdb.Error", **kwargs) -> "RunTimeError":
+        msg = str(e).lower()
+        if isinstance(e, duckdb.ConversionException):
+            print(e)
+        if '"inf"' in msg:
+            return cls("2-1-15-6", op="/", duckdb_msg=str(e), **kwargs)
+        return cls("2-0-0-0", duckdb_msg=str(e))
+
+
+
+
+class DataloadError(VTLEngineException):
+    def __init__(
+        self,
+        message: str = "Data load error",
+        lino: Optional[str] = None,
+        colno: Optional[str] = None,
+        code: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        if code is not None:
+            message = centralised_messages[code].format(**kwargs)
+        super().__init__(message, lino, colno, code)
+
 
 
 class InputValidationException(VTLEngineException):

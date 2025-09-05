@@ -2,6 +2,7 @@ from copy import copy
 from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -40,7 +41,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, RunTimeError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -681,7 +682,10 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        try:
+            result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
@@ -995,7 +999,10 @@ class Unary(Operator):
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(operand)
         # result_scalar.value = cls.op_func(operand.value)
-        result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        try:
+            result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
