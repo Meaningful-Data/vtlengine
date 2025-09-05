@@ -6,15 +6,18 @@ Description
 -----------
 All exceptions exposed by the Vtl engine.
 """
-
+import re
 from typing import Any, List, Optional
 
 import duckdb
 
+from vtlengine.Exceptions.duckdb_mapping import DUCKDB_TO_VTL_TYPES
 from vtlengine.Exceptions.messages import centralised_messages
 
 dataset_output = None
 
+def map_duckdb_type_to_vtl(duckdb_type: str) -> str:
+    return DUCKDB_TO_VTL_TYPES.get(duckdb_type.upper(), duckdb_type)
 
 class VTLEngineException(Exception):
     """Base class for exceptions in this module."""
@@ -134,9 +137,22 @@ class RunTimeError(VTLEngineException):
             print(e)
         if '"inf"' in msg:
             return cls("2-1-15-6", op="/", duckdb_msg=str(e), **kwargs)
-        return cls("2-0-0-0", duckdb_msg=str(e))
 
+        match = re.search(r"Could not convert(?: (\w+))? '(.+?)' to (\w+)", str(e), re.IGNORECASE)
 
+        if match:
+            from_type, value, target_type_raw = match.groups()
+            source_type = map_duckdb_type_to_vtl(from_type).capitalize()
+            vtl_type = map_duckdb_type_to_vtl(target_type_raw)
+
+            return cls(
+                "2-1-5-1",
+                value=value,
+                type_1=source_type,
+                type_2=vtl_type,
+                **kwargs
+            )
+        return cls("2-0-0-0", duckdb_msg=str(e), **kwargs)
 
 
 class DataloadError(VTLEngineException):
