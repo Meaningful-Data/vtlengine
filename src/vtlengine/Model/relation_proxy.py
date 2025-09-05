@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import Any, Iterable, Sequence
-from duckdb import DuckDBPyRelation  # type: ignore
-from vtlengine.connection import con
+
 import uuid
+from typing import Any, Sequence
+
+from duckdb import DuckDBPyRelation  # type: ignore
+
+from vtlengine.connection import con
 
 
 class RelationProxy:
@@ -28,7 +31,6 @@ class RelationProxy:
             return "__index__, " + projection
         return projection
 
-    # -------------- Public API --------------
     @property
     def relation(self) -> DuckDBPyRelation:
         return self._relation
@@ -50,7 +52,9 @@ class RelationProxy:
         new_rel = new_rel.with_column("__index__", "row_number() OVER() - 1")
         return RelationProxy(new_rel)
 
-    def assign_from(self, other: "RelationProxy", columns: Sequence[str] | None = None) -> "RelationProxy":
+    def assign_from(
+        self, other: "RelationProxy", columns: Sequence[str] | None = None
+    ) -> "RelationProxy":
         left_cols = [c for c in self._relation.columns if c != "__index__"]
         right_cols = [c for c in other._relation.columns if c != "__index__"]
         if columns is None:
@@ -63,7 +67,7 @@ class RelationProxy:
             else:
                 out_cols.append(f"l.{c} AS {c}")
         sql = f"""
-        SELECT {', '.join(out_cols)}
+        SELECT {", ".join(out_cols)}
         FROM ({self._relation.to_sql()}) l
         LEFT JOIN ({other._relation.to_sql()}) r USING (__index__)
         """
@@ -93,19 +97,23 @@ class RelationProxy:
             return object.__getattribute__(self, name)
 
         if name in ("project", "select"):
+
             def _proj_wrapper(projection: str, *args: Any, **kwargs: Any) -> Any:
                 projection = self._ensure_index(projection)
                 attr = getattr(self._relation, name)
                 result = attr(projection, *args, **kwargs)
                 return self._wrap_relation(result)
+
             return _proj_wrapper
 
         if hasattr(self._relation, name):
             attr = getattr(self._relation, name)
             if callable(attr):
+
                 def rel_wrapper(*args: Any, **kwargs: Any) -> Any:
                     result = attr(*args, **kwargs)
                     return self._wrap_relation(result)
+
                 return rel_wrapper
             return attr
 

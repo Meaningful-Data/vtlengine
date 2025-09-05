@@ -15,6 +15,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
+
 from .relation_proxy import RelationProxy
 
 
@@ -251,8 +252,8 @@ class Dataset:
         if self.data is None or other.data is None:
             return False
 
-        self_cols_set = set(c for c in self.data.columns if c != "__index")
-        other_cols_set = set(c for c in other.data.columns if c != "__index")
+        self_cols_set = {c for c in self.data.columns if c != "__index"}
+        other_cols_set = {c for c in other.data.columns if c != "__index"}
         if self_cols_set != other_cols_set:
             print("Column mismatch")
             return False
@@ -352,15 +353,14 @@ class Dataset:
             "components": {k: v.to_dict() for k, v in self.components.items()},
             "data": (
                 [
-                    {
-                        k: v
-                        for k, v in dict(zip(
-                            [c for c in self.data.columns if c != "__index"], row
-                        )).items()
-                    }
+                    dict(dict(
+                            zip([c for c in self.data.columns if c != "__index"], row)
+                        ).items())
                     for row in self.data.project(
-                        ", ".join(quote_cols([c for c in self.data.columns if c != '__index']))
-                    ).execute().fetchall()
+                        ", ".join(quote_cols([c for c in self.data.columns if c != "__index"]))
+                    )
+                    .execute()
+                    .fetchall()
                 ]
                 if self.data is not None
                 else None
@@ -416,10 +416,11 @@ class Dataset:
         Convert underlying data to DuckDB relation if it is a pandas DataFrame.
         (RelationProxy already wraps a DuckDBPyRelation.)
         """
-        if self.data is None or isinstance(self.data, RelationProxy) or isinstance(self.data, DuckDBPyRelation):
+        if (
+            self.data is None or isinstance(self.data, (RelationProxy, DuckDBPyRelation))
+        ):
             return
         self.data = con.from_df(self.data)
-
 
 
 @dataclass
