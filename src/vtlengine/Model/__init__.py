@@ -132,16 +132,41 @@ class DataComponent:
     """A component of a dataset with data"""
 
     name: str
-    data: Optional[Union[RelationProxy]]
+    _data: Optional[Union[RelationProxy]]
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
+
+    def __init__(self, name: str, data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]], data_type: Type[ScalarType], role: Role = Role.MEASURE, nullable: bool = True) -> None:
+        self.name = name
+        self.data = data
+        self.data_type = data_type
+        self.role = role
+        self.nullable = nullable
+        self.__post_init__()
 
     def __post_init__(self) -> None:
         if isinstance(self.data, pd.Series):
             self.data = con.from_df(self.data.to_frame())
         if isinstance(self.data, DuckDBPyRelation):
             self.data = RelationProxy(self.data)
+
+    @property
+    def data(self) -> Optional[Union[RelationProxy]]:
+        return self._data
+
+    @data.setter
+    def data(self, value: Optional[Union[pd.DataFrame, DuckDBPyRelation]]) -> None:
+        if isinstance(value, pd.DataFrame):
+            value = con.from_df(value)
+        if isinstance(value, DuckDBPyRelation):
+            self._data = RelationProxy(value)
+        elif isinstance(value, RelationProxy):
+            self._data = value
+        elif value is None:
+            self._data = None
+        else:
+            raise ValueError("Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None")
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataComponent):
@@ -250,13 +275,12 @@ class Dataset:
             self.data = RelationProxy(self.data)
 
         if self.data is not None:
-            data_cols = [c for c in self.data.columns if c != INDEX_COL]
-            if len(self.components) != len(data_cols):
+            if len(self.components) != len(self.data.columns):
                 raise ValueError(
                     "The number of components must match the number of columns in the data"
                 )
             for name, _ in self.components.items():
-                if name not in data_cols:
+                if name not in self.data.columns:
                     raise ValueError(f"Component {name} not found in the data")
 
     def __eq__(self, other: Any) -> bool:
