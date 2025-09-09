@@ -332,7 +332,6 @@ def normalize_data(
     other_data = duckdb_concat(
         other_data, base.project(", ".join(f"other_{col} AS {col}" for col in double_cols))
     )
-
     return self_data, other_data
 
 

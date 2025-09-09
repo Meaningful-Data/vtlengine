@@ -8,59 +8,65 @@ from duckdb import DuckDBPyRelation  # type: ignore
 from vtlengine.connection import con
 
 
+INDEX_COL = "__index__"
+
+
 class RelationProxy:
     __slots__ = ("_relation", "_id")
 
     def __init__(self, relation: DuckDBPyRelation):
         self._id = f"_relproxy_{uuid.uuid4().hex}"
-        if "__index__" not in relation.columns:
-            base_sql = relation.to_sql()
-            relation = con.sql(
-                f"SELECT row_number() OVER() - 1 AS __index__, t.* FROM ({base_sql}) t"
-            )
-        self._relation: DuckDBPyRelation = relation
+        if INDEX_COL not in relation.columns:
+            relation = relation.project(f"row_number() OVER () - 1 AS {INDEX_COL}, *")
+        self.relation = relation
 
-    def _wrap_relation(self, value: Any) -> Any:
-        if isinstance(value, DuckDBPyRelation):
-            return RelationProxy(value)
-        return value
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, RelationProxy):
+            other = other.relation
+        return self.relation == other
 
-    def _ensure_index(self, projection: str) -> str:
-        cols_lower = [c.strip().lower() for c in projection.split(",")]
-        if "__index__" not in cols_lower:
-            return "__index__, " + projection
-        return projection
+    def __len__(self) -> int:
+        count_rel = self.relation.aggregate("count(*) AS cnt")
+        count_df = count_rel.df()
+        return int(count_df["cnt"][0])
+
+    def __repr__(self) -> str:
+        return (f"RelationProxy(\n"
+                f"id={self._id},\n"
+                f"columns={self.relation.columns},\n"
+                f"data=\n{self.relation}\n"
+                f")")
+
+    @property
+    def index(self) -> DuckDBPyRelation:
+        return self.relation.project(INDEX_COL)
 
     @property
     def relation(self) -> DuckDBPyRelation:
         return self._relation
 
-    @property
-    def index(self) -> DuckDBPyRelation:
-        return self._relation.project("__index__")
+    @relation.setter
+    def relation(self, value: DuckDBPyRelation) -> None:
+        self._relation = value.relation if isinstance(value, RelationProxy) else value
 
-    def df(self, limit: int | None = None) -> Any:
-        rel = self._relation if limit is None else self._relation.limit(limit)
-        df = rel.df()
-        if "__index__" in df.columns:
-            df = df.set_index("__index__")
-        return df
+    def _wrap_relation(self, value: Any) -> Any:
+        return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
 
-    def reindex(self) -> "RelationProxy":
-        cols = [f"'{c}'" for c in self._relation.columns if c != "__index__"]
-        new_rel = self._relation.project(", ".join(cols))
-        new_rel = new_rel.with_column("__index__", "row_number() OVER() - 1")
-        return RelationProxy(new_rel)
+    def _ensure_index(self, projection: str) -> str:
+        cols_lower = [c.strip().lower() for c in projection.split(",")]
+        if INDEX_COL not in cols_lower:
+            return f"{INDEX_COL}, " + projection
+        return projection
 
-    def assign_from(
+    def assign(
         self, other: "RelationProxy", columns: Sequence[str] | None = None
     ) -> "RelationProxy":
-        left_cols = [c for c in self._relation.columns if c != "__index__"]
-        right_cols = [c for c in other._relation.columns if c != "__index__"]
+        left_cols = [c for c in self.relation.columns if c != INDEX_COL]
+        right_cols = [c for c in other.relation.columns if c != INDEX_COL]
         if columns is None:
             columns = [c for c in left_cols if c in right_cols]
         assign_set = set(columns)
-        out_cols: list[str] = ["l.__index__ AS __index__"]
+        out_cols: list[str] = [f"l.{INDEX_COL} AS {INDEX_COL}"]
         for c in left_cols:
             if c in assign_set:
                 out_cols.append(f"r.{c} AS {c}")
@@ -68,71 +74,47 @@ class RelationProxy:
                 out_cols.append(f"l.{c} AS {c}")
         sql = f"""
         SELECT {", ".join(out_cols)}
-        FROM ({self._relation.to_sql()}) l
-        LEFT JOIN ({other._relation.to_sql()}) r USING (__index__)
+        FROM ({self.relation.to_sql()}) l
+        LEFT JOIN ({other.relation.to_sql()}) r USING ({INDEX_COL})
         """
         return RelationProxy(con.sql(sql))
 
+    def df(self, limit: int | None = None) -> Any:
+        rel = self.relation if limit is None else self.relation.limit(limit)
+        df = rel.df()
+        if INDEX_COL in df.columns:
+            df = df.set_index(INDEX_COL)
+        return df
+
+    def project(self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True) -> "RelationProxy":
+        if include_index:
+            projection = self._ensure_index(projection)
+        return self.relation.project(projection)
+
+    def reindex(self) -> "RelationProxy":
+        cols = [f"'{c}'" for c in self.relation.columns if c != INDEX_COL]
+        new_rel = self.relation.project(", ".join(cols))
+        new_rel = new_rel.with_column(INDEX_COL, "row_number() OVER() - 1")
+        return RelationProxy(new_rel)
+
     # Dynamic dispatch
     def __getattribute__(self, name: str) -> Any:
-        reserved = {
-            "__class__",
-            "__slots__",
-            "__init__",
-            "__repr__",
-            "__iter__",
-            "__eq__",
-            "__getattribute__",
-            "_wrap_relation",
-            "_ensure_index_in_projection",
-            "_relation",
-            "_id",
-            "relation",
-            "index",
-            "df",
-            "reindex",
-            "assign_from",
-        }
+        reserved = set(RelationProxy.__dict__.keys())
         if name in reserved:
             return object.__getattribute__(self, name)
 
-        if name in ("project", "select"):
-
-            def _proj_wrapper(projection: str, *args: Any, **kwargs: Any) -> Any:
-                projection = self._ensure_index(projection)
-                attr = getattr(self._relation, name)
-                result = attr(projection, *args, **kwargs)
-                return self._wrap_relation(result)
-
-            return _proj_wrapper
-
-        if hasattr(self._relation, name):
-            attr = getattr(self._relation, name)
+        rel = object.__getattribute__(self, "_relation")
+        if hasattr(rel, name):
+            attr = getattr(rel, name)
             if callable(attr):
-
                 def rel_wrapper(*args: Any, **kwargs: Any) -> Any:
-                    result = attr(*args, **kwargs)
-                    return self._wrap_relation(result)
-
-                return rel_wrapper
+                    return attr(*args, **kwargs)
+                self._wrap_relation(rel_wrapper)
             return attr
 
-        # Fallback
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
             raise AttributeError(
                 f"Attribute or method '{name}' not found in DuckDBPyRelation nor RelationProxy"
             ) from None
-
-    def __repr__(self) -> str:
-        try:
-            cnt = con.sql(f"SELECT COUNT(*) FROM ({self._relation.to_sql()})").fetchone()[0]
-        except Exception:
-            cnt = "?"
-        return f"<RelationProxy rows={cnt} sql={self._relation.to_sql()!r}>"
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, RelationProxy):
-            other = other._relation
-        return self._relation == other

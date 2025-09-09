@@ -65,5 +65,3 @@ def format_time_period_external_representation(
             exprs.append(comp.name)
     query = ", ".join(exprs)
     dataset.data = dataset.data.project(query)
-
-    return
