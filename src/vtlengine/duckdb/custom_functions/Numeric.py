@@ -21,6 +21,8 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     """
     if value is None:
         return None
+    if math.isnan(value):
+        return math.nan
     multiplier = 1.0
     if decimals is not None:
         multiplier = 10**decimals

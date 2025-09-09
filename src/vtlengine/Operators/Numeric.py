@@ -1,5 +1,6 @@
 import math
 import operator
+import os
 import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
@@ -31,6 +32,20 @@ from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
+
+NUMERIC_TOKENS = [
+    "log",
+    "power",
+    "div",
+    "plus",
+    "minus",
+    "mult",
+    "mod",
+    "round_duck",
+    "trunc_duck",
+    "random_duck",
+]
+ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 
 
 class Unary(Operator.Unary):
@@ -66,6 +81,7 @@ class Binary(Operator.Binary):
         getcontext().prec = 10
         decimal_value = cls.py_op(Decimal(x), Decimal(y))
         result = float(decimal_value)
+        result = round(result, ROUND_VALUE)
         if result.is_integer():
             return int(result)
         return result
@@ -259,7 +275,13 @@ class Parameterized(Unary):
             param_name (str): The name of the parameter (or value) to be used in the operation.
             output_column_name (str): The name of the column where we store the result.
         """
-        return f'{cls.sql_op}({input_column_name}, {param_name}) AS "{output_column_name}"'
+        op_token = cls.sql_op
+        if op_token in NUMERIC_TOKENS:
+            return (
+                f"round({op_token}({input_column_name}, {param_name}), {ROUND_VALUE}) "
+                f'AS "{output_column_name}"'
+            )
+        return f'{op_token}({input_column_name}, {param_name}) AS "{output_column_name}"'
 
     @classmethod
     def validate(

@@ -1,3 +1,4 @@
+import os
 from copy import copy
 from decimal import Decimal
 from typing import Any, Optional, Type, Union
@@ -59,6 +60,23 @@ only_semantic = False
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = [TimeInterval, TimePeriod, Duration]
 
+NUMERIC_TOKENS = {
+    "abs",
+    "ceil",
+    "floor",
+    "exp",
+    "ln",
+    "sqrt",
+    "plus",
+    "minus",
+    "mult",
+    "div",
+    "log",
+    "power",
+    "mod",
+}
+ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
+
 
 def handle_sql_scalar(value: Any) -> Any:
     if value is None:
@@ -77,6 +95,8 @@ def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
         return cls.apply_unary_op(value, me_name)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
+    if op_token in NUMERIC_TOKENS:
+        return f'round_duck({op_token}("{me_name}"),{ROUND_VALUE}) AS "{value}"'
     return f'{op_token}("{me_name}") AS "{value}"'
 
 
@@ -88,7 +108,12 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
+    if op_token in NUMERIC_TOKENS:
+        result = con.sql(
+            f"SELECT round_duck({op_token}({handle_sql_scalar(value)}),{ROUND_VALUE})"
+        ).fetchone()[0]
+    else:
+        result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
 
@@ -111,6 +136,10 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
         # also we could do it as ln(left) / ln(right) following
         # the mathematical equivalence between log and ln
         right, left = (left, right)
+    if op_token in NUMERIC_TOKENS:
+        if token_position == LEFT:
+            return f'round({op_token}({left}, {right}), {ROUND_VALUE}) AS "{me_name}"'
+        return f'round_duck(({left} {op_token} {right}),{ROUND_VALUE}) AS "{me_name}"'
     if token_position == LEFT:
         return f'{op_token}({left}, {right}) AS "{me_name}"'
     return f'({left} {op_token} {right}) AS "{me_name}"'
@@ -130,9 +159,19 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
 
     if cls.op == LOG:
         right, left = (left, right)
-    query = (
-        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
-    )
+
+    if op_token in NUMERIC_TOKENS:
+        query = (
+            f"round_duck({op_token}({left}, {right}),{ROUND_VALUE})"
+            if token_position == LEFT
+            else f"round(({left} {op_token} {right}),{ROUND_VALUE})"
+        )
+    else:
+        query = (
+            f"{op_token}({left}, {right})"
+            if token_position == LEFT
+            else f"({left} {op_token} {right})"
+        )
 
     result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
