@@ -30,7 +30,7 @@ from vtlengine.API._InternalApi import (
     to_vtl_json,
 )
 from vtlengine.DataTypes import String
-from vtlengine.Exceptions import SemanticError, DataLoadError
+from vtlengine.Exceptions import DataLoadError, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
 
 # Path selection

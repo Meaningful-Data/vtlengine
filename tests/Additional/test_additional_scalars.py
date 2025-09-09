@@ -6,7 +6,7 @@ import pytest
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer, Number, String
-from vtlengine.Exceptions import SemanticError, RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -235,9 +235,8 @@ ds_param = [
     ("17-3", "DS_1[calc Me_1 := cast(Me_1, string)]"),
 ]
 
-division_zero_exception_param = [
-    ("18-1", "DS_1[calc Me_3 := Me_1 / 0]", "2-1-15-6")
-    ]
+division_zero_exception_param = [("18-1", "DS_1[calc Me_3 := Me_1 / 0]", "2-1-15-6")]
+
 
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
@@ -329,6 +328,7 @@ def test_comp_op_test(text, reference):
     interpreter = InterpreterAnalyzer({})
     result = interpreter.visit(ast)
     assert result["DS_r"].value == reference
+
 
 @pytest.mark.parametrize("code, text, error_code", division_zero_exception_param)
 def test_division_by_zero_exception(code, text, error_code):

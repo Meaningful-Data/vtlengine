@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-import duckdb
 import jsonschema
 import pandas as pd
 from pysdmx.model.dataflow import Component as SDMXComponent
@@ -24,7 +23,7 @@ from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentA
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import InputValidationException, check_key, DataLoadError
+from vtlengine.Exceptions import DataLoadError, InputValidationException, check_key
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_duckdb
 from vtlengine.Model import (
     Component as VTL_Component,
@@ -130,7 +129,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
             return dict_data
         try:
             datapoint = Path(datapoint)
-        except Exception as e:
+        except Exception:
             raise DataLoadError(code="0-1-2-7", input=datapoint)
     if datapoint.is_dir():
         datapoints: Dict[str, Any] = {}

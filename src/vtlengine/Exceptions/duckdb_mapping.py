@@ -8,7 +8,6 @@ DUCKDB_TO_VTL_TYPES = {
     "BIGINT": "Integer",
     "UBIGINT": "Integer",
     "UINTEGER": "Integer",
-
     # Numbers
     "REAL": "Number",
     "FLOAT": "Number",
@@ -17,13 +16,11 @@ DUCKDB_TO_VTL_TYPES = {
     "DOUBLE": "Number",
     "DECIMAL": "Number",
     "NUMERIC": "Number",
-
     # Strings
     "VARCHAR": "String",
     "CHAR": "String",
     "TEXT": "String",
     "UUID": "String",
-
     # Other
     "BOOLEAN": "Boolean",
     "DATE": "Date",
