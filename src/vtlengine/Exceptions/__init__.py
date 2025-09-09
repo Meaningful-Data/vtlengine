@@ -155,19 +155,26 @@ class RunTimeError(VTLEngineException):
         return cls("2-0-0-0", duckdb_msg=str(e), **kwargs)
 
 
-class DataloadError(VTLEngineException):
+class DataLoadError(VTLEngineException):
+    output_message = " Please check loaded file"
+    comp_code: Optional[str] = None
+
     def __init__(
         self,
-        message: str = "Data load error",
-        lino: Optional[str] = None,
-        colno: Optional[str] = None,
-        code: Optional[str] = None,
+        code: str,
+        comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        if code is not None:
-            message = centralised_messages[code].format(**kwargs)
-        super().__init__(message, lino, colno, code)
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + " " + str(dataset_output)
+        else:
+            message += self.output_message
 
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
 
 
 class InputValidationException(VTLEngineException):

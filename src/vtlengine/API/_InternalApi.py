@@ -24,7 +24,7 @@ from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentA
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import InputValidationException, check_key, DataloadError
+from vtlengine.Exceptions import InputValidationException, check_key, DataLoadError
 from vtlengine.files.parser import _fill_dataset_empty_data, _validate_duckdb
 from vtlengine.Model import (
     Component as VTL_Component,
@@ -121,7 +121,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     Returns a dict with the data given from one dataset.
     """
     if not isinstance(datapoint, (Path, str)):
-        raise DataloadError("Invalid datapoint. Input must be a Path or an S3 URI")
+        raise DataLoadError(code="0-1-2-7", input=datapoint)
     if isinstance(datapoint, str):
         if datapoint.startswith(("http:/", "https:/", "s3:/")):
             # __check_s3_extra()
@@ -131,7 +131,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         try:
             datapoint = Path(datapoint)
         except Exception as e:
-            raise DataloadError("Invalid datapoint. Input must refer to a Path or an S3 URI", duckdb_msg=str(e))
+            raise DataLoadError(code="0-1-2-7", input=datapoint)
     if datapoint.is_dir():
         datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
@@ -168,9 +168,9 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
-        raise DataloadError("Invalid datastructure. Input must be a dict or Path object")
+        raise DataLoadError(code="0-1-2-8", input=data_structure)
     if not data_structure.exists():
-        raise DataloadError("Invalid datastructure. Input does not exist")
+        raise DataLoadError(code="0-1-2-6", input=data_structure)
     if data_structure.is_dir():
         datasets: Dict[str, Any] = {}
         for f in data_structure.iterdir():
@@ -181,7 +181,7 @@ def _load_datastructure_single(data_structure: Union[Dict[str, Any], Path]) -> D
         return datasets
     else:
         if data_structure.suffix != ".json":
-            raise DataloadError("Invalid datastructure. Must have .json extension")
+            raise DataLoadError(code="0-1-2-9", input=data_structure, ext=".json")
         with open(data_structure, "r") as file:
             structures = json.load(file)
     return _load_dataset_from_structure(structures)
@@ -239,7 +239,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
         # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
-                raise DataloadError(f"Not found dataset {dataset_name}")
+                DataLoadError(code="0-1-2-6", input=dataset_name)
             # Handling pandas entry data from test files (avoiding test data load refactor)
             if isinstance(data, pd.DataFrame):
                 comps = datasets[dataset_name].components
@@ -269,7 +269,7 @@ def load_datasets_with_data(data_structures: Any, datapoints: Optional[Any] = No
     dict_datapoints = _load_datapoints_path(datapoints)
     for dataset_name, _ in dict_datapoints.items():
         if dataset_name not in datasets:
-            raise Exception(f"Not found dataset {dataset_name}")
+            raise DataLoadError(code="0-1-2-6", input=dataset_name)
 
     return datasets, dict_datapoints
 
@@ -294,18 +294,18 @@ def load_vtl(input: Union[str, Path]) -> str:
         else:
             return input
     if not isinstance(input, Path):
-        raise DataloadError("Invalid vtl file. Input is not a Path object")
+        raise DataLoadError(code="0-1-2-10", input=input)
     if not input.exists():
-        raise DataloadError("Invalid vtl file. Input does not exist")
+        raise DataLoadError(code="0-1-2-6", input=input)
     if input.suffix != ".vtl":
-        raise DataloadError("Invalid vtl file. Must have .vtl extension")
+        raise DataLoadError(code="0-1-2-9", input=input, ext=".vtl")
     with open(input, "r") as f:
         return f.read()
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
-        raise Exception("Invalid Value Domain file. Must have .json extension")
+        raise DataLoadError(code="0-1-2-9", input=input, ext=".json")
     with open(input, "r") as f:
         vd = ValueDomain.from_dict(json.load(f))
     return {vd.name: vd}
@@ -329,9 +329,9 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if not isinstance(input, Path):
-        raise DataloadError("Invalid vd file. Input is not a Path object")
+        raise DataLoadError(code="0-1-2-10", input=input)
     if not input.exists():
-        raise DataloadError("Invalid vd file. Input does not exist")
+        raise DataLoadError(code="0-1-2-6", input=input)
     if input.is_dir():
         value_domains: Dict[str, Any] = {}
         for f in input.iterdir():
@@ -339,7 +339,7 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
             value_domains = {**value_domains, **vd}
         return value_domains
     if input.suffix != ".json":
-        raise DataloadError("Invalid vd file. Must have .json extension")
+        raise DataLoadError(code="0-1-2-9", input=input, ext=".json")
     return _load_single_value_domain(input)
 
 
@@ -364,9 +364,9 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
             external_routines[ext_routine.name] = ext_routine
         return external_routines
     if not isinstance(input, Path):
-        raise DataloadError("Input invalid. Input must be a sql file.")
+        raise DataLoadError(code="0-1-2-9", input=input, ext=".sql")
     if not input.exists():
-        raise DataloadError("Input invalid. Input does not exist")
+        raise DataLoadError(code="0-1-2-6", input=input)
     if input.is_dir():
         for f in input.iterdir():
             if f.suffix != ".sql":
@@ -397,11 +397,11 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     Returns a single external routine.
     """
     if not isinstance(input, Path):
-        raise DataloadError("Input invalid")
+        raise DataLoadError(code="0-1-2-10", input=input)
     if not input.exists():
-        raise DataloadError("Input does not exist")
+        raise DataLoadError(code="0-1-2-6", input=input)
     if input.suffix != ".sql":
-        raise DataloadError("Input must be a sql file")
+        raise DataLoadError(code="0-1-2-9", input=input, ext=".sql")
     with open(input, "r") as f:
         ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix(".sql"), f.read())
     return ext_rout

@@ -30,7 +30,7 @@ from vtlengine.API._InternalApi import (
     to_vtl_json,
 )
 from vtlengine.DataTypes import String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, DataLoadError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
 
 # Path selection
@@ -64,11 +64,11 @@ input_vtl_params_OK = [
 ]
 
 input_vtl_error_params = [
-    (filepath_VTL, "Invalid vtl file. Must have .vtl extension"),
-    (filepath_csv / "DS_1.csv", "Invalid vtl file. Must have .vtl extension"),
-    (filepath_VTL / "3.vtl", "Invalid vtl file. Input does not exist"),
-    ({"DS": "dataset"}, "Invalid vtl file. Input is not a Path object"),
-    (2, "Invalid vtl file. Input is not a Path object"),
+    (filepath_VTL, "0-1-2-9"),
+    (filepath_csv / "DS_1.csv", "0-1-2-9"),
+    (filepath_VTL / "3.vtl", "0-1-2-6"),
+    ({"DS": "dataset"}, "0-1-2-10"),
+    (2, "0-1-2-10"),
 ]
 
 input_vd_OK = [
@@ -77,13 +77,13 @@ input_vd_OK = [
 ]
 
 input_vd_error_params = [
-    (filepath_VTL / "VD_1.json", "Invalid vd file. Input does not exist"),
-    (filepath_VTL / "1.vtl", "Invalid vd file. Must have .json extension"),
+    (filepath_VTL / "VD_1.json", "0-1-2-6"),
+    (filepath_VTL / "1.vtl", "0-1-2-9"),
     (
         filepath_json / "DS_1.json",
         "Invalid format for ValueDomain. Requires name, type and setlist.",
     ),
-    (2, "Invalid vd file. Input is not a Path object"),
+    (2, "0-1-2-10"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
         "Invalid format for ValueDomain. Requires name, type and setlist.",
@@ -124,8 +124,8 @@ load_datasets_input_params_OK = [
 ]
 
 load_datasets_wrong_input_params = [
-    (filepath_json / "VD_1.json", "Invalid datastructure. Input does not exist"),
-    (filepath_csv / "DS_1.csv", "Invalid datastructure. Must have .json extension"),
+    (filepath_json / "VD_1.json", "0-1-2-6"),
+    (filepath_csv / "DS_1.csv", "0-1-2-9"),
 ]
 
 load_datasets_with_data_without_dp_params_OK = [
@@ -261,22 +261,22 @@ load_datasets_with_data_and_wrong_inputs = [
     (
         filepath_csv / "DS_1.csv",
         filepath_csv / "DS_1.csv",
-        "Invalid datastructure. Must have .json extension",
+        "0-1-2-9",
     ),
     (
         filepath_json / "DS_1.json",
         filepath_json / "DS_2.json",
-        "Not found dataset DS_2.json",
+        "0-1-2-6",
     ),
-    (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
+    (2, 2, "0-1-2-8"),
 ]
 
 ext_params_OK = [(filepath_sql / "1.sql")]
 
 ext_params_wrong = [
-    (filepath_json / "DS_1.json", "Input must be a sql file"),
-    (5, "Input invalid. Input must be a sql file."),
-    (filepath_sql / "2.sql", "Input invalid. Input does not exist"),
+    (filepath_json / "DS_1.json", "0-1-2-9"),
+    (5, "0-1-2-9"),
+    (filepath_sql / "2.sql", "0-1-2-6"),
 ]
 
 params_semantic = [
@@ -558,9 +558,9 @@ def test_load_external_routine(input):
     assert result == reference
 
 
-@pytest.mark.parametrize("input, error_message", ext_params_wrong)
-def test_load_external_routine_with_wrong_params(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", ext_params_wrong)
+def test_load_external_routine_with_wrong_params(input, code):
+    with pytest.raises(DataLoadError, match=code):
         load_external_routines(input)
 
 
@@ -571,9 +571,9 @@ def test_load_input_vtl(input, expression):
     assert result == expression
 
 
-@pytest.mark.parametrize("input, error_message", input_vtl_error_params)
-def test_load_wrong_inputs_vtl(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", input_vtl_error_params)
+def test_load_wrong_inputs_vtl(input, code):
+    with pytest.raises(DataLoadError, match=code):
         load_vtl(input)
 
 
@@ -585,10 +585,14 @@ def test_load_input_vd(input):
     assert result["AnaCreditCountries"] == reference
 
 
-@pytest.mark.parametrize("input, error_message", input_vd_error_params)
-def test_load_wrong_inputs_vd(input, error_message):
-    with pytest.raises(Exception, match=error_message):
-        load_value_domains(input)
+@pytest.mark.parametrize("input, expected", input_vd_error_params)
+def test_load_wrong_inputs_vd(input, expected):
+    if isinstance(expected, str) and expected.count("-") >= 2:
+        with pytest.raises(DataLoadError, match=expected):
+            load_value_domains(input)
+    else:
+        with pytest.raises(Exception, match=expected):
+            load_value_domains(input)
 
 
 @pytest.mark.parametrize("datastructure", load_datasets_input_params_OK)
@@ -622,9 +626,9 @@ def test_load_datastructures(datastructure):
     assert result["DS_1"] == reference
 
 
-@pytest.mark.parametrize("input, error_message", load_datasets_wrong_input_params)
-def test_load_wrong_inputs_datastructures(input, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("input, code", load_datasets_wrong_input_params)
+def test_load_wrong_inputs_datastructures(input, code):
+    with pytest.raises(DataLoadError, match=code):
         load_datasets(input)
 
 
@@ -640,9 +644,9 @@ def test_load_datasets_with_data_path(ds_r, dp, reference):
     assert result == reference
 
 
-@pytest.mark.parametrize("ds_r, dp, error_message", load_datasets_with_data_and_wrong_inputs)
-def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
-    with pytest.raises(Exception, match=error_message):
+@pytest.mark.parametrize("ds_r, dp, code", load_datasets_with_data_and_wrong_inputs)
+def test_load_datasets_with_wrong_inputs(ds_r, dp, code):
+    with pytest.raises(DataLoadError, match=code):
         load_datasets_with_data(ds_r, dp)
 
 

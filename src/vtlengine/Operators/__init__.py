@@ -718,6 +718,8 @@ class Binary(Operator):
             exprs.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -778,6 +780,8 @@ class Binary(Operator):
 
         exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_component.data = comp_data.project(final_query)
         return result_component
 
@@ -1009,7 +1013,10 @@ class Unary(Operator):
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
-        result_component.data = result_data.project(
-            apply_unary_op(cls, operand.name, result_component.name)
-        )
+        try:
+            result_component.data = result_data.project(
+                apply_unary_op(cls, operand.name, result_component.name)
+            )
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_component
