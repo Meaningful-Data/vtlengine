@@ -22,11 +22,9 @@ from vtlengine.AST.Grammar.tokens import (
     PLUS,
     POWER,
     RANDOM,
-    RANDOM_DUCK,
     ROUND,
     SQRT,
     TRUNC,
-    TRUNC_DUCK,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
@@ -35,7 +33,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
-NUMERIC_TOKENS = [
+OUTPUT_NUMERIC_FUNCTIONS = [
     LOG,
     POWER,
     DIV,
@@ -44,14 +42,14 @@ NUMERIC_TOKENS = [
     MULT,
     MOD,
     ROUND,
-    TRUNC_DUCK,
-    RANDOM_DUCK,
     CEIL,
     ABS,
     FLOOR,
     EXP,
     LN,
     SQRT,
+    "trunc_duck",
+    "random_duck",
 ]
 ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 
@@ -284,7 +282,7 @@ class Parameterized(Unary):
             output_column_name (str): The name of the column where we store the result.
         """
         op_token = cls.sql_op
-        if op_token in NUMERIC_TOKENS:
+        if op_token in OUTPUT_NUMERIC_FUNCTIONS:
             return (
                 f"round({op_token}({input_column_name}, {param_name}), {ROUND_VALUE}) "
                 f'AS "{output_column_name}"'
