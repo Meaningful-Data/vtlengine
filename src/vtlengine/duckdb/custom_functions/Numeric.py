@@ -105,7 +105,7 @@ class PseudoRandom(_random.Random):
         self.seed(seed)
 
 
-def random_duck(seed: float, index: int) -> Optional[float]:
+def random_duck(seed: Optional[Union[float, int]], index: Optional[int]) -> Optional[float]:
     """Generates a pseudo-random number based on a seed and an index.
 
     It initializes a PseudoRandom instance with the seed,
@@ -118,6 +118,9 @@ def random_duck(seed: float, index: int) -> Optional[float]:
     Returns:
         A pseudo-random number rounded to 6 decimal places.
     """
+    if index is None or seed is None:
+        return None
+
     instance: PseudoRandom = PseudoRandom(seed)
     for _ in range(index):
         instance.random()
