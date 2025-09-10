@@ -1,4 +1,3 @@
-import csv
 from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -206,7 +205,6 @@ def load_datapoints(
     csv_path: Optional[Union[Path, str]] = None,
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
-        # Empty dataset as table
         return empty_relation(list(components.keys()))
 
     elif isinstance(csv_path, (str, Path)):
@@ -214,10 +212,12 @@ def load_datapoints(
         if isinstance(csv_path, Path):
             _validate_csv_path(components, csv_path)
 
+        header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
+        header = header_rel.columns
         # Lazy CSV read
-        with open(path_str, mode="r", encoding="utf-8") as file:
-            csv_reader = csv.reader(file)
-            header = next(csv_reader)  # Extract the header to determine column order
+        # with open(path_str, mode="r", encoding="utf-8") as file:
+        #     csv_reader = csv.reader(file)
+        #     header = next(csv_reader)  # Extract the header to determine column order
 
         # Extract data types from components in header
         dtypes = {
