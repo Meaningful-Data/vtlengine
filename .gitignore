@@ -174,3 +174,5 @@ _site/
 /ENV_DIR/
 /.tmp/
 /src/dev.py
+
+duckdbPerformance
