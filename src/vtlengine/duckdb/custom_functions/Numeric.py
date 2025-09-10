@@ -19,10 +19,8 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     Returns:
         Optional[float]: The rounded value, or None if the input value is None.
     """
-    if value is None:
+    if value is None or math.isnan(value):
         return None
-    if math.isnan(value):
-        return math.nan
     multiplier = 1.0
     if decimals is not None:
         multiplier = 10**decimals

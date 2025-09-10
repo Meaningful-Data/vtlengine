@@ -25,6 +25,8 @@ from vtlengine.AST.Grammar.tokens import (
     ROUND,
     SQRT,
     TRUNC,
+    RANDOM_DUCK,
+    TRUNC_DUCK
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
@@ -34,16 +36,22 @@ from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
 NUMERIC_TOKENS = [
-    "log",
-    "power",
-    "div",
-    "plus",
-    "minus",
-    "mult",
-    "mod",
-    "round_duck",
-    "trunc_duck",
-    "random_duck",
+    LOG,
+    POWER,
+    DIV,
+    PLUS,
+    MINUS,
+    MULT,
+    MOD,
+    ROUND,
+    TRUNC_DUCK,
+    RANDOM_DUCK,
+    CEIL,
+    ABS,
+    FLOOR,
+    EXP,
+    LN,
+    SQRT
 ]
 ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 

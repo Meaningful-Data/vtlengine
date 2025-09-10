@@ -167,3 +167,5 @@ EVAL = "eval"
 # External.
 SQLITE = '"sqlite"'
 EXTERNAL = [SQLITE]
+RANDOM_DUCK = "random_duck"
+TRUNC_DUCK = "trunc_duck"

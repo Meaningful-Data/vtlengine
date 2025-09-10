@@ -19,7 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
-    XOR,
+    XOR, POWER, DIV, PLUS, MINUS, MULT, MOD, TRUNC_DUCK, RANDOM_DUCK, ABS, EXP, LN, SQRT,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -60,21 +60,24 @@ only_semantic = False
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = [TimeInterval, TimePeriod, Duration]
 
-NUMERIC_TOKENS = {
-    "abs",
-    "ceil",
-    "floor",
-    "exp",
-    "ln",
-    "sqrt",
-    "plus",
-    "minus",
-    "mult",
-    "div",
-    "log",
-    "power",
-    "mod",
-}
+NUMERIC_TOKENS = [
+    LOG,
+    POWER,
+    DIV,
+    PLUS,
+    MINUS,
+    MULT,
+    MOD,
+    ROUND,
+    TRUNC_DUCK,
+    RANDOM_DUCK,
+    CEIL,
+    ABS,
+    FLOOR,
+    EXP,
+    LN,
+    SQRT
+]
 ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 
 
