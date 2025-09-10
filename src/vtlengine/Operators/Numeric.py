@@ -22,11 +22,11 @@ from vtlengine.AST.Grammar.tokens import (
     PLUS,
     POWER,
     RANDOM,
+    RANDOM_DUCK,
     ROUND,
     SQRT,
     TRUNC,
-    RANDOM_DUCK,
-    TRUNC_DUCK
+    TRUNC_DUCK,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
@@ -51,7 +51,7 @@ NUMERIC_TOKENS = [
     FLOOR,
     EXP,
     LN,
-    SQRT
+    SQRT,
 ]
 ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 

@@ -7,19 +7,31 @@ import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
+    ABS,
     AND,
     CEIL,
+    DIV,
     EQ,
+    EXP,
     FLOOR,
     GT,
     GTE,
+    LN,
     LOG,
     LT,
     LTE,
+    MINUS,
+    MOD,
+    MULT,
     NEQ,
     OR,
+    PLUS,
+    POWER,
+    RANDOM_DUCK,
     ROUND,
-    XOR, POWER, DIV, PLUS, MINUS, MULT, MOD, TRUNC_DUCK, RANDOM_DUCK, ABS, EXP, LN, SQRT,
+    SQRT,
+    TRUNC_DUCK,
+    XOR,
 )
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
@@ -76,7 +88,7 @@ NUMERIC_TOKENS = [
     FLOOR,
     EXP,
     LN,
-    SQRT
+    SQRT,
 ]
 ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 
@@ -114,7 +126,7 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
     if op_token in NUMERIC_TOKENS:
         result = con.sql(
             f"SELECT round_duck({op_token}({handle_sql_scalar(value)}),{ROUND_VALUE})"
-        ).fetchone()[0]
+        ).fetchone()[0] # type: ignore[index]
     else:
         result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
