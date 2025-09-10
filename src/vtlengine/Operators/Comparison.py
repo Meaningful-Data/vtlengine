@@ -66,7 +66,6 @@ class Binary(Operator.Binary):
     return_type = Boolean
 
     @classmethod
-    @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
         # Return None if any of the values are NaN
         if x is None or y is None:
