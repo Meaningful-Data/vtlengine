@@ -284,7 +284,7 @@ class Nvl(Binary):
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
                 name=comp_name,
-                data=pd.Series(dtype=object),
+                data=empty_relation(),
                 data_type=left.data_type,
                 role=Role.MEASURE,
                 nullable=False,

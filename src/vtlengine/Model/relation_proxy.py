@@ -370,3 +370,11 @@ class RelationProxy:
     def reset_index(self, **kwargs: Any) -> "RelationProxy":
         new_rel = self.relation.project(f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}")
         return RelationProxy(new_rel)
+
+    def drop(self, columns: Any) -> "RelationProxy":
+        drop_set = {columns} if isinstance(columns, str) else set(columns)
+        drop_set.discard(INDEX_COL)
+
+        keep_cols = [INDEX_COL] + [c for c in self.columns if c not in drop_set]
+        proj = ", ".join([f'"{c}"' for c in keep_cols])
+        return RelationProxy(self.relation.project(proj))

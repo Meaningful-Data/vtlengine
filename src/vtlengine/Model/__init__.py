@@ -362,7 +362,7 @@ class Dataset:
     def delete_component(self, component_name: str) -> None:
         self.components.pop(component_name, None)
         if self.data is not None:
-            self.data.drop(columns=[component_name], inplace=True)
+            self.data.drop(columns=component_name)
 
     def get_components(self) -> List[Component]:
         return list(self.components.values())
