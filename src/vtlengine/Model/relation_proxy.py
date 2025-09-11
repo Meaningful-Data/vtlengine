@@ -363,7 +363,7 @@ class RelationProxy:
         return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
 
     def project(self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True) -> "RelationProxy":
-        if include_index:
+        if include_index or len(self.columns) == 0:
             projection = self._ensure_index(projection)
         return self.relation.project(projection)
 
