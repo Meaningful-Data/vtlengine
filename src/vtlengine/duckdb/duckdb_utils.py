@@ -41,12 +41,12 @@ def duckdb_concat(
     con.register(l_name, left)
     con.register(r_name, right)
 
-    left_cols = set(left.columns)
-    right_cols = set(right.columns)
+    left_cols = set(left.all_columns if hasattr(left, "all_columns") else left.columns)
+    right_cols = set(right.all_columns if hasattr(right, "all_columns") else right.columns)
     common_cols = left_cols & right_cols
 
-    left_types = {col: left.dtypes[left.columns.index(col)] for col in left_cols}
-    right_types = {col: right.dtypes[right.columns.index(col)] for col in right_cols}
+    left_types = {name: type_ for name, type_, *_ in left.description}
+    right_types = {name: type_ for name, type_, *_ in right.description}
 
     select_parts = []
     for col in left_cols | right_cols:
@@ -54,16 +54,11 @@ def duckdb_concat(
             presence_col = on[0] if on else "__row_id__"
             l_type = left_types[col]
             r_type = right_types[col]
-            if l_type != r_type:
-                select_parts.append(
-                    f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
-                    f'ELSE CAST(l."{col}" AS {r_type}) END AS "{col}"'
-                )
-            else:
-                select_parts.append(
-                    f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
-                    f'ELSE l."{col}" END AS "{col}"'
-                )
+            casting = f'CAST(l."{col}" AS {r_type})' if l_type != r_type else f'l."{col}"'
+            select_parts.append(
+                f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
+                f'ELSE {casting} END AS "{col}"'
+            )
         elif col in left_cols:
             select_parts.append(f'l."{col}"')
         else:
@@ -150,7 +145,7 @@ def duckdb_fillna(
     cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
         col = col.replace('"', "")
-        col_type = data.dtypes[data.columns.index(col)]
+        col_type = data.dtypes[col]
         type_ = (
             (
                 types
@@ -374,7 +369,7 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[st
         type_columns = set(
             [
                 col
-                for col, dtype in zip(rel.columns, rel.dtypes)
+                for col, dtype in rel.dtypes.items()
                 if isinstance(dtype, DuckDBPyType) and dtype in TYPES_DICT.get(type_, [])
             ]
         )

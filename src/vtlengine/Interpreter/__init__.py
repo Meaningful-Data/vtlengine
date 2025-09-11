@@ -921,7 +921,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 dataset.data = dataset.data.project(", ".join(dataset.get_identifiers_names()))
             aux_operands = []
             for operand in operands:
-                print(operands)
                 measure = operand.get_component(operand.get_measures_names()[0])
                 data = operand.data[measure.name] if operand.data is not None else None
                 # Getting role from encoded information
