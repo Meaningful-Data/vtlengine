@@ -17,83 +17,73 @@ TYPES_DICT = {
     "DATE": [duckdb.type("DATE")],
 }
 
+INDEX_COL = "__index__"
+
 
 def duckdb_concat(
     left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
 ) -> DuckDBPyRelation:
     """
-    Concatenates two DuckDB relations by row, ensuring that columns are aligned.
-
-    If either relation is None, returns an empty relation.
-
-    If `on` is specified, only rows with matching values in the `on` columns are concatenated.
+    Horizontal concatenation (axis=1) of two relations.
+    - If `on` is provided, align rows using those key columns (OUTER JOIN).
+    - If `on` is None and both have INDEX_COL, align by INDEX_COL.
+    - Otherwise, align by position using a temporary row id (not exposed).
+    - For shared columns, prefer right-hand values when the right row exists.
     """
-
     if left is None or right is None:
         return empty_relation()
+
+    # Normalize key list
     if on is not None:
-        on = [on] if isinstance(on, str) else on
-
-    from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-
-    l_name = VirtualCounter._new_temp_view_name()
-    r_name = VirtualCounter._new_temp_view_name()
-    con.register(l_name, left)
-    con.register(r_name, right)
-
-    left_cols = set(left.all_columns if hasattr(left, "all_columns") else left.columns)
-    right_cols = set(right.all_columns if hasattr(right, "all_columns") else right.columns)
-    common_cols = left_cols & right_cols
-
-    left_types = {name: type_ for name, type_, *_ in left.description}
-    right_types = {name: type_ for name, type_, *_ in right.description}
-
-    select_parts = []
-    for col in left_cols | right_cols:
-        if col in common_cols:
-            presence_col = on[0] if on else "__row_id__"
-            l_type = left_types[col]
-            r_type = right_types[col]
-            casting = f'CAST(l."{col}" AS {r_type})' if l_type != r_type else f'l."{col}"'
-            select_parts.append(
-                f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
-                f'ELSE {casting} END AS "{col}"'
-            )
-        elif col in left_cols:
-            select_parts.append(f'l."{col}"')
-        else:
-            select_parts.append(f'r."{col}"')
-
-    select_clause = ",\n".join(select_parts)
-
-    if on is None:
-        with_clause = f"""
-        l AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {l_name}),
-        r AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {r_name})
-        """
-        on_clause = "l.__row_id__ = r.__row_id__"
+        on_cols = [on] if isinstance(on, str) else list(on)
     else:
-        with_clause = f"""
-        l AS (SELECT * FROM {l_name}),
-        r AS (SELECT * FROM {r_name})
-        """
-        on_clause = " AND ".join([f'l."{col}" = r."{col}"' for col in on])
+        on_cols = [INDEX_COL] if (INDEX_COL in left.columns and INDEX_COL in right.columns) else None
 
-    query = f"""
-        WITH {with_clause}
-        SELECT {select_clause}
-        FROM l
-        FULL OUTER JOIN r
-        ON {on_clause}
-    """
+    l = left.set_alias("l")
+    r = right.set_alias("r")
 
-    order_clause = ""
-    if on:
-        order_cols = ", ".join([f'COALESCE(r."{col}", l."{col}")' for col in on])
-        order_clause = f"ORDER BY {order_cols}"
+    used_rowid = False
+    if on_cols is None:
+        # Positional alignment when no usable key is available
+        l = l.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("l")
+        r = r.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("r")
+        join_cond = "l.__row_id__ = r.__row_id__"
+        presence_col = "r.__row_id__"
+        used_rowid = True
+    else:
+        join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
+        presence_col = f'r."{on_cols[0]}"'
 
-    final_query = query.format(select_clause=select_clause) + "\n" + order_clause
-    return con.sql(final_query)
+    # Use 'outer' (DuckDBPyRelation.join supports 'outer' but not 'full')
+    joined = l.join(r, join_cond, how="outer")
+
+    # Union of columns preserving order: left first, then right extras
+    left_cols = list(left.columns)
+    right_cols = list(right.columns)
+    union_cols: List[str] = []
+    seen: Set[str] = set()
+    for c in left_cols + right_cols:
+        if c not in seen:
+            seen.add(c)
+            union_cols.append(c)
+
+    # Build projection; prefer right values when there is a matching right row
+    select_exprs: List[str] = []
+    for c in union_cols:
+        if used_rowid and c == "__row_id__":
+            continue  # hide helper column
+        if c in left_cols and c in right_cols:
+            select_exprs.append(f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"')
+        elif c in left_cols:
+            select_exprs.append(f'l."{c}" AS "{c}"')
+        else:
+            select_exprs.append(f'r."{c}" AS "{c}"')
+
+    # If index exists in either side but was not included (positional mode without index), keep a coalesced index
+    if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
+        select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
+
+    return joined.project(", ".join(select_exprs))
 
 
 def duckdb_drop(
@@ -341,23 +331,6 @@ def quote_cols(cols: Union[str, List[str], Set[str]]) -> Set[str]:
     """
     cols_set = set(cols)
     return {f'"{c}"' for c in cols_set}
-
-
-def round_doubles(
-    data: DuckDBPyRelation, num_dec: int = 6, as_query: bool = False
-) -> DuckDBPyRelation:
-    """
-    Rounds double values in the dataset to avoid precision issues.
-    """
-    exprs = []
-    double_columns = get_cols_by_types(data, "DOUBLE")
-    for col in data.columns:
-        if col in double_columns:
-            exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
-        else:
-            exprs.append(f'"{col}"')
-    query = ", ".join(exprs)
-    return query if as_query else data.project(query)
 
 
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
