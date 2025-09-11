@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Sequence, Optional
 
 from duckdb import DuckDBPyRelation  # type: ignore
 from vtlengine.connection import con
@@ -14,7 +14,13 @@ class RelationProxy:
     _relation: DuckDBPyRelation
     __slots__ = ("_relation")
 
-    def __init__(self, relation: DuckDBPyRelation):
+    def __init__(self, relation: DuckDBPyRelation, index: Optional[DuckDBPyRelation] = None):
+        if index is not None and INDEX_COL in index.columns:
+            # setting index explicitly
+            idx = index.project(INDEX_COL).set_alias("idx")
+            rel = relation.set_alias("rel")
+            joined = rel.join(idx, f"rel.{INDEX_COL} = idx.{INDEX_COL}", how="right")
+            self.relation = joined.project(f"idx.{INDEX_COL} AS {INDEX_COL}, * EXCLUDE {INDEX_COL}")
         self.relation = relation
 
     # Dynamic dispatch
@@ -29,7 +35,6 @@ class RelationProxy:
             if callable(attr):
                 def rel_wrapper(*args: Any, **kwargs: Any) -> Any:
                     return attr(*args, **kwargs)
-
                 self._wrap_relation(rel_wrapper)
             return attr
 
@@ -165,16 +170,20 @@ class RelationProxy:
     def __repr__(self) -> str:
         return (f"RelationProxy(\n"
                 f"columns={self.relation.columns},\n"
-                f"data=\n{self.relation}\n"
+                f"data=\n{self.relation.limit(10)}\n"
                 f")")
+
+    @property
+    def all_columns(self) -> list[str]:
+        return self.relation.columns
 
     @property
     def columns(self) -> list[str]:
         return [c for c in self.relation.columns if c != INDEX_COL]
 
     @property
-    def all_columns(self) -> list[str]:
-        return self.relation.columns
+    def dtypes(self) -> dict[str, str]:
+        return {name: dtype for name, dtype in zip(self.relation.columns, self.relation.types)}
 
     @property
     def index(self) -> DuckDBPyRelation:
@@ -190,86 +199,6 @@ class RelationProxy:
         if INDEX_COL not in value.columns:
             value = value.project(f"*, row_number() OVER () - 1 AS {INDEX_COL}")
         self._relation = value
-
-    def _wrap_relation(self, value: Any) -> Any:
-        return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
-
-    def _ensure_index(self, projection: str) -> str:
-        cols_lower = [c.strip().lower() for c in projection.split(",")]
-        if INDEX_COL not in cols_lower:
-            return f"{INDEX_COL}, " + projection
-        return projection
-
-    def _to_sql_literal(self, v: Any) -> str:
-        # Convert a Python value into a safe SQL literal for DuckDB
-        if v is None:
-            return "NULL"
-        if isinstance(v, bool):
-            return "TRUE" if v else "FALSE"
-        if isinstance(v, (int, float)):
-            return repr(v)
-        if isinstance(v, str):
-            return "'" + v.replace("'", "''") + "'"
-        # Fallback: use DuckDB VALUES to build a literal and select it via join if needed
-        # For simplicity, convert to string literal
-        return "'" + str(v).replace("'", "''") + "'"
-
-    def _binary_compare(self, other: Any, op: str) -> "RelationProxy":
-        # Compare a single data column with a scalar or another single-column relation, aligned by index
-        left = self.relation
-        left_cols = [c for c in left.columns if c != INDEX_COL]
-        if len(left_cols) != 1:
-            raise ValueError("Element-wise comparison requires a single data column on the left side")
-
-        # Other is a RelationProxy or DuckDBPyRelation: align by index and compare columns
-        if isinstance(other, RelationProxy):
-            right = other.relation
-        elif isinstance(other, DuckDBPyRelation):
-            right = other
-        else:
-            right = None
-
-        if right is not None:
-            r_cols = [c for c in right.columns if c != INDEX_COL]
-            if len(r_cols) != 1:
-                raise ValueError("Element-wise comparison requires a single data column on the right side")
-            l = left.set_alias("l")
-            r = right.set_alias("r")
-            expr = f"(l.{left_cols[0]} {op} r.{r_cols[0]}) AS __mask__"
-            proj = f"l.{INDEX_COL} AS {INDEX_COL}, {expr}"
-            joined = l.join(r, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
-            return RelationProxy(joined.project(proj))
-
-        # Other is a scalar: compare left column with literal
-        lit = self._to_sql_literal(other)
-        expr = f"({left_cols[0]} {op} {lit}) AS __mask__"
-        proj = f"{INDEX_COL}, {expr}"
-        return RelationProxy(left.project(proj))
-
-    def df(self, limit: int | None = None) -> Any:
-        rel = self.relation if limit is None else self.relation.limit(limit)
-        df = rel.df()
-        if INDEX_COL in df.columns:
-            df = df.set_index(INDEX_COL)
-        return df
-
-    @property
-    def values(self):
-        # DataFrame/Series-like: return 1D for single data column, otherwise 2D
-        df = self.df()
-        cols = self.columns
-        if len(cols) == 1:
-            return df[cols[0]].values
-        return df.values
-
-    def project(self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True) -> "RelationProxy":
-        if include_index:
-            projection = self._ensure_index(projection)
-        return self.relation.project(projection)
-
-    def reset_index(self, **kwargs: Any) -> "RelationProxy":
-        new_rel = self.relation.project(f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}")
-        return RelationProxy(new_rel)
 
     def _assign_column(self, col_name: str, value: Any) -> None:
         l = self.relation.set_alias("l")
@@ -362,3 +291,82 @@ class RelationProxy:
             proj_cols.append(f'CASE WHEN "{cond}" THEN {lit} ELSE l."{c}" END AS "{c}"')
         self.relation = joined.project(", ".join(proj_cols))
 
+    def _binary_compare(self, other: Any, op: str) -> "RelationProxy":
+        # Compare a single data column with a scalar or another single-column relation, aligned by index
+        left = self.relation
+        left_cols = [c for c in left.columns if c != INDEX_COL]
+        if len(left_cols) != 1:
+            raise ValueError("Element-wise comparison requires a single data column on the left side")
+
+        # Other is a RelationProxy or DuckDBPyRelation: align by index and compare columns
+        if isinstance(other, RelationProxy):
+            right = other.relation
+        elif isinstance(other, DuckDBPyRelation):
+            right = other
+        else:
+            right = None
+
+        if right is not None:
+            r_cols = [c for c in right.columns if c != INDEX_COL]
+            if len(r_cols) != 1:
+                raise ValueError("Element-wise comparison requires a single data column on the right side")
+            l = left.set_alias("l")
+            r = right.set_alias("r")
+            expr = f"(l.{left_cols[0]} {op} r.{r_cols[0]}) AS __mask__"
+            proj = f"l.{INDEX_COL} AS {INDEX_COL}, {expr}"
+            joined = l.join(r, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
+            return RelationProxy(joined.project(proj))
+
+        # Other is a scalar: compare left column with literal
+        lit = self._to_sql_literal(other)
+        expr = f"({left_cols[0]} {op} {lit}) AS __mask__"
+        proj = f"{INDEX_COL}, {expr}"
+        return RelationProxy(left.project(proj))
+
+    def _ensure_index(self, projection: str) -> str:
+        cols_lower = [c.strip().lower() for c in projection.split(",")]
+        if INDEX_COL not in cols_lower:
+            return f"{INDEX_COL}, " + projection
+        return projection
+
+    def _to_sql_literal(self, v: Any) -> str:
+        # Convert a Python value into a safe SQL literal for DuckDB
+        if v is None:
+            return "NULL"
+        if isinstance(v, bool):
+            return "TRUE" if v else "FALSE"
+        if isinstance(v, (int, float)):
+            return repr(v)
+        if isinstance(v, str):
+            return "'" + v.replace("'", "''") + "'"
+        # Fallback: use DuckDB VALUES to build a literal and select it via join if needed
+        # For simplicity, convert to string literal
+        return "'" + str(v).replace("'", "''") + "'"
+
+    def _wrap_relation(self, value: Any) -> Any:
+        return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
+
+    def distinct(self) -> "RelationProxy":
+        return RelationProxy(self.project(include_index=False).distinct())
+
+    def df(self, limit: int | None = None) -> Any:
+        rel = self.relation if limit is None else self.relation.limit(limit)
+        df = rel.df()
+        if INDEX_COL in df.columns:
+            df = df.set_index(INDEX_COL)
+        return df
+
+    def isnull(self) -> "RelationProxy":
+        if len(self.columns) == 0:
+            raise ValueError("No data columns to check for nulls")
+        expr = f'("{self.columns[0]}" IS NULL) AS __mask__'
+        return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
+
+    def project(self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True) -> "RelationProxy":
+        if include_index:
+            projection = self._ensure_index(projection)
+        return self.relation.project(projection)
+
+    def reset_index(self, **kwargs: Any) -> "RelationProxy":
+        new_rel = self.relation.project(f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}")
+        return RelationProxy(new_rel)

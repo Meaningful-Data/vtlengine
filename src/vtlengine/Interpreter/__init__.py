@@ -921,6 +921,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 dataset.data = dataset.data.project(", ".join(dataset.get_identifiers_names()))
             aux_operands = []
             for operand in operands:
+                print(operands)
                 measure = operand.get_component(operand.get_measures_names()[0])
                 data = operand.data[measure.name] if operand.data is not None else None
                 # Getting role from encoded information
@@ -983,10 +984,6 @@ class InterpreterAnalyzer(ASTTemplate):
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 if result.data is not None:
-                    # result.data.rename(
-                    #     columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
-                    #     inplace=True,
-                    # )
                     result.data = duckdb_rename(
                         result.data,
                         {
@@ -1001,8 +998,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 }
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
-                # if result.data is not None:
-                #     result.data.reset_index(drop=True, inplace=True)
+                if result.data is not None:
+                    result.data = result.data.reset_index()
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
@@ -1730,23 +1727,24 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value]
-            return Dataset(name=name, components=result_components, data=df)
+            rel = self.hr_agg_rules_computed[node.value]
+            return Dataset(name=name, components=result_components, data=rel)
 
-        df = self.rule_data
+        rel = self.rule_data
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            rel = rel[condition].reset_index(drop=True)
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in df[hr_component].values:
+        if node.value in rel[hr_component].values:
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
-            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
+            # code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
+            # code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = duckdb_merge(code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers).distinct().reset_index(drop=True)
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1761,7 +1759,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
-                code_data.loc[fill_indexes, measure_name] = 0
+                code_data[fill_indexes, measure_name] = 0
             code_data[hr_component] = node.value
             df = code_data
         else:

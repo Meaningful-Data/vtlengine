@@ -133,6 +133,7 @@ class If(Operator):
             exprs.append(expr)
 
         result.data = base.project(", ".join(exprs))
+        result.data = result.data.reset_index()
         return result
 
     @classmethod

@@ -3,11 +3,14 @@ from copy import copy
 from typing import Any, Dict
 
 import pandas as pd
+from duckdb.duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, empty_relation
+from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -25,42 +28,91 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
 
 
 class HRComparison(Operators.Binary):
-    @classmethod
-    def imbalance_func(cls, x: Any, y: Any) -> Any:
-        return None if pd.isnull(x) or pd.isnull(y) else x - y
-
     @staticmethod
-    def hr_func(left_series: Any, right_series: Any, hr_mode: str) -> Any:
-        result = pd.Series(True, index=left_series.index)
+    def hr_func(
+        left_rel: DuckDBPyRelation, right_rel: DuckDBPyRelation, hr_mode: str
+    ) -> DuckDBPyRelation:
+        l_name = left_rel.columns[0]
+        r_name = right_rel.columns[0]
+        RM_val = "'REMOVE_VALUE'"
+        expr = f'"{l_name}", "{r_name}"'
 
-        if hr_mode in ("partial_null", "partial_zero"):
-            mask_remove = (right_series == "REMOVE_VALUE") & (right_series.notnull())
-            if hr_mode == "partial_null":
-                mask_null = mask_remove & left_series.notnull()
-            else:
-                mask_null = mask_remove & (left_series != 0)
-            result[mask_remove] = "REMOVE_VALUE"
-            result[mask_null] = None
+        if hr_mode == "partial_null":
+            expr += f""",
+                    CASE
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND
+                             "{l_name}" IS NOT NULL
+                        THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
+                        THEN {RM_val}
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+
+        elif hr_mode == "partial_zero":
+            expr += f""",
+                    CASE
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
+                        THEN NULL
+                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
+                        THEN {RM_val}
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+
         elif hr_mode == "non_null":
-            mask_remove = left_series.isnull() | right_series.isnull()
-            result[mask_remove] = "REMOVE_VALUE"
-        elif hr_mode == "non_zero":
-            mask_remove = (left_series == 0) & (right_series == 0)
-            result[mask_remove] = "REMOVE_VALUE"
+            expr += f""",
+                    CASE
+                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN 'REMOVE_VALUE'
+                        ELSE 'true'
+                    END AS hr_mask
+                """
 
-        return result
+        elif hr_mode == "non_zero":
+            expr += f""",
+                    CASE
+                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_val}
+                        ELSE 'true'
+                    END AS hr_mask
+                """
+        else:
+            expr += ", 'true' AS hr_mask"
+
+        # Combine the relations and apply the masks
+        combined_relation = duckdb_concat(left_rel, right_rel)
+        return combined_relation.project(expr)
 
     @classmethod
-    def apply_hr_func(cls, left_series: Any, right_series: Any, hr_mode: str, func: Any) -> Any:
+    def apply_hr_func(
+        cls,
+        left_rel: DuckDBPyRelation,
+        right_rel: DuckDBPyRelation,
+        hr_mode: str,
+        func: str,
+        col_name: str,
+    ) -> DuckDBPyRelation:
         # In order not to apply the function to the whole series, we align the series
         # and apply the function only to the valid values based on a validation mask.
         # The function is applied to the aligned series and the result is combined with the
         # original series.
-        left_series, right_series = left_series.align(right_series)
-        remove_result = cls.hr_func(left_series, right_series, hr_mode)
-        mask_valid = remove_result == True
-        result = pd.Series(remove_result, index=left_series.index)
-        result.loc[mask_valid] = left_series[mask_valid].combine(right_series[mask_valid], func)
+        result = cls.hr_func(left_rel, right_rel, hr_mode)
+
+        position = MIDDLE if func != "imbalance_func" else LEFT
+        sql_token = TO_SQL_TOKEN.get(func, func)
+        if isinstance(sql_token, tuple):
+            sql_token, position = sql_token
+        if position == MIDDLE:
+            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+        else:
+            sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
+
+        result = result.project(f"""
+                    CASE
+                        WHEN hr_mask = 'true'
+                        THEN CAST({sql_func} AS VARCHAR)
+                        ELSE hr_mask
+                    END AS "{col_name}"
+                """)
         return result
 
     @classmethod
@@ -90,17 +142,16 @@ class HRComparison(Operators.Binary):
 
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op_func
+                left.data[measure_name], right.data, hr_mode, cls.op_func, "bool_var"
             )
             result.data["imbalance"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.imbalance_func
+                left.data[measure_name], right.data, hr_mode, "imbalance_func", "imbalance"
             )
 
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = result.data[result.data["bool_var"] != "REMOVE_VALUE"]
-        result.data.drop(measure_name, axis=1, inplace=True)
+        result.data = duckdb_drop(result.data.filter("bool_var != 'REMOVE_VALUE'"), measure_name)
         return result
 
 
