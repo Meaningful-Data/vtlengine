@@ -5,6 +5,7 @@ from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
+from vtlengine.Model.relation_proxy import RelationProxy
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 
@@ -82,7 +83,7 @@ def duckdb_concat(
     if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
         select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
 
-    return joined.project(", ".join(select_exprs))
+    return RelationProxy(joined.project(", ".join(select_exprs)))
 
 
 def duckdb_drop(
@@ -99,7 +100,7 @@ def duckdb_drop(
     if not cols:
         return empty_relation(as_query=as_query)
     query = ", ".join(quote_cols(cols))
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_fill(
@@ -114,7 +115,7 @@ def duckdb_fill(
         query = f'*, {value} AS "{col_name}"'
     else:
         query = f'{col_name} COALESCE({value}) AS "{col_name}"'
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_fillna(
@@ -156,7 +157,7 @@ def duckdb_fillna(
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
     query = ", ".join(exprs)
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_merge(
@@ -213,7 +214,7 @@ def duckdb_merge(
         {how.upper()} JOIN {other_name}
         USING ({using_clause})
     """
-    return con.sql(query)
+    return RelationProxy(con.sql(query))
 
 
 def duckdb_rename(
@@ -228,7 +229,7 @@ def duckdb_rename(
         cols.remove(old_name)
         cols_set.add(f'"{old_name}" AS "{new_name}"')
     query = ", ".join(quote_cols(cols) | cols_set)
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_select(
@@ -292,31 +293,57 @@ def normalize_data(
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    double_cols = set(get_cols_by_types(self_data, "DOUBLE"))
-    if not len(double_cols):
+    # Target columns: intersection of DOUBLEs on both sides (exclude index)
+    self_double = get_cols_by_types(self_data, "DOUBLE")
+    other_double = get_cols_by_types(other_data, "DOUBLE")
+    target_cols = sorted(self_double & other_double)
+    if not target_cols:
         return self_data, other_data
 
-    round_exprs = []
-    base = empty_relation()
-    for col in double_cols:
-        base = duckdb_concat(
-            base,
-            duckdb_concat(
-                self_data.project(f'"{col}" AS "self_{col}"'),
-                other_data.project(f'"{col}" AS "other_{col}"'),
-            ),
-        )
-        round_exprs.append(f'round_to_ref("self_{col}", "other_{col}") AS "self_{col}"')
-        round_exprs.append(f'round_to_ref("other_{col}", "self_{col}") AS "other_{col}"')
+    s = self_data.set_alias("s")
+    o = other_data.set_alias("o")
 
-    base = base.project(", ".join(round_exprs))
-    self_data = duckdb_concat(
-        self_data, base.project(", ".join(f"self_{col} AS {col}" for col in double_cols))
-    )
-    other_data = duckdb_concat(
-        other_data, base.project(", ".join(f"other_{col} AS {col}" for col in double_cols))
-    )
-    return self_data, other_data
+    # Single OUTER join by index to compute rounded values once
+    j = s.join(o, f's.{INDEX_COL} = o.{INDEX_COL}', how="outer")
+
+    # Build rounded projections for both sides
+    self_exprs = [f's.{INDEX_COL} AS {INDEX_COL}'] + [
+        f'round_to_ref(s."{c}", o."{c}") AS "{c}"' for c in target_cols
+    ]
+    other_exprs = [f'o.{INDEX_COL} AS {INDEX_COL}'] + [
+        f'round_to_ref(o."{c}", s."{c}") AS "{c}"' for c in target_cols
+    ]
+
+    new_self_vals = j.project(", ".join(self_exprs)).set_alias("ns")
+    new_other_vals = j.project(", ".join(other_exprs)).set_alias("no")
+
+    # Assemble final self side: replace only target columns
+    s_cols = list(self_data.columns)
+    js = self_data.set_alias("s").join(new_self_vals, f's.{INDEX_COL} = ns.{INDEX_COL}', how="left")
+    s_select = []
+    for c in s_cols:
+        if c == INDEX_COL:
+            s_select.append(f's.{INDEX_COL} AS {INDEX_COL}')
+        elif c in target_cols:
+            s_select.append(f'ns."{c}" AS "{c}"')
+        else:
+            s_select.append(f's."{c}" AS "{c}"')
+    self_out = js.project(", ".join(s_select))
+
+    # Assemble final other side: replace only target columns
+    o_cols = list(other_data.columns)
+    jo = other_data.set_alias("o").join(new_other_vals, f'o.{INDEX_COL} = no.{INDEX_COL}', how="left")
+    o_select = []
+    for c in o_cols:
+        if c == INDEX_COL:
+            o_select.append(f'o.{INDEX_COL} AS {INDEX_COL}')
+        elif c in target_cols:
+            o_select.append(f'no."{c}" AS "{c}"')
+        else:
+            o_select.append(f'o."{c}" AS "{c}"')
+    other_out = jo.project(", ".join(o_select))
+
+    return self_out, other_out
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:
@@ -333,6 +360,7 @@ def quote_cols(cols: Union[str, List[str], Set[str]]) -> Set[str]:
 
 
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
+    # Collect column names matching duckdb types; exclude the index column.
     cols = set()
     types = {types} if isinstance(types, str) else set(types)
     types = {t.upper() for t in types}
@@ -342,7 +370,9 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[st
             [
                 col
                 for col, dtype in rel.dtypes.items()
-                if isinstance(dtype, DuckDBPyType) and dtype in TYPES_DICT.get(type_, [])
+                if col != INDEX_COL
+                and isinstance(dtype, DuckDBPyType)
+                and dtype in TYPES_DICT.get(type_, [])
             ]
         )
         cols.update(type_columns)

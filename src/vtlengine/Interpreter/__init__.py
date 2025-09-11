@@ -69,6 +69,7 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    RelationProxy,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
@@ -1341,7 +1342,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = self.ruleset_dataset.data
+            self.rule_data = RelationProxy(self.ruleset_dataset.data)
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
@@ -1388,10 +1389,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = duckdb_concat(
                 self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
             )
-            filtered = self.rule_data.filter('"bool_var" = TRUE')
+            filtered = self.rule_data[self.rule_data["bool_var"] == True]
             data = self.rule_data.project(
-                '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
-                'THEN NULL ELSE TRUE END AS "bool_var"'
+                '* EXCLUDE "bool_var", '
+                'CASE WHEN "bool_var" IS NULL THEN NULL ELSE TRUE END AS "bool_var"'
             )
 
             if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
@@ -1404,6 +1405,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We only need to filter rule_data on DPR
                 return result_validation
 
+            self.rule_data = self.rule_data.reset_index()
             self.rule_data = duckdb_concat(
                 self.rule_data,
                 result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
