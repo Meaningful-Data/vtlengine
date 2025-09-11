@@ -33,7 +33,6 @@ def duckdb_concat(
     if left is None or right is None:
         return empty_relation()
 
-    # Normalize key list
     if on is not None:
         on_cols = [on] if isinstance(on, str) else list(on)
     else:
@@ -41,6 +40,9 @@ def duckdb_concat(
 
     l = left.set_alias("l")
     r = right.set_alias("r")
+
+    if not on_cols and INDEX_COL in left.columns and INDEX_COL in right.columns:
+        on_cols = [INDEX_COL]
 
     used_rowid = False
     if on_cols is None:
@@ -54,10 +56,8 @@ def duckdb_concat(
         join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
         presence_col = f'r."{on_cols[0]}"'
 
-    # Use 'outer' (DuckDBPyRelation.join supports 'outer' but not 'full')
     joined = l.join(r, join_cond, how="outer")
 
-    # Union of columns preserving order: left first, then right extras
     left_cols = list(left.columns)
     right_cols = list(right.columns)
     union_cols: List[str] = []
@@ -67,11 +67,10 @@ def duckdb_concat(
             seen.add(c)
             union_cols.append(c)
 
-    # Build projection; prefer right values when there is a matching right row
     select_exprs: List[str] = []
     for c in union_cols:
         if used_rowid and c == "__row_id__":
-            continue  # hide helper column
+            continue
         if c in left_cols and c in right_cols:
             select_exprs.append(f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"')
         elif c in left_cols:
