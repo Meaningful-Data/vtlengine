@@ -230,9 +230,9 @@ class DataComponent:
         if self.data is None:
             return pd.DataFrame()
         if isinstance(self.data, RelationProxy):
-            df = self.data.df(1000)
+            df = self.data.df(10)
         else:
-            df = self.data.limit(1000).df()
+            df = self.data.limit(10).df()
             if INDEX_COL in df.columns:
                 df = df.set_index(INDEX_COL)
         return df
@@ -470,8 +470,8 @@ class Dataset:
         if self.data is None:
             return pd.DataFrame()
         if isinstance(self.data, RelationProxy):
-            return self.data.df(1000)
-        df = self.data.limit(1000).df()
+            return self.data.df(10)
+        df = self.data.limit(10).df()
         if INDEX_COL in df.columns:
             df = df.set_index(INDEX_COL)
         return df
