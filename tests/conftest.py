@@ -1,7 +1,7 @@
 import pytest
 from _pytest.outcomes import Skipped, xfail
 
-from src.vtlengine.connection.connection import ConnectionManager
+from vtlengine.connection import ConnectionManager
 
 
 @pytest.fixture(autouse=True)

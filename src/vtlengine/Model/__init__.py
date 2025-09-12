@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
@@ -15,6 +16,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
+from vtlengine.Exceptions import DataLoadError
 
 
 def __duckdb_repr__(self: Any) -> str:
@@ -154,7 +156,7 @@ class Component:
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
-            raise ValueError(f"Identifier {self.name} cannot be nullable")
+            raise DataLoadError(code="0-1-1-4", name=self.name, null_identifier=self.name)
 
     def __eq__(self, other: Any) -> bool:
         return self.to_dict() == other.to_dict()
@@ -372,7 +374,10 @@ class Dataset:
         if isinstance(self.data, pd.DataFrame):
             data = repr(self.data).replace("<NA>", "None")
         elif isinstance(self.data, DuckDBPyRelation):
-            data = self.data.limit(10).df()
+            try:
+                data = self.data.limit(10).df()
+            except duckdb.Error as e:
+                raise DataLoadError.map_duckdb_error(e)
         return f"Dataset(name={self.name}, components={list(self.components.keys())},data={data})"
 
     def _to_duckdb(self) -> DuckDBPyRelation:
