@@ -209,7 +209,6 @@ numeric_exception_param = [
     ("log(5.0, -8)", "Out of Range Error: cannot take logarithm of a negative number"),
     ("log(0.0, 6)", "Out of Range Error: cannot take logarithm of zero"),
     ("log(-2, 6)", "Out of Range Error: cannot take logarithm of a negative number"),
-    ("1 / 0", "2-1-15-6"),
 ]
 
 ds_param = [

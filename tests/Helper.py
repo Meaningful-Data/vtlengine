@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key
+from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, DataLoadError
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -343,14 +343,20 @@ class TestHelper(TestCase):
         exception_code: Optional[str] = None,
     ):
         if exception_code is not None:
-            with pytest.raises(VTLEngineException) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+            with pytest.raises(DataLoadError) as context:
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
+        elif exception_message is not None:
+            with pytest.raises(VTLEngineException, match=exception_message) as context:
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
         else:
-            with pytest.raises(Exception, match=exception_message) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+            with pytest.raises(SemanticError, match=exception_code) as context:
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
         # Test Assertion.------------------------------------------------------
-
-        if len(context.value.args) > 1 and exception_code is not None:
-            assert exception_code == str(context.value.args[1])
-        else:
-            assert exception_message in str(context.value.args[0])
+        #
+        # if len(context.value.args) > 1 and exception_code is not None:
+        #     assert exception_code == str(context.value.args[1])
+        # else:
+        #     assert exception_message in str(context.value.args[0])

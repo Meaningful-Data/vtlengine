@@ -153,6 +153,10 @@ class RunTimeError(VTLEngineException):
 
 
 class DataLoadError(VTLEngineException):
+    """
+    Errors related to loading data into the engine
+    (e.g., reading CSV files, data type mismatches during loading).
+    """
     output_message = " Please check loaded file"
     comp_code: Optional[str] = None
 
@@ -173,9 +177,55 @@ class DataLoadError(VTLEngineException):
         if comp_code:
             self.comp_code = comp_code
 
+    @classmethod
+    def map_duckdb_error(cls, e: "duckdb.Error", comp_code: Optional[str] = None, **kwargs) -> "DataLoadError":
+        msg = str(e)
+        dataset_name = kwargs.get("name") or kwargs.get("comp_code") or "unknown"
+        if isinstance(e, duckdb.ConversionException):
+            match = re.search(
+                r'Error when converting column\s+"(\w+)".*?Could not convert string\s+"(.+?)"\s+to\s+\'?(\w+)\'?',
+                msg,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if match:
+                column, value, target_type = match.groups()
+                vtl_type = map_duckdb_type_to_vtl(target_type)
+                return cls(
+                    "0-1-1-12",
+                    comp_code=comp_code,
+                    column=column,
+                    value=value,
+                    type=vtl_type,
+                    duckdb_msg=msg,
+                    name=dataset_name,
+                    **kwargs,
+                )
+        elif isinstance(e, duckdb.BinderException):
+            null_identifier = kwargs.get("null_identifier") or "unknown_column"
+            if re.search(r"read_csv requires at least a single column", str(e)):
+                return cls(
+                    "0-1-1-4",
+                    comp_code=comp_code,
+                    duckdb_msg=msg,
+                    name=dataset_name,
+                    null_identifier=null_identifier,
+                    **kwargs,
+                )
+        elif isinstance(e, duckdb.InvalidInputException):
+            print(e)
+
+        return cls(
+            "2-0-0-0",
+            comp_code=comp_code,
+            duckdb_msg=msg,
+            **kwargs,
+        )
 
 class InputValidationException(VTLEngineException):
-    """ """
+    """
+    Errors related to DAG, overwriting datasets, invalid inputs, etc.
+    Unknown files, invalid paths, etc.
+    """
 
     def __init__(
         self,

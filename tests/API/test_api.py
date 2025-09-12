@@ -300,7 +300,7 @@ params_run = [
 
 params_schema = [(filepath_json / "DS_Schema.json")]
 
-param_id_null = [((filepath_json / "DS_ID_null.json"), "Identifier Id_1 cannot be nullable")]
+param_id_null = [((filepath_json / "DS_ID_null.json"), "0-1-1-4")]
 
 param_wrong_role = [((filepath_json / "DS_Role_wrong.json"), "0-1-1-13")]
 
@@ -1265,7 +1265,7 @@ def test_mandatory_at_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1318,7 +1318,7 @@ def test_mandatory_me_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     result = exception_code == str(context.value.args[1])
     if result is False:
@@ -1363,9 +1363,9 @@ def test_load_data_structure_with_new_schema(data_structure):
     assert result["DS_Schema"] == reference
 
 
-@pytest.mark.parametrize("ds_r, error_message", param_id_null)
-def test_load_data_structure_with_null_id(ds_r, error_message):
-    with pytest.raises(ValueError, match=error_message):
+@pytest.mark.parametrize("ds_r, code", param_id_null)
+def test_load_data_structure_with_null_id(ds_r, code):
+    with pytest.raises(DataLoadError, match=code):
         load_datasets(ds_r)
 
 
