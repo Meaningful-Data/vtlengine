@@ -151,6 +151,7 @@ class InterpreterAnalyzer(ASTTemplate):
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    is_from_case_then: bool = False
 
     # **********************************
     # *                                *
@@ -1078,15 +1079,38 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.condition_stack is None:
             self.condition_stack = []
+        if self.then_condition_dataset is None:
+            self.then_condition_dataset = []
+        if self.else_condition_dataset is None:
+            self.else_condition_dataset = []
 
-        while node.cases:
-            case = node.cases.pop(0)
+        for case in node.cases:
             self.is_from_condition = True
-            conditions.append(self.visit(case.condition))
+            cond = self.visit(case.condition)
             self.is_from_condition = False
-            thenOps.append(self.visit(case.thenOp))
+            conditions.append(cond)
 
-        return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
+            self.generate_then_else_datasets(copy(cond))
+
+            self.condition_stack.append(THEN_ELSE["then"])
+            self.is_from_if = True
+            self.is_from_case_then = True
+
+            then_result = self.visit(case.thenOp)
+            thenOps.append(then_result)
+
+            self.is_from_case_then = False
+            self.is_from_if = False
+            if len(self.condition_stack) > 0:
+                self.condition_stack.pop()
+            if len(self.then_condition_dataset) > 0:
+                self.then_condition_dataset.pop()
+            if len(self.else_condition_dataset) > 0:
+                self.else_condition_dataset.pop()
+
+        elseOp = self.visit(node.elseOp)
+
+        return Case.analyze(conditions, thenOps, elseOp)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
@@ -1667,11 +1691,18 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             return left_operand, right_operand
 
-        merge_dataset = (
-            self.then_condition_dataset.pop()
-            if self.condition_stack.pop() == THEN_ELSE["then"]
-            else (self.else_condition_dataset.pop())
-        )
+        if self.is_from_case_then:
+            merge_dataset = (
+                self.then_condition_dataset[-1]
+                if self.condition_stack[-1] == THEN_ELSE["then"]
+                else self.else_condition_dataset[-1]
+            )
+        else:
+            merge_dataset = (
+                self.then_condition_dataset.pop()
+                if self.condition_stack.pop() == THEN_ELSE["then"]
+                else (self.else_condition_dataset.pop())
+            )
 
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
