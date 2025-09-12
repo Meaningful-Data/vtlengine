@@ -115,7 +115,6 @@ class Aggregate(Operator):
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
-        print(result_dataset.data)
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -124,8 +123,6 @@ class Aggregate(Operator):
                     result_dataset.data[operand.name] = operand.data
                 else:
                     result_dataset.data[operand.name] = None
-        print(operands)
-        print(result_dataset.data)
         return result_dataset
 
 
