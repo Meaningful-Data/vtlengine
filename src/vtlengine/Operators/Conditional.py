@@ -361,9 +361,14 @@ class Case(Operator):
                 result.data = temp
 
             stacked_conditions = [
-                c.data.reindex(full_index).fillna(False) for c in conditions  # type: ignore[attr-defined]
+                c.data.reindex(full_index).fillna(False)
+                for c in conditions  # type: ignore[attr-defined]
             ]
-            condition_mask_else = ~np.logical_or.reduce(stacked_conditions) if stacked_conditions else pd.Series(True, index=full_index)
+            condition_mask_else = (
+                ~np.logical_or.reduce(stacked_conditions)
+                if stacked_conditions
+                else pd.Series(True, index=full_index)
+            )
             if isinstance(elseOp, Scalar):
                 else_series = pd.Series(elseOp.value, index=full_index)
             else:
@@ -393,19 +398,26 @@ class Case(Operator):
                     result.data.loc[cond_mask, columns] = branch_df.loc[cond_mask, columns]
 
             stacked_masks = [
-                c.data[
-                    next(x.name for x in c.get_measures() if x.data_type == Boolean)
-                ].reindex(full_index).fillna(False).astype(bool)
+                c.data[next(x.name for x in c.get_measures() if x.data_type == Boolean)]
+                .reindex(full_index)
+                .fillna(False)
+                .astype(bool)
                 for c in conditions
             ]
-            condition_mask_else = ~np.logical_or.reduce(stacked_masks) if stacked_masks else pd.Series(True, index=full_index)
+            condition_mask_else = (
+                ~np.logical_or.reduce(stacked_masks)
+                if stacked_masks
+                else pd.Series(True, index=full_index)
+            )
 
             if isinstance(elseOp, Scalar):
                 for col in columns:
                     result.data.loc[condition_mask_else, col] = elseOp.value
             else:
                 else_df = elseOp.data.reindex(full_index)
-                result.data.loc[condition_mask_else, columns] = else_df.loc[condition_mask_else, columns]
+                result.data.loc[condition_mask_else, columns] = else_df.loc[
+                    condition_mask_else, columns
+                ]
 
         return result
 
