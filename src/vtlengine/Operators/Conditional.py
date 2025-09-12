@@ -345,7 +345,7 @@ class Case(Operator):
                     result.value = thenOps[i].value
 
         if isinstance(result, DataComponent):
-            full_index = conditions[0].data.index  # type: ignore[union-attr]
+            full_index = conditions[0].data.index
             result.data = pd.Series(None, index=full_index)
 
             for i, condition in enumerate(conditions):
@@ -362,7 +362,7 @@ class Case(Operator):
 
             stacked_conditions = [
                 c.data.reindex(full_index).fillna(False)
-                for c in conditions  # type: ignore[attr-defined]
+                for c in conditions
             ]
             condition_mask_else = (
                 ~np.logical_or.reduce(stacked_conditions)
