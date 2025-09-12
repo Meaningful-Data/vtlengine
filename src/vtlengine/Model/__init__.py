@@ -13,10 +13,10 @@ from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
-from vtlengine.Exceptions import DataLoadError
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
+from vtlengine.Exceptions import DataLoadError
 
 
 def __duckdb_repr__(self: Any) -> str:

@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, DataLoadError
+from vtlengine.Exceptions import DataLoadError, SemanticError, VTLEngineException, check_key
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -343,15 +343,15 @@ class TestHelper(TestCase):
         exception_code: Optional[str] = None,
     ):
         if exception_code is not None:
-            with pytest.raises(DataLoadError) as context:
+            with pytest.raises(DataLoadError):
                 datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
                 print(datasets)
         elif exception_message is not None:
-            with pytest.raises(VTLEngineException, match=exception_message) as context:
+            with pytest.raises(VTLEngineException, match=exception_message):
                 datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
                 print(datasets)
         else:
-            with pytest.raises(SemanticError, match=exception_code) as context:
+            with pytest.raises(SemanticError, match=exception_code):
                 datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
                 print(datasets)
         # Test Assertion.------------------------------------------------------

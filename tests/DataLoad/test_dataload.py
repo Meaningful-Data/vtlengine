@@ -83,7 +83,7 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-3"
         number_inputs = 1
 
-        exception_code = '0-1-1-12'
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )

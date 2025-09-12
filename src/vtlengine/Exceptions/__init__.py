@@ -157,6 +157,7 @@ class DataLoadError(VTLEngineException):
     Errors related to loading data into the engine
     (e.g., reading CSV files, data type mismatches during loading).
     """
+
     output_message = " Please check loaded file"
     comp_code: Optional[str] = None
 
@@ -178,12 +179,15 @@ class DataLoadError(VTLEngineException):
             self.comp_code = comp_code
 
     @classmethod
-    def map_duckdb_error(cls, e: "duckdb.Error", comp_code: Optional[str] = None, **kwargs) -> "DataLoadError":
+    def map_duckdb_error(  # type: ignore[no-untyped-def]
+        cls, e: "duckdb.Error", comp_code: Optional[str] = None, **kwargs
+    ) -> "DataLoadError":
         msg = str(e)
         dataset_name = kwargs.get("name") or kwargs.get("comp_code") or "unknown"
         if isinstance(e, duckdb.ConversionException):
             match = re.search(
-                r'Error when converting column\s+"(\w+)".*?Could not convert string\s+"(.+?)"\s+to\s+\'?(\w+)\'?',
+                r'Error when converting column\s+"(\w+)".*?'
+                r'Could not convert string\s+"(.+?)"\s+to\s+\'?(\w+)\'?',
                 msg,
                 re.IGNORECASE | re.DOTALL,
             )
@@ -220,6 +224,7 @@ class DataLoadError(VTLEngineException):
             duckdb_msg=msg,
             **kwargs,
         )
+
 
 class InputValidationException(VTLEngineException):
     """
