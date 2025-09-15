@@ -360,10 +360,7 @@ class Case(Operator):
                 temp[notna_mask & true_mask] = value_series[notna_mask & true_mask]
                 result.data = temp
 
-            stacked_conditions = [
-                c.data.reindex(full_index).fillna(False)
-                for c in conditions
-            ]
+            stacked_conditions = [c.data.reindex(full_index).fillna(False) for c in conditions]
             condition_mask_else = (
                 ~np.logical_or.reduce(stacked_conditions)
                 if stacked_conditions
