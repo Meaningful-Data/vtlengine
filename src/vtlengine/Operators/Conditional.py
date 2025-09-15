@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Any, List, Union
 
-import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (

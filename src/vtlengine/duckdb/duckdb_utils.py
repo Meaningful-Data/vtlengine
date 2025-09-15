@@ -5,9 +5,9 @@ from duckdb import duckdb
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
-from vtlengine.Model.relation_proxy import RelationProxy
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
+from vtlengine.Model.relation_proxy import RelationProxy
 
 TYPES_DICT = {
     "STRING": [duckdb.type("VARCHAR"), duckdb.type("STRING")],
@@ -37,7 +37,9 @@ def duckdb_concat(
     if on is not None:
         on_cols = [on] if isinstance(on, str) else list(on)
     else:
-        on_cols = [INDEX_COL] if (INDEX_COL in left.columns and INDEX_COL in right.columns) else None
+        on_cols = (
+            [INDEX_COL] if (INDEX_COL in left.columns and INDEX_COL in right.columns) else None
+        )
 
     l = left.set_alias("l")
     r = right.set_alias("r")
@@ -73,13 +75,16 @@ def duckdb_concat(
         if used_rowid and c == "__row_id__":
             continue
         if c in left_cols and c in right_cols:
-            select_exprs.append(f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"')
+            select_exprs.append(
+                f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"'
+            )
         elif c in left_cols:
             select_exprs.append(f'l."{c}" AS "{c}"')
         else:
             select_exprs.append(f'r."{c}" AS "{c}"')
 
-    # If index exists in either side but was not included (positional mode without index), keep a coalesced index
+    # If index exists in either side but was not included (positional mode without index),
+    # keep a coalesced index
     if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
         select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
 
@@ -304,13 +309,13 @@ def normalize_data(
     o = other_data.set_alias("o")
 
     # Single OUTER join by index to compute rounded values once
-    j = s.join(o, f's.{INDEX_COL} = o.{INDEX_COL}', how="outer")
+    j = s.join(o, f"s.{INDEX_COL} = o.{INDEX_COL}", how="outer")
 
     # Build rounded projections for both sides
-    self_exprs = [f's.{INDEX_COL} AS {INDEX_COL}'] + [
+    self_exprs = [f"s.{INDEX_COL} AS {INDEX_COL}"] + [
         f'round_to_ref(s."{c}", o."{c}") AS "{c}"' for c in target_cols
     ]
-    other_exprs = [f'o.{INDEX_COL} AS {INDEX_COL}'] + [
+    other_exprs = [f"o.{INDEX_COL} AS {INDEX_COL}"] + [
         f'round_to_ref(o."{c}", s."{c}") AS "{c}"' for c in target_cols
     ]
 
@@ -319,11 +324,11 @@ def normalize_data(
 
     # Assemble final self side: replace only target columns
     s_cols = list(self_data.columns)
-    js = self_data.set_alias("s").join(new_self_vals, f's.{INDEX_COL} = ns.{INDEX_COL}', how="left")
+    js = self_data.set_alias("s").join(new_self_vals, f"s.{INDEX_COL} = ns.{INDEX_COL}", how="left")
     s_select = []
     for c in s_cols:
         if c == INDEX_COL:
-            s_select.append(f's.{INDEX_COL} AS {INDEX_COL}')
+            s_select.append(f"s.{INDEX_COL} AS {INDEX_COL}")
         elif c in target_cols:
             s_select.append(f'ns."{c}" AS "{c}"')
         else:
@@ -332,11 +337,13 @@ def normalize_data(
 
     # Assemble final other side: replace only target columns
     o_cols = list(other_data.columns)
-    jo = other_data.set_alias("o").join(new_other_vals, f'o.{INDEX_COL} = no.{INDEX_COL}', how="left")
+    jo = other_data.set_alias("o").join(
+        new_other_vals, f"o.{INDEX_COL} = no.{INDEX_COL}", how="left"
+    )
     o_select = []
     for c in o_cols:
         if c == INDEX_COL:
-            o_select.append(f'o.{INDEX_COL} AS {INDEX_COL}')
+            o_select.append(f"o.{INDEX_COL} AS {INDEX_COL}")
         elif c in target_cols:
             o_select.append(f'no."{c}" AS "{c}"')
         else:

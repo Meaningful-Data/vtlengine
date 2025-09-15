@@ -65,11 +65,11 @@ from vtlengine.Model import (
     DataComponent,
     Dataset,
     ExternalRoutine,
+    RelationProxy,
     Role,
     Scalar,
     ScalarSet,
     ValueDomain,
-    RelationProxy,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
@@ -1342,7 +1342,11 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = RelationProxy(self.ruleset_dataset.data) if self.ruleset_dataset.data is not None else None
+            self.rule_data = (
+                RelationProxy(self.ruleset_dataset.data)
+                if self.ruleset_dataset.data is not None
+                else None
+            )
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
@@ -1745,7 +1749,13 @@ class InterpreterAnalyzer(ASTTemplate):
             code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
             # code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
             # code_data = code_data.drop_duplicates().reset_index(drop=True)
-            code_data = duckdb_merge(code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers).distinct().reset_index(drop=True)
+            code_data = (
+                duckdb_merge(
+                    code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
+                )
+                .distinct()
+                .reset_index(drop=True)
+            )
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode

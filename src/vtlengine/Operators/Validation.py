@@ -13,7 +13,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
-    duckdb_select,
     empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
@@ -95,8 +94,8 @@ class Check(Operator):
         if validation_element.data is None:
             validation_element.data = empty_relation()
 
-        error_code_ = repr(error_code) if error_code is not None else "NULL"
-        error_level_ = repr(error_level) if error_level is not None else "NULL"
+        repr(error_code) if error_code is not None else "NULL"
+        repr(error_level) if error_level is not None else "NULL"
 
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()

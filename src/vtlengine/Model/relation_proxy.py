@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Sequence, Optional
+from typing import Any, Optional, Sequence
 
 from duckdb import DuckDBPyRelation  # type: ignore
+
 from vtlengine.connection import con
 
 INDEX_COL = "__index__"
@@ -12,7 +13,7 @@ INDEX_COL = "__index__"
 @dataclass
 class RelationProxy:
     _relation: DuckDBPyRelation
-    __slots__ = ("_relation")
+    __slots__ = "_relation"
 
     def __init__(self, relation: DuckDBPyRelation, index: Optional[DuckDBPyRelation] = None):
         if index is not None and INDEX_COL in index.columns:
@@ -33,8 +34,10 @@ class RelationProxy:
         if hasattr(rel, name):
             attr = getattr(rel, name)
             if callable(attr):
+
                 def rel_wrapper(*args: Any, **kwargs: Any) -> Any:
                     return attr(*args, **kwargs)
+
                 self._wrap_relation(rel_wrapper)
             return attr
 
@@ -57,34 +60,40 @@ class RelationProxy:
             mask_rel = None
 
         if mask_rel is not None:
-            l = self.relation.set_alias('l')
-            m = mask_rel.set_alias('m')
+            l = self.relation.set_alias("l")
+            m = mask_rel.set_alias("m")
             data_cols = [c for c in m.columns if c != INDEX_COL]
 
             if len(data_cols) == 0:
                 # Treat relation as a list of indices; preserve given order
-                mpos = m.project(f'row_number() OVER () - 1 AS __pos__, {INDEX_COL}').set_alias('m')
-                joined = l.join(mpos, f'l.{INDEX_COL} = m.{INDEX_COL}', how='inner')
+                mpos = m.project(f"row_number() OVER () - 1 AS __pos__, {INDEX_COL}").set_alias("m")
+                joined = l.join(mpos, f"l.{INDEX_COL} = m.{INDEX_COL}", how="inner")
                 out_cols = [f'l."{c}" AS "{c}"' for c in self.all_columns]
-                return RelationProxy(joined.order('m.__pos__').project(", ".join(out_cols)))
+                return RelationProxy(joined.order("m.__pos__").project(", ".join(out_cols)))
 
             # Boolean mask relation (use first non-index column as mask)
             mask_col = data_cols[0]
-            joined = l.join(m, f'l.{INDEX_COL} = m.{INDEX_COL}', how='left')
+            joined = l.join(m, f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
             filtered = joined.filter(f'coalesce(m."{mask_col}", false)')
             out_cols = [f'l."{c}" AS "{c}"' for c in self.all_columns]
-            return RelationProxy(filtered.project(', '.join(out_cols)))
+            return RelationProxy(filtered.project(", ".join(out_cols)))
 
         if isinstance(key, Sequence) and not isinstance(key, str):
             # Boolean mask as Python sequence
             if len(key) > 0 and all(type(x) is bool for x in key):
                 data = list(enumerate(key))
-                m = con.values(data).project('column0 AS __pos__, column1 AS __flag__').set_alias('m')
-                l = self.relation.project(f'row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *').set_alias('l')
-                joined = l.join(m, 'l.__pos__ = m.__pos__', how='left')
-                filtered = joined.filter('coalesce(m.__flag__, false)')
+                m = (
+                    con.values(data)
+                    .project("column0 AS __pos__, column1 AS __flag__")
+                    .set_alias("m")
+                )
+                l = self.relation.project(
+                    f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
+                ).set_alias("l")
+                joined = l.join(m, "l.__pos__ = m.__pos__", how="left")
+                filtered = joined.filter("coalesce(m.__flag__, false)")
                 out_cols = [f'l."{c}" AS "{c}"' for c in self.all_columns]
-                return RelationProxy(filtered.project(', '.join(out_cols)))
+                return RelationProxy(filtered.project(", ".join(out_cols)))
 
             # List of columns
             if all(isinstance(x, str) for x in key):
@@ -101,20 +110,19 @@ class RelationProxy:
                 try:
                     # Preferred: build rows via UNNEST with bound parameters
                     idx = con.sql(
-                        "SELECT * FROM UNNEST(?, ?) AS t(__pos__, idx)",
-                        [pos_list, idx_list]
-                    ).set_alias('idx')
+                        "SELECT * FROM UNNEST(?, ?) AS t(__pos__, idx)", [pos_list, idx_list]
+                    ).set_alias("idx")
                 except Exception:
                     # Fallback: VALUES clause
                     values_str = ", ".join(f"({i}, {v})" for i, v in enumerate(idx_list))
                     idx = con.sql(
                         f"SELECT * FROM (VALUES {values_str}) AS t(__pos__, idx)"
-                    ).set_alias('idx')
+                    ).set_alias("idx")
 
-                l = self.relation.set_alias('l')
-                joined = l.join(idx, f'l.{INDEX_COL} = idx.idx', how='inner')
+                l = self.relation.set_alias("l")
+                joined = l.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
                 proj = [f'l."{c}" AS "{c}"' for c in self.all_columns]
-                result = joined.order('idx.__pos__').project(", ".join(proj))
+                result = joined.order("idx.__pos__").project(", ".join(proj))
                 return RelationProxy(result)
 
         raise TypeError(f"Unsupported key type for __getitem__: {type(key)!r}")
@@ -168,10 +176,9 @@ class RelationProxy:
         return int(self.relation.aggregate("count(*) AS cnt").execute().fetchone()[0])
 
     def __repr__(self) -> str:
-        return (f"RelationProxy(\n"
-                f"columns={self.relation.columns},\n"
-                f"data=\n{self.relation.limit(10)}\n"
-                f")")
+        return (
+            f"RelationProxy(\ncolumns={self.relation.columns},\ndata=\n{self.relation.limit(10)}\n)"
+        )
 
     @property
     def all_columns(self) -> list[str]:
@@ -183,7 +190,7 @@ class RelationProxy:
 
     @property
     def dtypes(self) -> dict[str, str]:
-        return {name: dtype for name, dtype in zip(self.relation.columns, self.relation.types)}
+        return dict(zip(self.relation.columns, self.relation.types))
 
     @property
     def index(self) -> DuckDBPyRelation:
@@ -197,7 +204,7 @@ class RelationProxy:
     def relation(self, value: DuckDBPyRelation) -> None:
         value = value.relation if isinstance(value, RelationProxy) else value
         if value is None:
-            a = 0
+            pass
         if INDEX_COL not in value.columns:
             value = value.project(f"*, row_number() OVER () - 1 AS {INDEX_COL}")
         self._relation = value
@@ -207,18 +214,23 @@ class RelationProxy:
         other_cols = [c for c in self.columns if c != col_name]
 
         # Relation-like value: align by index, take single data column
-        if isinstance(value, RelationProxy) or isinstance(value, DuckDBPyRelation):
-            r_rel = value.relation if isinstance(value, RelationProxy) else RelationProxy(value).relation
+        if isinstance(value, (RelationProxy, DuckDBPyRelation)):
+            r_rel = (
+                value.relation
+                if isinstance(value, RelationProxy)
+                else RelationProxy(value).relation
+            )
             r = r_rel.set_alias("r")
             r_cols = [c for c in r.columns if c != INDEX_COL]
             if len(r_cols) == 0:
                 raise ValueError("Right-hand side relation has no data columns to assign")
-            if len(r_cols) > 1:
-                r_col = r_cols[0]
-            else:
-                r_col = r_cols[0]
+            r_col = r_cols[0] if len(r_cols) > 1 else r_cols[0]
             joined = l.join(r, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
-            proj_cols = [f'l.{INDEX_COL} AS {INDEX_COL}'] + [f'l."{c}" AS "{c}"' for c in other_cols] + [f'r."{r_col}" AS "{col_name}"']
+            proj_cols = (
+                [f"l.{INDEX_COL} AS {INDEX_COL}"]
+                + [f'l."{c}" AS "{c}"' for c in other_cols]
+                + [f'r."{r_col}" AS "{col_name}"']
+            )
             self.relation = joined.project(", ".join(proj_cols))
             return
 
@@ -226,25 +238,39 @@ class RelationProxy:
         if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
             expected = len(self)
             if len(value) != expected:
-                raise ValueError(f"Sequence length {len(value)} does not match relation length {expected}")
+                raise ValueError(
+                    f"Sequence length {len(value)} does not match relation length {expected}"
+                )
             data = list(enumerate(value))
             m = con.values(data).project("column0 AS __pos__, column1 AS __val__").set_alias("m")
-            lpos = l.project(f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *").set_alias("l")
+            lpos = l.project(
+                f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
+            ).set_alias("l")
             joined = lpos.join(m, "l.__pos__ = m.__pos__", how="left")
-            proj_cols = [f"l.{INDEX_COL} AS {INDEX_COL}"] + [f'l."{c}" AS "{c}"' for c in other_cols] + ["m.__val__ AS " + col_name]
+            proj_cols = (
+                [f"l.{INDEX_COL} AS {INDEX_COL}"]
+                + [f'l."{c}" AS "{c}"' for c in other_cols]
+                + ["m.__val__ AS " + col_name]
+            )
             self.relation = joined.project(", ".join(proj_cols))
             return
 
         # Scalar value: broadcast
         lit = self._to_sql_literal(value)
-        proj_cols = [f"{INDEX_COL}"] + [c for c in other_cols] + [f'{lit} AS "{col_name}"']
+        proj_cols = [f"{INDEX_COL}"] + list(other_cols) + [f'{lit} AS "{col_name}"']
         # Build projection explicitly to avoid duplicate column names
-        proj_expr = ", ".join([f'{INDEX_COL} AS {INDEX_COL}'] + [f'"{c}" AS "{c}"' for c in other_cols] + [f'{lit} AS "{col_name}"'])
+        proj_expr = ", ".join(
+            [f"{INDEX_COL} AS {INDEX_COL}"]
+            + [f'"{c}" AS "{c}"' for c in other_cols]
+            + [f'{lit} AS "{col_name}"']
+        )
         self.relation = l.project(proj_expr)
 
     def _assign_rows(self, key: Any, value: Any) -> None:
         # Only scalar RHS supported for row-wise assignment
-        if isinstance(value, (RelationProxy, DuckDBPyRelation, Sequence)) and not isinstance(value, (str, bytes)):
+        if isinstance(value, (RelationProxy, DuckDBPyRelation, Sequence)) and not isinstance(
+            value, (str, bytes)
+        ):
             raise NotImplementedError("Row-wise assignment currently supports only scalar values")
 
         lit = self._to_sql_literal(value)
@@ -260,7 +286,7 @@ class RelationProxy:
             if not m_cols:
                 # Treat as index-list relation: select rows where index exists in 'm'
                 joined = l.join(m, f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
-                cond = f'm.{INDEX_COL} IS NOT NULL'
+                cond = f"m.{INDEX_COL} IS NOT NULL"
             else:
                 mask_col = m_cols[0]
                 joined = l.join(m, f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
@@ -271,14 +297,24 @@ class RelationProxy:
             # Boolean mask list
             if len(key) > 0 and all(type(x) is bool for x in key):
                 data = list(enumerate(key))
-                m = con.values(data).project("column0 AS __pos__, column1 AS __flag__").set_alias("m")
-                lpos = l.project(f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *").set_alias("l")
+                m = (
+                    con.values(data)
+                    .project("column0 AS __pos__, column1 AS __flag__")
+                    .set_alias("m")
+                )
+                lpos = l.project(
+                    f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
+                ).set_alias("l")
                 joined = lpos.join(m, "l.__pos__ = m.__pos__", how="left")
                 cond = "coalesce(m.__flag__, false)"
             # Index list (ints)
             elif all(isinstance(x, int) and not isinstance(x, bool) for x in key):
                 idx_data = [(int(i), True) for i in key]
-                m = con.values(idx_data).project("column0 AS idx, column1 AS __flag__").set_alias("m")
+                m = (
+                    con.values(idx_data)
+                    .project("column0 AS idx, column1 AS __flag__")
+                    .set_alias("m")
+                )
                 joined = l.join(m, f"l.{INDEX_COL} = m.idx", how="left")
                 cond = "coalesce(m.__flag__, false)"
             else:
@@ -298,7 +334,9 @@ class RelationProxy:
         left = self.relation
         left_cols = [c for c in left.columns if c != INDEX_COL]
         if len(left_cols) != 1:
-            raise ValueError("Element-wise comparison requires a single data column on the left side")
+            raise ValueError(
+                "Element-wise comparison requires a single data column on the left side"
+            )
 
         # Other is a RelationProxy or DuckDBPyRelation: align by index and compare columns
         if isinstance(other, RelationProxy):
@@ -311,7 +349,9 @@ class RelationProxy:
         if right is not None:
             r_cols = [c for c in right.columns if c != INDEX_COL]
             if len(r_cols) != 1:
-                raise ValueError("Element-wise comparison requires a single data column on the right side")
+                raise ValueError(
+                    "Element-wise comparison requires a single data column on the right side"
+                )
             l = left.set_alias("l")
             r = right.set_alias("r")
             expr = f"(l.{left_cols[0]} {op} r.{r_cols[0]}) AS __mask__"
@@ -365,13 +405,17 @@ class RelationProxy:
         expr = f'("{self.columns[0]}" IS NULL) AS __mask__'
         return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
 
-    def project(self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True) -> "RelationProxy":
+    def project(
+        self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True
+    ) -> "RelationProxy":
         if include_index or len(self.columns) == 0:
             projection = self._ensure_index(projection)
         return self.relation.project(projection)
 
     def reset_index(self, **kwargs: Any) -> "RelationProxy":
-        new_rel = self.relation.project(f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}")
+        new_rel = self.relation.project(
+            f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}"
+        )
         return RelationProxy(new_rel)
 
     def drop(self, columns: Any) -> "RelationProxy":

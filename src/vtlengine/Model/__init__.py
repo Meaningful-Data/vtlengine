@@ -18,7 +18,6 @@ from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data,
 
 from .relation_proxy import RelationProxy
 
-
 INDEX_COL = "__index__"
 
 
@@ -71,8 +70,8 @@ class Role(Enum):
     IDENTIFIER = "Identifier"
     ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
-    
-    
+
+
 @dataclass
 class Component:
     """
@@ -137,7 +136,14 @@ class DataComponent:
     role: Role = Role.MEASURE
     nullable: bool = True
 
-    def __init__(self, name: str, data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]], data_type: Type[ScalarType], role: Role = Role.MEASURE, nullable: bool = True) -> None:
+    def __init__(
+        self,
+        name: str,
+        data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]],
+        data_type: Type[ScalarType],
+        role: Role = Role.MEASURE,
+        nullable: bool = True,
+    ) -> None:
         self.name = name
         self.data = data
         self.data_type = data_type
@@ -166,7 +172,9 @@ class DataComponent:
         elif value is None:
             self._data = None
         else:
-            raise ValueError("Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None")
+            raise ValueError(
+                "Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None"
+            )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataComponent):
@@ -259,10 +267,16 @@ class Dataset:
         elif value is None:
             self._data = None
         else:
-            raise ValueError("Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None")
+            raise ValueError(
+                "Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None"
+            )
 
-
-    def __init__(self, name: str, components: Dict[str, Component], data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]] = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        components: Dict[str, Component],
+        data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]] = None,
+    ) -> None:
         self.name = name
         self.components = components
         self.data = data
@@ -415,9 +429,7 @@ class Dataset:
             "components": {k: v.to_dict() for k, v in self.components.items()},
             "data": (
                 [
-                    dict(dict(
-                            zip([c for c in self.data.columns if c != INDEX_COL], row)
-                        ).items())
+                    dict(dict(zip([c for c in self.data.columns if c != INDEX_COL], row)).items())
                     for row in self.data.project(
                         ", ".join(quote_cols([c for c in self.data.columns if c != INDEX_COL]))
                     )
@@ -460,10 +472,12 @@ class Dataset:
             if INDEX_COL in tmp.columns:
                 tmp = tmp.set_index(INDEX_COL)
             data = tmp
-        return (f"Dataset("
-                f"\nname={self.name},"
-                f"\ncomponents={list(self.components.keys())},"
-                f"\ndata=\n{data})")
+        return (
+            f"Dataset("
+            f"\nname={self.name},"
+            f"\ncomponents={list(self.components.keys())},"
+            f"\ndata=\n{data})"
+        )
 
     @property
     def df(self) -> pd.DataFrame:
@@ -481,9 +495,7 @@ class Dataset:
         Convert underlying data to DuckDB relation if it is a pandas DataFrame.
         (RelationProxy already wraps a DuckDBPyRelation.)
         """
-        if (
-            self.data is None or isinstance(self.data, (RelationProxy, DuckDBPyRelation))
-        ):
+        if self.data is None or isinstance(self.data, (RelationProxy, DuckDBPyRelation)):
             return
         self.data = con.from_df(self.data)
 

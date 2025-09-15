@@ -12,9 +12,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
-    duckdb_concat,
     duckdb_drop,
-    duckdb_fill,
     duckdb_rename,
     duckdb_select,
     empty_relation,
