@@ -356,21 +356,21 @@ class Case(Operator):
                 cond_series = condition.data.reindex(full_index)
                 notna_mask = cond_series.notna()
                 true_mask = cond_series == True
-                temp = result.data.copy()
-                temp[notna_mask & true_mask] = value_series[notna_mask & true_mask]
-                result.data = temp
+                result_data = result.data.copy()
+                result_data[notna_mask & true_mask] = value_series[notna_mask & true_mask]
+                result.data = result_data
 
-            stacked_conditions = [c.data.reindex(full_index).fillna(False) for c in conditions]
-            condition_mask_else = (
-                ~np.logical_or.reduce(stacked_conditions)
-                if stacked_conditions
+            conditions_stack = [c.data.reindex(full_index).fillna(False) for c in conditions]
+            else_cond_mask = (
+                ~np.logical_or.reduce(conditions_stack)
+                if conditions_stack
                 else pd.Series(True, index=full_index)
             )
             if isinstance(elseOp, Scalar):
                 else_series = pd.Series(elseOp.value, index=full_index)
             else:
                 else_series = elseOp.data.reindex(full_index)
-            result.data[condition_mask_else] = else_series[condition_mask_else]
+            result.data[else_cond_mask] = else_series[else_cond_mask]
 
         elif isinstance(result, Dataset):
             identifiers = result.get_identifiers_names()
@@ -391,30 +391,28 @@ class Case(Operator):
                     for col in columns:
                         result.data.loc[cond_mask, col] = thenOps[i].value
                 else:
-                    branch_df = thenOps[i].data.reindex(full_index)
-                    result.data.loc[cond_mask, columns] = branch_df.loc[cond_mask, columns]
+                    cond_df = thenOps[i].data.reindex(full_index)
+                    result.data.loc[cond_mask, columns] = cond_df.loc[cond_mask, columns]
 
-            stacked_masks = [
+            then_cond_masks = [
                 c.data[next(x.name for x in c.get_measures() if x.data_type == Boolean)]
                 .reindex(full_index)
                 .fillna(False)
                 .astype(bool)
                 for c in conditions
             ]
-            condition_mask_else = (
-                ~np.logical_or.reduce(stacked_masks)
-                if stacked_masks
+            else_cond_mask = (
+                ~np.logical_or.reduce(then_cond_masks)
+                if then_cond_masks
                 else pd.Series(True, index=full_index)
             )
 
             if isinstance(elseOp, Scalar):
                 for col in columns:
-                    result.data.loc[condition_mask_else, col] = elseOp.value
+                    result.data.loc[else_cond_mask, col] = elseOp.value
             else:
                 else_df = elseOp.data.reindex(full_index)
-                result.data.loc[condition_mask_else, columns] = else_df.loc[
-                    condition_mask_else, columns
-                ]
+                result.data.loc[else_cond_mask, columns] = else_df.loc[else_cond_mask, columns]
 
         return result
 
