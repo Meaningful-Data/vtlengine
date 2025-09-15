@@ -354,10 +354,9 @@ class Case(Operator):
                 else:
                     value_series = thenOps[i].data.reindex(full_index)
                 cond_series = condition.data.reindex(full_index)
-                notna_mask = cond_series.notna()
-                true_mask = cond_series == True
+                cond_mask = cond_series.notna() & cond_series == True
                 result_data = result.data.copy()
-                result_data[notna_mask & true_mask] = value_series[notna_mask & true_mask]
+                result_data[cond_mask] = value_series[cond_mask]
                 result.data = result_data
 
             conditions_stack = [c.data.reindex(full_index).fillna(False) for c in conditions]
