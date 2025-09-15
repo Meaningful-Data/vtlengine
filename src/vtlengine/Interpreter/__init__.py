@@ -1088,7 +1088,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_condition = True
             cond = self.visit(case.condition)
             self.is_from_condition = False
+
             conditions.append(cond)
+            if isinstance(cond, Scalar):
+                then_result = self.visit(case.thenOp)
+                thenOps.append(then_result)
+                continue
 
             self.generate_then_else_datasets(copy(cond))
 
@@ -1599,11 +1604,10 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.else_condition_dataset is None:
             self.else_condition_dataset = []
         if isinstance(condition, Dataset):
-            if (
-                len(condition.get_measures()) != 1
-                or condition.get_measures()[0].data_type != BASIC_TYPES[bool]
-            ):
-                raise ValueError("Only one boolean measure is allowed on condition dataset")
+            if len(condition.get_measures()) != 1:
+                raise SemanticError("1-1-1-4", op="condition")
+            if condition.get_measures()[0].data_type != BASIC_TYPES[bool]:
+                raise SemanticError("2-1-9-5", op="condition", name=condition.name)
             name = condition.get_measures_names()[0]
             if condition.data is None or condition.data.empty:
                 data = None
@@ -1613,7 +1617,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             if condition.data_type != BASIC_TYPES[bool]:
-                raise ValueError("Only boolean scalars are allowed on data component condition")
+                raise SemanticError("2-1-9-4", op="condition", name=condition.name)
             name = condition.name
             data = None if condition.data is None else condition.data
 
