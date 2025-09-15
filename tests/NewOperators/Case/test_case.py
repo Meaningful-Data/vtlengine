@@ -40,7 +40,9 @@ ds_param = [
         "19",
         'DS_r <- DS_1[calc identifier Id_2  := case when Me_1 = "S123" then "1220" else "DUMMY"];',
     ),
-    ("20", """
+    (
+        "20",
+        """
             DS_r <- DS_1[
                 calc Me_2 :=
                     case
@@ -48,7 +50,8 @@ ds_param = [
                         when Me_1 < -30 then case when Me_1 = 0 then 0 else Me_1 * 10
                         else if Me_1 <> 0 then Me_1 else 1
             ];
-        """),
+        """,
+    ),
 ]
 
 error_param = [
