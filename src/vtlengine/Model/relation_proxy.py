@@ -196,6 +196,8 @@ class RelationProxy:
     @relation.setter
     def relation(self, value: DuckDBPyRelation) -> None:
         value = value.relation if isinstance(value, RelationProxy) else value
+        if value is None:
+            a = 0
         if INDEX_COL not in value.columns:
             value = value.project(f"*, row_number() OVER () - 1 AS {INDEX_COL}")
         self._relation = value
@@ -354,6 +356,7 @@ class RelationProxy:
         df = rel.df()
         if INDEX_COL in df.columns:
             df = df.set_index(INDEX_COL)
+            df.index.name = None
         return df
 
     def isnull(self) -> "RelationProxy":

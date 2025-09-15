@@ -1342,7 +1342,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = RelationProxy(self.ruleset_dataset.data)
+            self.rule_data = RelationProxy(self.ruleset_dataset.data) if self.ruleset_dataset.data is not None else None
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
