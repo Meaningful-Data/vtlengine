@@ -3,6 +3,7 @@ from copy import copy
 from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -51,7 +52,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -733,7 +734,10 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        try:
+            result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
@@ -766,6 +770,8 @@ class Binary(Operator):
             exprs.append(apply_bin_op(cls, me.name, left, right))
 
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -826,6 +832,8 @@ class Binary(Operator):
 
         exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_component.data = comp_data.project(final_query)
         return result_component
 
@@ -1047,14 +1055,20 @@ class Unary(Operator):
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(operand)
         # result_scalar.value = cls.op_func(operand.value)
-        result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        try:
+            result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
-        result_component.data = result_data.project(
-            apply_unary_op(cls, operand.name, result_component.name)
-        )
+        try:
+            result_component.data = result_data.project(
+                apply_unary_op(cls, operand.name, result_component.name)
+            )
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_component

@@ -29,7 +29,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
 from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
@@ -73,16 +73,13 @@ class Binary(Operator.Binary):
     def op_func(cls, x: Any, y: Any) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
-        if isinstance(x, int) and isinstance(y, int):
-            if cls.op == DIV and y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
-            if cls.op == RANDOM:
-                return cls.py_op(x, y)
-        x = float(x)
-        y = float(y)
         # Handles precision to avoid floating point errors
         if cls.op == DIV and y == 0:
-            raise SemanticError("2-1-15-6", op=cls.op, value=y)
+            raise RunTimeError("2-1-15-6", value=y)
+        if isinstance(x, int) and isinstance(y, int) and cls.op == RANDOM:
+            return cls.py_op(x, y)
+        x = float(x)
+        y = float(y)
 
         getcontext().prec = 10
         decimal_value = cls.py_op(Decimal(x), Decimal(y))
