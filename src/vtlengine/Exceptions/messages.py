@@ -16,7 +16,7 @@ centralised_messages = {
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
     "0-1-2-6": "Input does not exist: {input}.",
-    "0-1-2-7": "Invalid input file. Input must be a Path or an S3 URI",
+    "0-1-2-7": "Invalid input file. Input must be a Path or HTTP/S3 URL string.",
     "0-1-2-8": "Invalid input file. Input must be a dict or Path object",
     "0-1-2-9": "Invalid input file. Input must have a {ext} extension",
     "0-1-2-10": "Invalid input file. Input is not a Path object",
