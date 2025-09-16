@@ -256,13 +256,12 @@ class RelationProxy:
             return
 
         # Scalar value: broadcast
-        lit = self._to_sql_literal(value)
-        proj_cols = [f"{INDEX_COL}"] + list(other_cols) + [f'{lit} AS "{col_name}"']
+        value = self._to_sql_literal(value)
         # Build projection explicitly to avoid duplicate column names
         proj_expr = ", ".join(
             [f"{INDEX_COL} AS {INDEX_COL}"]
             + [f'"{c}" AS "{c}"' for c in other_cols]
-            + [f'{lit} AS "{col_name}"']
+            + [f'{value} AS "{col_name}"']
         )
         self.relation = l.project(proj_expr)
 
@@ -273,7 +272,7 @@ class RelationProxy:
         ):
             raise NotImplementedError("Row-wise assignment currently supports only scalar values")
 
-        lit = self._to_sql_literal(value)
+        value = self._to_sql_literal(value)
         l = self.relation.set_alias("l")
         cond = None
         joined = None
@@ -326,7 +325,7 @@ class RelationProxy:
         # Build projection with CASE expressions per data column
         proj_cols = [f"l.{INDEX_COL} AS {INDEX_COL}"]
         for c in self.columns:
-            proj_cols.append(f'CASE WHEN "{cond}" THEN {lit} ELSE l."{c}" END AS "{c}"')
+            proj_cols.append(f'CASE WHEN "{cond}" THEN {value} ELSE l."{c}" END AS "{c}"')
         self.relation = joined.project(", ".join(proj_cols))
 
     def _binary_compare(self, other: Any, op: str) -> "RelationProxy":
@@ -360,8 +359,8 @@ class RelationProxy:
             return RelationProxy(joined.project(proj))
 
         # Other is a scalar: compare left column with literal
-        lit = self._to_sql_literal(other)
-        expr = f"({left_cols[0]} {op} {lit}) AS __mask__"
+        value = self._to_sql_literal(other)
+        expr = f"({left_cols[0]} {op} {value}) AS __mask__"
         proj = f"{INDEX_COL}, {expr}"
         return RelationProxy(left.project(proj))
 
@@ -387,6 +386,9 @@ class RelationProxy:
 
     def _wrap_relation(self, value: Any) -> Any:
         return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
+
+    def clean_exec_graph(self):
+        self.relation.execute().fetchall()
 
     def distinct(self) -> "RelationProxy":
         return RelationProxy(self.project(include_index=False).distinct())
