@@ -133,6 +133,15 @@ class InputValidationException(VTLEngineException):
             super().__init__(message, lino, colno)
 
 
+class VtlEngineRemoteExtensionException(VTLEngineException):
+    """Exception for errors related to DuckDB extensions like httpfs."""
+
+    @classmethod
+    def remote_access_disabled(cls) -> "VtlEngineRemoteExtensionException":
+        message = "Remote access to files and extensions is currently disabled. "
+        return cls(message)
+
+
 def check_key(field: str, dict_keys: Any, key: str) -> None:
     if key not in dict_keys:
         closest_key = find_closest_key(dict_keys, key)
