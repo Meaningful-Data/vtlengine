@@ -693,12 +693,15 @@ class Binary(Operator):
 
         # Measures are the same, using left operand measures names
         transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        to_exclude = set()
         for me in left_operand.get_measures():
             if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type in TIME_TYPES:
                 transformations.append(f"""
-                    cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
-                    cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
+                    cast_time_types('{me.data_type.__name__}', "{me.name}_x") AS "{me.name}_x",
+                    cast_time_types('{me.data_type.__name__}', "{me.name}_y") AS "{me.name}_y"
                 """)
+                to_exclude.add(f"{me.name}_x")
+                to_exclude.add(f"{me.name}_y")
             left, right = (
                 (f"{me.name}_y", f"{me.name}_x")
                 if use_right_as_base
@@ -708,6 +711,9 @@ class Binary(Operator):
 
         final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
+
+        if to_exclude:
+            result_data = result_data.project(f"* EXCLUDE ({', '.join(sorted(to_exclude))})")
 
         # Delete attributes from the result data
         attributes = list(

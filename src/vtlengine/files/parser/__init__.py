@@ -214,6 +214,8 @@ def load_datapoints(
 
         header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
         header = header_rel.columns
+        if len(header) == 1 and ',' in header[0]:
+            header = [h.strip() for h in header[0].split(',')]
         # Lazy CSV read
         # with open(path_str, mode="r", encoding="utf-8") as file:
         #     csv_reader = csv.reader(file)
