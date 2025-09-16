@@ -46,37 +46,28 @@ class RelationProxy:
         ) from None
 
     def __getitem__(self, key: Any) -> "RelationProxy":
-        # str: select column
         if isinstance(key, str):
-            proj = ", ".join([INDEX_COL, key])
-            return RelationProxy(self.relation.project(proj))
+            if key == INDEX_COL:
+                return RelationProxy(self.relation.project(INDEX_COL))
+            return RelationProxy(self.relation.project(f'{INDEX_COL}, "{key}"'))
 
-        # RelationProxy or DuckDBPyRelation: boolean mask or index-list relation
-        mask_rel: Optional[DuckDBPyRelation] = None
-        if isinstance(key, RelationProxy):
-            mask_rel = key.relation
-        elif isinstance(key, DuckDBPyRelation):
-            mask_rel = key
-
-        if mask_rel is not None:
+        if isinstance(key, (RelationProxy, DuckDBPyRelation)):
+            m_rel = key.relation if isinstance(key, RelationProxy) else key
             l = self.relation.set_alias("l")
-            m = mask_rel.set_alias("m")
+            m = m_rel.set_alias("m")
             data_cols = [c for c in m.columns if c != INDEX_COL]
 
             if len(data_cols) == 0:
-                # Treat relation as a list of index; preserve given order
                 mpos = m.project(f"row_number() OVER () - 1 AS __pos__, {INDEX_COL}").set_alias("m")
                 joined = l.join(mpos, f"l.{INDEX_COL} = m.{INDEX_COL}", how="inner")
                 return RelationProxy(joined.order("m.__pos__").project("l.*"))
 
-            # Boolean mask relation (use first non-index column as mask)
             mask_col = data_cols[0]
             m_true = m.filter(f'coalesce(m."{mask_col}", false)')
             joined = l.join(m_true, f"l.{INDEX_COL} = m.{INDEX_COL}", how="semi")
             return RelationProxy(joined)
 
-        # Boolean mask as Python sequence
-        if isinstance(key, Sequence) and not isinstance(key, str):
+        if isinstance(key, Sequence) and not isinstance(key, (str, bytes)):
             if all(isinstance(x, str) for x in key):
                 cols = [c for c in key if c in self.relation.columns and c != INDEX_COL]
                 if not cols:
@@ -84,17 +75,13 @@ class RelationProxy:
                 proj = ", ".join([INDEX_COL] + [f'"{c}"' for c in cols])
                 return RelationProxy(self.relation.project(proj))
 
-            # List/tuple of indices (ints): align by index and preserve order of the key
             if all(isinstance(x, int) and not isinstance(x, bool) for x in key):
                 idx_list = [int(x) for x in key]
                 if not idx_list:
                     return RelationProxy(self.relation.limit(0))
 
-                values_str = ", ".join(f"({i}, {v})" for i, v in enumerate(idx_list))
-                idx = con.sql(
-                    f"SELECT * FROM (VALUES {values_str}) AS t(__pos__, idx)"
-                ).set_alias("idx")
-
+                data = list(enumerate(idx_list))
+                idx = con.values(data).project("column0 AS __pos__, column1 AS idx").set_alias("idx")
                 l = self.relation.set_alias("l")
                 joined = l.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
                 return RelationProxy(joined.order("idx.__pos__").project("l.*"))
