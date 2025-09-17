@@ -230,7 +230,6 @@ class RelationProxy:
         self.relation = l.project(proj_expr)
 
     def _assign_rows(self, key: Any, value: Any) -> None:
-        # Only scalar RHS supported for row-wise assignment
         if isinstance(value, (RelationProxy, DuckDBPyRelation, Sequence)) and not isinstance(
             value, (str, bytes)
         ):
@@ -238,58 +237,53 @@ class RelationProxy:
 
         value = self._to_sql_literal(value)
         l = self.relation.set_alias("l")
-        cond = None
-        joined = None
+        cond: Optional[str] = None
+        joined: Optional[DuckDBPyRelation] = None
 
-        # Mask is Relation/DuckDB relation
         if isinstance(key, (RelationProxy, DuckDBPyRelation)):
             m_rel = key.relation if isinstance(key, RelationProxy) else RelationProxy(key).relation
             m = m_rel.set_alias("m")
             m_cols = [c for c in m.columns if c != INDEX_COL]
             if not m_cols:
-                # Treat as index-list relation: select rows where index exists in 'm'
-                joined = l.join(m, f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
+                joined = l.join(m.project(INDEX_COL).set_alias("m"), f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
                 cond = f"m.{INDEX_COL} IS NOT NULL"
             else:
                 mask_col = m_cols[0]
-                joined = l.join(m, f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
+                joined = l.join(
+                    m.project(f'{INDEX_COL}, "{mask_col}"').set_alias("m"),
+                    f"l.{INDEX_COL} = m.{INDEX_COL}",
+                    how="left",
+                )
                 cond = f'coalesce(m."{mask_col}", false)'
 
-        # Mask is a Python sequence
-        elif isinstance(key, Sequence) and not isinstance(key, str):
-            # Boolean mask list
+        elif isinstance(key, Sequence) and not isinstance(key, (str, bytes)):
             if len(key) > 0 and all(type(x) is bool for x in key):
-                data = list(enumerate(key))
-                m = (
-                    con.values(data)
-                    .project("column0 AS __pos__, column1 AS __flag__")
-                    .set_alias("m")
-                )
+                true_pos = [i for i, f in enumerate(key) if f]
+                if not true_pos:
+                    return
+                m = con.values([(i,) for i in true_pos]).project("column0 AS __pos__").set_alias("m")
                 lpos = l.project(
                     f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
                 ).set_alias("l")
                 joined = lpos.join(m, "l.__pos__ = m.__pos__", how="left")
-                cond = "coalesce(m.__flag__, false)"
-            # Index list (ints)
+                cond = "m.__pos__ IS NOT NULL"
+
             elif all(isinstance(x, int) and not isinstance(x, bool) for x in key):
-                idx_data = [(int(i), True) for i in key]
-                m = (
-                    con.values(idx_data)
-                    .project("column0 AS idx, column1 AS __flag__")
-                    .set_alias("m")
-                )
+                if not key:
+                    return
+                m = con.values([(int(i),) for i in key]).project("column0 AS idx").set_alias("m")
                 joined = l.join(m, f"l.{INDEX_COL} = m.idx", how="left")
-                cond = "coalesce(m.__flag__, false)"
+                cond = "m.idx IS NOT NULL"
+
             else:
                 raise TypeError("Unsupported sequence type for row-wise assignment")
-
         else:
             raise TypeError(f"Unsupported key type for row-wise assignment: {type(key)!r}")
 
-        # Build projection with CASE expressions per data column
-        proj_cols = [f"l.{INDEX_COL} AS {INDEX_COL}"]
-        for c in self.columns:
-            proj_cols.append(f'CASE WHEN "{cond}" THEN {value} ELSE l."{c}" END AS "{c}"')
+        proj_cols = [f"l.{INDEX_COL} AS {INDEX_COL}"] + [
+            f'CASE WHEN {cond} THEN {value} ELSE l."{c}" END AS "{c}"' for c in self.columns
+        ]
+        assert joined is not None
         self.relation = joined.project(", ".join(proj_cols))
 
     def _binary_compare(self, other: Any, op: str) -> "RelationProxy":
