@@ -137,6 +137,11 @@ class VtlEngineRemoteExtensionException(VTLEngineException):
     """Exception for errors related to DuckDB extensions like httpfs."""
 
     @classmethod
+    def local_access_disabled(cls) -> "VtlEngineRemoteExtensionException":
+        message = "Local access to files and extensions is currently disabled. "
+        return cls(message)
+
+    @classmethod
     def remote_access_disabled(cls) -> "VtlEngineRemoteExtensionException":
         message = "Remote access to files and extensions is currently disabled. "
         return cls(message)
