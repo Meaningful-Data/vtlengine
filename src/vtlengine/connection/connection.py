@@ -14,7 +14,7 @@ BASE_PATH = Path(__file__).resolve().parents[3]
 # BASE_DATABASE = str(Path(os.getenv("DUCKDB_DATABASE", BASE_PATH / "vtl_duckdb.db")).resolve())
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
 BASE_TEMP_DIRECTORY = str(Path(os.getenv("DUCKDB_TEMP_DIRECTORY", BASE_PATH / ".tmp")))
-BASE_MEMORY_LIMIT = "4GB"
+BASE_MEMORY_LIMIT = "1GB"
 # TODO: uncomment the following line to use the memory limit by env-var
 # total_memory = psutil.virtual_memory().total
 # memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
@@ -28,7 +28,7 @@ class ConnectionManager:
     _memory_limit = BASE_MEMORY_LIMIT
     _plan_format = PLAN_FORMAT
     _temp_directory: str = BASE_TEMP_DIRECTORY
-    _threads = None
+    _threads = 1
 
     @classmethod
     def configure(
@@ -58,7 +58,7 @@ class ConnectionManager:
             config_dict = {
                 "memory_limit": cls._memory_limit,
                 "temp_directory": cls._temp_directory,
-                "preserve_insertion_order": True,
+                "preserve_insertion_order": False,
             }
             cls._connection = duckdb.connect(database=cls._database, config=config_dict)
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
