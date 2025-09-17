@@ -134,9 +134,6 @@ class RelationProxy:
         return self._binary_compare(other, ">=")
 
     def __len__(self) -> int:
-        # print(f"\nOLD EXEC GRAPH:\n{self.relation.explain()}")
-        # self.clean_exec_graph()
-        # print(f"\nNEW EXEC GRAPH:\n{self.relation.explain()}")
         return int(self.relation.aggregate("count(*) AS cnt").execute().fetchone()[0])
 
     def __repr__(self) -> str:
@@ -175,59 +172,34 @@ class RelationProxy:
 
     def _assign_column(self, col_name: str, value: Any) -> None:
         l = self.relation.set_alias("l")
-        other_cols = [c for c in self.columns if c != col_name]
+        has_col = col_name in self.columns
+        base_proj = f'l.* EXCLUDE "{col_name}"' if has_col else "l.*"
 
-        # Relation-like value: align by index, take single data column
         if isinstance(value, (RelationProxy, DuckDBPyRelation)):
-            r_rel = (
-                value.relation
-                if isinstance(value, RelationProxy)
-                else RelationProxy(value).relation
-            )
+            r_rel = value.relation if isinstance(value, RelationProxy) else RelationProxy(value).relation
             r = r_rel.set_alias("r")
             r_cols = [c for c in r.columns if c != INDEX_COL]
-            if len(r_cols) == 0:
+            if not r_cols:
                 raise ValueError("Right-hand side relation has no data columns to assign")
-            r_col = r_cols[0] if len(r_cols) > 1 else r_cols[0]
-            joined = l.join(r, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
-            proj_cols = (
-                [f"l.{INDEX_COL} AS {INDEX_COL}"]
-                + [f'l."{c}" AS "{c}"' for c in other_cols]
-                + [f'r."{r_col}" AS "{col_name}"']
-            )
-            self.relation = joined.project(", ".join(proj_cols))
+            r_col = r_cols[0]
+            r_min = r.project(f'{INDEX_COL}, "{r_col}"').set_alias("r")
+            joined = l.join(r_min, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
+            self.relation = joined.project(f'{base_proj}, r."{r_col}" AS "{col_name}"')
             return
 
-        # Sequence value: align by position
         if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
             expected = len(self)
             if len(value) != expected:
-                raise ValueError(
-                    f"Sequence length {len(value)} does not match relation length {expected}"
-                )
+                raise ValueError(f"Sequence length {len(value)} does not match relation length {expected}")
             data = list(enumerate(value))
             m = con.values(data).project("column0 AS __pos__, column1 AS __val__").set_alias("m")
-            lpos = l.project(
-                f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
-            ).set_alias("l")
+            lpos = l.project(f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *").set_alias("l")
             joined = lpos.join(m, "l.__pos__ = m.__pos__", how="left")
-            proj_cols = (
-                [f"l.{INDEX_COL} AS {INDEX_COL}"]
-                + [f'l."{c}" AS "{c}"' for c in other_cols]
-                + ["m.__val__ AS " + col_name]
-            )
-            self.relation = joined.project(", ".join(proj_cols))
+            self.relation = joined.project(f'{base_proj}, m.__val__ AS "{col_name}"')
             return
 
-        # Scalar value: broadcast
         value = self._to_sql_literal(value)
-        # Build projection explicitly to avoid duplicate column names
-        proj_expr = ", ".join(
-            [f"{INDEX_COL} AS {INDEX_COL}"]
-            + [f'"{c}" AS "{c}"' for c in other_cols]
-            + [f'{value} AS "{col_name}"']
-        )
-        self.relation = l.project(proj_expr)
+        self.relation = l.project(f'{base_proj}, {value} AS "{col_name}"')
 
     def _assign_rows(self, key: Any, value: Any) -> None:
         if isinstance(value, (RelationProxy, DuckDBPyRelation, Sequence)) and not isinstance(
