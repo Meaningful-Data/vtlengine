@@ -1,3 +1,5 @@
+import os
+
 import duckdb
 
 from vtlengine.connection import con
@@ -12,13 +14,15 @@ ERROR_MESSAGE = (
 )
 
 
-def __check_s3_extra(allow_installation: bool = True) -> None:
+def __check_s3_extra() -> None:
+    prod_mode = os.getenv("PROD_MODE", "False").lower() in ("1", "true", "yes")
     try:
         con.execute("LOAD httpfs;")
     except duckdb.Error:
-        if allow_installation:
-            try:
-                con.execute("INSTALL httpfs;")
-                con.execute("LOAD httpfs;")
-            except duckdb.Error:
-                raise VtlEngineRemoteExtensionException.remote_access_disabled()
+        if prod_mode:
+            raise VtlEngineRemoteExtensionException.remote_access_disabled()
+        try:
+            con.execute("INSTALL httpfs;")
+            con.execute("LOAD httpfs;")
+        except duckdb.Error:
+            raise VtlEngineRemoteExtensionException.remote_access_disabled()
