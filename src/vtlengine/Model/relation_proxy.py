@@ -331,11 +331,22 @@ class RelationProxy:
             df.index.name = None
         return df
 
+    def drop(self, columns: Any) -> "RelationProxy":
+        drop_set = {columns} if isinstance(columns, str) else set(columns)
+        drop_set.discard(INDEX_COL)
+
+        keep_cols = [INDEX_COL] + [c for c in self.columns if c not in drop_set]
+        proj = ", ".join([f'"{c}"' for c in keep_cols])
+        return RelationProxy(self.relation.project(proj))
+
     def isnull(self) -> "RelationProxy":
         if len(self.columns) == 0:
             raise ValueError("No data columns to check for nulls")
         expr = f'("{self.columns[0]}" IS NULL) AS __mask__'
         return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
+
+    def is_empty(self):
+        pass
 
     def project(
         self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True
@@ -349,11 +360,3 @@ class RelationProxy:
             f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}"
         )
         return RelationProxy(new_rel)
-
-    def drop(self, columns: Any) -> "RelationProxy":
-        drop_set = {columns} if isinstance(columns, str) else set(columns)
-        drop_set.discard(INDEX_COL)
-
-        keep_cols = [INDEX_COL] + [c for c in self.columns if c not in drop_set]
-        proj = ", ".join([f'"{c}"' for c in keep_cols])
-        return RelationProxy(self.relation.project(proj))

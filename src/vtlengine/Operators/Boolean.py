@@ -22,7 +22,7 @@ class Binary(Operator.Binary):
     def apply_bin_op(cls, me_name: Optional[str], left: str, right: str) -> str:
         if me_name is None:
             return f"{cls.duck_op(left, right)}"
-        return f'{cls.duck_op(left, right)} AS "{me_name}"'
+        return f'{cls.duck_op(left, right)} AS {me_name}'
 
     @classmethod
     def apply_bin_op_scalar(cls, left: Optional[bool], right: Optional[bool]) -> str:

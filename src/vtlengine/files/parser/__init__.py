@@ -168,7 +168,7 @@ def check_duplicates(
     data: DuckDBPyRelation,
     dataset_name: str,
 ) -> None:
-    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    id_names = [f'"{name}"' for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if id_names:
         query = f"""
