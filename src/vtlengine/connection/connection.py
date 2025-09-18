@@ -29,6 +29,9 @@ class ConnectionManager:
     _plan_format = PLAN_FORMAT
     _temp_directory: str = BASE_TEMP_DIRECTORY
     _threads = None
+    _auto_install_extensions: bool = False
+    _auto_load_extensions: bool = False
+    _lock_configuration: bool = True
 
     @classmethod
     def configure(
@@ -38,6 +41,9 @@ class ConnectionManager:
         plan_format: str = PLAN_FORMAT,
         temp_directory: str = BASE_TEMP_DIRECTORY,
         threads: Optional[int] = None,
+        auto_install_extensions: bool = False,
+        auto_load_extensions: bool = False,
+        lock_configuration: bool = True,
     ) -> None:
         """
         Configures the database path and memory limit for DuckDB.
@@ -46,6 +52,9 @@ class ConnectionManager:
         cls._memory_limit = memory_limit
         cls._plan_format = plan_format
         cls._temp_directory = temp_directory
+        cls._auto_install_extensions = auto_install_extensions
+        cls._auto_load_extensions = auto_load_extensions
+        cls._lock_configuration = lock_configuration
         if threads is not None:
             cls._threads = threads
 
@@ -64,6 +73,13 @@ class ConnectionManager:
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
+
+            cls._connection.execute(
+                f"SET autoinstall_known_extensions={cls._auto_install_extensions};"
+            )
+            cls._connection.execute(f"SET autoload_known_extensions={cls._auto_load_extensions};")
+            cls._connection.execute(f"SET lock_configuration={cls._lock_configuration};")
+
             cls.register_functions()
         return cls._connection
 

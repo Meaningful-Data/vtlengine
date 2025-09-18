@@ -1,4 +1,9 @@
-import importlib.util
+import os
+
+import duckdb
+
+from vtlengine.connection import con
+from vtlengine.Exceptions import VtlEngineRemoteExtensionException
 
 EXTRAS_DOCS = "https://docs.vtlengine.meaningfuldata.eu/#installation"
 ERROR_MESSAGE = (
@@ -10,8 +15,14 @@ ERROR_MESSAGE = (
 
 
 def __check_s3_extra() -> None:
-    package_loc = importlib.util.find_spec("s3fs")
-    if package_loc is None:
-        raise ImportError(
-            ERROR_MESSAGE.format(extra_name="s3", extra_desc="over csv files using S3 URIs")
-        ) from None
+    prod_mode = os.getenv("PROD_MODE", "False").lower() in ("1", "true", "yes")
+    try:
+        con.execute("LOAD httpfs;")
+    except duckdb.Error:
+        if prod_mode:
+            raise VtlEngineRemoteExtensionException.remote_access_disabled()
+        try:
+            con.execute("INSTALL httpfs;")
+            con.execute("LOAD httpfs;")
+        except duckdb.Error:
+            raise VtlEngineRemoteExtensionException.remote_access_disabled()
