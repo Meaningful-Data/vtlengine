@@ -67,7 +67,6 @@ BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
 
-
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = [TimeInterval, TimePeriod, Duration]
 
@@ -174,7 +173,9 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     if cls.op == LOG:
         right, left = (left, right)
 
-    if op_token in OUTPUT_NUMERIC_FUNCTIONS:
+    if cls.op == DIV:
+        query = f"division_duck({left}, {right})"
+    elif op_token in OUTPUT_NUMERIC_FUNCTIONS:
         query = (
             f"round_duck({op_token}({left}, {right}),{ROUND_VALUE})"
             if token_position == LEFT
@@ -330,11 +331,11 @@ class Operator:
 
 
 def _id_type_promotion_join_keys(
-    c_left: Component,
-    c_right: Component,
-    join_key: str,
-    left_data: Optional[DuckDBPyRelation] = None,
-    right_data: Optional[DuckDBPyRelation] = None,
+        c_left: Component,
+        c_right: Component,
+        join_key: str,
+        left_data: Optional[DuckDBPyRelation] = None,
+        right_data: Optional[DuckDBPyRelation] = None,
 ) -> tuple[Optional[DuckDBPyRelation], Optional[DuckDBPyRelation]]:
     if left_data is None or right_data is None:
         return left_data, right_data
@@ -376,10 +377,10 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_series_scalar(
-        cls,
-        series: Any,
-        scalar: Scalar,
-        series_left: bool,
+            cls,
+            series: Any,
+            scalar: Scalar,
+            series_left: bool,
     ) -> Any:
         if scalar is None:
             return pd.Series(None, index=series.index)
@@ -505,7 +506,7 @@ class Binary(Operator):
 
     @classmethod
     def component_validation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
+            cls, left_operand: DataComponent, right_operand: DataComponent
     ) -> DataComponent:
         """
         Validates the compatibility between the types of the components and the operator
@@ -556,7 +557,7 @@ class Binary(Operator):
 
     @classmethod
     def component_set_validation(
-        cls, component: DataComponent, scalar_set: ScalarSet
+            cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         comp_name = VirtualCounter._new_dc_name()
         cls.type_validation(component.data_type, scalar_set.data_type)
@@ -611,7 +612,7 @@ class Binary(Operator):
 
     @classmethod
     def apply_return_type_dataset(
-        cls, result_dataset: Dataset, left_operand: Any, right_operand: Any
+            cls, result_dataset: Dataset, left_operand: Any, right_operand: Any
     ) -> None:
         """
         Used in dataset's validation.
@@ -641,9 +642,9 @@ class Binary(Operator):
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
-                changed_allowed is False
-                and is_mono_measure is False
-                and left_type.promotion_changed_type(result_data_type)
+                    changed_allowed is False
+                    and is_mono_measure is False
+                    and left_type.promotion_changed_type(result_data_type)
             ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
@@ -742,7 +743,7 @@ class Binary(Operator):
 
     @classmethod
     def dataset_scalar_evaluation(
-        cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
+            cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
     ) -> Dataset:
         result_dataset = cls.dataset_scalar_validation(dataset, scalar)
 
@@ -778,7 +779,7 @@ class Binary(Operator):
 
     @classmethod
     def component_evaluation(
-        cls, left_operand: DataComponent, right_operand: DataComponent
+            cls, left_operand: DataComponent, right_operand: DataComponent
     ) -> DataComponent:
         result_component = cls.component_validation(left_operand, right_operand)
         if left_operand.data is None or right_operand.data is None:
@@ -810,7 +811,7 @@ class Binary(Operator):
 
     @classmethod
     def component_scalar_evaluation(
-        cls, component: DataComponent, scalar: Scalar, component_left: bool = True
+            cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = component.data if component.data is not None else empty_relation()
@@ -824,7 +825,7 @@ class Binary(Operator):
 
         scalar_value = cast_time_types_scalar(cls.op, scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
-            scalar_value, int
+                scalar_value, int
         ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
         if isinstance(scalar_value, str):
@@ -852,7 +853,7 @@ class Binary(Operator):
 
     @classmethod
     def component_set_evaluation(
-        cls, component: DataComponent, scalar_set: ScalarSet
+            cls, component: DataComponent, scalar_set: ScalarSet
     ) -> DataComponent:
         result_component = cls.component_set_validation(component, scalar_set)
         result_data = component.data if component.data is not None else empty_relation()
@@ -1021,9 +1022,9 @@ class Unary(Operator):
                 if result_dataset.data is not None:
                     result_dataset.data.rename(columns={measure.name: component.name}, inplace=True)
             elif (
-                changed_allowed is False
-                and is_mono_measure is False
-                and operand_type.promotion_changed_type(result_data_type)
+                    changed_allowed is False
+                    and is_mono_measure is False
+                    and operand_type.promotion_changed_type(result_data_type)
             ):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:

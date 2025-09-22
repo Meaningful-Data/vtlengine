@@ -2,6 +2,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
+import duckdb
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
@@ -31,7 +32,7 @@ from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
 from vtlengine.connection import con
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, RunTimeError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -336,7 +337,10 @@ def run(
     # Recasting to pandas-like objects
     for operand in result.values():
         if isinstance(operand, Dataset) and operand.data is not None:
-            operand.data = operand.data.df()
+            try:
+                operand.data = operand.data.df()
+            except duckdb.Error as e:
+                raise RunTimeError.map_duckdb_error(e) from None
         elif isinstance(operand, DataComponent) and operand.data is not None:
             df = operand.data.df()
             operand.data = df.squeeze() if len(df.columns) == 1 else df

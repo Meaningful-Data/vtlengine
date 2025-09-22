@@ -3,6 +3,8 @@ import math
 from decimal import Decimal
 from typing import Optional, Union
 
+from vtlengine.Exceptions import RunTimeError
+
 
 def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
     """
@@ -123,3 +125,25 @@ def random_duck(seed: Optional[Union[float, int]], index: Optional[int]) -> Opti
     for _ in range(index):
         instance.random()
     return instance.random().__round__(6)
+
+
+def division_duck(a: Optional[Union[int, float]], b: Optional[Union[int, float]]) -> Optional[float]:
+    """
+    Custom DuckDB-safe division function.
+    Handles division by zero and overflow.
+
+    Args:
+        a (Optional[Union[int, float]]): Dividend
+        b (Optional[Union[int, float]]): Divisor
+
+    Returns:
+        Optional[float]: Result of a / b, or raises ValueError
+    """
+    if a is None or b is None:
+        return None
+
+    if b == 0:
+        raise RunTimeError(code="2-1-15-6", value_1=a, value_2=b, op="/")
+    result = a / b
+
+    return result

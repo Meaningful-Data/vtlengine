@@ -113,6 +113,9 @@ class InterpreterError(VTLEngineException):
             message = centralised_messages[code].format(**kwargs)
         super().__init__(message, None, None, code)
 
+RUNTIME_ERROR_CODES = {
+    "2-1-15-6": {"op": "/"},
+}
 
 class RunTimeError(VTLEngineException):
     output_message = " Please check transformation with output dataset "
@@ -135,11 +138,18 @@ class RunTimeError(VTLEngineException):
 
     @classmethod
     def map_duckdb_error(cls, e: "duckdb.Error", **kwargs) -> "RunTimeError":  # type: ignore[no-untyped-def]
+        msg_str = str(e)
+        if isinstance(e, duckdb.InvalidInputException) and "Python exception occurred while executing the UDF" in msg_str:
+            match = re.search(r"RunTimeError: \('(.+?)', '(\d+-\d+-\d+-\d+)'\)", msg_str)
+            if match:
+                message, code = match.groups()
+                return cls(code, **RUNTIME_ERROR_CODES[code])
         msg = str(e).lower()
         if isinstance(e, duckdb.ConversionException):
             print(e)
-        if '"inf"' in msg:
-            return cls("2-1-15-6", op="/", duckdb_msg=str(e), **kwargs)
+        for error_code in RUNTIME_ERROR_CODES:
+            if error_code in msg:
+                return cls(error_code, **RUNTIME_ERROR_CODES[error_code])
 
         match = re.search(r"Could not convert(?: (\w+))? '(.+?)' to (\w+)", str(e), re.IGNORECASE)
 
@@ -224,7 +234,6 @@ class DataLoadError(VTLEngineException):
             duckdb_msg=msg,
             **kwargs,
         )
-
 
 class InputValidationException(VTLEngineException):
     """

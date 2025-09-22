@@ -5,6 +5,7 @@ import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
+import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -27,7 +28,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck
+from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck, division_duck
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
@@ -74,8 +75,6 @@ class Binary(Operator.Binary):
         if pd.isnull(x) or pd.isnull(y):
             return None
         # Handles precision to avoid floating point errors
-        if cls.op == DIV and y == 0:
-            raise RunTimeError("2-1-15-6", value=y)
         if isinstance(x, int) and isinstance(y, int) and cls.op == RANDOM:
             return cls.py_op(x, y)
         x = float(x)
@@ -210,7 +209,8 @@ class Div(Binary):
     """  # noqa E501
 
     op = DIV
-    py_op = operator.truediv
+    py_op = division_duck
+    sql_op = "division_duck"
     return_type = Number
 
 
