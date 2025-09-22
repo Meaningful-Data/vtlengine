@@ -180,7 +180,7 @@ class TimePeriodHandler:
 
     @staticmethod
     def _check_year(year: int) -> None:
-        if year < 1900 or year > 9999:
+        if year < 0 or year > 9999:
             raise SemanticError("2-1-19-10", year=year)
             # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
 
