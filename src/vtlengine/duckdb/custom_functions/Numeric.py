@@ -127,7 +127,9 @@ def random_duck(seed: Optional[Union[float, int]], index: Optional[int]) -> Opti
     return instance.random().__round__(6)
 
 
-def division_duck(a: Optional[Union[int, float]], b: Optional[Union[int, float]]) -> Optional[float]:
+def division_duck(
+    a: Optional[Union[int, float]], b: Optional[Union[int, float]]
+) -> Optional[float]:
     """
     Custom DuckDB-safe division function.
     Handles division by zero and overflow.

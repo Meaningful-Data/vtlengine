@@ -113,9 +113,11 @@ class InterpreterError(VTLEngineException):
             message = centralised_messages[code].format(**kwargs)
         super().__init__(message, None, None, code)
 
+
 RUNTIME_ERROR_CODES = {
     "2-1-15-6": {"op": "/"},
 }
+
 
 class RunTimeError(VTLEngineException):
     output_message = " Please check transformation with output dataset "
@@ -139,7 +141,10 @@ class RunTimeError(VTLEngineException):
     @classmethod
     def map_duckdb_error(cls, e: "duckdb.Error", **kwargs) -> "RunTimeError":  # type: ignore[no-untyped-def]
         msg_str = str(e)
-        if isinstance(e, duckdb.InvalidInputException) and "Python exception occurred while executing the UDF" in msg_str:
+        if (
+            isinstance(e, duckdb.InvalidInputException)
+            and "Python exception occurred while executing the UDF" in msg_str
+        ):
             match = re.search(r"RunTimeError: \('(.+?)', '(\d+-\d+-\d+-\d+)'\)", msg_str)
             if match:
                 message, code = match.groups()
@@ -234,6 +239,7 @@ class DataLoadError(VTLEngineException):
             duckdb_msg=msg,
             **kwargs,
         )
+
 
 class InputValidationException(VTLEngineException):
     """

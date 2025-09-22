@@ -1,10 +1,10 @@
 from vtlengine.duckdb.custom_functions.Comparison import between_duck, isnull_duck
 from vtlengine.duckdb.custom_functions.Numeric import (
+    division_duck,
     random_duck,
     round_duck,
     round_to_ref,
     trunc_duck,
-    division_duck,
 )
 from vtlengine.duckdb.custom_functions.String import (
     instr_duck,

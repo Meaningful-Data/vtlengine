@@ -5,7 +5,6 @@ import warnings
 from decimal import Decimal, getcontext
 from typing import Any, Optional, Union
 
-import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -28,9 +27,14 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import Integer, Number, binary_implicit_promotion
-from vtlengine.duckdb.custom_functions.Numeric import random_duck, round_duck, trunc_duck, division_duck
+from vtlengine.duckdb.custom_functions.Numeric import (
+    division_duck,
+    random_duck,
+    round_duck,
+    trunc_duck,
+)
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, empty_relation
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 
