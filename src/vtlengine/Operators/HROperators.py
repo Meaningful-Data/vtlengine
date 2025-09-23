@@ -9,7 +9,7 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -190,9 +190,16 @@ class HRBinNumeric(Operators.Binary):
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
         # TODO: remove type ignore on HROperators issue
-        result_data = cls.apply_operation_two_series(left.data, right.data)  # type: ignore[attr-defined]
+        name = f"{left.name}{cls.op}{right.name}"
+        left_rel = duckdb_rename(left.data, {left.data.columns[0]: "left"})
+        right_rel = duckdb_rename(right.data, {right.data.columns[0]: "right"})
+
+        expr = Operators.apply_bin_op(cls, f'"{name}"', '"left"', '"right"')
+        result_data = duckdb_concat(left_rel, right_rel)
+        result_data = result_data.project(expr)
+
         return DataComponent(
-            name=f"{left.name}{cls.op}{right.name}",
+            name=name,
             data=result_data,
             data_type=left.data_type,
             role=left.role,

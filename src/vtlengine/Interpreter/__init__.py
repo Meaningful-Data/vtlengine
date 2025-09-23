@@ -1745,7 +1745,7 @@ class InterpreterAnalyzer(ASTTemplate):
             rel = rel[condition].reset_index(drop=True)
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in rel[hr_component].values:
+        if node.value in rel[hr_component]:
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
