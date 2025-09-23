@@ -558,12 +558,6 @@ class ComparisonBugs(BugHelper):
             references_names=references_names,
             vd_names=vd_names,
         )
-        self.BaseTest(
-            code=code,
-            number_inputs=number_inputs,
-            references_names=references_names,
-            vd_names=vd_names,
-        )
 
     def test_GL_88_2(self):
         """
