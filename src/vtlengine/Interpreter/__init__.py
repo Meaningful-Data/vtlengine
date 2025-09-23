@@ -55,6 +55,7 @@ from vtlengine.duckdb.duckdb_utils import (
     duckdb_merge,
     duckdb_rename,
     duckdb_select,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
@@ -923,7 +924,7 @@ class InterpreterAnalyzer(ASTTemplate):
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
-                data = operand.data[measure.name] if operand.data is not None else None
+                data = operand.data[measure.name] if operand.data is not None else empty_relation(measure.name)
                 # Getting role from encoded information
                 # (handling also UDO params as it is present in the value of the mapping)
                 if self.udo_params is not None and operand.name in self.udo_params[-1].values():
