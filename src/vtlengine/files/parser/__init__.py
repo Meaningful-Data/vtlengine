@@ -2,12 +2,13 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+import duckdb
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
@@ -38,7 +39,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
-        raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
+        raise DataLoadError(code="0-1-2-3", component=duplicates)
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
     comps_missing: Union[str, List[str]] = (
@@ -109,7 +110,7 @@ def _validate_duckdb(
     for col in components:
         if col not in data_columns:
             if not components[col].nullable:
-                raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
+                raise DataLoadError(code="0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
             data = data.project(f'*, NULL AS "{col}"')
 
@@ -159,7 +160,7 @@ def check_nulls(
     for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
             if col in id_names:
-                raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
+                raise DataLoadError(code="0-1-1-4", null_identifier=col, name=dataset_name)
             raise SemanticError(code="0-1-1-15", measure=col, name=dataset_name)
 
 
@@ -230,17 +231,20 @@ def load_datapoints(
         }
 
         # Read the CSV file
-        rel = con.read_csv(
-            path_str,
-            header=True,
-            columns=dtypes,
-            delimiter=",",
-            quotechar='"',
-            ignore_errors=True,
-            date_format="%Y-%m-%d",
-            allow_quoted_nulls=False,
-            encoding="utf-8",
-        )
+        try:
+            rel = con.read_csv(
+                path_str,
+                header=True,
+                columns=dtypes,
+                delimiter=",",
+                quotechar='"',
+                ignore_errors=False,
+                date_format="%Y-%m-%d",
+                allow_quoted_nulls=False,
+                encoding="utf-8",
+            )
+        except duckdb.Error as e:
+            raise DataLoadError.map_duckdb_error(e)
 
         # Type validation and normalization
         rel = _validate_duckdb(components, rel, dataset_name)

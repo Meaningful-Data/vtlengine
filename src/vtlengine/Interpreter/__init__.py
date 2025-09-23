@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -233,7 +234,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-3-17")
-            result = self.visit(child)
+            try:
+                result = self.visit(child)
+            except duckdb.Error as e:
+                raise (vtlengine.Exceptions.RunTimeError.map_duckdb_error(e))
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
