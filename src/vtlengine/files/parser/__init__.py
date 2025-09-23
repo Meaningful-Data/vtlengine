@@ -11,7 +11,7 @@ from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
-
+import pyarrow.parquet as pq
 load_time_checks(con)
 
 
@@ -47,6 +47,39 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
     if comps_missing:
         comps_missing = ", ".join(comps_missing)
         raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
+
+
+def _validate_parquet_path(components: Dict[str, Component], parquet_path: Path) -> None:
+    if not parquet_path.exists():
+        raise Exception(f"Path {parquet_path} does not exist.")
+    if not parquet_path.is_file():
+        raise Exception(f"Path {parquet_path} is not a file.")
+
+    register_rfc()
+
+    try:
+        table = pq.read_table(parquet_path, columns=[])
+        parquet_columns = table.schema.names
+    except InputValidationException as ie:
+        raise InputValidationException("{}".format(str(ie))) from None
+    except Exception as e:
+        raise InputValidationException(
+            f"ERROR: {str(e)}, review file {str(parquet_path.as_posix())}"
+        ) from None
+
+    if not parquet_columns:
+        raise InputValidationException(code="0-1-1-7")
+
+    if len(list(set(parquet_columns))) != len(parquet_columns):
+        duplicates = list(set([item for item in parquet_columns if parquet_columns.count(item) > 1]))
+        raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
+
+    comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
+    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in parquet_columns]
+
+    if comps_missing:
+        comps_missing = ", ".join(comps_missing)
+        raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(parquet_path.name))
 
 
 def _sanitize_duckdb_columns(

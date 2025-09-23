@@ -124,7 +124,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     if isinstance(datapoint, str):
         if datapoint.startswith(("http:/", "https:/", "s3:/")):
             # __check_s3_extra()
-            dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
+            dataset_name = datapoint.split("/")[-1].removesuffix(".csv").removesuffix(".parquet")
             dict_data = {dataset_name: datapoint}
             return dict_data
         try:
@@ -134,13 +134,13 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
     if datapoint.is_dir():
         datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
-            if f.suffix != ".csv":
+            if f.suffix not in [".csv", ".parquet"]:
                 continue
             dp = _load_single_datapoint(f)
             datapoints = {**datapoints, **dp}
         dict_data = datapoints
     else:
-        dataset_name = datapoint.name.removesuffix(".csv")
+        dataset_name = datapoint.name.removesuffix(".csv").removesuffix(".parquet")
         dict_data = {dataset_name: datapoint}  # type: ignore[dict-item]
     return dict_data
 
