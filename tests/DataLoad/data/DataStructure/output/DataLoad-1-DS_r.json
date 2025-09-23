@@ -48,7 +48,7 @@
         {
           "name": "Id_8",
           "role": "Identifier",
-          "type": "Duration",
+          "type": "String",
           "nullable": false
         },
         {
