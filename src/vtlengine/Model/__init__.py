@@ -484,8 +484,8 @@ class Dataset:
         if self.data is None:
             return pd.DataFrame()
         if isinstance(self.data, RelationProxy):
-            return self.data.df(10)
-        df = self.data.limit(10).df()
+            return self.data.df(30)
+        df = self.data.limit(30).df()
         if INDEX_COL in df.columns:
             df = df.set_index(INDEX_COL)
         return df

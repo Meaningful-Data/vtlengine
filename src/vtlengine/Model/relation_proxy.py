@@ -51,6 +51,15 @@ class RelationProxy:
                 return RelationProxy(self.relation.project(INDEX_COL))
             return RelationProxy(self.relation.project(f'{INDEX_COL}, "{key}"'))
 
+        if isinstance(key, int):
+            if key < 0:
+                raise IndexError("Negative indexing is not supported")
+            data = self.relation.filter(f"{INDEX_COL} = {key}")
+            if len(self.columns) == 1:
+                value = data.project(f'* EXCLUDE {INDEX_COL}').execute().fetchone()[0]
+                return value
+            return RelationProxy(data)
+
         if isinstance(key, (RelationProxy, DuckDBPyRelation)):
             m_rel = key.relation if isinstance(key, RelationProxy) else key
             l = self.relation.set_alias("l")
