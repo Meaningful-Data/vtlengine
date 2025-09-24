@@ -16,76 +16,44 @@ import pyarrow.parquet as pq
 load_time_checks(con)
 
 
-def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None:
+def _validate_path(components: Dict[str, Component], path: Path) -> None:
     # GE1 check if the file is empty
-    if not csv_path.exists():
-        raise Exception(f"Path {csv_path} does not exist.")
-    if not csv_path.is_file():
-        raise Exception(f"Path {csv_path} is not a file.")
+    if not path.exists():
+        raise Exception(f"Path {path} does not exist.")
+    if not path.is_file():
+        raise Exception(f"Path {path} is not a file.")
     register_rfc()
-    try:
-        with open(csv_path, "r", errors="replace", encoding="utf-8") as f:
-            reader = DictReader(f, dialect="rfc")
-            csv_columns = reader.fieldnames
-    except InputValidationException as ie:
-        raise InputValidationException("{}".format(str(ie))) from None
-    except Exception as e:
-        raise InputValidationException(
-            f"ERROR: {str(e)}, review file {str(csv_path.as_posix())}"
-        ) from None
+    if path.suffix.lower() == [".csv", ".parquet"]:
+        try:
+            with open(path, "r", errors="replace", encoding="utf-8") as f:
+                reader = DictReader(f, dialect="rfc")
+                csv_columns = reader.fieldnames
+        except InputValidationException as ie:
+            raise InputValidationException("{}".format(str(ie))) from None
+        except Exception as e:
+            raise InputValidationException(
+                f"ERROR: {str(e)}, review file {str(path.as_posix())}"
+            ) from None
 
-    if not csv_columns:
-        raise InputValidationException(code="0-1-1-7")
+        if not csv_columns:
+            raise InputValidationException(code="0-1-1-7")
 
-    if len(list(set(csv_columns))) != len(csv_columns):
-        duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
-        raise DataLoadError(code="0-1-2-3", component=duplicates)
+        if len(list(set(csv_columns))) != len(csv_columns):
+            duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
+            raise DataLoadError(code="0-1-2-3", component=duplicates)
 
-    comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing: Union[str, List[str]] = (
-        [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
-    )
-    if comps_missing:
-        comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(csv_path.name))
-
-
-def _validate_parquet_path(components: Dict[str, Component], parquet_path: Path) -> None:
-    if not parquet_path.exists():
-        raise Exception(f"Path {parquet_path} does not exist.")
-    if not parquet_path.is_file():
-        raise Exception(f"Path {parquet_path} is not a file.")
-
-    register_rfc()
-
-    try:
-        table = pq.read_table(parquet_path, columns=[])
-        parquet_columns = table.schema.names
-    except InputValidationException as ie:
-        raise InputValidationException("{}".format(str(ie))) from None
-    except Exception as e:
-        raise InputValidationException(
-            f"ERROR: {str(e)}, review file {str(parquet_path.as_posix())}"
-        ) from None
-
-    if not parquet_columns:
-        raise InputValidationException(code="0-1-1-7")
-
-    if len(list(set(parquet_columns))) != len(parquet_columns):
-        duplicates = list(set([item for item in parquet_columns if parquet_columns.count(item) > 1]))
-        raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
-
-    comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
-    comps_missing: Union[str, List[str]] = [id_m for id_m in comp_names if id_m not in parquet_columns]
-
-    if comps_missing:
-        comps_missing = ", ".join(comps_missing)
-        raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(parquet_path.name))
+        comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
+        comps_missing: Union[str, List[str]] = (
+            [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
+        )
+        if comps_missing:
+            comps_missing = ", ".join(comps_missing)
+            raise InputValidationException(code="0-1-1-8", ids=comps_missing, file=str(path.name))
 
 
 def _sanitize_duckdb_columns(
     components: Dict[str, Component],
-    csv_path: Union[str, Path],
+    path: Union[str, Path],
     data: DuckDBPyRelation,
 ) -> DuckDBPyRelation:
     column_names = data.columns
@@ -117,7 +85,7 @@ def _sanitize_duckdb_columns(
     missing = [name for name in comp_names if name not in column_names]
 
     if missing:
-        file = csv_path if isinstance(csv_path, str) else csv_path.name
+        file = path if isinstance(path, str) else path.name
         raise InputValidationException(code="0-1-1-7", ids=", ".join(missing), file=file)
 
     # Add missing nullable columns
@@ -234,56 +202,76 @@ def check_dwi(
 
 
 def load_datapoints(
-    components: Dict[str, Component],
+    components: Dict[str, "Component"],
     dataset_name: str,
-    csv_path: Optional[Union[Path, str]] = None,
-) -> DuckDBPyRelation:
-    if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
+    path: Optional[Union[Path, str]] = None,
+) -> "DuckDBPyRelation":
+    if path is None or (isinstance(path, Path) and not path.exists()):
         return empty_relation(list(components.keys()))
 
-    elif isinstance(csv_path, (str, Path)):
-        path_str = str(csv_path)
-        if isinstance(csv_path, Path):
-            _validate_csv_path(components, csv_path)
+    elif isinstance(path, (str, Path)):
+        path_str = str(path)
+        if isinstance(path, Path):
+            _validate_path(components, path)
 
-        header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
-        header = header_rel.columns
-        # Lazy CSV read
-        # with open(path_str, mode="r", encoding="utf-8") as file:
-        #     csv_reader = csv.reader(file)
-        #     header = next(csv_reader)  # Extract the header to determine column order
+        rel = None
 
-        # Extract data types from components in header
-        dtypes = {
-            col: comp.data_type().sql_type
-            for col in header
-            for comp in components.values()
-            if comp.name == col
-        }
+        if path_str.lower().endswith(".csv"):
+            header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
+            header = header_rel.columns
+            # Lazy CSV read
+            # with open(path_str, mode="r", encoding="utf-8") as file:
+            #     csv_reader = csv.reader(file)
+            #     header = next(csv_reader)  # Extract the header to determine column order
 
-        # Read the CSV file
-        try:
-            rel = con.read_csv(
-                path_str,
-                header=True,
-                columns=dtypes,
-                delimiter=",",
-                quotechar='"',
-                ignore_errors=False,
-                date_format="%Y-%m-%d",
-                allow_quoted_nulls=False,
-                encoding="utf-8",
-            )
-        except duckdb.Error as e:
-            raise DataLoadError.map_duckdb_error(e)
+            # Extract data types from components in header
+            dtypes = {
+                col: comp.data_type().sql_type
+                for col in header
+                for comp in components.values()
+                if comp.name == col
+            }
 
-        # Type validation and normalization
-        rel = _validate_duckdb(components, rel, dataset_name)
+            # Read the CSV file
+            try:
+                rel = con.read_csv(
+                    path_str,
+                    header=True,
+                    columns=dtypes,
+                    delimiter=",",
+                    quotechar='"',
+                    ignore_errors=False,
+                    date_format="%Y-%m-%d",
+                    allow_quoted_nulls=False,
+                    encoding="utf-8",
+                )
+            except duckdb.Error as e:
+                raise DataLoadError.map_duckdb_error(e)
 
-        return _sanitize_duckdb_columns(components, csv_path, rel)
+            # Type validation and normalization
+            rel = _validate_duckdb(components, rel, dataset_name)
+
+        elif path_str.lower().endswith(".parquet"):
+            try:
+                header_rel = con.query(f"SELECT * FROM read_parquet('{path_str}') LIMIT 0")
+                header = header_rel.columns
+
+                table = pq.read_table(path_str)
+                df = table.to_pandas()
+                rel = con.from_df(df)
+            except duckdb.Error as e:
+                raise DataLoadError.map_duckdb_error(e)
+
+            # Type validation and normalization
+            rel = _validate_duckdb(components, rel, dataset_name)
+
+        else:
+            raise Exception(f"Unsupported file type for path: {path_str}")
+
+        return _sanitize_duckdb_columns(components, path, rel)
 
     else:
-        raise Exception("Invalid csv_path type")
+        raise Exception("Invalid path type")
 
 
 def _fill_dataset_empty_data(dataset: Dataset) -> None:
