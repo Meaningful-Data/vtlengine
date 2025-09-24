@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import duckdb
+import pyarrow.parquet as pq  # type: ignore[import-untyped]
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
@@ -12,7 +13,7 @@ from vtlengine.Exceptions import DataLoadError, InputValidationException, Semant
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
-import pyarrow.parquet as pq
+
 load_time_checks(con)
 
 
@@ -23,7 +24,7 @@ def _validate_path(components: Dict[str, Component], path: Path) -> None:
     if not path.is_file():
         raise Exception(f"Path {path} is not a file.")
     register_rfc()
-    if path.suffix.lower() == [".csv", ".parquet"]:
+    if path.suffix.lower() == ".csv" or ".parquet":
         try:
             with open(path, "r", errors="replace", encoding="utf-8") as f:
                 reader = DictReader(f, dialect="rfc")
@@ -44,7 +45,9 @@ def _validate_path(components: Dict[str, Component], path: Path) -> None:
 
         comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
         comps_missing: Union[str, List[str]] = (
-            [id_m for id_m in comp_names if id_m not in reader.fieldnames] if reader.fieldnames else []
+            [id_m for id_m in comp_names if id_m not in reader.fieldnames]
+            if reader.fieldnames
+            else []
         )
         if comps_missing:
             comps_missing = ", ".join(comps_missing)

@@ -31,18 +31,18 @@ def save_datapoints(
         # __check_s3_extra()
         base_output = output_path if output_path.endswith("/") else output_path + "/"
     else:
-        base_output = Path(output_path)
+        base_output = Path(output_path)  # type: ignore[assignment]
         # start = time()
         # end = time()
         # print(f"Dataset {dataset.name} saved to {s3_file_output}")
         # print(f"Time to save data on s3 URI: {end - start}")
     if str(output_path).lower().endswith(".parquet"):
         file_output = (
-            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.parquet"
+            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.parquet"  # type: ignore[redundant-expr]
         )
         dataset.data.to_parquet(file_output, index=False)
     else:
         file_output = (
-            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.csv"
+            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.csv"  # type: ignore[redundant-expr]
         )
         dataset.data.to_csv(file_output, index=False)
