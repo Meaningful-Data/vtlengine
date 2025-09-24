@@ -91,7 +91,6 @@ class If(Operator):
     ) -> Any:
         ids = condition.get_identifiers_names()
         cond_col = f"{condition.get_measures_names()[0]}"
-
         base = duckdb_fillna(condition.data, "FALSE", cond_col)
 
         if not isinstance(true_branch, Scalar):
@@ -99,39 +98,40 @@ class If(Operator):
             true_branch.data = duckdb_rename(
                 true_branch.data, {m: f"__{m}@true_branch__" for m in comps}
             )
-            base = duckdb_concat(base, true_branch.data, ids)
         if not isinstance(false_branch, Scalar):
             comps = [c for c in false_branch.get_components_names() if c not in ids]
             false_branch.data = duckdb_rename(
                 false_branch.data, {m: f"__{m}@false_branch__" for m in comps}
             )
-            base = duckdb_concat(base, false_branch.data, ids)
 
-        exprs = []
-        for comp_name in result.get_components_names():
-            if comp_name in ids:
-                expr = f'"{comp_name}"'
-            else:
-                true_expr = (
-                    f'"__{comp_name}@true_branch__"'
-                    if not isinstance(true_branch, Scalar)
-                    else repr(true_branch.value)
-                    if true_branch.value is not None
-                    else "NULL"
-                )
-                false_expr = (
-                    f'"__{comp_name}@false_branch__"'
-                    if not isinstance(false_branch, Scalar)
-                    else repr(false_branch.value)
-                    if false_branch.value is not None
-                    else "NULL"
-                )
-                expr = (
-                    f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
-                )
-            exprs.append(expr)
+        base_true = base.filter(f'"{cond_col}"')
+        base_false = base.filter(f'NOT "{cond_col}"')
 
-        result.data = base.project(", ".join(exprs))
+        def project_side(side_rel: DuckDBPyRelation, branch: Any, tag: str) -> DuckDBPyRelation:
+            if isinstance(branch, Scalar):
+                exprs = [f'"{id_}"' for id_ in ids]
+                for comp_name in result.get_components_names():
+                    if comp_name in ids:
+                        continue
+                    value = repr(branch.value) if branch.value is not None else "NULL"
+                    exprs.append(f'{value} AS "{comp_name}"')
+                return side_rel.project(", ".join(exprs))
+
+            b = side_rel.set_alias("b")
+            t = branch.data.set_alias("t")
+            join_cond = " AND ".join(f'b."{c}" = t."{c}"' for c in ids)
+            joined = b.join(t, join_cond, how="inner")
+            exprs = [f'b."{id_}"' for id_ in ids]
+            for comp_name in result.get_components_names():
+                if comp_name in ids:
+                    continue
+                exprs.append(f't."__{comp_name}@{tag}__" AS "{comp_name}"')
+            return joined.project(", ".join(exprs))
+
+        res_true = project_side(base_true, true_branch, "true_branch")
+        res_false = project_side(base_false, false_branch, "false_branch")
+
+        result.data = res_true.union(res_false)
         result.data = result.data.reset_index()
         return result
 
