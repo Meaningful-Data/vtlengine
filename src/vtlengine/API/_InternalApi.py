@@ -123,7 +123,7 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
         raise DataLoadError(code="0-1-2-7", input=datapoint)
     if isinstance(datapoint, str):
         if datapoint.startswith(("http:/", "https:/", "s3:/")):
-            # __check_s3_extra()
+            __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
             dict_data = {dataset_name: datapoint}
             return dict_data
