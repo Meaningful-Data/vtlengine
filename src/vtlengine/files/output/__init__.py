@@ -29,14 +29,20 @@ def save_datapoints(
             raise RunTimeError.map_duckdb_error(e)
     if isinstance(output_path, str):
         # __check_s3_extra()
-        if output_path.endswith("/"):
-            s3_file_output = output_path + f"{dataset.name}.csv"
-        else:
-            s3_file_output = output_path + f"/{dataset.name}.csv"
+        base_output = output_path if output_path.endswith("/") else output_path + "/"
+    else:
+        base_output = Path(output_path)
         # start = time()
-        dataset.data.to_csv(s3_file_output, index=False)
         # end = time()
         # print(f"Dataset {dataset.name} saved to {s3_file_output}")
         # print(f"Time to save data on s3 URI: {end - start}")
+    if str(output_path).lower().endswith(".parquet"):
+        file_output = (
+            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.parquet"
+        )
+        dataset.data.to_parquet(file_output, index=False)
     else:
-        dataset.data.to_csv(output_path / f"{dataset.name}.csv", index=False)
+        file_output = (
+            base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.csv"
+        )
+        dataset.data.to_csv(file_output, index=False)

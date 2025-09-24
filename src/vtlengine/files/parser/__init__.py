@@ -214,8 +214,6 @@ def load_datapoints(
         if isinstance(path, Path):
             _validate_path(components, path)
 
-        rel = None
-
         if path_str.lower().endswith(".csv"):
             header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
             header = header_rel.columns
