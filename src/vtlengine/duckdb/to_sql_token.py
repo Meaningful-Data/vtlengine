@@ -6,6 +6,7 @@ from vtlengine.AST.Grammar.tokens import (
     DAYOFMONTH,
     DAYTOMONTH,
     DAYTOYEAR,
+    DIV,
     ISNULL,
     LOG,
     MOD,
@@ -26,6 +27,7 @@ LEFT = "left"
 # not specified it is assumed to be MIDDLE
 TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     # Numeric operators
+    DIV: ("division_duck", LEFT),
     MOD: "%",
     POWER: "^",
     LOG: (LOG, LEFT),
