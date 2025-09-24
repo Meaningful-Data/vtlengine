@@ -352,17 +352,14 @@ class Dataset:
         self_cols = quote_cols([c for c in self.data.columns if c != INDEX_COL])
         sorted_self = self.data.project(", ".join(self_cols), include_index=False)
         sorted_other = other.data.project(", ".join(self_cols), include_index=False)
-        print("SORTED")
-        print(sorted_self)
-        print(sorted_other)
 
         # Comparing data using DuckDB
         diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
         # Loading only the first row to check if there are any internal structure differences
         # (avoiding memory overload)
         if diff.limit(1).execute().fetchone() is not None:
-            # print("\nSELF\n", self.data)
-            # print("\nOTHER\n", other.data)
+            print("\nSELF\n", self.data)
+            print("\nOTHER\n", other.data)
             diff.show()
             return False
         return True
