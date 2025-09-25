@@ -107,7 +107,7 @@ class If(Operator):
         base_true = base.filter(f'"{cond_col}"')
         base_false = base.filter(f'NOT "{cond_col}"')
 
-        def project_side(side_rel: DuckDBPyRelation, branch: Any, tag: str) -> DuckDBPyRelation:
+        def project_side(base: DuckDBPyRelation, branch: Any, tag: str) -> DuckDBPyRelation:
             if isinstance(branch, Scalar):
                 exprs = [f'"{id_}"' for id_ in ids]
                 for comp_name in result.get_components_names():
@@ -115,17 +115,17 @@ class If(Operator):
                         continue
                     value = repr(branch.value) if branch.value is not None else "NULL"
                     exprs.append(f'{value} AS "{comp_name}"')
-                return side_rel.project(", ".join(exprs))
+                return base.project(", ".join(exprs))
 
-            b = side_rel.set_alias("b")
-            t = branch.data.set_alias("t")
-            join_cond = " AND ".join(f'b."{c}" = t."{c}"' for c in ids)
-            joined = b.join(t, join_cond, how="inner")
-            exprs = [f'b."{id_}"' for id_ in ids]
+            base = base.set_alias("base")
+            branch = branch.data.set_alias("branch")
+            join_cond = " AND ".join(f'base."{c}" = branch."{c}"' for c in ids)
+            joined = base.join(branch, join_cond, how="inner")
+            exprs = [f'base."{id_}"' for id_ in ids]
             for comp_name in result.get_components_names():
                 if comp_name in ids:
                     continue
-                exprs.append(f't."__{comp_name}@{tag}__" AS "{comp_name}"')
+                exprs.append(f'branch."__{comp_name}@{tag}__" AS "{comp_name}"')
             return joined.project(", ".join(exprs))
 
         res_true = project_side(base_true, true_branch, "true_branch")
@@ -317,13 +317,6 @@ class Case(Operator):
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-        def get_measures(op: Union[DataComponent, Dataset, Scalar]) -> List[str]:
-            if isinstance(op, DataComponent) and op.data is not None:
-                return [op.data.columns[0]]
-            if isinstance(op, Dataset) and op.data is not None:
-                return op.get_measures_names()
-            return []
-
         def get_condition_measure(op: Union[DataComponent, Dataset, Scalar]) -> str:
             return op.get_measures_names()[0] if isinstance(op, Dataset) else op.name
 
@@ -365,27 +358,27 @@ class Case(Operator):
         ids = next((op.get_identifiers_names() for op in operands if isinstance(op, Dataset)), [])
         exprs = [f'"{id_}"' for id_ in ids]
         columns = base.columns
-        measures = next(
-            (get_measures(op) for op in operands if isinstance(op, (Dataset, DataComponent))),
-            ["result"],
-        )
+        measures = next((op.get_measures_names() for op in operands if isinstance(op, Dataset)),
+                        [VirtualCounter._new_dc_name()])
         for col in measures:
             expr = "CASE "
             # CASE op ends whenever the first cond is matched, so in order to match the
             # VTL specification, we need to reverse the order of the operands
             for i, op in enumerate(reversed(operands)):
-                i = len(operands) - 1 - i  # Reverse index to match conditions
+                i = len(operands) - 1 - i
                 cond_col = next(
-                    (col for col in columns if col.startswith(f"cond_{i}")), "cond_else"
+                    (col_ for col_ in columns if col_.startswith(f"cond_{i}")), "cond_else"
                 )
                 if isinstance(op, Scalar):
                     value = repr(op.value) if op.value is not None else "NULL"
                 else:
-                    value = f'"op_{i}.{col}"'
+                    col_ = col if isinstance(op, Dataset) else op.data.columns[0]
+                    value = f'"op_{i}.{col_}"'
                 expr += f'WHEN "{cond_col}" THEN {value} '
             expr += f'END AS "{col}"'
             exprs.append(expr)
 
+        print("\n",exprs)
         result.data = base.project(", ".join(exprs))
         return result
 
