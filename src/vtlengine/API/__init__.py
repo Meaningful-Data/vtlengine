@@ -214,6 +214,7 @@ def run(
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
+    use_parquet_datapoints: bool = False,
 ) -> Dict[str, Dataset]:
     """
     Run is the main function of the ``API``, which mission is to execute

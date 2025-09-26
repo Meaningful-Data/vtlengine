@@ -23,7 +23,7 @@ def _validate_path(components: Dict[str, Component], path: Path) -> None:
         raise Exception(f"Path {path} does not exist.")
     if not path.is_file():
         raise Exception(f"Path {path} is not a file.")
-    register_rfc()
+    register_rfc() # solo csv
     if path.suffix.lower() == ".csv" or ".parquet":
         try:
             with open(path, "r", errors="replace", encoding="utf-8") as f:

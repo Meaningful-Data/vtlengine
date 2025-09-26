@@ -22,9 +22,9 @@ def save_datapoints(
         dataset.data = pd.DataFrame()
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
-    if isinstance(dataset.data, DuckDBPyRelation):
+    if isinstance(dataset.data, DuckDBPyRelation):  # try except tiene que ser en la escritura (to.parquet, to.csv)
         try:
-            dataset.data = dataset.data.df()
+            dataset.data = dataset.data.df()  # eliminar esta linea
         except duckdb.Error as e:
             raise RunTimeError.map_duckdb_error(e)
     if isinstance(output_path, str):
@@ -36,7 +36,7 @@ def save_datapoints(
         # end = time()
         # print(f"Dataset {dataset.name} saved to {s3_file_output}")
         # print(f"Time to save data on s3 URI: {end - start}")
-    if str(output_path).lower().endswith(".parquet"):
+    if str(output_path).lower().endswith(".parquet"): # flag
         file_output = (
             base_output if isinstance(base_output, str) else base_output / f"{dataset.name}.parquet"  # type: ignore[redundant-expr]
         )
