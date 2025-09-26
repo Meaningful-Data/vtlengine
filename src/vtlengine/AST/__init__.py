@@ -443,7 +443,7 @@ class Validation(AST):
     op: str
     validation: str
     error_code: Optional[str]
-    error_level: Optional[int]
+    error_level: Union[int, str]
     imbalance: Optional[AST]
     invalid: bool
 
