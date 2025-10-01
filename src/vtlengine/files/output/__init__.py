@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import Optional, Union
 
 import duckdb
-import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
-from vtlengine.Exceptions import RunTimeError
 from vtlengine.duckdb.duckdb_utils import empty_relation
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,

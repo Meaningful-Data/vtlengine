@@ -41,8 +41,8 @@ def duckdb_concat(
             [INDEX_COL] if (INDEX_COL in left.columns and INDEX_COL in right.columns) else None
         )
 
-    l = left.set_alias("l")
-    r = right.set_alias("r")
+    left_rel = left.set_alias("l")
+    right_rel = right.set_alias("r")
 
     if not on_cols and INDEX_COL in left.columns and INDEX_COL in right.columns:
         on_cols = [INDEX_COL]
@@ -50,8 +50,8 @@ def duckdb_concat(
     used_rowid = False
     if on_cols is None:
         # Positional alignment when no usable key is available
-        l = l.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("l")
-        r = r.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("r")
+        left_rel = left_rel.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("l")
+        right_rel = right_rel.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("r")
         join_cond = "l.__row_id__ = r.__row_id__"
         presence_col = "r.__row_id__"
         used_rowid = True
@@ -59,7 +59,7 @@ def duckdb_concat(
         join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
         presence_col = f'r."{on_cols[0]}"'
 
-    joined = l.join(r, join_cond, how="outer")
+    joined = left_rel.join(right_rel, join_cond, how="outer")
 
     left_cols = list(left.columns)
     right_cols = list(right.columns)
