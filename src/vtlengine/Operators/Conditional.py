@@ -358,8 +358,10 @@ class Case(Operator):
         ids = next((op.get_identifiers_names() for op in operands if isinstance(op, Dataset)), [])
         exprs = [f'"{id_}"' for id_ in ids]
         columns = base.columns
-        measures = next((op.get_measures_names() for op in operands if isinstance(op, Dataset)),
-                        [VirtualCounter._new_dc_name()])
+        measures = next(
+            (op.get_measures_names() for op in operands if isinstance(op, Dataset)),
+            [VirtualCounter._new_dc_name()],
+        )
         for col in measures:
             expr = "CASE "
             # CASE op ends whenever the first cond is matched, so in order to match the
@@ -378,7 +380,7 @@ class Case(Operator):
             expr += f'END AS "{col}"'
             exprs.append(expr)
 
-        print("\n",exprs)
+        print("\n", exprs)
         result.data = base.project(", ".join(exprs))
         return result
 

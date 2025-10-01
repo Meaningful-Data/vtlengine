@@ -151,11 +151,11 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
         right, left = (left, right)
     if op_token in OUTPUT_NUMERIC_FUNCTIONS:
         if token_position == LEFT:
-            return f'round({op_token}({left}, {right}), {ROUND_VALUE}) AS {me_name}'
-        return f'round_duck(({left} {op_token} {right}),{ROUND_VALUE}) AS {me_name}'
+            return f"round({op_token}({left}, {right}), {ROUND_VALUE}) AS {me_name}"
+        return f"round_duck(({left} {op_token} {right}),{ROUND_VALUE}) AS {me_name}"
     if token_position == LEFT:
-        return f'{op_token}({left}, {right}) AS {me_name}'
-    return f'({left} {op_token} {right}) AS {me_name}'
+        return f"{op_token}({left}, {right}) AS {me_name}"
+    return f"({left} {op_token} {right}) AS {me_name}"
 
 
 def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
@@ -807,7 +807,10 @@ class Binary(Operator):
 
         transformations.append(
             apply_bin_op(
-                cls, f'"{result_component.name}"', f'"{left_operand.name}"', f'"{right_operand.name}"'
+                cls,
+                f'"{result_component.name}"',
+                f'"{left_operand.name}"',
+                f'"{right_operand.name}"',
             )
         )
         final_query = ", ".join(transformations)
@@ -837,7 +840,9 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        exprs.append(apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_value))
+        exprs.append(
+            apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_value)
+        )
         final_query = ", ".join(exprs)
         if "/" in final_query and scalar_value == 0:
             raise RunTimeError(code="2-1-15-6", op="/")
@@ -851,7 +856,9 @@ class Binary(Operator):
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            exprs.append(apply_bin_op(cls, f'"{measure_name}"', f'"{measure_name}"', scalar_set.values))
+            exprs.append(
+                apply_bin_op(cls, f'"{measure_name}"', f'"{measure_name}"', scalar_set.values)
+            )
 
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
@@ -865,7 +872,9 @@ class Binary(Operator):
         result_data = component.data if component.data is not None else empty_relation()
 
         result_component.data = result_data.project(
-            apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_set.values)
+            apply_bin_op(
+                cls, f'"{result_component.name}"', f'"{component.name}"', scalar_set.values
+            )
         )
         return result_component
 

@@ -56,7 +56,7 @@ class RelationProxy:
                 raise IndexError("Negative indexing is not supported")
             data = self.relation.filter(f"{INDEX_COL} = {key}")
             if len(self.columns) == 1:
-                value = data.project(f'* EXCLUDE {INDEX_COL}').execute().fetchone()[0]
+                value = data.project(f"* EXCLUDE {INDEX_COL}").execute().fetchone()[0]
                 return value
             return RelationProxy(data)
 
@@ -90,7 +90,9 @@ class RelationProxy:
                     return RelationProxy(self.relation.limit(0))
 
                 data = list(enumerate(idx_list))
-                idx = con.values(data).project("column0 AS __pos__, column1 AS idx").set_alias("idx")
+                idx = (
+                    con.values(data).project("column0 AS __pos__, column1 AS idx").set_alias("idx")
+                )
                 l = self.relation.set_alias("l")
                 joined = l.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
                 return RelationProxy(joined.order("idx.__pos__").project("l.*"))
@@ -185,7 +187,11 @@ class RelationProxy:
         base_proj = f'l.* EXCLUDE "{col_name}"' if has_col else "l.*"
 
         if isinstance(value, (RelationProxy, DuckDBPyRelation)):
-            r_rel = value.relation if isinstance(value, RelationProxy) else RelationProxy(value).relation
+            r_rel = (
+                value.relation
+                if isinstance(value, RelationProxy)
+                else RelationProxy(value).relation
+            )
             r = r_rel.set_alias("r")
             r_cols = [c for c in r.columns if c != INDEX_COL]
             if not r_cols:
@@ -199,10 +205,14 @@ class RelationProxy:
         if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
             expected = len(self)
             if len(value) != expected:
-                raise ValueError(f"Sequence length {len(value)} does not match relation length {expected}")
+                raise ValueError(
+                    f"Sequence length {len(value)} does not match relation length {expected}"
+                )
             data = list(enumerate(value))
             m = con.values(data).project("column0 AS __pos__, column1 AS __val__").set_alias("m")
-            lpos = l.project(f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *").set_alias("l")
+            lpos = l.project(
+                f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
+            ).set_alias("l")
             joined = lpos.join(m, "l.__pos__ = m.__pos__", how="left")
             self.relation = joined.project(f'{base_proj}, m.__val__ AS "{col_name}"')
             return
@@ -226,7 +236,11 @@ class RelationProxy:
             m = m_rel.set_alias("m")
             m_cols = [c for c in m.columns if c != INDEX_COL]
             if not m_cols:
-                joined = l.join(m.project(INDEX_COL).set_alias("m"), f"l.{INDEX_COL} = m.{INDEX_COL}", how="left")
+                joined = l.join(
+                    m.project(INDEX_COL).set_alias("m"),
+                    f"l.{INDEX_COL} = m.{INDEX_COL}",
+                    how="left",
+                )
                 cond = f"m.{INDEX_COL} IS NOT NULL"
             else:
                 mask_col = m_cols[0]
@@ -242,7 +256,11 @@ class RelationProxy:
                 true_pos = [i for i, f in enumerate(key) if f]
                 if not true_pos:
                     return
-                m = con.values([(i,) for i in true_pos]).project("column0 AS __pos__").set_alias("m")
+                m = (
+                    con.values([(i,) for i in true_pos])
+                    .project("column0 AS __pos__")
+                    .set_alias("m")
+                )
                 lpos = l.project(
                     f"row_number() OVER (ORDER BY {INDEX_COL}) - 1 AS __pos__, *"
                 ).set_alias("l")

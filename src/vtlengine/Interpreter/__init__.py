@@ -928,7 +928,11 @@ class InterpreterAnalyzer(ASTTemplate):
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
-                data = operand.data[measure.name] if operand.data is not None else empty_relation(measure.name)
+                data = (
+                    operand.data[measure.name]
+                    if operand.data is not None
+                    else empty_relation(measure.name)
+                )
                 # Getting role from encoded information
                 # (handling also UDO params as it is present in the value of the mapping)
                 if self.udo_params is not None and operand.name in self.udo_params[-1].values():

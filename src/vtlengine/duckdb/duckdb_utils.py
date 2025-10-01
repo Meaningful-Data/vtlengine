@@ -160,7 +160,7 @@ def duckdb_fillna(
         cast_type = type_ if type_ else col_type
         # problematic default value
         if value == "default":
-            value = 'default'
+            value = "default"
         if value == "":
             value = "''"
         exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
