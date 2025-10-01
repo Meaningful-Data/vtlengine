@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional, Sequence
 
-from duckdb import DuckDBPyRelation  # type: ignore
+from duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
 
