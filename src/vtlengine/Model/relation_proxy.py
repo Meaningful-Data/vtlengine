@@ -354,6 +354,12 @@ class RelationProxy:
         expr = f'("{self.columns[0]}" IS NULL) AS __mask__'
         return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
 
+    def notnull(self) -> "RelationProxy":
+        if len(self.columns) == 0:
+            raise ValueError("No data columns to check for not nulls")
+        expr = f'("{self.columns[0]}" IS NOT NULL) AS __mask__'
+        return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
+
     def is_empty(self):
         pass
 
