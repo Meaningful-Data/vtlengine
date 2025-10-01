@@ -53,6 +53,7 @@ centralised_messages = {
     "1-1-1-2": "Invalid implicit cast from {type_1} and {type_2} to {type_check}.",
     "1-1-1-3": "At op {op}: {entity} {name} cannot be promoted to {target_type}.",
     "1-1-1-4": "At op {op}: Operation not allowed for multimeasure datasets.",
+    "1-1-1-5": "At op {op}: Invalid type {type}.",
     "1-1-1-8": "At op {op}: Invalid Dataset {name}, no measures defined.",
     "1-1-1-9": "At op {op}: Invalid Dataset {name}, all measures must have the same type: {type}.",
     "1-1-1-10": "Component {comp_name} not found in Dataset {dataset_name}.",

@@ -407,22 +407,22 @@ class TimeIntervalHandler:
         return py_op(self.length, other.length)
 
     def __eq__(self, other: Any) -> Optional[bool]:  # type: ignore[override]
-        return self._meta_comparison(other, operator.eq)
+        return str(self) == str(other) if other is not None else None
 
     def __ne__(self, other: Any) -> Optional[bool]:  # type: ignore[override]
-        return self._meta_comparison(other, operator.ne)
+        return str(self) != str(other) if other is not None else None
 
     def __lt__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.lt)
+        raise SemanticError("1-1-1-5", op="<", type="Time")
 
     def __le__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.le)
+        raise SemanticError("1-1-1-5", op="<=", type="Time")
 
     def __gt__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.gt)
+        raise SemanticError("1-1-1-5", op=">", type="Time")
 
     def __ge__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.ge)
+        raise SemanticError("1-1-1-5", op=">=", type="Time")
 
     @classmethod
     def from_time_period(cls, value: TimePeriodHandler) -> "TimeIntervalHandler":
