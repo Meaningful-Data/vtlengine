@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import GT, GTE, LTE, LT
+from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
 from vtlengine.Exceptions import SemanticError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
