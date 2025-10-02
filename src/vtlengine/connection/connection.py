@@ -28,7 +28,7 @@ class ConnectionManager:
     _memory_limit = BASE_MEMORY_LIMIT
     _plan_format = PLAN_FORMAT
     _temp_directory: str = BASE_TEMP_DIRECTORY
-    _threads = 1
+    _threads: Optional[int] = 1
     _auto_install_extensions: bool = False
     _auto_load_extensions: bool = False
     _lock_configuration: bool = True

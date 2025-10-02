@@ -101,7 +101,7 @@ class RelationProxy:
 
         raise TypeError(f"Unsupported key type for __getitem__: {type(key)!r}")
 
-    # New: pandas-like assignment
+    # pandas-like assignment
     def __setitem__(self, key: Any, value: Any) -> None:
         if isinstance(key, str):
             if key == INDEX_COL:
@@ -114,10 +114,8 @@ class RelationProxy:
             return
 
         if isinstance(key, Sequence) and not isinstance(key, (str, bytes)):
-            if len(key) > 0 and all(type(x) is bool for x in key):
-                self._assign_rows(key, value)
-                return
-            if all(isinstance(x, int) and not isinstance(x, bool) for x in key):
+            if ((len(key) > 0 and all(type(x) is bool for x in key)) or
+                    (all(isinstance(x, int) and not isinstance(x, bool) for x in key))):
                 self._assign_rows(key, value)
                 return
 
