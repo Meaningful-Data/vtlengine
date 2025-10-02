@@ -289,41 +289,29 @@ class RelationProxy:
         self.relation = joined.project(", ".join(proj_cols))
 
     def _binary_compare(self, other: Any, op: str) -> "RelationProxy":
-        # Compare a single data column with a scalar or
-        # another single-column relation, aligned by index
         left = self.relation
-        left_cols = [c for c in left.columns if c != INDEX_COL]
-        if len(left_cols) != 1:
-            raise ValueError(
-                "Element-wise comparison requires a single data column on the left side"
-            )
+        lcol = self._get_single_data_column(left)
 
-        # Other is a RelationProxy or DuckDBPyRelation: align by index and compare columns
-        if isinstance(other, RelationProxy):
-            right = other.relation
-        elif isinstance(other, DuckDBPyRelation):
-            right = other
-        else:
-            right = None
+        if isinstance(other, (RelationProxy, DuckDBPyRelation)):
+            right = other.relation if isinstance(other, RelationProxy) else other
+            rcol = self._get_single_data_column(right)
 
-        if right is not None:
-            r_cols = [c for c in right.columns if c != INDEX_COL]
-            if len(r_cols) != 1:
-                raise ValueError(
-                    "Element-wise comparison requires a single data column on the right side"
-                )
-            left_rel = left.set_alias("l")
-            right_rel = right.set_alias("r")
-            expr = f"(l.{left_cols[0]} {op} r.{r_cols[0]}) AS __mask__"
-            proj = f"l.{INDEX_COL} AS {INDEX_COL}, {expr}"
-            joined = left_rel.join(right_rel, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
-            return RelationProxy(joined.project(proj))
+            l = left.project(f'{INDEX_COL}, "{lcol}"').set_alias("l")
+            r = right.project(f'{INDEX_COL}, "{rcol}"').set_alias("r")
+            expr = f'(l."{lcol}" {op} r."{rcol}") AS __mask__'
+            joined = l.join(r, f'l.{INDEX_COL} = r.{INDEX_COL}', how="left")
+            return RelationProxy(joined.project(f'l.{INDEX_COL} AS {INDEX_COL}, {expr}'))
 
-        # Other is a scalar: compare left column with literal
         value = self._to_sql_literal(other)
-        expr = f"({left_cols[0]} {op} {value}) AS __mask__"
-        proj = f"{INDEX_COL}, {expr}"
-        return RelationProxy(left.project(proj))
+        proj_left = left.project(f'{INDEX_COL}, "{lcol}"')
+        expr = f'("{lcol}" {op} {value}) AS __mask__'
+        return RelationProxy(proj_left.project(f'{INDEX_COL}, {expr}'))
+
+    def _get_single_data_column(self, rel: DuckDBPyRelation) -> str:
+        cols = [c for c in rel.columns if c != INDEX_COL]
+        if len(cols) != 1:
+            raise ValueError("Element-wise comparison requires exactly one data column per side")
+        return cols[0]
 
     def _ensure_index(self, projection: str) -> str:
         cols_lower = [c.strip().lower() for c in projection.split(",")]
