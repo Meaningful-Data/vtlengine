@@ -296,10 +296,10 @@ class RelationProxy:
             right = other.relation if isinstance(other, RelationProxy) else other
             rcol = self._get_single_data_column(right)
 
-            l = left.project(f'{INDEX_COL}, "{lcol}"').set_alias("l")
-            r = right.project(f'{INDEX_COL}, "{rcol}"').set_alias("r")
+            left_rel = left.project(f'{INDEX_COL}, "{lcol}"').set_alias("l")
+            right_rel = right.project(f'{INDEX_COL}, "{rcol}"').set_alias("r")
             expr = f'(l."{lcol}" {op} r."{rcol}") AS __mask__'
-            joined = l.join(r, f'l.{INDEX_COL} = r.{INDEX_COL}', how="left")
+            joined = left_rel.join(right_rel, f'l.{INDEX_COL} = r.{INDEX_COL}', how="left")
             return RelationProxy(joined.project(f'l.{INDEX_COL} AS {INDEX_COL}, {expr}'))
 
         value = self._to_sql_literal(other)
