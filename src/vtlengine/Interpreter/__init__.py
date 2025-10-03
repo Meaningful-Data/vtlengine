@@ -1891,6 +1891,16 @@ class InterpreterAnalyzer(ASTTemplate):
                     if param["type"] == "Scalar":
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
+                        param_element = self.visit(node.params[i])
+                        if isinstance(param_element, Dataset) and param["type"] == "Component":
+                            raise SemanticError(
+                                "1-4-1-1",
+                                op=node.op,
+                                option=param["name"],
+                                type_1=param["type"],
+                                type_2="Dataset",
+                            )
+                        signature_values[param["name"]] = param_element
                         if isinstance(node.params[i], AST.VarID):
                             signature_values[param["name"]] = node.params[i].value  # type: ignore[attr-defined]
                         else:
