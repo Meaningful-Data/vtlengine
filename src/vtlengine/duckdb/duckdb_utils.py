@@ -140,7 +140,7 @@ def duckdb_fillna(
     cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
         col = col.replace('"', "")
-        col_type = data.dtypes[col]
+        col_type = get_col_type(data, col)
         type_ = (
             (
                 types
@@ -252,7 +252,7 @@ def duckdb_select(
 
     If `as_query` is True, returns the SQL query string instead of the relation.
     """
-    data = clean_execution_graph(data)
+    data.clean_exec_graph()
     cols = {cols} if isinstance(cols, str) else set(cols)
     query = ", ".join(quote_cols(cols))
     return query if as_query else data.project(query)
@@ -290,11 +290,12 @@ def empty_relation(
     return query if as_query else con.sql(query)
 
 
-def get_col_type(rel: DuckDBPyRelation, col_name: str) -> DuckDBPyType:
+def get_col_type(rel: RelationProxy, col_name: str) -> DuckDBPyType:
     """
     Returns the specified column type from the DuckDB relation.
     """
-    return rel.types[rel.columns.index(col_name)]
+    empty_row = rel.project(f'"{col_name}"', include_index=False).limit(0)
+    return empty_row.types[0]
 
 
 def normalize_data(
@@ -372,7 +373,6 @@ def quote_cols(cols: Union[str, List[str], Set[str]]) -> Set[str]:
 
 
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
-    # Collect column names matching duckdb types; exclude the index column.
     cols = set()
     types = {types} if isinstance(types, str) else set(types)
     types = {t.upper() for t in types}

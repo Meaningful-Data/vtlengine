@@ -149,8 +149,10 @@ class RelationProxy:
         return int(self.relation.aggregate("count(*) AS cnt").execute().fetchone()[0])
 
     def __repr__(self) -> str:
+        sorted_cols = sorted(self.relation.columns)
+        data = self.relation.project(", ".join(sorted_cols)).limit(10)
         return (
-            f"RelationProxy(\ncolumns={self.relation.columns},\ndata=\n{self.relation.limit(10)}\n)"
+            f"RelationProxy(\ncolumns={sorted_cols},\ndata=\n{data}\n)"
         )
 
     @property
