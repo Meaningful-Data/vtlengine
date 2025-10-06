@@ -151,9 +151,7 @@ class RelationProxy:
     def __repr__(self) -> str:
         sorted_cols = sorted(self.relation.columns)
         data = self.relation.project(", ".join(sorted_cols)).limit(10)
-        return (
-            f"RelationProxy(\ncolumns={sorted_cols},\ndata=\n{data}\n)"
-        )
+        return f"RelationProxy(\ncolumns={sorted_cols},\ndata=\n{data}\n)"
 
     @property
     def all_columns(self) -> list[str]:
