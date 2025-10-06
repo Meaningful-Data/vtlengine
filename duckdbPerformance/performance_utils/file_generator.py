@@ -201,8 +201,8 @@ def generate_big_ass_csv_fast(dtypes, length=None, chunk_size=1_000_000):
     try:
         bin_path = Path(__file__).parent / C_BIN_NAME
         subprocess.check_call([str(bin_path), cfg_path])
-    except:
-        a = 0
+    except Exception as e:
+        raise OSError(f"Invalid OS '{os.name}'. Try calling from WSL.") from e
     finally:
         with contextlib.suppress(OSError):
             os.remove(cfg_path)
