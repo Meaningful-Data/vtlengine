@@ -344,7 +344,7 @@ class RelationProxy:
     def _wrap_relation(self, value: Any) -> Any:
         return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
 
-    def clean_exec_graph(self, verbose: bool = True) -> None:
+    def clean_exec_graph(self, verbose: bool = False) -> None:
         if verbose:
             print("Pre-clean plan:")
             print(self.explain())
@@ -395,7 +395,7 @@ class RelationProxy:
     def project(
         self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True
     ) -> "RelationProxy":
-        self.clean_exec_graph()
+        # self.clean_exec_graph()
         if include_index or len(self.columns) == 0:
             projection = self._ensure_index(projection)
         return self.relation.project(projection)
