@@ -168,7 +168,7 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
     print(f"Final size: {size_mb:.2f} MB ({size_gb:.2f} GB)")
 
 
-C_BIN_NAME = "fiuuuum"
+C_BIN_NAME = "fg"
 
 
 def generate_big_ass_csv_fast(dtypes, length=None, chunk_size=1_000_000):
@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     # C version
     # If necessary, re-compile in WSL the C code with (-lm flag needed to support some math ops):
-    # gcc file_generator_fast.c -o exec_name -lm
+    # gcc file_generator_fast.c -o fg -lm
     # Need to be launched from WSL with:
     # python3 duckdbPerformance/performance_utils/file_generator.py
     print("Generating BIG_ASS CSV file (C version)")
