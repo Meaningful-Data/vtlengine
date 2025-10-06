@@ -219,6 +219,7 @@ class Aggregation(Unary):
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
+        aux_rel.clean_exec_graph()
         aux_rel = aux_rel[grouping_keys].distinct()
         if len(grouping_keys) == 0:
             aux_rel = result_rel

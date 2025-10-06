@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from typing import Any, Optional, Sequence
 
@@ -324,7 +325,11 @@ class RelationProxy:
             return f"{INDEX_COL}, " + projection
         return projection
 
-    # Convert a Python value into a SQL literal value
+    def _materialize(self, data: DuckDBPyRelation) -> DuckDBPyRelation:
+        tmp = f"__mat_{uuid.uuid4().hex}"
+        con.execute(f"CREATE TEMP TABLE {tmp} AS SELECT * FROM data")
+        return con.table(tmp)
+
     def _to_sql_literal(self, v: Any) -> str:
         if v is None:
             return "NULL"
@@ -339,8 +344,14 @@ class RelationProxy:
     def _wrap_relation(self, value: Any) -> Any:
         return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
 
-    def clean_exec_graph(self):
-        self.relation.execute().fetchall()
+    def clean_exec_graph(self, verbose: bool = True) -> None:
+        if verbose:
+            print("Pre-clean plan:")
+            print(self.explain())
+        self.relation = self._materialize(self.relation)
+        if verbose:
+            print("Post-clean plan:")
+            print(self.explain())
 
     def distinct(self) -> "RelationProxy":
         return RelationProxy(self.project(include_index=False).distinct())
@@ -361,6 +372,11 @@ class RelationProxy:
         proj = ", ".join([f'"{c}"' for c in keep_cols])
         return RelationProxy(self.relation.project(proj))
 
+    def explain(self, type_: Optional[str] = None) -> str:
+        if type_ in ["analyze", "logical"]:
+            return self.relation.explain(type=type_)
+        return self.relation.explain()
+
     def isnull(self) -> "RelationProxy":
         if len(self.columns) == 0:
             raise ValueError("No data columns to check for nulls")
@@ -379,6 +395,7 @@ class RelationProxy:
     def project(
         self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True
     ) -> "RelationProxy":
+        self.clean_exec_graph()
         if include_index or len(self.columns) == 0:
             projection = self._ensure_index(projection)
         return self.relation.project(projection)
