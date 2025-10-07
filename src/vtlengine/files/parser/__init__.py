@@ -3,7 +3,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod

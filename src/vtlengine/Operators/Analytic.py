@@ -1,7 +1,7 @@
 from copy import copy
 from typing import List, Optional
 
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 import vtlengine.Operators as Operator
 from vtlengine.AST import OrderBy, Windowing

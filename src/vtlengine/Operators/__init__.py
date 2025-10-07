@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     AND,
