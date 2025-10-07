@@ -590,7 +590,7 @@ class HRule(AST):
     name: Optional[str]
     rule: HRBinOp
     erCode: Optional[str]
-    erLevel: Optional[int]
+    erLevel: Union[int, str]
 
     __eq__ = AST.ast_equality
 
@@ -604,7 +604,7 @@ class DPRule(AST):
     name: Optional[str]
     rule: HRBinOp
     erCode: Optional[str]
-    erLevel: Optional[int]
+    erLevel: Union[int, str]
 
     __eq__ = AST.ast_equality
 
