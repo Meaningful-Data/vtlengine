@@ -6,7 +6,7 @@ import pytest
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer, Number, String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 
@@ -132,12 +132,12 @@ numeric_params = [
     ("log(8, 2)", 3.0),
     ("log(8.0, 2)", 3.0),
     ("log(1024, 2)", 10.0),
-    ("log(1024, 10)", 3.010299956639812),
+    ("log(1024, 10)", 3.01029996),
     ("log(2.0, 2)", 1.0),
     ("log(null, null)", None),
     ("log(null, 1)", None),
     ("log(1, null)", None),
-    ("log(0.5, 6)", -0.3868528072345416),
+    ("log(0.5, 6)", -0.38685281),
     ("(1 + 2) / 3", 1.0),
     ("random(12, 2)", 0.66641),
 ]
@@ -234,6 +234,8 @@ ds_param = [
     ("17-3", "DS_1[calc Me_1 := cast(Me_1, string)]"),
 ]
 
+division_zero_exception_param = [("18-1", "DS_1[calc Me_3 := Me_1 / 0]", "2-1-15-6")]
+
 
 @pytest.mark.parametrize("text, reference", string_params)
 def test_string_operators(text, reference):
@@ -281,14 +283,18 @@ def test_numeric_operators(text, reference):
         assert result["DS_r"].data_type == Number or result["DS_r"].data_type == Integer
 
 
-@pytest.mark.parametrize("text, exception_message", numeric_exception_param)
-def test_exception_numeric_op(text, exception_message):
+@pytest.mark.parametrize("text, expected", numeric_exception_param)
+def test_exception_numeric_op(text, expected):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
     ast = create_ast(expression)
     interpreter = InterpreterAnalyzer({})
-    with pytest.raises(Exception, match=exception_message):
-        interpreter.visit(ast)
+    if isinstance(expected, str) and expected.count("-") >= 2:
+        with pytest.raises(RunTimeError, match=expected):
+            interpreter.visit(ast)
+    else:
+        with pytest.raises(Exception, match=expected):
+            interpreter.visit(ast)
 
 
 @pytest.mark.parametrize("code, text", ds_param)
@@ -321,3 +327,14 @@ def test_comp_op_test(text, reference):
     interpreter = InterpreterAnalyzer({})
     result = interpreter.visit(ast)
     assert result["DS_r"].value == reference
+
+
+@pytest.mark.parametrize("code, text, error_code", division_zero_exception_param)
+def test_division_by_zero_exception(code, text, error_code):
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    datasets = AdditionalScalarsTests.LoadInputs(code, 1)
+    expression = f"DS_r := {text};"
+    ast = create_ast(expression)
+    interpreter = InterpreterAnalyzer(datasets)
+    with pytest.raises(RunTimeError, match=error_code):
+        interpreter.visit(ast)

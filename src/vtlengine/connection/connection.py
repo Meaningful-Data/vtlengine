@@ -14,34 +14,12 @@ BASE_PATH = Path(__file__).resolve().parents[3]
 # BASE_DATABASE = str(Path(os.getenv("DUCKDB_DATABASE", BASE_PATH / "vtl_duckdb.db")).resolve())
 BASE_DATABASE = os.getenv("DUCKDB_DATABASE", ":memory:")
 BASE_TEMP_DIRECTORY = str(Path(os.getenv("DUCKDB_TEMP_DIRECTORY", BASE_PATH / ".tmp")))
-BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", "4GB")
+BASE_MEMORY_LIMIT = "1GB"
 # TODO: uncomment the following line to use the memory limit by env-var
 # total_memory = psutil.virtual_memory().total
 # memory_limit = f"{total_memory * 0.8 / (1024 ** 3):.0f}GB"
 # BASE_MEMORY_LIMIT = os.getenv("DUCKDB_MEMORY_LIMIT", memory_limit)
 PLAN_FORMAT = "optimized_only"
-CONFIG = {
-    "enable_profiling": "json",
-    "profiling_mode": "detailed",
-    "profiling_output": str(BASE_PATH / "duckdbPerformance" / "output" / "logs" / "logs.json"),
-    "settings": [
-        "BLOCKED_THREAD_TIME",
-        "EXTRA_INFO",
-        "LATENCY",
-        "OPERATOR_CARDINALITY",
-        "OPERATOR_ROWS_SCANNED",
-        "OPERATOR_TIMING",
-        "OPERATOR_TYPE",
-        "QUERY_NAME",
-        "RESULT_SET_SIZE",
-        "ROWS_RETURNED",
-        "CPU_TIME",
-        "CUMULATIVE_CARDINALITY",
-        "CUMULATIVE_ROWS_SCANNED",
-        "SYSTEM_PEAK_BUFFER_MEMORY",
-        "SYSTEM_PEAK_TEMP_DIR_SIZE",
-    ],
-}
 
 
 class ConnectionManager:
@@ -50,8 +28,10 @@ class ConnectionManager:
     _memory_limit = BASE_MEMORY_LIMIT
     _plan_format = PLAN_FORMAT
     _temp_directory: str = BASE_TEMP_DIRECTORY
-    _threads = None
-    _config = CONFIG
+    _threads: Optional[int] = 1
+    _auto_install_extensions: bool = False
+    _auto_load_extensions: bool = False
+    _lock_configuration: bool = True
 
     @classmethod
     def configure(
@@ -60,7 +40,10 @@ class ConnectionManager:
         memory_limit: str = BASE_MEMORY_LIMIT,
         plan_format: str = PLAN_FORMAT,
         temp_directory: str = BASE_TEMP_DIRECTORY,
-        threads: Optional[int] = None,
+        threads: Optional[int] = 1,
+        auto_install_extensions: bool = False,
+        auto_load_extensions: bool = False,
+        lock_configuration: bool = True,
     ) -> None:
         """
         Configures the database path and memory limit for DuckDB.
@@ -69,7 +52,9 @@ class ConnectionManager:
         cls._memory_limit = memory_limit
         cls._plan_format = plan_format
         cls._temp_directory = temp_directory
-        print("Memory Limit Connection: ", cls._memory_limit)
+        cls._auto_install_extensions = auto_install_extensions
+        cls._auto_load_extensions = auto_load_extensions
+        cls._lock_configuration = lock_configuration
         if threads is not None:
             cls._threads = threads
 
@@ -82,16 +67,20 @@ class ConnectionManager:
             config_dict = {
                 "memory_limit": cls._memory_limit,
                 "temp_directory": cls._temp_directory,
-                "preserve_insertion_order": True,
+                "preserve_insertion_order": False,
             }
             cls._connection = duckdb.connect(database=cls._database, config=config_dict)
             cls._connection.execute(f"SET explain_output={cls._plan_format};")
             if cls._threads is not None:
                 cls._connection.execute(f"SET threads={cls._threads}")
-            cls._connection.execute(cls.profiling_set())  # type: ignore[no-untyped-call]
+
+            cls._connection.execute(
+                f"SET autoinstall_known_extensions={cls._auto_install_extensions};"
+            )
+            cls._connection.execute(f"SET autoload_known_extensions={cls._auto_load_extensions};")
+            cls._connection.execute(f"SET lock_configuration={cls._lock_configuration};")
+
             cls.register_functions()
-            print("Memory Limit Connection New: ", cls._memory_limit)
-        print("Memory Limit Connection Instance: ", cls._memory_limit)
         return cls._connection
 
     @classmethod
@@ -142,15 +131,3 @@ class ConnectionManager:
                 )
                 # duckdb.create_function expects a function,
                 # we are using FunctionType which works the same
-
-    @classmethod
-    def profiling_set(cls):  # type: ignore[no-untyped-def]
-        pragmas = []
-        for key, value in cls._config.items():
-            if key == "settings":
-                settings_str = "{" + ",".join(f'"{m}": "true"' for m in value) + "}"
-                pragmas.append(f"PRAGMA custom_profiling_settings = '{settings_str}';")
-            else:
-                pragmas.append(f"PRAGMA {key} = '{value}';")
-
-        return "\n".join(pragmas)

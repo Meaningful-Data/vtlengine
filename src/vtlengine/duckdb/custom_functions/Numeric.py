@@ -3,6 +3,8 @@ import math
 from decimal import Decimal
 from typing import Optional, Union
 
+from vtlengine.Exceptions import RunTimeError
+
 
 def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
     """
@@ -19,7 +21,7 @@ def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> O
     Returns:
         Optional[float]: The rounded value, or None if the input value is None.
     """
-    if value is None:
+    if value is None or math.isnan(value):
         return None
     multiplier = 1.0
     if decimals is not None:
@@ -103,7 +105,7 @@ class PseudoRandom(_random.Random):
         self.seed(seed)
 
 
-def random_duck(seed: float, index: int) -> Optional[float]:
+def random_duck(seed: Optional[Union[float, int]], index: Optional[int]) -> Optional[float]:
     """Generates a pseudo-random number based on a seed and an index.
 
     It initializes a PseudoRandom instance with the seed,
@@ -116,7 +118,34 @@ def random_duck(seed: float, index: int) -> Optional[float]:
     Returns:
         A pseudo-random number rounded to 6 decimal places.
     """
+    if index is None or seed is None:
+        return None
+
     instance: PseudoRandom = PseudoRandom(seed)
     for _ in range(index):
         instance.random()
     return instance.random().__round__(6)
+
+
+def division_duck(
+    a: Optional[Union[int, float]], b: Optional[Union[int, float]]
+) -> Optional[float]:
+    """
+    Custom DuckDB-safe division function.
+    Handles division by zero and overflow.
+
+    Args:
+        a (Optional[Union[int, float]]): Dividend
+        b (Optional[Union[int, float]]): Divisor
+
+    Returns:
+        Optional[float]: Result of a / b, or raises ValueError
+    """
+    if a is None or b is None:
+        return None
+
+    if b == 0:
+        raise RunTimeError(code="2-1-15-6", value_1=a, value_2=b, op="/")
+    result = a / b
+
+    return result

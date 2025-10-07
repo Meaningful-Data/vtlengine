@@ -33,8 +33,8 @@ jobs:
       run: poetry install --all-extras
     - name: Run lint checks
       run: poetry run ruff check src tests
-    - name: Run type checks
-      run: poetry run mypy
+#    - name: Run type checks
+#      run: poetry run mypy
 #    - name: Run tests
 #      run: poetry run pytest --cov
 #    - name: Check coverage

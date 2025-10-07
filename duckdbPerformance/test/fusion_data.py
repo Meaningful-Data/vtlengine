@@ -151,7 +151,6 @@ def generate_timeline(series, windows, run_id, out_dir=OUT_DIR):
     return timeline_path
 
 
-
 def run_pipeline():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 

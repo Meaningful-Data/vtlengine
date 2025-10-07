@@ -5,14 +5,14 @@
       "DataStructure": [
         {
           "name": "Id_1",
-          "role": "Identifier",
           "type": "Integer",
+          "role": "Identifier",
           "nullable": false
         },
         {
           "name": "Me_1",
+          "type": "Integer",
           "role": "Measure",
-          "type": "String",
           "nullable": true
         }
       ]

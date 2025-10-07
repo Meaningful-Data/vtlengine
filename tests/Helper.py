@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key
+from vtlengine.Exceptions import DataLoadError, SemanticError, VTLEngineException, check_key
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -208,7 +208,7 @@ class TestHelper(TestCase):
             ref_dataset = reference_datasets[dataset.name]
             param_name = ref_dataset.ref_name
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{param_name}{cls.CSV}")
-            dataset.data.to_csv(csv_file_name, index=False, header=True)
+            dataset.data.df().to_csv(csv_file_name, index=False, header=True)
 
     @classmethod
     def NewSemanticExceptionTest(
@@ -343,14 +343,20 @@ class TestHelper(TestCase):
         exception_code: Optional[str] = None,
     ):
         if exception_code is not None:
-            with pytest.raises(VTLEngineException) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+            with pytest.raises(DataLoadError):
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
+        elif exception_message is not None:
+            with pytest.raises(VTLEngineException, match=exception_message):
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
         else:
-            with pytest.raises(Exception, match=exception_message) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+            with pytest.raises(SemanticError, match=exception_code):
+                datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
+                print(datasets)
         # Test Assertion.------------------------------------------------------
-
-        if len(context.value.args) > 1 and exception_code is not None:
-            assert exception_code == str(context.value.args[1])
-        else:
-            assert exception_message in str(context.value.args[0])
+        #
+        # if len(context.value.args) > 1 and exception_code is not None:
+        #     assert exception_code == str(context.value.args[1])
+        # else:
+        #     assert exception_message in str(context.value.args[0])

@@ -1,8 +1,7 @@
 from copy import copy
 from typing import Any, List, Union
 
-import pandas as pd
-from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
@@ -48,7 +47,9 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if not isinstance(result, Scalar):
             if isinstance(condition, DataComponent):
-                result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+                result.data = cls.component_level_evaluation(
+                    condition, true_branch, false_branch, result.name
+                )
             if isinstance(condition, Dataset):
                 result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
@@ -59,6 +60,7 @@ class If(Operator):
         condition: DataComponent,
         true_branch: Union[DataComponent, Scalar],
         false_branch: Union[DataComponent, Scalar],
+        comp_name: str,
     ) -> DuckDBPyRelation:
         def get_expr(branch: Any) -> str:
             return (
@@ -80,7 +82,7 @@ class If(Operator):
         if not isinstance(false_branch, Scalar):
             base = duckdb_concat(base, false_branch.data)
 
-        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{condition.name}"'
+        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
         return base.project(expr)
 
     @classmethod
@@ -89,7 +91,6 @@ class If(Operator):
     ) -> Any:
         ids = condition.get_identifiers_names()
         cond_col = f"{condition.get_measures_names()[0]}"
-
         base = duckdb_fillna(condition.data, "FALSE", cond_col)
 
         if not isinstance(true_branch, Scalar):
@@ -97,39 +98,41 @@ class If(Operator):
             true_branch.data = duckdb_rename(
                 true_branch.data, {m: f"__{m}@true_branch__" for m in comps}
             )
-            base = duckdb_concat(base, true_branch.data, ids)
         if not isinstance(false_branch, Scalar):
             comps = [c for c in false_branch.get_components_names() if c not in ids]
             false_branch.data = duckdb_rename(
                 false_branch.data, {m: f"__{m}@false_branch__" for m in comps}
             )
-            base = duckdb_concat(base, false_branch.data, ids)
 
-        exprs = []
-        for comp_name in result.get_components_names():
-            if comp_name in ids:
-                expr = f'"{comp_name}"'
-            else:
-                true_expr = (
-                    f'"__{comp_name}@true_branch__"'
-                    if not isinstance(true_branch, Scalar)
-                    else repr(true_branch.value)
-                    if true_branch.value is not None
-                    else "NULL"
-                )
-                false_expr = (
-                    f'"__{comp_name}@false_branch__"'
-                    if not isinstance(false_branch, Scalar)
-                    else repr(false_branch.value)
-                    if false_branch.value is not None
-                    else "NULL"
-                )
-                expr = (
-                    f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
-                )
-            exprs.append(expr)
+        base_true = base.filter(f'"{cond_col}"')
+        base_false = base.filter(f'NOT "{cond_col}"')
 
-        result.data = base.project(", ".join(exprs))
+        def project_side(base: DuckDBPyRelation, branch: Any, tag: str) -> DuckDBPyRelation:
+            if isinstance(branch, Scalar):
+                exprs = [f'"{id_}"' for id_ in ids]
+                for comp_name in result.get_components_names():
+                    if comp_name in ids:
+                        continue
+                    value = repr(branch.value) if branch.value is not None else "NULL"
+                    exprs.append(f'{value} AS "{comp_name}"')
+                return base.project(", ".join(exprs))
+
+            base = base.set_alias("base")
+            branch = branch.data.set_alias("branch")
+            join_cond = " AND ".join(f'base."{c}" = branch."{c}"' for c in ids)
+            joined = base.join(branch, join_cond, how="inner")
+            exprs = [f'base."{id_}"' for id_ in ids]
+            for comp_name in result.get_components_names():
+                if comp_name in ids:
+                    continue
+                exprs.append(f'branch."__{comp_name}@{tag}__" AS "{comp_name}"')
+            return joined.project(", ".join(exprs))
+
+        res_true = project_side(base_true, true_branch, "true_branch")
+        res_false = project_side(base_false, false_branch, "false_branch")
+
+        result.data = res_true.union(res_false)
+        result.data = result.data.reset_index()
         return result
 
     @classmethod
@@ -280,7 +283,7 @@ class Nvl(Binary):
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
                 name=comp_name,
-                data=pd.Series(dtype=object),
+                data=empty_relation(),
                 data_type=left.data_type,
                 role=Role.MEASURE,
                 nullable=False,
@@ -314,13 +317,6 @@ class Case(Operator):
     def evaluate(
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
-        def get_measures(op: Union[DataComponent, Dataset, Scalar]) -> List[str]:
-            if isinstance(op, DataComponent) and op.data is not None:
-                return [op.data.columns[0]]
-            if isinstance(op, Dataset) and op.data is not None:
-                return op.get_measures_names()
-            return []
-
         def get_condition_measure(op: Union[DataComponent, Dataset, Scalar]) -> str:
             return op.get_measures_names()[0] if isinstance(op, Dataset) else op.name
 
@@ -363,26 +359,28 @@ class Case(Operator):
         exprs = [f'"{id_}"' for id_ in ids]
         columns = base.columns
         measures = next(
-            (get_measures(op) for op in operands if isinstance(op, (Dataset, DataComponent))),
-            ["result"],
+            (op.get_measures_names() for op in operands if isinstance(op, Dataset)),
+            [VirtualCounter._new_dc_name()],
         )
         for col in measures:
             expr = "CASE "
             # CASE op ends whenever the first cond is matched, so in order to match the
             # VTL specification, we need to reverse the order of the operands
             for i, op in enumerate(reversed(operands)):
-                i = len(operands) - 1 - i  # Reverse index to match conditions
+                i = len(operands) - 1 - i
                 cond_col = next(
-                    (col for col in columns if col.startswith(f"cond_{i}")), "cond_else"
+                    (col_ for col_ in columns if col_.startswith(f"cond_{i}")), "cond_else"
                 )
                 if isinstance(op, Scalar):
                     value = repr(op.value) if op.value is not None else "NULL"
                 else:
-                    value = f'"op_{i}.{col}"'
+                    col_ = col if isinstance(op, Dataset) else op.data.columns[0]
+                    value = f'"op_{i}.{col_}"'
                 expr += f'WHEN "{cond_col}" THEN {value} '
             expr += f'END AS "{col}"'
             exprs.append(expr)
 
+        print("\n", exprs)
         result.data = base.project(", ".join(exprs))
         return result
 

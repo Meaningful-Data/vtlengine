@@ -207,7 +207,7 @@ class Aggregation(Unary):
         grouping_keys = result.get_identifiers_names()
         result_rel = operand.data if operand.data is not None else empty_relation()
         measure_names = operand.get_measures_names()
-        result_rel = result_rel.project(", ".join(grouping_keys + measure_names))
+        result_rel = result_rel[grouping_keys + measure_names]
         if cls.op == COUNT:
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
             if condition:
@@ -219,7 +219,8 @@ class Aggregation(Unary):
 
         # Handle correct order on result
         aux_rel = operand.data if operand.data is not None else empty_relation()
-        aux_rel = aux_rel.project(", ".join(grouping_keys) or "*").distinct()
+        aux_rel.clean_exec_graph()
+        aux_rel = aux_rel[grouping_keys].distinct()
         if len(grouping_keys) == 0:
             aux_rel = result_rel
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())

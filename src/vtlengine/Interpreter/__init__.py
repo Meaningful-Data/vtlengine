@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -55,6 +56,7 @@ from vtlengine.duckdb.duckdb_utils import (
     duckdb_merge,
     duckdb_rename,
     duckdb_select,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.files.output import save_datapoints
@@ -65,6 +67,7 @@ from vtlengine.Model import (
     DataComponent,
     Dataset,
     ExternalRoutine,
+    RelationProxy,
     Role,
     Scalar,
     ScalarSet,
@@ -231,7 +234,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 child, (AST.HRuleset, AST.DPRuleset, AST.Operator)
             ) and not isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 raise SemanticError("1-3-17")
-            result = self.visit(child)
+            try:
+                result = self.visit(child)
+            except duckdb.Error as e:
+                raise (vtlengine.Exceptions.RunTimeError.map_duckdb_error(e))
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
@@ -485,10 +491,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=op_comp.nullable,
                 )
                 if operand.data is not None:
-                    # data_to_keep = operand.data[operand.get_identifiers_names()]
-                    # data_to_keep[op_comp.name] = op_comp.data
-                    data_to_keep = duckdb_select(operand.data, operand.get_identifiers_names())
-                    data_to_keep = duckdb_concat(data_to_keep, op_comp.data)
+                    data_to_keep = operand.data[operand.get_identifiers_names()]
+                    data_to_keep[op_comp.name] = op_comp.data
                 else:
                     data_to_keep = None
                 operand = Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
@@ -931,7 +935,11 @@ class InterpreterAnalyzer(ASTTemplate):
             aux_operands = []
             for operand in operands:
                 measure = operand.get_component(operand.get_measures_names()[0])
-                data = operand.data[measure.name] if operand.data is not None else None
+                data = (
+                    operand.data[measure.name]
+                    if operand.data is not None
+                    else empty_relation(measure.name)
+                )
                 # Getting role from encoded information
                 # (handling also UDO params as it is present in the value of the mapping)
                 if self.udo_params is not None and operand.name in self.udo_params[-1].values():
@@ -992,10 +1000,6 @@ class InterpreterAnalyzer(ASTTemplate):
             result = REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
             if node.isLast:
                 if result.data is not None:
-                    # result.data.rename(
-                    #     columns={col: col[col.find("#") + 1 :] for col in result.data.columns},
-                    #     inplace=True,
-                    # )
                     result.data = duckdb_rename(
                         result.data,
                         {
@@ -1010,8 +1014,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 }
                 for comp in result.components.values():
                     comp.name = comp.name[comp.name.find("#") + 1 :]
-                # if result.data is not None:
-                #     result.data.reset_index(drop=True, inplace=True)
+                if result.data is not None:
+                    result.data = result.data.reset_index()
                 self.is_from_join = False
             return result
         return REGULAR_AGGREGATION_MAPPING[node.op].analyze(operands, dataset)
@@ -1354,7 +1358,11 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_DPRule(self, node: AST.DPRule) -> None:
         self.is_from_rule = True
         if self.ruleset_dataset is not None:
-            self.rule_data = self.ruleset_dataset.data
+            self.rule_data = (
+                RelationProxy(self.ruleset_dataset.data)
+                if self.ruleset_dataset.data is not None
+                else None
+            )
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
@@ -1401,10 +1409,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.rule_data = duckdb_concat(
                 self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
             )
-            filtered = self.rule_data.filter('"bool_var" = TRUE')
+            filtered = self.rule_data[self.rule_data["bool_var"] == True]
             data = self.rule_data.project(
-                '* EXCLUDE "bool_var", CASE WHEN "bool_var" IS NULL '
-                'THEN NULL ELSE TRUE END AS "bool_var"'
+                '* EXCLUDE "bool_var", '
+                'CASE WHEN "bool_var" IS NULL THEN NULL ELSE TRUE END AS "bool_var"'
             )
 
             if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
@@ -1417,6 +1425,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We only need to filter rule_data on DPR
                 return result_validation
 
+            self.rule_data = self.rule_data.reset_index()
             self.rule_data = duckdb_concat(
                 self.rule_data,
                 result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
@@ -1484,7 +1493,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # If no indexes are in common, then one datapoint is not null
                 invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
                 if len(invalid_indexes) > 0:
-                    left_operand.data.loc[invalid_indexes, measure_name] = "REMOVE_VALUE"
+                    left_operand.data[invalid_indexes, measure_name] = "REMOVE_VALUE"
             if isinstance(left_operand, Dataset):
                 left_operand = get_measure_from_dataset(left_operand, node.left.value)
             if isinstance(right_operand, Dataset):
@@ -1739,23 +1748,30 @@ class InterpreterAnalyzer(ASTTemplate):
             and self.hr_input == "rule"
             and node.value in self.hr_agg_rules_computed
         ):
-            df = self.hr_agg_rules_computed[node.value]
-            return Dataset(name=name, components=result_components, data=df)
+            rel = self.hr_agg_rules_computed[node.value]
+            return Dataset(name=name, components=result_components, data=rel)
 
-        df = self.rule_data
+        rel = self.rule_data
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            rel = rel[condition].reset_index(drop=True)
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
-        if node.value in df[hr_component].values:
+        if node.value in rel[hr_component]:
             rest_identifiers = [
                 comp.name
                 for comp in result_components.values()
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
-            code_data = df[df[hr_component] == node.value].reset_index(drop=True)
-            code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
+            # code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
+            # code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = (
+                duckdb_merge(
+                    code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
+                )
+                .distinct()
+                .reset_index(drop=True)
+            )
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1770,7 +1786,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
-                code_data.loc[fill_indexes, measure_name] = 0
+                code_data[fill_indexes, measure_name] = 0
             code_data[hr_component] = node.value
             df = code_data
         else:

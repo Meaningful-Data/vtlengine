@@ -1,7 +1,11 @@
+import contextlib
 import json
 import math
 import os
 import string
+import subprocess
+import tempfile
+import time
 from pathlib import Path
 from typing import Dict
 
@@ -43,7 +47,7 @@ def generate_datastructure(dtypes: Dict[str, str], file_name: str):
 
     for column, dtype in dtypes.items():
         role = "Identifier" if column.lower().startswith("id") else "Measure"
-        nullable = (role == MEASURE)
+        nullable = role == MEASURE
         comps[column] = {
             "name": column,
             "type": dtype,
@@ -164,14 +168,82 @@ def generate_big_ass_csv(dtypes, length=None, chunk_size=1_000_000):
     print(f"Final size: {size_mb:.2f} MB ({size_gb:.2f} GB)")
 
 
+C_BIN_NAME = "fg"
+
+
+def generate_big_ass_csv_fast(dtypes, length=None, chunk_size=1_000_000):
+    ensure_dirs()
+    length = int(length or BASE_LENGTH)
+    suffix = get_suffix(length)
+    csv_path = DP_PATH / f"BF_{suffix}"
+    ds_json_path = DS_PATH / suffix.replace(".csv", ".json")
+
+    if csv_path.exists():
+        os.remove(csv_path)
+
+    generate_datastructure(dtypes, suffix)
+    config_lines = [
+        f"rows={length}",
+        f"chunk_size={chunk_size}",
+        f"max_num={MAX_NUM}",
+        f"max_str={MAX_STR}",
+        f"csv_path={csv_path}",
+        f"ds_path={ds_json_path}",
+        f"columns={len(dtypes)}",
+    ]
+
+    for name, dt in dtypes.items():
+        config_lines.append(f"col={name}|{dt}")
+
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".cfg") as cfg:
+        cfg.write("\n".join(config_lines))
+        cfg_path = cfg.name
+    try:
+        bin_path = Path(__file__).parent / C_BIN_NAME
+        subprocess.check_call([str(bin_path), cfg_path])
+    except Exception as e:
+        raise OSError(f"Invalid OS '{os.name}'. Try calling from WSL.") from e
+    finally:
+        with contextlib.suppress(OSError):
+            os.remove(cfg_path)
+
+
 if __name__ == "__main__":
-    print("Generating BIG_ASS CSV file")
-    generate_big_ass_csv(
-        dtypes={
-            "Id_1": "Integer",
-            "Id_2": "Integer",
-            "Me_1": "Integer"
-        },
-        length=70_000_000,
-        chunk_size=4000000,
+    rows = 50_000_000
+    chunk_size = 1_000_000
+    dtypes = {
+        "Id_1": "Integer",
+        "Id_2": "String",
+        "Me_1": "Integer",
+    }
+    suffix = get_suffix(rows)
+    file_path = DP_PATH / f"BF_{suffix}"
+
+    # C version
+    # If necessary, re-compile in WSL the C code with (-lm flag needed to support some math ops):
+    # gcc file_generator_fast.c -o fg -lm
+    # Need to be launched from WSL with:
+    # python3 duckdbPerformance/performance_utils/file_generator.py
+    print("Generating BIG_ASS CSV file (C version)")
+    start = time.time()
+    generate_big_ass_csv_fast(
+        dtypes=dtypes,
+        length=rows,
+        chunk_size=chunk_size,
     )
+    size_bytes = os.path.getsize(file_path)
+    size_mb = size_bytes / (1024**2)
+    size_gb = size_bytes / (1024**3)
+    print(f"Generated CSV: '{file_path}' with {rows:,} rows.")
+    print(f"Final size: {size_mb:.2f} MB ({size_gb:.2f} GB)")
+    print(f"Time to generate CSV in C: {time.time() - start:.2f} seconds")
+
+    # Python version
+    # start = time.time()
+    # print(f"Generating BIG_ASS CSV file (Python version)")
+    # generate_big_ass_csv(
+    #     dtypes=dtypes,
+    #     length=rows,
+    #     chunk_size=chunk_size,
+    # )
+    # print(f"Time to generate CSV in Python: {time.time() - start:.2f} seconds")

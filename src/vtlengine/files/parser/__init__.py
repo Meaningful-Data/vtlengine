@@ -1,14 +1,14 @@
-import csv
 from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+import duckdb
+from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, Role
@@ -39,7 +39,7 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
-        raise Exception(f"Duplicated columns {', '.join(duplicates)} found in file.")
+        raise DataLoadError(code="0-1-2-3", component=duplicates)
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
     comps_missing: Union[str, List[str]] = (
@@ -110,13 +110,13 @@ def _validate_duckdb(
     for col in components:
         if col not in data_columns:
             if not components[col].nullable:
-                raise SemanticError(code="0-1-1-10", name=dataset_name, comp_name=col)
+                raise DataLoadError(code="0-1-1-10", name=dataset_name, comp_name=col)
             # Add NULL column
             data = data.project(f'*, NULL AS "{col}"')
 
     # Check dataset integrity
     check_nulls(components, data, dataset_name)
-    # check_duplicates(components, data, dataset_name)
+    check_duplicates(components, data, dataset_name)
     check_dwi(components, data, dataset_name)
 
     exprs = []
@@ -160,7 +160,7 @@ def check_nulls(
     for col, null_count in zip(non_nullable, null_counts):  # type: ignore[arg-type]
         if null_count > 0:
             if col in id_names:
-                raise SemanticError(code="0-1-1-4", null_identifier=col, name=dataset_name)
+                raise DataLoadError(code="0-1-1-4", null_identifier=col, name=dataset_name)
             raise SemanticError(code="0-1-1-15", measure=col, name=dataset_name)
 
 
@@ -169,7 +169,7 @@ def check_duplicates(
     data: DuckDBPyRelation,
     dataset_name: str,
 ) -> None:
-    id_names = [name for name, comp in components.items() if comp.role == Role.IDENTIFIER]
+    id_names = [f'"{name}"' for name, comp in components.items() if comp.role == Role.IDENTIFIER]
 
     if id_names:
         query = f"""
@@ -206,7 +206,6 @@ def load_datapoints(
     csv_path: Optional[Union[Path, str]] = None,
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
-        # Empty dataset as table
         return empty_relation(list(components.keys()))
 
     elif isinstance(csv_path, (str, Path)):
@@ -214,10 +213,14 @@ def load_datapoints(
         if isinstance(csv_path, Path):
             _validate_csv_path(components, csv_path)
 
+        header_rel = con.query(f"SELECT * FROM read_csv('{path_str}', header = TRUE) LIMIT 0")
+        header = header_rel.columns
+        if len(header) == 1 and "," in header[0]:
+            header = [h.strip() for h in header[0].split(",")]
         # Lazy CSV read
-        with open(path_str, mode="r", encoding="utf-8") as file:
-            csv_reader = csv.reader(file)
-            header = next(csv_reader)  # Extract the header to determine column order
+        # with open(path_str, mode="r", encoding="utf-8") as file:
+        #     csv_reader = csv.reader(file)
+        #     header = next(csv_reader)  # Extract the header to determine column order
 
         # Extract data types from components in header
         dtypes = {
@@ -228,17 +231,20 @@ def load_datapoints(
         }
 
         # Read the CSV file
-        rel = con.read_csv(
-            path_str,
-            header=True,
-            columns=dtypes,
-            delimiter=",",
-            quotechar='"',
-            ignore_errors=True,
-            date_format="%Y-%m-%d",
-            allow_quoted_nulls=False,
-            encoding="utf-8",
-        )
+        try:
+            rel = con.read_csv(
+                path_str,
+                header=True,
+                columns=dtypes,
+                delimiter=",",
+                quotechar='"',
+                ignore_errors=False,
+                date_format="%Y-%m-%d",
+                allow_quoted_nulls=False,
+                encoding="utf-8",
+            )
+        except duckdb.Error as e:
+            raise DataLoadError.map_duckdb_error(e)
 
         # Type validation and normalization
         rel = _validate_duckdb(components, rel, dataset_name)

@@ -114,6 +114,8 @@ def iso_duration_to_indicator(value: str) -> str:
     pattern = r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$"
     match = re.match(pattern, value)
     if not match:
+        if value in PERIOD_IND_MAPPING:
+            return value
         raise ValueError(f"Not valid Duration format: {value}")
 
     years, months, days = match.groups()
