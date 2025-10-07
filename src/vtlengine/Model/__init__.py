@@ -252,10 +252,10 @@ class DataComponent:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    _data: Optional[Union[RelationProxy]] = None
+    _data: Optional[RelationProxy] = None
 
     @property
-    def data(self) -> Optional[Union[RelationProxy]]:
+    def data(self) -> Optional[RelationProxy]:
         return self._data
 
     @data.setter
