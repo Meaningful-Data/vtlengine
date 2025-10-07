@@ -57,8 +57,7 @@ class RelationProxy:
                 raise IndexError("Negative indexing is not supported")
             data = self.relation.filter(f"{INDEX_COL} = {key}")
             if len(self.columns) == 1:
-                value = data.project(f"* EXCLUDE {INDEX_COL}").execute().fetchone()[0]
-                return value
+                data = data.project(f"* EXCLUDE {INDEX_COL}").execute().fetchone()[0]
             return RelationProxy(data)
 
         if isinstance(key, (RelationProxy, DuckDBPyRelation)):
@@ -94,7 +93,7 @@ class RelationProxy:
 
                 data = list(enumerate(idx_list))
                 idx = (
-                    con.values(data).project("column0 AS __pos__, column1 AS idx").set_alias("idx")
+                    con.values(data).project("col0 AS __pos__, col1 AS idx").set_alias("idx")
                 )
                 left_rel = self.relation.set_alias("l")
                 joined = left_rel.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
@@ -144,6 +143,19 @@ class RelationProxy:
 
     def __ge__(self, other: Any) -> "RelationProxy":
         return self._binary_compare(other, ">=")
+
+    def __contains__(self, item: Any) -> bool:
+        cols = [c for c in self.relation.columns if c != INDEX_COL]
+        if len(cols) != 1:
+            return False
+        col = cols[0]
+        proj = self.relation.project(f'{INDEX_COL}, "{col}"')
+        if item is None:
+            cond = f'"{col}" IS NULL'
+        else:
+            cond = f'"{col}" = {self._to_sql_literal(item)}'
+        cnt_rel = proj.filter(cond).aggregate("count(*) AS cnt")
+        return int(cnt_rel.execute().fetchone()[0]) > 0
 
     def __len__(self) -> int:
         return int(self.relation.aggregate("count(*) AS cnt").execute().fetchone()[0])
@@ -388,6 +400,18 @@ class RelationProxy:
             raise ValueError("No data columns to check for not nulls")
         expr = f'("{self.columns[0]}" IS NOT NULL) AS __mask__'
         return RelationProxy(self.relation.project(f"{INDEX_COL}, {expr}"))
+
+    def any(self) -> bool:
+        col = self._get_single_data_column(self.relation)
+        proj = self.relation.project(f'{INDEX_COL}, "{col}"')
+        agg = proj.aggregate(f'coalesce(bool_or("{col}"), false) AS __any__')
+        return bool(agg.execute().fetchone()[0])
+
+    def all(self) -> bool:
+        col = self._get_single_data_column(self.relation)
+        proj = self.relation.project(f'{INDEX_COL}, "{col}"')
+        agg = proj.aggregate(f'coalesce(bool_and(coalesce("{col}", true)), true) AS __all__')
+        return bool(agg.execute().fetchone()[0])
 
     def is_empty(self):
         pass
