@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 import duckdb
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 import vtlengine.AST as AST
 import vtlengine.Exceptions
@@ -264,6 +264,13 @@ class InterpreterAnalyzer(ASTTemplate):
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
 
+        if self.output_path is not None:
+            # Removing data from results
+            for value in results.values():
+                if isinstance(value, Dataset) and value.data is not None:
+                    value.data = None
+
+        self._write_finish()  # type: ignore[no-untyped-call]
         return results
 
     # Definition Language
@@ -1954,3 +1961,18 @@ class InterpreterAnalyzer(ASTTemplate):
             period_to=node.period_to,
             conf=node.conf,
         )
+
+    @staticmethod
+    def _write_finish():  # type: ignore[no-untyped-def]
+        import json
+        import time
+        from pathlib import Path
+
+        data = {"perf_end": time.perf_counter()}
+
+        folder = Path(__file__).parents[3] / "duckdbPerformance" / "output" / "logs"
+        folder.mkdir(parents=True, exist_ok=True)
+
+        file = folder / "finish.json"
+        with open(file, "w") as f:
+            json.dump(data, f)
