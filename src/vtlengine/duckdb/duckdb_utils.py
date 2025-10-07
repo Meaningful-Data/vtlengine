@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import duckdb
 import pandas as pd
-
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
