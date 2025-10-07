@@ -9,7 +9,7 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename, empty_relation
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -137,12 +137,12 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op_func, "bool_var"
+                left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
             )
             result.data["imbalance"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, "imbalance_func", "imbalance"
