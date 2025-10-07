@@ -443,7 +443,7 @@ class Validation(AST):
     op: str
     validation: str
     error_code: Optional[str]
-    error_level: Union[int, str]
+    error_level: Optional[Union[int, str]]
     imbalance: Optional[AST]
     invalid: bool
 
@@ -590,7 +590,7 @@ class HRule(AST):
     name: Optional[str]
     rule: HRBinOp
     erCode: Optional[str]
-    erLevel: Union[int, str]
+    erLevel: Optional[Union[int, str]]
 
     __eq__ = AST.ast_equality
 
@@ -604,7 +604,7 @@ class DPRule(AST):
     name: Optional[str]
     rule: HRBinOp
     erCode: Optional[str]
-    erLevel: Union[int, str]
+    erLevel: Optional[Union[int, str]]
 
     __eq__ = AST.ast_equality
 
