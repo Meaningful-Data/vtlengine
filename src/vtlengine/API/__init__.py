@@ -338,12 +338,12 @@ def run(
     for operand in result.values():
         if isinstance(operand, Dataset) and operand.data is not None:
             try:
-                operand.data = operand.data.df()
+                operand._data = operand.data.df()
             except duckdb.Error as e:
                 raise RunTimeError.map_duckdb_error(e) from None
         elif isinstance(operand, DataComponent) and operand.data is not None:
             df = operand.data.df()
-            operand.data = df.squeeze() if len(df.columns) == 1 else df
+            operand._data = df.squeeze() if len(df.columns) == 1 else df
 
     # Remove temporary views if any
     VirtualCounter.reset_temp_views()

@@ -131,7 +131,7 @@ def test_save_datapoints(dataset, reference, tmp_path_factory):
     output_path = tmp_path_factory.mktemp("test")
     save_datapoints(None, dataset, output_path=output_path)
     result = pd.read_csv(output_path / f"{dataset.name}.csv")
-    pd.testing.assert_frame_equal(result, dataset.data, check_dtype=False)
+    pd.testing.assert_frame_equal(result, dataset.data.df(), check_dtype=False)
 
 
 @patch("vtlengine.files.parser.con")

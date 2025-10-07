@@ -208,7 +208,7 @@ class TestHelper(TestCase):
             ref_dataset = reference_datasets[dataset.name]
             param_name = ref_dataset.ref_name
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{param_name}{cls.CSV}")
-            dataset.data.to_csv(csv_file_name, index=False, header=True)
+            dataset.data.df().to_csv(csv_file_name, index=False, header=True)
 
     @classmethod
     def NewSemanticExceptionTest(
