@@ -92,9 +92,7 @@ class RelationProxy:
                     return RelationProxy(self.relation.limit(0))
 
                 data = list(enumerate(idx_list))
-                idx = (
-                    con.values(data).project("col0 AS __pos__, col1 AS idx").set_alias("idx")
-                )
+                idx = con.values(data).project("col0 AS __pos__, col1 AS idx").set_alias("idx")
                 left_rel = self.relation.set_alias("l")
                 joined = left_rel.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
                 return RelationProxy(joined.order("idx.__pos__").project("l.*"))
@@ -150,10 +148,7 @@ class RelationProxy:
             return False
         col = cols[0]
         proj = self.relation.project(f'{INDEX_COL}, "{col}"')
-        if item is None:
-            cond = f'"{col}" IS NULL'
-        else:
-            cond = f'"{col}" = {self._to_sql_literal(item)}'
+        cond = f'"{col}" IS NULL' if item is None else f'"{col}" = {self._to_sql_literal(item)}'
         cnt_rel = proj.filter(cond).aggregate("count(*) AS cnt")
         return int(cnt_rel.execute().fetchone()[0]) > 0
 
