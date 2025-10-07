@@ -4,6 +4,12 @@
       "name": "with_udo",
       "DataStructure": [
         {
+          "name": "__index_id__",
+          "type": "Number",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
           "name": "INDEX_BASE",
           "role": "Identifier",
           "type": "String",

@@ -1,23 +1,35 @@
+import os
 from copy import copy
 from decimal import Decimal
 from typing import Any, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
+    ABS,
     AND,
     CEIL,
+    DIV,
     EQ,
+    EXP,
     FLOOR,
     GT,
     GTE,
+    LN,
     LOG,
     LT,
     LTE,
+    MINUS,
+    MOD,
+    MULT,
     NEQ,
     OR,
+    PLUS,
+    POWER,
     ROUND,
+    SQRT,
     XOR,
 )
 from vtlengine.connection import con
@@ -40,7 +52,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_rename, empty_relation
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -55,9 +67,28 @@ BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
 
-
 DUCKDB_RETURN_TYPES = Union[str, int, float, bool, None]
 TIME_TYPES = [TimeInterval, TimePeriod, Duration]
+
+OUTPUT_NUMERIC_FUNCTIONS = [
+    LOG,
+    POWER,
+    DIV,
+    PLUS,
+    MINUS,
+    MULT,
+    MOD,
+    ROUND,
+    "trunc_duck",
+    "random_duck",
+    CEIL,
+    ABS,
+    FLOOR,
+    EXP,
+    LN,
+    SQRT,
+]
+ROUND_VALUE = int(os.getenv("ROUND_VALUE", "8"))
 
 
 def handle_sql_scalar(value: Any) -> Any:
@@ -77,6 +108,8 @@ def apply_unary_op(cls: Type["Unary"], me_name: str, value: Any) -> str:
         return cls.apply_unary_op(value, me_name)
     if isinstance(op_token, tuple):
         op_token, _ = op_token
+    if op_token in OUTPUT_NUMERIC_FUNCTIONS:
+        return f'round_duck({op_token}("{me_name}"),{ROUND_VALUE}) AS "{value}"'
     return f'{op_token}("{me_name}") AS "{value}"'
 
 
@@ -88,7 +121,12 @@ def apply_unary_op_scalar(cls: Type["Unary"], value: Any) -> Any:
 
     if isinstance(op_token, tuple):
         op_token, _ = op_token
-    result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
+    if op_token in OUTPUT_NUMERIC_FUNCTIONS:
+        result = con.sql(
+            f"SELECT round_duck({op_token}({handle_sql_scalar(value)}),{ROUND_VALUE})"
+        ).fetchone()[0]  # type: ignore[index]
+    else:
+        result = con.sql(f"SELECT {op_token}({handle_sql_scalar(value)})").fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
 
 
@@ -111,9 +149,13 @@ def apply_bin_op(cls: Type["Binary"], me_name: str, left: Any, right: Any) -> st
         # also we could do it as ln(left) / ln(right) following
         # the mathematical equivalence between log and ln
         right, left = (left, right)
+    if op_token in OUTPUT_NUMERIC_FUNCTIONS:
+        if token_position == LEFT:
+            return f"round({op_token}({left}, {right}), {ROUND_VALUE}) AS {me_name}"
+        return f"round_duck(({left} {op_token} {right}),{ROUND_VALUE}) AS {me_name}"
     if token_position == LEFT:
-        return f'{op_token}({left}, {right}) AS "{me_name}"'
-    return f'({left} {op_token} {right}) AS "{me_name}"'
+        return f"{op_token}({left}, {right}) AS {me_name}"
+    return f"({left} {op_token} {right}) AS {me_name}"
 
 
 def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
@@ -130,9 +172,21 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
 
     if cls.op == LOG:
         right, left = (left, right)
-    query = (
-        f"{op_token}({left}, {right})" if token_position == LEFT else f"({left} {op_token} {right})"
-    )
+
+    if cls.op == DIV:
+        query = f"division_duck({left}, {right})"
+    elif op_token in OUTPUT_NUMERIC_FUNCTIONS:
+        query = (
+            f"round_duck({op_token}({left}, {right}),{ROUND_VALUE})"
+            if token_position == LEFT
+            else f"round(({left} {op_token} {right}),{ROUND_VALUE})"
+        )
+    else:
+        query = (
+            f"{op_token}({left}, {right})"
+            if token_position == LEFT
+            else f"({left} {op_token} {right})"
+        )
 
     result = con.sql("SELECT " + query).fetchone()[0]  # type: ignore[index]
     return float(result) if isinstance(result, Decimal) else result
@@ -640,22 +694,28 @@ class Binary(Operator):
             raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
 
         # Measures are the same, using left operand measures names
-        exprs = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        transformations = [f"{d}" for d in result_dataset.get_identifiers_names()]
+        to_exclude = set()
         for me in left_operand.get_measures():
             if cls.op in BINARY_COMPARISON_OPERATORS and me.data_type in TIME_TYPES:
-                exprs.append(f"""
-                    cast_time_types('{me.data_type.__name__}', {me.name}_x) AS {me.name}_x,
-                    cast_time_types('{me.data_type.__name__}', {me.name}_y) AS {me.name}_y
+                transformations.append(f"""
+                    cast_time_types('{me.data_type.__name__}', "{me.name}_x") AS "{me.name}_x",
+                    cast_time_types('{me.data_type.__name__}', "{me.name}_y") AS "{me.name}_y"
                 """)
+                to_exclude.add(f"{me.name}_x")
+                to_exclude.add(f"{me.name}_y")
             left, right = (
                 (f"{me.name}_y", f"{me.name}_x")
                 if use_right_as_base
                 else (f"{me.name}_x", f"{me.name}_y")
             )
-            exprs.append(apply_bin_op(cls, me.name, left, right))
+            transformations.append(apply_bin_op(cls, f'"{me.name}"', left, right))
 
-        final_query = ", ".join(exprs)
+        final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
+
+        if to_exclude:
+            result_data = result_data.project(f"* EXCLUDE ({', '.join(sorted(to_exclude))})")
 
         # Delete attributes from the result data
         attributes = list(
@@ -681,7 +741,10 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        try:
+            result_scalar.value = apply_bin_op_scalar(cls, left_operand.value, right_operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
@@ -711,9 +774,11 @@ class Binary(Operator):
             left, right = (
                 (f'"{me.name}"', scalar_value) if dataset_left else (scalar_value, f'"{me.name}"')
             )
-            exprs.append(apply_bin_op(cls, me.name, left, right))
+            exprs.append(apply_bin_op(cls, f'"{me.name}"', left, right))
 
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_dataset.data = result_data.project(final_query)
         cls.modify_measure_column(result_dataset)
         return result_dataset
@@ -742,7 +807,10 @@ class Binary(Operator):
 
         transformations.append(
             apply_bin_op(
-                cls, result_component.name, f'"{left_operand.name}"', f'"{right_operand.name}"'
+                cls,
+                f'"{result_component.name}"',
+                f'"{left_operand.name}"',
+                f'"{right_operand.name}"',
             )
         )
         final_query = ", ".join(transformations)
@@ -772,8 +840,12 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        exprs.append(apply_bin_op(cls, result_component.name, component.name, scalar_value))
+        exprs.append(
+            apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_value)
+        )
         final_query = ", ".join(exprs)
+        if "/" in final_query and scalar_value == 0:
+            raise RunTimeError(code="2-1-15-6", op="/")
         result_component.data = comp_data.project(final_query)
         return result_component
 
@@ -784,7 +856,9 @@ class Binary(Operator):
 
         exprs = [f'"{d}"' for d in dataset.get_identifiers_names()]
         for measure_name in dataset.get_measures_names():
-            exprs.append(apply_bin_op(cls, measure_name, measure_name, scalar_set.values))
+            exprs.append(
+                apply_bin_op(cls, f'"{measure_name}"', f'"{measure_name}"', scalar_set.values)
+            )
 
         result_dataset.data = result_data.project(", ".join(exprs))
         cls.modify_measure_column(result_dataset)
@@ -798,7 +872,9 @@ class Binary(Operator):
         result_data = component.data if component.data is not None else empty_relation()
 
         result_component.data = result_data.project(
-            apply_bin_op(cls, result_component.name, component.name, scalar_set.values)
+            apply_bin_op(
+                cls, f'"{result_component.name}"', f'"{component.name}"', scalar_set.values
+            )
         )
         return result_component
 
@@ -995,14 +1071,20 @@ class Unary(Operator):
     def scalar_evaluation(cls, operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(operand)
         # result_scalar.value = cls.op_func(operand.value)
-        result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        try:
+            result_scalar.value = apply_unary_op_scalar(cls, operand.value)
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_scalar
 
     @classmethod
     def component_evaluation(cls, operand: DataComponent) -> DataComponent:
         result_component = cls.component_validation(operand)
         result_data = operand.data if operand.data is not None else empty_relation()
-        result_component.data = result_data.project(
-            apply_unary_op(cls, operand.name, result_component.name)
-        )
+        try:
+            result_component.data = result_data.project(
+                apply_unary_op(cls, operand.name, result_component.name)
+            )
+        except duckdb.Error as e:
+            raise RunTimeError.map_duckdb_error(e)
         return result_component

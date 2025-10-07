@@ -7,6 +7,7 @@ from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
+from vtlengine.Model.relation_proxy import RelationProxy
 
 TYPES_DICT = {
     "STRING": [duckdb.type("VARCHAR"), duckdb.type("STRING")],
@@ -17,77 +18,77 @@ TYPES_DICT = {
     "DATE": [duckdb.type("DATE")],
 }
 
+INDEX_COL = "__index__"
+
 
 def duckdb_concat(
     left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
 ) -> DuckDBPyRelation:
     """
-    Concatenates two DuckDB relations by row, ensuring that columns are aligned.
-
-    If either relation is None, returns an empty relation.
-
-    If `on` is specified, only rows with matching values in the `on` columns are concatenated.
+    Horizontal concatenation (axis=1) of two relations.
+    - If `on` is provided, align rows using those key columns (OUTER JOIN).
+    - If `on` is None and both have INDEX_COL, align by INDEX_COL.
+    - Otherwise, align by position using a temporary row id (not exposed).
+    - For shared columns, prefer right-hand values when the right row exists.
     """
-
     if left is None or right is None:
         return empty_relation()
+
     if on is not None:
-        on = [on] if isinstance(on, str) else on
-
-    from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-
-    l_name = VirtualCounter._new_temp_view_name()
-    r_name = VirtualCounter._new_temp_view_name()
-    con.register(l_name, left)
-    con.register(r_name, right)
-
-    left_cols = set(left.columns)
-    right_cols = set(right.columns)
-    common_cols = left_cols & right_cols
-
-    select_parts = []
-    for col in left_cols | right_cols:
-        if col in common_cols:
-            presence_col = on[0] if on else "__row_id__"
-            select_parts.append(
-                f'CASE WHEN r."{presence_col}" IS NOT NULL THEN r."{col}" '
-                f'ELSE l."{col}" END AS "{col}"'
-            )
-        elif col in left_cols:
-            select_parts.append(f'l."{col}"')
-        else:
-            select_parts.append(f'r."{col}"')
-
-    select_clause = ",\n".join(select_parts)
-
-    if on is None:
-        with_clause = f"""
-        l AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {l_name}),
-        r AS (SELECT *, ROW_NUMBER() OVER () AS __row_id__ FROM {r_name})
-        """
-        on_clause = "l.__row_id__ = r.__row_id__"
+        on_cols = [on] if isinstance(on, str) else list(on)
     else:
-        with_clause = f"""
-        l AS (SELECT * FROM {l_name}),
-        r AS (SELECT * FROM {r_name})
-        """
-        on_clause = " AND ".join([f'l."{col}" = r."{col}"' for col in on])
+        on_cols = (
+            [INDEX_COL] if (INDEX_COL in left.columns and INDEX_COL in right.columns) else None
+        )
 
-    query = f"""
-        WITH {with_clause}
-        SELECT {select_clause}
-        FROM l
-        FULL OUTER JOIN r
-        ON {on_clause}
-    """
+    left_rel = left.set_alias("l")
+    right_rel = right.set_alias("r")
 
-    order_clause = ""
-    if on:
-        order_cols = ", ".join([f'COALESCE(r."{col}", l."{col}")' for col in on])
-        order_clause = f"ORDER BY {order_cols}"
+    if not on_cols and INDEX_COL in left.columns and INDEX_COL in right.columns:
+        on_cols = [INDEX_COL]
 
-    final_query = query.format(select_clause=select_clause) + "\n" + order_clause
-    return con.sql(final_query)
+    used_rowid = False
+    if on_cols is None:
+        # Positional alignment when no usable key is available
+        left_rel = left_rel.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("l")
+        right_rel = right_rel.project("row_number() OVER () - 1 AS __row_id__, *").set_alias("r")
+        join_cond = "l.__row_id__ = r.__row_id__"
+        presence_col = "r.__row_id__"
+        used_rowid = True
+    else:
+        join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
+        presence_col = f'r."{on_cols[0]}"'
+
+    joined = left_rel.join(right_rel, join_cond, how="outer")
+
+    left_cols = list(left.columns)
+    right_cols = list(right.columns)
+    union_cols: List[str] = []
+    seen: Set[str] = set()
+    for c in left_cols + right_cols:
+        if c not in seen:
+            seen.add(c)
+            union_cols.append(c)
+
+    select_exprs: List[str] = []
+    for c in union_cols:
+        if used_rowid and c == "__row_id__":
+            continue
+        if c in left_cols and c in right_cols:
+            select_exprs.append(
+                f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"'
+            )
+        elif c in left_cols:
+            select_exprs.append(f'l."{c}" AS "{c}"')
+        else:
+            select_exprs.append(f'r."{c}" AS "{c}"')
+
+    # If index exists in either side but was not included (positional mode without index),
+    # keep a coalesced index
+    if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
+        select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
+
+    return RelationProxy(joined.project(", ".join(select_exprs)))
 
 
 def duckdb_drop(
@@ -104,7 +105,7 @@ def duckdb_drop(
     if not cols:
         return empty_relation(as_query=as_query)
     query = ", ".join(quote_cols(cols))
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_fill(
@@ -119,7 +120,7 @@ def duckdb_fill(
         query = f'*, {value} AS "{col_name}"'
     else:
         query = f'{col_name} COALESCE({value}) AS "{col_name}"'
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_fillna(
@@ -138,6 +139,8 @@ def duckdb_fillna(
     exprs = []
     cols_set = set(data.columns) if cols is None else {cols} if isinstance(cols, str) else set(cols)
     for idx, col in enumerate(cols_set):
+        col = col.replace('"', "")
+        col_type = get_col_type(data, col)
         type_ = (
             (
                 types
@@ -154,15 +157,17 @@ def duckdb_fillna(
             else None
         )
 
-        if isinstance(types, list) and len(types) not in (1, len(cols_set)):
-            raise ValueError("Length of types must match length of columns.")
-
-        value = f"CAST({value} AS {type_})" if type_ else value
-        exprs.append(f'COALESCE("{col}", {value}) AS "{col}"'.replace('""', '"'))
+        cast_type = type_ if type_ else col_type
+        # problematic default value
+        if value == "default":
+            value = "default"
+        if value == "":
+            value = "''"
+        exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
     query = ", ".join(exprs)
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_merge(
@@ -219,7 +224,7 @@ def duckdb_merge(
         {how.upper()} JOIN {other_name}
         USING ({using_clause})
     """
-    return con.sql(query)
+    return RelationProxy(con.sql(query))
 
 
 def duckdb_rename(
@@ -234,7 +239,7 @@ def duckdb_rename(
         cols.remove(old_name)
         cols_set.add(f'"{old_name}" AS "{new_name}"')
     query = ", ".join(quote_cols(cols) | cols_set)
-    return query if as_query else data.project(query)
+    return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_select(
@@ -247,7 +252,7 @@ def duckdb_select(
 
     If `as_query` is True, returns the SQL query string instead of the relation.
     """
-    data = clean_execution_graph(data)
+    data.clean_exec_graph()
     cols = {cols} if isinstance(cols, str) else set(cols)
     query = ", ".join(quote_cols(cols))
     return query if as_query else data.project(query)
@@ -285,11 +290,12 @@ def empty_relation(
     return query if as_query else con.sql(query)
 
 
-def get_col_type(rel: DuckDBPyRelation, col_name: str) -> DuckDBPyType:
+def get_col_type(rel: RelationProxy, col_name: str) -> DuckDBPyType:
     """
     Returns the specified column type from the DuckDB relation.
     """
-    return rel.types[rel.columns.index(col_name)]
+    empty_row = rel.project(f'"{col_name}"', include_index=False).limit(0)
+    return empty_row.types[0]
 
 
 def normalize_data(
@@ -298,32 +304,59 @@ def normalize_data(
     """
     Normalizes the data by launching a remove_null_str and round_doubles operations.
     """
-    double_cols = set(get_cols_by_types(self_data, "DOUBLE"))
-    if not len(double_cols):
+    # Target columns: intersection of DOUBLEs on both sides (exclude index)
+    self_double = get_cols_by_types(self_data, "DOUBLE")
+    other_double = get_cols_by_types(other_data, "DOUBLE")
+    target_cols = sorted(self_double & other_double)
+    if not target_cols:
         return self_data, other_data
 
-    round_exprs = []
-    base = empty_relation()
-    for col in double_cols:
-        base = duckdb_concat(
-            base,
-            duckdb_concat(
-                self_data.project(f'"{col}" AS "self_{col}"'),
-                other_data.project(f'"{col}" AS "other_{col}"'),
-            ),
-        )
-        round_exprs.append(f'round_to_ref("self_{col}", "other_{col}") AS "self_{col}"')
-        round_exprs.append(f'round_to_ref("other_{col}", "self_{col}") AS "other_{col}"')
+    s = self_data.set_alias("s")
+    o = other_data.set_alias("o")
 
-    base = base.project(", ".join(round_exprs))
-    self_data = duckdb_concat(
-        self_data, base.project(", ".join(f"self_{col} AS {col}" for col in double_cols))
-    )
-    other_data = duckdb_concat(
-        other_data, base.project(", ".join(f"other_{col} AS {col}" for col in double_cols))
-    )
+    # Single OUTER join by index to compute rounded values once
+    j = s.join(o, f"s.{INDEX_COL} = o.{INDEX_COL}", how="outer")
 
-    return self_data, other_data
+    # Build rounded projections for both sides
+    self_exprs = [f"s.{INDEX_COL} AS {INDEX_COL}"] + [
+        f'round_to_ref(s."{c}", o."{c}") AS "{c}"' for c in target_cols
+    ]
+    other_exprs = [f"o.{INDEX_COL} AS {INDEX_COL}"] + [
+        f'round_to_ref(o."{c}", s."{c}") AS "{c}"' for c in target_cols
+    ]
+
+    new_self_vals = j.project(", ".join(self_exprs)).set_alias("ns")
+    new_other_vals = j.project(", ".join(other_exprs)).set_alias("no")
+
+    # Assemble final self side: replace only target columns
+    s_cols = list(self_data.columns)
+    js = self_data.set_alias("s").join(new_self_vals, f"s.{INDEX_COL} = ns.{INDEX_COL}", how="left")
+    s_select = []
+    for c in s_cols:
+        if c == INDEX_COL:
+            s_select.append(f"s.{INDEX_COL} AS {INDEX_COL}")
+        elif c in target_cols:
+            s_select.append(f'ns."{c}" AS "{c}"')
+        else:
+            s_select.append(f's."{c}" AS "{c}"')
+    self_out = js.project(", ".join(s_select))
+
+    # Assemble final other side: replace only target columns
+    o_cols = list(other_data.columns)
+    jo = other_data.set_alias("o").join(
+        new_other_vals, f"o.{INDEX_COL} = no.{INDEX_COL}", how="left"
+    )
+    o_select = []
+    for c in o_cols:
+        if c == INDEX_COL:
+            o_select.append(f"o.{INDEX_COL} AS {INDEX_COL}")
+        elif c in target_cols:
+            o_select.append(f'no."{c}" AS "{c}"')
+        else:
+            o_select.append(f'o."{c}" AS "{c}"')
+    other_out = jo.project(", ".join(o_select))
+
+    return self_out, other_out
 
 
 def null_counter(data: DuckDBPyRelation, name: str, as_query: bool = False) -> Any:
@@ -339,23 +372,6 @@ def quote_cols(cols: Union[str, List[str], Set[str]]) -> Set[str]:
     return {f'"{c}"' for c in cols_set}
 
 
-def round_doubles(
-    data: DuckDBPyRelation, num_dec: int = 6, as_query: bool = False
-) -> DuckDBPyRelation:
-    """
-    Rounds double values in the dataset to avoid precision issues.
-    """
-    exprs = []
-    double_columns = get_cols_by_types(data, "DOUBLE")
-    for col in data.columns:
-        if col in double_columns:
-            exprs.append(f'ROUND("{col}", {num_dec}) AS "{col}"')
-        else:
-            exprs.append(f'"{col}"')
-    query = ", ".join(exprs)
-    return query if as_query else data.project(query)
-
-
 def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[str]]) -> Set[str]:
     cols = set()
     types = {types} if isinstance(types, str) else set(types)
@@ -365,8 +381,10 @@ def get_cols_by_types(rel: DuckDBPyRelation, types: Union[str, List[str], Set[st
         type_columns = set(
             [
                 col
-                for col, dtype in zip(rel.columns, rel.dtypes)
-                if isinstance(dtype, DuckDBPyType) and dtype in TYPES_DICT.get(type_, [])
+                for col, dtype in rel.dtypes.items()
+                if col != INDEX_COL
+                and isinstance(dtype, DuckDBPyType)
+                and dtype in TYPES_DICT.get(type_, [])
             ]
         )
         cols.update(type_columns)

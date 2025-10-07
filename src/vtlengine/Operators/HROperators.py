@@ -9,7 +9,7 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -137,17 +137,16 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data if left.data is not None else empty_relation()
+        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
-            bool_var = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
+            result.data["bool_var"] = cls.apply_hr_func(
+                left.data[measure_name], right.data, hr_mode, cls.op_func, "bool_var"
             )
-            imbalance = cls.apply_hr_func(
+            result.data["imbalance"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, "imbalance_func", "imbalance"
             )
-            result.data = duckdb_concat(result.data, duckdb_concat(bool_var, imbalance))
 
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
@@ -191,14 +190,16 @@ class HRBinNumeric(Operators.Binary):
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
         # TODO: remove type ignore on HROperators issue
-        l_name = left.data.columns[0]
-        r_name = right.data.columns[0]
-        name = f"{l_name}{cls.op}{r_name}"
-        result_data = duckdb_concat(left.data, right.data)
-        result_data = result_data.project(Operators.apply_bin_op(cls, name, l_name, r_name))
+        name = f"{left.name}{cls.op}{right.name}"
+        left_rel = duckdb_rename(left.data, {left.data.columns[0]: "left"})
+        right_rel = duckdb_rename(right.data, {right.data.columns[0]: "right"})
+
+        expr = Operators.apply_bin_op(cls, f'"{name}"', '"left"', '"right"')
+        result_data = duckdb_concat(left_rel, right_rel)
+        result_data = result_data.project(expr)
 
         return DataComponent(
-            name=f"{left.name}{cls.op}{right.name}",
+            name=name,
             data=result_data,
             data_type=left.data_type,
             role=left.role,
@@ -251,16 +252,19 @@ class HAAssignment(Operators.Binary):
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data if left.data is not None else empty_relation()
+        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         if right.data is not None:
-            result.data = duckdb_concat(
-                result.data,
-                right.data.project(
-                    f'handle_mode("{right.data.columns[0]}", {repr(hr_mode)}) AS "{measure_name}"'
-                ),
-            )
-        result.data = result.data.filter(f"\"{measure_name}\" != 'REMOVE_VALUE'")
+            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
+        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
         return result
+
+    @classmethod
+    def handle_mode(cls, x: Any, hr_mode: str) -> Any:
+        if not pd.isnull(x) and x == "REMOVE_VALUE":
+            return "REMOVE_VALUE"
+        if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
+            return "REMOVE_VALUE"
+        return x
 
 
 class Hierarchy(Operators.Operator):
@@ -289,7 +293,7 @@ class Hierarchy(Operators.Operator):
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         if len(computed_dict) == 0:
-            computed_data = empty_relation(dataset.get_components_names())
+            computed_data = pd.DataFrame(columns=dataset.get_components_names())
         else:
             computed_data = cls.generate_computed_data(computed_dict)
         if output == "computed":
@@ -298,5 +302,9 @@ class Hierarchy(Operators.Operator):
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = duckdb_concat(dataset.data, computed_data).distinct()
+        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
+        result.data.drop_duplicates(
+            subset=dataset.get_identifiers_names(), keep="last", inplace=True
+        )
+        result.data.reset_index(drop=True, inplace=True)
         return result

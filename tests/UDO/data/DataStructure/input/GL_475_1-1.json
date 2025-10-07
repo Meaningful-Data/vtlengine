@@ -22,6 +22,12 @@
             "role": "Attribute"
           },
           {
+            "name": "__index_id__",
+            "type": "Number",
+            "nullable": false,
+            "role": "Identifier"
+          },
+          {
             "name": "FREQ",
             "type": "String",
             "nullable": false,

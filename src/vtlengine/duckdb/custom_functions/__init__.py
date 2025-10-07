@@ -4,6 +4,7 @@ from vtlengine.duckdb.custom_functions.HR import (
     imbalance_func,
 )
 from vtlengine.duckdb.custom_functions.Numeric import (
+    division_duck,
     random_duck,
     round_duck,
     round_to_ref,
@@ -38,6 +39,7 @@ __all__ = [
     "trunc_duck",
     "round_duck",
     "round_to_ref",
+    "division_duck",
     # String functions
     "instr_duck",
     "replace_duck",

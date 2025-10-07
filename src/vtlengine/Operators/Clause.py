@@ -12,9 +12,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
-    duckdb_concat,
     duckdb_drop,
-    duckdb_fill,
     duckdb_rename,
     duckdb_select,
     empty_relation,
@@ -65,16 +63,11 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        relation = dataset.data if dataset.data is not None else empty_relation()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
 
         for operand in operands:
-            if isinstance(operand, Scalar):
-                value = "NULL" if operand.value is None else operand.value
-                relation = relation.project(f"*, {value} AS {operand.name}")
-            else:
-                relation = duckdb_concat(relation, operand.data)
-
-        result_dataset.data = relation
+            data = operand.value if isinstance(operand, Scalar) else operand.data
+            result_dataset.data[operand.name] = data
         return result_dataset
 
 
@@ -122,14 +115,12 @@ class Aggregate(Operator):
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
-                result_dataset.data = duckdb_fill(result_dataset.data, operand.value, operand.name)
+                result_dataset.data[operand.name] = operand.value
             else:
                 if operand.data is not None and len(operand.data) > 0:
-                    result_dataset.data = duckdb_concat(result_dataset.data, operand.data)
+                    result_dataset.data[operand.name] = operand.data
                 else:
-                    result_dataset.data = result_dataset.data.project(
-                        f'*, NULL::{operand.data_type().sql_type} AS "{operand.name}"'
-                    )
+                    result_dataset.data[operand.name] = None
         return result_dataset
 
 
@@ -146,11 +137,8 @@ class Filter(Operator):
         result_dataset = cls.validate(condition, dataset)
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
-            condition_col = condition.data.project(f'{condition.name} AS "__condition_col__"')
-            result_data = duckdb_concat(result_dataset.data, condition_col)
-            result_dataset.data = result_data.filter("__condition_col__ = TRUE").project(
-                '* EXCLUDE("__condition_col__")'
-            )
+            true_indexes = condition.data[condition.data == True].index
+            result_dataset.data = dataset.data[true_indexes].reset_index()
         return result_dataset
 
 
@@ -329,6 +317,7 @@ class Unpivot(Operator):
             WHERE value IS NOT NULL
             """
             result_dataset.data = con.query(query)
+            result_dataset.data = result_dataset.data.reset_index()
 
         return result_dataset
 
@@ -371,22 +360,19 @@ class Sub(Operator):
         result_dataset = cls.validate(operands, dataset)
         result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         operand_names = [operand.name for operand in operands]
-
-        if dataset.data is not None:
-            filter_exprs = []
-            op_names = []
+        if dataset.data is not None and len(dataset.data) > 0:
+            true_indexes = empty_relation()
+            is_first = True
             for operand in operands:
-                if operand.data is not None:
-                    op_name = f'"__{operand.name}@operand_bool__"'
-                    op_names.append(op_name)
-                    operand_relation = operand.data.project(f'"{operand.name}" AS {op_name}')
-                    result_dataset.data = duckdb_concat(result_dataset.data, operand_relation)
-                    filter_exprs.append(f"{op_name} = TRUE")
+                if operand.data is not None and len(operand.data) > 0:
+                    idx_rel = operand.data[operand.data == True].index
+                    if is_first:
+                        true_indexes = idx_rel
+                        is_first = False
+                    else:
+                        true_indexes = true_indexes.intersect(idx_rel)
 
-            if filter_exprs:
-                filter_query = " AND ".join(filter_exprs)
-                clean_query = f"* EXCLUDE({', '.join(op_names)})"
-                result_dataset.data = result_dataset.data.filter(filter_query).project(clean_query)
-
+            result_dataset.data = result_dataset.data[true_indexes]
         result_dataset.data = duckdb_drop(result_dataset.data, operand_names)
+        result_dataset.data = result_dataset.data.reset_index()
         return result_dataset

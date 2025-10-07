@@ -13,7 +13,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
-    duckdb_select,
     empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
@@ -95,29 +94,25 @@ class Check(Operator):
         if validation_element.data is None:
             validation_element.data = empty_relation()
 
-        error_code_ = repr(error_code) if error_code is not None else "NULL"
-        error_level_ = repr(error_level) if error_level is not None else "NULL"
+        repr(error_code) if error_code is not None else "NULL"
+        repr(error_level) if error_level is not None else "NULL"
 
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
-        result.data = duckdb_select(validation_element.data, columns_to_keep)
-
-        exprs = [f'"{col}"' for col in columns_to_keep]
-        if imbalance_element and imbalance_element.data:
-            measure = imbalance_element.get_measures_names()[0]
-            result.data = duckdb_concat(result.data, duckdb_select(imbalance_element.data, measure))
-            exprs.append(f'"{measure}" AS "imbalance"')
+        result.data = validation_element.data[columns_to_keep]
+        if imbalance_element is not None and imbalance_element.data is not None:
+            imbalance_measure_name = imbalance_element.get_measures_names()[0]
+            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
         else:
-            exprs.append('NULL AS "imbalance"')
-        exprs.extend([f'{error_code_} AS "errorcode"', f'{error_level_} AS "errorlevel"'])
+            result.data["imbalance"] = None
 
-        result.data = result.data.project(", ".join(exprs))
+        result.data["errorcode"] = error_code
+        result.data["errorlevel"] = error_level
         if invalid:
-            result.data = result.data.filter(
-                f'"{validation_element.get_measures_names()[0]}" = False'
-            )
-
+            validation_measure_name = validation_element.get_measures_names()[0]
+            result.data = result.data[result.data[validation_measure_name] == False]
+            result.data.reset_index()
         return result
 
 
@@ -188,7 +183,8 @@ class Validation(Operator):
         identifiers = result.get_identifiers_names()
         result.data = result.data.filter(
             " AND ".join(f'"{id_}" IS NOT NULL' for id_ in identifiers)
-        ).distinct()
+        )
+        result.data = result.data.distinct()
 
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
         if "imbalance" in result.components:
