@@ -535,4 +535,3 @@ class RelationProxy:
 
     def cast(self, dtype: Any) -> "RelationProxy":
         return self.astype(dtype)
-

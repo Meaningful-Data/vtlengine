@@ -7,9 +7,15 @@ from duckdb.duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import HIERARCHY, LT, LTE, GT, GTE
+from vtlengine.AST.Grammar.tokens import GT, GTE, HIERARCHY, LT, LTE
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename, empty_relation, get_col_type
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_drop,
+    duckdb_rename,
+    empty_relation,
+    get_col_type,
+)
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter

@@ -1487,7 +1487,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     lmask.relation.set_alias("l")
                     .join(rmask.relation.set_alias("r"), "l.__index__ = r.__index__", how="inner")
                     .project(
-                        'l.__index__ AS __index__, '
+                        "l.__index__ AS __index__, "
                         '(coalesce(l."__mask__", false) AND coalesce(r."__mask__", false)) AS "__mask__"'
                     )
                 )
@@ -1767,7 +1767,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ]
             code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
             print(code_data)
-            code_data = duckdb_merge(code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers)
+            code_data = duckdb_merge(
+                code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
+            )
             print(code_data)
             code_data = code_data.distinct().reset_index(drop=True)
             print(code_data)
