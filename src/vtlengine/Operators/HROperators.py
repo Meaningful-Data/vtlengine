@@ -7,9 +7,9 @@ from duckdb.duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import HIERARCHY
+from vtlengine.AST.Grammar.tokens import HIERARCHY, LT, LTE, GT, GTE
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename, empty_relation
+from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename, empty_relation, get_col_type
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -91,25 +91,26 @@ class HRComparison(Operators.Binary):
         func: str,
         col_name: str,
     ) -> DuckDBPyRelation:
-        # In order not to apply the function to the whole series, we align the series
-        # and apply the function only to the valid values based on a validation mask.
-        # The function is applied to the aligned series and the result is combined with the
-        # original series.
         result = cls.hr_func(left_rel, right_rel, hr_mode)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
         sql_token = TO_SQL_TOKEN.get(func, func)
         if isinstance(sql_token, tuple):
             sql_token, position = sql_token
+
+        left_col_type = get_col_type(left_rel, left_rel.columns[0])
+        right_col_type = get_col_type(right_rel, right_rel.columns[0])
         if position == MIDDLE:
-            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+            if sql_token in [LT, LTE, GT, GTE] and left_col_type != right_col_type:
+                sql_func = f'TRY_CAST("{left_rel.columns[0]}" AS DOUBLE) {sql_token} TRY_CAST("{right_rel.columns[0]}" AS DOUBLE)'
+            else:
+                sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
         else:
             sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
 
         result = result.project(f"""
                     CASE
-                        WHEN hr_mask = 'true'
-                        THEN CAST({sql_func} AS VARCHAR)
+                        WHEN hr_mask = 'true' THEN TRY_CAST({sql_func} AS VARCHAR)
                         ELSE hr_mask
                     END AS "{col_name}"
                 """)
@@ -140,6 +141,11 @@ class HRComparison(Operators.Binary):
         result.data = left.data if left.data is not None else empty_relation()
         measure_name = left.get_measures_names()[0]
 
+        print("LEFT DATA")
+        print(left.data)
+        print("RIGHT DATA")
+        print(right.data)
+
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
@@ -152,6 +158,8 @@ class HRComparison(Operators.Binary):
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
         result.data = duckdb_drop(result.data.filter("bool_var != 'REMOVE_VALUE'"), measure_name)
+        print("RESULT DATA")
+        print(result.data, "\n\n\n")
         return result
 
 
@@ -182,19 +190,22 @@ class HRLessEqual(HRComparison):
 
 class HRBinNumeric(Operators.Binary):
     @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
-        return super().op_func(x, y)
+    def op_func(cls, me_name: str, left: Any, right: Any) -> Any:
+        left = left if left is not None else "NULL"
+        right = right if right is not None else "NULL"
+        return f"""
+                    CASE
+                        WHEN CAST({left} AS VARCHAR) = 'REMOVE_VALUE' THEN 'REMOVE_VALUE'
+                        ELSE CAST((TRY_CAST({left} AS DOUBLE) {cls.op} TRY_CAST({right} AS DOUBLE)) AS VARCHAR)
+                    END AS {me_name}
+                """
 
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
-        # TODO: remove type ignore on HROperators issue
         name = f"{left.name}{cls.op}{right.name}"
         left_rel = duckdb_rename(left.data, {left.data.columns[0]: "left"})
         right_rel = duckdb_rename(right.data, {right.data.columns[0]: "right"})
-
-        expr = Operators.apply_bin_op(cls, f'"{name}"', '"left"', '"right"')
+        expr = cls.op_func(f'"{name}"', '"left"', '"right"')
         result_data = duckdb_concat(left_rel, right_rel)
         result_data = result_data.project(expr)
 

@@ -2,6 +2,10 @@ from typing import Any, Optional
 
 
 def imbalance_func(x: Any, y: Any) -> Optional[float]:
+    if x is not None and not isinstance(x, (int, float)):
+        x = float(x)
+    if y is not None and not isinstance(y, (int, float)):
+        y = float(y)
     return None if x is None or y is None else x - y
 
 
