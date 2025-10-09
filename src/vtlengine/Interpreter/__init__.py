@@ -1959,9 +1959,9 @@ class InterpreterAnalyzer(ASTTemplate):
         # Adding parameters to the stack
         for k, v in signature_values.items():
             if hasattr(v, "name"):
-                v = v.name
-            if v in self.signature_values.keys():
-                signature_values[k] = self.signature_values[v]
+                v = v.name  # type: ignore[assignment]
+            if v in self.signature_values:
+                signature_values[k] = self.signature_values[v]  # type: ignore[index]
         self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
