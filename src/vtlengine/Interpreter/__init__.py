@@ -876,9 +876,19 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if self.scalars and node.value in self.scalars:
             return self.scalars[node.value]
+        for ds in self.datasets.values():
+            if isinstance(ds, Dataset) and node.value in ds.components:
+                comp = ds.components[node.value]
+                data = None if ds.data is None else ds.data[node.value]
+                return DataComponent(
+                    name=node.value,
+                    data=data,
+                    data_type=comp.data_type,
+                    role=comp.role,
+                    nullable=comp.nullable,
+                )
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
-
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
