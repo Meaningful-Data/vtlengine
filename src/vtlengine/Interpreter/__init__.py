@@ -131,7 +131,6 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_condition: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
-    is_from_udo: bool = False
     condition_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -153,6 +152,7 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     is_from_case_then: bool = False
+    signature_values: Optional[Dict[str, Any]] = None
 
     # **********************************
     # *                                *
@@ -877,21 +877,9 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if self.scalars and node.value in self.scalars:
             return self.scalars[node.value]
-        for ds in self.datasets.values():
-            if isinstance(ds, Dataset) and node.value in ds.components:
-                comp = ds.components[node.value]
-                data = None if ds.data is None else ds.data[node.value]
-                return DataComponent(
-                    name=node.value,
-                    data=data,
-                    data_type=comp.data_type,
-                    role=comp.role,
-                    nullable=comp.nullable,
-                )
         if node.value not in self.datasets:
-            if self.is_from_udo:
-                return node.value
             raise SemanticError("2-3-6", dataset_name=node.value)
+
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
@@ -1874,6 +1862,8 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
+        if self.signature_values is None:
+            self.signature_values = {}
 
         operator = self.udos[node.op]
         signature_values = {}
@@ -1907,9 +1897,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         if isinstance(node.params[i], AST.VarID):
                             signature_values[param["name"]] = node.params[i].value  # type: ignore[attr-defined]
                         else:
-                            self.is_from_udo = True
                             param_element = self.visit(node.params[i])
-                            self.is_from_udo = False
                             if isinstance(param_element, Dataset):
                                 if param["type"] == "Component":
                                     raise SemanticError(
@@ -1969,6 +1957,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self.udo_params = []
 
         # Adding parameters to the stack
+        for k, v in signature_values.items():
+            if hasattr(v, "name"):
+                v = v.name
+            if v in self.signature_values.keys():
+                signature_values[k] = self.signature_values[v]
+        self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
