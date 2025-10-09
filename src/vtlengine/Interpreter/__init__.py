@@ -131,6 +131,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_condition: bool = False
     is_from_hr_val: bool = False
     is_from_hr_agg: bool = False
+    is_from_udo: bool = False
     condition_stack: Optional[List[str]] = None
     # Handlers for simplicity
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -888,6 +889,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     nullable=comp.nullable,
                 )
         if node.value not in self.datasets:
+            if self.is_from_udo:
+                return node.value
             raise SemanticError("2-3-6", dataset_name=node.value)
         return self.datasets[node.value]
 
@@ -1901,20 +1904,12 @@ class InterpreterAnalyzer(ASTTemplate):
                     if param["type"] == "Scalar":
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] in ["Dataset", "Component"]:
-                        param_element = self.visit(node.params[i])
-                        if isinstance(param_element, Dataset) and param["type"] == "Component":
-                            raise SemanticError(
-                                "1-4-1-1",
-                                op=node.op,
-                                option=param["name"],
-                                type_1=param["type"],
-                                type_2="Dataset",
-                            )
-                        signature_values[param["name"]] = param_element
                         if isinstance(node.params[i], AST.VarID):
                             signature_values[param["name"]] = node.params[i].value  # type: ignore[attr-defined]
                         else:
+                            self.is_from_udo = True
                             param_element = self.visit(node.params[i])
+                            self.is_from_udo = False
                             if isinstance(param_element, Dataset):
                                 if param["type"] == "Component":
                                     raise SemanticError(
