@@ -243,9 +243,10 @@ centralised_messages = {
     "measure.",
     "2-1-19-15": "{op} can only be applied according to the iso 8601 format mask",
     "2-1-19-16": "{op} can only be positive numbers",
-    "2-1-19-17": "At op {op}: Time operators comparison are only support = and <> comparison operations",
+    "2-1-19-17": "At op {op}: Time operators comparison are only support "
+                 "= and <> comparison operations",
     "2-1-19-18": "At op {op}: Time operators do not support < and > comparison operations, "
-                 "so its not possible to use get the max or min between two time operators",
+    "so its not possible to use get the max or min between two time operators",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",

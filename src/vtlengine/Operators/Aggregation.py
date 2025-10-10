@@ -36,7 +36,6 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators.Time import Time
 
 
 def extract_grouping_identifiers(
