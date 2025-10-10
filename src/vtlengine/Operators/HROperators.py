@@ -7,8 +7,9 @@ from duckdb.duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import GT, GTE, HIERARCHY, LT, LTE
+from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
+from vtlengine.duckdb.custom_functions.HR import NINF, INF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
@@ -19,6 +20,9 @@ from vtlengine.duckdb.duckdb_utils import (
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+TRUE_VAL = INF
+RM_VAL = NINF
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -40,49 +44,48 @@ class HRComparison(Operators.Binary):
     ) -> DuckDBPyRelation:
         l_name = left_rel.columns[0]
         r_name = right_rel.columns[0]
-        RM_val = "'REMOVE_VALUE'"
         expr = f'"{l_name}", "{r_name}"'
 
         if hr_mode == "partial_null":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND
+                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL AND
                              "{l_name}" IS NOT NULL
                         THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
-                        THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL
+                        THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "partial_zero":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
+                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
                         THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
-                        THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL
+                        THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "non_null":
             expr += f""",
                     CASE
-                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN 'REMOVE_VALUE'
-                        ELSE 'true'
+                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "non_zero":
             expr += f""",
                     CASE
-                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
         else:
-            expr += ", 'true' AS hr_mask"
+            expr += f", {TRUE_VAL} AS hr_mask"
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
@@ -104,20 +107,15 @@ class HRComparison(Operators.Binary):
         if isinstance(sql_token, tuple):
             sql_token, position = sql_token
 
-        left_col_type = get_col_type(left_rel, left_rel.columns[0])
-        right_col_type = get_col_type(right_rel, right_rel.columns[0])
         if position == MIDDLE:
-            if sql_token in [LT, LTE, GT, GTE] and left_col_type != right_col_type:
-                sql_func = f'TRY_CAST("{left_rel.columns[0]}" AS DOUBLE) {sql_token} TRY_CAST("{right_rel.columns[0]}" AS DOUBLE)'
-            else:
-                sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
         else:
             sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
 
         result = result.project(f"""
                     CASE
-                        WHEN hr_mask = 'true' THEN TRY_CAST({sql_func} AS VARCHAR)
-                        ELSE hr_mask
+                        WHEN hr_mask = {TRUE_VAL} THEN CAST({sql_func} AS DOUBLE)
+                        ELSE CAST(hr_mask AS DOUBLE)
                     END AS "{col_name}"
                 """)
         return result
@@ -147,11 +145,6 @@ class HRComparison(Operators.Binary):
         result.data = left.data if left.data is not None else empty_relation()
         measure_name = left.get_measures_names()[0]
 
-        print("LEFT DATA")
-        print(left.data)
-        print("RIGHT DATA")
-        print(right.data)
-
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
@@ -163,9 +156,7 @@ class HRComparison(Operators.Binary):
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = duckdb_drop(result.data.filter("bool_var != 'REMOVE_VALUE'"), measure_name)
-        print("RESULT DATA")
-        print(result.data, "\n\n\n")
+        result.data = duckdb_drop(result.data.filter(f'bool_var IS DISTINCT FROM {NINF}'), measure_name)
         return result
 
 
@@ -201,16 +192,16 @@ class HRBinNumeric(Operators.Binary):
         right = right if right is not None else "NULL"
         return f"""
                     CASE
-                        WHEN CAST({left} AS VARCHAR) = 'REMOVE_VALUE' THEN 'REMOVE_VALUE'
-                        ELSE CAST((TRY_CAST({left} AS DOUBLE) {cls.op} TRY_CAST({right} AS DOUBLE)) AS VARCHAR)
+                        WHEN {left} = {NINF} THEN {NINF}
+                        ELSE {left} {cls.op} {right}
                     END AS {me_name}
                 """
 
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
         name = f"{left.name}{cls.op}{right.name}"
-        left_rel = duckdb_rename(left.data, {left.data.columns[0]: "left"})
-        right_rel = duckdb_rename(right.data, {right.data.columns[0]: "right"})
+        left_rel = duckdb_rename(left.data.order_by_index(), {left.data.columns[0]: "left"})
+        right_rel = duckdb_rename(right.data.order_by_index(), {right.data.columns[0]: "right"})
         expr = cls.op_func(f'"{name}"', '"left"', '"right"')
         result_data = duckdb_concat(left_rel, right_rel)
         result_data = result_data.project(expr)
@@ -269,18 +260,21 @@ class HAAssignment(Operators.Binary):
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         if right.data is not None:
-            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
-        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
+            rcol = right.data.columns[0]
+            result.data[measure_name] = right.data.project(
+                f'handle_mode("{rcol}", \'{hr_mode}\') AS "{measure_name}"'
+            )
+        result.data = result.data[result.data[measure_name] != NINF]
         return result
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
+        if not pd.isnull(x) and x == NINF:
+            return NINF
         if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
-            return "REMOVE_VALUE"
+            return NINF
         return x
 
 
