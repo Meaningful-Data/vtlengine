@@ -211,6 +211,17 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
+        rel = None
+        for rule_name, rule_data in rule_info.items():
+            rule_df = rule_data["output"]
+            rule_df["ruleid"] = rule_name
+            rule_df["errorcode"] = rule_data["errorcode"]
+            rule_df["errorlevel"] = rule_data["errorlevel"]
+            rel = rule_df if rel is None else duckdb_concat(rel, rule_df, on="ruleid")
+        return rel if rel is not None else empty_relation()
+
+    @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
         result = super().validate(dataset_element, rule_info, output)
         result.components["imbalance"] = Component(
