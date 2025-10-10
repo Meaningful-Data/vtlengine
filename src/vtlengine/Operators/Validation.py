@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
@@ -27,7 +27,7 @@ class Check(Operator):
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
         error_code: Optional[str],
-        error_level: Optional[int],
+        error_level: Optional[Union[int, str]],
         invalid: bool,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -81,7 +81,7 @@ class Check(Operator):
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
         error_code: Optional[str],
-        error_level: Optional[int],
+        error_level: Optional[Union[int, str]],
         invalid: bool,
     ) -> Dataset:
         result = cls.validate(
