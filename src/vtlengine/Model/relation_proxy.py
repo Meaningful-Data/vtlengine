@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Union
 
+import pandas as pd
 from duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
@@ -16,7 +17,9 @@ class RelationProxy:
     _relation: DuckDBPyRelation
     __slots__ = "_relation"
 
-    def __init__(self, relation: DuckDBPyRelation, index: Optional[DuckDBPyRelation] = None):
+    def __init__(self, relation: Union[DuckDBPyRelation, pd.DataFrame], index: Optional[DuckDBPyRelation] = None):
+        if isinstance(relation, pd.DataFrame):
+            relation = con.from_df(relation)
         if index is not None and INDEX_COL in index.columns:
             # setting index explicitly
             idx = index.project(INDEX_COL).set_alias("idx")
@@ -178,8 +181,10 @@ class RelationProxy:
 
     def __repr__(self) -> str:
         sorted_cols = sorted(self.relation.columns)
-        # data = self.relation.project(", ".join(sorted_cols)).limit(10)
-        data = self.relation
+        try:
+            data = self.relation.project(", ".join(sorted_cols)).limit(30)
+        except:
+            data = self.relation
         return f"RelationProxy(\ncolumns={sorted_cols},\ndata=\n{data}\n)"
 
     @property
@@ -512,6 +517,9 @@ class RelationProxy:
 
     def is_empty(self):
         pass
+
+    def order_by_index(self) -> "RelationProxy":
+        return RelationProxy(self.relation.order(INDEX_COL))
 
     def project(
         self, projection: str = f"* EXCLUDE {INDEX_COL}", include_index: bool = True
