@@ -259,6 +259,10 @@ class Aggregation(Operator.Unary):
         result_df = result_df[grouping_keys + measure_names]
         if cls.op == COUNT:
             result_df = result_df.dropna(subset=measure_names, how="any")
+        if cls.op in [MAX, MIN]:
+            for measure in operand.get_measures():
+                if measure.data_type == TimeInterval:
+                    raise SemanticError("2-1-19-18", op=cls.op)
         cls._handle_data_types(result_df, operand.get_measures(), "input")
         result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
 

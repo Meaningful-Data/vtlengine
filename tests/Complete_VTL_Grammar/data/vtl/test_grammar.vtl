@@ -30,8 +30,8 @@ lag_ds := lag(DS_1#Me_num, 1 over (partition by Id_1 , Id_2 order by Id_3));
 lead_ds := lead(DS_1#Me_num, 2 over (partition by Id_1, Id_2 order by Id_3 asc));
 rank_ds := DS_1[calc Me_rank := rank (over (partition by Id_1, Id_2 order by Id_3))];
 ratio_to_report_ds := ratio_to_report(DS_1#Me_num over (partition by Id_1, Id_2));
-max_analytic_ds := max(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
-min_analytic_ds := min(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
+max_analytic_ds := max(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
+min_analytic_ds := min(DS_1_without_time#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
 sum_analytic_ds := sum(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
 count_analytic_ds := count(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 asc));
 avg_analytic_ds := avg(DS_1#Me_int over (partition by Id_1, Id_2 order by Id_3 desc));
@@ -283,19 +283,21 @@ daytomonth_sc := daytomonth(183);
 yeartoday_sc := yeartoday("P1Y6M15D");
 monthtoday_sc := monthtoday("P2Y9M21D");
 
-period_indicator_ds := period_indicator(drop_identifier(DS_1, Id_date));
-flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1, Id_date));
-stock_to_flow_period_ds := flow_to_stock(drop_identifier(DS_1, Id_period));
+DS_1_without_time := DS_1[drop Me_interval];
 
-fill_time_series_date_single_ds := fill_time_series(drop_identifier(DS_1, Id_period), single);
-//fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1, Id_date), all);
-timeshift_date_ds := timeshift(drop_identifier(DS_1, Id_period), 1);
-timeshift_period_ds := timeshift(drop_identifier(DS_1, Id_date), -2);
+period_indicator_ds := period_indicator(drop_identifier(DS_1_without_time, Id_date));
+flow_to_stock_date_ds := flow_to_stock(drop_identifier(DS_1_without_time, Id_date));
+stock_to_flow_period_ds := flow_to_stock(drop_identifier(DS_1_without_time, Id_period));
+
+fill_time_series_date_single_ds := fill_time_series(drop_identifier(DS_1_without_time, Id_period), single);
+//fill_time_series_period_all_ds := fill_time_series(drop_identifier(DS_1_without_time, Id_date), all);
+timeshift_date_ds := timeshift(drop_identifier(DS_1_without_time, Id_period), 1);
+timeshift_period_ds := timeshift(drop_identifier(DS_1_without_time, Id_date), -2);
 datediff_ds := DS_1[calc Me_diff := datediff(Me_interval, Id_period)];
 date_add_ds := DS_1[calc Me_add := dateadd(Id_period, 2, "M")];
 
-time_agg_date_ds := sum(drop_identifier(DS_1, Id_period)#Me_int group all time_agg("A", _, Id_date));
-time_agg_period_ds := sum(drop_identifier(DS_1, Id_date)#Me_num group all time_agg("M", _, Id_period));
+time_agg_date_ds := sum(drop_identifier(DS_1_without_time, Id_period)#Me_int group all time_agg("A", _, Id_date));
+time_agg_period_ds := sum(drop_identifier(DS_1_without_time, Id_date)#Me_num group all time_agg("M", _, Id_period));
 
 /*************************************************
 USER DEFINE OPERATOR
@@ -305,7 +307,7 @@ define operator drop_identifier (ds dataset, comp component)
     max(ds group except comp)
 end operator;
 
-UDO_ds := drop_identifier(DS_1, Id_3);
+UDO_ds := drop_identifier(DS_1_without_time, Id_3);
 
 /*************************************************
 VALIDATION
