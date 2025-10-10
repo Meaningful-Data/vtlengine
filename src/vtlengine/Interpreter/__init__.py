@@ -51,6 +51,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
+from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_merge,
@@ -1448,7 +1449,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # Check all values were present in the dataset
                 if self.hr_partial_is_valid and not any(self.hr_partial_is_valid):
-                    right_operand.data = right_operand.data.map(lambda x: "REMOVE_VALUE")
+                    rcol = right_operand.data.columns[0]
+                    right_operand.data = right_operand.data.project(f'{NINF} AS "{rcol}"')
                 self.hr_partial_is_valid = []
 
             if self.is_from_hr_agg:
@@ -1491,8 +1493,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         '(coalesce(l."__mask__", false) AND coalesce(r."__mask__", false)) AS "__mask__"'
                     )
                 )
+                
                 both_null = both_join.filter('"__mask__"')
-                left_operand.data[both_null, measure_name] = "REMOVE_VALUE"
+                left_operand.data[both_null, measure_name] = NINF
 
             if isinstance(left_operand, Dataset):
                 left_operand = get_measure_from_dataset(left_operand, node.left.value)
@@ -1766,13 +1769,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
             code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
-            print(code_data)
             code_data = duckdb_merge(
                 code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
             )
-            print(code_data)
             code_data = code_data.distinct().reset_index(drop=True)
-            print(code_data)
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1813,7 +1813,9 @@ class InterpreterAnalyzer(ASTTemplate):
             "partial_zero",
         ):
             self.hr_partial_is_valid.append(partial_is_valid)
-        return Dataset(name=name, components=result_components, data=rel)
+        ds = Dataset(name=name, components=result_components, data=rel)
+        ds.data = ds.data.order_by_index()
+        return ds
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
