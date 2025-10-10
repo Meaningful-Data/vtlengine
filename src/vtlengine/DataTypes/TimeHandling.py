@@ -414,16 +414,16 @@ class TimeIntervalHandler:
         return str(self) != str(other) if other is not None else None
 
     def __lt__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("1-1-1-5", op=LT, type="Time")
+        raise SemanticError("2-1-19-17", op=LT, type="Time")
 
     def __le__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("1-1-1-5", op=LTE, type="Time")
+        raise SemanticError("2-1-19-17", op=LTE, type="Time")
 
     def __gt__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("1-1-1-5", op=GT, type="Time")
+        raise SemanticError("2-1-19-17", op=GT, type="Time")
 
     def __ge__(self, other: Any) -> Optional[bool]:
-        raise SemanticError("1-1-1-5", op=GTE, type="Time")
+        raise SemanticError("2-1-19-17", op=GTE, type="Time")
 
     @classmethod
     def from_time_period(cls, value: TimePeriodHandler) -> "TimeIntervalHandler":
