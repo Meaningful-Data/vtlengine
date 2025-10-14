@@ -9,13 +9,12 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.custom_functions.HR import NINF, INF
+from vtlengine.duckdb.custom_functions.HR import INF, NINF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
     duckdb_rename,
     empty_relation,
-    get_col_type,
 )
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
@@ -156,7 +155,9 @@ class HRComparison(Operators.Binary):
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = duckdb_drop(result.data.filter(f'bool_var IS DISTINCT FROM {NINF}'), measure_name)
+        result.data = duckdb_drop(
+            result.data.filter(f"bool_var IS DISTINCT FROM {NINF}"), measure_name
+        )
         return result
 
 

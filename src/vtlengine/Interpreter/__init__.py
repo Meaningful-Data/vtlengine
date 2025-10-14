@@ -1490,10 +1490,11 @@ class InterpreterAnalyzer(ASTTemplate):
                     .join(rmask.relation.set_alias("r"), "l.__index__ = r.__index__", how="inner")
                     .project(
                         "l.__index__ AS __index__, "
-                        '(coalesce(l."__mask__", false) AND coalesce(r."__mask__", false)) AS "__mask__"'
+                        '(coalesce(l."__mask__", false) AND coalesce(r."__mask__", false)) AS '
+                        '"__mask__"'
                     )
                 )
-                
+
                 both_null = both_join.filter('"__mask__"')
                 left_operand.data[both_null, measure_name] = NINF
 

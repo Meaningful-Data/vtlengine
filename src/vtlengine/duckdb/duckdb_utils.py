@@ -206,7 +206,12 @@ def duckdb_merge(
     con.register(other_name, other_relation)
 
     if how == "cross":
-        query = f"SELECT {base_name}.*, {other_name}.* FROM {base_name} CROSS JOIN {other_name} ORDER BY {base_name}.\"{INDEX_COL}\""
+        query = (
+            f"SELECT {base_name}.*, {other_name}.* "
+            f"FROM {base_name} "
+            f"CROSS JOIN {other_name} "
+            f'ORDER BY {base_name}."{INDEX_COL}"'
+        )
         return RelationProxy(con.sql(query))
 
     join_keyword = "FULL OUTER" if how.lower() == "outer" else how.upper()
@@ -232,9 +237,7 @@ def duckdb_merge(
         index_expr = (
             f'COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}") AS "{INDEX_COL}"'
         )
-        order_by = (
-            f'ORDER BY COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}")'
-        )
+        order_by = f'ORDER BY COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}")'
 
     select_cols = [index_expr] + [
         f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys

@@ -1,6 +1,5 @@
 from typing import Any, Optional
 
-
 INF = float(1e100)
 NINF = -INF
 

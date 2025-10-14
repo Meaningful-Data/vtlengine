@@ -17,7 +17,11 @@ class RelationProxy:
     _relation: DuckDBPyRelation
     __slots__ = "_relation"
 
-    def __init__(self, relation: Union[DuckDBPyRelation, pd.DataFrame], index: Optional[DuckDBPyRelation] = None):
+    def __init__(
+        self,
+        relation: Union[DuckDBPyRelation, pd.DataFrame],
+        index: Optional[DuckDBPyRelation] = None,
+    ):
         if isinstance(relation, pd.DataFrame):
             relation = con.from_df(relation)
         if index is not None and INDEX_COL in index.columns:
@@ -183,7 +187,7 @@ class RelationProxy:
         sorted_cols = sorted(self.relation.columns)
         try:
             data = self.relation.project(", ".join(sorted_cols)).limit(30)
-        except:
+        except Exception:
             data = self.relation
         return f"RelationProxy(\ncolumns={sorted_cols},\ndata=\n{data}\n)"
 
