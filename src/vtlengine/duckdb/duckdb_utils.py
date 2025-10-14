@@ -22,7 +22,10 @@ INDEX_COL = "__index__"
 
 
 def duckdb_concat(
-    left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
+    left: DuckDBPyRelation,
+    right: DuckDBPyRelation,
+    on: Optional[Union[str, List[str]]] = None,
+    how: str = "outer",
 ) -> DuckDBPyRelation:
     """
     Horizontal concatenation (axis=1) of two relations.
@@ -33,6 +36,9 @@ def duckdb_concat(
     """
     if left is None or right is None:
         return empty_relation()
+    how = (how or "outer").lower()
+    if how not in ("outer", "inner", "left", "right"):
+        raise ValueError(f"Unsupported how for duckdb_concat: {how}")
 
     if on is not None:
         on_cols = [on] if isinstance(on, str) else list(on)
@@ -59,7 +65,7 @@ def duckdb_concat(
         join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
         presence_col = f'r."{on_cols[0]}"'
 
-    joined = left_rel.join(right_rel, join_cond, how="outer")
+    joined = left_rel.join(right_rel, join_cond, how=how)
 
     left_cols = list(left.columns)
     right_cols = list(right.columns)
@@ -74,6 +80,13 @@ def duckdb_concat(
     for c in union_cols:
         if used_rowid and c == "__row_id__":
             continue
+        if c == INDEX_COL and c in left_cols and c in right_cols:
+            if used_rowid and how == "inner":
+                select_exprs.append(f'l."{INDEX_COL}" AS "{INDEX_COL}"')
+            else:
+                select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
+            continue
+
         if c in left_cols and c in right_cols:
             select_exprs.append(
                 f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"'

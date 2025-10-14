@@ -203,7 +203,7 @@ class HRBinNumeric(Operators.Binary):
         left_rel = duckdb_rename(left.data.order_by_index(), {left.data.columns[0]: "left"})
         right_rel = duckdb_rename(right.data.order_by_index(), {right.data.columns[0]: "right"})
         expr = cls.op_func(f'"{name}"', '"left"', '"right"')
-        result_data = duckdb_concat(left_rel, right_rel)
+        result_data = duckdb_concat(left_rel, right_rel, how="inner")
         result_data = result_data.project(expr)
 
         return DataComponent(
