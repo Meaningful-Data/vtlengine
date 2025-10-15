@@ -31,10 +31,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: poetry install --all-extras
+    - name: Check compliance with code formatting guidelines
+      run: poetry run ruff format --no-cache --check
     - name: Run lint checks
-      run: poetry run ruff check src tests
+      run: poetry run ruff check --output-format=github
     - name: Run type checks
-      run: poetry run mypy
+      run: poetry run mypy --show-error-codes --pretty
     - name: Run tests
       run: poetry run pytest --cov
     - name: Check coverage
