@@ -48,10 +48,9 @@ class HRComparison(Operators.Binary):
         if hr_mode == "partial_null":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL AND
-                             "{l_name}" IS NOT NULL
+                        WHEN "{r_name}" = {RM_VAL} AND "{l_name}" IS NOT NULL
                         THEN NULL
-                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL
+                        WHEN "{r_name}" = {RM_VAL}
                         THEN {RM_VAL}
                         ELSE {TRUE_VAL}
                     END AS hr_mask
@@ -60,9 +59,9 @@ class HRComparison(Operators.Binary):
         elif hr_mode == "partial_zero":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
+                        WHEN "{r_name}" = {RM_VAL} AND ("{l_name}" != 0 OR "{l_name}" IS NULL)
                         THEN NULL
-                        WHEN "{r_name}" = {RM_VAL} AND "{r_name}" IS NOT NULL
+                        WHEN "{r_name}" = {RM_VAL}
                         THEN {RM_VAL}
                         ELSE {TRUE_VAL}
                     END AS hr_mask
@@ -107,6 +106,7 @@ class HRComparison(Operators.Binary):
             left_rel = duckdb_rename(left_rel, {left_rel.columns[0]: l_name})
             right_rel = duckdb_rename(right_rel, {right_rel.columns[0]: r_name})
         result = cls.hr_func(left_rel, right_rel, hr_mode)
+        print(result)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
         sql_token = TO_SQL_TOKEN.get(func, func)
@@ -124,6 +124,7 @@ class HRComparison(Operators.Binary):
                         ELSE CAST(hr_mask AS DOUBLE)
                     END AS "{col_name}"
                 """)
+        print(result)
         return result
 
     @classmethod
