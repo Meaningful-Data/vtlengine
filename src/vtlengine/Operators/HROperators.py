@@ -295,8 +295,8 @@ class Hierarchy(Operators.Operator):
             return empty_relation()
         combined_relation = relations[0]
         for rel in relations[1:]:
-            combined_relation = duckdb_concat(combined_relation, rel, how="outer")
-        return combined_relation.reset_index()
+            combined_relation = combined_relation.union(rel)
+        return RelationProxy(combined_relation).reset_index()
 
     @classmethod
     def validate(
