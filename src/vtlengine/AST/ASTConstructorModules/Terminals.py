@@ -622,11 +622,7 @@ class Terminals(VtlVisitor):
         erLevel: ERRORLEVEL  constant;
         """
         ctx_list = list(ctx.getChildren())
-
-        try:
-            return int(self.visitConstant(ctx_list[1]).value)
-        except Exception:
-            raise Exception(f"Error level must be an integer, line {ctx_list[1].start.line}")
+        return self.visitConstant(ctx_list[1]).value
 
     def visitSignature(self, ctx: Parser.SignatureContext, kind="ComponentID"):
         """
