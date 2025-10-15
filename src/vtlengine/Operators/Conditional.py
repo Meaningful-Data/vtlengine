@@ -40,7 +40,7 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
-    """  # noqa E501
+    """
 
     @classmethod
     def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
