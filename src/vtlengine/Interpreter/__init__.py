@@ -152,6 +152,7 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     is_from_case_then: bool = False
+    signature_values: Optional[Dict[str, Any]] = None
 
     # **********************************
     # *                                *
@@ -1861,6 +1862,8 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
+        if self.signature_values is None:
+            self.signature_values = {}
 
         operator = self.udos[node.op]
         signature_values = {}
@@ -1954,6 +1957,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self.udo_params = []
 
         # Adding parameters to the stack
+        for k, v in signature_values.items():
+            if hasattr(v, "name"):
+                v = v.name  # type: ignore[assignment]
+            if v in self.signature_values:
+                signature_values[k] = self.signature_values[v]  # type: ignore[index]
+        self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
