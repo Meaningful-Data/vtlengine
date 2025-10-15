@@ -244,7 +244,7 @@ centralised_messages = {
     "2-1-19-15": "{op} can only be applied according to the iso 8601 format mask",
     "2-1-19-16": "{op} can only be positive numbers",
     "2-1-19-17": "At op {op}: Time operators comparison are only support "
-                 "= and <> comparison operations",
+    "= and <> comparison operations",
     "2-1-19-18": "At op {op}: Time operators do not support < and > comparison operations, "
     "so its not possible to use get the max or min between two time operators",
     # ----------- Interpreter Common ------
