@@ -20,7 +20,7 @@ from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
-TRUE_VAL = INF
+TRUE_VAL = 1
 RM_VAL = NINF
 
 
@@ -99,6 +99,13 @@ class HRComparison(Operators.Binary):
         func: str,
         col_name: str,
     ) -> DuckDBPyRelation:
+        l_name = left_rel.columns[0]
+        r_name = right_rel.columns[0]
+        if l_name == r_name:
+            l_name = f"__l_{l_name}__"
+            r_name = f"__r_{r_name}__"
+            left_rel = duckdb_rename(left_rel, {left_rel.columns[0]: l_name})
+            right_rel = duckdb_rename(right_rel, {right_rel.columns[0]: r_name})
         result = cls.hr_func(left_rel, right_rel, hr_mode)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
@@ -107,9 +114,9 @@ class HRComparison(Operators.Binary):
             sql_token, position = sql_token
 
         if position == MIDDLE:
-            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+            sql_func = f'("{l_name}" {sql_token} "{r_name}")'
         else:
-            sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
+            sql_func = f'{sql_token}("{l_name}", "{r_name}")'
 
         result = result.project(f"""
                     CASE
