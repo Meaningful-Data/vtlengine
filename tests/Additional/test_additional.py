@@ -3851,6 +3851,66 @@ class TimeOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_GH_261_1(self):
+        text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_261_2(self):
+        text = "DS_r <- DS_1[calc Me_2 := Me_1 <= Me_1];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_261_3(self):
+        text = "DS_r <- DS_1[calc Me_2 := Me_1 > Me_1];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_261_4(self):
+        text = "DS_r <- DS_1[calc Me_2 := Me_1 >= Me_1];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_261_5(self):
+        text = "DS_r <- DS_1[aggr Me_2 := max(Me_1)];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_261_6(self):
+        text = "DS_r <- DS_1[aggr Me_2 := min(Me_1)];"
+        code = "GH_261"
+        number_inputs = 1
+        exception_code = "2-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class EmptyDatasetsTest(AdditionalHelper):
     """
