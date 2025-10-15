@@ -106,7 +106,6 @@ class HRComparison(Operators.Binary):
             left_rel = duckdb_rename(left_rel, {left_rel.columns[0]: l_name})
             right_rel = duckdb_rename(right_rel, {right_rel.columns[0]: r_name})
         result = cls.hr_func(left_rel, right_rel, hr_mode)
-        print(result)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
         sql_token = TO_SQL_TOKEN.get(func, func)
@@ -124,7 +123,6 @@ class HRComparison(Operators.Binary):
                         ELSE CAST(hr_mask AS DOUBLE)
                     END AS "{col_name}"
                 """)
-        print(result)
         return result
 
     @classmethod
