@@ -1412,13 +1412,15 @@ class InterpreterAnalyzer(ASTTemplate):
             if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
                 return data
 
-            self.rule_data = filtered
+            bool_var = filtered["bool_var"]
+            self.rule_data = RelationProxy(filtered.project("* EXCLUDE bool_var"))
             result_validation = self.visit(node.right)
 
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
 
+            self.rule_data["bool_var"] = bool_var
             self.rule_data = self.rule_data.reset_index()
             self.rule_data = duckdb_concat(
                 self.rule_data,
