@@ -17,7 +17,7 @@ from vtlengine.duckdb.duckdb_utils import (
     empty_relation,
 )
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Model import Component, DataComponent, Dataset, Role, RelationProxy
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 TRUE_VAL = 1
@@ -289,11 +289,14 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @staticmethod
-    def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
-        list_data = list(computed_dict.values())
-        df = pd.concat(list_data, axis=0)
-        df.reset_index(drop=True, inplace=True)
-        return df
+    def generate_computed_data(computed_dict: Dict[str, RelationProxy]) -> RelationProxy:
+        relations = list(computed_dict.values())
+        if not relations:
+            return empty_relation()
+        combined_relation = relations[0]
+        for rel in relations[1:]:
+            combined_relation = duckdb_concat(combined_relation, rel, how="outer")
+        return combined_relation.reset_index()
 
     @classmethod
     def validate(
@@ -311,18 +314,17 @@ class Hierarchy(Operators.Operator):
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
         if len(computed_dict) == 0:
-            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+            computed_data = empty_relation(dataset.get_components_names())
         else:
-            computed_data = cls.generate_computed_data(computed_dict)
+            computed_data = RelationProxy(cls.generate_computed_data(computed_dict))
+
         if output == "computed":
             result.data = computed_data
             return result
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(
-            subset=dataset.get_identifiers_names(), keep="last", inplace=True
-        )
-        result.data.reset_index(drop=True, inplace=True)
+        result.data = duckdb_concat(dataset.data, computed_data, how="outer")
+        result.data = result.data.distinct()
+        result.data = result.data.reset_index()
         return result
