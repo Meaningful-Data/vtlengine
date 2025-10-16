@@ -1361,7 +1361,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
                 expr = ", ".join(self.ruleset_dataset.get_components_names())
-                validation_data = self.rule_data.project(
+                validation_data = duckdb_concat(self.rule_data, validation_data.data).project(
                     f"{expr}, {validation_data.name} AS bool_var"
                 )
             else:
