@@ -1413,7 +1413,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return data
 
             bool_var = filtered["bool_var"]
-            self.rule_data = RelationProxy(filtered.project("* EXCLUDE bool_var"))
+            self.rule_data = RelationProxy(filtered.drop("bool_var"))
             result_validation = self.visit(node.right)
 
             if self.is_from_hr_agg or self.is_from_hr_val:
