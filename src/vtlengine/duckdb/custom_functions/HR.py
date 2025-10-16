@@ -9,6 +9,6 @@ def imbalance_func(x: Any, y: Any) -> Optional[float]:
 
 
 def handle_mode(x: Any, hr_mode: str) -> float:
-    if hr_mode == "non_null" and x is None or hr_mode == "non_zero" and x == 0:
+    if x == NINF or (hr_mode == "non_null" and x is None or hr_mode == "non_zero" and x == 0):
         return NINF
     return x
