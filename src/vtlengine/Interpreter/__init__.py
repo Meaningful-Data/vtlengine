@@ -1360,10 +1360,9 @@ class InterpreterAnalyzer(ASTTemplate):
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
-                expr = ", ".join(self.ruleset_dataset.get_components_names())
-                validation_data = duckdb_concat(self.rule_data, validation_data.data).project(
-                    f"{expr}, {validation_data.name} AS bool_var"
-                )
+                comps = self.ruleset_dataset.get_components_names() + ["bool_var"]
+                self.rule_data["bool_var"] = validation_data.data[validation_data.name]
+                validation_data = self.rule_data[comps]
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
@@ -1399,42 +1398,26 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
+            filtering_indexes = filter_comp.data[filter_comp.data == True].index
+            nan_indexes = filter_comp.data[filter_comp.data.isnull()].index
+            # If no filtering indexes, then all datapoints are valid on DPR and HR
+            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                self.rule_data["bool_var"] = True
+                self.rule_data[nan_indexes, "bool_var"] = None
+                return self.rule_data
+            non_filtering_indexes = filter_comp.data.project("__index__").except_(filtering_indexes.project("__index__"))
 
-            self.rule_data = duckdb_concat(
-                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
-            )
-            filtered = self.rule_data[self.rule_data["bool_var"] == True]
-            data = self.rule_data.project(
-                '* EXCLUDE "bool_var", '
-                'CASE WHEN "bool_var" IS NULL THEN NULL ELSE TRUE END AS "bool_var"'
-            )
-
-            if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
-                return data
-
-            bool_var = filtered["bool_var"]
-            self.rule_data = RelationProxy(filtered.drop("bool_var"))
+            original_data = self.rule_data
+            self.rule_data = self.rule_data[filtering_indexes].reset_index()
             result_validation = self.visit(node.right)
-
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
-
-            self.rule_data["bool_var"] = bool_var
-            self.rule_data = self.rule_data.reset_index()
-            self.rule_data = duckdb_concat(
-                self.rule_data,
-                result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
-            )
-            self.rule_data = duckdb_rename(self.rule_data, {"bool_var": "bool_var_temp"})
-
-            keys = [c for c in self.rule_data.columns if c != "bool_var_temp"]
-            data = duckdb_merge(data, self.rule_data, how="left", join_keys=keys)
-            data = data.project(
-                ", ".join(keys) + ', CASE WHEN "bool_var_temp" != TRUE THEN '
-                '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
-            )
-            return data
+            self.rule_data["bool_var"] = result_validation.data
+            original_data = duckdb_merge(original_data, self.rule_data, how="left", join_keys=original_data.columns)
+            original_data[non_filtering_indexes, "bool_var"] = True
+            original_data[nan_indexes, "bool_var"] = None
+            return original_data
 
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
