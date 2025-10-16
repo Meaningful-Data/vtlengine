@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
@@ -289,13 +289,13 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @staticmethod
-    def generate_computed_data(computed_dict: Dict[str, RelationProxy]) -> RelationProxy:
+    def generate_computed_data(computed_dict: Dict[str, RelationProxy], comp_names: List[str]) -> RelationProxy:
         relations = list(computed_dict.values())
         if not relations:
             return empty_relation()
         combined_relation = relations[0]
         for rel in relations[1:]:
-            combined_relation = combined_relation.union(rel)
+            combined_relation = duckdb_concat(combined_relation, rel, how="outer", on=comp_names)
         return RelationProxy(combined_relation).reset_index()
 
     @classmethod
@@ -313,10 +313,11 @@ class Hierarchy(Operators.Operator):
         cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
+        comp_names = dataset.get_components_names()
         if len(computed_dict) == 0:
             computed_data = empty_relation(dataset.get_components_names())
         else:
-            computed_data = RelationProxy(cls.generate_computed_data(computed_dict))
+            computed_data = RelationProxy(cls.generate_computed_data(computed_dict, comp_names))
 
         if output == "computed":
             result.data = computed_data
@@ -324,7 +325,7 @@ class Hierarchy(Operators.Operator):
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = duckdb_concat(dataset.data, computed_data, how="outer")
+        result.data = duckdb_concat(dataset.data, computed_data, how="outer", on=comp_names)
         result.data = result.data.distinct()
         result.data = result.data.reset_index()
         return result
