@@ -81,7 +81,7 @@ class RelationProxy:
                 return RelationProxy(joined.order("m.__pos__").project("l.*"))
 
             mask_col = data_cols[0]
-            mask_true = mask.filter(f'coalesce(m."{mask_col}", false)')
+            mask_true = mask.filter(f'coalesce(m."{mask_col}", true)')
             joined = left_rel.join(mask_true, f"l.{INDEX_COL} = m.{INDEX_COL}", how="semi")
             return RelationProxy(joined)
 
