@@ -255,6 +255,15 @@ class TimePeriodHandler:
         if isinstance(other, str):
             other = TimePeriodHandler(other)
 
+        if self.period_indicator != other.period_indicator:
+            tokens = {
+                operator.lt: '<',
+                operator.le: '<=',
+                operator.gt: '>',
+                operator.ge: '>='
+            }
+            raise SemanticError("2-1-19-19", op=tokens[py_op], value1=self, value2=other)
+
         self_lapse, other_lapse = self.period_dates, other.period_dates
         is_lt_or_le = py_op in [operator.lt, operator.le]
         is_gt_or_ge = py_op in [operator.gt, operator.ge]
