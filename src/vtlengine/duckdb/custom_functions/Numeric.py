@@ -6,7 +6,7 @@ from typing import Optional, Union
 from vtlengine.Exceptions import RunTimeError
 
 
-def round_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
+def round_duck(value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]) -> Optional[float]:
     """
     Custom round function for DuckDB that handles None values and rounding.
     Applied on Round operator in VTL.
