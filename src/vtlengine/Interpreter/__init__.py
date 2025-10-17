@@ -1402,7 +1402,7 @@ class InterpreterAnalyzer(ASTTemplate):
             nan_indexes = filter_comp.data[filter_comp.data.isnull()].index
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
-                self.rule_data["bool_var"] = True
+                self.rule_data["bool_var"] = 1
                 self.rule_data[nan_indexes, "bool_var"] = None
                 return self.rule_data
             non_filtering_indexes = filter_comp.data.project("__index__").except_(filtering_indexes.project("__index__"))
@@ -1415,7 +1415,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return result_validation
             self.rule_data["bool_var"] = result_validation.data
             original_data = duckdb_merge(original_data, self.rule_data, how="left", join_keys=original_data.columns)
-            original_data[non_filtering_indexes, "bool_var"] = True
+            original_data[non_filtering_indexes, "bool_var"] = 1
             original_data[nan_indexes, "bool_var"] = None
             return original_data
 
