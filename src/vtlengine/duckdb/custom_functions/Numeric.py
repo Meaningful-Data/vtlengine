@@ -65,7 +65,7 @@ def round_to_ref(x: Optional[float], ref: Optional[float]) -> Optional[float]:
     return round(x, dec_ref) if dec_x > dec_ref else x
 
 
-def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[int]) -> Optional[float]:
+def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]) -> Optional[float]:
     """
     Truncates a numeric value to a specified number of decimals.
     If the input value is None, the function will return None.
