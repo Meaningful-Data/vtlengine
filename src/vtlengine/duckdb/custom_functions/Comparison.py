@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any, Optional, Union
 
 from vtlengine.DataTypes import Number, String
@@ -6,8 +7,7 @@ from vtlengine.DataTypes import Number, String
 def isnull_duck(x: Any) -> bool:
     return x is None
 
-
-BASIC_SCALAR_TYPES = Optional[Union[str, float, int, bool]]
+BASIC_SCALAR_TYPES = Optional[Union[str, float, int, bool, date]]
 
 
 def between_duck(
@@ -34,6 +34,8 @@ def _comparison_cast_values(
             x = Number.cast(x)
         elif isinstance(x, (int, float)) and isinstance(y, str):
             y = Number.cast(y)
+        elif isinstance(x, date) and isinstance(y, (int, float)):
+            x = Number.cast(x.year)
     except ValueError:
         x = str(x)
         y = str(y)

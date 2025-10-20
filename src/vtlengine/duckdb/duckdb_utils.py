@@ -174,8 +174,10 @@ def duckdb_fillna(
         # problematic default value
         if value == "default":
             value = "default"
-        if value == "":
+        elif value == "":
             value = "''"
+        elif isinstance(value, str) and not (value.startswith("'") and value.endswith("'")):
+            value = repr(value)
         exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
