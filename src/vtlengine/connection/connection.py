@@ -100,6 +100,8 @@ class ConnectionManager:
         try:
             if cls._connection:
                 cls._connection.rollback()
+                # Free generated resources
+                cls.close_connection()
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)  # type: ignore[arg-type]
