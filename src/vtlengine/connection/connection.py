@@ -99,8 +99,11 @@ class ConnectionManager:
         """
         try:
             if cls._connection:
+                # Rollback any open transaction
                 cls._connection.rollback()
                 # Free generated resources
+                cls._connection.execute("DROP ALL")
+                # Reset to avoid dropped objects mem fragmentation
                 cls.close_connection()
         except Exception as e:
             # No rollback needed
