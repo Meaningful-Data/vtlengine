@@ -435,6 +435,8 @@ class RelationProxy:
 
         value = self._to_sql_literal(other)
         proj_left = left.project(f'{INDEX_COL}, "{lcol}"')
+        if op in ["=", "!="] and value in ["NULL", "TRUE", "FALSE"]:
+            op = "IS" if op == "=" else "IS NOT"
         expr = f'("{lcol}" {op} {value}) AS __mask__'
         return RelationProxy(proj_left.project(f"{INDEX_COL}, {expr}"))
 
@@ -551,8 +553,49 @@ class RelationProxy:
                 print("No cleaning needed for execution graph.")
                 print(self.explain())
 
-    def distinct(self) -> "RelationProxy":
-        return RelationProxy(self.project(include_index=False).distinct())
+    def distinct(
+            self,
+            subset: Optional[Sequence[str]] = None,
+            keep: Union[str, bool] = "first",
+    ) -> "RelationProxy":
+        if keep not in ("first", "last", False):
+            raise ValueError("keep must be 'first', 'last' o False")
+        if not subset:
+            return RelationProxy(self.project(include_index=False).distinct())
+
+        all_cols = [c for c in self.columns if c != INDEX_COL]
+        cols = [c for c in (subset or all_cols) if c != INDEX_COL]
+
+        if not cols:
+            return self
+
+        missing = [c for c in cols if c not in self.columns]
+        if missing:
+            raise ValueError(f"Missing columns in the subset: {missing}")
+
+        l = self.relation.set_alias("l")
+        part_expr = ", ".join([f'l."{c}"' for c in cols])
+
+        if keep in ("first", "last"):
+            direction = "ASC" if keep == "first" else "DESC"
+            base = l.project(
+                f"""l.*,
+                    row_number() OVER (
+                        PARTITION BY {part_expr}
+                        ORDER BY l.{INDEX_COL} {direction}
+                    ) AS __count__"""
+            )
+        else:
+            base = l.project(
+                f"""l.*,
+                    count(*) OVER (
+                        PARTITION BY {part_expr}
+                    ) AS __count__"""
+            )
+        filtered = base.filter("__count__ = 1").project("* EXCLUDE __count__")
+
+        filtered = filtered.order(INDEX_COL)
+        return RelationProxy(filtered)
 
     def df(self, limit: int | None = None) -> Any:
         rel = self.relation if limit is None else self.relation.limit(limit)
