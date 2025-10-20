@@ -3952,7 +3952,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_273_5(self):
-        text = 'DS_r <- DS_1[aggr Me_2 := max];'
+        text = "DS_r <- DS_1[aggr Me_2 := max];"
         code = "GH_273"
         number_inputs = 1
         exception_code = "2-1-19-20"
@@ -3962,7 +3962,7 @@ class TimeOperatorsTest(AdditionalHelper):
         )
 
     def test_GH_273_6(self):
-        text = 'DS_r <- DS_1[aggr Me_2 := min(Me_1)];'
+        text = "DS_r <- DS_1[aggr Me_2 := min(Me_1)];"
         code = "GH_273"
         number_inputs = 1
         exception_code = "2-1-19-20"
