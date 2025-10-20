@@ -16,14 +16,18 @@ COMPLEXITY_LIMITS = {
     "max_nodes": 20,
     "max_depth": 8,
     "max_agg": 3,
+    "max_filter": 3,
     "max_joins": 3,
+    "max_order": 3,
     "max_complexity": 100,
 }
 
-COMPLEXITY_LIMIT = 100
+COMPLEXITY_LIMIT = 75
 DEPTH_MULT = 3
 AGG_MULT = 10
+FILTER_MULT = 5
 JOIN_MULT = 10
+ORDER_MULT = 5
 
 
 @dataclass
@@ -462,18 +466,25 @@ class RelationProxy:
         node_count = 0
         max_depth = 0
         agg_count = 0
+        filter_count = 0
         join_count = 0
+        order_count = 0
 
         def get_plan_nodes(n: Dict[str, Any], depth: int = 0):
-            nonlocal node_count, agg_count, join_count, max_depth
+            nonlocal node_count, max_depth, agg_count, filter_count, join_count, order_count
             if not isinstance(n, dict):
                 return
             node_count += 1
             name = str(n.get("name", "")).upper()
-            if "AGGREGATE" in name or "GROUP" in name:
+            if "AGGREGATE" in name or "GROUP" in name or "WINDOW" in name:
                 agg_count += 1
+            if "FILTER" in name or "DISTINCT" in name:
+                filter_count += 1
             if "JOIN" in name:
                 join_count += 1
+            if "ORDER" in name in name:
+                order_count += 1
+
             max_depth = max(max_depth, depth)
             for c in n.get("children", []) or []:
                 get_plan_nodes(c, depth + 1)
@@ -485,7 +496,9 @@ class RelationProxy:
             node_count
             + max_depth * DEPTH_MULT
             + agg_count * AGG_MULT
+            + filter_count * FILTER_MULT
             + join_count * JOIN_MULT
+            + order_count * ORDER_MULT
         )
 
         return complexity
