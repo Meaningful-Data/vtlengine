@@ -7,6 +7,7 @@ from vtlengine.DataTypes import Number, String
 def isnull_duck(x: Any) -> bool:
     return x is None
 
+
 BASIC_SCALAR_TYPES = Optional[Union[str, float, int, bool, date]]
 
 

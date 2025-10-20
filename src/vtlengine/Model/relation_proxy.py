@@ -554,9 +554,9 @@ class RelationProxy:
                 print(self.explain())
 
     def distinct(
-            self,
-            subset: Optional[Sequence[str]] = None,
-            keep: Union[str, bool] = "first",
+        self,
+        subset: Optional[Sequence[str]] = None,
+        keep: Union[str, bool] = "first",
     ) -> "RelationProxy":
         if keep not in ("first", "last", False):
             raise ValueError("keep must be 'first', 'last' o False")
@@ -573,12 +573,12 @@ class RelationProxy:
         if missing:
             raise ValueError(f"Missing columns in the subset: {missing}")
 
-        l = self.relation.set_alias("l")
+        left_rel = self.relation.set_alias("l")
         part_expr = ", ".join([f'l."{c}"' for c in cols])
 
         if keep in ("first", "last"):
             direction = "ASC" if keep == "first" else "DESC"
-            base = l.project(
+            base = left_rel.project(
                 f"""l.*,
                     row_number() OVER (
                         PARTITION BY {part_expr}
@@ -586,7 +586,7 @@ class RelationProxy:
                     ) AS __count__"""
             )
         else:
-            base = l.project(
+            base = left_rel.project(
                 f"""l.*,
                     count(*) OVER (
                         PARTITION BY {part_expr}

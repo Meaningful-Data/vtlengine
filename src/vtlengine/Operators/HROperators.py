@@ -328,5 +328,7 @@ class Hierarchy(Operators.Operator):
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
         result.data = duckdb_concat(dataset.data, computed_data, how="outer", on=comp_names)
-        result.data = result.data.distinct(subset=dataset.get_identifiers_names(), keep="last").reset_index()
+        result.data = result.data.distinct(
+            subset=dataset.get_identifiers_names(), keep="last"
+        ).reset_index()
         return result
