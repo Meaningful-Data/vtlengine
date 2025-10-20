@@ -51,8 +51,8 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
+from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
-    duckdb_concat,
     duckdb_merge,
     duckdb_rename,
     duckdb_select,
@@ -1366,10 +1366,9 @@ class InterpreterAnalyzer(ASTTemplate):
         validation_data = self.visit(node.rule)
         if isinstance(validation_data, DataComponent):
             if self.rule_data is not None and self.ruleset_dataset is not None:
-                expr = ", ".join(self.ruleset_dataset.get_components_names())
-                validation_data = self.rule_data.project(
-                    f"{expr}, {validation_data.name} AS bool_var"
-                )
+                comps = self.ruleset_dataset.get_components_names() + ["bool_var"]
+                self.rule_data["bool_var"] = validation_data.data[validation_data.name]
+                validation_data = self.rule_data[comps]
             else:
                 validation_data = None
         if self.ruleset_mode == "invalid" and validation_data is not None:
@@ -1405,55 +1404,48 @@ class InterpreterAnalyzer(ASTTemplate):
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
                 return None
-
-            self.rule_data = duckdb_concat(
-                self.rule_data, filter_comp.data.project(f'"{filter_comp.name}" AS "bool_var"')
+            filtering_indexes = filter_comp.data[filter_comp.data == True].index
+            nan_indexes = filter_comp.data[filter_comp.data.isnull()].index
+            # If no filtering indexes, then all datapoints are valid on DPR and HR
+            if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                self.rule_data["bool_var"] = 1
+                self.rule_data[nan_indexes, "bool_var"] = None
+                return self.rule_data
+            non_filtering_indexes = filter_comp.data.project("__index__").except_(
+                filtering_indexes.project("__index__")
             )
-            filtered = self.rule_data[self.rule_data["bool_var"] == True]
-            data = self.rule_data.project(
-                '* EXCLUDE "bool_var", '
-                'CASE WHEN "bool_var" IS NULL THEN NULL ELSE TRUE END AS "bool_var"'
-            )
 
-            if not len(filtered) and not (self.is_from_hr_agg or self.is_from_hr_val):
-                return data
-
-            self.rule_data = filtered
+            original_data = self.rule_data
+            self.rule_data = self.rule_data[filtering_indexes].reset_index()
             result_validation = self.visit(node.right)
-
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
-
-            self.rule_data = self.rule_data.reset_index()
-            self.rule_data = duckdb_concat(
-                self.rule_data,
-                result_validation.data.project(f'"{result_validation.name}" AS "bool_var"'),
+            self.rule_data["bool_var"] = result_validation.data
+            original_data = duckdb_merge(
+                original_data, self.rule_data, how="left", join_keys=original_data.columns
             )
-            self.rule_data = duckdb_rename(self.rule_data, {"bool_var": "bool_var_temp"})
-
-            keys = [c for c in self.rule_data.columns if c != "bool_var_temp"]
-            data = duckdb_merge(data, self.rule_data, how="left", join_keys=keys)
-            data = data.project(
-                ", ".join(keys) + ', CASE WHEN "bool_var_temp" != TRUE THEN '
-                '"bool_var_temp" ELSE "bool_var" END AS "bool_var"'
-            )
-            return data
+            original_data[non_filtering_indexes, "bool_var"] = 1
+            original_data[nan_indexes, "bool_var"] = None
+            return original_data
 
         elif node.op in HR_COMP_MAPPING:
             self.is_from_assignment = True
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 self.hr_partial_is_valid = []
+
             left_operand = self.visit(node.left)
             self.is_from_assignment = False
             right_operand = self.visit(node.right)
+
             if isinstance(right_operand, Dataset):
                 right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # Check all values were present in the dataset
                 if self.hr_partial_is_valid and not any(self.hr_partial_is_valid):
-                    right_operand.data = right_operand.data.map(lambda x: "REMOVE_VALUE")
+                    rcol = right_operand.data.columns[0]
+                    right_operand.data = right_operand.data.project(f'{NINF} AS "{rcol}"')
                 self.hr_partial_is_valid = []
 
             if self.is_from_hr_agg:
@@ -1462,6 +1454,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 result = HR_COMP_MAPPING[node.op].analyze(
                     left_operand, right_operand, self.ruleset_mode
                 )
+
                 left_measure = left_operand.get_measures()[0]
                 if left_operand.data is None:
                     result.data = None
@@ -1481,19 +1474,25 @@ class InterpreterAnalyzer(ASTTemplate):
             ):
                 measure_name = left_operand.get_measures_names()[0]
                 if left_operand.data is None:
-                    left_operand.data = pd.DataFrame({measure_name: []})
+                    left_operand.data = empty_relation(measure_name)
                 if right_operand.data is None:
-                    right_operand.data = pd.DataFrame({measure_name: []})
-                left_null_indexes = set(
-                    left_operand.data[left_operand.data[measure_name].isnull()].index
+                    right_operand.data = empty_relation(measure_name)
+
+                lmask = left_operand.data[measure_name].isnull()
+                rmask = right_operand.data[measure_name].isnull()
+                both_join = (
+                    lmask.relation.set_alias("l")
+                    .join(rmask.relation.set_alias("r"), "l.__index__ = r.__index__", how="inner")
+                    .project(
+                        "l.__index__ AS __index__, "
+                        '(coalesce(l."__mask__", false) AND coalesce(r."__mask__", false)) AS '
+                        '"__mask__"'
+                    )
                 )
-                right_null_indexes = set(
-                    right_operand.data[right_operand.data[measure_name].isnull()].index
-                )
-                # If no indexes are in common, then one datapoint is not null
-                invalid_indexes = list(left_null_indexes.intersection(right_null_indexes))
-                if len(invalid_indexes) > 0:
-                    left_operand.data[invalid_indexes, measure_name] = "REMOVE_VALUE"
+
+                both_null = both_join.filter('"__mask__"')
+                left_operand.data[both_null, measure_name] = NINF
+
             if isinstance(left_operand, Dataset):
                 left_operand = get_measure_from_dataset(left_operand, node.left.value)
             if isinstance(right_operand, Dataset):
@@ -1730,6 +1729,8 @@ class InterpreterAnalyzer(ASTTemplate):
             comp_name: copy(comp)
             for comp_name, comp in self.ruleset_dataset.components.items()  # type: ignore[union-attr]
         }
+
+        hr_component = None
         if self.ruleset_signature is not None:
             hr_component = self.ruleset_signature["RULE_COMPONENT"]
         name = node.value
@@ -1756,6 +1757,7 @@ class InterpreterAnalyzer(ASTTemplate):
             rel = rel[condition].reset_index(drop=True)
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
+
         if node.value in rel[hr_component]:
             rest_identifiers = [
                 comp.name
@@ -1763,32 +1765,28 @@ class InterpreterAnalyzer(ASTTemplate):
                 if comp.role == Role.IDENTIFIER and comp.name != hr_component
             ]
             code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
-            # code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            # code_data = code_data.drop_duplicates().reset_index(drop=True)
-            code_data = (
-                duckdb_merge(
-                    code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
-                )
-                .distinct()
-                .reset_index(drop=True)
+            code_data = duckdb_merge(
+                code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
             )
+            code_data = code_data.distinct().reset_index(drop=True)
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
             # (Missing data points are considered,
             # lines 6483-6510 of the reference manual)
-            if self.ruleset_mode in ("partial_null", "partial_zero"):
+            if (
+                self.ruleset_mode in ("partial_null", "partial_zero")
+                and code_data[hr_component].isnull().any()
+            ):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
-                if self.is_from_hr_agg and self.is_from_assignment:
-                    pass
-                elif code_data[hr_component].isnull().any():
-                    partial_is_valid = False
+                partial_is_valid = False
 
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
                 fill_indexes = code_data[code_data[hr_component].isnull()].index
                 code_data[fill_indexes, measure_name] = 0
+
             code_data[hr_component] = node.value
-            df = code_data
+            rel = code_data
         else:
             # If the value is not in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1800,18 +1798,20 @@ class InterpreterAnalyzer(ASTTemplate):
                     pass
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
-            df = df.head(1)
-            df[hr_component] = node.value
+            rel = rel[0]
+            rel[hr_component] = node.value
             if self.ruleset_mode in ("non_zero", "partial_zero", "always_zero"):
-                df[measure_name] = 0
+                rel[measure_name] = 0
             else:  # For non_null, partial_null and always_null
-                df[measure_name] = None
+                rel[measure_name] = None
         if self.hr_partial_is_valid is not None and self.ruleset_mode in (
             "partial_null",
             "partial_zero",
         ):
             self.hr_partial_is_valid.append(partial_is_valid)
-        return Dataset(name=name, components=result_components, data=df)
+        ds = Dataset(name=name, components=result_components, data=rel)
+        ds.data = ds.data.order_by_index()
+        return ds
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:

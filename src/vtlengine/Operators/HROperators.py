@@ -1,6 +1,6 @@
 import operator
 from copy import copy
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 from duckdb.duckdb import DuckDBPyRelation
@@ -9,10 +9,19 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_drop, duckdb_rename
+from vtlengine.duckdb.custom_functions.HR import NINF
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_drop,
+    duckdb_rename,
+    empty_relation,
+)
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Model import Component, DataComponent, Dataset, RelationProxy, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+TRUE_VAL = 1
+RM_VAL = NINF
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -34,49 +43,47 @@ class HRComparison(Operators.Binary):
     ) -> DuckDBPyRelation:
         l_name = left_rel.columns[0]
         r_name = right_rel.columns[0]
-        RM_val = "'REMOVE_VALUE'"
         expr = f'"{l_name}", "{r_name}"'
 
         if hr_mode == "partial_null":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND
-                             "{l_name}" IS NOT NULL
+                        WHEN "{r_name}" = {RM_VAL} AND "{l_name}" IS NOT NULL
                         THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
-                        THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{r_name}" = {RM_VAL}
+                        THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "partial_zero":
             expr += f""",
                     CASE
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL AND "{l_name}" != 0
+                        WHEN "{r_name}" = {RM_VAL} AND ("{l_name}" != 0 OR "{l_name}" IS NULL)
                         THEN NULL
-                        WHEN "{r_name}" = {RM_val} AND "{r_name}" IS NOT NULL
-                        THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{r_name}" = {RM_VAL}
+                        THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "non_null":
             expr += f""",
                     CASE
-                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN 'REMOVE_VALUE'
-                        ELSE 'true'
+                        WHEN "{l_name}" IS NULL OR "{r_name}" IS NULL THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
 
         elif hr_mode == "non_zero":
             expr += f""",
                     CASE
-                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_val}
-                        ELSE 'true'
+                        WHEN "{l_name}" = 0 AND "{r_name}" = 0 THEN {RM_VAL}
+                        ELSE {TRUE_VAL}
                     END AS hr_mask
                 """
         else:
-            expr += ", 'true' AS hr_mask"
+            expr += f", {TRUE_VAL} AS hr_mask"
 
         # Combine the relations and apply the masks
         combined_relation = duckdb_concat(left_rel, right_rel)
@@ -91,26 +98,29 @@ class HRComparison(Operators.Binary):
         func: str,
         col_name: str,
     ) -> DuckDBPyRelation:
-        # In order not to apply the function to the whole series, we align the series
-        # and apply the function only to the valid values based on a validation mask.
-        # The function is applied to the aligned series and the result is combined with the
-        # original series.
+        l_name = left_rel.columns[0]
+        r_name = right_rel.columns[0]
+        if l_name == r_name:
+            l_name = f"__l_{l_name}__"
+            r_name = f"__r_{r_name}__"
+            left_rel = duckdb_rename(left_rel, {left_rel.columns[0]: l_name})
+            right_rel = duckdb_rename(right_rel, {right_rel.columns[0]: r_name})
         result = cls.hr_func(left_rel, right_rel, hr_mode)
 
         position = MIDDLE if func != "imbalance_func" else LEFT
         sql_token = TO_SQL_TOKEN.get(func, func)
         if isinstance(sql_token, tuple):
             sql_token, position = sql_token
+
         if position == MIDDLE:
-            sql_func = f'("{left_rel.columns[0]}" {sql_token} "{right_rel.columns[0]}")'
+            sql_func = f'("{l_name}" {sql_token} "{r_name}")'
         else:
-            sql_func = f'{sql_token}("{left_rel.columns[0]}", "{right_rel.columns[0]}")'
+            sql_func = f'{sql_token}("{l_name}", "{r_name}")'
 
         result = result.project(f"""
                     CASE
-                        WHEN hr_mask = 'true'
-                        THEN CAST({sql_func} AS VARCHAR)
-                        ELSE hr_mask
+                        WHEN hr_mask = {TRUE_VAL} THEN CAST({sql_func} AS DOUBLE)
+                        ELSE CAST(hr_mask AS DOUBLE)
                     END AS "{col_name}"
                 """)
         return result
@@ -137,12 +147,12 @@ class HRComparison(Operators.Binary):
     @classmethod
     def evaluate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:  # type: ignore[override]
         result = cls.validate(left, right, hr_mode)
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         measure_name = left.get_measures_names()[0]
 
         if left.data is not None and right.data is not None:
             result.data["bool_var"] = cls.apply_hr_func(
-                left.data[measure_name], right.data, hr_mode, cls.op_func, "bool_var"
+                left.data[measure_name], right.data, hr_mode, cls.op, "bool_var"
             )
             result.data["imbalance"] = cls.apply_hr_func(
                 left.data[measure_name], right.data, hr_mode, "imbalance_func", "imbalance"
@@ -151,7 +161,9 @@ class HRComparison(Operators.Binary):
         # Removing datapoints that should not be returned
         # (we do it below imbalance calculation
         # to avoid errors on different shape)
-        result.data = duckdb_drop(result.data.filter("bool_var != 'REMOVE_VALUE'"), measure_name)
+        result.data = duckdb_drop(
+            result.data.filter(f"bool_var IS DISTINCT FROM {NINF}"), measure_name
+        )
         return result
 
 
@@ -182,20 +194,23 @@ class HRLessEqual(HRComparison):
 
 class HRBinNumeric(Operators.Binary):
     @classmethod
-    def op_func(cls, x: Any, y: Any) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
-        return super().op_func(x, y)
+    def op_func(cls, me_name: str, left: Any, right: Any) -> Any:
+        left = left if left is not None else "NULL"
+        right = right if right is not None else "NULL"
+        return f"""
+                    CASE
+                        WHEN {left} = {NINF} THEN {NINF}
+                        ELSE {left} {cls.op} {right}
+                    END AS {me_name}
+                """
 
     @classmethod
     def evaluate(cls, left: DataComponent, right: DataComponent) -> DataComponent:
-        # TODO: remove type ignore on HROperators issue
         name = f"{left.name}{cls.op}{right.name}"
-        left_rel = duckdb_rename(left.data, {left.data.columns[0]: "left"})
-        right_rel = duckdb_rename(right.data, {right.data.columns[0]: "right"})
-
-        expr = Operators.apply_bin_op(cls, f'"{name}"', '"left"', '"right"')
-        result_data = duckdb_concat(left_rel, right_rel)
+        left_rel = duckdb_rename(left.data.order_by_index(), {left.data.columns[0]: "left"})
+        right_rel = duckdb_rename(right.data.order_by_index(), {right.data.columns[0]: "right"})
+        expr = cls.op_func(f'"{name}"', '"left"', '"right"')
+        result_data = duckdb_concat(left_rel, right_rel, how="inner")
         result_data = result_data.project(expr)
 
         return DataComponent(
@@ -252,18 +267,21 @@ class HAAssignment(Operators.Binary):
     ) -> Dataset:
         result = cls.validate(left, right, hr_mode)
         measure_name = left.get_measures_names()[0]
-        result.data = left.data.copy() if left.data is not None else pd.DataFrame()
+        result.data = left.data if left.data is not None else empty_relation()
         if right.data is not None:
-            result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
-        result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
+            rcol = right.data.columns[0]
+            result.data[measure_name] = right.data.project(
+                f'handle_mode("{rcol}", \'{hr_mode}\') AS "{measure_name}"'
+            )
+        result.data = result.data[result.data[measure_name] != NINF]
         return result
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
-        if not pd.isnull(x) and x == "REMOVE_VALUE":
-            return "REMOVE_VALUE"
+        if not pd.isnull(x) and x == NINF:
+            return NINF
         if hr_mode == "non_null" and pd.isnull(x) or hr_mode == "non_zero" and x == 0:
-            return "REMOVE_VALUE"
+            return NINF
         return x
 
 
@@ -271,11 +289,16 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @staticmethod
-    def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
-        list_data = list(computed_dict.values())
-        df = pd.concat(list_data, axis=0)
-        df.reset_index(drop=True, inplace=True)
-        return df
+    def generate_computed_data(
+        computed_dict: Dict[str, RelationProxy], comp_names: List[str]
+    ) -> RelationProxy:
+        relations = list(computed_dict.values())
+        if not relations:
+            return empty_relation()
+        combined_relation = relations[0]
+        for rel in relations[1:]:
+            combined_relation = duckdb_concat(combined_relation, rel, how="outer", on=comp_names)
+        return RelationProxy(combined_relation).reset_index()
 
     @classmethod
     def validate(
@@ -292,19 +315,20 @@ class Hierarchy(Operators.Operator):
         cls, dataset: Dataset, computed_dict: Dict[str, DataFrame], output: str
     ) -> Dataset:
         result = cls.validate(dataset, computed_dict, output)
+        comp_names = dataset.get_components_names()
         if len(computed_dict) == 0:
-            computed_data = pd.DataFrame(columns=dataset.get_components_names())
+            computed_data = empty_relation(dataset.get_components_names())
         else:
-            computed_data = cls.generate_computed_data(computed_dict)
+            computed_data = RelationProxy(cls.generate_computed_data(computed_dict, comp_names))
+
         if output == "computed":
             result.data = computed_data
             return result
 
         # union(setdiff(op, R), R) where R is the computed data.
         # It is the same as union(op, R) and drop duplicates, selecting the last one available
-        result.data = pd.concat([dataset.data, computed_data], axis=0, ignore_index=True)
-        result.data.drop_duplicates(
-            subset=dataset.get_identifiers_names(), keep="last", inplace=True
-        )
-        result.data.reset_index(drop=True, inplace=True)
+        result.data = duckdb_concat(dataset.data, computed_data, how="outer", on=comp_names)
+        result.data = result.data.distinct(
+            subset=dataset.get_identifiers_names(), keep="last"
+        ).reset_index()
         return result

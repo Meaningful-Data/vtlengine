@@ -22,7 +22,10 @@ INDEX_COL = "__index__"
 
 
 def duckdb_concat(
-    left: DuckDBPyRelation, right: DuckDBPyRelation, on: Optional[Union[str, List[str]]] = None
+    left: DuckDBPyRelation,
+    right: DuckDBPyRelation,
+    on: Optional[Union[str, List[str]]] = None,
+    how: str = "outer",
 ) -> DuckDBPyRelation:
     """
     Horizontal concatenation (axis=1) of two relations.
@@ -33,6 +36,9 @@ def duckdb_concat(
     """
     if left is None or right is None:
         return empty_relation()
+    how = (how or "outer").lower()
+    if how not in ("outer", "inner", "left", "right"):
+        raise ValueError(f"Unsupported how for duckdb_concat: {how}")
 
     if on is not None:
         on_cols = [on] if isinstance(on, str) else list(on)
@@ -59,7 +65,7 @@ def duckdb_concat(
         join_cond = " AND ".join(f'l."{c}" = r."{c}"' for c in on_cols)
         presence_col = f'r."{on_cols[0]}"'
 
-    joined = left_rel.join(right_rel, join_cond, how="outer")
+    joined = left_rel.join(right_rel, join_cond, how=how)
 
     left_cols = list(left.columns)
     right_cols = list(right.columns)
@@ -74,6 +80,13 @@ def duckdb_concat(
     for c in union_cols:
         if used_rowid and c == "__row_id__":
             continue
+        if c == INDEX_COL and c in left_cols and c in right_cols:
+            if used_rowid and how == "inner":
+                select_exprs.append(f'l."{INDEX_COL}" AS "{INDEX_COL}"')
+            else:
+                select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
+            continue
+
         if c in left_cols and c in right_cols:
             select_exprs.append(
                 f'CASE WHEN {presence_col} IS NOT NULL THEN r."{c}" ELSE l."{c}" END AS "{c}"'
@@ -161,8 +174,10 @@ def duckdb_fillna(
         # problematic default value
         if value == "default":
             value = "default"
-        if value == "":
+        elif value == "":
             value = "''"
+        elif isinstance(value, str) and not (value.startswith("'") and value.endswith("'")):
+            value = repr(value)
         exprs.append(f'COALESCE("{col}", CAST({value} AS {cast_type})) AS "{col}"')
 
     exprs.extend([f'"{c}"' for c in data.columns if c not in cols_set])
@@ -193,9 +208,17 @@ def duckdb_merge(
     con.register(other_name, other_relation)
 
     if how == "cross":
-        return con.sql(f"SELECT * FROM {base_name} CROSS JOIN {other_name}")
-    elif how == "outer":
-        how = "FULL OUTER"
+        query = (
+            f"SELECT {base_name}.*, {other_name}.* "
+            f"FROM {base_name} "
+            f"CROSS JOIN {other_name} "
+            f'ORDER BY {base_name}."{INDEX_COL}"'
+        )
+        return RelationProxy(con.sql(query))
+
+    join_keyword = "FULL OUTER" if how.lower() == "outer" else how.upper()
+    if join_keyword not in ("INNER", "LEFT", "RIGHT", "FULL OUTER"):
+        raise ValueError(f"Unsupported join type: {how}")
 
     if not join_keys:
         raise ValueError("Join keys required for non-cross joins")
@@ -206,23 +229,40 @@ def duckdb_merge(
     other_cols = set(other_relation.columns)
     common_cols = (base_cols & other_cols) - set(join_keys)
 
-    select_cols = [f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys]
+    if join_keyword == "RIGHT":
+        index_expr = f'{other_name}."{INDEX_COL}" AS "{INDEX_COL}"'
+        order_by = f'ORDER BY {other_name}."{INDEX_COL}"'
+    elif join_keyword == "LEFT" or join_keyword == "INNER":
+        index_expr = f'{base_name}."{INDEX_COL}" AS "{INDEX_COL}"'
+        order_by = f'ORDER BY {base_name}."{INDEX_COL}"'
+    else:
+        index_expr = (
+            f'COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}") AS "{INDEX_COL}"'
+        )
+        order_by = f'ORDER BY COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}")'
+
+    select_cols = [index_expr] + [
+        f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys
+    ]
 
     for col in base_relation.columns:
-        if col not in join_keys:
-            suffix = "_x" if col in common_cols and how != "left" else ""
-            select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
+        if col in (INDEX_COL, *join_keys):
+            continue
+        suffix = "_x" if col in common_cols and join_keyword != "LEFT" else ""
+        select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
     for col in other_relation.columns:
-        if col not in join_keys:
-            suffix = "_y" if col in common_cols and how != "left" else ""
-            select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
+        if col in (INDEX_COL, *join_keys):
+            continue
+        suffix = "_y" if col in common_cols and join_keyword != "LEFT" else ""
+        select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
 
     query = f"""
         SELECT {", ".join(select_cols)}
         FROM {base_name}
-        {how.upper()} JOIN {other_name}
+        {join_keyword} JOIN {other_name}
         USING ({using_clause})
+        {order_by}
     """
     return RelationProxy(con.sql(query))
 
