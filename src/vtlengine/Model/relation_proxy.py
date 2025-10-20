@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union, Dict
 
 import pandas as pd
 from duckdb import DuckDBPyRelation
@@ -10,6 +11,19 @@ from duckdb import DuckDBPyRelation
 from vtlengine.connection import con
 
 INDEX_COL = "__index__"
+
+COMPLEXITY_LIMITS = {
+    "max_nodes": 20,
+    "max_depth": 8,
+    "max_agg": 3,
+    "max_joins": 3,
+    "max_complexity": 100,
+}
+
+COMPLEXITY_LIMIT = 100
+DEPTH_MULT = 3
+AGG_MULT = 10
+JOIN_MULT = 10
 
 
 @dataclass
@@ -432,10 +446,60 @@ class RelationProxy:
             return f"{INDEX_COL}, " + projection
         return projection
 
+    def _explain_json(self, data: DuckDBPyRelation) -> Optional[Dict[str, Any]]:
+        try:
+            raw = con.execute("EXPLAIN (FORMAT json) FROM data").fetchone()[-1]
+            return json.loads(raw)
+        except Exception:
+            return None
+
+    def _get_complexity(self) -> int:
+        plan = self._explain_json(self._relation)
+        if not plan:
+            return 0
+
+        plan = plan[0]
+        node_count = 0
+        max_depth = 0
+        agg_count = 0
+        join_count = 0
+
+        def get_plan_nodes(n: Dict[str, Any], depth: int = 0):
+            nonlocal node_count, agg_count, join_count, max_depth
+            if not isinstance(n, dict):
+                return
+            node_count += 1
+            name = str(n.get("name", "")).upper()
+            if "AGGREGATE" in name or "GROUP" in name:
+                agg_count += 1
+            if "JOIN" in name:
+                join_count += 1
+            max_depth = max(max_depth, depth)
+            for c in n.get("children", []) or []:
+                get_plan_nodes(c, depth + 1)
+
+        if plan:
+            get_plan_nodes(plan, 1)
+
+        complexity = (
+            node_count
+            + max_depth * DEPTH_MULT
+            + agg_count * AGG_MULT
+            + join_count * JOIN_MULT
+        )
+
+        return complexity
+
     def _materialize(self, data: DuckDBPyRelation) -> DuckDBPyRelation:
         tmp = f"__mat_{uuid.uuid4().hex}"
         con.execute(f"CREATE TEMP TABLE {tmp} AS SELECT * FROM data")
         return con.table(tmp)
+
+    def _should_clean_exec_graph(self, verbose: bool) -> bool:
+        complexity = self._get_complexity()
+        if verbose:
+            print(f"\nCOMPLEXITY: {complexity}")
+        return complexity > COMPLEXITY_LIMIT
 
     def _to_sql_literal(self, v: Any) -> str:
         if v is None:
@@ -449,8 +513,6 @@ class RelationProxy:
         return "'" + str(v).replace("'", "''") + "'"
 
     def _resolve_duckdb_type(self, dtype: Any) -> str:
-        if dtype is str:
-            return "VARCHAR"
         if dtype is int:
             return "BIGINT"
         if dtype is float:
@@ -463,13 +525,18 @@ class RelationProxy:
         return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
 
     def clean_exec_graph(self, verbose: bool = False) -> None:
-        if verbose:
-            print("Pre-clean plan:")
-            print(self.explain())
-        self.relation = self._materialize(self.relation)
-        if verbose:
-            print("Post-clean plan:")
-            print(self.explain())
+        if self._should_clean_exec_graph(verbose):
+            if verbose:
+                print("Pre-clean plan:")
+                print(self.explain())
+            self.relation = self._materialize(self.relation)
+            if verbose:
+                print("Post-clean plan:")
+                print(self.explain())
+        else:
+            if verbose:
+                print("No cleaning needed for execution graph.")
+                print(self.explain())
 
     def distinct(self) -> "RelationProxy":
         return RelationProxy(self.project(include_index=False).distinct())
