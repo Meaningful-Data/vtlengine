@@ -5,7 +5,7 @@ from typing import Any, Optional, Type, Union
 
 import duckdb
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import (
     ABS,

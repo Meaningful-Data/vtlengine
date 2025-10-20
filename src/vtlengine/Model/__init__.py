@@ -9,7 +9,7 @@ import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes

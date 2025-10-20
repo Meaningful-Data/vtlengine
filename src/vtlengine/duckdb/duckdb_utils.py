@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+import duckdb
 import pandas as pd
-from duckdb import duckdb
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
-from duckdb.duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb.typing import DuckDBPyType  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE

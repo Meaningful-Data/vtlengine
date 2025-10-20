@@ -1,7 +1,7 @@
 from copy import copy
 from typing import Any, Dict, Optional
 
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
