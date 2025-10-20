@@ -80,6 +80,10 @@ class Aggregation(Operator.Unary):
                         .astype(object)
                         .map(lambda x: TimePeriodHandler(str(x)), na_action="ignore")
                     )
+                    if cls.op in [MAX, MIN]:
+                        indicators = {v.period_indicator for v in data[measure.name].dropna()}
+                        if len(indicators) > 1:
+                            raise SemanticError("2-1-19-20", op=cls.op)
                 else:
                     data[measure.name] = data[measure.name].map(
                         lambda x: str(x), na_action="ignore"
