@@ -9,7 +9,7 @@ from pandas import DataFrame
 import vtlengine.Operators as Operators
 from vtlengine.AST.Grammar.tokens import HIERARCHY
 from vtlengine.DataTypes import Boolean, Number
-from vtlengine.duckdb.custom_functions.HR import INF, NINF
+from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_drop,
@@ -17,7 +17,7 @@ from vtlengine.duckdb.duckdb_utils import (
     empty_relation,
 )
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
-from vtlengine.Model import Component, DataComponent, Dataset, Role, RelationProxy
+from vtlengine.Model import Component, DataComponent, Dataset, RelationProxy, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 TRUE_VAL = 1
@@ -289,7 +289,9 @@ class Hierarchy(Operators.Operator):
     op = HIERARCHY
 
     @staticmethod
-    def generate_computed_data(computed_dict: Dict[str, RelationProxy], comp_names: List[str]) -> RelationProxy:
+    def generate_computed_data(
+        computed_dict: Dict[str, RelationProxy], comp_names: List[str]
+    ) -> RelationProxy:
         relations = list(computed_dict.values())
         if not relations:
             return empty_relation()

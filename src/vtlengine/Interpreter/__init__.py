@@ -53,7 +53,6 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
-    duckdb_concat,
     duckdb_merge,
     duckdb_rename,
     duckdb_select,
@@ -1405,7 +1404,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.rule_data["bool_var"] = 1
                 self.rule_data[nan_indexes, "bool_var"] = None
                 return self.rule_data
-            non_filtering_indexes = filter_comp.data.project("__index__").except_(filtering_indexes.project("__index__"))
+            non_filtering_indexes = filter_comp.data.project("__index__").except_(
+                filtering_indexes.project("__index__")
+            )
 
             original_data = self.rule_data
             self.rule_data = self.rule_data[filtering_indexes].reset_index()
@@ -1414,7 +1415,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We only need to filter rule_data on DPR
                 return result_validation
             self.rule_data["bool_var"] = result_validation.data
-            original_data = duckdb_merge(original_data, self.rule_data, how="left", join_keys=original_data.columns)
+            original_data = duckdb_merge(
+                original_data, self.rule_data, how="left", join_keys=original_data.columns
+            )
             original_data[non_filtering_indexes, "bool_var"] = 1
             original_data[nan_indexes, "bool_var"] = None
             return original_data

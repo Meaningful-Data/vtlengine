@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Union, Dict
+from typing import Any, Dict, Optional, Sequence, Union
 
 import pandas as pd
 from duckdb import DuckDBPyRelation

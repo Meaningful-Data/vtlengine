@@ -6,7 +6,9 @@ from typing import Optional, Union
 from vtlengine.Exceptions import RunTimeError
 
 
-def round_duck(value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]) -> Optional[float]:
+def round_duck(
+    value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]
+) -> Optional[float]:
     """
     Custom round function for DuckDB that handles None values and rounding.
     Applied on Round operator in VTL.
@@ -65,7 +67,9 @@ def round_to_ref(x: Optional[float], ref: Optional[float]) -> Optional[float]:
     return round(x, dec_ref) if dec_x > dec_ref else x
 
 
-def trunc_duck(value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]) -> Optional[float]:
+def trunc_duck(
+    value: Optional[Union[int, float]], decimals: Optional[Union[int, float]]
+) -> Optional[float]:
     """
     Truncates a numeric value to a specified number of decimals.
     If the input value is None, the function will return None.
