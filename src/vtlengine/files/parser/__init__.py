@@ -108,7 +108,7 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
     obj_dtypes = {comp_name: object for comp_name, comp in components.items()}
 
     data = pd.read_csv(
-        csv_path,
+        csv_path,  # type: ignore[call-overload, unused-ignore]
         dtype=obj_dtypes,
         engine="c",
         keep_default_na=False,
@@ -148,7 +148,7 @@ def _validate_pandas(
     if len(id_names) == 0 and len(data) > 1:
         raise SemanticError("0-1-1-5", name=dataset_name)
 
-    data = data.fillna(np.nan).replace([np.nan], [None])
+    data = data.fillna(np.nan).replace([np.nan], None)
     # Checking data types on all data types
     comp_name = ""
     comp = None
@@ -182,7 +182,7 @@ def _validate_pandas(
                         values_correct = (
                             data[comp_name]
                             .map(
-                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,  # type: ignore[union-attr]
+                                lambda x: x.replace(" ", "") in PERIOD_IND_MAPPING,  # type: ignore[union-attr, unused-ignore]
                                 na_action="ignore",
                             )
                             .all()
