@@ -618,7 +618,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand_comp = self.visit(node.operand)
                 component_name = operand_comp.data.columns[0]
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
-                attribute_names = self.regular_aggregation_dataset.get_attributes_names()
+                self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
                     dataset_components.pop(name)
