@@ -24,12 +24,12 @@ keywords = ['vtl', 'sdmx', 'vtlengine', 'Validation and Transformation Language'
 
 dependencies = [
     # PyPi dependencies
-    "duckdb>=1.1,<1.2",
+    "duckdb>=1.4,<1.5",
     "pysdmx[xml]>=1.5.2,<2.0",
     # APT-supported dependencies
     "jsonschema>=3.2.0,<5.0",
     "sqlglot>=22.2.0,<23.0",
-    "antlr4-python3-runtime>=4.13.2,<4.14",
+    "antlr4-python3-runtime>=4.9,<4.10",
     "pandas>=2.1.4,<3.0",
     "networkx>=2.8,<3.0",
     "numpy>=1.23.2,<2 ; python_version < '3.13'",
@@ -57,7 +57,7 @@ pytest-xdist = "^3.8.0"
 line-profiler-pycharm = "^1.2.0"
 mypy = "1.18.2"
 pandas-stubs = "^2.2.2"
-ruff = "^0.14.0"
+ruff = "^0.14.1"
 types-jsonschema = "^4.25.1"
 
 [tool.poetry.group.docs.dependencies]
