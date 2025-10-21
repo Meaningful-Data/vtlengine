@@ -800,11 +800,7 @@ def test_run_only_persistent_results(
                     nullable=True,
                 ),
             },
-            data=pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"],
-                index=[0, 1],
-                data=[(1, "A", 3), (1, "B", 6)],
-            ),
+            data=None
         ),
     }
 
