@@ -99,12 +99,23 @@ class ConnectionManager:
         """
         try:
             if cls._connection:
-                # Rollback any open transaction
+                # Free generated objs to avoid mem fragmentation
+                objs = cls._connection.execute(
+                    """
+                    SELECT table_name, table_type 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'main';
+                    """
+                ).fetchall()
+
+                for obj_name, obj_type in objs:
+                    if obj_type == "VIEW":
+                        cls._connection.execute(f"DROP VIEW IF EXISTS {obj_name};")
+                    else:
+                        cls._connection.execute(f"DROP TABLE IF EXISTS {obj_name};")
+
+                # Rollback any open transaction if needed
                 cls._connection.rollback()
-                # Free generated resources
-                cls._connection.execute("DROP ALL")
-                # Reset to avoid dropped objects mem fragmentation
-                cls.close_connection()
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)  # type: ignore[arg-type]
