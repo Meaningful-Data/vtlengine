@@ -99,12 +99,15 @@ class ConnectionManager:
         """
         try:
             if cls._connection:
-                # Rollback any open transaction
+                # Free generated objs to avoid mem fragmentation
+                # Fetch all table names
+                tables = cls._connection.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main';"
+                ).fetchall()
+                for table in tables:
+                    cls._connection.execute(f"DROP TABLE IF EXISTS {table[0]};")
+                # Rollback any open transaction if needed
                 cls._connection.rollback()
-                # Free generated resources
-                cls._connection.execute("DROP ALL")
-                # Reset to avoid dropped objects mem fragmentation
-                cls.close_connection()
         except Exception as e:
             # No rollback needed
             contextlib.suppress(e)  # type: ignore[arg-type]
