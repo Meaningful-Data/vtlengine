@@ -19,7 +19,7 @@
           "name": "ENTRPRS_SZ_PRLMNRY_T",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "ENTRPRS_SZ_CLCLTD",

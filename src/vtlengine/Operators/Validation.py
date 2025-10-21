@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -31,7 +31,7 @@ class Check(Operator):
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
         error_code: Optional[str],
-        error_level: Optional[int],
+        error_level: Optional[Union[int, str]],
         invalid: bool,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
@@ -40,6 +40,13 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
+        error_level_type = None
+        if error_level is None or isinstance(error_level, int):
+            error_level_type = Integer
+        elif isinstance(error_level, str):
+            error_level_type = String  # type: ignore[assignment]
+        else:
+            error_level_type = String
 
         imbalance_measure = None
         if imbalance_element is not None:
@@ -73,8 +80,12 @@ class Check(Operator):
         result_components["errorcode"] = Component(
             name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
         )
+
         result_components["errorlevel"] = Component(
-            name="errorlevel", data_type=Integer, role=Role.MEASURE, nullable=True
+            name="errorlevel",
+            data_type=error_level_type,  # type: ignore[arg-type]
+            role=Role.MEASURE,
+            nullable=True,
         )
 
         return Dataset(name=dataset_name, components=result_components, data=None)
@@ -85,7 +96,7 @@ class Check(Operator):
         validation_element: Dataset,
         imbalance_element: Optional[Dataset],
         error_code: Optional[str],
-        error_level: Optional[int],
+        error_level: Optional[Union[int, str]],
         invalid: bool,
     ) -> Dataset:
         result = cls.validate(
@@ -144,6 +155,20 @@ class Validation(Operator):
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
+        error_level_type = None
+        error_levels = [
+            rule_data.get("errorlevel")
+            for rule_data in rule_info.values()
+            if "errorlevel" in rule_data
+        ]
+        non_null_levels = [el for el in error_levels if el is not None]
+
+        if len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
+            error_level_type = Number
+        elif all(isinstance(el, str) for el in non_null_levels):
+            error_level_type = String  # type: ignore[assignment]
+        else:
+            error_level_type = String  # type: ignore[assignment]
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -170,7 +195,10 @@ class Validation(Operator):
             name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
         )
         result_components["errorlevel"] = Component(
-            name="errorlevel", data_type=Number, role=Role.MEASURE, nullable=True
+            name="errorlevel",
+            data_type=error_level_type,  # type: ignore[arg-type]
+            role=Role.MEASURE,
+            nullable=True,
         )
 
         return Dataset(name=dataset_name, components=result_components, data=None)

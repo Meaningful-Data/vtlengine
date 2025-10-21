@@ -338,6 +338,32 @@ class ValidationOperatorsTests(ValidationHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_13(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel "AA";
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel "AA"
+                    end hierarchical ruleset;
+
+                    DS_r := check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset)
+                            [calc OBS_VALUE_N := OBS_VALUE * 2];
+                    BOP Dataset
+
+        Description: Hierarchical Rulsets are Vertical validations apply to a
+        component over a set of data point. Error level is string typo.
+
+        Git Branch: Cr-255.
+        Goal: Verify it works with error_level as string data type.
+        """
+        code = "1-1-1-13"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_446_2(self):
         """
         Description: Left_join review.

@@ -9,6 +9,8 @@ All exceptions exposed by the Vtl engine.
 
 centralised_messages = {
     # Input Validation errors
+    "0-1-1-1": "invalid script format type: {format_}. Input must be a string, "
+    "TransformationScheme or Path object",
     "0-1-2-1": "Invalid json structure because additional properties have been supplied "
     "on file {filename}.",
     "0-1-2-2": "Errors found on file {filename}: {errors}",
@@ -27,6 +29,7 @@ centralised_messages = {
     "0-1-3-4": "Dataset {short_urn} not found in mapping dictionary.",
     "0-1-3-5": "Dataset {dataset_name} not found in the input datasets.",
     "0-1-3-6": "Input name {missing} not found in the input datasets.",
+    "0-1-3-7": "Invalid input datasets type: {type_}. Expected a sequence of PandasDataset.",
     # JSON Schema validations
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
@@ -55,6 +58,7 @@ centralised_messages = {
     "1-1-1-2": "Invalid implicit cast from {type_1} and {type_2} to {type_check}.",
     "1-1-1-3": "At op {op}: {entity} {name} cannot be promoted to {target_type}.",
     "1-1-1-4": "At op {op}: Operation not allowed for multimeasure datasets.",
+    "1-1-1-5": "At op {op}: Invalid type {type}.",
     "1-1-1-8": "At op {op}: Invalid Dataset {name}, no measures defined.",
     "1-1-1-9": "At op {op}: Invalid Dataset {name}, all measures must have the same type: {type}.",
     "1-1-1-10": "Component {comp_name} not found in Dataset {dataset_name}.",
@@ -244,12 +248,20 @@ centralised_messages = {
     "measure.",
     "2-1-19-15": "{op} can only be applied according to the iso 8601 format mask",
     "2-1-19-16": "{op} can only be positive numbers",
+    "2-1-19-17": "At op {op}: Time operators comparison are only support "
+    "= and <> comparison operations",
+    "2-1-19-18": "At op {op}: Time operators do not support < and > comparison operations, "
+    "so its not possible to use get the max or min between two time operators",
+    "2-1-19-19": "Time Period comparison (>, <, >=, <=) with different period indicator is not "
+    "supported, found {value1} {op} {value2}",
+    "2-1-19-20": "Time Period operands with different period indicators do not support < and > "
+    "comparison operations, unable to get the {op}",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",
     "2-3-4": "{op} operator must have a {comp}",
-    "2-3-5": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}",
-    "2-3-6": "Dataset {dataset_name} not found, please check input datastructures",
+    "2-3-5": "Expected {param_type}, got {type_name} on UDO {op}, parameter {param_name}.",
+    "2-3-6": "Dataset or scalar {dataset_name} not found, please check input datastructures.",
     "2-3-9": "{comp_type} {comp_name} not found in {param}.",
     "2-3-10": "No {comp_type} have been defined.",
     "2-3-11": "{pos} operand must be a dataset.",

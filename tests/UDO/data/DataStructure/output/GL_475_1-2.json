@@ -43,7 +43,7 @@
           "name": "CONF_STATUS_ST",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

@@ -20,7 +20,7 @@ from vtlengine.connection import con
 from vtlengine.DataTypes import (
     Integer,
     Number,
-    unary_implicit_promotion,
+    unary_implicit_promotion, TimeInterval,
 )
 from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError
@@ -128,6 +128,11 @@ class Aggregation(Unary):
             )
             result_components["int_var"] = new_comp
 
+        if cls.op in [MAX, MIN]:
+            for measure in operand.get_measures():
+                if measure.data_type == TimeInterval:
+                    raise SemanticError("2-1-19-18", op=cls.op)
+
         # VDS is handled in visit_Aggregation
         return Dataset(name="result", components=result_components, data=None)
 
@@ -212,7 +217,6 @@ class Aggregation(Unary):
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in measure_names)
             if condition:
                 result_rel = result_rel.filter(condition)
-
         # result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "input")
         result_rel = cls._agg_func(result_rel, grouping_keys, measure_names, having_expr)
         # result_rel = cls._handle_data_types(result_rel, operand.get_measures(), "result")

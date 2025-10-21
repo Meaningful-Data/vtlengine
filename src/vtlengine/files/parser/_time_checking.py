@@ -76,6 +76,11 @@ def check_time_period(value: Union[str, int, date]) -> str:
         value = str(value)
 
     value = value.replace(" ", "")
+
+    match = re.fullmatch(r"^(\d{4})-(\d{2})$", value)
+    if match:
+        value = f"{match.group(1)}-M{match.group(2)}"
+
     period_result = re.fullmatch(period_pattern, value)
     if period_result is not None:
         result = TimePeriodHandler(value)

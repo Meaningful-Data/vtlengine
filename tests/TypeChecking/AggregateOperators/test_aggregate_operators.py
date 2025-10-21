@@ -426,11 +426,14 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         Git Branch: tests-21-aggregation-types-checking-tests.
         Goal: Check Result.
         """
+        text = "DS_r := max(DS_1 group by Id_1);"
         code = "10-1-26"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "2-1-19-20"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_27(self):
         """
@@ -672,11 +675,14 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         Git Branch: tests-21-aggregation-types-checking-tests.
         Goal: Check Exception.
         """
+        text = "DS_r := min(DS_1 group by Id_1);"
         code = "10-1-42"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "2-1-19-20"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_43(self):
         """
@@ -1646,11 +1652,14 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         Git Branch: tests-21-aggregation-types-checking-tests.
         Goal: Check Result.
         """
+        text = "DS_r := DS_1[aggr Me_3 := max ( Me_1 ) , Me_4 := max ( Me_2 ) group by Id_1];"
         code = "10-2-22"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "2-1-19-20"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_23(self):
         """
@@ -1885,11 +1894,14 @@ class AggregateOperatorsComponentTypeChecking(TestAggregateTypeChecking):
         Git Branch: tests-21-aggregation-types-checking-tests.
         Goal: Check Result.
         """
+        text = "DS_r := DS_1[aggr Me_3 := min ( Me_1 ) , Me_4 := min ( Me_2 ) group by Id_1];"
         code = "10-2-38"
         number_inputs = 1
-        references_names = ["DS_r"]
+        exception_code = "2-1-19-20"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_39(self):
         """

@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
 from vtlengine.Exceptions import SemanticError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
@@ -180,7 +181,7 @@ class TimePeriodHandler:
 
     @staticmethod
     def _check_year(year: int) -> None:
-        if year < 1900 or year > 9999:
+        if year < 0 or year > 9999:
             raise SemanticError("2-1-19-10", year=year)
             # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
 
@@ -253,6 +254,10 @@ class TimePeriodHandler:
 
         if isinstance(other, str):
             other = TimePeriodHandler(other)
+
+        if self.period_indicator != other.period_indicator:
+            tokens = {operator.lt: "<", operator.le: "<=", operator.gt: ">", operator.ge: ">="}
+            raise SemanticError("2-1-19-19", op=tokens[py_op], value1=self, value2=other)
 
         self_lapse, other_lapse = self.period_dates, other.period_dates
         is_lt_or_le = py_op in [operator.lt, operator.le]
@@ -407,22 +412,22 @@ class TimeIntervalHandler:
         return py_op(self.length, other.length)
 
     def __eq__(self, other: Any) -> Optional[bool]:  # type: ignore[override]
-        return self._meta_comparison(other, operator.eq)
+        return str(self) == str(other) if other is not None else None
 
     def __ne__(self, other: Any) -> Optional[bool]:  # type: ignore[override]
-        return self._meta_comparison(other, operator.ne)
+        return str(self) != str(other) if other is not None else None
 
     def __lt__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.lt)
+        raise SemanticError("2-1-19-17", op=LT, type="Time")
 
     def __le__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.le)
+        raise SemanticError("2-1-19-17", op=LTE, type="Time")
 
     def __gt__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.gt)
+        raise SemanticError("2-1-19-17", op=GT, type="Time")
 
     def __ge__(self, other: Any) -> Optional[bool]:
-        return self._meta_comparison(other, operator.ge)
+        raise SemanticError("2-1-19-17", op=GTE, type="Time")
 
     @classmethod
     def from_time_period(cls, value: TimePeriodHandler) -> "TimeIntervalHandler":
