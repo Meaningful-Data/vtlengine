@@ -115,10 +115,6 @@ class ConnectionManager:
                         cls._connection.execute(f"DROP TABLE IF EXISTS {obj_name};")
 
                 # Rollback any open transaction if needed
-                # status = cls._connection.execute(
-                #     "SELECT current_setting('transaction_mode');"
-                # ).fetchone()[0]
-                # if status == 'transaction':
                 cls._connection.rollback()
         except Exception as e:
             # No rollback needed
