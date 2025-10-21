@@ -247,6 +247,10 @@ centralised_messages = {
     "= and <> comparison operations",
     "2-1-19-18": "At op {op}: Time operators do not support < and > comparison operations, "
     "so its not possible to use get the max or min between two time operators",
+    "2-1-19-19": "Time Period comparison (>, <, >=, <=) with different period indicator is not "
+    "supported, found {value1} {op} {value2}",
+    "2-1-19-20": "Time Period operands with different period indicators do not support < and > "
+    "comparison operations, unable to get the {op}",
     # ----------- Interpreter Common ------
     "2-3-1": "{comp_type} {comp_name} not found.",
     "2-3-2": "{op_type} cannot be used with {node_op} operators.",

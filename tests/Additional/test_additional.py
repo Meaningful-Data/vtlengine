@@ -3911,6 +3911,66 @@ class TimeOperatorsTest(AdditionalHelper):
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_273_1(self):
+        text = 'DS_r <- DS_1[calc Me_2 := Me_1 < cast("2002Q2", time_period)];'
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-19"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_273_2(self):
+        text = 'DS_r <- DS_1[calc Me_2 := Me_1 <= cast("2002Q2", time_period)];'
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-19"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_273_3(self):
+        text = 'DS_r <- DS_1[calc Me_2 := Me_1 > cast("2002Q2", time_period)];'
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-19"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_273_4(self):
+        text = 'DS_r <- DS_1[calc Me_2 := Me_1 >= cast("2002Q2", time_period)];'
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-19"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_273_5(self):
+        text = "DS_r <- DS_1[aggr Me_2 := max(Me_1)];"
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_273_6(self):
+        text = "DS_r <- DS_1[aggr Me_2 := min(Me_1)];"
+        code = "GH_273"
+        number_inputs = 1
+        exception_code = "2-1-19-20"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class EmptyDatasetsTest(AdditionalHelper):
     """
