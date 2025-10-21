@@ -72,7 +72,7 @@ class Aggregation(Operator.Unary):
                         new_value = ["9999-99-99"]
                     else:
                         to_replace = ["9999-99-99"]
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type]
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
             elif measure.data_type == TimePeriod:
                 if mode == "input":
                     data[measure.name] = (
@@ -99,7 +99,7 @@ class Aggregation(Operator.Unary):
                         lambda x: str(x), na_action="ignore"
                     )
             elif measure.data_type == String:
-                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type]
+                data[measure.name] = data[measure.name].replace(to_replace, new_value)  # type: ignore[arg-type, unused-ignore]
             elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
