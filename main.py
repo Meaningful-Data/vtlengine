@@ -5,7 +5,7 @@ from vtlengine import run
 
 def main():
     script = """
-        DS_A := DS_1 * 10;
+        DS_A <- DS_1 * 10;
     """
 
     data_structures = {
