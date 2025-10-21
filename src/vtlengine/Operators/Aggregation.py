@@ -20,7 +20,8 @@ from vtlengine.connection import con
 from vtlengine.DataTypes import (
     Integer,
     Number,
-    unary_implicit_promotion, TimeInterval,
+    TimeInterval,
+    unary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import duckdb_merge, empty_relation
 from vtlengine.Exceptions import SemanticError

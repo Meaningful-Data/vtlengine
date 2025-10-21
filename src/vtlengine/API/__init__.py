@@ -6,7 +6,7 @@ import duckdb
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
-from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
