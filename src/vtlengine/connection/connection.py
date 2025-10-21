@@ -100,13 +100,25 @@ class ConnectionManager:
         try:
             if cls._connection:
                 # Free generated objs to avoid mem fragmentation
-                # Fetch all table names
-                tables = cls._connection.execute(
-                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main';"
+                objs = cls._connection.execute(
+                    """
+                    SELECT table_name, table_type 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'main';
+                    """
                 ).fetchall()
-                for table in tables:
-                    cls._connection.execute(f"DROP TABLE IF EXISTS {table[0]};")
+
+                for obj_name, obj_type in objs:
+                    if obj_type == "VIEW":
+                        cls._connection.execute(f"DROP VIEW IF EXISTS {obj_name};")
+                    else:
+                        cls._connection.execute(f"DROP TABLE IF EXISTS {obj_name};")
+
                 # Rollback any open transaction if needed
+                # status = cls._connection.execute(
+                #     "SELECT current_setting('transaction_mode');"
+                # ).fetchone()[0]
+                # if status == 'transaction':
                 cls._connection.rollback()
         except Exception as e:
             # No rollback needed
