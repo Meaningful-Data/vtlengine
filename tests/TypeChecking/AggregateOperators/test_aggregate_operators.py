@@ -426,7 +426,7 @@ class AggregateOperatorsDatasetTypeChecking(TestAggregateTypeChecking):
         Git Branch: tests-21-aggregation-types-checking-tests.
         Goal: Check Result.
         """
-        text="DS_r := max(DS_1 group by Id_1);"
+        text = "DS_r := max(DS_1 group by Id_1);"
         code = "10-1-26"
         number_inputs = 1
         exception_code = "2-1-19-20"
