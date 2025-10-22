@@ -7,7 +7,7 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
-    binary_implicit_promotion,
+    binary_implicit_promotion, COMP_NAME_MAPPING,
 )
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
@@ -20,6 +20,7 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.duckdb.to_sql_token import to_sql_literal
 
 
 class If(Operator):
@@ -56,83 +57,111 @@ class If(Operator):
 
     @classmethod
     def component_level_evaluation(
-        cls,
-        condition: DataComponent,
-        true_branch: Union[DataComponent, Scalar],
-        false_branch: Union[DataComponent, Scalar],
-        comp_name: str,
-    ) -> DuckDBPyRelation:
-        def get_expr(branch: Any) -> str:
-            return (
-                f"{repr(branch.value)}"
-                if isinstance(branch, Scalar) and branch.value is not None
-                else ("NULL" if isinstance(branch, Scalar) else f'"{branch.data.columns[0]}"')
-            )
-
+        cls, condition: DataComponent, true_branch: Any, false_branch: Any, result_name: str
+    ) -> Any:
         if condition.data is None:
             return empty_relation()
 
-        cond_col = f'"{condition.data.columns[0]}"'
-        true_expr = get_expr(true_branch)
-        false_expr = get_expr(false_branch)
+        cond_col = condition.name
+        base = duckdb_fillna(condition.data, False, cond_col)
+        base = duckdb_rename(base, {cond_col: "__cond__"})
 
-        base = duckdb_fillna(condition.data, "TRUE", cond_col)
-        if not isinstance(true_branch, Scalar):
-            base = duckdb_concat(base, true_branch.data)
-        if not isinstance(false_branch, Scalar):
-            base = duckdb_concat(base, false_branch.data)
+        if isinstance(true_branch, DataComponent):
+            tcol = true_branch.name
+            tdata = duckdb_rename(true_branch.data, {tcol: "__t__"})
+            base = duckdb_concat(base, tdata)
+            t_expr = '"__t__"'
+        elif isinstance(true_branch, Scalar):
+            t_expr = to_sql_literal(true_branch.value)
+        else:
+            raise ValueError("Invalid true_branch type for component level evaluation")
 
-        expr = f'CASE WHEN {cond_col} THEN {true_expr} ELSE {false_expr} END AS "{comp_name}"'
+        if isinstance(false_branch, DataComponent):
+            fcol = false_branch.name
+            fdata = duckdb_rename(false_branch.data, {fcol: "__f__"})
+            base = duckdb_concat(base, fdata)
+            f_expr = '"__f__"'
+        elif isinstance(false_branch, Scalar):
+            f_expr = to_sql_literal(false_branch.value)
+        else:
+            raise ValueError("Invalid false_branch type for component level evaluation")
+
+        expr = f'CASE WHEN "__cond__" THEN {t_expr} ELSE {f_expr} END AS "{result_name}"'
         return base.project(expr)
 
     @classmethod
     def dataset_level_evaluation(
         cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
-    ) -> Any:
+    ) -> Dataset:
+
+        def map_component(op: Dataset, desired: str, role: Role) -> Union[str, None]:
+            names = (
+                op.get_measures_names()
+                if role == Role.MEASURE
+                else op.get_attributes_names() if role == Role.ATTRIBUTE else op.get_identifiers_names()
+            )
+            if desired in names:
+                return desired
+            return names[0] if names else None
+
         ids = condition.get_identifiers_names()
-        cond_col = f"{condition.get_measures_names()[0]}"
-        base = duckdb_fillna(condition.data, "FALSE", cond_col)
+        cond_measure = condition.get_measures_names()[0]
 
-        if not isinstance(true_branch, Scalar):
-            comps = [c for c in true_branch.get_components_names() if c not in ids]
-            true_branch.data = duckdb_rename(
-                true_branch.data, {m: f"__{m}@true_branch__" for m in comps}
-            )
-        if not isinstance(false_branch, Scalar):
-            comps = [c for c in false_branch.get_components_names() if c not in ids]
-            false_branch.data = duckdb_rename(
-                false_branch.data, {m: f"__{m}@false_branch__" for m in comps}
-            )
+        base = duckdb_fillna(condition.data, False, cond_measure)
+        base = duckdb_rename(base, {cond_measure: "__cond__"})
 
-        base_true = base.filter(f'"{cond_col}"')
-        base_false = base.filter(f'NOT "{cond_col}"')
+        has_t_ds = isinstance(true_branch, Dataset)
+        has_f_ds = isinstance(false_branch, Dataset)
 
-        def project_side(base: DuckDBPyRelation, branch: Any, tag: str) -> DuckDBPyRelation:
-            if isinstance(branch, Scalar):
-                exprs = [f'"{id_}"' for id_ in ids]
-                for comp_name in result.get_components_names():
-                    if comp_name in ids:
-                        continue
-                    value = repr(branch.value) if branch.value is not None else "NULL"
-                    exprs.append(f'{value} AS "{comp_name}"')
-                return base.project(", ".join(exprs))
+        if has_t_ds and true_branch.data is not None:
+            rename_t = {c: f"t.{c}" for c in true_branch.get_components_names() if c not in ids}
+            t_proj = duckdb_rename(true_branch.data, rename_t) if rename_t else true_branch.data
+            base = duckdb_concat(base, t_proj, on=ids, how="outer")
 
-            base = base.set_alias("base")
-            branch = branch.data.set_alias("branch")
-            join_cond = " AND ".join(f'base."{c}" = branch."{c}"' for c in ids)
-            joined = base.join(branch, join_cond, how="inner")
-            exprs = [f'base."{id_}"' for id_ in ids]
-            for comp_name in result.get_components_names():
-                if comp_name in ids:
-                    continue
-                exprs.append(f'branch."__{comp_name}@{tag}__" AS "{comp_name}"')
-            return joined.project(", ".join(exprs))
+        if has_f_ds and false_branch.data is not None:
+            rename_f = {c: f"f.{c}" for c in false_branch.get_components_names() if c not in ids}
+            f_proj = duckdb_rename(false_branch.data, rename_f) if rename_f else false_branch.data
+            base = duckdb_concat(base, f_proj, on=ids, how="outer")
 
-        res_true = project_side(base_true, true_branch, "true_branch")
-        res_false = project_side(base_false, false_branch, "false_branch")
+        exprs: List[str] = [f'"{id_}"' for id_ in ids]
 
-        result.data = res_true.union(res_false)
-        result.data = result.data.reset_index()
+        attrs = [name for name, comp in result.components.items() if comp.role == Role.ATTRIBUTE]
+        for attr in attrs:
+            if has_t_ds:
+                t_src_name = map_component(true_branch, attr, Role.ATTRIBUTE)
+                t_val = f'"t.{t_src_name}"' if t_src_name else "NULL"
+            else:
+                t_val = f'"{attr}"' if attr in condition.get_components_names() else "NULL"
+
+            if has_f_ds:
+                f_src_name = map_component(false_branch, attr, Role.ATTRIBUTE)
+                f_val = f'"f.{f_src_name}"' if f_src_name else "NULL"
+            else:
+                f_val = f'"{attr}"' if attr in condition.get_components_names() else "NULL"
+
+            exprs.append(f'CASE WHEN "__cond__" THEN {t_val} ELSE {f_val} END AS "{attr}"')
+
+        measures = result.get_measures_names()
+        for m in measures:
+            if isinstance(true_branch, Scalar):
+                t_val = to_sql_literal(true_branch.value)
+            elif has_t_ds:
+                t_src_name = map_component(true_branch, m, Role.MEASURE)
+                t_val = f'"t.{t_src_name}"' if t_src_name else "NULL"
+            else:
+                t_val = "NULL"
+
+            if isinstance(false_branch, Scalar):
+                f_val = to_sql_literal(false_branch.value)
+            elif has_f_ds:
+                f_src_name = map_component(false_branch, m, Role.MEASURE)
+                f_val = f'"f.{f_src_name}"' if f_src_name else "NULL"
+            else:
+                f_val = "NULL"
+
+            exprs.append(f'CASE WHEN "__cond__" THEN {t_val} ELSE {f_val} END AS "{m}"')
+
+        result.data = base.project(", ".join(exprs))
         return result
 
     @classmethod
