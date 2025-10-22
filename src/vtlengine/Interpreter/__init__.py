@@ -51,6 +51,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
+from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_merge,
@@ -1071,11 +1072,40 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            return self.visit(node.thenOp if condition.value else node.elseOp)
+            if condition.value:
+                return self.visit(node.thenOp)
+            else:
+                return self.visit(node.elseOp)
 
+        # Analysis for data component and dataset
+        else:
+            if self.condition_stack is None:
+                self.condition_stack = []
+            if self.then_condition_dataset is None:
+                self.then_condition_dataset = []
+            if self.else_condition_dataset is None:
+                self.else_condition_dataset = []
+            self.generate_then_else_datasets(copy(condition))
+
+        self.condition_stack.append(THEN_ELSE["then"])
         self.is_from_if = True
+        self.nested_condition = "T" if isinstance(node.thenOp, AST.If) else False
         thenOp = self.visit(node.thenOp)
+        if isinstance(thenOp, Scalar) or not isinstance(node.thenOp, AST.BinOp):
+            self.then_condition_dataset.pop()
+            self.condition_stack.pop()
+
+        self.condition_stack.append(THEN_ELSE["else"])
+        self.is_from_if = True
+        self.nested_condition = "E" if isinstance(node.elseOp, AST.If) else False
         elseOp = self.visit(node.elseOp)
+        if isinstance(elseOp, Scalar) or (
+            not isinstance(node.elseOp, AST.BinOp) and not isinstance(node.elseOp, AST.If)
+        ):
+            if len(self.else_condition_dataset) > 0:
+                self.else_condition_dataset.pop()
+            if len(self.condition_stack) > 0:
+                self.condition_stack.pop()
 
         return If.analyze(condition, thenOp, elseOp)
 
@@ -1617,20 +1647,19 @@ class InterpreterAnalyzer(ASTTemplate):
         return Eval.analyze(operands, external_routine, output_to_check)
 
     def generate_then_else_datasets(self, condition: Union[Dataset, DataComponent]) -> None:
+        data = None
         components = {}
-        if self.then_condition_dataset is None:
+        if self.then_condition_dataset is None or self.else_condition_dataset is None:
             self.then_condition_dataset = []
-        if self.else_condition_dataset is None:
             self.else_condition_dataset = []
+
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1:
                 raise SemanticError("1-1-1-4", op="condition")
             if condition.get_measures()[0].data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-5", op="condition", name=condition.name)
             name = condition.get_measures_names()[0]
-            if condition.data is None or len(condition.data) == 0:
-                data = None
-            else:
+            if condition.data is not None:
                 data = condition.data[name]
                 components = {comp.name: comp for comp in condition.get_identifiers()}
 
@@ -1638,8 +1667,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if condition.data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-4", op="condition", name=condition.name)
             name = condition.name
-            data = None if condition.data is None else condition.data
+            data = condition.data
 
+        then_data = empty_relation(name)
+        else_data = empty_relation(name)
         if data is not None:
             if self.nested_condition and self.condition_stack is not None:
                 merge_df = (
@@ -1652,43 +1683,37 @@ class InterpreterAnalyzer(ASTTemplate):
                 indexes = data[data.notnull()].index
 
             if isinstance(condition, Dataset):
-                filtered_data = data.iloc[indexes]
+                filtered_data = data[indexes]
                 then_data: Any = (
                     condition.data[condition.data[name] == True]
                     if (condition.data is not None)
                     else []
                 )
-                then_indexes: Any = list(filtered_data[filtered_data == True].index)
+                then_indexes: Any = filtered_data[filtered_data == True].index
                 if len(then_data) > len(then_indexes):
-                    then_data = then_data.iloc[then_indexes]
+                    then_data = then_data[then_indexes]
                 then_data[name] = then_indexes
                 else_data: Any = (
                     condition.data[condition.data[name] != True]
                     if (condition.data is not None)
                     else []
                 )
-                else_indexes: Any = list(set(indexes) - set(then_indexes))
+                else_indexes = RelationProxy(indexes.except_(then_indexes))
                 if len(else_data) > len(else_indexes):
-                    else_data = else_data.iloc[else_indexes]
+                    else_data = else_data[else_indexes]
                 else_data[name] = else_indexes
             else:
-                filtered_data = data.iloc[indexes]
-                then_indexes = list(filtered_data[filtered_data == True].index)
-                else_indexes = list(set(indexes) - set(then_indexes))
-                then_data = pd.DataFrame({name: then_indexes})
-                else_data = pd.DataFrame({name: else_indexes})
-        else:
-            then_data = pd.DataFrame({name: []})
-            else_data = pd.DataFrame({name: []})
-        components.update(
-            {
-                name: Component(
-                    name=name,
-                    data_type=BASIC_TYPES[int],
-                    role=Role.MEASURE,
-                    nullable=True,
-                )
-            }
+                filtered_data = data[indexes]
+                then_indexes = filtered_data[filtered_data == True].index
+                else_indexes = RelationProxy(indexes.except_(then_indexes))
+                then_data = duckdb_rename(then_indexes, {INDEX_COL: name})
+                else_data = duckdb_rename(else_indexes, {INDEX_COL: name})
+
+        components[name] = Component(
+            name=name,
+            data_type=BASIC_TYPES[int],
+            role=Role.MEASURE,
+            nullable=True,
         )
 
         if self.condition_stack and len(self.condition_stack) > 0:
@@ -1700,17 +1725,19 @@ class InterpreterAnalyzer(ASTTemplate):
             measure_name = last_condition_dataset.get_measures_names()[0]
             then_data = then_data[then_data[name].isin(last_condition_dataset.data[measure_name])]
             else_data = else_data[else_data[name].isin(last_condition_dataset.data[measure_name])]
-        then_dataset = Dataset(name=name, components=components, data=then_data)
-        else_dataset = Dataset(name=name, components=components, data=else_data)
 
-        self.then_condition_dataset.append(then_dataset)
-        self.else_condition_dataset.append(else_dataset)
+        self.then_condition_dataset.append(
+            Dataset(name=name, components=components, data=then_data)
+        )
+        self.else_condition_dataset.append(
+            Dataset(name=name, components=components, data=else_data)
+        )
 
     def merge_then_else_datasets(self, left_operand: Any, right_operand: Any) -> Any:
         if (
-            self.then_condition_dataset is None
-            or self.else_condition_dataset is None
-            or self.condition_stack is None
+                self.then_condition_dataset is None
+                or self.else_condition_dataset is None
+                or self.condition_stack is None
         ):
             return left_operand, right_operand
 
@@ -1724,44 +1751,38 @@ class InterpreterAnalyzer(ASTTemplate):
             merge_dataset = (
                 self.then_condition_dataset.pop()
                 if self.condition_stack.pop() == THEN_ELSE["then"]
-                else (self.else_condition_dataset.pop())
+                else self.else_condition_dataset.pop()
             )
 
-        merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
-        if isinstance(left_operand, (Dataset, DataComponent)):
-            if left_operand.data is None:
-                return left_operand, right_operand
-            if isinstance(left_operand, Dataset):
-                dataset_index = left_operand.data.index[
-                    left_operand.data[ids]
-                    .apply(tuple, 1)
-                    .isin(merge_dataset.data[ids].apply(tuple, 1))
-                ]
-                left = left_operand.data[left_operand.get_measures_names()[0]]
-                left_operand.data[left_operand.get_measures_names()[0]] = left.reindex(
-                    dataset_index, fill_value=None
-                )
+        merge_measure = merge_dataset.get_measures_names()[0]
+        merge_df = merge_dataset.data
+        merge_index = merge_df[merge_measure] if merge_df is not None else []
+        merge_keys = merge_df[ids] if (ids and merge_df is not None) else None
+
+        def _apply_merge(operand: Any) -> Any:
+            if not isinstance(operand, (Dataset, DataComponent)) or operand.data is None:
+                return operand
+
+            if isinstance(operand, DataComponent):
+                operand.data = operand.data.reindex(merge_index)
+                return operand
+
+            if ids:
+                op_keys = operand.data[ids]
+                mask = op_keys.isin(merge_keys) if merge_keys is not None else False
+                dataset_index = operand.data[mask].index
             else:
-                left = left_operand.data
-                left_operand.data = left.reindex(merge_index, fill_value=None)
-        if isinstance(right_operand, (Dataset, DataComponent)):
-            if right_operand.data is None:
-                return left_operand, right_operand
-            if isinstance(right_operand, Dataset):
-                dataset_index = right_operand.data.index[
-                    right_operand.data[ids]
-                    .apply(tuple, 1)
-                    .isin(merge_dataset.data[ids].apply(tuple, 1))
-                ]
-                right = right_operand.data[right_operand.get_measures_names()[0]]
-                right_operand.data[right_operand.get_measures_names()[0]] = right.reindex(
-                    dataset_index, fill_value=None
-                )
-            else:
-                right = right_operand.data
-                right_operand.data = right.reindex(merge_index, fill_value=None)
-        return left_operand, right_operand
+                dataset_index = operand.data.index
+
+            measure_name = operand.get_measures_names()[0]
+            series = operand.data[measure_name]
+            operand.data[measure_name] = series.reindex(dataset_index)
+            return operand
+
+        left_operand = _apply_merge(left_operand)
+        right_operand = _apply_merge(right_operand)
+        return _apply_merge(left_operand), _apply_merge(right_operand)
 
     def visit_Identifier(self, node: AST.Identifier) -> Union[AST.AST, Dataset, str]:
         """
