@@ -1037,3 +1037,17 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_29(self):
+        """
+        Status: OK
+        Expression:  DS_r <- DS_1[calc Me_2 := sum(nvl(Me_1, 0) over (partition by Id_1))];
+                    DS_1 Dataset
+
+        Description: Analytic with operator before operand in a calc
+        """
+        code = "2-1-1-29"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

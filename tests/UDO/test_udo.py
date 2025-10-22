@@ -300,6 +300,31 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_12(self):
+        """
+        Expression: define operator identity(y component)
+        returns component is
+            y
+        end operator;
+
+        define operator is_above_05(x component)
+        returns component is
+            identity(x) > 0.5
+        end operator;
+
+        DS_r <- DS_1
+        [calc
+            column_3 := is_above_05(Me_1)
+        ];
+        Description: Bug on component.
+        Git Branch: Cr-249
+        """
+        code = "1-1-1-12"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GL_286_1(self):
         """
         USER DEFINED OPERATORS

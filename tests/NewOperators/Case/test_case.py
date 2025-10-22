@@ -36,6 +36,26 @@ ds_param = [
     ("7", "DS_r := case when DS_cond then DS_2 else DS_1;"),
     ("8", "DS_r := case when DS_cond then DS_1 else null;"),
     ("9", "DS_r := case when DS_cond1 then DS_1 when DS_cond2 then DS_2 else null;"),
+    (
+        "19",
+        'DS_r <- DS_1[calc identifier Id_2  := case when Me_1 = "S123" then "1220" else "DUMMY"];',
+    ),
+    (
+        "20",
+        """
+            DS_r <- DS_1[
+                calc Me_2 :=
+                    case
+                        when Me_1 > 50 then 1 / Me_1
+                        when Me_1 < -30 then case when Me_1 = 0 then 0 else Me_1 * 10
+                        else if Me_1 <> 0 then Me_1 else 1
+            ];
+        """,
+    ),
+    (
+        "21",
+        "DS_r <- DS_1[calc Me_2 := case when Me_1 <> 0 then 1 / Me_1 else 1];",
+    ),
 ]
 
 error_param = [

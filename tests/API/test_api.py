@@ -1,3 +1,4 @@
+import csv
 import json
 import warnings
 from pathlib import Path
@@ -29,9 +30,9 @@ from vtlengine.API._InternalApi import (
     load_vtl,
     to_vtl_json,
 )
-from vtlengine.DataTypes import String
+from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import DataLoadError, SemanticError
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, ValueDomain
+from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
 base_path = Path(__file__).parent
@@ -118,7 +119,13 @@ load_datasets_input_params_OK = [
                         },
                     ],
                 }
-            ]
+            ],
+            "scalars": [
+                {
+                    "name": "sc_1",
+                    "type": "Integer",
+                },
+            ],
         }
     ),
 ]
@@ -159,6 +166,7 @@ load_datasets_with_data_without_dp_params_OK = [
                     data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
+            {"sc_1": Scalar(name="sc_1", data_type=DataTypes.Integer, value=None)},
             None,
         ),
     )
@@ -195,6 +203,7 @@ load_datasets_with_data_path_params_OK = [
                     data=None,
                 )
             },
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             {"DS_1": filepath_csv / "DS_1.csv"},
         ),
     ),
@@ -252,6 +261,7 @@ load_datasets_with_data_path_params_OK = [
                     data=None,
                 ),
             },
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
         ),
     ),
@@ -543,6 +553,8 @@ params_generate_sdmx = [
     ),
 ]
 
+params_run_with_scalars = [(filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")]
+
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -597,8 +609,8 @@ def test_load_wrong_inputs_vd(input, expected):
 
 @pytest.mark.parametrize("datastructure", load_datasets_input_params_OK)
 def test_load_datastructures(datastructure):
-    result = load_datasets(datastructure)
-    reference = Dataset(
+    datasets, scalars = load_datasets(datastructure)
+    reference_dataset = Dataset(
         name="DS_1",
         components={
             "Id_1": Component(
@@ -622,8 +634,17 @@ def test_load_datastructures(datastructure):
         },
         data=None,
     )
-    assert "DS_1" in result
-    assert result["DS_1"] == reference
+    reference_scalar = Scalar(
+        name="sc_1",
+        data_type=DataTypes.Integer,
+        value=None,
+    )
+
+    assert "DS_1" in datasets
+    assert datasets["DS_1"] == reference_dataset
+
+    assert "sc_1" in scalars
+    assert scalars["sc_1"] == reference_scalar
 
 
 @pytest.mark.parametrize("input, code", load_datasets_wrong_input_params)
@@ -777,34 +798,8 @@ def test_run_only_persistent_results(
         return_only_persistent=True,
     )
 
-    reference = {
-        "DS_r2": Dataset(
-            name="DS_r2",
-            components={
-                "Id_1": Component(
-                    name="Id_1",
-                    data_type=DataTypes.Integer,
-                    role=Role.IDENTIFIER,
-                    nullable=False,
-                ),
-                "Id_2": Component(
-                    name="Id_2",
-                    data_type=DataTypes.String,
-                    role=Role.IDENTIFIER,
-                    nullable=False,
-                ),
-                "Me_1": Component(
-                    name="Me_1",
-                    data_type=DataTypes.Number,
-                    role=Role.MEASURE,
-                    nullable=True,
-                ),
-            },
-            data=None
-        ),
-    }
-
-    assert result == reference
+    assert len(result) == 1
+    assert "DS_r2" in result
     files = list(output_path.iterdir())
     assert len(files) == 1
     assert set(result.keys()) == {"DS_r2"}
@@ -1324,7 +1319,7 @@ def test_mandatory_me_error():
 
 @pytest.mark.parametrize("data_structure", params_schema)
 def test_load_data_structure_with_new_schema(data_structure):
-    result = load_datasets(data_structure)
+    datasets, _ = load_datasets(data_structure)
     reference = Dataset(
         name="DS_Schema",
         components={
@@ -1355,8 +1350,8 @@ def test_load_data_structure_with_new_schema(data_structure):
         },
         data=None,
     )
-    assert "DS_Schema" in result
-    assert result["DS_Schema"] == reference
+    assert "DS_Schema" in datasets
+    assert datasets["DS_Schema"] == reference
 
 
 @pytest.mark.parametrize("ds_r, code", param_id_null)
@@ -1585,7 +1580,10 @@ def test_check_script_with_string_input():
 
 
 def test_check_script_invalid_input_type():
-    with pytest.raises(Exception, match="Invalid script format"):
+    with pytest.raises(
+        Exception,
+        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+    ):
         _check_script(12345)
 
 
@@ -1651,3 +1649,140 @@ def test_check_script_with_transformation_scheme(transformation_scheme, result_s
     with open(result_script, "r") as file:
         reference = file.read()
     assert prettify(result) == prettify(reference)
+
+
+@pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
+def test_run_with_scalars(data_structures, datapoints, tmp_path):
+    script = """
+        DS_r <- DS_3[filter Me_1 = sc_1];
+        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        Sc_r <- sc_1 + sc_2 + 3 + sc_3;
+    """
+    scalars = {"sc_1": 20, "sc_2": 5, "sc_3": 3}
+    output_folder = tmp_path
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalars,
+        output_folder=output_folder,
+        return_only_persistent=True,
+    )
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Me_1": []}),
+        ),
+        "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
+    }
+    # assert run_result == reference
+    ds_csv = output_folder / "DS_r.csv"
+    sc_csv = output_folder / "Sc_r.csv"
+    assert ds_csv.exists()
+    assert sc_csv.exists()
+    df = pd.read_csv(ds_csv)
+    assert list(df.columns) == ["Id_1", "Me_1"]
+    assert df.loc[0, "Id_1"] == 2
+    assert df.loc[0, "Me_1"] == 20
+    with open(sc_csv, newline="") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0][0] == str(reference["Sc_r"].value)
+    assert all(isinstance(v, (Dataset, Scalar)) for v in run_result.values())
+
+
+@pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
+def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
+    script = """
+        DS_r <- DS_3[filter Me_1 = sc_1];
+        DS_r2 <- DS_3[sub Id_1 = sc_1];
+        Sc_r <- sc_1 + sc_2 + 3 + sc_3;
+    """
+    scalars = {"sc_1": 20, "sc_2": 5, "sc_3": None}
+    output_folder = tmp_path
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        scalar_values=scalars,
+        output_folder=output_folder,
+        return_only_persistent=True,
+    )
+    assert run_result["Sc_r"].value is None
+    # assert run_result == reference
+    ds_csv = output_folder / "DS_r.csv"
+    sc_csv = output_folder / "Sc_r.csv"
+    assert ds_csv.exists()
+    assert sc_csv.exists()
+    df = pd.read_csv(ds_csv)
+    assert list(df.columns) == ["Id_1", "Me_1"]
+    assert df.loc[0, "Id_1"] == 2
+    assert df.loc[0, "Me_1"] == 20
+    with open(sc_csv, newline="") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0] == [] or rows[0] == [""]
+
+
+def test_script_with_component_working_as_scalar_and_component():
+    script = """
+            Me_2 <- 10;
+            DS_r <- DS_1[filter Me_1 = Me_2];
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [
+            {
+                "name": "Sc_1",
+                "type": "Number",
+            }
+        ],
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+    datapoints = {"DS_1": data_df}
+    with pytest.raises(SemanticError, match="1-1-6-11"):
+        run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            return_only_persistent=True,
+        )

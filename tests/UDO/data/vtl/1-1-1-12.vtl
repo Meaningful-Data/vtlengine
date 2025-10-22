@@ -1,0 +1,14 @@
+define operator identity(y component)
+        returns component is
+            y
+        end operator;
+
+        define operator is_above_05(x component)
+        returns component is
+            identity(x) > 0.5
+        end operator;
+
+        table_2 <- DS_1
+        [calc
+            column_3 := is_above_05(Me_1)
+        ];

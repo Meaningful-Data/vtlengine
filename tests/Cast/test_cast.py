@@ -144,8 +144,7 @@ cast_error_params = [
         String,
         "DD.DDD",
         SemanticError,
-        "('Impossible to cast 40.000 from type Number to String. Please check transformation with "
-        "output dataset DS_r', '2-1-5-1')",
+        "Impossible to cast 40.000 from type Number to String",
     ),
 ]
 test_params = [
@@ -177,20 +176,20 @@ test_params = [
     (
         'cast("2021-12-21", string, "YYYY-MM-DD hh:mm:ss")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
-        "YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD hh:mm:ss",
     ),
     (
         'cast("P0Y240D", string, "YYYY-MM-DD hh:mm:ss")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
-        "YYYY-MM-DD hh:mm:ss. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD hh:mm:ss",
     ),
     (
         'cast ("2022-05-21/2023-05-21", string, "YYYY-MM-DD/YYYY-MM-DD")',
         SemanticError,
-        "(\"A mask can't be provided to cast from type String to String. Mask provided: "
-        "YYYY-MM-DD/YYYY-MM-DD. Please check transformation with output dataset DS_r\", '1-1-5-5')",
+        "A mask can't be provided to cast from type String to String. Mask provided: "
+        "YYYY-MM-DD/YYYY-MM-DD",
     ),
 ]
 
@@ -226,7 +225,7 @@ def test_errors_validate_cast_scalar(text, type_of_error, exception_message):
 )
 def test_errors_cast_scalar(value, provided_type, to_type, mask, type_of_error, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    with pytest.raises(type_of_error, match=f"{exception_message}"):
+    with pytest.raises(type_of_error, match=exception_message):
         Cast.cast_value(value, provided_type=provided_type, to_type=to_type, mask_value=mask)
 
 
@@ -235,5 +234,5 @@ def test_errors_cast_scalar(value, provided_type, to_type, mask, type_of_error, 
 )
 def test_errors_cast_scalar_evaluate(operand, scalar_type, mask, type_of_error, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
-    with pytest.raises(type_of_error, match=f"{exception_message}"):
+    with pytest.raises(type_of_error, match=exception_message):
         Cast.evaluate(operand=operand, scalarType=scalar_type, mask=mask)
