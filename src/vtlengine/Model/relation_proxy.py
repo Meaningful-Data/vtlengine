@@ -9,6 +9,7 @@ import pandas as pd
 from duckdb import DuckDBPyRelation
 
 from vtlengine.connection import con
+from vtlengine.duckdb.to_sql_token import to_sql_literal
 
 INDEX_COL = "__index__"
 
@@ -176,7 +177,7 @@ class RelationProxy:
             return False
         col = cols[0]
         proj = self.relation.project(f'{INDEX_COL}, "{col}"')
-        cond = f'"{col}" IS NULL' if item is None else f'"{col}" = {self._to_sql_literal(item)}'
+        cond = f'"{col}" IS NULL' if item is None else f'"{col}" = {to_sql_literal(item)}'
         cur = proj.filter(cond).limit(1).execute()
         return cur.fetchone() is not None
 
@@ -262,12 +263,15 @@ class RelationProxy:
                 if isinstance(value, RelationProxy)
                 else RelationProxy(value).relation
             )
-            if len(right_rel.columns) == 0:
+
+            if len(right_rel.columns) == 0 or right_rel.columns == [INDEX_COL]:
                 self.relation = left_rel.project(f'{base_proj}, NULL AS "{col_name}"')
                 return
+
             r_data_cols = [c for c in right_rel.columns if c != INDEX_COL]
             if not r_data_cols:
                 raise ValueError("Right-hand side relation has no data columns to assign")
+
             rcol = r_data_cols[0]
             right_rel = right_rel.project(f'{INDEX_COL}, "{rcol}"').set_alias("r")
             joined = left_rel.join(right_rel, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
@@ -286,7 +290,7 @@ class RelationProxy:
             self.relation = joined.project(f'{base_proj}, m.__val__ AS "{col_name}"')
             return
 
-        scalar = self._to_sql_literal(value)
+        scalar = to_sql_literal(value)
         self.relation = left_rel.project(f'{base_proj}, {scalar} AS "{col_name}"')
 
     def _assign_rows(self, key: Any, value: Any) -> None:
@@ -339,7 +343,7 @@ class RelationProxy:
         if joined is None or cond is None:
             raise RuntimeError("Internal error constructing row-wise assignment")
 
-        lit = self._to_sql_literal(value)
+        lit = to_sql_literal(value)
         replace_parts = [
             f'CASE WHEN {cond} THEN {lit} ELSE l."{c}" END AS "{c}"' for c in self.columns
         ]
@@ -357,7 +361,7 @@ class RelationProxy:
         if joined is None or cond is None:
             return
 
-        value = self._to_sql_literal(value)
+        value = to_sql_literal(value)
         columns = set(columns)
 
         parts: list[str] = []
@@ -433,7 +437,7 @@ class RelationProxy:
             joined = left_rel.join(right_rel, f"l.{INDEX_COL} = r.{INDEX_COL}", how="left")
             return RelationProxy(joined.project(f"l.{INDEX_COL} AS {INDEX_COL}, {expr}"))
 
-        value = self._to_sql_literal(other)
+        value = to_sql_literal(other)
         proj_left = left.project(f'{INDEX_COL}, "{lcol}"')
         if op in ["=", "!="] and value in ["NULL", "TRUE", "FALSE"]:
             op = "IS" if op == "=" else "IS NOT"
@@ -515,17 +519,6 @@ class RelationProxy:
         if verbose:
             print(f"\nCOMPLEXITY: {complexity}")
         return complexity > COMPLEXITY_LIMIT
-
-    def _to_sql_literal(self, v: Any) -> str:
-        if v is None:
-            return "NULL"
-        if isinstance(v, bool):
-            return "TRUE" if v else "FALSE"
-        if isinstance(v, (int, float)):
-            return repr(v)
-        if isinstance(v, str):
-            return "'" + v.replace("'", "''") + "'"
-        return "'" + str(v).replace("'", "''") + "'"
 
     def _resolve_duckdb_type(self, dtype: Any) -> str:
         if dtype is int:
@@ -643,7 +636,20 @@ class RelationProxy:
         return bool(agg.execute().fetchone()[0])
 
     def is_empty(self):
-        pass
+        cnt = int(self.relation.aggregate("count(*) AS cnt").execute().fetchone()[0])
+        return cnt == 0
+
+    def isin(self, other: RelationProxy) -> "RelationProxy":
+        left = self.relation.set_alias("l")
+        right = other.relation.set_alias("r")
+
+        join_conditions = " AND ".join(
+            [f'l."{lc}" IS NOT DISTINCT FROM r."{rc}"' for lc, rc in zip(left.columns, right.columns)]
+        )
+
+        expr = f'(r.{INDEX_COL} IS NOT NULL) AS __mask__'
+        joined = left.join(right, join_conditions, how="left")
+        return RelationProxy(joined.project(expr))
 
     def order_by_index(self) -> "RelationProxy":
         return RelationProxy(self.relation.order(INDEX_COL))
@@ -661,6 +667,9 @@ class RelationProxy:
             f"row_number() OVER () - 1 AS {INDEX_COL}, * EXCLUDE {INDEX_COL}"
         )
         return RelationProxy(new_rel)
+
+    def reindex(self, index) -> "RelationProxy":
+        return RelationProxy(self.relation, index)
 
     def astype(self, dtype: Any) -> "RelationProxy":
         col = self._get_single_data_column(self.relation)

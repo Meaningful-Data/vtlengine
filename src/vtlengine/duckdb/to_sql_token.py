@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 from vtlengine.AST.Grammar.tokens import (
     CHARSET_MATCH,
@@ -43,3 +43,15 @@ TO_SQL_TOKEN: Dict[str, Union[str, tuple[str, str]]] = {
     YEARTODAY: ("year_to_day_duck", LEFT),
     DATEDIFF: ("date_diff_duck", LEFT),
 }
+
+
+def to_sql_literal(v: Any) -> str:
+    if v is None:
+        return "NULL"
+    if isinstance(v, bool):
+        return "TRUE" if v else "FALSE"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    if isinstance(v, str):
+        return "'" + v.replace("'", "''") + "'"
+    return "'" + str(v).replace("'", "''") + "'"
