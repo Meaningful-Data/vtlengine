@@ -3,7 +3,7 @@ from copy import copy
 from typing import Any, Dict, List
 
 import pandas as pd
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb import DuckDBPyRelation
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators

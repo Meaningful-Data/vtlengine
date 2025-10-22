@@ -165,8 +165,13 @@ class TestHelper(TestCase):
                 if not isinstance(input_datasets[scalar_name], Scalar):
                     raise Exception(f"{scalar_name} is a dataset")
                 input_datasets[scalar_name].value = scalar_value
+
+        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+
         interpreter = InterpreterAnalyzer(
-            input_datasets,
+            datasets=datasets,
+            scalars=scalars_obj,
             value_domains=value_domains,
             external_routines=external_routines,
             only_semantic=only_semantic,
@@ -243,8 +248,12 @@ class TestHelper(TestCase):
                     raise Exception(f"{scalar_name} is a dataset")
                 input_datasets[scalar_name].value = scalar_value
 
+        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
+        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
+
         interpreter = InterpreterAnalyzer(
-            input_datasets,
+            datasets=datasets,
+            scalars=scalars_obj,
             value_domains=value_domains,
             external_routines=external_routines,
         )

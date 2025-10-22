@@ -43,7 +43,7 @@
           "name": "CONF_STATUS",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "FREQ",
@@ -55,7 +55,7 @@
           "name": "CONF_STATUS_ST",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

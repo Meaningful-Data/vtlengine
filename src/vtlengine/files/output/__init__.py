@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Optional, Union
 
-import duckdb
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from _duckdb import Error
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import RunTimeError
@@ -25,7 +25,7 @@ def save_datapoints(
     if isinstance(dataset.data, DuckDBPyRelation):
         try:
             dataset.data = dataset.data.df()
-        except duckdb.Error as e:
+        except Error as e:
             raise RunTimeError.map_duckdb_error(e)
     if isinstance(output_path, str):
         # __check_s3_extra()

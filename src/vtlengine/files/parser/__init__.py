@@ -2,8 +2,8 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-import duckdb
-from duckdb.duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
+from _duckdb import Error
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
@@ -243,7 +243,7 @@ def load_datapoints(
                 allow_quoted_nulls=False,
                 encoding="utf-8",
             )
-        except duckdb.Error as e:
+        except Error as e:
             raise DataLoadError.map_duckdb_error(e)
 
         # Type validation and normalization

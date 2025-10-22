@@ -115,6 +115,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 class InterpreterAnalyzer(ASTTemplate):
     # Model elements
     datasets: Dict[str, Dataset]
+    scalars: Optional[Dict[str, Scalar]] = None
     value_domains: Optional[Dict[str, ValueDomain]] = None
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
@@ -160,6 +161,8 @@ class InterpreterAnalyzer(ASTTemplate):
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
+    is_from_case_then: bool = False
+    signature_values: Optional[Dict[str, Any]] = None
 
     # **********************************
     # *                                *
@@ -213,6 +216,15 @@ class InterpreterAnalyzer(ASTTemplate):
             )
             self.datasets[ds_name].data = None
 
+    def _save_scalars_efficient(self, scalars: Dict[str, Scalar]) -> None:
+        output_path = Path(self.output_path)  # type: ignore[arg-type]
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        for name, scalar in scalars.items():
+            file_path = output_path / f"{name}.csv"
+            df = pd.DataFrame([[scalar.value]] if scalar.value is not None else [[]])
+            df.to_csv(file_path, header=False, index=False)
+
     # **********************************
     # *                                *
     # *          AST Visitors          *
@@ -226,6 +238,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             Operators.only_semantic = False
         results = {}
+        scalars_to_save = set()
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
@@ -261,6 +274,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # Save results
             self.datasets[result.name] = copy(result)
             results[result.name] = result
+            if isinstance(result, Scalar):
+                scalars_to_save.add(result.name)
+                if self.scalars is None:
+                    self.scalars = {}
+                self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
 
@@ -271,6 +289,14 @@ class InterpreterAnalyzer(ASTTemplate):
                     value.data = None
 
         self._write_finish()  # type: ignore[no-untyped-call]
+        if self.output_path is not None and scalars_to_save:
+            scalars_filtered = {
+                name: self.scalars[name]  # type: ignore[index]
+                for name in scalars_to_save
+                if (not self.return_only_persistent or name in self.ds_analysis.get(PERSISTENT, []))  # type: ignore[union-attr]
+            }
+            self._save_scalars_efficient(scalars_filtered)
+
         return results
 
     # Definition Language
@@ -590,12 +616,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand = self.regular_aggregation_dataset
             else:
                 operand_comp = self.visit(node.operand)
-                component_name = operand_comp.name
+                component_name = operand_comp.data.columns[0]
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
+                self.regular_aggregation_dataset.get_attributes_names()
                 dataset_components = self.regular_aggregation_dataset.components.copy()
                 for name in measure_names:
-                    if name != operand_comp.name:
-                        dataset_components.pop(name)
+                    dataset_components.pop(name)
+
+                dataset_components[component_name] = Component(
+                    name=component_name,
+                    data_type=operand_comp.data_type,
+                    role=operand_comp.role,
+                    nullable=operand_comp.nullable,
+                )
 
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
@@ -799,10 +832,10 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_join and node.value in self.datasets:
                 return self.datasets[node.value]
             if self.regular_aggregation_dataset is not None:
-                if node.value in self.datasets and isinstance(self.datasets[node.value], Scalar):
+                if self.scalars is not None and node.value in self.scalars:
                     if node.value in self.regular_aggregation_dataset.components:
                         raise SemanticError("1-1-6-11", comp_name=node.value)
-                    return self.datasets[node.value]
+                    return self.scalars[node.value]
                 if self.regular_aggregation_dataset.data is not None:
                     if (
                         self.is_from_join
@@ -867,8 +900,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 role=self.ruleset_dataset.components[comp_name].role,
                 nullable=self.ruleset_dataset.components[comp_name].nullable,
             )
+        if self.scalars and node.value in self.scalars:
+            return self.scalars[node.value]
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
+
         return self.datasets[node.value]
 
     def visit_Collection(self, node: AST.Collection) -> Any:
@@ -1049,15 +1085,43 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.condition_stack is None:
             self.condition_stack = []
+        if self.then_condition_dataset is None:
+            self.then_condition_dataset = []
+        if self.else_condition_dataset is None:
+            self.else_condition_dataset = []
 
-        while node.cases:
-            case = node.cases.pop(0)
+        for case in node.cases:
             self.is_from_condition = True
-            conditions.append(self.visit(case.condition))
+            cond = self.visit(case.condition)
             self.is_from_condition = False
-            thenOps.append(self.visit(case.thenOp))
 
-        return Case.analyze(conditions, thenOps, self.visit(node.elseOp))
+            conditions.append(cond)
+            if isinstance(cond, Scalar):
+                then_result = self.visit(case.thenOp)
+                thenOps.append(then_result)
+                continue
+
+            self.generate_then_else_datasets(copy(cond))
+
+            self.condition_stack.append(THEN_ELSE["then"])
+            self.is_from_if = True
+            self.is_from_case_then = True
+
+            then_result = self.visit(case.thenOp)
+            thenOps.append(then_result)
+
+            self.is_from_case_then = False
+            self.is_from_if = False
+            if len(self.condition_stack) > 0:
+                self.condition_stack.pop()
+            if len(self.then_condition_dataset) > 0:
+                self.then_condition_dataset.pop()
+            if len(self.else_condition_dataset) > 0:
+                self.else_condition_dataset.pop()
+
+        elseOp = self.visit(node.elseOp)
+
+        return Case.analyze(conditions, thenOps, elseOp)
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
@@ -1559,11 +1623,10 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.else_condition_dataset is None:
             self.else_condition_dataset = []
         if isinstance(condition, Dataset):
-            if (
-                len(condition.get_measures()) != 1
-                or condition.get_measures()[0].data_type != BASIC_TYPES[bool]
-            ):
-                raise ValueError("Only one boolean measure is allowed on condition dataset")
+            if len(condition.get_measures()) != 1:
+                raise SemanticError("1-1-1-4", op="condition")
+            if condition.get_measures()[0].data_type != BASIC_TYPES[bool]:
+                raise SemanticError("2-1-9-5", op="condition", name=condition.name)
             name = condition.get_measures_names()[0]
             if condition.data is None or len(condition.data) == 0:
                 data = None
@@ -1573,7 +1636,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         else:
             if condition.data_type != BASIC_TYPES[bool]:
-                raise ValueError("Only boolean scalars are allowed on data component condition")
+                raise SemanticError("2-1-9-4", op="condition", name=condition.name)
             name = condition.name
             data = None if condition.data is None else condition.data
 
@@ -1651,11 +1714,18 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             return left_operand, right_operand
 
-        merge_dataset = (
-            self.then_condition_dataset.pop()
-            if self.condition_stack.pop() == THEN_ELSE["then"]
-            else (self.else_condition_dataset.pop())
-        )
+        if self.is_from_case_then:
+            merge_dataset = (
+                self.then_condition_dataset[-1]
+                if self.condition_stack[-1] == THEN_ELSE["then"]
+                else self.else_condition_dataset[-1]
+            )
+        else:
+            merge_dataset = (
+                self.then_condition_dataset.pop()
+                if self.condition_stack.pop() == THEN_ELSE["then"]
+                else (self.else_condition_dataset.pop())
+            )
 
         merge_index = merge_dataset.data[merge_dataset.get_measures_names()[0]].to_list()
         ids = merge_dataset.get_identifiers_names()
@@ -1818,6 +1888,8 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("2-3-10", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-3-5", node_op=node.op, op_type="User Defined Operator")
+        if self.signature_values is None:
+            self.signature_values = {}
 
         operator = self.udos[node.op]
         signature_values = {}
@@ -1911,6 +1983,12 @@ class InterpreterAnalyzer(ASTTemplate):
             self.udo_params = []
 
         # Adding parameters to the stack
+        for k, v in signature_values.items():
+            if hasattr(v, "name"):
+                v = v.name  # type: ignore[assignment]
+            if v in self.signature_values:
+                signature_values[k] = self.signature_values[v]  # type: ignore[index]
+        self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
