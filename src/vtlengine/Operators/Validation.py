@@ -45,7 +45,6 @@ class Check(Operator):
         if error_level is None or isinstance(error_level, int):
             error_level_type = Integer
 
-
         imbalance_measure = None
         if imbalance_element is not None:
             operand_identifiers = validation_element.get_identifiers_names()
