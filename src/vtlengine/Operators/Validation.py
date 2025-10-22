@@ -40,13 +40,11 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type = None
+
+        error_level_type = String
         if error_level is None or isinstance(error_level, int):
             error_level_type = Integer
-        elif isinstance(error_level, str):
-            error_level_type = String  # type: ignore[assignment]
-        else:
-            error_level_type = String
+
 
         imbalance_measure = None
         if imbalance_element is not None:
@@ -155,7 +153,6 @@ class Validation(Operator):
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        error_level_type = None
         error_levels = [
             rule_data.get("errorlevel")
             for rule_data in rule_info.values()
@@ -163,12 +160,10 @@ class Validation(Operator):
         ]
         non_null_levels = [el for el in error_levels if el is not None]
 
+        error_level_type = String
         if len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
             error_level_type = Number
-        elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String  # type: ignore[assignment]
-        else:
-            error_level_type = String  # type: ignore[assignment]
+
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
