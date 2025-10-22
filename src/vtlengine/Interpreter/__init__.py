@@ -1678,7 +1678,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     if self.condition_stack[-1] == THEN_ELSE["then"]
                     else self.else_condition_dataset[-1]
                 )
-                indexes = merge_df.data[merge_df.data.columns[-1]]
+                indexes = merge_df.data.index
             else:
                 indexes = data[data.notnull()].index
 
