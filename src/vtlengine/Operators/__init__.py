@@ -616,9 +616,11 @@ class Binary(Operator):
 
         for measure in dataset.get_measures():
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
-                scalar_value, int
-            ) and scalar_value is not None:
+            if (
+                measure.data_type.__name__.__str__() == "Duration"
+                and not isinstance(scalar_value, int)
+                and scalar_value is not None
+            ):
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
@@ -656,9 +658,11 @@ class Binary(Operator):
             component.data.copy() if component.data is not None else pd.Series(),
         )
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if component.data_type.__name__.__str__() == "Duration" and not isinstance(
-            scalar_value, int
-        ) and scalar_value is not None:
+        if (
+            component.data_type.__name__.__str__() == "Duration"
+            and not isinstance(scalar_value, int)
+            and scalar_value is not None
+        ):
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
