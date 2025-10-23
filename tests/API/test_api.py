@@ -1845,15 +1845,18 @@ def test_script_with_component_working_as_scalar_and_component():
             return_only_persistent=True,
         )
 
+
 wrong_types_params = [
-    ("string", "String"), # Check lower case
-    ("Nuber", "Number"), # Check missing letter
-    ("intger", "Integer"), # Check lowercase and missing letter
-    ("TimePeriod", "Time_Period"), # Check underscore
-    ("bool", ""), # Has no closest marker
-    ("dates", "Date"),
-    ("TimeInterval", "Time"),
+    ("string", "String"),  # Check lower case
+    ("Nuber", "Number"),  # Check missing letter
+    ("intger", "Integer"),  # Check lowercase and missing letter
+    ("TimePeriod", "Time_Period"),  # Check underscore
+    ("bool", ""),  # Has no closest marker
+    ("dates", "Date"),  # Check plural form
+    ("TimeInterval", "Time"),  # Check TimeInterval to Time
 ]
+
+
 @pytest.mark.parametrize("wrong_type, correct_type", wrong_types_params)
 def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
     script = """
