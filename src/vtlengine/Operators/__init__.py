@@ -84,6 +84,8 @@ class Operator:
     def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return value
+        if value is None:
+            return None
         if data_type.__name__ == "TimeInterval":
             return TimeIntervalHandler.from_iso_format(value)
         elif data_type.__name__ == "TimePeriod":
@@ -616,7 +618,7 @@ class Binary(Operator):
             measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
             if measure.data_type.__name__.__str__() == "Duration" and not isinstance(
                 scalar_value, int
-            ):
+            ) and scalar_value is not None:
                 scalar_value = PERIOD_IND_MAPPING[scalar_value]
             result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
                 measure_data, scalar_value, dataset_left
@@ -656,7 +658,7 @@ class Binary(Operator):
         scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
         if component.data_type.__name__.__str__() == "Duration" and not isinstance(
             scalar_value, int
-        ):
+        ) and scalar_value is not None:
             scalar_value = PERIOD_IND_MAPPING[scalar_value]
         result_component.data = cls.apply_operation_series_scalar(
             comp_data, scalar_value, component_left
