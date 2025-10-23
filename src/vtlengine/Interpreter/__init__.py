@@ -1517,7 +1517,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 return result_validation
             self.rule_data["bool_var"] = result_validation.data
             original_data = duckdb_merge(
-                original_data, self.rule_data, how="left", join_keys=original_data.columns
+                original_data, self.rule_data, how="left", on=original_data.columns
             )
             original_data[non_filtering_indexes, "bool_var"] = 1
             original_data[nan_indexes, "bool_var"] = None
@@ -1666,8 +1666,8 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             if condition.data_type != BASIC_TYPES[bool]:
                 raise SemanticError("2-1-9-4", op="condition", name=condition.name)
-            name = condition.name
             data = condition.data
+            name = data.columns[0]
 
         then_data = empty_relation(name)
         else_data = empty_relation(name)
@@ -1682,28 +1682,15 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 indexes = data[data.notnull()].index
 
+            filtered_data = data[indexes]
             if isinstance(condition, Dataset):
-                filtered_data = data[indexes]
-                then_data: Any = (
-                    condition.data[condition.data[name] == True]
-                    if (condition.data is not None)
-                    else []
-                )
-                then_indexes: Any = filtered_data[filtered_data == True].index
-                if len(then_data) > len(then_indexes):
-                    then_data = then_data[then_indexes]
+                then_indexes = filtered_data[filtered_data == True].index
+                then_data = condition.data[then_indexes]
                 then_data[name] = then_indexes
-                else_data: Any = (
-                    condition.data[condition.data[name] != True]
-                    if (condition.data is not None)
-                    else []
-                )
                 else_indexes = RelationProxy(indexes.except_(then_indexes))
-                if len(else_data) > len(else_indexes):
-                    else_data = else_data[else_indexes]
+                else_data = condition.data[else_indexes]
                 else_data[name] = else_indexes
             else:
-                filtered_data = data[indexes]
                 then_indexes = filtered_data[filtered_data == True].index
                 else_indexes = RelationProxy(indexes.except_(then_indexes))
                 then_data = duckdb_rename(then_indexes, {INDEX_COL: name})
@@ -1857,7 +1844,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ]
             code_data = rel[rel[hr_component] == node.value].reset_index(drop=True)
             code_data = duckdb_merge(
-                code_data, rel[rest_identifiers], how="right", join_keys=rest_identifiers
+                code_data, rel[rest_identifiers], how="right", on=rest_identifiers
             )
             code_data = code_data.distinct().reset_index(drop=True)
 
