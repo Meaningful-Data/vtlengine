@@ -23,7 +23,7 @@ COMPLEXITY_LIMITS = {
     "max_complexity": 100,
 }
 
-COMPLEXITY_LIMIT = 75
+COMPLEXITY_LIMIT = 50
 DEPTH_MULT = 3
 AGG_MULT = 10
 FILTER_MULT = 5
@@ -212,19 +212,19 @@ class RelationProxy:
 
     @property
     def all_columns(self) -> list[str]:
-        return self.relation.columns
+        return self._relation.columns
 
     @property
     def columns(self) -> list[str]:
-        return [c for c in self.relation.columns if c != INDEX_COL]
+        return [c for c in self._relation.columns if c != INDEX_COL]
 
     @property
     def dtypes(self) -> dict[str, str]:
-        return dict(zip(self.relation.columns, self.relation.types))
+        return dict(zip(self._relation.columns, self._relation.types))
 
     @property
     def index(self) -> DuckDBPyRelation:
-        return self.relation.project(INDEX_COL)
+        return self._relation.project(INDEX_COL)
 
     @property
     def relation(self) -> DuckDBPyRelation:
