@@ -70,7 +70,7 @@ class If(Operator):
         base = duckdb_rename(base, {cond_col: COND_COL})
 
         if isinstance(true_branch, DataComponent):
-            tcol = true_branch.name
+            tcol = true_branch.data.columns[0]
             tdata = duckdb_rename(true_branch.data, {tcol: "__t__"})
             base = duckdb_concat(base, tdata)
             t_expr = '"__t__"'
@@ -80,7 +80,7 @@ class If(Operator):
             raise ValueError("Invalid true_branch type for component level evaluation")
 
         if isinstance(false_branch, DataComponent):
-            fcol = false_branch.name
+            fcol = false_branch.data.columns[0]
             fdata = duckdb_rename(false_branch.data, {fcol: "__f__"})
             base = duckdb_concat(base, fdata)
             f_expr = '"__f__"'
