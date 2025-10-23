@@ -7,7 +7,7 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
-    binary_implicit_promotion, COMP_NAME_MAPPING,
+    binary_implicit_promotion,
 )
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
@@ -106,7 +106,7 @@ class If(Operator):
 
         true_mask = base[COND_COL] == True
         if isinstance(true_branch, Dataset) and true_branch.data is not None:
-            true_base = duckdb_merge(base[true_mask], true_branch.data, join_keys=ids, how="inner")
+            true_base = duckdb_merge(base[true_mask], true_branch.data, on=ids, how="inner")
         else:
             true_base = base[true_mask]
             for m in measures:
@@ -114,7 +114,7 @@ class If(Operator):
 
         false_mask = base[COND_COL] == False
         if isinstance(false_branch, Dataset) and false_branch.data is not None:
-            false_base = duckdb_merge(base[false_mask], false_branch.data, join_keys=ids, how="inner")
+            false_base = duckdb_merge(base[false_mask], false_branch.data, on=ids, how="inner")
         else:
             false_base = base[false_mask]
             for m in measures:
@@ -368,7 +368,6 @@ class Case(Operator):
             expr += f'END AS "{col}"'
             exprs.append(expr)
 
-        print("\n", exprs)
         result.data = base.project(", ".join(exprs))
         return result
 

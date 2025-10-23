@@ -188,7 +188,7 @@ def duckdb_fillna(
 def duckdb_merge(
     base_relation: Optional[RelationProxy],
     other_relation: Optional[RelationProxy],
-    join_keys: Optional[List[str]],
+    on: Optional[List[str]],
     how: str = "inner",
 ) -> RelationProxy:
     """
@@ -198,7 +198,7 @@ def duckdb_merge(
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
-    join_keys = join_keys if join_keys is not None else []
+    on = on if on is not None else []
 
     from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -220,14 +220,14 @@ def duckdb_merge(
     if join_keyword not in ("INNER", "LEFT", "RIGHT", "FULL OUTER"):
         raise ValueError(f"Unsupported join type: {how}")
 
-    if not join_keys:
+    if not on:
         raise ValueError("Join keys required for non-cross joins")
 
-    using_clause = ", ".join(f'"{k}"' for k in join_keys)
+    using_clause = ", ".join(f'"{k}"' for k in on)
 
     base_cols = set(base_relation.columns)
     other_cols = set(other_relation.columns)
-    common_cols = (base_cols & other_cols) - set(join_keys)
+    common_cols = (base_cols & other_cols) - set(on)
 
     if join_keyword == "RIGHT":
         index_expr = f'{other_name}."{INDEX_COL}" AS "{INDEX_COL}"'
@@ -242,17 +242,17 @@ def duckdb_merge(
         order_by = f'ORDER BY COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}")'
 
     select_cols = [index_expr] + [
-        f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys
+        f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in on
     ]
 
     for col in base_relation.columns:
-        if col in (INDEX_COL, *join_keys):
+        if col in (INDEX_COL, *on):
             continue
         suffix = "_x" if col in common_cols and join_keyword != "LEFT" else ""
         select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
     for col in other_relation.columns:
-        if col in (INDEX_COL, *join_keys):
+        if col in (INDEX_COL, *on):
             continue
         suffix = "_y" if col in common_cols and join_keyword != "LEFT" else ""
         select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
