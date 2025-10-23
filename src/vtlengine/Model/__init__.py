@@ -235,18 +235,6 @@ class DataComponent:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    @property
-    def df(self) -> pd.DataFrame:
-        if self.data is None:
-            return pd.DataFrame()
-        if isinstance(self.data, RelationProxy):
-            df = self.data.df(10)
-        else:
-            df = self.data.limit(10).df()
-            if INDEX_COL in df.columns:
-                df = df.set_index(INDEX_COL)
-        return df
-
 
 @dataclass
 class Dataset:
@@ -484,17 +472,6 @@ class Dataset:
             f"\ncomponents={list(self.components.keys())},"
             f"\ndata=\n{data})"
         )
-
-    @property
-    def df(self) -> pd.DataFrame:
-        if self.data is None:
-            return pd.DataFrame()
-        if isinstance(self.data, RelationProxy):
-            return self.data.df(30)
-        df = self.data.limit(30).df()
-        if INDEX_COL in df.columns:
-            df = df.set_index(INDEX_COL)
-        return df
 
     def _to_duckdb(self) -> DuckDBPyRelation:
         """
