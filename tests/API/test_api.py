@@ -1844,3 +1844,36 @@ def test_script_with_component_working_as_scalar_and_component():
             datapoints=datapoints,
             return_only_persistent=True,
         )
+
+wrong_types_params = [
+    ("string", "String"), # Check lower case
+    ("Nuber", "Number"), # Check missing letter
+    ("intger", "Integer"), # Check lowercase and missing letter
+    ("TimePeriod", "Time_Period"), # Check underscore
+    ("bool", ""), # Has no closest marker
+    ("dates", "Date"),
+    ("TimeInterval", "Time"),
+]
+@pytest.mark.parametrize("wrong_type, correct_type", wrong_types_params)
+def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
+    script = """
+        sc_r <- sc_1;
+    """
+
+    data_structures = {
+        "scalars": [
+            {
+                "name": "sc_1",
+                "type": wrong_type,
+            }
+        ]
+    }
+
+    with pytest.raises(SemanticError, match="0-1-1-13") as e:
+        run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=[],
+        )
+    assert wrong_type in e.value.args[0]
+    assert correct_type in e.value.args[0]
