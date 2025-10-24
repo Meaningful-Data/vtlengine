@@ -119,8 +119,8 @@ class RelationProxy:
 
                 data = list(enumerate(idx_list))
                 idx = con.values(data).project("col0 AS __pos__, col1 AS idx").set_alias("idx")
-                left_rel = self.relation.set_alias("l")
-                joined = left_rel.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
+                left = self.relation.set_alias("l")
+                joined = left.join(idx, f"l.{INDEX_COL} = idx.idx", how="inner")
                 return RelationProxy(joined.order("idx.__pos__").project("l.*"))
 
         raise TypeError(f"Unsupported key type for __getitem__: {type(key)!r}")
@@ -452,7 +452,7 @@ class RelationProxy:
 
     def _ensure_index(self, projection: str) -> str:
         cols_lower = [c.strip().lower() for c in projection.split(",")]
-        if INDEX_COL not in cols_lower:
+        if INDEX_COL not in cols_lower and "*" not in cols_lower:
             return f"{INDEX_COL}, " + projection
         return projection
 
@@ -640,15 +640,17 @@ class RelationProxy:
         return cnt == 0
 
     def isin(self, other: RelationProxy) -> "RelationProxy":
+        l_cols = self.columns
+        r_cols = other.columns
         left = self.relation.set_alias("l")
         right = other.relation.set_alias("r")
 
         join_conditions = " AND ".join(
-            [f'l."{lc}" IS NOT DISTINCT FROM r."{rc}"' for lc, rc in zip(left.columns, right.columns)]
+            [f'l."{lc}" IS NOT DISTINCT FROM r."{rc}"' for lc, rc in zip(l_cols, r_cols)]
         )
 
         expr = f'(r.{INDEX_COL} IS NOT NULL) AS __mask__'
-        joined = left.join(right, join_conditions, how="left")
+        joined = left.join(right, join_conditions, how="left").order(f"l.{INDEX_COL}")
         return RelationProxy(joined.project(expr))
 
     def order_by_index(self) -> "RelationProxy":
