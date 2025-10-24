@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, Optional, Sequence, Union, List
 
 import pandas as pd
 from duckdb import DuckDBPyRelation
@@ -672,6 +672,12 @@ class RelationProxy:
 
     def reindex(self, index) -> "RelationProxy":
         return RelationProxy(self.relation, index)
+
+    def sort_values(self, by: Union[List[str], str], ascending: bool = True) -> "RelationProxy":
+        by = f'"{by}"' if isinstance(by, str) else '", "'.join(by)
+        direction = "ASC" if ascending else "DESC"
+        sorted_rel = self.relation.order(f'"{by}" {direction}')
+        return RelationProxy(sorted_rel)
 
     def astype(self, dtype: Any) -> "RelationProxy":
         col = self._get_single_data_column(self.relation)
