@@ -22,11 +22,11 @@ INDEX_COL = "__index__"
 
 
 def duckdb_concat(
-    left: DuckDBPyRelation,
-    right: DuckDBPyRelation,
+    left: RelationProxy,
+    right: RelationProxy,
     on: Optional[Union[str, List[str]]] = None,
     how: str = "outer",
-) -> DuckDBPyRelation:
+) -> RelationProxy:
     """
     Horizontal concatenation (axis=1) of two relations.
     - If `on` is provided, align rows using those key columns (OUTER JOIN).
@@ -98,7 +98,7 @@ def duckdb_concat(
 
     # If index exists in either side but was not included (positional mode without index),
     # keep a coalesced index
-    if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
+    if on and INDEX_COL in on and INDEX_COL not in union_cols:
         select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
 
     return RelationProxy(joined.project(", ".join(select_exprs)))
@@ -122,8 +122,8 @@ def duckdb_drop(
 
 
 def duckdb_fill(
-    data: DuckDBPyRelation, value: Any, col_name: str, as_query: bool = False
-) -> DuckDBPyRelation:
+    data: RelationProxy, value: Any, col_name: str, as_query: bool = False
+) -> RelationProxy:
     """
     Fills a column in a DuckDB relation with a specified value.
 
@@ -137,12 +137,12 @@ def duckdb_fill(
 
 
 def duckdb_fillna(
-    data: DuckDBPyRelation,
+    data: RelationProxy,
     value: Any,
     cols: Optional[Union[str, List[str], Set[str]]] = None,
     types: Optional[Union[str, List[str], Set[str], Dict[str, str]]] = None,
     as_query: bool = False,
-) -> DuckDBPyRelation:
+) -> RelationProxy:
     """
     Fills NaN values in specified columns of a DuckDB relation with a specified value.
 
@@ -186,11 +186,11 @@ def duckdb_fillna(
 
 
 def duckdb_merge(
-    base_relation: Optional[DuckDBPyRelation],
-    other_relation: Optional[DuckDBPyRelation],
-    join_keys: Optional[List[str]],
+    base_relation: Optional[RelationProxy],
+    other_relation: Optional[RelationProxy],
+    on: Optional[List[str]],
     how: str = "inner",
-) -> DuckDBPyRelation:
+) -> RelationProxy:
     """
     Merges two DuckDB relations using SQL syntax and temporary views.
 
@@ -198,7 +198,7 @@ def duckdb_merge(
     """
     base_relation = base_relation if base_relation is not None else empty_relation()
     other_relation = other_relation if other_relation is not None else empty_relation()
-    join_keys = join_keys if join_keys is not None else []
+    on = on if on is not None else []
 
     from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -220,14 +220,14 @@ def duckdb_merge(
     if join_keyword not in ("INNER", "LEFT", "RIGHT", "FULL OUTER"):
         raise ValueError(f"Unsupported join type: {how}")
 
-    if not join_keys:
+    if not on:
         raise ValueError("Join keys required for non-cross joins")
 
-    using_clause = ", ".join(f'"{k}"' for k in join_keys)
+    using_clause = ", ".join(f'"{k}"' for k in on)
 
     base_cols = set(base_relation.columns)
     other_cols = set(other_relation.columns)
-    common_cols = (base_cols & other_cols) - set(join_keys)
+    common_cols = (base_cols & other_cols) - set(on)
 
     if join_keyword == "RIGHT":
         index_expr = f'{other_name}."{INDEX_COL}" AS "{INDEX_COL}"'
@@ -242,17 +242,17 @@ def duckdb_merge(
         order_by = f'ORDER BY COALESCE({base_name}."{INDEX_COL}", {other_name}."{INDEX_COL}")'
 
     select_cols = [index_expr] + [
-        f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in join_keys
+        f'COALESCE({base_name}."{k}", {other_name}."{k}") AS "{k}"' for k in on
     ]
 
     for col in base_relation.columns:
-        if col in (INDEX_COL, *join_keys):
+        if col in (INDEX_COL, *on):
             continue
         suffix = "_x" if col in common_cols and join_keyword != "LEFT" else ""
         select_cols.append(f'{base_name}."{col}" AS "{col}{suffix}"')
 
     for col in other_relation.columns:
-        if col in (INDEX_COL, *join_keys):
+        if col in (INDEX_COL, *on):
             continue
         suffix = "_y" if col in common_cols and join_keyword != "LEFT" else ""
         select_cols.append(f'{other_name}."{col}" AS "{col}{suffix}"')
@@ -268,23 +268,24 @@ def duckdb_merge(
 
 
 def duckdb_rename(
-    data: DuckDBPyRelation, name_dict: Dict[str, str], as_query: bool = False
-) -> DuckDBPyRelation:
+    data: RelationProxy, name_dict: Dict[str, str], as_query: bool = False
+) -> RelationProxy:
     """Renames columns in a DuckDB relation."""
     cols_set = set()
     cols = set(data.columns)
     for old_name, new_name in name_dict.items():
-        if old_name not in cols:
-            raise ValueError(f"Column '{old_name}' not found in relation.")
-        cols.remove(old_name)
+        if old_name != INDEX_COL:
+            if old_name not in cols:
+                raise ValueError(f"Column '{old_name}' not found in relation.")
+            cols.remove(old_name)
         cols_set.add(f'"{old_name}" AS "{new_name}"')
     query = ", ".join(quote_cols(cols) | cols_set)
     return query if as_query else RelationProxy(data.project(query))
 
 
 def duckdb_select(
-    data: DuckDBPyRelation, cols: Union[str, List[str], Any] = "*", as_query: bool = False
-) -> DuckDBPyRelation:
+    data: RelationProxy, cols: Union[str, List[str], Any] = "*", as_query: bool = False
+) -> RelationProxy:
     """
     Selects specific columns from a DuckDB relation.
 
@@ -317,7 +318,7 @@ def duration_handler(col: str, reverse: bool = False) -> str:
 
 def empty_relation(
     cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
-) -> DuckDBPyRelation:
+) -> RelationProxy:
     """
     Returns an empty DuckDB relation.
 
@@ -325,9 +326,9 @@ def empty_relation(
     """
     if cols:
         df = pd.DataFrame(columns=list(cols) if isinstance(cols, (list, set)) else [cols])
-        return con.from_df(pd.DataFrame(df))
+        return RelationProxy(con.from_df(df))
     query = "SELECT 1 LIMIT 0"
-    return query if as_query else con.sql(query)
+    return query if as_query else RelationProxy(con.sql(query))
 
 
 def get_col_type(rel: RelationProxy, col_name: str) -> DuckDBPyType:

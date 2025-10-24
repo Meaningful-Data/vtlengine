@@ -237,7 +237,7 @@ class Aggregation(Unary):
         elif len(aux_rel) == 0:
             aux_rel = con.from_df(pd.DataFrame(columns=result.get_components_names()))
         else:
-            aux_rel = duckdb_merge(aux_rel, result_rel, join_keys=grouping_keys, how="left")
+            aux_rel = duckdb_merge(aux_rel, result_rel, on=grouping_keys, how="left")
         if having_expr is not None:
             condition = " AND ".join(f'"{c}" IS NOT NULL' for c in result.get_measures_names())
             aux_rel = aux_rel.filter(condition)

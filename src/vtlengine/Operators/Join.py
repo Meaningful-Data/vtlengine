@@ -180,7 +180,7 @@ class Join(Operator):
                     )
                 if op.data is not None and result.data is not None:
                     result.data = duckdb_merge(
-                        result.data, op.data, join_keys=merge_join_keys, how=cls.how
+                        result.data, op.data, on=merge_join_keys, how=cls.how
                     )
                 else:
                     result.data = empty_relation()
@@ -334,7 +334,7 @@ class CrossJoin(Join):
                 result.data = duckdb_merge(
                     result.data,
                     op.data,
-                    join_keys=common,
+                    on=common,
                     how=cls.how,
                 )
             if result.data is not None:
