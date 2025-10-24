@@ -298,13 +298,15 @@ class Dataset:
 
         # Check components
         if self.components != other.components:
-            print("Components mismatch")
+            print("Components mismatch on dataset:", self.name)
             diff_comps = {
-                k: v
+                k: (v, other.components[k])
                 for k, v in self.components.items()
                 if k not in other.components or v != other.components[k]
             }
-            print(f"Differences in components: {diff_comps}")
+            print(f"Differences in components:")
+            for k, (v1, v2) in diff_comps.items():
+                print(f"Component: {k}\nSELF: {v1}\nOTHER: {v2}\n")
             return False
 
         # Check both data are None, they are equal
