@@ -17,7 +17,7 @@ from vtlengine.duckdb.duckdb_utils import (
     empty_relation, duckdb_merge,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import DataComponent, Dataset, Role, Scalar, INDEX_COL, RelationProxy
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.duckdb.to_sql_token import to_sql_literal
@@ -67,30 +67,20 @@ class If(Operator):
 
         cond_col = condition.name
         base = duckdb_fillna(condition.data, False, cond_col)
-        base = duckdb_rename(base, {cond_col: COND_COL})
 
+        t_base = base[base[cond_col] == True]
         if isinstance(true_branch, DataComponent):
-            tcol = true_branch.data.columns[0]
-            tdata = duckdb_rename(true_branch.data, {tcol: "__t__"})
-            base = duckdb_concat(base, tdata)
-            t_expr = '"__t__"'
-        elif isinstance(true_branch, Scalar):
-            t_expr = to_sql_literal(true_branch.value)
+            t_base[result_name] = true_branch.data[true_branch.data.columns[0]]
         else:
-            raise ValueError("Invalid true_branch type for component level evaluation")
+            t_base[result_name] = true_branch.value
 
+        f_base = base[base[cond_col] == False]
         if isinstance(false_branch, DataComponent):
-            fcol = false_branch.data.columns[0]
-            fdata = duckdb_rename(false_branch.data, {fcol: "__f__"})
-            base = duckdb_concat(base, fdata)
-            f_expr = '"__f__"'
-        elif isinstance(false_branch, Scalar):
-            f_expr = to_sql_literal(false_branch.value)
+            f_base[result_name] = false_branch.data[false_branch.data.columns[0]]
         else:
-            raise ValueError("Invalid false_branch type for component level evaluation")
+            f_base[result_name] = false_branch.value
 
-        expr = f'CASE WHEN {COND_COL} THEN {t_expr} ELSE {f_expr} END AS "{result_name}"'
-        return base.project(expr)
+        return duckdb_concat(t_base, f_base, on=[INDEX_COL]).project(f'"{result_name}"')
 
     @classmethod
     def dataset_level_evaluation(
@@ -100,27 +90,26 @@ class If(Operator):
         ids = condition.get_identifiers_names()
         cond_measure = condition.get_measures_names()[0]
         measures = result.get_measures_names()
-
         base = duckdb_fillna(condition.data, False, cond_measure)
         base = duckdb_rename(base, {cond_measure: COND_COL})
 
-        true_mask = base[COND_COL] == True
+        t_mask = base[COND_COL] == True
         if isinstance(true_branch, Dataset) and true_branch.data is not None:
-            true_base = duckdb_merge(base[true_mask], true_branch.data, on=ids, how="inner")
+            t_base = duckdb_merge(base[t_mask], true_branch.data, on=ids, how="inner")
         else:
-            true_base = base[true_mask]
+            t_base = base[t_mask]
             for m in measures:
-                true_base[m] = true_branch.value
+                t_base[m] = true_branch.value
 
-        false_mask = base[COND_COL] == False
+        f_mask = base[COND_COL] == False
         if isinstance(false_branch, Dataset) and false_branch.data is not None:
-            false_base = duckdb_merge(base[false_mask], false_branch.data, on=ids, how="inner")
+            f_base = duckdb_merge(base[f_mask], false_branch.data, on=ids, how="inner")
         else:
-            false_base = base[false_mask]
+            f_base = base[f_mask]
             for m in measures:
-                false_base[m] = false_branch.value
+                f_base[m] = false_branch.value
 
-        result.data = duckdb_concat(true_base, false_base, on=ids).drop(columns=COND_COL)
+        result.data = duckdb_concat(t_base, f_base, on=ids).drop(columns=COND_COL)
         return result
 
     @classmethod
