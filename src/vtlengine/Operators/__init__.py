@@ -32,6 +32,7 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     XOR,
 )
+from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -791,7 +792,7 @@ class Binary(Operator):
         if left_operand.data is None or right_operand.data is None:
             return empty_relation()
 
-        result_data = duckdb_concat(left_operand.data, right_operand.data)
+        result_data = duckdb_concat(left_operand.data, right_operand.data, on=[INDEX_COL])
 
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
@@ -815,7 +816,7 @@ class Binary(Operator):
         )
         final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
-        result_component.data = result_data.project(result_component.name)
+        result_component.data = result_data.project(result_component.name, INDEX_COL)
         return result_component
 
     @classmethod
@@ -825,7 +826,7 @@ class Binary(Operator):
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = component.data if component.data is not None else empty_relation()
 
-        exprs = []
+        exprs = [INDEX_COL]
         if component.data_type in TIME_TYPES:
             exprs.append(
                 f'cast_time_types("{component.data_type.__name__}", {component.name}) '
