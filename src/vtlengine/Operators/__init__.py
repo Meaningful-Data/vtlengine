@@ -792,6 +792,12 @@ class Binary(Operator):
         if left_operand.data is None or right_operand.data is None:
             return empty_relation()
 
+        if left_operand.name == right_operand.name:
+            right_operand.data = duckdb_rename(
+                right_operand.data,
+                {right_operand.name: f"__r_{right_operand.name}__"},
+            )
+            right_operand.name = f"__r_{right_operand.name}__"
         result_data = duckdb_concat(left_operand.data, right_operand.data, on=[INDEX_COL])
 
         transformations = ["*"]
