@@ -1061,7 +1061,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.visit(node.thenOp if condition.value else node.elseOp)
 
         # Analysis for data component and dataset
-        t_dataset, e_dataset = self.generate_then_else_datasets(copy(condition))
+        t_dataset, e_dataset = self.generate_then_else_datasets(condition)
 
         self.condition_stack.append(t_dataset)
         thenOp = self.visit(node.thenOp)
