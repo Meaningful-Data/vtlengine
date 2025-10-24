@@ -140,11 +140,8 @@ class If(Operator):
                     op=cls.op,
                     type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
-            if not isinstance(left, Scalar) or not isinstance(right, Scalar):
-                nullable = condition.nullable
-            else:
-                if left.data_type == Null or right.data_type == Null:
-                    nullable = True
+            if left.data_type == Null or right.data_type == Null:
+                nullable = True
             if isinstance(left, DataComponent):
                 nullable |= left.nullable
             if isinstance(right, DataComponent):
