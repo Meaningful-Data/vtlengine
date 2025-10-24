@@ -1086,19 +1086,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.condition_stack = []
 
         for case in node.cases:
-            cond = self.visit(case.condition)
-
-            conditions.append(cond)
-            if isinstance(cond, Scalar):
-                then_result = self.visit(case.thenOp)
-                thenOps.append(then_result)
+            conditions.append(self.visit(case.condition))
+            if isinstance(conditions[-1], Scalar):
+                thenOps.append(self.visit(case.thenOp))
                 continue
 
-            t_dataset, e_dataset = self.generate_then_else_datasets(copy(cond))
+            t_dataset, e_dataset = self.generate_then_else_datasets(conditions[-1])
 
             self.condition_stack.append(t_dataset)
-            then_result = self.visit(case.thenOp)
-            thenOps.append(then_result)
+            thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
         self.condition_stack.append(e_dataset)
