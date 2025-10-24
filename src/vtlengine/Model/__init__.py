@@ -304,7 +304,7 @@ class Dataset:
                 for k, v in self.components.items()
                 if k not in other.components or v != other.components[k]
             }
-            print(f"Differences in components:")
+            print("Differences in components:")
             for k, (v1, v2) in diff_comps.items():
                 print(f"Component: {k}\nSELF: {v1}\nOTHER: {v2}\n")
             return False

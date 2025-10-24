@@ -1,4 +1,4 @@
-from typing import Dict, Union, Any
+from typing import Any, Dict, Union
 
 from vtlengine.AST.Grammar.tokens import (
     CHARSET_MATCH,

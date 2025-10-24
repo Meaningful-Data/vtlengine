@@ -1,7 +1,7 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import duckdb
 import pandas as pd
@@ -51,7 +51,6 @@ from vtlengine.DataTypes import (
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.duckdb.custom_functions.HR import NINF
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_merge,
@@ -74,6 +73,7 @@ from vtlengine.Model import (
     ScalarSet,
     ValueDomain,
 )
+from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
@@ -105,7 +105,6 @@ from vtlengine.Utils import (
     REGULAR_AGGREGATION_MAPPING,
     ROLE_SETTER_MAPPING,
     SET_MAPPING,
-    THEN_ELSE,
     UNARY_MAPPING,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -1103,7 +1102,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         return Case.analyze(conditions, thenOps, elseOp)
 
-    def generate_then_else_datasets(self, condition: Union[Dataset, DataComponent]) -> Tuple[Union[Dataset, DataComponent], Union[Dataset, DataComponent]]:
+    def generate_then_else_datasets(
+        self, condition: Union[Dataset, DataComponent]
+    ) -> Tuple[Union[Dataset, DataComponent], Union[Dataset, DataComponent]]:
         data = None
         comps = {}
         name = "result"
@@ -1129,10 +1130,7 @@ class InterpreterAnalyzer(ASTTemplate):
         e_data = empty_relation(name)
         merge_df = self.condition_stack[-1] if self.condition_stack else None
         if data is not None:
-            if merge_df:
-                indexes = merge_df.data.index
-            else:
-                indexes = data[data.notnull()].index
+            indexes = merge_df.data.index if merge_df else data[data.notnull()].index
 
             filtered_data = data[indexes]
             if isinstance(condition, Dataset):

@@ -32,7 +32,6 @@ from vtlengine.AST.Grammar.tokens import (
     SQRT,
     XOR,
 )
-from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.connection import con
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
@@ -55,6 +54,7 @@ from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_re
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]

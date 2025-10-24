@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, List, Union, Optional
+from typing import Any, List, Optional, Union
 
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -12,23 +12,21 @@ from vtlengine.DataTypes import (
 from vtlengine.duckdb.duckdb_utils import (
     duckdb_concat,
     duckdb_fillna,
+    duckdb_merge,
     duckdb_rename,
     duckdb_select,
-    empty_relation, duckdb_merge,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Role, Scalar, INDEX_COL, RelationProxy
+from vtlengine.Model import INDEX_COL, DataComponent, Dataset, RelationProxy, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-
 
 COND_COL = "__cond__"
 
 
 def component_assignment(
-        base: DuckDBPyRelation, op:
-        Union[DataComponent, Scalar],
-        result_name: str
+    base: DuckDBPyRelation, op: Union[DataComponent, Scalar], result_name: str
 ) -> Any:
     if isinstance(op, DataComponent):
         base[result_name] = op.data[op.data.columns[0]]
@@ -38,10 +36,10 @@ def component_assignment(
 
 
 def dataset_assignment(
-        base: DuckDBPyRelation,
-        op: Union[Dataset, Scalar],
-        ids: Optional[List[str]] = None,
-        measures: Optional[List[str]] = None
+    base: DuckDBPyRelation,
+    op: Union[Dataset, Scalar],
+    ids: Optional[List[str]] = None,
+    measures: Optional[List[str]] = None,
 ) -> DuckDBPyRelation:
     if isinstance(op, Dataset) and op.data is not None:
         base = duckdb_merge(base, op.data, on=ids, how="inner")
@@ -105,7 +103,6 @@ class If(Operator):
     def dataset_level_evaluation(
         cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
     ) -> Dataset:
-
         ids = condition.get_identifiers_names()
         cond_measure = condition.get_measures_names()[0]
         measures = result.get_measures_names()
@@ -312,7 +309,9 @@ class Case(Operator):
         return result
 
     @classmethod
-    def component_level_evaluation(cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, result_name: str) -> Any:
+    def component_level_evaluation(
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, result_name: str
+    ) -> Any:
         result_base = RelationProxy(conditions[-1].data.index)
         result_base = component_assignment(result_base, elseOp, result_name)
 
@@ -325,7 +324,9 @@ class Case(Operator):
         return RelationProxy(result_base.project(result_name))
 
     @classmethod
-    def dataset_level_evaluation(cls, result: Any, conditions: List[Any], thenOps: List[Any], elseOp: Any) -> Dataset:
+    def dataset_level_evaluation(
+        cls, result: Any, conditions: List[Any], thenOps: List[Any], elseOp: Any
+    ) -> Dataset:
         ids = result.get_identifiers_names()
         measures = result.get_measures_names()
         result_base = RelationProxy(conditions[-1].data.drop(measures))
@@ -333,7 +334,9 @@ class Case(Operator):
 
         for i in range(len(conditions)):
             thenOp = thenOps[i]
-            base = duckdb_rename(conditions[i].data, {conditions[i].get_measures_names()[0]: COND_COL})
+            base = duckdb_rename(
+                conditions[i].data, {conditions[i].get_measures_names()[0]: COND_COL}
+            )
             t_mask = base[COND_COL] == True
             t_base = dataset_assignment(base[t_mask], thenOp, ids, measures)
             result_base = duckdb_concat(result_base, t_base, on=ids)

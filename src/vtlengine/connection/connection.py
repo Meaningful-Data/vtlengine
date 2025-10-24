@@ -102,8 +102,8 @@ class ConnectionManager:
                 # Free generated objs to avoid mem fragmentation
                 objs = cls._connection.execute(
                     """
-                    SELECT table_name, table_type 
-                    FROM information_schema.tables 
+                    SELECT table_name, table_type
+                    FROM information_schema.tables
                     WHERE table_schema = 'main';
                     """
                 ).fetchall()

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Sequence, Union, List
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pandas as pd
 from duckdb import DuckDBPyRelation
@@ -649,7 +649,7 @@ class RelationProxy:
             [f'l."{lc}" IS NOT DISTINCT FROM r."{rc}"' for lc, rc in zip(l_cols, r_cols)]
         )
 
-        expr = f'(r.{INDEX_COL} IS NOT NULL) AS __mask__'
+        expr = f"(r.{INDEX_COL} IS NOT NULL) AS __mask__"
         joined = left.join(right, join_conditions, how="left").order(f"l.{INDEX_COL}")
         return RelationProxy(joined.project(expr))
 
