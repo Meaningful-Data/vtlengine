@@ -98,7 +98,7 @@ def duckdb_concat(
 
     # If index exists in either side but was not included (positional mode without index),
     # keep a coalesced index
-    if INDEX_COL in (set(left_cols) | set(right_cols)) and INDEX_COL not in union_cols:
+    if on and INDEX_COL in on and INDEX_COL not in union_cols:
         select_exprs.append(f'COALESCE(r."{INDEX_COL}", l."{INDEX_COL}") AS "{INDEX_COL}"')
 
     return RelationProxy(joined.project(", ".join(select_exprs)))
