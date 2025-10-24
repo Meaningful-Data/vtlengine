@@ -1061,13 +1061,13 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.visit(node.thenOp if condition.value else node.elseOp)
 
         # Analysis for data component and dataset
-        t_dataset, e_dataset = self.generate_then_else_datasets(condition)
+        then_ds, else_ds = self.generate_then_else_datasets(condition)
 
-        self.condition_stack.append(t_dataset)
+        self.condition_stack.append(then_ds)
         thenOp = self.visit(node.thenOp)
         self.condition_stack.pop()
 
-        self.condition_stack.append(e_dataset)
+        self.condition_stack.append(else_ds)
         elseOp = self.visit(node.elseOp)
         self.condition_stack.pop()
 
@@ -1076,7 +1076,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        e_dataset = empty_relation()
+        else_ds = empty_relation()
 
         if self.condition_stack is None:
             self.condition_stack = []
@@ -1087,13 +1087,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 thenOps.append(self.visit(case.thenOp))
                 continue
 
-            t_dataset, e_dataset = self.generate_then_else_datasets(conditions[-1])
+            then_ds, else_ds = self.generate_then_else_datasets(conditions[-1])
 
-            self.condition_stack.append(t_dataset)
+            self.condition_stack.append(then_ds)
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-        self.condition_stack.append(e_dataset)
+        self.condition_stack.append(else_ds)
         elseOp = self.visit(node.elseOp)
         self.condition_stack.pop()
 
