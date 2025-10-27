@@ -327,7 +327,7 @@ def empty_relation(
     if cols:
         df = pd.DataFrame(columns=list(cols) if isinstance(cols, (list, set)) else [cols])
         return RelationProxy(con.from_df(df))
-    return RelationProxy(con.from_df(pd.DataFrame()))
+    return RelationProxy(con.from_df(pd.DataFrame(columns=[INDEX_COL])))
 
 
 def get_col_type(rel: RelationProxy, col_name: str) -> DuckDBPyType:

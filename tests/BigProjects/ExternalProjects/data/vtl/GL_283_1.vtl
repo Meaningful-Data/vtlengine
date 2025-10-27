@@ -501,7 +501,7 @@ ENTTY_JN :=
 
 ENTTY := 
     ENTTY_JN
-        [calc HD_QRTR_CNTRY := substr(HD_QRTR_CD, 1, 2)];
+        [calc HD_QRTR_CNTRY := substr(cast(HD_QRTR_CD, string), 1, 2)];
 
 
 /***************************************************************************************

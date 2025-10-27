@@ -2,7 +2,7 @@ from copy import copy
 from typing import Any, Union
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import String
+from vtlengine.DataTypes import String, TimePeriod, Date
 from vtlengine.duckdb.duckdb_utils import null_counter
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar
@@ -43,8 +43,8 @@ class RoleSetter(Unary):
         if isinstance(operand, Scalar):
             if operand.value is None:
                 operand.value = "NULL"
-            elif operand.data_type == String:
-                operand.value = f"'{operand.value}'"
+            else:
+                operand.value = repr(operand.value)
             query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
             result.data = con.query(query)
         else:
