@@ -2695,24 +2695,25 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
-    def test_GL_463_1(self):
-        """
-        HIERARCHICAL RULSET: hierarchy
-        Dataset --> Dataset
-        Status: OK
-        Expression:
-
-        Description: Hierarchical Rulsets are Vertical validations apply to a
-        component over a set of data point.
-
-        Uses SDMX-CSV 1.0
-
-        Git Branch: #463.
-        Goal:
-        """
-
-        code = "GL_463_1"
-        number_inputs = 1
-        references_names = ["1", "2"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+    # TODO: Enable when pysdmx supports
+    # def test_GL_463_1(self):
+    #     """
+    #     HIERARCHICAL RULSET: hierarchy
+    #     Dataset --> Dataset
+    #     Status: OK
+    #     Expression:
+    #
+    #     Description: Hierarchical Rulsets are Vertical validations apply to a
+    #     component over a set of data point.
+    #
+    #     Uses SDMX-CSV 1.0
+    #
+    #     Git Branch: #463.
+    #     Goal:
+    #     """
+    #
+    #     code = "GL_463_1"
+    #     number_inputs = 1
+    #     references_names = ["1", "2"]
+    #
+    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
