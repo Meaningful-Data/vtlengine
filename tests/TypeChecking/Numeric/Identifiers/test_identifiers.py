@@ -92,6 +92,7 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    # TODO: raise a casting error
     def test_5(self):
         """
         ADD OPERATOR
@@ -140,6 +141,7 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    # TODO: raise a casting error
     def test_2(self):
         """
         SUBSTRACTION OPERATOR
@@ -188,6 +190,7 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    # TODO: raise a casting error
     def test_2(self):
         """
         MULTIPLICATION OPERATOR
@@ -236,6 +239,7 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    # TODO: raise a casting error
     def test_2(self):
         """
         DIVISION OPERATOR
@@ -280,6 +284,7 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    # TODO: raise a casting error
     def test_2(self):
         """
         MOD OPERATOR
