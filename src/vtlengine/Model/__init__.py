@@ -235,18 +235,6 @@ class DataComponent:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    @property
-    def df(self) -> pd.DataFrame:
-        if self.data is None:
-            return pd.DataFrame()
-        if isinstance(self.data, RelationProxy):
-            df = self.data.df(10)
-        else:
-            df = self.data.limit(10).df()
-            if INDEX_COL in df.columns:
-                df = df.set_index(INDEX_COL)
-        return df
-
 
 @dataclass
 class Dataset:
@@ -310,13 +298,15 @@ class Dataset:
 
         # Check components
         if self.components != other.components:
-            print("Components mismatch")
+            print("Components mismatch on dataset:", self.name)
             diff_comps = {
-                k: v
+                k: (v, other.components[k])
                 for k, v in self.components.items()
                 if k not in other.components or v != other.components[k]
             }
-            print(f"Differences in components: {diff_comps}")
+            print("Differences in components:")
+            for k, (v1, v2) in diff_comps.items():
+                print(f"Component: {k}\nSELF: {v1}\nOTHER: {v2}\n")
             return False
 
         # Check both data are None, they are equal
@@ -376,7 +366,7 @@ class Dataset:
     def delete_component(self, component_name: str) -> None:
         self.components.pop(component_name, None)
         if self.data is not None:
-            self.data.drop(columns=component_name)
+            self.data = self.data.drop(columns=component_name)
 
     def get_components(self) -> List[Component]:
         return list(self.components.values())
@@ -484,17 +474,6 @@ class Dataset:
             f"\ncomponents={list(self.components.keys())},"
             f"\ndata=\n{data})"
         )
-
-    @property
-    def df(self) -> pd.DataFrame:
-        if self.data is None:
-            return pd.DataFrame()
-        if isinstance(self.data, RelationProxy):
-            return self.data.df(30)
-        df = self.data.limit(30).df()
-        if INDEX_COL in df.columns:
-            df = df.set_index(INDEX_COL)
-        return df
 
     def _to_duckdb(self) -> DuckDBPyRelation:
         """

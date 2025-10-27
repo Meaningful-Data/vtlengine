@@ -54,6 +54,7 @@ from vtlengine.duckdb.duckdb_utils import duckdb_concat, duckdb_merge, duckdb_re
 from vtlengine.duckdb.to_sql_token import LEFT, MIDDLE, TO_SQL_TOKEN
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model.relation_proxy import INDEX_COL
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
@@ -791,7 +792,13 @@ class Binary(Operator):
         if left_operand.data is None or right_operand.data is None:
             return empty_relation()
 
-        result_data = duckdb_concat(left_operand.data, right_operand.data)
+        if left_operand.name == right_operand.name:
+            right_operand.data = duckdb_rename(
+                right_operand.data,
+                {right_operand.name: f"__r_{right_operand.name}__"},
+            )
+            right_operand.name = f"__r_{right_operand.name}__"
+        result_data = duckdb_concat(left_operand.data, right_operand.data, on=[INDEX_COL])
 
         transformations = ["*"]
         if left_operand.data_type in TIME_TYPES:
@@ -815,7 +822,7 @@ class Binary(Operator):
         )
         final_query = ", ".join(transformations)
         result_data = result_data.project(final_query)
-        result_component.data = result_data.project(result_component.name)
+        result_component.data = result_data.project(result_component.name, INDEX_COL)
         return result_component
 
     @classmethod
@@ -825,7 +832,7 @@ class Binary(Operator):
         result_component = cls.component_scalar_validation(component, scalar)
         comp_data = component.data if component.data is not None else empty_relation()
 
-        exprs = []
+        exprs = [INDEX_COL]
         if component.data_type in TIME_TYPES:
             exprs.append(
                 f'cast_time_types("{component.data_type.__name__}", {component.name}) '
@@ -840,9 +847,10 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
-        exprs.append(
-            apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_value)
-        )
+        left = f'"{component.name}"' if component_left else scalar_value
+        right = scalar_value if component_left else f'"{component.name}"'
+
+        exprs.append(apply_bin_op(cls, f'"{result_component.name}"', left, right))
         final_query = ", ".join(exprs)
         if "/" in final_query and scalar_value == 0:
             raise RunTimeError(code="2-1-15-6", op="/")

@@ -380,8 +380,6 @@ ANALYTIC_MAPPING = {
     RANK: Rank,
 }
 
-THEN_ELSE = {"then": "T", "else": "E"}
-
 JOIN_MAPPING = {
     INNER_JOIN: InnerJoin,
     LEFT_JOIN: LeftJoin,
