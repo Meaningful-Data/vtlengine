@@ -847,8 +847,11 @@ class Binary(Operator):
         if isinstance(scalar_value, str):
             scalar_value = f"'{scalar_value}'"
 
+        left = f'"{component.name}"' if component_left else scalar_value
+        right = scalar_value if component_left else f'"{component.name}"'
+
         exprs.append(
-            apply_bin_op(cls, f'"{result_component.name}"', f'"{component.name}"', scalar_value)
+            apply_bin_op(cls, f'"{result_component.name}"', left, right)
         )
         final_query = ", ".join(exprs)
         if "/" in final_query and scalar_value == 0:
