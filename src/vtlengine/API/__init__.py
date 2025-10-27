@@ -207,9 +207,7 @@ def run(
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    external_routines: Optional[Union[str, Path, List[Union[str, Path]]]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -270,7 +268,7 @@ def run(
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None)
 
-        external_routines: String or Path, or List of Dicts, Strings or Paths of the \
+        external_routines: String or Path, or List of Strings or Paths of the \
         external routines SQL files. (default: None)
 
         time_period_output_format: String with the possible values \

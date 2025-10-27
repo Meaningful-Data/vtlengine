@@ -286,7 +286,7 @@ ext_params_OK = [(filepath_sql / "1.sql")]
 ext_params_wrong = [
     (filepath_json / "DS_1.json", "Input must be a sql file"),
     (5, "Input invalid. Input must be a sql file."),
-    (filepath_sql / "2.sql", "Input invalid. Input does not exist"),
+    (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
 ]
 
 params_semantic = [
