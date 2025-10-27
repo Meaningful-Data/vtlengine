@@ -198,7 +198,7 @@ class DataLoadTest(DataLoadHelper):
         string_to_compare = "Deshmoret e 4 Shkurtit, Godina nr. 6, Kati II"
         dataset_input = self.LoadInputs(code=code, number_inputs=number_inputs)["DS_1"]
 
-        assert dataset_input.df["OBS_VALUE"][0] == string_to_compare
+        assert dataset_input.data.df()["OBS_VALUE"][0] == string_to_compare
 
     def test_12(self):
         """
