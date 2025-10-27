@@ -19,7 +19,7 @@
           "name": "Me_2",
           "type": "Integer",
           "role": "Measure",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

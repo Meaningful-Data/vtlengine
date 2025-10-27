@@ -385,7 +385,6 @@ class Case(Operator):
                 (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
                 for thenOp in ops
             )
-            nullable |= any(condition.nullable for condition in conditions)
 
             data_type = ops[0].data_type
             for op in ops[1:]:
