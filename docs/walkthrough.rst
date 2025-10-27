@@ -25,10 +25,10 @@ Any action with VTL requires the following elements as input:
   providing the information, the VTL Engine is implementing a JSON format that can be found here.
   Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have
 * **External routines**: The VTL Engine allows using SQL (SQLite) with the eval operator. Can be
-  provided as a string with the SQL or as a path object to an SQL file. Its default value is `None`,
+  provided as a string with the SQL or as a path object, or a List of them, to an SQL file. Its default value is `None`,
   which shall be used if external routines are not applicable to the VTL script.
 * **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
-  operator. Can be provided as a dictionary or as a path to a JSON file. Its default value
+  operator. Can be provided as a dictionary or as a path, or a List of them, to a JSON file. Its default value
   is `None`, which shall be used if value domains are not applicable to the VTL script.
 * **Scalar values**: The VTL Engine now allows the use of scalar values to be used as input in the VTL script. These scalar values can be provided as a dictionary, where the keys are the names of the scalar values and the values are the scalar values themselves. The default value is `None`, which shall be used if scalar values are not applicable to the VTL script.
 * **Output folder**: The VTL Engine allows the user to specify an output folder where the results of
