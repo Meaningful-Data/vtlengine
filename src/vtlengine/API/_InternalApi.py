@@ -112,6 +112,7 @@ def _load_dataset_from_structure(
     if "scalars" in structures:
         for scalar_json in structures["scalars"]:
             scalar_name = scalar_json["name"]
+            check_key("type", SCALAR_TYPES.keys(), scalar_json["type"])
             scalar = Scalar(
                 name=scalar_name,
                 data_type=SCALAR_TYPES[scalar_json["type"]],
