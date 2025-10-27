@@ -850,9 +850,7 @@ class Binary(Operator):
         left = f'"{component.name}"' if component_left else scalar_value
         right = scalar_value if component_left else f'"{component.name}"'
 
-        exprs.append(
-            apply_bin_op(cls, f'"{result_component.name}"', left, right)
-        )
+        exprs.append(apply_bin_op(cls, f'"{result_component.name}"', left, right))
         final_query = ", ".join(exprs)
         if "/" in final_query and scalar_value == 0:
             raise RunTimeError(code="2-1-15-6", op="/")
