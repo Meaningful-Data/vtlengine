@@ -206,8 +206,10 @@ def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
     datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -265,9 +267,11 @@ def run(
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
 
-        value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None)
 
-        external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path, or List of Dicts, Strings or Paths of the \
+        external routines SQL files. (default: None)
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -303,10 +307,20 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        vd = load_value_domains(value_domains)
+        if isinstance(value_domains, List):
+            vd = {}
+            for item in value_domains:
+                vd.update(load_value_domains(item))
+        else:
+            vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        ext_routines = load_external_routines(external_routines)
+        if isinstance(external_routines, List):
+            ext_routines = {}
+            for item in external_routines:
+                ext_routines.update(load_external_routines(item))
+        else:
+            ext_routines = load_external_routines(external_routines)
 
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
@@ -348,8 +362,10 @@ def run_sdmx(  # noqa: C901
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[str, Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -388,9 +404,11 @@ def run_sdmx(  # noqa: C901
 
         mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
 
-        value_domains: Dict or Path of the value domains JSON files. (default:None)
+        value_domains: Dict or Path, or List of Dicts or Paths of the \
+        value domains JSON files. (default:None)
 
-        external_routines: String or Path of the external routines SQL files. (default: None)
+        external_routines: String or Path, or List of Dicts, Strings or Paths of the \
+        external routines SQL files. (default: None)
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \

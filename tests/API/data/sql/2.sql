@@ -1,0 +1,1 @@
+SELECT Id_1, Me_1 FROM DS_1 WHERE Me_1 > 15;

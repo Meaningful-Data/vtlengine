@@ -1880,3 +1880,70 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
+
+
+def test_with_multiple_vd_and_ext_routines():
+    script = """
+            DS_r <- DS_1 * 10;
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+
+    datapoints = {"DS_1": data_df}
+
+    external_routines = [
+        filepath_sql / "1.sql",
+        filepath_sql / "2.sql",
+        {
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS cnt FROM DS_1 GROUP BY Id_1 HAVING COUNT(*) > 10;",
+        },
+    ]
+
+    value_domains = [
+        filepath_ValueDomains / "VD_1.json",
+        filepath_ValueDomains / "VD_2.json",
+        {"name": "Countries_NA_Sample", "setlist": ["US", "CA"], "type": "String"},
+    ]
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=value_domains,
+        external_routines=external_routines,
+    )
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component(
+                    name="Id_1",
+                    data_type=DataTypes.Integer,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
+                "Me_1": Component(
+                    name="Me_1",
+                    data_type=DataTypes.Number,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
+            },
+            data=pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [100.0, 200.0, 300.0]}),
+        )
+    }
+
+    assert run_result == reference
