@@ -353,7 +353,7 @@ class Date(TimeInterval):
 
     @property
     def sql_type(self) -> str:
-        return "DATE"
+        return "VARCHAR"
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:

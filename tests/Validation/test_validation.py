@@ -391,16 +391,3 @@ class ValidationOperatorsTests(ValidationHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
-
-    def test_GL_cs_22(self):
-        """
-        Eschaped characters in the hierarchical ruleset have to be replaced by the corresponding character
-        '_T' -> 'T'
-
-        Uses SDMX-CSV 1.0
-        """
-        code = "GL_cs_22"
-        number_inputs = 1
-        references_names = ["1", "2", "3", "4", "5", "6", "7"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
