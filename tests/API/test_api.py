@@ -1881,51 +1881,69 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
 
-
 def test_with_multiple_vd_and_ext_routines():
-    script = """
-            DS_r <- DS_1 * 10;
+        script = """
+            DS_r <- DS_1 [ calc Me_2:= Me_1 in { 0, 3, 6, 12 } ];
         """
 
-    data_structures = {
-        "datasets": [
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+
+        data_df = pd.DataFrame({"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]})
+
+        datapoints = {"DS_1": data_df}
+
+        external_routines = [
+            filepath_sql / "1.sql",
+            filepath_sql / "2.sql",
             {
-                "name": "DS_1",
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                ],
+                "name": "SQL_3",
+                "query": "SELECT Id_1, COUNT(*) AS cnt FROM DS_1 GROUP BY Id_1 HAVING COUNT(*) > 10;"
             }
         ]
-    }
 
-    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [10, 20, 30]})
+        value_domains = [
+            {
+                "name": "Countries",
+                "setlist": [
+                    "AT",
+                    "BE",
+                    "CY"
+                ],
+                "type": "String"
+            },
+            {
+                "name": "Countries_EU_Sample",
+                "setlist": [
+                    "DE",
+                    "FR",
+                    "IT"
+                ],
+                "type": "String"
+            },
+            filepath_ValueDomains / "VD_1.json",
+            filepath_ValueDomains / "VD_2.json",
+        ]
 
-    datapoints = {"DS_1": data_df}
+        run_result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
 
-    external_routines = [
-        filepath_sql / "1.sql",
-        filepath_sql / "2.sql",
-        {
-            "name": "SQL_3",
-            "query": "SELECT Id_1, COUNT(*) AS cnt FROM DS_1 GROUP BY Id_1 HAVING COUNT(*) > 10;",
-        },
-    ]
-
-    value_domains = [
-        filepath_ValueDomains / "VD_1.json",
-        filepath_ValueDomains / "VD_2.json",
-        {"name": "Countries_NA_Sample", "setlist": ["US", "CA"], "type": "String"},
-    ]
-
-    run_result = run(
-        script=script,
-        data_structures=data_structures,
-        datapoints=datapoints,
-        value_domains=value_domains,
-        external_routines=external_routines,
-    )
-    reference = {
+        reference = {
         "DS_r": Dataset(
             name="DS_r",
             components={
@@ -1935,15 +1953,26 @@ def test_with_multiple_vd_and_ext_routines():
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
+                "Id_2": Component(
+                    name="Id_2",
+                    data_type=DataTypes.String,
+                    role=Role.IDENTIFIER,
+                    nullable=False,
+                ),
                 "Me_1": Component(
                     name="Me_1",
                     data_type=DataTypes.Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
+                "Me_2": Component(
+                    name="Me_2",
+                    data_type=DataTypes.Boolean,
+                    role=Role.MEASURE,
+                    nullable=True,
+                ),
             },
-            data=pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [100.0, 200.0, 300.0]}),
+            data=pd.DataFrame({"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0.0, 4.0, 9.0], "Me_2": [True, False, False]}),
         )
     }
-
-    assert run_result == reference
+        assert run_result == reference
