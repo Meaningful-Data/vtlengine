@@ -26,10 +26,12 @@ Any action with VTL requires the following elements as input:
   Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have
 * **External routines**: The VTL Engine allows using SQL (SQLite) with the eval operator. Can be
   provided as a string with the SQL or as a path object, or a List of them, to an SQL file. Its default value is `None`,
-  which shall be used if external routines are not applicable to the VTL script.
+  which shall be used if external routines are not applicable to the VTL script. You can find an example at
+    the :ref:`example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
 * **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
   operator. Can be provided as a dictionary or as a path, or a List of them, to a JSON file. Its default value
   is `None`, which shall be used if value domains are not applicable to the VTL script.
+  You can find an example at the :ref:`example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
 * **Scalar values**: The VTL Engine now allows the use of scalar values to be used as input in the VTL script. These scalar values can be provided as a dictionary, where the keys are the names of the scalar values and the values are the scalar values themselves. The default value is `None`, which shall be used if scalar values are not applicable to the VTL script.
 * **Output folder**: The VTL Engine allows the user to specify an output folder where the results of
   the VTL script execution will be saved. This is useful for scripts that generate datasets or scalar
@@ -457,5 +459,85 @@ Returns:
 .. code-block:: text
 
     30
+
+================================================================
+Example 6: Run with multiple Value Domains and External Routines
+================================================================
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+    filepath_ValueDomains = Path(__file__).parent / "VD_2.json"
+    filepath_external_routines = Path(__file__).parent / "SQL_4.sql"
+    def main():
+        script = """
+                    DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
+                    DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
+                    DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset { identifier<integer> Id_1,
+                    measure<number> Me_1});
+                    DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset { identifier<integer> Id_1,
+                    measure<number> Me_1});
+                """
+
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+
+        data_df = pd.DataFrame(
+            {"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]}
+        )
+
+        datapoints = {"DS_1": data_df}
+
+        external_routines = [{
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
+        },
+        filepath_external_routines]
+
+
+        value_domains = [
+        {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"},
+        filepath_ValueDomains]
+
+        run_result = run(
+            script=script,
+            data_structures=data_structures,
+            datapoints=datapoints,
+            value_domains=value_domains,
+            external_routines=external_routines,
+        )
+        print(run_result)
+
+Returns:
+
+.. csv-table::
+    :file: _static/DS_r_run_with_multiple_vd_and_ext.csv
+    :header-rows: 1
+
+.. csv-table::
+    :file: _static/DS_r2_run_with_multiple_vd_and_ext.csv
+    :header-rows: 1
+
+.. csv-table::
+    :file: _static/DS_r3_run_with_multiple_vd_and_ext.csv
+    :header-rows: 1
+
+.. csv-table::
+    :file: _static/DS_r4_run_with_multiple_vd_and_ext.csv
+    :header-rows: 1
 
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_

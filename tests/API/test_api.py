@@ -1884,8 +1884,11 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
 
 def test_with_multiple_vd_and_ext_routines():
     script = """
-            DS_r <- DS_1 [ calc Me_2:= Me_1 in { 0, 3, 6, 12 } ];
-        """
+      DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
+      DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
+      DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+    """
 
     data_structures = {
         "datasets": [
@@ -1907,18 +1910,15 @@ def test_with_multiple_vd_and_ext_routines():
     datapoints = {"DS_1": data_df}
 
     external_routines = [
-        filepath_sql / "1.sql",
-        filepath_sql / "2.sql",
         {
             "name": "SQL_3",
-            "query": "SELECT Id_1, COUNT(*) AS cnt FROM DS_1 GROUP BY Id_1 HAVING COUNT(*) > 10;",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
         },
+        filepath_sql / "SQL_4.sql",
     ]
 
     value_domains = [
-        {"name": "Countries", "setlist": ["AT", "BE", "CY"], "type": "String"},
         {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"},
-        filepath_ValueDomains / "VD_1.json",
         filepath_ValueDomains / "VD_2.json",
     ]
 
@@ -1934,39 +1934,65 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r": Dataset(
             name="DS_r",
             components={
-                "Id_1": Component(
-                    name="Id_1",
-                    data_type=DataTypes.Integer,
-                    role=Role.IDENTIFIER,
-                    nullable=False,
-                ),
-                "Id_2": Component(
-                    name="Id_2",
-                    data_type=DataTypes.String,
-                    role=Role.IDENTIFIER,
-                    nullable=False,
-                ),
-                "Me_1": Component(
-                    name="Me_1",
-                    data_type=DataTypes.Number,
-                    role=Role.MEASURE,
-                    nullable=True,
-                ),
-                "Me_2": Component(
-                    name="Me_2",
-                    data_type=DataTypes.Boolean,
-                    role=Role.MEASURE,
-                    nullable=True,
-                ),
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
                     "Id_1": [2012, 2012, 2012],
                     "Id_2": ["AT", "DE", "FR"],
                     "Me_1": [0.0, 4.0, 9.0],
-                    "Me_2": [True, False, False],
+                    "Me_2": [False, False, False],
                 }
             ),
-        )
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012, 2012, 2012],
+                    "Id_2": ["AT", "DE", "FR"],
+                    "Me_1": [0.0, 4.0, 9.0],
+                    "Me_2": [False, False, False],
+                }
+            ),
+        ),
+        "DS_r3": Dataset(
+            name="DS_r3",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012],
+                    "Me_1": [3.0],
+                }
+            ),
+        ),
+        "DS_r4": Dataset(
+            name="DS_r4",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012, 2012, 2012],
+                    "Me_1": [0.0, 4.0, 9.0],
+                }
+            ),
+        ),
     }
-    assert run_result == reference
+    assert run_result["DS_r"] == reference["DS_r"]
+    assert run_result["DS_r2"] == reference["DS_r2"]
+    assert run_result["DS_r3"] == reference["DS_r3"]
+    assert run_result["DS_r4"] == reference["DS_r4"]

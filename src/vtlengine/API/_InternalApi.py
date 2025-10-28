@@ -378,9 +378,9 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
     """
     external_routines = {}
     if isinstance(input, dict):
-        for name, query in input.items():
-            ext_routine = ExternalRoutine.from_sql_query(name, query)
-            external_routines[ext_routine.name] = ext_routine
+        # for name, query in input.items():
+        ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
+        external_routines[ext_routine.name] = ext_routine
         return external_routines
     if not isinstance(input, Path):
         raise Exception("Input invalid. Input must be a sql file.")
@@ -421,8 +421,10 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
         raise Exception("Input does not exist")
     if input.suffix != ".sql":
         raise Exception("Input must be a sql file")
+    routine_name = input.stem
     with open(input, "r") as f:
-        ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix(".sql"), f.read())
+        query = f.read()
+    ext_rout = ExternalRoutine.from_sql_query(routine_name, query)
     return ext_rout
 
 
