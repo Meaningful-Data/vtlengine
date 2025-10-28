@@ -11,6 +11,7 @@ from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, TimePeriodHandl
 
 def load_time_checks(con: DuckDBPyConnection) -> None:
     # Register the functions with DuckDB
+    con.create_function("check_date", check_date, return_type=duckdb.type("VARCHAR"))
     con.create_function("check_duration", check_duration, return_type=duckdb.type("VARCHAR"))
     con.create_function("check_timeinterval", check_time, return_type=duckdb.type("VARCHAR"))
     con.create_function("check_timeperiod", check_time_period, return_type=duckdb.type("VARCHAR"))
@@ -23,12 +24,31 @@ def dates_to_string(date1: date, date2: date) -> str:
 
 
 date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d"
+
+
+def check_date(value: str, ds_name: str, col_name: str) -> str:
+    value = value.replace(" ", "")
+    date_result = re.fullmatch(date_pattern, value)
+    if date_result is not None:
+        try:
+            dt = datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(
+                f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Date."
+            )
+        return dt.strftime("%Y-%m-%d")
+    raise ValueError(
+        f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Date."
+    )
+
+
+
 year_pattern = r"\d{4}"
 month_pattern = r"\d{4}[-][0-1]?\d"
 time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
 
 
-def check_time(value: str) -> str:
+def check_time(value: str, ds_name: str, col_name: str) -> str:
     value = value.replace(" ", "")
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
@@ -45,10 +65,12 @@ def check_time(value: str) -> str:
     if time_result is not None:
         time_list = value.split("/")
         if time_list[0] > time_list[1]:
-            raise ValueError("Start date is greater than end date.")
+            raise ValueError(
+                f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Time."
+            )
         return value
     raise ValueError(
-        "Time is not in the correct format. Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM."
+        f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Time."
     )
 
 
@@ -71,7 +93,7 @@ further_options_period_pattern = (
 )
 
 
-def check_time_period(value: Union[str, int, date]) -> str:
+def check_time_period(value: Union[str, int, date], ds_name: str, col_name: str) -> str:
     if isinstance(value, (int, date)):
         value = str(value)
 
@@ -112,16 +134,20 @@ def check_time_period(value: Union[str, int, date]) -> str:
         day = datetime.strptime(value, "%Y-%m-%d")
         day_period = day.strftime("%YD%-j")
         return day_period
-    raise ValueError
+    raise ValueError(
+        f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Time_Period."
+    )
 
 
-def iso_duration_to_indicator(value: str) -> str:
+def iso_duration_to_indicator(value: str, ds_name: str, col_name: str) -> str:
     pattern = r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$"
     match = re.match(pattern, value)
     if not match:
         if value in PERIOD_IND_MAPPING:
             return value
-        raise ValueError(f"Not valid Duration format: {value}")
+        raise ValueError(
+            f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Duration."
+        )
 
     years, months, days = match.groups()
     years = int(years) if years else 0
@@ -135,14 +161,15 @@ def iso_duration_to_indicator(value: str) -> str:
     elif days > 0:
         return "D"
     else:
-        raise ValueError(f"Invalid Duration: {value}")
+        raise ValueError(
+            f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Duration."
+        )
 
 
-def check_duration(value: str) -> str:
-    indicator = iso_duration_to_indicator(value)
+def check_duration(value: str, ds_name: str, col_name: str) -> str:
+    indicator = iso_duration_to_indicator(value, ds_name, col_name)
     if indicator not in PERIOD_IND_MAPPING:
         raise ValueError(
-            f"Duration {value} converted to {indicator} is not a valid duration. "
-            f"Valid durations are: {', '.join(PERIOD_IND_MAPPING)}."
+            f"On Dataset {ds_name} loading: not possible to cast column {col_name} to Duration."
         )
     return value

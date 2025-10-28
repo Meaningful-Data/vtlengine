@@ -6,12 +6,12 @@ from _duckdb import Error
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod, Date
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, RelationProxy
 
 load_time_checks(con)
 
@@ -122,15 +122,14 @@ def _validate_duckdb(
     exprs = []
     for col, comp in components.items():
         dtype = comp.data_type
-        if dtype in [Duration, TimeInterval, TimePeriod]:
+        if dtype in [Duration, TimeInterval, TimePeriod, Date]:
             check_method = f"check_{dtype.__name__}".lower()
-            exprs.append(f'{check_method}("{col}") AS "{col}"')
+            exprs.append(f'{check_method}("{col}", {repr(dataset_name)}, {repr(col)}) AS "{col}"')
         else:
             exprs.append(f'"{col}"')
 
     final_query = ", ".join(exprs)
-    data = data.project(final_query)
-
+    data = RelationProxy(data.project(final_query))
     return data
 
 

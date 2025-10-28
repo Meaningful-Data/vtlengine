@@ -209,7 +209,7 @@ def date_diff_duck(x: Union[str, date], y: Union[str, date]) -> Optional[int]:
     return abs((y - x).days)  # type: ignore[operator]
 
 
-def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
+def date_add_duck(value: Union[date, str], period: str, shift: int) -> str:
     """
     Adds a specified period and shift to a date or time value.
     Args:
@@ -242,7 +242,7 @@ def date_add_duck(value: Union[date, str], period: str, shift: int) -> date:
             year=new_year, month=new_month, day=min(date_value.day, last_day)
         )
     new_date = date(new_date.year, new_date.month, new_date.day)
-    return new_date
+    return new_date.__str__()
 
 
 def time_agg_duck(
