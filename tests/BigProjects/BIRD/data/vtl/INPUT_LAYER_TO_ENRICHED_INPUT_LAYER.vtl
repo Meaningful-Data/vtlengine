@@ -118,7 +118,11 @@ CMMTMNT_RCVD_E <- CMMTMNT_RCVD ;
 *       Module P_CNTRPRTS_E_1
 *******************************************************************************/
 P_CNTRPRTS_E_1.CNTRPRTS_E_JN := inner_join ( CNTRPRTS , D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD , CRDT_ASSSSMNT_SPLT.ECA_CNTRPRTS ) ; 
-CNTRPRTS_E <- P_CNTRPRTS_E_1.CNTRPRTS_E_JN [ calc INSTTTNL_SCTR_FINREP := D_INSTTTNL_SCTR_FINREP ( INSTTTNL_SCTR , INTRNTNL_ORGNSTN ) ] [ calc CNTRY_FINREP := D_CNTRY_FINREP ( CNTRY , INTRNTNL_ORGNSTN ) ] [ calc IS_ELGBL_CNTRPRTY := G_IS_ELGBL_CNTRPRTY_AC ( INSTTTNL_SCTR ) ] ; 
+CNTRPRTS_E <- P_CNTRPRTS_E_1.CNTRPRTS_E_JN [calc INSTTTNL_SCTR_FINREP := D_INSTTTNL_SCTR_FINREP (
+                                               cast(INSTTTNL_SCTR, string), INTRNTNL_ORGNSTN
+                                           )]
+                                           [calc CNTRY_FINREP := D_CNTRY_FINREP (cast(CNTRY, string), INTRNTNL_ORGNSTN)]
+                                           [calc IS_ELGBL_CNTRPRTY := G_IS_ELGBL_CNTRPRTY_AC (INSTTTNL_SCTR)] ;
 /*******************************************************************************
 *       Module P_CNTRY_E
 *******************************************************************************/
