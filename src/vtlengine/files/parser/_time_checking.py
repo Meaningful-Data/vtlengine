@@ -42,7 +42,6 @@ def check_date(value: str, ds_name: str, col_name: str) -> str:
     )
 
 
-
 year_pattern = r"\d{4}"
 month_pattern = r"\d{4}[-][0-1]?\d"
 time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"

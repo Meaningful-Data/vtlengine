@@ -6,7 +6,6 @@ from typing import Optional
 
 import duckdb
 from duckdb.functional import FunctionNullHandling
-from duckdb.typing import DATE
 
 # import psutil
 

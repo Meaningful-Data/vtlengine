@@ -2,7 +2,6 @@ from copy import copy
 from typing import Any, Union
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import String, TimePeriod, Date
 from vtlengine.duckdb.duckdb_utils import null_counter
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import DataComponent, Role, Scalar

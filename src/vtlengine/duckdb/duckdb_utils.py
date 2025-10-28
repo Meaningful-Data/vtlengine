@@ -316,9 +316,7 @@ def duration_handler(col: str, reverse: bool = False) -> str:
     return expr
 
 
-def empty_relation(
-    cols: Optional[Union[str, List[str]]] = None
-) -> RelationProxy:
+def empty_relation(cols: Optional[Union[str, List[str]]] = None) -> RelationProxy:
     """
     Returns an empty DuckDB relation.
 
