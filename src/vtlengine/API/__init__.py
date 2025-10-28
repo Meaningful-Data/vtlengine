@@ -406,9 +406,13 @@ def run_sdmx(  # noqa: C901
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None)
+        It is passed as an object, that can be read from a Path or from a dictionary. \
+        Furthermore, a list of those objects can be passed.
 
         external_routines: String or Path, or List of Dicts, Strings or Paths of the \
         external routines SQL files. (default: None)
+        It is passed as an object, that can be read from a Path or from a dictionary. \
+        Furthermore, a list of those objects can be passed.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \

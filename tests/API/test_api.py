@@ -281,11 +281,14 @@ load_datasets_with_data_and_wrong_inputs = [
     (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
 ]
 
-ext_params_OK = [(filepath_sql / "1.sql")]
+ext_params_OK = [(filepath_sql / "1.json")]
 
 ext_params_wrong = [
-    (filepath_json / "DS_1.json", "Input must be a sql file"),
-    (5, "Input invalid. Input must be a sql file."),
+    (
+        filepath_json / "DS_1.json",
+        "Invalid format for ValueDomain. Requires name, type and setlist.",
+    ),
+    (5, "Input invalid. Input must be a json file."),
     (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
 ]
 
@@ -294,7 +297,7 @@ params_semantic = [
         filepath_VTL / "1.vtl",
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         filepath_ValueDomains / "VD_1.json",
-        filepath_sql / "1.sql",
+        filepath_sql / "1.json",
     )
 ]
 
@@ -304,7 +307,7 @@ params_run = [
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
         filepath_ValueDomains / "VD_1.json",
-        filepath_sql / "1.sql",
+        filepath_sql / "1.json",
     )
 ]
 
@@ -562,7 +565,12 @@ def test_load_external_routine(input):
     reference = {
         "1": ExternalRoutine(
             dataset_names=["BNFCRS_TRNSFRS", "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4"],
-            query="SELECT\n    date(DT_RFRNC) as DT_RFRNC,\n    PRSPCTV_ID,\n    INSTRMNT_UNQ_ID,\n    BNFCRS_CNTRPRTY_ID,\n    TRNSFR_CNTRPRTY_ID,\n    BNFCR_ID,\n    TRNSFR_ID\nFROM\n    BNFCRS_TRNSFRS\nWHERE\n    INSTRMNT_UNQ_ID NOT IN(\n\t\tSELECT\n\t\t\tINSTRMNT_UNQ_ID\n\t\tFROM\n\t\t\tBNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);\n",
+            query="SELECT date(DT_RFRNC) as DT_RFRNC, PRSPCTV_ID, "
+            "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
+            "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
+            "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
+            "IN(SELECT INSTRMNT_UNQ_ID FROM "
+            "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
             name="1",
         )
     }
@@ -1914,7 +1922,7 @@ def test_with_multiple_vd_and_ext_routines():
             "name": "SQL_3",
             "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
         },
-        filepath_sql / "SQL_4.sql",
+        filepath_sql / "SQL_4.json",
     ]
 
     value_domains = [
