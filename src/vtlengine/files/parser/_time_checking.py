@@ -11,7 +11,7 @@ def check_date(value: str) -> str:
     Check if the date is in the correct format.
     """
     # Remove all whitespaces
-    value = value.replace(" ", "")
+    value = value.strip()
     try:
         if len(value) == 9 and value[7] == "-":
             value = value[:-1] + "0" + value[-1]
@@ -49,7 +49,7 @@ time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
 
 
 def check_time(value: str) -> str:
-    value = value.replace(" ", "")
+    value = value.strip()
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
         date1_time = datetime.strptime(value, "%Y")
@@ -94,7 +94,7 @@ further_options_period_pattern = (
 def check_time_period(value: str) -> str:
     if isinstance(value, int):
         value = str(value)
-    value = value.replace(" ", "")
+    value = value.strip()
 
     match = re.fullmatch(r"^(\d{4})-(\d{2})$", value)
     if match:
