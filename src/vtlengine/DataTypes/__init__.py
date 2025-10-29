@@ -3,15 +3,15 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
 
-from vtlengine.DataTypes.TimeHandling import (
-    check_max_date,
-    date_to_period_str,
-    str_period_to_date,
-)
 from vtlengine.DataTypes._time_checking import (
     check_date,
     check_time,
     check_time_period,
+)
+from vtlengine.DataTypes.TimeHandling import (
+    check_max_date,
+    date_to_period_str,
+    str_period_to_date,
 )
 from vtlengine.Exceptions import SemanticError
 
