@@ -402,7 +402,6 @@ class ScalarSet:
 
     @values.setter
     def values(self, new_values: List[Union[int, float, str, bool]]) -> None:
-        casted_values = []
         for value in new_values:
             if not self.data_type.check(value):
                 raise InputValidationException(
@@ -412,7 +411,7 @@ class ScalarSet:
                     op_type=self.__class__.__name__,
                     name=""
                 )
-        self._values = casted_values
+        self._values = new_values
 
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
