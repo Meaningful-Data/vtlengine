@@ -95,8 +95,7 @@ further_options_period_pattern = (
 def check_time_period(value: Union[str, int, date], ds_name: str, col_name: str) -> str:
     if isinstance(value, (int, date)):
         value = str(value)
-
-    value = value.replace(" ", "")
+    value = value.strip()
 
     match = re.fullmatch(r"^(\d{4})-(\d{2})$", value)
     if match:
@@ -166,6 +165,7 @@ def iso_duration_to_indicator(value: str, ds_name: str, col_name: str) -> str:
 
 
 def check_duration(value: str, ds_name: str, col_name: str) -> str:
+    value = value.strip()
     indicator = iso_duration_to_indicator(value, ds_name, col_name)
     if indicator not in PERIOD_IND_MAPPING:
         raise ValueError(
