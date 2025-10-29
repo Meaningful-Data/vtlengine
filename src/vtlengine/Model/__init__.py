@@ -403,7 +403,7 @@ class ScalarSet:
     @values.setter
     def values(self, new_values: List[Union[int, float, str, bool]]) -> None:
         for value in new_values:
-            if not self.data_type.check(value):
+            if self.data_type and not self.data_type.check(value):
                 raise InputValidationException(
                     code="0-1-2-7",
                     value=value,
