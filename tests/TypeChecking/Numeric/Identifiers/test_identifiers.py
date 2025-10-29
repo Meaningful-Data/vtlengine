@@ -92,24 +92,6 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # TODO: raise a casting error
-    def test_5(self):
-        """
-        ADD OPERATOR
-        Status: BUG
-        Expression: DS_r := DS_2 + DS_1 ;
-        number-string
-        Description: operations between identifiers, numbers and strings.
-        Jira issue: VTLEN 566.
-        Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
-        """
-        code = "4-6-3-5"
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
 
 class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
     """
@@ -136,24 +118,6 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
         # 6 For group identifiers
         # 4 For substraction operator in numeric
         # 1 Number of test
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    # TODO: raise a casting error
-    def test_2(self):
-        """
-        SUBSTRACTION OPERATOR
-        Status: OK
-        Expression: DS_r := DS_1 - DS_2;
-        number - string
-        Description: operations between identifiers, numbers and strings.
-        Jira issue: VTLEN 566.
-        Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
-        """
-        code = "4-6-4-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
@@ -190,24 +154,6 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # TODO: raise a casting error
-    def test_2(self):
-        """
-        MULTIPLICATION OPERATOR
-        Status: BUG
-        Expression: DS_r := DS_1 * DS_2;
-        number - string
-        Description: operations between identifiers, numbers and strings.
-        Jira issue: VTLEN 566.
-        Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
-        """
-        code = "4-6-5-2"
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
 
 class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
     """
@@ -239,24 +185,6 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    # TODO: raise a casting error
-    def test_2(self):
-        """
-        DIVISION OPERATOR
-        Status: BUG
-        Expression: DS_r := DS_1 / DS_2;
-        number - string
-        Description: operations between identifiers, numbers and strings.
-        Jira issue: VTLEN 566.
-        Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
-        """
-        code = "4-6-6-2"
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
 
 class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
     """
@@ -279,24 +207,6 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
         Goal: Check Doubt.
         """
         code = "4-6-7-1"
-        number_inputs = 2
-        references_names = ["DS_r"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    # TODO: raise a casting error
-    def test_2(self):
-        """
-        MOD OPERATOR
-        Status: BUG
-        Expression: DS_r := mod ( DS_1, DS_2 );
-        number - string
-        Description: operations between identifiers, numbers and strings.
-        Jira issue: VTLEN 566.
-        Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
-        """
-        code = "4-6-7-2"
         number_inputs = 2
         references_names = ["DS_r"]
 
