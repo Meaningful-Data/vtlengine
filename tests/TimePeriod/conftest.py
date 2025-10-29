@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.API._InternalApi import load_datasets_with_data
-from vtlengine.Exceptions import SemanticError, DataLoadError
+from vtlengine.Exceptions import DataLoadError
 
 
 def load_datasets(base_path, code, folder_type):
