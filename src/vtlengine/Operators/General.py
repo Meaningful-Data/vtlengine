@@ -159,7 +159,7 @@ class Eval(Unary):
         for comp_name in component_names:
             if comp_name not in output.components:
                 raise SemanticError(
-                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=output.name
+                    "1-1-1-10", op=cls.op, comp_name=comp_name, dataset_name=df.name
                 )
 
         for comp_name in output.components:

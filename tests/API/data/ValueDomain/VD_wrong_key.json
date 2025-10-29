@@ -1,9 +1,0 @@
-{
-  "name": "AnaCreditCountries",
-  "types": [
-    "AT",
-    "BE",
-    "CY"
-  ],
-  "type": "String"
-}

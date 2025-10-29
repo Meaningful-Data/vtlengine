@@ -23,7 +23,7 @@ def test_grammar():
     with open(vtl_path / script_name, "r") as file:
         script = file.read()
 
-    sql_name = "SQL1.json"
+    sql_name = "SQL1.sql"
     external_routines = sql_path / sql_name
 
     vd_name = "countries"
