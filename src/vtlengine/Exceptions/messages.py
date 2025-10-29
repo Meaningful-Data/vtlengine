@@ -17,6 +17,8 @@ centralised_messages = {
     "0-1-2-3": "Component {component} is duplicated.",
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
+    "0-1-2-6": "Not found scalar {name} in datastructures",
+    "0-1-2-7": "Invalid value '{value}' for scalar {name}.",
     # Run SDMX errors
     "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
