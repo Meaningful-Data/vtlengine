@@ -229,12 +229,6 @@ def load_datapoints(
             if comp.name == col
         }
 
-        # if len(dtypes) != len(header):
-        #     # Some columns in the CSV are not defined in components, assign them as VARCHAR
-        #     for col in header:
-        #         if col not in dtypes:
-        #             dtypes[col] = "VARCHAR"
-
         # Read the CSV file
         try:
             rel = con.read_csv(
