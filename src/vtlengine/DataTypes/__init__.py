@@ -362,11 +362,13 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def check(cls, value: Any) -> bool:
-        from vtlengine.files.parser._time_checking import check_time
+        if pd.isnull(value):
+            return True
 
         try:
+            from vtlengine.files.parser._time_checking import check_time
             check_time(value)
-        except SemanticError:
+        except Exception:
             return False
         return True
 
@@ -404,11 +406,13 @@ class Date(TimeInterval):
 
     @classmethod
     def check(cls, value: Any) -> bool:
-        from vtlengine.files.parser._time_checking import check_date
+        if pd.isnull(value):
+            return True
 
         try:
+            from vtlengine.files.parser._time_checking import check_date
             check_date(value)
-        except SemanticError:
+        except Exception:
             return False
         return True
 
@@ -457,11 +461,13 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def check(cls, value: Any) -> bool:
-        from vtlengine.files.parser._time_checking import check_time_period
+        if pd.isnull(value):
+            return True
 
         try:
+            from vtlengine.files.parser._time_checking import check_time_period
             check_time_period(value)
-        except SemanticError:
+        except Exception:
             return False
         return True
 
@@ -530,6 +536,7 @@ class Duration(ScalarType):
     def check(cls, value: Any) -> bool:
         if pd.isnull(value):
             return True
+
         if isinstance(value, str):
             match = re.match(cls.iso8601_duration_pattern, value)
             return bool(match)
