@@ -17,14 +17,14 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
-from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import (
+from vtlengine.DataTypes._time_checking import (
     check_date,
     check_time,
     check_time_period,
 )
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
+from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.Model import Component, Dataset, Role
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {

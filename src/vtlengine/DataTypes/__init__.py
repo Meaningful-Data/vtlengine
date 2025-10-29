@@ -3,6 +3,11 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 import pandas as pd
 
+from vtlengine.DataTypes._time_checking import (
+    check_date,
+    check_time,
+    check_time_period,
+)
 from vtlengine.DataTypes.TimeHandling import (
     check_max_date,
     date_to_period_str,
@@ -102,6 +107,14 @@ class ScalarType:
         class_name: str = cls.__name__.__str__()
         return DTYPE_MAPPING[class_name]
 
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        try:
+            cls.cast(value)
+            return True
+        except Exception:
+            return False
+
 
 class String(ScalarType):
     """ """
@@ -142,6 +155,10 @@ class String(ScalarType):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        return True
 
 
 class Number(ScalarType):
@@ -200,6 +217,19 @@ class Number(ScalarType):
             elif value.lower() == "false":
                 return 0.0
         return float(value)
+
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        if isinstance(value, (int, float, bool)):
+            return True
+        if isinstance(value, str):
+            v = value.strip()
+            if v.lower() in {"true", "false"}:
+                return True
+            return bool(re.match(r"^\d+(\.\d*)?$|^\.\d+$", v))
+        return False
 
 
 class Integer(Number):
@@ -286,6 +316,16 @@ class Integer(Number):
                 return 0
         return int(value)
 
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        if isinstance(value, str):
+            return value.isdigit() or value.lower() in {"true", "false"}
+        if isinstance(value, float):
+            return value.is_integer()
+        return isinstance(value, (int, bool))
+
 
 class TimeInterval(ScalarType):
     """ """
@@ -325,6 +365,16 @@ class TimeInterval(ScalarType):
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
 
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        try:
+            check_time(value)
+        except Exception:
+            return False
+        return True
+
 
 class Date(TimeInterval):
     """ """
@@ -356,6 +406,16 @@ class Date(TimeInterval):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        try:
+            check_date(value)
+        except Exception:
+            return False
+        return True
 
 
 class TimePeriod(TimeInterval):
@@ -399,6 +459,16 @@ class TimePeriod(TimeInterval):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        try:
+            check_time_period(value)
+        except Exception:
+            return False
+        return True
 
 
 class Duration(ScalarType):
@@ -461,6 +531,16 @@ class Duration(ScalarType):
         total_days = years * 365 + months * 30 + days
         return int(total_days)
 
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+
+        if isinstance(value, str):
+            match = re.match(cls.iso8601_duration_pattern, value)
+            return bool(match)
+        return False
+
 
 class Boolean(ScalarType):
     """ """
@@ -514,6 +594,14 @@ class Boolean(ScalarType):
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
 
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        if pd.isnull(value):
+            return True
+        if isinstance(value, str):
+            return value.lower() in {"true", "false", "1", "0"}
+        return isinstance(value, (int, float, bool))
+
 
 class Null(ScalarType):
     """ """
@@ -533,6 +621,10 @@ class Null(ScalarType):
     @classmethod
     def dtype(cls) -> str:
         return "string"
+
+    @classmethod
+    def check(cls, value: Any) -> bool:
+        return True
 
 
 SCALAR_TYPES: Dict[str, Type[ScalarType]] = {

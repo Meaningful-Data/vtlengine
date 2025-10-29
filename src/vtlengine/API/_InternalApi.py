@@ -240,8 +240,16 @@ def _handle_scalars_values(
     # Handling scalar values with the scalar dict
     for name, value in scalar_values.items():
         if name not in scalars:
-            raise Exception(f"Not found scalar {name} in datastructures")
+            raise InputValidationException(code="0-1-2-6", name=name)
         # Casting value to scalar data type
+        if not scalars[name].data_type.check(value):
+            raise InputValidationException(
+                code="0-1-2-7",
+                value=value,
+                type_=scalars[name].data_type.__name__,
+                op_type=type(scalars[name]).__name__,
+                name=name,
+            )
         scalars[name].value = scalars[name].data_type.cast(value)
 
 
