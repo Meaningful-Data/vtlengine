@@ -242,7 +242,7 @@ def date_add_duck(value: Union[date, str], period: str, shift: int) -> str:
             year=new_year, month=new_month, day=min(date_value.day, last_day)
         )
     new_date = date(new_date.year, new_date.month, new_date.day)
-    return new_date.__str__()
+    return new_date.isoformat()
 
 
 def time_agg_duck(
