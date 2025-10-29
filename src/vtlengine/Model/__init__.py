@@ -29,7 +29,7 @@ class Scalar:
     data_type: Type[ScalarType]
     _value: Any
 
-    def __init__(self, name, data_type, value):
+    def __init__(self, name: str, data_type: Type[ScalarType], value: Any) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
@@ -391,7 +391,9 @@ class ScalarSet:
     data_type: Type[ScalarType]
     _values: List[Union[int, float, str, bool]]
 
-    def __init__(self, data_type: Type[ScalarType], values: List[Union[int, float, str, bool]]):
+    def __init__(
+        self, data_type: Type[ScalarType], values: List[Union[int, float, str, bool]]
+    ) -> None:
         self.data_type = data_type
         self.values = values
 
