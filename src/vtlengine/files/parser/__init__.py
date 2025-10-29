@@ -20,7 +20,7 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import (
+from vtlengine.DataTypes._time_checking import (
     check_date,
     check_time,
     check_time_period,

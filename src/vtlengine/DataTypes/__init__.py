@@ -8,6 +8,11 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period_str,
     str_period_to_date,
 )
+from vtlengine.DataTypes._time_checking import (
+    check_date,
+    check_time,
+    check_time_period,
+)
 from vtlengine.Exceptions import SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
@@ -364,10 +369,7 @@ class TimeInterval(ScalarType):
     def check(cls, value: Any) -> bool:
         if pd.isnull(value):
             return True
-
         try:
-            from vtlengine.files.parser._time_checking import check_time
-
             check_time(value)
         except Exception:
             return False
@@ -409,10 +411,7 @@ class Date(TimeInterval):
     def check(cls, value: Any) -> bool:
         if pd.isnull(value):
             return True
-
         try:
-            from vtlengine.files.parser._time_checking import check_date
-
             check_date(value)
         except Exception:
             return False
@@ -465,10 +464,7 @@ class TimePeriod(TimeInterval):
     def check(cls, value: Any) -> bool:
         if pd.isnull(value):
             return True
-
         try:
-            from vtlengine.files.parser._time_checking import check_time_period
-
             check_time_period(value)
         except Exception:
             return False
