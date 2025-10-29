@@ -290,7 +290,7 @@ def load_datasets_with_data(
                 data = con.from_df(data).project(query)
 
             datasets[dataset_name].data = _validate_duckdb(
-                datasets[dataset_name].components, data, dataset_name
+                datasets[dataset_name].components, data, dataset_name, materialize=True
             )
         for dataset_name in datasets:
             if datasets[dataset_name].data is None:

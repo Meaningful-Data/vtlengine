@@ -145,7 +145,7 @@ def test_load_datapoints_s3(mock_read_csv):
     mock_read_csv.execute.return_value.fetchone.return_value = (0,)
 
     input_path = "s3://path/to/input/dataset.csv"
-    load_datapoints(components={}, dataset_name="dataset", csv_path=input_path)
+    load_datapoints(components={}, dataset_name="dataset", csv_path=input_path, materialize=False)
     args, kwargs = mock_read_csv.read_csv.call_args
     assert args[0] == input_path
 
