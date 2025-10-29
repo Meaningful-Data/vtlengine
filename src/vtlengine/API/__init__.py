@@ -271,7 +271,8 @@ def run(
         value domains JSON files. (default:None)
 
         external_routines: String or Path, or List of Strings or Paths of the \
-        external routines SQL files. (default: None)
+        external routines SQL files. (default: None) Check the following example to see how to \
+        load value domains and external routines as dictionaries: `Example 6 <https://docs.vtlengine.meaningfuldata.eu/walkthrough.html#example_6_run_with_multiple_value_domains_and_external_routines>`_
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -307,7 +308,7 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        if isinstance(value_domains, List):
+        if isinstance(value_domains, list):
             vd = {}
             for item in value_domains:
                 vd.update(load_value_domains(item))
@@ -315,7 +316,7 @@ def run(
             vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        if isinstance(external_routines, List):
+        if isinstance(external_routines, list):
             ext_routines = {}
             for item in external_routines:
                 ext_routines.update(load_external_routines(item))
