@@ -2,6 +2,7 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+import duckdb
 from _duckdb import Error
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
@@ -104,6 +105,7 @@ def _validate_duckdb(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
+    materialize: bool = False,
 ) -> DuckDBPyRelation:
     # Check for missing columns
     data_columns = data.columns
@@ -130,6 +132,10 @@ def _validate_duckdb(
 
     final_query = ", ".join(exprs)
     data = RelationProxy(data.project(final_query))
+    try:
+        data.clean_exec_graph(no_check=materialize)
+    except duckdb.Error as e:
+        raise DataLoadError.map_duckdb_error(e)
     return data
 
 
@@ -203,6 +209,7 @@ def load_datapoints(
     components: Dict[str, Component],
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
+    materialize: bool = True,
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return empty_relation(list(components.keys()))
@@ -216,10 +223,6 @@ def load_datapoints(
         header = header_rel.columns
         if len(header) == 1 and "," in header[0]:
             header = [h.strip() for h in header[0].split(",")]
-        # Lazy CSV read
-        # with open(path_str, mode="r", encoding="utf-8") as file:
-        #     csv_reader = csv.reader(file)
-        #     header = next(csv_reader)  # Extract the header to determine column order
 
         # Extract data types from components in header
         dtypes = {
@@ -246,9 +249,16 @@ def load_datapoints(
             raise DataLoadError.map_duckdb_error(e)
 
         # Type validation and normalization
-        rel = _validate_duckdb(components, rel, dataset_name)
-
-        return _sanitize_duckdb_columns(components, csv_path, rel)
+        rel = _validate_duckdb(components, rel, dataset_name, materialize=materialize)
+        # Column sanitization
+        rel = _sanitize_duckdb_columns(components, csv_path, rel)
+        # Materialization of the relation to avoid later re-computation
+        data = RelationProxy(rel)
+        try:
+            data.clean_exec_graph(no_check=materialize)
+        except duckdb.Error as e:
+            raise DataLoadError.map_duckdb_error(e)
+        return data
 
     else:
         raise Exception("Invalid csv_path type")
