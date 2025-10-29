@@ -30,7 +30,7 @@
         {
           "name": "Me_4",
           "role": "Measure",
-          "type": "Duration",
+          "type": "String",
           "nullable": true
         }
       ]

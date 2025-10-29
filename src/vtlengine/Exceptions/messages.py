@@ -17,6 +17,11 @@ centralised_messages = {
     "0-1-2-3": "Component {component} is duplicated.",
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
+    "0-1-2-6": "Input does not exist: {input}.",
+    "0-1-2-7": "Invalid input file. Input must be a Path or HTTP/S3 URL string.",
+    "0-1-2-8": "Invalid input file. Input must be a dict or Path object",
+    "0-1-2-9": "Invalid input file. Input must have a {ext} extension",
+    "0-1-2-10": "Invalid input file. Input is not a Path object",
     # Run SDMX errors
     "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",
@@ -44,8 +49,8 @@ centralised_messages = {
     "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
     "0-1-1-13": "Invalid key on {field} field: {key}{closest_key}.",
     "0-1-1-14": "Empty datasets {dataset1} and {dataset2} shape missmatch.",
-    "0-1-1-15": "On Dataset {name} loading: Duplicated identifiers are not allowed, "
-    "found on row {row_index}",
+    "0-1-1-15": "On Dataset {name} loading:  A non nullable measure cannot have null values, "
+    "found null values on {measure}.",
     "0-1-0-1": " Trying to redefine input datasets {dataset}.",  # Semantic Error
     # ------------Operators-------------
     # General Semantic errors
@@ -315,4 +320,6 @@ centralised_messages = {
     "1-4-2-6": "At op {op}: Window must be provided.",
     "1-4-2-7": "At op {op}: Partition by or order by clause must be provided for Analytic "
     "operators.",
+    # duckdb errors
+    "2-0-0-0": "DuckDB error: {duckdb_msg}",
 }

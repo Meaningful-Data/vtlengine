@@ -23,11 +23,11 @@ ds_param = [
     ),
     (
         "4",
-        'DS_r := DS_1 [calc Me_3 := case when Id_1 = 1 then case when Id_2 = "A" then Id_2 when Id_2 = "B" then case when Me_2 = "B" then "X" else Me_1 else case when Id_1 = 3 then "U" when Id_1 = 2 then Id_1 else "Y" else case when Me_2 = "J" then Me_2 when Me_1 = 10 then "Z" when Me_1 = 9 then "I" when Id_1 = 5 then "W" else null];',
+        'DS_r := DS_1 [calc Me_3 := case when Id_1 = 1 then case when Id_2 = "A" then Id_2 when Id_2 = "B" then case when Me_2 = "B" then "X" else cast(Me_1, string) else case when Id_1 = 3 then "U" when Id_1 = 2 then cast(Id_1, string) else "Y" else case when Me_2 = "J" then Me_2 when Me_1 = 10 then "Z" when Me_1 = 9 then "I" when Id_1 = 5 then "W" else null];',
     ),
     (
         "5",
-        'DS_r := DS_1 [calc Me_3 := case when Id_2 = "A" then case when Id_1 = 1 then if Me_1 = 1 then case when Me_2 = "A" then "Y" else Me_2 else Id_1 else Id_2 when Id_2 = "B" then Id_2 else case when Id_1 = 1 then Id_1 when Me_2 = Id_2 then Me_2 when Me_2 = "J" then "J" else if Me_1 = 4 then Id_2 else "X"];',
+        'DS_r := DS_1 [calc Me_3 := case when Id_2 = "A" then case when Id_1 = 1 then if Me_1 = 1 then case when Me_2 = "A" then "Y" else Me_2 else cast(Id_1, string) else Id_2 when Id_2 = "B" then Id_2 else case when Id_1 = 1 then cast(Id_1, string) when Me_2 = Id_2 then Me_2 when Me_2 = "J" then "J" else if Me_1 = 4 then Id_2 else "X"];',
     ),
     (
         "6",

@@ -5,18 +5,32 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
+import duckdb
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
-from pandas import DataFrame as PandasDataFrame
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
+from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import SemanticError
+from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
+from vtlengine.Exceptions import DataLoadError
 
-# from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
+from .relation_proxy import RelationProxy
+
+INDEX_COL = "__index__"
+
+
+def __duckdb_repr__(self: Any) -> str:
+    """
+    DuckDB internal repr based on pandas repr
+    """
+    return f"<DuckDBPyRelation: {self.df().__repr__()}>"
+
+
+DuckDBPyRelation.__repr__ = __duckdb_repr__
 
 
 @dataclass
@@ -61,44 +75,6 @@ class Role(Enum):
 
 
 @dataclass
-class DataComponent:
-    """A component of a dataset with data"""
-
-    name: str
-    # data: Optional[Union[PandasSeries, SparkSeries]]
-    data: Optional[Any]
-    data_type: Type[ScalarType]
-    role: Role = Role.MEASURE
-    nullable: bool = True
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, DataComponent):
-            return False
-        return self.to_dict() == other.to_dict()
-
-    @classmethod
-    def from_json(cls, json_str: Any) -> "DataComponent":
-        return cls(
-            json_str["name"],
-            None,
-            SCALAR_TYPES[json_str["data_type"]],
-            Role(json_str["role"]),
-            json_str["nullable"],
-        )
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "data": self.data,
-            "data_type": self.data_type,
-            "role": self.role,
-        }
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_dict(), indent=4)
-
-
-@dataclass
 class Component:
     """
     Class representing a component of a dataset
@@ -111,7 +87,7 @@ class Component:
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
-            raise ValueError(f"Identifier {self.name} cannot be nullable")
+            raise DataLoadError(code="0-1-1-4", name=self.name, null_identifier=self.name)
 
     def __eq__(self, other: Any) -> bool:
         return self.to_dict() == other.to_dict()
@@ -153,13 +129,155 @@ class Component:
 
 
 @dataclass
+class DataComponent:
+    """A component of a dataset with data"""
+
+    name: str
+    _data: Optional[Union[RelationProxy]]
+    data_type: Type[ScalarType]
+    role: Role = Role.MEASURE
+    nullable: bool = True
+
+    def __init__(
+        self,
+        name: str,
+        data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]],
+        data_type: Type[ScalarType],
+        role: Role = Role.MEASURE,
+        nullable: bool = True,
+    ) -> None:
+        self.name = name
+        self.data = data
+        self.data_type = data_type
+        self.role = role
+        self.nullable = nullable
+        self.__post_init__()
+
+    def __post_init__(self) -> None:
+        if isinstance(self.data, pd.Series):
+            self.data = con.from_df(self.data.to_frame())
+        if isinstance(self.data, DuckDBPyRelation):
+            self.data = RelationProxy(self.data)
+
+    @property
+    def data(self) -> Optional[Union[RelationProxy]]:
+        return self._data
+
+    @data.setter
+    def data(self, value: Optional[Union[pd.DataFrame, DuckDBPyRelation]]) -> None:
+        if isinstance(value, pd.DataFrame):
+            value = con.from_df(value)
+        if isinstance(value, DuckDBPyRelation):
+            self._data = RelationProxy(value)
+        elif isinstance(value, RelationProxy):
+            self._data = value
+        elif value is None:
+            self._data = None
+        else:
+            raise ValueError(
+                "Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None"
+            )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, DataComponent):
+            return False
+
+        if self.name != other.name:
+            return False
+
+        if self.data_type != other.data_type:
+            return False
+
+        if self.role != other.role:
+            return False
+
+        if self.nullable != other.nullable:
+            return False
+
+        # Both data are None
+        if self.data is None and other.data is None:
+            return True
+
+        # One of the data is None
+        if self.data is None or other.data is None:
+            return False
+
+        cols_self = [c for c in self.data.columns if c != INDEX_COL]
+        cols_other = [c for c in other.data.columns if c != INDEX_COL]
+        if cols_self != cols_other:
+            return False
+        col = cols_self[0]
+        sorted_self = self.data.order(col)
+        sorted_other = other.data.order(col)
+        diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
+
+        # Lazy comparison: check if any difference exists
+        return not diff.limit(1).df().shape[0] > 0
+
+    @classmethod
+    def from_json(cls, json_str: Any) -> "DataComponent":
+        return cls(
+            json_str["name"],
+            None,
+            SCALAR_TYPES[json_str["data_type"]],
+            Role(json_str["role"]),
+            json_str["nullable"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "data": self.data,
+            "data_type": self.data_type,
+            "role": self.role,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=4)
+
+
+@dataclass
 class Dataset:
     name: str
     components: Dict[str, Component]
-    # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
-    data: Optional[PandasDataFrame] = None
+    _data: Optional[RelationProxy] = None
+
+    @property
+    def data(self) -> Optional[RelationProxy]:
+        return self._data
+
+    @data.setter
+    def data(self, value: Optional[Union[pd.DataFrame, DuckDBPyRelation]]) -> None:
+        if isinstance(value, pd.DataFrame):
+            value = con.from_df(value)
+        if isinstance(value, DuckDBPyRelation):
+            self._data = RelationProxy(value)
+        elif isinstance(value, RelationProxy):
+            self._data = value
+        elif value is None:
+            self._data = None
+        else:
+            raise ValueError(
+                "Data must be a pandas DataFrame, DuckDBPyRelation, RelationProxy or None"
+            )
+
+    def __init__(
+        self,
+        name: str,
+        components: Dict[str, Component],
+        data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]] = None,
+    ) -> None:
+        self.name = name
+        self.components = components
+        self.data = data
+        self.__post_init__()
 
     def __post_init__(self) -> None:
+        if isinstance(self.data, pd.DataFrame):
+            self.data = con.from_df(self.data)
+        if isinstance(self.data, DuckDBPyRelation):
+            self.data = RelationProxy(self.data)
+
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
                 raise ValueError(
@@ -173,110 +291,68 @@ class Dataset:
         if not isinstance(other, Dataset):
             return False
 
-        same_name = self.name == other.name
-        if not same_name:
-            print("\nName mismatch")
-            print("result:", self.name)
-            print("reference:", other.name)
-        same_components = self.components == other.components
-        if not same_components:
-            print("\nComponents mismatch")
-            result_comps = self.to_dict()["components"]
-            reference_comps = other.to_dict()["components"]
-            if len(result_comps) != len(reference_comps):
-                print(
-                    f"Shape mismatch: result:{len(result_comps)} "
-                    f"!= reference:{len(reference_comps)}"
-                )
-                if len(result_comps) < len(reference_comps):
-                    print(
-                        "Missing components in result:",
-                        set(reference_comps.keys()) - set(result_comps.keys()),
-                    )
-                else:
-                    print(
-                        "Additional components in result:",
-                        set(result_comps.keys()) - set(reference_comps.keys()),
-                    )
-                return False
-
-            diff_comps = {
-                k: v
-                for k, v in result_comps.items()
-                if (k in reference_comps and v != reference_comps[k]) or k not in reference_comps
-            }
-            ref_diff_comps = {k: v for k, v in reference_comps.items() if k in diff_comps}
-            print(f"Differences in components {self.name}: ")
-            print("result:", json.dumps(diff_comps, indent=4))
-            print("reference:", json.dumps(ref_diff_comps, indent=4))
+        # Check names
+        if self.name != other.name:
+            print(f"Name mismatch: {self.name} != {other.name}")
             return False
 
+        # Check components
+        if self.components != other.components:
+            print("Components mismatch on dataset:", self.name)
+            diff_comps = {
+                k: (v, other.components[k])
+                for k, v in self.components.items()
+                if k not in other.components or v != other.components[k]
+            }
+            print("Differences in components:")
+            for k, (v1, v2) in diff_comps.items():
+                print(f"Component: {k}\nSELF: {v1}\nOTHER: {v2}\n")
+            return False
+
+        # Check both data are None, they are equal
         if self.data is None and other.data is None:
             return True
-        elif self.data is None or other.data is None:
-            return False
-        if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
-            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
 
-        self.data.fillna("", inplace=True)
-        other.data.fillna("", inplace=True)
-        sorted_identifiers = sorted(self.get_identifiers_names())
-        self.data = self.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        other.data = other.data.sort_values(by=sorted_identifiers).reset_index(drop=True)
-        self.data = self.data.reindex(sorted(self.data.columns), axis=1)
-        other.data = other.data.reindex(sorted(other.data.columns), axis=1)
-        for comp in self.components.values():
-            type_name: str = comp.data_type.__name__.__str__()
-            if type_name in ["String", "Date"]:
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
-            elif type_name == "TimePeriod":
-                self.data[comp.name] = self.data[comp.name].astype(str)
-                other.data[comp.name] = other.data[comp.name].astype(str)
-                self.data[comp.name] = self.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
-                )
-                other.data[comp.name] = other.data[comp.name].map(
-                    lambda x: str(TimePeriodHandler(str(x))) if x != "" else "",
-                    na_action="ignore",
-                )
-            elif type_name in ["Integer", "Number"]:
-                type_ = "int64" if type_name == "Integer" else "float32"
-                # We use here a number to avoid errors on equality on empty strings
-                self.data[comp.name] = (
-                    self.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
-                other.data[comp.name] = (
-                    other.data[comp.name].replace("", -1234997).astype(type_)  # type: ignore[call-overload]
-                )
-        try:
-            assert_frame_equal(
-                self.data,
-                other.data,
-                check_dtype=False,
-                check_index_type=False,
-                check_datetimelike_compat=True,
-                check_exact=False,
-                rtol=0.01,
-                atol=0.01,
-            )
-        except AssertionError as e:
-            if "DataFrame shape" in str(e):
-                print(f"\nDataFrame shape mismatch {self.name}:")
-                print("result:", self.data.shape)
-                print("reference:", other.data.shape)
-            # Differences between the dataframes
-            diff = pd.concat([self.data, other.data]).drop_duplicates(keep=False)
-            if len(diff) == 0:
-                return True
-            # To display actual null values instead of -1234997
-            for comp in self.components.values():
-                if comp.data_type.__name__.__str__() in ["Integer", "Number"]:
-                    diff[comp.name] = diff[comp.name].replace(-1234997, "")
-            print("\n Differences between the dataframes in", self.name)
-            print(diff)
-            raise e
+        # If only one is empty they are not equal
+        if self.data is None or other.data is None:
+            return False
+
+        self_cols_set = {c for c in self.data.columns if c != INDEX_COL}
+        other_cols_set = {c for c in other.data.columns if c != INDEX_COL}
+        if self_cols_set != other_cols_set:
+            print("Column mismatch")
+            return False
+
+        if isinstance(self.data, pd.DataFrame) and isinstance(other.data, pd.DataFrame):
+            # If both data are pandas DataFrames, compare them directly
+            assert_frame_equal(self.data, other.data, check_dtype=False)
+            return True
+        elif isinstance(self.data, pd.DataFrame):
+            self._to_duckdb()
+        elif isinstance(other.data, pd.DataFrame):
+            other._to_duckdb()
+
+        # Ensuring the dataset is materialized
+        self.data = clean_execution_graph(self.data)
+        other.data = clean_execution_graph(other.data)
+        # Round double values to avoid precision issues
+        self.data, other.data = normalize_data(self.data, other.data)
+
+        # Order by identifiers
+        self_cols = quote_cols([c for c in self.data.columns if c != INDEX_COL])
+        sorted_self = self.data.project(", ".join(self_cols), include_index=False)
+        sorted_other = other.data.project(", ".join(self_cols), include_index=False)
+
+        # Comparing data using DuckDB
+        diff = sorted_self.except_(sorted_other).union(sorted_other.except_(sorted_self))
+        # Loading only the first row to check if there are any internal structure differences
+        # (avoiding memory overload)
+        if diff.limit(1).execute().fetchone() is not None:
+            print(f"\nData mismatch on dataset: {self.name} and {other.name}\n")
+            print("\nSELF\n", self.data)
+            print("\nOTHER\n", other.data)
+            diff.show()
+            return False
         return True
 
     def get_component(self, component_name: str) -> Component:
@@ -290,7 +366,7 @@ class Dataset:
     def delete_component(self, component_name: str) -> None:
         self.components.pop(component_name, None)
         if self.data is not None:
-            self.data.drop(columns=[component_name], inplace=True)
+            self.data = self.data.drop(columns=component_name)
 
     def get_components(self) -> List[Component]:
         return list(self.components.values())
@@ -331,13 +407,28 @@ class Dataset:
     @classmethod
     def from_json(cls, json_str: Any) -> "Dataset":
         components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
-        return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
+        data = None
+        if "data" in json_str and json_str["data"] is not None:
+            # Convert JSON data directly to DuckDB relation
+            data = con.sql(f"SELECT * FROM json('{json.dumps(json_str['data'])}')")
+        return cls(json_str["name"], components, data)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
             "components": {k: v.to_dict() for k, v in self.components.items()},
-            "data": (self.data.to_dict(orient="records") if self.data is not None else None),
+            "data": (
+                [
+                    dict(dict(zip([c for c in self.data.columns if c != INDEX_COL], row)).items())
+                    for row in self.data.project(
+                        ", ".join(quote_cols([c for c in self.data.columns if c != INDEX_COL]))
+                    )
+                    .execute()
+                    .fetchall()
+                ]
+                if self.data is not None
+                else None
+            ),
         }
 
     def to_json(self) -> str:
@@ -360,6 +451,39 @@ class Dataset:
         result = {"datasets": [ds_info]}
         return json.dumps(result, indent=2)
 
+    def __repr__(self) -> str:
+        data = "None"
+        if isinstance(self.data, pd.DataFrame):
+            data = repr(self.data).replace("<NA>", "None")
+        elif isinstance(self.data, RelationProxy):
+            try:
+                data = self.data.relation.limit(30).df()
+            except duckdb.Error as e:
+                raise DataLoadError.map_duckdb_error(e)
+        elif isinstance(self.data, DuckDBPyRelation):
+            try:
+                tmp = self.data
+                if INDEX_COL in tmp.columns:
+                    tmp = tmp.set_index(INDEX_COL)
+                data = tmp
+            except duckdb.Error as e:
+                raise DataLoadError.map_duckdb_error(e)
+        return (
+            f"Dataset("
+            f"\nname={self.name},"
+            f"\ncomponents={list(self.components.keys())},"
+            f"\ndata=\n{data})"
+        )
+
+    def _to_duckdb(self) -> DuckDBPyRelation:
+        """
+        Convert underlying data to DuckDB relation if it is a pandas DataFrame.
+        (RelationProxy already wraps a DuckDBPyRelation.)
+        """
+        if self.data is None or isinstance(self.data, (RelationProxy, DuckDBPyRelation)):
+            return
+        self.data = con.from_df(self.data)
+
 
 @dataclass
 class ScalarSet:
@@ -368,7 +492,7 @@ class ScalarSet:
     """
 
     data_type: Type[ScalarType]
-    values: List[Union[int, float, str, bool]]
+    values: Union[List[Union[int, float, str, bool]], DuckDBPyRelation]
 
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():

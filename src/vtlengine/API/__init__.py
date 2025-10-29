@@ -2,9 +2,11 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
 
+import duckdb
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream  # type: ignore[import-untyped]
 from antlr4.error.ErrorListener import ErrorListener  # type: ignore[import-untyped]
+from duckdb import DuckDBPyRelation
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference, TransformationScheme
 from pysdmx.model.dataflow import Dataflow, Schema
@@ -29,13 +31,15 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.Exceptions import SemanticError
+from vtlengine.connection import con
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import DataComponent, Dataset, Scalar
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 pd.options.mode.chained_assignment = None
 
@@ -163,17 +167,8 @@ def semantic_analysis(
         that holds the vtl script.
         data_structures: Dict or Path (file or folder), \
         or List of Dicts or Paths with the data structures JSON files.
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
-
-        external_routines: String or Path, or List of Strings or Paths of the \
-        external routines SQL files. (default: None) It is passed as an object, that can be read \
-        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        value_domains: Dict or Path of the value domains JSON files. (default: None)
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
     Returns:
         The computed datasets.
@@ -214,11 +209,9 @@ def semantic_analysis(
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    datapoints: Union[Dict[str, DuckDBPyRelation], str, Path, List[Dict[str, Any]], List[Path]],
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -276,17 +269,9 @@ def run(
 
         datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        value_domains: Dict or Path of the value domains JSON files. (default:None)
 
-        external_routines: String or Path, or List of Strings or Paths of the \
-        external routines JSON files. (default: None) It is passed as an object, that can be read \
-        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -322,20 +307,10 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        if isinstance(value_domains, list):
-            vd = {}
-            for item in value_domains:
-                vd.update(load_value_domains(item))
-        else:
-            vd = load_value_domains(value_domains)
+        vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        if isinstance(external_routines, list):
-            ext_routines = {}
-            for item in external_routines:
-                ext_routines.update(load_external_routines(item))
-        else:
-            ext_routines = load_external_routines(external_routines)
+        ext_routines = load_external_routines(external_routines)
 
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
@@ -367,6 +342,20 @@ def run(
             if isinstance(obj, (Dataset, Scalar)):
                 format_time_period_external_representation(obj, time_period_representation)
 
+    # Recasting to pandas-like objects
+    for operand in result.values():
+        if isinstance(operand, Dataset) and operand.data is not None:
+            try:
+                operand._data = operand.data.df()
+            except duckdb.Error as e:
+                raise RunTimeError.map_duckdb_error(e) from None
+        elif isinstance(operand, DataComponent) and operand.data is not None:
+            df = operand.data.df()
+            operand._data = df.squeeze() if len(df.columns) == 1 else df
+
+    # Remove temporary views if any
+    VirtualCounter.reset_temp_views()
+
     # Returning only persistent datasets
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
@@ -377,10 +366,8 @@ def run_sdmx(  # noqa: C901
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
+    external_routines: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -419,17 +406,9 @@ def run_sdmx(  # noqa: C901
 
         mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        value_domains: Dict or Path of the value domains JSON files. (default:None)
 
-        external_routines: String or Path, or List of Strings or Paths of the \
-        external routines JSON files. (default: None) It is passed as an object, that can be read \
-        from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
-        Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        external_routines: String or Path of the external routines SQL files. (default: None)
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -515,7 +494,8 @@ def run_sdmx(  # noqa: C901
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures.append(vtl_structure)
-        datapoints[dataset_name] = dataset.data
+        # datapoints[dataset_name] = dataset.data
+        datapoints[dataset_name] = con.from_df(dataset.data)
 
     missing = []
     for input_name in input_names:

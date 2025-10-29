@@ -1,7 +1,7 @@
 from copy import copy
 from typing import Any, Dict, Optional, Union
 
-import pandas as pd
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
@@ -10,6 +10,10 @@ from vtlengine.DataTypes import (
     Number,
     String,
     check_unary_implicit_promotion,
+)
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -36,13 +40,10 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type = None
+
+        error_level_type = String
         if error_level is None or isinstance(error_level, int):
             error_level_type = Integer
-        elif isinstance(error_level, str):
-            error_level_type = String  # type: ignore[assignment]
-        else:
-            error_level_type = String
 
         imbalance_measure = None
         if imbalance_element is not None:
@@ -99,11 +100,15 @@ class Check(Operator):
             validation_element, imbalance_element, error_code, error_level, invalid
         )
         if validation_element.data is None:
-            validation_element.data = pd.DataFrame()
+            validation_element.data = empty_relation()
+
+        repr(error_code) if error_code is not None else "NULL"
+        repr(error_level) if error_level is not None else "NULL"
+
         columns_to_keep = (
             validation_element.get_identifiers_names() + validation_element.get_measures_names()
         )
-        result.data = validation_element.data.loc[:, columns_to_keep]
+        result.data = validation_element.data[columns_to_keep]
         if imbalance_element is not None and imbalance_element.data is not None:
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
             result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
@@ -113,33 +118,40 @@ class Check(Operator):
         result.data["errorcode"] = error_code
         result.data["errorlevel"] = error_level
         if invalid:
-            # TODO: Is this always bool_var?? In any case this does the trick for more use cases
             validation_measure_name = validation_element.get_measures_names()[0]
             result.data = result.data[result.data[validation_measure_name] == False]
-            result.data.reset_index(drop=True, inplace=True)
+            result.data.reset_index()
         return result
 
 
 # noinspection PyTypeChecker
 class Validation(Operator):
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        rule_list_df = []
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
+        rel_list = []
         for rule_name, rule_data in rule_info.items():
-            rule_df = rule_data["output"]
-            rule_df["ruleid"] = rule_name
-            rule_df["errorcode"] = rule_df["bool_var"].map({False: rule_data["errorcode"]})
-            rule_df["errorlevel"] = rule_df["bool_var"].map({False: rule_data["errorlevel"]})
-            rule_list_df.append(rule_df)
+            rel = rule_data["output"]
+            rule_name = repr(rule_name)
+            errorcode, errorlevel = (
+                repr(rule_data.get(key)) if rule_data.get(key) is not None else "NULL"
+                for key in ("errorcode", "errorlevel")
+            )
 
-        if len(rule_list_df) == 1:
-            return rule_list_df[0]
-        df = pd.concat(rule_list_df, ignore_index=True, copy=False)
-        return df
+            query = f"""
+            *,
+            {rule_name} AS ruleid,
+            CASE WHEN "bool_var" = FALSE THEN {errorcode} END AS "errorcode",
+            CASE WHEN "bool_var" = FALSE THEN {errorlevel} END AS "errorlevel"
+            """
+            rel_list.append(rel.project(query))
+
+        result = rel_list[0]
+        for rel in rel_list[1:]:
+            result = duckdb_concat(rel, result, on=["ruleid"])
+        return result
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:
-        error_level_type = None
         error_levels = [
             rule_data.get("errorlevel")
             for rule_data in rule_info.values()
@@ -147,12 +159,10 @@ class Validation(Operator):
         ]
         non_null_levels = [el for el in error_levels if el is not None]
 
+        error_level_type = String
         if len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
             error_level_type = Number
-        elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String  # type: ignore[assignment]
-        else:
-            error_level_type = String  # type: ignore[assignment]
+
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -192,28 +202,26 @@ class Validation(Operator):
         result = cls.validate(dataset_element, rule_info, output)
         result.data = cls._generate_result_data(rule_info)
 
-        result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
-        result.data = result.data.drop_duplicates(
-            subset=result.get_identifiers_names() + ["ruleid"]
-        ).reset_index(drop=True)
+        identifiers = result.get_identifiers_names()
+        result.data = result.data.filter(
+            " AND ".join(f'"{id_}" IS NOT NULL' for id_ in identifiers)
+        )
+        result.data = result.data.distinct()
+
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
         if "imbalance" in result.components:
             validation_measures.append("imbalance")
-        if output == "invalid":
-            result.data = result.data[result.data["bool_var"] == False]
-            result.data = result.data.drop(columns=["bool_var"])
-            result.data.reset_index(drop=True, inplace=True)
-        elif output == "all":
-            result.data = result.data[result.get_identifiers_names() + validation_measures]
-        else:  # output == 'all_measures'
-            result.data = result.data[
-                result.get_identifiers_names()
-                + dataset_element.get_measures_names()
-                + validation_measures
-            ]
 
-        result.data = result.data[result.get_components_names()]
+        if output == "invalid":
+            result.data = result.data.filter("bool_var = FALSE")
+        elif output == "all":
+            result.data = result.data.project(", ".join(identifiers + validation_measures))
+        else:  # output == 'all_measures'
+            result.data = result.data.project(
+                ", ".join(identifiers + dataset_element.get_measures_names() + validation_measures)
+            )
+
+        result.data = result.data.project(", ".join(result.get_components_names()))
         return result
 
 
@@ -225,17 +233,15 @@ class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
 
     @classmethod
-    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
-        df = pd.DataFrame()
+    def _generate_result_data(cls, rule_info: Dict[str, Any]) -> DuckDBPyRelation:
+        rel = None
         for rule_name, rule_data in rule_info.items():
             rule_df = rule_data["output"]
             rule_df["ruleid"] = rule_name
             rule_df["errorcode"] = rule_data["errorcode"]
             rule_df["errorlevel"] = rule_data["errorlevel"]
-            df = pd.concat([df, rule_df], ignore_index=True)
-        if df is None:
-            df = pd.DataFrame()
-        return df
+            rel = rule_df if rel is None else duckdb_concat(rel, rule_df, on="ruleid")
+        return rel if rel is not None else empty_relation()
 
     @classmethod
     def validate(cls, dataset_element: Dataset, rule_info: Dict[str, Any], output: str) -> Dataset:

@@ -1,25 +1,52 @@
 from copy import copy
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
-import numpy as np
-
-# if os.environ.get("SPARK", False):
-#     import pyspark.pandas as pd
-# else:
-#     import pandas as pd
-import pandas as pd
+from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.DataTypes import (
-    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
     binary_implicit_promotion,
 )
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_concat,
+    duckdb_fillna,
+    duckdb_merge,
+    duckdb_rename,
+    duckdb_select,
+    empty_relation,
+)
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import INDEX_COL, DataComponent, Dataset, RelationProxy, Role, Scalar
 from vtlengine.Operators import Binary, Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+
+COND_COL = "__cond__"
+
+
+def component_assignment(
+    base: DuckDBPyRelation, op: Union[DataComponent, Scalar], result_name: str
+) -> Any:
+    if isinstance(op, DataComponent):
+        base[result_name] = op.data[op.data.columns[0]]
+    else:
+        base[result_name] = op.value
+    return base
+
+
+def dataset_assignment(
+    base: DuckDBPyRelation,
+    op: Union[Dataset, Scalar],
+    ids: Optional[List[str]] = None,
+    measures: Optional[List[str]] = None,
+) -> DuckDBPyRelation:
+    if isinstance(op, Dataset) and op.data is not None:
+        base = duckdb_merge(base, op.data, on=ids, how="inner")
+    else:
+        for m in measures:
+            base[m] = op.value
+    return base
 
 
 class If(Operator):
@@ -47,87 +74,48 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch)
         if not isinstance(result, Scalar):
             if isinstance(condition, DataComponent):
-                result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+                result.data = cls.component_level_evaluation(
+                    condition, true_branch, false_branch, result.name
+                )
             if isinstance(condition, Dataset):
                 result = cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
 
     @classmethod
     def component_level_evaluation(
-        cls, condition: DataComponent, true_branch: Any, false_branch: Any
+        cls, condition: DataComponent, true_branch: Any, false_branch: Any, result_name: str
     ) -> Any:
-        result = None
-        if condition.data is not None:
-            if isinstance(true_branch, Scalar):
-                true_data = pd.Series(true_branch.value, index=condition.data.index)
-            else:
-                true_data = true_branch.data.reindex(condition.data.index)
-            if isinstance(false_branch, Scalar):
-                false_data = pd.Series(false_branch.value, index=condition.data.index)
-            else:
-                false_data = false_branch.data.reindex(condition.data.index)
-            condition.data = condition.data.fillna(False)
-            result = np.where(condition.data, true_data, false_data)
+        if condition.data is None:
+            return empty_relation()
 
-        return pd.Series(result, index=condition.data.index)  # type: ignore[union-attr]
+        cond_col = condition.name
+        base = duckdb_fillna(condition.data, False, cond_col)
+
+        t_base = base[base[cond_col] == True]
+        t_base = component_assignment(t_base, true_branch, result_name)
+
+        f_base = base[base[cond_col] == False]
+        f_base = component_assignment(f_base, false_branch, result_name)
+
+        return duckdb_concat(t_base, f_base, on=[INDEX_COL]).project(f'"{result_name}"')
 
     @classmethod
     def dataset_level_evaluation(
         cls, result: Any, condition: Any, true_branch: Any, false_branch: Any
     ) -> Dataset:
         ids = condition.get_identifiers_names()
-        condition_measure = condition.get_measures_names()[0]
-        true_data = condition.data[condition.data[condition_measure].dropna() == True]
-        false_data = condition.data[condition.data[condition_measure] != True]
+        cond_measure = condition.get_measures_names()[0]
+        measures = result.get_measures_names()
+        base = duckdb_fillna(condition.data, False, cond_measure)
+        base = duckdb_rename(base, {cond_measure: COND_COL})
 
-        if isinstance(true_branch, Dataset):
-            if len(true_data) > 0 and true_branch.data is not None:
-                true_data = pd.merge(
-                    true_data,
-                    true_branch.data,
-                    on=ids,
-                    how="left",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                true_data = pd.DataFrame(columns=true_branch.get_components_names())
-        else:
-            true_data[condition_measure] = true_data[condition_measure].apply(
-                lambda x: true_branch.value
-            )
-        if isinstance(false_branch, Dataset):
-            if len(false_data) > 0 and false_branch.data is not None:
-                false_data = pd.merge(
-                    false_data,
-                    false_branch.data,
-                    on=ids,
-                    how="left",
-                    suffixes=("_condition", ""),
-                )
-            else:
-                false_data = pd.DataFrame(columns=false_branch.get_components_names())
-        else:
-            false_data[condition_measure] = false_data[condition_measure].apply(
-                lambda x: false_branch.value
-            )
+        t_mask = base[COND_COL] == True
+        t_base = dataset_assignment(base[t_mask], true_branch, ids, measures)
 
-        result.data = (
-            pd.concat([true_data, false_data], ignore_index=True)
-            .drop_duplicates()
-            .sort_values(by=ids)
-        ).reset_index(drop=True)
-        if isinstance(result, Dataset):
-            drop_columns = [
-                column for column in result.data.columns if column not in result.components
-            ]
-            result.data = result.data.drop(columns=drop_columns)
-        if isinstance(true_branch, Scalar) and isinstance(false_branch, Scalar):
-            result.get_measures()[0].data_type = true_branch.data_type
-            result.get_measures()[0].name = COMP_NAME_MAPPING[true_branch.data_type]
-            if result.data is not None:
-                result.data = result.data.rename(
-                    columns={condition_measure: result.get_measures()[0].name}
-                )
+        f_mask = base[COND_COL] == False
+        f_base = dataset_assignment(base[f_mask], false_branch, ids, measures)
+
+        result.data = duckdb_concat(t_base, f_base, on=ids).drop(columns=COND_COL)
         return result
 
     @classmethod
@@ -158,19 +146,12 @@ class If(Operator):
                     op=cls.op,
                     type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
-
-            if (
-                isinstance(left, Scalar)
-                and isinstance(right, Scalar)
-                and (left.data_type == Null or right.data_type == Null)
-            ):
+            if left.data_type == Null or right.data_type == Null:
                 nullable = True
-            if isinstance(left, DataComponent) and isinstance(right, DataComponent):
-                nullable = left.nullable or right.nullable
-            elif isinstance(left, DataComponent):
-                nullable = left.nullable or right.data_type == Null
-            elif isinstance(right, DataComponent):
-                nullable = left.data_type == Null or right.nullable
+            if isinstance(left, DataComponent):
+                nullable |= left.nullable
+            if isinstance(right, DataComponent):
+                nullable |= right.nullable
             return DataComponent(
                 name=comp_name,
                 data=None,
@@ -253,11 +234,11 @@ class Nvl(Binary):
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
-                    result.data = left.data.fillna(right.value)
+                    result.data = duckdb_fillna(left.data, right.value)
                 else:
                     result.data = left.data.fillna(right.data)
                 if isinstance(result, Dataset):
-                    result.data = result.data[result.get_components_names()]
+                    result.data = duckdb_select(result.data, result.get_components_names())
         return result
 
     @classmethod
@@ -282,7 +263,7 @@ class Nvl(Binary):
             cls.type_validation(left.data_type, right.data_type)
             return DataComponent(
                 name=comp_name,
-                data=pd.Series(dtype=object),
+                data=empty_relation(),
                 data_type=left.data_type,
                 role=Role.MEASURE,
                 nullable=False,
@@ -317,104 +298,50 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
-
-        for condition in conditions:
-            if isinstance(condition, Dataset) and condition.data is not None:
-                condition.data.fillna(False, inplace=True)
-                condition_measure = condition.get_measures_names()[0]
-                if condition.data[condition_measure].dtype != bool:
-                    condition.data[condition_measure] = condition.data[condition_measure].astype(
-                        bool
-                    )
-            elif (
-                isinstance(
-                    condition,
-                    DataComponent,
+        if not isinstance(result, Scalar):
+            operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
+            if operation_level[0] == DataComponent:
+                result.data = cls.component_level_evaluation(
+                    conditions, thenOps, elseOp, result.name
                 )
-                and condition.data is not None
-            ):
-                condition.data.fillna(False, inplace=True)
-                if condition.data.dtype != bool:
-                    condition.data = condition.data.astype(bool)
-            elif isinstance(condition, Scalar) and condition.value is None:
-                condition.value = False
-
-        if isinstance(result, Scalar):
-            result.value = elseOp.value
-            for i in range(len(conditions)):
-                if conditions[i].value:
-                    result.value = thenOps[i].value
-
-        if isinstance(result, DataComponent):
-            full_index = conditions[0].data.index
-            result.data = pd.Series(None, index=full_index)
-
-            for i, condition in enumerate(conditions):
-                if isinstance(thenOps[i], Scalar):
-                    value_series = pd.Series(thenOps[i].value, index=full_index)
-                else:
-                    value_series = thenOps[i].data.reindex(full_index)
-                cond_series = condition.data.reindex(full_index)
-                cond_mask = cond_series.notna() & cond_series == True
-                result_data = result.data.copy()
-                result_data[cond_mask] = value_series[cond_mask]
-                result.data = result_data
-
-            conditions_stack = [c.data.reindex(full_index).fillna(False) for c in conditions]
-            else_cond_mask = (
-                ~np.logical_or.reduce(conditions_stack)
-                if conditions_stack
-                else pd.Series(True, index=full_index)
-            )
-            if isinstance(elseOp, Scalar):
-                else_series = pd.Series(elseOp.value, index=full_index)
             else:
-                else_series = elseOp.data.reindex(full_index)
-            result.data[else_cond_mask] = else_series[else_cond_mask]
-
-        elif isinstance(result, Dataset):
-            identifiers = result.get_identifiers_names()
-            columns = [col for col in result.get_components_names() if col not in identifiers]
-            result.data = (
-                conditions[0].data[identifiers]
-                if conditions[0].data is not None
-                else pd.DataFrame(columns=identifiers)
-            ).copy()
-
-            full_index = result.data.index
-            for i in range(len(conditions)):
-                condition = conditions[i]
-                bool_col = next(x.name for x in condition.get_measures() if x.data_type == Boolean)
-                cond_mask = condition.data[bool_col].reindex(full_index).astype(bool)
-
-                if isinstance(thenOps[i], Scalar):
-                    for col in columns:
-                        result.data.loc[cond_mask, col] = thenOps[i].value
-                else:
-                    cond_df = thenOps[i].data.reindex(full_index)
-                    result.data.loc[cond_mask, columns] = cond_df.loc[cond_mask, columns]
-
-            then_cond_masks = [
-                c.data[next(x.name for x in c.get_measures() if x.data_type == Boolean)]
-                .reindex(full_index)
-                .fillna(False)
-                .astype(bool)
-                for c in conditions
-            ]
-            else_cond_mask = (
-                ~np.logical_or.reduce(then_cond_masks)
-                if then_cond_masks
-                else pd.Series(True, index=full_index)
-            )
-
-            if isinstance(elseOp, Scalar):
-                for col in columns:
-                    result.data.loc[else_cond_mask, col] = elseOp.value
-            else:
-                else_df = elseOp.data.reindex(full_index)
-                result.data.loc[else_cond_mask, columns] = else_df.loc[else_cond_mask, columns]
-
+                result.data = cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
         return result
+
+    @classmethod
+    def component_level_evaluation(
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, result_name: str
+    ) -> Any:
+        result_base = RelationProxy(conditions[-1].data.index)
+        result_base = component_assignment(result_base, elseOp, result_name)
+
+        for i in range(len(conditions)):
+            thenOp = thenOps[i]
+            base = conditions[i].data[conditions[i].data == True]
+            base = component_assignment(base, thenOp, result_name)
+            result_base = duckdb_concat(result_base, base, on=[INDEX_COL])
+
+        return RelationProxy(result_base.project(result_name))
+
+    @classmethod
+    def dataset_level_evaluation(
+        cls, result: Any, conditions: List[Any], thenOps: List[Any], elseOp: Any
+    ) -> Dataset:
+        ids = result.get_identifiers_names()
+        measures = result.get_measures_names()
+        result_base = RelationProxy(conditions[-1].data.drop(measures))
+        result_base = dataset_assignment(result_base, elseOp, ids, measures)
+
+        for i in range(len(conditions)):
+            thenOp = thenOps[i]
+            base = duckdb_rename(
+                conditions[i].data, {conditions[i].get_measures_names()[0]: COND_COL}
+            )
+            t_mask = base[COND_COL] == True
+            t_base = dataset_assignment(base[t_mask], thenOp, ids, measures)
+            result_base = duckdb_concat(result_base, t_base, on=ids)
+
+        return result_base.drop(columns=COND_COL)
 
     @classmethod
     def validate(
@@ -455,9 +382,10 @@ class Case(Operator):
                     raise SemanticError("2-1-9-4", op=cls.op, name=condition.name)
 
             nullable = any(
-                (op.nullable if isinstance(op, DataComponent) else op.data_type == Null)
-                for op in ops
+                (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
+                for thenOp in ops
             )
+
             data_type = ops[0].data_type
             for op in ops[1:]:
                 data_type = binary_implicit_promotion(data_type, op.data_type)

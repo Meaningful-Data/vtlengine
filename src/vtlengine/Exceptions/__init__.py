@@ -7,11 +7,19 @@ Description
 All exceptions exposed by the Vtl engine.
 """
 
+import re
 from typing import Any, List, Optional
 
+import duckdb
+
+from vtlengine.Exceptions.duckdb_mapping import DUCKDB_TO_VTL_TYPES
 from vtlengine.Exceptions.messages import centralised_messages
 
 dataset_output = None
+
+
+def map_duckdb_type_to_vtl(duckdb_type: str) -> str:
+    return DUCKDB_TO_VTL_TYPES.get(duckdb_type.upper(), duckdb_type)
 
 
 class VTLEngineException(Exception):
@@ -106,17 +114,138 @@ class InterpreterError(VTLEngineException):
         super().__init__(message, None, None, code)
 
 
-class RuntimeError(VTLEngineException):
-    """ """
+RUNTIME_ERROR_CODES = {
+    "2-1-15-6": {"op": "/"},
+}
+
+
+class RunTimeError(VTLEngineException):
+    output_message = " Please check transformation with output dataset "
+    comp_code = None
 
     def __init__(
-        self, message: str, lino: Optional[str] = None, colno: Optional[str] = None
+        self,
+        code: str,
+        comp_code: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(message, lino, colno)
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + str(dataset_output)
+
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
+
+    @classmethod
+    def map_duckdb_error(cls, e: "duckdb.Error", **kwargs) -> "RunTimeError":  # type: ignore[no-untyped-def]
+        msg_str = str(e)
+        if (
+            isinstance(e, duckdb.InvalidInputException)
+            and "Python exception occurred while executing the UDF" in msg_str
+        ):
+            match = re.search(r"RunTimeError: \('(.+?)', '(\d+-\d+-\d+-\d+)'\)", msg_str)
+            if match:
+                message, code = match.groups()
+                return cls(code, **RUNTIME_ERROR_CODES[code])
+        msg = str(e).lower()
+        if isinstance(e, duckdb.ConversionException):
+            print(e)
+        for error_code in RUNTIME_ERROR_CODES:
+            if error_code in msg:
+                return cls(error_code, **RUNTIME_ERROR_CODES[error_code])
+
+        match = re.search(r"Could not convert(?: (\w+))? '(.+?)' to (\w+)", str(e), re.IGNORECASE)
+
+        if match:
+            from_type, value, target_type_raw = match.groups()
+            source_type = map_duckdb_type_to_vtl(from_type).capitalize()
+            vtl_type = map_duckdb_type_to_vtl(target_type_raw)
+
+            return cls("2-1-5-1", value=value, type_1=source_type, type_2=vtl_type, **kwargs)
+        return cls("2-0-0-0", duckdb_msg=str(e), **kwargs)
+
+
+class DataLoadError(VTLEngineException):
+    """
+    Errors related to loading data into the engine
+    (e.g., reading CSV files, data type mismatches during loading).
+    """
+
+    output_message = " Please check loaded file"
+    comp_code: Optional[str] = None
+
+    def __init__(
+        self,
+        code: str,
+        comp_code: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + " " + str(dataset_output)
+        else:
+            message += self.output_message
+
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
+
+    @classmethod
+    def map_duckdb_error(  # type: ignore[no-untyped-def]
+        cls, e: "duckdb.Error", comp_code: Optional[str] = None, **kwargs
+    ) -> "DataLoadError":
+        msg = str(e)
+        dataset_name = kwargs.get("name") or kwargs.get("comp_code") or "unknown"
+        if isinstance(e, duckdb.ConversionException):
+            match = re.search(
+                r'Error when converting column\s+"(\w+)".*?'
+                r'Could not convert string\s+"(.+?)"\s+to\s+\'?(\w+)\'?',
+                msg,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if match:
+                column, value, target_type = match.groups()
+                vtl_type = map_duckdb_type_to_vtl(target_type)
+                return cls(
+                    "0-1-1-12",
+                    comp_code=comp_code,
+                    column=column,
+                    value=value,
+                    type=vtl_type,
+                    duckdb_msg=msg,
+                    name=dataset_name,
+                    **kwargs,
+                )
+        elif isinstance(e, duckdb.BinderException):
+            null_identifier = kwargs.get("null_identifier") or "unknown_column"
+            if re.search(r"read_csv requires at least a single column", str(e)):
+                return cls(
+                    "0-1-1-4",
+                    comp_code=comp_code,
+                    duckdb_msg=msg,
+                    name=dataset_name,
+                    null_identifier=null_identifier,
+                    **kwargs,
+                )
+        elif isinstance(e, duckdb.InvalidInputException):
+            print(e)
+
+        return cls(
+            "2-0-0-0",
+            comp_code=comp_code,
+            duckdb_msg=msg,
+            **kwargs,
+        )
 
 
 class InputValidationException(VTLEngineException):
-    """ """
+    """
+    Errors related to DAG, overwriting datasets, invalid inputs, etc.
+    Unknown files, invalid paths, etc.
+    """
 
     def __init__(
         self,
@@ -131,6 +260,20 @@ class InputValidationException(VTLEngineException):
             super().__init__(message, lino, colno, code)
         else:
             super().__init__(message, lino, colno)
+
+
+class VtlEngineRemoteExtensionException(VTLEngineException):
+    """Exception for errors related to DuckDB extensions like httpfs."""
+
+    @classmethod
+    def local_access_disabled(cls) -> "VtlEngineRemoteExtensionException":
+        message = "Local access to files and extensions is currently disabled. "
+        return cls(message)
+
+    @classmethod
+    def remote_access_disabled(cls) -> "VtlEngineRemoteExtensionException":
+        message = "Remote access to files and extensions is currently disabled. "
+        return cls(message)
 
 
 def check_key(field: str, dict_keys: Any, key: str) -> None:

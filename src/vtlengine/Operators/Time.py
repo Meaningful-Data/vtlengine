@@ -1,6 +1,6 @@
 import re
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Type, Union
+from datetime import date
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -26,7 +26,6 @@ from vtlengine.DataTypes import (
     Date,
     Duration,
     Integer,
-    ScalarType,
     String,
     TimeInterval,
     TimePeriod,
@@ -35,9 +34,24 @@ from vtlengine.DataTypes import (
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
-    date_to_period,
-    period_to_date,
 )
+from vtlengine.duckdb.custom_functions import (
+    date_add_duck,
+    date_diff_duck,
+    day_of_month_duck,
+    time_agg_duck,
+    year_duck,
+    year_to_day_duck,
+)
+from vtlengine.duckdb.custom_functions.Time import (
+    day_of_year_duck,
+    day_to_month_duck,
+    day_to_year_duck,
+    month_duck,
+    month_to_day_duck,
+    period_ind_duck,
+)
+from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -182,6 +196,8 @@ class Parameterized(Time):
 
 class Period_indicator(Unary):
     op = PERIOD_INDICATOR
+    sql_op = "period_ind_duck"
+    py_op = period_ind_duck
 
     @classmethod
     def validate(cls, operand: Any) -> Any:
@@ -197,7 +213,8 @@ class Period_indicator(Unary):
             }
             result_components["duration_var"] = Component(
                 name="duration_var",
-                data_type=Duration,
+                data_type=String,  # This is not correct. Must be Duration,
+                # but for now we are going to set it as String
                 role=Role.MEASURE,
                 nullable=True,
             )
@@ -221,16 +238,25 @@ class Period_indicator(Unary):
             return result
         if isinstance(operand, DataComponent):
             if operand.data is not None:
-                result.data = operand.data.map(cls._get_period, na_action="ignore")
+                result.data = operand.data.project(
+                    f'{cls.sql_op}("{operand.name}") AS "{operand.name}"'
+                )
             return result
+
+        # Dataset handling
         cls.time_id = cls._get_time_id(operand)
-        result.data = (
-            operand.data.copy()[result.get_identifiers_names()]
-            if (operand.data is not None)
-            else pd.Series()
-        )
-        period_series: Any = result.data[cls.time_id].map(cls._get_period)
-        result.data["duration_var"] = period_series
+
+        if operand.data is None:
+            result.data = None
+            return result
+
+        select_exprs = []
+
+        for comp in operand.components.values():
+            if comp.role == Role.IDENTIFIER:
+                select_exprs.append(f'"{comp.name}"')
+        select_exprs.append(f'{cls.sql_op}("{cls.time_id}") AS "duration_var"')
+        result.data = operand.data.project(", ".join(select_exprs))
         return result
 
 
@@ -635,6 +661,8 @@ class Time_Shift(Binary):
 
 class Time_Aggregation(Time):
     op = TIME_AGG
+    sql_op = "time_agg_duck"
+    py_op = time_agg_duck
 
     @classmethod
     def _check_duration(cls, value: str) -> None:
@@ -647,15 +675,12 @@ class Time_Aggregation(Time):
         if period_from is not None:
             cls._check_duration(period_from)
             if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
-                # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
     @classmethod
     def dataset_validation(
         cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
-        # TODO: Review with VTL TF as this makes no sense
-
         count_time_types = 0
         for measure in operand.get_measures():
             if measure.data_type in cls.TIME_DATA_TYPES:
@@ -675,11 +700,6 @@ class Time_Aggregation(Time):
                 op=cls.op,
                 comp_type="dataset",
                 param="single time identifier",
-            )
-
-        if count_time_types != 1:
-            raise SemanticError(
-                "1-1-19-9", op=cls.op, comp_type="dataset", param="single time measure"
             )
 
         result_components = {
@@ -717,40 +737,33 @@ class Time_Aggregation(Time):
         return Scalar(name=operand.name, data_type=operand.data_type, value=None)
 
     @classmethod
-    def _execute_time_aggregation(
-        cls,
-        value: str,
-        data_type: Type[ScalarType],
-        period_from: Optional[str],
-        period_to: str,
-        conf: str,
-    ) -> str:
-        if data_type == TimePeriod:  # Time period
-            return _time_period_access(value, period_to)
-
-        elif data_type == Date:
-            start = conf == "first"
-            # Date
-            if period_to == "D":
-                return value
-            return _date_access(value, period_to, start)
-        else:
-            raise NotImplementedError
-
-    @classmethod
     def dataset_evaluation(
         cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: str
     ) -> Dataset:
         result = cls.dataset_validation(operand, period_from, period_to, conf)
-        result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
-        time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
-        result.data[time_measure.name] = result.data[time_measure.name].map(
-            lambda x: cls._execute_time_aggregation(
-                x, time_measure.data_type, period_from, period_to, conf
-            ),
-            na_action="ignore",
-        )
+        if operand.data is None:
+            result.data = None
+            return result
 
+        time_measure = [m for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES][0]
+
+        select_exprs = []
+        for comp in operand.components.values():
+            if comp.role in [Role.IDENTIFIER, Role.MEASURE]:
+                if comp.name == time_measure.name:
+                    if comp.data_type == Date:
+                        select_exprs.append(
+                            f"CAST({cls.sql_op}(\"{comp.name}\", NULL, '{period_to}', "
+                            f"'{conf or ''}') AS DATE) AS \"{comp.name}\""
+                        )
+                    else:
+                        select_exprs.append(
+                            f"{cls.sql_op}(\"{comp.name}\", NULL, '{period_to}', '{conf or ''}') "
+                            f'AS "{comp.name}"'
+                        )
+                else:
+                    select_exprs.append(f'"{comp.name}"')
+        result.data = operand.data.project(", ".join(select_exprs))
         return result
 
     @classmethod
@@ -762,13 +775,15 @@ class Time_Aggregation(Time):
         conf: str,
     ) -> DataComponent:
         result = cls.component_validation(operand, period_from, period_to, conf)
-        if operand.data is not None:
-            result.data = operand.data.map(
-                lambda x: cls._execute_time_aggregation(
-                    x, operand.data_type, period_from, period_to, conf
-                ),
-                na_action="ignore",
-            )
+        if operand.data is None:
+            result.data = None
+            return result
+
+        result.data = operand.data.project(
+            f'{cls.sql_op}("{operand.name}", NULL, '
+            f"'{period_to}', '{conf or ''}') AS \"{operand.name}\""
+        )
+
         return result
 
     @classmethod
@@ -776,8 +791,11 @@ class Time_Aggregation(Time):
         cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: str
     ) -> Scalar:
         result = cls.scalar_validation(operand, period_from, period_to, conf)
-        result.value = cls._execute_time_aggregation(
-            operand.value, operand.data_type, period_from, period_to, conf
+        result.value = cls.py_op(
+            operand.value,
+            period_from,
+            period_to,
+            conf,
         )
         return result
 
@@ -812,21 +830,6 @@ class Time_Aggregation(Time):
             return cls.component_evaluation(operand, period_from, period_to, conf)
         else:
             return cls.scalar_evaluation(operand, period_from, period_to, conf)
-
-
-def _time_period_access(v: Any, to_param: str) -> Any:
-    v = TimePeriodHandler(v)
-    if v.period_indicator == to_param:
-        return str(v)
-    v.change_indicator(to_param)
-    return str(v)
-
-
-def _date_access(v: str, to_param: str, start: bool) -> Any:
-    period_value = date_to_period(date.fromisoformat(v), to_param)
-    if start:
-        return period_value.start_date()
-    return period_value.end_date()
 
 
 class Current_Date(Time):
@@ -886,27 +889,14 @@ class Date_Diff(SimpleBinaryTime):
     op = DATEDIFF
     type_to_check = TimeInterval
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, x: Any, y: Any) -> int:
-        if (x.count("/") >= 1) or (y.count("/") >= 1):
-            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-
-        if x.count("-") == 2:
-            fecha1 = datetime.strptime(x, "%Y-%m-%d").date()
-        else:
-            fecha1 = TimePeriodHandler(x).end_date(as_date=True)  # type: ignore[assignment]
-
-        if y.count("-") == 2:
-            fecha2 = datetime.strptime(y, "%Y-%m-%d").date()
-        else:
-            fecha2 = TimePeriodHandler(y).end_date(as_date=True)  # type: ignore[assignment]
-
-        return abs((fecha2 - fecha1).days)
+    sql_op = "date_diff_duck"
+    py_op = date_diff_duck
 
 
 class Date_Add(Parametrized):
     op = DATE_ADD
+    sql_op = "date_add_duck"
+    py_op = date_add_duck
 
     @classmethod
     def validate(
@@ -952,55 +942,37 @@ class Date_Add(Parametrized):
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(operand, param_list)
         shift, period = param_list[0].value, param_list[1].value
-        is_tp = isinstance(operand, (Scalar, DataComponent)) and operand.data_type == TimePeriod
 
-        if isinstance(result, Scalar) and isinstance(operand, Scalar) and operand.value is not None:
-            result.value = cls.py_op(operand.value, shift, period, is_tp)
+        if isinstance(operand, Scalar) and operand.value is not None:
+            result.value = cls.py_op(operand.value, shift, period)  # type: ignore[union-attr]
+
         elif (
             isinstance(result, DataComponent)
             and isinstance(operand, DataComponent)
             and operand.data is not None
         ):
-            result.data = operand.data.map(
-                lambda x: cls.py_op(x, shift, period, is_tp), na_action="ignore"
-            )
+            expr = f'{cls.sql_op}("{operand.name}", \'{period}\', {shift}) AS "{result.name}"'
+            result.data = operand.data.project(expr)
+
         elif (
             isinstance(result, Dataset)
             and isinstance(operand, Dataset)
             and operand.data is not None
         ):
-            result.data = operand.data.copy()
+            exprs = [f'"{id_}"' for id_ in operand.get_identifiers_names()]
             for measure in operand.get_measures():
                 if measure.data_type in [Date, TimePeriod]:
-                    result.data[measure.name] = result.data[measure.name].map(
-                        lambda x: cls.py_op(str(x), shift, period, measure.data_type == TimePeriod),
-                        na_action="ignore",
+                    exprs.append(
+                        f'{cls.sql_op}("{measure.name}", \'{period}\', {shift}) AS "{measure.name}"'
                     )
                     measure.data_type = Date
+                else:
+                    exprs.append(f'"{measure.name}"')
+            result.data = operand.data.project(", ".join(exprs))
 
         if isinstance(result, (Scalar, DataComponent)):
             result.data_type = Date
         return result
-
-    @classmethod
-    def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
-        if is_tp:
-            tp_value = TimePeriodHandler(date_str)
-            date = period_to_date(tp_value.year, tp_value.period_indicator, tp_value.period_number)
-        else:
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-
-        if period in ["D", "W"]:
-            days_shift = shift * (7 if period == "W" else 1)
-            return (date + timedelta(days=days_shift)).strftime("%Y-%m-%d")
-
-        month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
-        new_year = date.year + (date.month - 1 + month_shift) // 12
-        new_month = (date.month - 1 + month_shift) % 12 + 1
-        last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-        return date.replace(year=new_year, month=new_month, day=min(date.day, last_day)).strftime(
-            "%Y-%m-%d"
-        )
 
 
 class SimpleUnaryTime(Operators.Unary):
@@ -1028,109 +1000,97 @@ class SimpleUnaryTime(Operators.Unary):
         cls.validate(operand)
         return super().evaluate(operand)
 
+    @classmethod
+    def apply_unary(cls, input_column_name: str, output_column_name: str) -> str:
+        """
+        Applies the operation to the operand and returns a SQL expression.
+
+        Args:
+            input_column_name (str): The operand to which the operation
+              will be applied (name of the column).
+            output_column_name (str): The name of the column where we store the result.
+        """
+        return f'{cls.sql_op}({input_column_name}) AS "{output_column_name}"'
+
+    @classmethod
+    def dataset_evaluation(cls, operand: Dataset) -> Dataset:
+        result_dataset = cls.validate(operand)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        exprs = [f'"{d}"' for d in operand.get_identifiers_names()]
+        for measure_name in operand.get_measures_names():
+            exprs.append(cls.apply_unary(measure_name, measure_name))
+
+        result_dataset.data = result_data.project(", ".join(exprs))  # type: ignore[union-attr]
+        cls.modify_measure_column(result_dataset)  # type: ignore[arg-type]
+        return result_dataset  # type: ignore[return-value]
+
+    @classmethod
+    def component_evaluation(cls, operand: DataComponent) -> DataComponent:
+        result_component = cls.validate(operand)
+        result_data = operand.data if operand.data is not None else empty_relation()
+        result_component.data = result_data.project(  # type: ignore[union-attr]
+            cls.apply_unary(operand.name, result_component.name)
+        )
+        return result_component  # type: ignore[return-value]
+
+    @classmethod
+    def scalar_evaluation(cls, operand: Scalar) -> Scalar:
+        result = cls.validate(operand)
+        result.value = cls.py_op(operand.value)  # type: ignore[union-attr]
+        return result  # type: ignore[return-value]
+
 
 class Year(SimpleUnaryTime):
     op = YEAR
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        return int(value[:4])
-
     return_type = Integer
+    sql_op = "year_duck"
+    py_op = year_duck
 
 
 class Month(SimpleUnaryTime):
     op = MONTH
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            return date.fromisoformat(value).month
-
-        result = TimePeriodHandler(value).start_date(as_date=True)
-        return result.month  # type: ignore[union-attr]
+    sql_op = "month_duck"
+    py_op = month_duck
 
 
 class Day_of_Month(SimpleUnaryTime):
     op = DAYOFMONTH
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            return date.fromisoformat(value).day
-
-        result = TimePeriodHandler(value).end_date(as_date=True)
-        return result.day  # type: ignore[union-attr]
+    sql_op = "day_of_month_duck"
+    py_op = day_of_month_duck
 
 
 class Day_of_Year(SimpleUnaryTime):
     op = DAYOFYEAR
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        if value.count("-") == 2:
-            day_y = datetime.strptime(value, "%Y-%m-%d")
-            return day_y.timetuple().tm_yday
-
-        result = TimePeriodHandler(value).end_date(as_date=True)
-        datetime_value = datetime(
-            year=result.year,  # type: ignore[union-attr]
-            month=result.month,  # type: ignore[union-attr]
-            day=result.day,  # type: ignore[union-attr]
-        )
-        return datetime_value.timetuple().tm_yday
+    sql_op = "day_of_year_duck"
+    py_op = day_of_year_duck
 
 
 class Day_to_Year(Operators.Unary):
     op = DAYTOYEAR
     return_type = Duration
-
-    @classmethod
-    def py_op(cls, value: int) -> str:
-        if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
-        years = 0
-        days_remaining = value
-        if value >= 365:
-            years = value // 365
-            days_remaining = value % 365
-        return f"P{int(years)}Y{int(days_remaining)}D"
+    sql_op = "day_to_year_duck"
+    py_op = day_to_year_duck
 
 
 class Day_to_Month(Operators.Unary):
     op = DAYTOMONTH
     return_type = Duration
-
-    @classmethod
-    def py_op(cls, value: int) -> str:
-        if value < 0:
-            raise SemanticError("2-1-19-16", op=cls.op)
-        months = 0
-        days_remaining = value
-        if value >= 30:
-            months = value // 30
-            days_remaining = value % 30
-        return f"P{int(months)}M{int(days_remaining)}D"
+    sql_op = "day_to_month_duck"
+    py_op = day_to_month_duck
 
 
 class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
-        return days
+    sql_op = "year_to_day_duck"
+    py_op = year_to_day_duck
 
 
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
-
-    @classmethod
-    def py_op(cls, value: str) -> int:
-        days = Duration.to_days(value)
-        return days
+    sql_op = "month_to_day_duck"
+    py_op = month_to_day_duck

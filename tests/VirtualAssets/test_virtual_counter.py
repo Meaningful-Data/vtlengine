@@ -209,12 +209,12 @@ def test_virtual_counter_with_run():
     call_vdc = []
 
     def mock_new_ds_name():
-        ds = f"__VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
     def mock_new_dc_name():
-        dc = f"__VDC_{len(call_vdc) + 1}"
+        dc = f"__VDC_{len(call_vdc) + 1}__"
         call_vdc.append(dc)
         return dc
 
@@ -258,7 +258,7 @@ def test_virtual_counter_aggregate():
     call_vds = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
@@ -267,7 +267,7 @@ def test_virtual_counter_aggregate():
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
     assert len(call_vds) == 1
-    assert set(call_vds) == {"@VDS_1"}
+    assert set(call_vds) == {"__VDS_1__"}
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 
@@ -298,7 +298,7 @@ def test_virtual_counter_analytic():
     call_vds = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
@@ -323,12 +323,12 @@ def test_virtual_counter_run_with_udo():
     call_vdc = []
 
     def mock_new_ds_name():
-        ds = f"@VDS_{len(call_vds) + 1}"
+        ds = f"__VDS_{len(call_vds) + 1}__"
         call_vds.append(ds)
         return ds
 
     def mock_new_dc_name():
-        dc = f"@VDC_{len(call_vdc) + 1}"
+        dc = f"__VDC_{len(call_vdc) + 1}__"
         call_vdc.append(dc)
         return dc
 

@@ -1,16 +1,21 @@
 from copy import copy
 from typing import List, Type, Union
 
-import pandas as pd
-
 from vtlengine.AST import RenameNode
 from vtlengine.AST.Grammar.tokens import AGGREGATE, CALC, DROP, KEEP, RENAME, SUBSPACE
+from vtlengine.connection import con
 from vtlengine.DataTypes import (
     Boolean,
     ScalarType,
     String,
     check_unary_implicit_promotion,
     unary_implicit_promotion,
+)
+from vtlengine.duckdb.duckdb_utils import (
+    duckdb_drop,
+    duckdb_rename,
+    duckdb_select,
+    empty_relation,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -58,12 +63,11 @@ class Calc(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
+
         for operand in operands:
-            if isinstance(operand, Scalar):
-                result_dataset.data[operand.name] = operand.value
-            else:
-                result_dataset.data[operand.name] = operand.data
+            data = operand.value if isinstance(operand, Scalar) else operand.data
+            result_dataset.data[operand.name] = data
         return result_dataset
 
 
@@ -108,7 +112,7 @@ class Aggregate(Operator):
     @classmethod
     def evaluate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         for operand in operands:
             if isinstance(operand, Scalar):
                 result_dataset.data[operand.name] = operand.value
@@ -131,10 +135,10 @@ class Filter(Operator):
     @classmethod
     def evaluate(cls, condition: DataComponent, dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(condition, dataset)
-        result_dataset.data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         if condition.data is not None and len(condition.data) > 0 and dataset.data is not None:
             true_indexes = condition.data[condition.data == True].index
-            result_dataset.data = dataset.data.iloc[true_indexes].reset_index(drop=True)
+            result_dataset.data = dataset.data[true_indexes].reset_index()
         return result_dataset
 
 
@@ -166,7 +170,8 @@ class Keep(Operator):
             raise ValueError("Keep clause requires at most one dataset operand")
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data[dataset.get_identifiers_names() + operands]
+            cols_to_keep = set(operands) | set(dataset.get_identifiers_names())
+            result_dataset.data = duckdb_select(dataset.data, cols_to_keep)
         return result_dataset
 
 
@@ -192,7 +197,7 @@ class Drop(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.drop(columns=operands, axis=1)
+            result_dataset.data = duckdb_drop(dataset.data, operands)
         return result_dataset
 
 
@@ -243,9 +248,8 @@ class Rename(Operator):
     def evaluate(cls, operands: List[RenameNode], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.rename(
-                columns={operand.old_name: operand.new_name for operand in operands}
-            )
+            rename_dict = {operand.old_name: operand.new_name for operand in operands}
+            result_dataset.data = duckdb_rename(dataset.data, rename_dict)
         return result_dataset
 
 
@@ -297,14 +301,24 @@ class Unpivot(Operator):
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
         if dataset.data is not None:
-            result_dataset.data = dataset.data.melt(
-                id_vars=dataset.get_identifiers_names(),
-                value_vars=dataset.get_measures_names(),
-                var_name=operands[0],
-                value_name="NEW_COLUMN",
+            con.register("__data_to_melt__", dataset.data)
+
+            query = f"""
+            SELECT
+              {", ".join(dataset.get_identifiers_names())},
+              variable AS "{operands[0]}",
+              value AS "{operands[1]}"
+            FROM (
+              SELECT * FROM __data_to_melt__
+              UNPIVOT (
+                value FOR variable IN ({", ".join(dataset.get_measures_names())})
+              )
             )
-            result_dataset.data.rename(columns={"NEW_COLUMN": operands[1]}, inplace=True)
-            result_dataset.data = result_dataset.data.dropna().reset_index(drop=True)
+            WHERE value IS NOT NULL
+            """
+            result_dataset.data = con.query(query)
+            result_dataset.data = result_dataset.data.reset_index()
+
         return result_dataset
 
 
@@ -344,23 +358,21 @@ class Sub(Operator):
     @classmethod
     def evaluate(cls, operands: List[DataComponent], dataset: Dataset) -> Dataset:
         result_dataset = cls.validate(operands, dataset)
-        result_dataset.data = copy(dataset.data) if dataset.data is not None else pd.DataFrame()
+        result_dataset.data = dataset.data if dataset.data is not None else empty_relation()
         operand_names = [operand.name for operand in operands]
         if dataset.data is not None and len(dataset.data) > 0:
-            # Filter the Dataframe
-            # by intersecting the indexes of the Data Component with True values
-            true_indexes = set()
+            true_indexes = empty_relation()
             is_first = True
             for operand in operands:
-                if operand.data is not None:
+                if operand.data is not None and len(operand.data) > 0:
+                    idx_rel = operand.data[operand.data == True].index
                     if is_first:
-                        true_indexes = set(operand.data[operand.data == True].index)
+                        true_indexes = idx_rel
                         is_first = False
                     else:
-                        true_indexes.intersection_update(
-                            set(operand.data[operand.data == True].index)
-                        )
-            result_dataset.data = result_dataset.data.iloc[list(true_indexes)]
-        result_dataset.data = result_dataset.data.drop(columns=operand_names, axis=1)
-        result_dataset.data = result_dataset.data.reset_index(drop=True)
+                        true_indexes = true_indexes.intersect(idx_rel)
+
+            result_dataset.data = result_dataset.data[true_indexes]
+        result_dataset.data = duckdb_drop(result_dataset.data, operand_names)
+        result_dataset.data = result_dataset.data.reset_index()
         return result_dataset
