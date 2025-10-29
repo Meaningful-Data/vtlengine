@@ -26,8 +26,7 @@ Any action with VTL requires the following elements as input:
   Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have
 * **External routines**: The VTL Engine allows using SQL (SQLite) with the eval operator. Can be
   provided as a string with the SQL or as a path object, or a List of them, to an SQL file. Its default value is `None`,
-  which shall be used if external routines are not applicable to the VTL script. You can find an example at
-    the :ref:`example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+  which shall be used if external routines are not applicable to the VTL script. You can find an example at the :ref:`example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
 * **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
   operator. Can be provided as a dictionary or as a path, or a List of them, to a JSON file. Its default value
   is `None`, which shall be used if value domains are not applicable to the VTL script.
@@ -459,6 +458,8 @@ Returns:
 .. code-block:: text
 
     30
+
+.. _example_6_run_with_multiple_value_domains_and_external_routines:
 
 =================================================================================
 Example 6: Run with multiple Value Domains and External Routines as dictionaries.
