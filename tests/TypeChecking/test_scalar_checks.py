@@ -1,17 +1,17 @@
 import pytest
 
-from vtlengine.Model import Scalar, ScalarSet
-from vtlengine.Exceptions import InputValidationException
 from vtlengine.DataTypes import (
-    String,
-    Number,
-    Integer,
-    Date,
-    TimePeriod,
-    TimeInterval,
-    Duration,
     Boolean,
+    Date,
+    Duration,
+    Integer,
+    Number,
+    String,
+    TimeInterval,
+    TimePeriod,
 )
+from vtlengine.Exceptions import InputValidationException
+from vtlengine.Model import Scalar, ScalarSet
 
 
 @pytest.mark.parametrize(
@@ -21,16 +21,14 @@ from vtlengine.DataTypes import (
         (String, "a"),
         (String, 1),
         (String, 3.14),
-        (Number, .1),
-        (Number, 1.),
+        (Number, 0.1),
+        (Number, 1.0),
         (String, True),
         (String, False),
         (String, None),
         # Number
         (Number, 3.14),
         (Number, 1),
-        (Number, .1),
-        (Number, 1.),
         (Number, True),
         (Number, False),
         (Number, "3.14"),
@@ -179,4 +177,3 @@ def test_scalarset_valid_values(data_type, values):
 def test_scalarset_invalid_values(data_type, values):
     with pytest.raises(InputValidationException):
         ScalarSet(data_type=data_type, values=values)
-

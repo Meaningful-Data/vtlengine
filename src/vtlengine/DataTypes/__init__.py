@@ -367,6 +367,7 @@ class TimeInterval(ScalarType):
 
         try:
             from vtlengine.files.parser._time_checking import check_time
+
             check_time(value)
         except Exception:
             return False
@@ -411,6 +412,7 @@ class Date(TimeInterval):
 
         try:
             from vtlengine.files.parser._time_checking import check_date
+
             check_date(value)
         except Exception:
             return False
@@ -466,6 +468,7 @@ class TimePeriod(TimeInterval):
 
         try:
             from vtlengine.files.parser._time_checking import check_time_period
+
             check_time_period(value)
         except Exception:
             return False

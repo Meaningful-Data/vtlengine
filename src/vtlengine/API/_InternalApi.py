@@ -244,7 +244,7 @@ def _handle_scalars_values(
                 value=value,
                 type_=scalars[name].data_type.__name__,
                 op_type=type(scalars[name]).__name__,
-                name=name
+                name=name,
             )
         scalars[name].value = scalars[name].data_type.cast(value)
 

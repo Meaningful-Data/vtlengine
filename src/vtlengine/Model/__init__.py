@@ -14,8 +14,7 @@ from pandas._testing import assert_frame_equal
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import SemanticError, InputValidationException
-
+from vtlengine.Exceptions import InputValidationException, SemanticError
 
 # from pyspark.pandas import DataFrame as SparkDataFrame, Series as SparkSeries
 
@@ -47,7 +46,7 @@ class Scalar:
                 value=new_value,
                 type_=self.data_type.__name__,
                 op_type=self.__class__.__name__,
-                name=self.name
+                name=self.name,
             )
         self._value = new_value
 
@@ -409,7 +408,7 @@ class ScalarSet:
                     value=value,
                     type_=self.data_type.__name__,
                     op_type=self.__class__.__name__,
-                    name=""
+                    name="",
                 )
         self._values = new_values
 
