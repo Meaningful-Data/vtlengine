@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "sqlQuery": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier for the SQL query"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "description": "SQL query statement"
+        }
+      },
+      "required": ["name", "query"],
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/sqlQuery"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/sqlQuery"
+      },
+      "minItems": 1
+    }
+  ]
+}

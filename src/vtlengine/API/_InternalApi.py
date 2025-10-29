@@ -46,6 +46,10 @@ schema_path = base_path / "data" / "schema"
 sdmx_csv_path = base_path / "data" / "sdmx_csv"
 with open(schema_path / "json_schema_2.1.json", "r") as file:
     schema = json.load(file)
+with open(schema_path / "value_domain_schema.json", "r") as file:
+    vd_schema = json.load(file)
+with open(schema_path / "external_routines_schema.json", "r") as file:
+    external_routine_schema = json.load(file)
 
 
 def _load_dataset_from_structure(
@@ -322,11 +326,20 @@ def load_vtl(input: Union[str, Path]) -> str:
         return f.read()
 
 
+def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
+    try:
+        jsonschema.validate(instance=data, schema=schema)
+    except jsonschema.ValidationError:
+        raise Exception("The given json does not follow the schema.")
+
+
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
         raise Exception("Invalid Value Domain file. Must have .json extension")
     with open(input, "r") as f:
-        vd = ValueDomain.from_dict(json.load(f))
+        data = json.load(f)
+    _validate_json(data, vd_schema)
+    vd = ValueDomain.from_dict(data)
     return {vd.name: vd}
 
 
@@ -345,6 +358,7 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
         or the value domains file does not exist.
     """
     if isinstance(input, dict):
+        _validate_json(input, vd_schema)
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if not isinstance(input, Path):
@@ -378,12 +392,12 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
     """
     external_routines = {}
     if isinstance(input, dict):
-        for name, query in input.items():
-            ext_routine = ExternalRoutine.from_sql_query(name, query)
-            external_routines[ext_routine.name] = ext_routine
+        _validate_json(input, external_routine_schema)
+        ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
+        external_routines[ext_routine.name] = ext_routine
         return external_routines
     if not isinstance(input, Path):
-        raise Exception("Input invalid. Input must be a sql file.")
+        raise Exception("Input invalid. Input must be a json file.")
     if not input.exists():
         raise Exception("Input invalid. Input does not exist")
     if input.is_dir():
@@ -412,17 +426,17 @@ def _return_only_persistent_datasets(
 
 
 def _load_single_external_routine_from_file(input: Path) -> Any:
-    """
-    Returns a single external routine.
-    """
     if not isinstance(input, Path):
         raise Exception("Input invalid")
     if not input.exists():
         raise Exception("Input does not exist")
-    if input.suffix != ".sql":
-        raise Exception("Input must be a sql file")
+    if input.suffix != ".json":
+        raise Exception("Input must be a json file")
+    routine_name = input.stem
     with open(input, "r") as f:
-        ext_rout = ExternalRoutine.from_sql_query(input.name.removesuffix(".sql"), f.read())
+        data = json.load(f)
+    _validate_json(data, external_routine_schema)
+    ext_rout = ExternalRoutine.from_sql_query(routine_name, data["query"])
     return ext_rout
 
 
