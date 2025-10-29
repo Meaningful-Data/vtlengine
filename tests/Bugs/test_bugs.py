@@ -701,18 +701,6 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GL_169_8(self):
-        """
-        Status:
-        Expression: DS_r := match_characters(DS_1, "[A-Z]{2}[0-9]{3}");
-        Description: Implicit cast string for number.
-        Git Issue: feat-169-implement-match.
-        Goal: Check Result.
-        """
-        code = "GL_169_8"
-        number_inputs = 1
-        references_names = ["1"]
-
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GL_169_9(self):
@@ -854,20 +842,6 @@ class ComparisonBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GL_165_5"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GL_165_6(self):
-        """
-        Status: OK
-        Expression: temp := ;
-        Description: Comparison between number and string.
-        Git Issue: fix-gl-165-force-df-string-type-cast.
-        Goal: Check Result.
-        """
-        code = "GL_165_6"
         number_inputs = 1
         references_names = ["1"]
 

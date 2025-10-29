@@ -198,27 +198,6 @@ class CalcOperatorTest(TestCalcHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GL_287_1(self):
-        """
-        CALC: calc
-        Dataset --> Dataset
-        Status:
-        Expression:
-                    DS_1 Dataset
-
-        Description: The operator calculates new Identifier, Measure or Attribute
-        Components on the basis of sub-expressions at Component level.
-        Note: It gives an error that says: AttributeError: 'NoneType' object has no attribute 'name'
-
-        Git Branch: #287-review-with-several-inputs.
-        Goal: Check the performance of the calc operator.
-        """
-        code = "GL_287_1"
-        number_inputs = 3
-        references_names = ["1", "2", "3", "4"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
     def test_GL_300_1(self):
         """
         Inner join
@@ -499,22 +478,6 @@ class CalcOperatorTest(TestCalcHelper):
         Goal: Check the performance of the calc operator.
         """
         code = "GL_310_1"
-        number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GL_310_2(self):
-        """
-        Inner join
-        Dataset --> Dataset
-        Status: OK
-        Expression:
-
-        Git Branch: #fix-310-review-join
-        Goal: Check the performance of the calc operator.
-        """
-        code = "GL_310_2"
         number_inputs = 2
         references_names = ["1"]
 

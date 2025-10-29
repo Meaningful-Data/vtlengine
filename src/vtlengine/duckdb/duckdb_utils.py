@@ -316,9 +316,7 @@ def duration_handler(col: str, reverse: bool = False) -> str:
     return expr
 
 
-def empty_relation(
-    cols: Optional[Union[str, List[str]]] = None, as_query: bool = False
-) -> RelationProxy:
+def empty_relation(cols: Optional[Union[str, List[str]]] = None) -> RelationProxy:
     """
     Returns an empty DuckDB relation.
 
@@ -327,8 +325,7 @@ def empty_relation(
     if cols:
         df = pd.DataFrame(columns=list(cols) if isinstance(cols, (list, set)) else [cols])
         return RelationProxy(con.from_df(df))
-    query = "SELECT 1 LIMIT 0"
-    return query if as_query else RelationProxy(con.sql(query))
+    return RelationProxy(con.from_df(pd.DataFrame(columns=[INDEX_COL])))
 
 
 def get_col_type(rel: RelationProxy, col_name: str) -> DuckDBPyType:

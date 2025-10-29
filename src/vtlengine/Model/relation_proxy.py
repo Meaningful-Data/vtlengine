@@ -532,8 +532,8 @@ class RelationProxy:
     def _wrap_relation(self, value: Any) -> Any:
         return RelationProxy(value) if isinstance(value, DuckDBPyRelation) else value
 
-    def clean_exec_graph(self, verbose: bool = False) -> None:
-        if self._should_clean_exec_graph(verbose):
+    def clean_exec_graph(self, verbose: bool = False, no_check: bool = False) -> None:
+        if no_check or self._should_clean_exec_graph(verbose):
             if verbose:
                 print("Pre-clean plan:")
                 print(self.explain())

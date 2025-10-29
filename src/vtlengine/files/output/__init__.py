@@ -19,7 +19,7 @@ def save_datapoints(
     output_path: Union[str, Path],
 ) -> None:
     if dataset.data is None:
-        dataset.data = empty_relation()
+        dataset.data = empty_relation(dataset.get_components_names())
     if time_period_representation is not None:
         format_time_period_external_representation(dataset, time_period_representation)
     if isinstance(dataset.data, DuckDBPyRelation):

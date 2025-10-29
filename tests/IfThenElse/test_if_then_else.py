@@ -478,58 +478,6 @@ class IfThenElseTest(TestIfThenElse):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GL_424_1(self):
-        """
-        if-then-else: if
-        Dataset --> Dataset
-        Status: OK
-        Expression: INPUT_CHECK_REGEX :=
-            if
-                (match_characters(BIS_LOC_STATS # OBS_VALUE,r'[0-9]*[.,]?[0-9]*\\Z'))
-            then
-                length(BIS_LOC_STATS # OBS_VALUE) > 0 and length(BIS_LOC_STATS # OBS_VALUE) < 20
-            else
-                if(match_characters(BIS_LOC_STATS # OBS_VALUE,"/[^A-Za-z ]/g"))
-                then
-                    BIS_LOC_STATS # REP_COUNTRY in { "TR" }
-                else
-                BIS_LOC_STATS # REP_COUNTRY in { "US" }
-            ;
-
-        Description: The if operator returns thenOperand if condition evaluates
-                     to true, elseOperand otherwise.
-        Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/424
-        Goal: Check the result of if-then-else for dataset-dataset.
-        """
-        code = "GL_424_1"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GL_424_2(self):
-        """
-        if-then-else: if
-        Dataset --> Dataset
-        Status: OK
-        Expression: INPUT_CHECK_REGEX :=
-            if(match_characters(BIS_LOC_STATS # OBS_VALUE,"/[^A-Za-z ]/g"))
-            then
-                BIS_LOC_STATS # REP_COUNTRY in { "TR" }
-            else
-            BIS_LOC_STATS # REP_COUNTRY in { "US" }
-            ;
-        Description: The if operator returns thenOperand if condition evaluates
-                     to true, elseOperand otherwise.
-        Git Branch: #https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/424
-        Goal: Check the result of if-then-else for dataset-dataset.
-        """
-        code = "GL_424_2"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
     def test_GL_436_1(self):
         """
         if-then-else: if

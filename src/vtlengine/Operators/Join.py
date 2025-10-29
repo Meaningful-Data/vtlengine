@@ -184,6 +184,8 @@ class Join(Operator):
                     )
                 else:
                     result.data = empty_relation()
+
+        result.data = result.data.reset_index()
         return result
 
     @classmethod

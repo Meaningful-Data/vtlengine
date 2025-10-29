@@ -2,16 +2,17 @@ from csv import DictReader
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+import duckdb
 from _duckdb import Error
 from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
-from vtlengine.DataTypes import Duration, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Date, Duration, TimeInterval, TimePeriod
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.files.parser._time_checking import load_time_checks
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, RelationProxy, Role
 
 load_time_checks(con)
 
@@ -104,6 +105,7 @@ def _validate_duckdb(
     components: Dict[str, Component],
     data: DuckDBPyRelation,
     dataset_name: str,
+    materialize: bool = False,
 ) -> DuckDBPyRelation:
     # Check for missing columns
     data_columns = data.columns
@@ -122,15 +124,18 @@ def _validate_duckdb(
     exprs = []
     for col, comp in components.items():
         dtype = comp.data_type
-        if dtype in [Duration, TimeInterval, TimePeriod]:
+        if dtype in [Duration, TimeInterval, TimePeriod, Date]:
             check_method = f"check_{dtype.__name__}".lower()
-            exprs.append(f'{check_method}("{col}") AS "{col}"')
+            exprs.append(f'{check_method}("{col}", {repr(dataset_name)}, {repr(col)}) AS "{col}"')
         else:
             exprs.append(f'"{col}"')
 
     final_query = ", ".join(exprs)
-    data = data.project(final_query)
-
+    data = RelationProxy(data.project(final_query))
+    try:
+        data.clean_exec_graph(no_check=materialize)
+    except duckdb.Error as e:
+        raise DataLoadError.map_duckdb_error(e)
     return data
 
 
@@ -204,6 +209,7 @@ def load_datapoints(
     components: Dict[str, Component],
     dataset_name: str,
     csv_path: Optional[Union[Path, str]] = None,
+    materialize: bool = True,
 ) -> DuckDBPyRelation:
     if csv_path is None or (isinstance(csv_path, Path) and not csv_path.exists()):
         return empty_relation(list(components.keys()))
@@ -217,10 +223,6 @@ def load_datapoints(
         header = header_rel.columns
         if len(header) == 1 and "," in header[0]:
             header = [h.strip() for h in header[0].split(",")]
-        # Lazy CSV read
-        # with open(path_str, mode="r", encoding="utf-8") as file:
-        #     csv_reader = csv.reader(file)
-        #     header = next(csv_reader)  # Extract the header to determine column order
 
         # Extract data types from components in header
         dtypes = {
@@ -247,9 +249,16 @@ def load_datapoints(
             raise DataLoadError.map_duckdb_error(e)
 
         # Type validation and normalization
-        rel = _validate_duckdb(components, rel, dataset_name)
-
-        return _sanitize_duckdb_columns(components, csv_path, rel)
+        rel = _validate_duckdb(components, rel, dataset_name, materialize=materialize)
+        # Column sanitization
+        rel = _sanitize_duckdb_columns(components, csv_path, rel)
+        # Materialization of the relation to avoid later re-computation
+        data = RelationProxy(rel)
+        try:
+            data.clean_exec_graph(no_check=materialize)
+        except duckdb.Error as e:
+            raise DataLoadError.map_duckdb_error(e)
+        return data
 
     else:
         raise Exception("Invalid csv_path type")

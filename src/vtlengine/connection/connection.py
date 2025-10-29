@@ -6,7 +6,6 @@ from typing import Optional
 
 import duckdb
 from duckdb.functional import FunctionNullHandling
-from duckdb.typing import DATE
 
 # import psutil
 
@@ -137,8 +136,6 @@ class ConnectionManager:
                 func_ref = getattr(custom_functions, func_name)
                 if func_name.startswith("__") or not inspect.isfunction(func_ref):
                     continue
-                if func_name in ("date_add_duck",):
-                    kwargs["return_type"] = DATE
                 cls._connection.create_function(
                     func_name,
                     func_ref,  # type: ignore[arg-type]
