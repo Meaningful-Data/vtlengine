@@ -504,7 +504,7 @@ Example 6: Run with multiple Value Domains and External Routines as dictionaries
 
 
         value_domains =
-        {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"}
+        {"name": "Countries", "setlist": ["DE", "FR", "IT"], "type": "String"}
 
         run_result = run(
             script=script,
@@ -525,9 +525,9 @@ Returns:
     :file: _static/Example_6_2.csv
     :header-rows: 1
 
-=============================================================================
-Example 7: Run with multiple Value Domains and External Routines using Paths.
-=============================================================================
+===========================
+Example 7: Run using Paths
+===========================
 .. code-block:: python
 
     from pathlib import Path
@@ -536,40 +536,18 @@ Example 7: Run with multiple Value Domains and External Routines using Paths.
 
     from vtlengine import run
 
-    filepath_external_routines = Path("Docs/SQL_4..json")
-    filepath_ValueDomains = Path("Docs/_static/VD_2.json")
-
     def main():
-        script = """
-                    Example_7 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
-                    Example_7_2 <- eval(SQL_3(DS_1) language "sqlite" returns dataset { identifier<integer> Id_1,
-                    measure<number> Me_1});
-                """
+        filepath_external_routines = Path("Docs/_static/SQL_4.json")
+        filepath_ValueDomains = Path("Docs/_static/VD_2.json")
+        filepath_vtl_script = Path("Docs/_static/Example_7.vtl")
+        filepath_data_structures = Path("Docs/_static/Example_7.json")
+        filepath_data = Path("Docs/_static/Example_7_input.csv")
 
-        data_structures = {
-            "datasets": [
-                {
-                    "name": "DS_1",
-                    "DataStructure": [
-                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                        {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
-                    ],
-                }
-            ]
-        }
-
-        data_df = pd.DataFrame(
-            {"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]}
-        )
-
-        datapoints = {"DS_1": data_df}
-
+        datastructures = filepath_data_structures
+        datapoints = filepath_data
+        script = filepath_vtl_script
         external_routines = filepath_external_routines
-
-
         value_domains = filepath_ValueDomains
-
         run_result = run(
             script=script,
             data_structures=data_structures,
@@ -582,11 +560,11 @@ Example 7: Run with multiple Value Domains and External Routines using Paths.
 Returns:
 
 .. csv-table::
-    :file: _static/Example_7.csv
+    :file: _static/Example_7_output.csv
     :header-rows: 1
 
 .. csv-table::
-    :file: _static/Example_7_2.csv
+    :file: _static/Example_7_2_output.csv
     :header-rows: 1
 
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_

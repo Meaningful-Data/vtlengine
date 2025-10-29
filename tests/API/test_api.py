@@ -29,6 +29,7 @@ from vtlengine.API._InternalApi import (
     load_value_domains,
     load_vtl,
     to_vtl_json,
+    _validate_json
 )
 from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import SemanticError
@@ -558,6 +559,20 @@ params_generate_sdmx = [
 
 params_run_with_scalars = [(filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")]
 
+params_validate_vd_sql_schema = [
+    (filepath_json / "value_domain_schema.json", filepath_json / "external_routines_schema.json",
+     filepath_ValueDomains / "VD_1.json", filepath_sql / "1.json")]
+
+params_invalid_vd = [
+    pytest.param(filepath_json / "value_domain_schema.json", filepath_ValueDomains / "VD_wrong_key.json", id="wrong_key"),
+    pytest.param(filepath_json / "value_domain_schema.json", filepath_ValueDomains / "VD_wrong_setlist.json", id="wrong_setlist"),
+    pytest.param(filepath_json / "value_domain_schema.json", filepath_ValueDomains / "VD_wrong_type.json", id="wrong_type"),
+    pytest.param(filepath_json / "value_domain_schema.json", filepath_ValueDomains / "VD_wrong_values.json", id="wrong_values"),
+]
+params_invalid_sql = [
+    pytest.param(filepath_json / "external_routines_schema.json", filepath_sql / "ext_routine_wrong_key.json", id="wrong_key"),
+    pytest.param(filepath_json / "external_routines_schema.json", filepath_sql / "ext_routine_wrong_query.json", id="wrong_query"),
+]
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -566,11 +581,11 @@ def test_load_external_routine(input):
         "1": ExternalRoutine(
             dataset_names=["BNFCRS_TRNSFRS", "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4"],
             query="SELECT date(DT_RFRNC) as DT_RFRNC, PRSPCTV_ID, "
-            "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
-            "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
-            "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
-            "IN(SELECT INSTRMNT_UNQ_ID FROM "
-            "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
+                  "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
+                  "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
+                  "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
+                  "IN(SELECT INSTRMNT_UNQ_ID FROM "
+                  "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
             name="1",
         )
     }
@@ -788,7 +803,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run_only_persistent_results(
-    script, data_structures, datapoints, value_domains, external_routines, tmp_path
+        script, data_structures, datapoints, value_domains, external_routines, tmp_path
 ):
     output_path = tmp_path
 
@@ -1615,8 +1630,8 @@ def test_check_script_with_string_input():
 
 def test_check_script_invalid_input_type():
     with pytest.raises(
-        Exception,
-        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+            Exception,
+            match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
     ):
         _check_script(12345)
 
@@ -1888,6 +1903,38 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
+
+
+@pytest.mark.parametrize("path_vd_schema, path_ext_routine_schema, path_vd, path_sql", params_validate_vd_sql_schema)
+def test_validate_json_schema_on_vd_and_external_routine(path_vd_schema, path_ext_routine_schema, path_vd, path_sql):
+    with open(path_vd, 'r') as f:
+        vd_data = json.load(f)
+    with open(path_sql, 'r') as f:
+        ext_routine_data = json.load(f)
+    with open(path_vd_schema, 'r') as f:
+        vd_schema = json.load(f)
+    with open(path_ext_routine_schema, 'r') as f:
+        ext_routine_schema = json.load(f)
+    _validate_json(vd_data, vd_schema)
+    _validate_json(ext_routine_data, ext_routine_schema)
+
+@pytest.mark.parametrize("path_schema, path_vd", params_invalid_vd)
+def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
+    with open(path_vd, 'r') as f:
+        vd_data = json.load(f)
+    with open(path_schema, 'r') as f:
+        vd_schema = json.load(f)
+    with pytest.raises(Exception):
+        _validate_json(vd_data, vd_schema)
+
+@pytest.mark.parametrize("path_schema, path_sql", params_invalid_sql)
+def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
+    with open(path_sql, 'r') as f:
+        ext_routine_data = json.load(f)
+    with open(path_schema, 'r') as f:
+        ext_routine_schema = json.load(f)
+    with pytest.raises(Exception):
+        _validate_json(ext_routine_data, ext_routine_schema)
 
 
 def test_with_multiple_vd_and_ext_routines():
