@@ -23,6 +23,7 @@ from tests.Helper import TestHelper
 from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
 from vtlengine.API._InternalApi import (
     _check_script,
+    _validate_json,
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
@@ -82,12 +83,12 @@ input_vd_error_params = [
     (filepath_VTL / "1.vtl", "Invalid vd file. Must have .json extension"),
     (
         filepath_json / "DS_1.json",
-        "Invalid format for ValueDomain. Requires name, type and setlist.",
+        "The given json does not follow the schema.",
     ),
     (2, "Invalid vd file. Input is not a Path object"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
-        "Invalid format for ValueDomain. Requires name, type and setlist.",
+        "The given json does not follow the schema.",
     ),
 ]
 
@@ -281,12 +282,15 @@ load_datasets_with_data_and_wrong_inputs = [
     (2, 2, "Invalid datastructure. Input must be a dict or Path object"),
 ]
 
-ext_params_OK = [(filepath_sql / "1.sql")]
+ext_params_OK = [(filepath_sql / "1.json")]
 
 ext_params_wrong = [
-    (filepath_json / "DS_1.json", "Input must be a sql file"),
-    (5, "Input invalid. Input must be a sql file."),
-    (filepath_sql / "2.sql", "Input invalid. Input does not exist"),
+    (
+        filepath_json / "DS_1.json",
+        "The given json does not follow the schema.",
+    ),
+    (5, "Input invalid. Input must be a json file."),
+    (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
 ]
 
 params_semantic = [
@@ -294,7 +298,7 @@ params_semantic = [
         filepath_VTL / "1.vtl",
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         filepath_ValueDomains / "VD_1.json",
-        filepath_sql / "1.sql",
+        filepath_sql / "1.json",
     )
 ]
 
@@ -304,7 +308,7 @@ params_run = [
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
         filepath_ValueDomains / "VD_1.json",
-        filepath_sql / "1.sql",
+        filepath_sql / "1.json",
     )
 ]
 
@@ -555,6 +559,50 @@ params_generate_sdmx = [
 
 params_run_with_scalars = [(filepath_json / "DS_3.json", filepath_csv / "DS_3.csv")]
 
+params_validate_vd_sql_schema = [
+    (
+        filepath_json / "value_domain_schema.json",
+        filepath_json / "external_routines_schema.json",
+        filepath_ValueDomains / "VD_1.json",
+        filepath_sql / "1.json",
+    )
+]
+
+params_invalid_vd = [
+    pytest.param(
+        filepath_json / "value_domain_schema.json",
+        filepath_ValueDomains / "VD_wrong_key.json",
+        id="wrong_key",
+    ),
+    pytest.param(
+        filepath_json / "value_domain_schema.json",
+        filepath_ValueDomains / "VD_wrong_setlist.json",
+        id="wrong_setlist",
+    ),
+    pytest.param(
+        filepath_json / "value_domain_schema.json",
+        filepath_ValueDomains / "VD_wrong_type.json",
+        id="wrong_type",
+    ),
+    pytest.param(
+        filepath_json / "value_domain_schema.json",
+        filepath_ValueDomains / "VD_wrong_values.json",
+        id="wrong_values",
+    ),
+]
+params_invalid_sql = [
+    pytest.param(
+        filepath_json / "external_routines_schema.json",
+        filepath_sql / "ext_routine_wrong_key.json",
+        id="wrong_key",
+    ),
+    pytest.param(
+        filepath_json / "external_routines_schema.json",
+        filepath_sql / "ext_routine_wrong_query.json",
+        id="wrong_query",
+    ),
+]
+
 
 @pytest.mark.parametrize("input", ext_params_OK)
 def test_load_external_routine(input):
@@ -562,7 +610,12 @@ def test_load_external_routine(input):
     reference = {
         "1": ExternalRoutine(
             dataset_names=["BNFCRS_TRNSFRS", "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4"],
-            query="SELECT\n    date(DT_RFRNC) as DT_RFRNC,\n    PRSPCTV_ID,\n    INSTRMNT_UNQ_ID,\n    BNFCRS_CNTRPRTY_ID,\n    TRNSFR_CNTRPRTY_ID,\n    BNFCR_ID,\n    TRNSFR_ID\nFROM\n    BNFCRS_TRNSFRS\nWHERE\n    INSTRMNT_UNQ_ID NOT IN(\n\t\tSELECT\n\t\t\tINSTRMNT_UNQ_ID\n\t\tFROM\n\t\t\tBNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);\n",
+            query="SELECT date(DT_RFRNC) as DT_RFRNC, PRSPCTV_ID, "
+            "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
+            "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
+            "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
+            "IN(SELECT INSTRMNT_UNQ_ID FROM "
+            "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
             name="1",
         )
     }
@@ -1880,3 +1933,157 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
         )
     assert wrong_type in e.value.args[0]
     assert correct_type in e.value.args[0]
+
+
+@pytest.mark.parametrize(
+    "path_vd_schema, path_ext_routine_schema, path_vd, path_sql", params_validate_vd_sql_schema
+)
+def test_validate_json_schema_on_vd_and_external_routine(
+    path_vd_schema, path_ext_routine_schema, path_vd, path_sql
+):
+    with open(path_vd, "r") as f:
+        vd_data = json.load(f)
+    with open(path_sql, "r") as f:
+        ext_routine_data = json.load(f)
+    with open(path_vd_schema, "r") as f:
+        vd_schema = json.load(f)
+    with open(path_ext_routine_schema, "r") as f:
+        ext_routine_schema = json.load(f)
+    _validate_json(vd_data, vd_schema)
+    _validate_json(ext_routine_data, ext_routine_schema)
+
+
+@pytest.mark.parametrize("path_schema, path_vd", params_invalid_vd)
+def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
+    with open(path_vd, "r") as f:
+        vd_data = json.load(f)
+    with open(path_schema, "r") as f:
+        vd_schema = json.load(f)
+    with pytest.raises(Exception, match="The given json does not follow the schema."):
+        _validate_json(vd_data, vd_schema)
+
+
+@pytest.mark.parametrize("path_schema, path_sql", params_invalid_sql)
+def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
+    with open(path_sql, "r") as f:
+        ext_routine_data = json.load(f)
+    with open(path_schema, "r") as f:
+        ext_routine_schema = json.load(f)
+    with pytest.raises(Exception, match="The given json does not follow the schema."):
+        _validate_json(ext_routine_data, ext_routine_schema)
+
+
+def test_with_multiple_vd_and_ext_routines():
+    script = """
+      DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
+      DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
+      DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+      DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+    """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    data_df = pd.DataFrame(
+        {"Id_1": [2012, 2012, 2012], "Id_2": ["AT", "DE", "FR"], "Me_1": [0, 4, 9]}
+    )
+
+    datapoints = {"DS_1": data_df}
+
+    external_routines = [
+        {
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
+        },
+        filepath_sql / "SQL_4.json",
+    ]
+
+    value_domains = [
+        {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"},
+        filepath_ValueDomains / "VD_2.json",
+    ]
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=value_domains,
+        external_routines=external_routines,
+    )
+
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012, 2012, 2012],
+                    "Id_2": ["AT", "DE", "FR"],
+                    "Me_1": [0.0, 4.0, 9.0],
+                    "Me_2": [False, False, False],
+                }
+            ),
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012, 2012, 2012],
+                    "Id_2": ["AT", "DE", "FR"],
+                    "Me_1": [0.0, 4.0, 9.0],
+                    "Me_2": [False, False, False],
+                }
+            ),
+        ),
+        "DS_r3": Dataset(
+            name="DS_r3",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012],
+                    "Me_1": [3.0],
+                }
+            ),
+        ),
+        "DS_r4": Dataset(
+            name="DS_r4",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=pd.DataFrame(
+                {
+                    "Id_1": [2012, 2012, 2012],
+                    "Me_1": [0.0, 4.0, 9.0],
+                }
+            ),
+        ),
+    }
+    assert run_result["DS_r"] == reference["DS_r"]
+    assert run_result["DS_r2"] == reference["DS_r2"]
+    assert run_result["DS_r3"] == reference["DS_r3"]
+    assert run_result["DS_r4"] == reference["DS_r4"]

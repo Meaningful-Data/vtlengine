@@ -1,1 +1,0 @@
-SELECT * FROM DS_1 WHERE Me_int = 5;
