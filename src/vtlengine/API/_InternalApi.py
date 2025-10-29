@@ -330,7 +330,7 @@ def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError:
-        raise Exception("Invalid format for ValueDomain. Requires name, type and setlist.")
+        raise Exception("The given json does not follow the schema.")
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
