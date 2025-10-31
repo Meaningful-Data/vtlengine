@@ -705,7 +705,9 @@ class Time_Aggregation(Time):
         if operand.data_type == TimeInterval:
             raise SemanticError("1-1-19-6", op=cls.op, comp=operand.name)
 
-        return DataComponent(name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable)
+        return DataComponent(
+            name=operand.name, data_type=operand.data_type, data=None, nullable=operand.nullable
+        )
 
     @classmethod
     def scalar_validation(
