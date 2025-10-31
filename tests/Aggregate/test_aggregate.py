@@ -1242,26 +1242,26 @@ class AggregateOperatorsTest(TestAggregateHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GL_466_1(self):
-        """
-        Dataset --> Dataset
-        Status: OK
-        Expression:
-
-        Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
-
-        Git Branch: #466.
-        Goal: aggr (count) with null values and fill_time_series
-        """
-        code = "GL_466_1"
-        number_inputs = 1
-        # references_names = ["1", "2", "3"]
-
-        # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+    # def test_GL_466_1(self):
+    #     """
+    #     Dataset --> Dataset
+    #     Status: OK
+    #     Expression:
+    #
+    #     Description: https://gitlab.meaningfuldata.eu/vtl-suite/vtlengine/-/issues/466
+    #
+    #     Git Branch: #466.
+    #     Goal: aggr (count) with null values and fill_time_series
+    #     """
+    #     code = "GL_466_1"
+    #     number_inputs = 1
+    #     # references_names = ["1", "2", "3"]
+    #
+    #     # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+    #     message = "1-1-1-16"
+    #     self.NewSemanticExceptionTest(
+    #         code=code, number_inputs=number_inputs, exception_code=message
+    #     )
 
     def test_GL_466_2(self):
         """

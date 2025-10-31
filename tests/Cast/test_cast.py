@@ -208,6 +208,16 @@ class CastExplicitWithoutMask(CastHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GL_563_1(self):
+        """
+        Solves bug report in github issue #296
+        """
+        code = "GL_563_1"
+        number_inputs = 1
+        reference_names = ["1", "2"]
+
+        self.BaseTest(code, number_inputs, references_names=reference_names)
+
 
 @pytest.mark.parametrize("text, type_of_error, exception_message", test_params)
 def test_errors_validate_cast_scalar(text, type_of_error, exception_message):
