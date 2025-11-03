@@ -39,7 +39,7 @@ jobs:
 
       - name: Compare versions
         run: |
-          if [ "${{ steps.pyproject-version.outputs.value }}" != "${{ steps.module-version.outputs.MODULE_VERSION }}" ]; then
+          if [ "${{ steps.pyproject-version.outputs.value }}" != "${{ steps.module-version.outputs.value }}" ]; then
             echo "❌ Version mismatch detected!"
             echo "pyproject.toml version: ${{ steps.pyproject-version.outputs.value }}"
             echo "__version__ value: ${{ steps.module-version.outputs.MODULE_VERSION }}"
