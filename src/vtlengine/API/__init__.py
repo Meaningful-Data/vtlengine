@@ -136,8 +136,10 @@ def create_ast(text: str) -> Start:
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -194,10 +196,20 @@ def semantic_analysis(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        vd = load_value_domains(value_domains)
+        if isinstance(value_domains, list):
+            vd = {}
+            for item in value_domains:
+                vd.update(load_value_domains(item))
+        else:
+            vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        ext_routines = load_external_routines(external_routines)
+        if isinstance(external_routines, list):
+            ext_routines = {}
+            for item in external_routines:
+                ext_routines.update(load_external_routines(item))
+        else:
+            ext_routines = load_external_routines(external_routines)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
