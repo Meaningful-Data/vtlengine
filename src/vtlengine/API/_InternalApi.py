@@ -426,11 +426,7 @@ def _return_only_persistent_datasets(
     """
     Returns only the datasets with a persistent assignment.
     """
-    persistent = []
-    for child in ast.children:
-        if isinstance(child, PersistentAssignment) and hasattr(child.left, "value"):
-            persistent.append(child.left.value)
-    return {dataset.name: dataset for dataset in datasets.values() if dataset.name in persistent}
+    return {dataset.name: dataset for dataset in datasets.values() if dataset.persistent}
 
 
 def _load_single_external_routine_from_file(input: Path) -> Any:
