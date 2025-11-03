@@ -351,7 +351,9 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]) -> Dict[str, ValueDomain]:
+def load_value_domains(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
@@ -389,7 +391,9 @@ def load_value_domains(input: Union[Dict[str, Any], Path, List[Union[Dict[str, A
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]]) -> Any:
+def load_external_routines(
+    input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]],
+) -> Any:
     """
     Load the external routines.
 
@@ -401,7 +405,8 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str, List[Union[Di
         the dictionaries from the Path given.
 
     Raises:
-        Exception: If the JSON file does not exist, the Path is wrong, or the file is not a JSON one.
+        Exception: If the JSON file does not exist, the Path is wrong, or the file is not a \
+        JSON one.
     """
     external_routines = {}
     if isinstance(input, dict):
