@@ -230,8 +230,7 @@ class Binary(Operator):
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        index = [] if len(result) == 0 else left_series.index[0:len(result)]
-        return pd.Series(result, index=index, dtype=object)
+        return pd.Series(result, index=list(range(len(result))), dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
