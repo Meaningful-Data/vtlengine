@@ -196,20 +196,10 @@ def semantic_analysis(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        if isinstance(value_domains, list):
-            vd = {}
-            for item in value_domains:
-                vd.update(load_value_domains(item))
-        else:
-            vd = load_value_domains(value_domains)
+        vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        if isinstance(external_routines, list):
-            ext_routines = {}
-            for item in external_routines:
-                ext_routines.update(load_external_routines(item))
-        else:
-            ext_routines = load_external_routines(external_routines)
+        ext_routines = load_external_routines(external_routines)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
@@ -334,20 +324,10 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        if isinstance(value_domains, list):
-            vd = {}
-            for item in value_domains:
-                vd.update(load_value_domains(item))
-        else:
-            vd = load_value_domains(value_domains)
+        vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        if isinstance(external_routines, list):
-            ext_routines = {}
-            for item in external_routines:
-                ext_routines.update(load_external_routines(item))
-        else:
-            ext_routines = load_external_routines(external_routines)
+        ext_routines = load_external_routines(external_routines)
 
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
