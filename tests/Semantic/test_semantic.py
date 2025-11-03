@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine import semantic_analysis
 
 
 class SemanticHelper(TestHelper):
@@ -2781,9 +2782,6 @@ class ScalarTests(SemanticHelper):
             scalars={"sc_1": 3},
         )
 
-import pytest
-from vtlengine.API import semantic_analysis
-
 
 def test_bug_297():
     """
@@ -2792,20 +2790,12 @@ def test_bug_297():
     script = """
         Mod1.DS_cond :=
             DS_1 # Me_bool;
-
         Mod1.DS_then :=
             DS_1 # Me_int;
-
         Mod1.DS_else :=
             DS_1 # Me_int;
-
         Mod1.if_ds_ds :=
-            if 
-                Mod1.DS_cond # Id_2 = "A" 
-            then 
-                Mod1.DS_then 
-            else 
-                Mod1.DS_else;
+            if Mod1.DS_cond # Id_2 = "A"then Mod1.DS_then else Mod1.DS_else;
     """
     data_structures = {
         "datasets": [
@@ -2816,7 +2806,12 @@ def test_bug_297():
                     {"name": "Id_2", "type": "String", "nullable": False, "role": "Identifier"},
                     {"name": "Id_3", "type": "Integer", "nullable": False, "role": "Identifier"},
                     {"name": "Id_date", "type": "Date", "nullable": False, "role": "Identifier"},
-                    {"name": "Id_period", "type": "Time_Period", "nullable": False, "role": "Identifier"},
+                    {
+                        "name": "Id_period",
+                        "type": "Time_Period",
+                        "nullable": False,
+                        "role": "Identifier",
+                    },
                     {"name": "Me_bool", "type": "Boolean", "nullable": True, "role": "Measure"},
                     {"name": "Me_int", "type": "Integer", "nullable": True, "role": "Measure"},
                     {"name": "Me_interval", "type": "Time", "nullable": True, "role": "Measure"},
