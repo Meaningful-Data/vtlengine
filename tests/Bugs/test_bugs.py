@@ -2852,19 +2852,6 @@ class ExternalRoutineBugs(BugHelper):
 class CastBugs(BugHelper):
     classTest = "Bugs.CastTest"
 
-    # def test_GL_449_1(self):
-    #     """
-    #     Status: OK
-    #     Description:
-    #     Goal: Check Result.
-    #     """
-    #     code = "GL_449_1"
-    #     number_inputs = 1
-    #     message = "1-1-1-16"
-    #     self.NewSemanticExceptionTest(
-    #         code=code, number_inputs=number_inputs, exception_code=message
-    #     )
-
     def test_GL_449_2(self):
         """
         Status: OK
@@ -2890,32 +2877,6 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
-
-    # def test_GL_449_4(self):
-    #     """
-    #     Status: OK
-    #     Description:
-    #     Goal: Check Result.
-    #     """
-    #     code = "GL_449_4"
-    #     number_inputs = 1
-    #     message = "1-1-1-16"
-    #     self.NewSemanticExceptionTest(
-    #         code=code, number_inputs=number_inputs, exception_code=message
-    #     )
-    #
-    # def test_GL_449_5(self):
-    #     """
-    #     Status: OK
-    #     Description:
-    #     Goal: Check Result.
-    #     """
-    #     code = "GL_449_5"
-    #     number_inputs = 1
-    #     message = "1-1-1-16"
-    #     self.NewSemanticExceptionTest(
-    #         code=code, number_inputs=number_inputs, exception_code=message
-    #     )
 
     def test_GL_449_6(self):
         """
@@ -2971,19 +2932,6 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
-
-    # def test_GL_447_1(self):
-    #     """
-    #     Status: OK
-    #     Description: Time_period not usable for order by clause
-    #     Goal: Check Result.
-    #     """
-    #     code = "GL_447_1"
-    #     number_inputs = 1
-    #     message = "1-1-1-16"
-    #     self.NewSemanticExceptionTest(
-    #         code=code, number_inputs=number_inputs, exception_code=message
-    #     )
 
     def test_GL_90_1(self):
         """
