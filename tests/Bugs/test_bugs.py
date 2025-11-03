@@ -2852,7 +2852,6 @@ class ExternalRoutineBugs(BugHelper):
 class CastBugs(BugHelper):
     classTest = "Bugs.CastTest"
 
-
     def test_GL_449_2(self):
         """
         Status: OK
@@ -2878,7 +2877,6 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
-
 
     def test_GL_449_6(self):
         """
@@ -2934,7 +2932,6 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
-
 
     def test_GL_90_1(self):
         """
