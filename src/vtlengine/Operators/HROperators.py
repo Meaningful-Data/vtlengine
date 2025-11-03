@@ -183,19 +183,22 @@ class HRUnMinus(HRUnNumeric):
 
 class HAAssignment(Operators.Binary):
     @classmethod
-    def validate(cls, left: Dataset, right: DataComponent, hr_mode: str) -> Dataset:
+    def validate(cls, left: Dataset, right: DataComponent, hr_mode: str, hr_component) -> Dataset:
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         return Dataset(name=f"{left.name}", components=result_components, data=None)
 
     @classmethod
     def evaluate(  # type: ignore[override]
-        cls, left: Dataset, right: DataComponent, hr_mode: str
+        cls, left: Dataset, right: DataComponent, hr_mode: str, hr_component
     ) -> Dataset:
-        result = cls.validate(left, right, hr_mode)
+        result = cls.validate(left, right, hr_mode, hr_component)
         measure_name = left.get_measures_names()[0]
         result.data = left.data.copy() if left.data is not None else pd.DataFrame()
         if right.data is not None:
             result.data[measure_name] = right.data.map(lambda x: cls.handle_mode(x, hr_mode))
+            result.data = result.data.iloc[right.data.index[0:len(result.data)]]
+
+        result.data[hr_component] = left.name
         result.data = result.data[result.data[measure_name] != "REMOVE_VALUE"]
         return result
 

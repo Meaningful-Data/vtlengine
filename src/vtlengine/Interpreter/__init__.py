@@ -1502,7 +1502,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_partial_is_valid = []
 
             if self.is_from_hr_agg:
-                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode)
+                return HAAssignment.analyze(left_operand, right_operand, self.ruleset_mode, self.ruleset_signature["RULE_COMPONENT"])
             else:
                 result = HR_COMP_MAPPING[node.op].analyze(
                     left_operand, right_operand, self.ruleset_mode
@@ -1804,7 +1804,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         df = self.rule_data.copy()
         if condition is not None:
-            df = df.loc[condition].reset_index(drop=True)
+            df = df.loc[condition]
 
         measure_name = self.ruleset_dataset.get_measures_names()[0]  # type: ignore[union-attr]
         if node.value in df[hr_component].values:
@@ -1815,7 +1815,9 @@ class InterpreterAnalyzer(ASTTemplate):
             ]
             code_data = df[df[hr_component] == node.value].reset_index(drop=True)
             code_data = code_data.merge(df[rest_identifiers], how="right", on=rest_identifiers)
-            code_data = code_data.drop_duplicates().reset_index(drop=True)
+            code_data = code_data.drop_duplicates()
+            if not code_data.empty:
+                code_data = code_data.set_index(df.index[0: len(code_data)])
 
             # If the value is in the dataset, we create a new row
             # based on the hierarchy mode
@@ -1824,7 +1826,8 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
-                    pass
+                    code_data[hr_component] = node.value
+                    return Dataset(name=name, components=result_components, data=code_data)
                 elif code_data[hr_component].isnull().any():
                     partial_is_valid = False
 
@@ -1841,7 +1844,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.ruleset_mode in ("partial_null", "partial_zero"):
                 # We do not care about the presence of the leftCodeItem in Hierarchy Roll-up
                 if self.is_from_hr_agg and self.is_from_assignment:
-                    pass
+                    ids = self.ruleset_dataset.get_identifiers_names()
+                    df = df.drop_duplicates(subset=ids).reset_index(drop=True)
+                    return Dataset(name=name, components=result_components, data=df)
                 elif self.ruleset_mode == "partial_null":
                     partial_is_valid = False
             df = df.head(1)
