@@ -229,8 +229,12 @@ class Binary(Operator):
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
+        index = left_series.index.intersection(right_series.index)
+        left_series = left_series.loc[index]
+        right_series = right_series.loc[index]
+
         result = list(map(cls.op_func, left_series.values, right_series.values))
-        return pd.Series(result, index=list(range(len(result))), dtype=object)
+        return pd.Series(result, index=index, dtype=object)
 
     @classmethod
     def apply_operation_series_scalar(
