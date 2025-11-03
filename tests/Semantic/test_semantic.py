@@ -2780,3 +2780,53 @@ class ScalarTests(SemanticHelper):
             references_names=references_names,
             scalars={"sc_1": 3},
         )
+
+import pytest
+from vtlengine.API import semantic_analysis
+
+
+def test_bug_297():
+    """
+    Github issue #297. Resolves a bug in semantic analysis.
+    """
+    script = """
+        Mod1.DS_cond :=
+            DS_1 # Me_bool;
+
+        Mod1.DS_then :=
+            DS_1 # Me_int;
+
+        Mod1.DS_else :=
+            DS_1 # Me_int;
+
+        Mod1.if_ds_ds :=
+            if 
+                Mod1.DS_cond # Id_2 = "A" 
+            then 
+                Mod1.DS_then 
+            else 
+                Mod1.DS_else;
+    """
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_2", "type": "String", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_3", "type": "Integer", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_date", "type": "Date", "nullable": False, "role": "Identifier"},
+                    {"name": "Id_period", "type": "Time_Period", "nullable": False, "role": "Identifier"},
+                    {"name": "Me_bool", "type": "Boolean", "nullable": True, "role": "Measure"},
+                    {"name": "Me_int", "type": "Integer", "nullable": True, "role": "Measure"},
+                    {"name": "Me_interval", "type": "Time", "nullable": True, "role": "Measure"},
+                    {"name": "Me_num", "type": "Number", "nullable": True, "role": "Measure"},
+                    {"name": "Me_str", "type": "String", "nullable": True, "role": "Measure"},
+                ],
+            }
+        ]
+    }
+    try:
+        semantic_analysis(script, data_structures=data_structures)
+    except Exception as e:
+        pytest.fail(f"semantic_analysis raised an exception: {e}")
