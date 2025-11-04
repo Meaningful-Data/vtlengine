@@ -2174,7 +2174,7 @@ def test_semantic_analysis_list_vd_ext_routines():
     assert semantic_result["DS_r4"] == reference["DS_r4"]
 
 
-def test_GH_316():
+def test_GH_316_1():
     """ """
     script = """
             a <- 1;
@@ -2185,6 +2185,38 @@ def test_GH_316():
 
     ast = create_ast(script)
     interpreter = InterpreterAnalyzer(datasets=[])
+    result = interpreter.visit(ast)
+    for sc in result.values():
+        assert sc.name in references
+
+
+def test_GH_316_2():
+    """ """
+    script = """
+            a <- 1;
+            b := a;
+            """
+
+    references = ["a", "b"]
+
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(datasets=None)
+    result = interpreter.visit(ast)
+    for sc in result.values():
+        assert sc.name in references
+
+
+def test_GH_316_3():
+    """ """
+    script = """
+            a <- 1;
+            b := a;
+            """
+
+    references = ["a", "b"]
+
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(datasets={})
     result = interpreter.visit(ast)
     for sc in result.values():
         assert sc.name in references
