@@ -38,18 +38,18 @@ CAST_MAPPING: Dict[str, type] = {
 }
 
 
-class ScalarType:
+class DataTypeSimpleRepr(type):
+    def __repr__(cls) -> Any:
+        return SCALAR_TYPES_CLASS_REVERSE[cls]
+
+    def __hash__(cls) -> int:
+        return id(cls)
+
+
+class ScalarType(metaclass=DataTypeSimpleRepr):
     """ """
 
     default: Optional[Union[str, "ScalarType"]] = None
-
-    def __name__(self) -> Any:
-        return self.__class__.__name__
-
-    def __str__(self) -> str:
-        return SCALAR_TYPES_CLASS_REVERSE[self.__class__]
-
-    __repr__ = __str__
 
     def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
@@ -91,7 +91,7 @@ class ScalarType:
 
     @classmethod
     def check_type(cls, value: Any) -> bool:
-        if isinstance(value, CAST_MAPPING[cls.__name__]):  # type: ignore[index]
+        if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
@@ -638,7 +638,7 @@ SCALAR_TYPES: Dict[str, Type[ScalarType]] = {
     "Boolean": Boolean,
 }
 
-SCALAR_TYPES_CLASS_REVERSE: Dict[Type[ScalarType], str] = {
+SCALAR_TYPES_CLASS_REVERSE: Dict[Any, str] = {
     String: "String",
     Number: "Number",
     Integer: "Integer",
