@@ -611,11 +611,11 @@ def test_load_external_routine(input):
         "1": ExternalRoutine(
             dataset_names=["BNFCRS_TRNSFRS", "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4"],
             query="SELECT date(DT_RFRNC) as DT_RFRNC, PRSPCTV_ID, "
-                  "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
-                  "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
-                  "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
-                  "IN(SELECT INSTRMNT_UNQ_ID FROM "
-                  "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
+            "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
+            "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
+            "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
+            "IN(SELECT INSTRMNT_UNQ_ID FROM "
+            "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
             name="1",
         )
     }
@@ -833,7 +833,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run_only_persistent_results(
-        script, data_structures, datapoints, value_domains, external_routines, tmp_path
+    script, data_structures, datapoints, value_domains, external_routines, tmp_path
 ):
     output_path = tmp_path
 
@@ -1660,8 +1660,8 @@ def test_check_script_with_string_input():
 
 def test_check_script_invalid_input_type():
     with pytest.raises(
-            Exception,
-            match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+        Exception,
+        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
     ):
         _check_script(12345)
 
@@ -1939,7 +1939,7 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
     "path_vd_schema, path_ext_routine_schema, path_vd, path_sql", params_validate_vd_sql_schema
 )
 def test_validate_json_schema_on_vd_and_external_routine(
-        path_vd_schema, path_ext_routine_schema, path_vd, path_sql
+    path_vd_schema, path_ext_routine_schema, path_vd, path_sql
 ):
     with open(path_vd, "r") as f:
         vd_data = json.load(f)
@@ -2138,7 +2138,7 @@ def test_semantic_analysis_list_vd_ext_routines():
                 "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
                 "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
             },
-            data=None
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -2148,7 +2148,7 @@ def test_semantic_analysis_list_vd_ext_routines():
                 "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
                 "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
             },
-            data=None
+            data=None,
         ),
         "DS_r3": Dataset(
             name="DS_r3",
@@ -2156,7 +2156,7 @@ def test_semantic_analysis_list_vd_ext_routines():
                 "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
                 "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
             },
-            data=None
+            data=None,
         ),
         "DS_r4": Dataset(
             name="DS_r4",
@@ -2164,7 +2164,7 @@ def test_semantic_analysis_list_vd_ext_routines():
                 "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
                 "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
             },
-            data=None
+            data=None,
         ),
     }
     assert semantic_result["DS_r"] == reference["DS_r"]
