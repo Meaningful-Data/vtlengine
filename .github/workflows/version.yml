@@ -34,8 +34,7 @@ jobs:
       - name: Extract version from pyproject.toml
         id: pyproject-version
         run: |
-          VERSION=$(poetry version --short)
-          echo "value=$VERSION" >> $GITHUB_OUTPUT
+          echo "value=$(poetry version --short)" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         run: |
