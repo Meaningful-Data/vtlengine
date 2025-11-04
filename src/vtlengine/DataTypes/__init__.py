@@ -91,7 +91,7 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     @classmethod
     def check_type(cls, value: Any) -> bool:
-        if isinstance(value, CAST_MAPPING[cls.__name__]):  # type: ignore[index]
+        if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
         raise Exception(f"Value {value} is not a {cls.__name__}")
 
@@ -638,7 +638,7 @@ SCALAR_TYPES: Dict[str, Type[ScalarType]] = {
     "Boolean": Boolean,
 }
 
-SCALAR_TYPES_CLASS_REVERSE: Dict[Type[ScalarType], str] = {
+SCALAR_TYPES_CLASS_REVERSE: Dict[Any, str] = {
     String: "String",
     Number: "Number",
     Integer: "Integer",
