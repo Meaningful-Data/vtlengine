@@ -420,31 +420,17 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
     return external_routines
 
 
-def _get_persistence(
-    datasets: Dict[str, Union[Dataset, Scalar]], ast: Start
-) -> Dict[str, Union[Dataset, Scalar]]:
-    """
-    Set the persistence attribute to the datasets according to the AST.
-    """
-    persistent = []
-    for child in ast.children:
-        if isinstance(child, PersistentAssignment) and hasattr(child.left, "value"):
-            persistent.append(child.left.value)
-
-    ds = {}
-    for k, v in datasets.items():
-        v.persistent = k in persistent
-        ds[k] = v
-    return ds
-
-
 def _return_only_persistent_datasets(
     datasets: Dict[str, Union[Dataset, Scalar]], ast: Start
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Returns only the datasets with a persistent assignment.
     """
-    return {dataset.name: dataset for dataset in datasets.values() if dataset.persistent}
+    persistent = []
+    for child in ast.children:
+        if isinstance(child, PersistentAssignment) and hasattr(child.left, "value"):
+            persistent.append(child.left.value)
+    return {dataset.name: dataset for dataset in datasets.values() if dataset.name in persistent}
 
 
 def _load_single_external_routine_from_file(input: Path) -> Any:
