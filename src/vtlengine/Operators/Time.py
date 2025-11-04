@@ -69,7 +69,7 @@ class Time(Operators.Operator):
                     raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
                 reference_id = id.name
         if reference_id is None:
-            raise SemanticError("1-1-19-1", op=cls.op, comp="identifier")
+            raise SemanticError("1-1-19-1", op=cls.op, data_type="Time_Period", comp="identifier")
         return str(reference_id)
 
     @classmethod
