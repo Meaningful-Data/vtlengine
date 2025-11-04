@@ -20,7 +20,7 @@ from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
-from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
+from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis, create_ast
 from vtlengine.API._InternalApi import (
     _check_script,
     _validate_json,
@@ -33,6 +33,7 @@ from vtlengine.API._InternalApi import (
 )
 from vtlengine.DataTypes import Integer, String
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
@@ -2171,3 +2172,19 @@ def test_semantic_analysis_list_vd_ext_routines():
     assert semantic_result["DS_r2"] == reference["DS_r2"]
     assert semantic_result["DS_r3"] == reference["DS_r3"]
     assert semantic_result["DS_r4"] == reference["DS_r4"]
+
+
+def test_GH_316():
+    """ """
+    script = """
+            a <- 1;
+            b := a;
+            """
+
+    references = ["a", "b"]
+
+    ast = create_ast(script)
+    interpreter = InterpreterAnalyzer(datasets=[])
+    result = interpreter.visit(ast)
+    for sc in result.values():
+        assert sc.name in references
