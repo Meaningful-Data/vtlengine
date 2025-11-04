@@ -85,7 +85,6 @@ class TestHelper(TestCase):
                     name=scalar_name,
                     data_type=SCALAR_TYPES[scalar_json["type"]],
                     value=None,
-                    persistent=scalar_json.get("persistent", False),
                 )
                 datasets[scalar_name] = scalar
         return datasets

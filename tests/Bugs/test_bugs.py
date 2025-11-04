@@ -52,16 +52,21 @@ class GeneralBugs(BugHelper):
         e <- b;
         f := b;
         """
-        code = "GH_314_1"
-        references_names = ["1"]
 
-        reference_datasets = self.LoadOutputs(code, references_names)
+        references = {
+            "a": True,
+            "b": False,
+            "c": True,
+            "d": False,
+            "e": True,
+            "f": False,
+        }
 
         ast = create_ast(script)
         interpreter = InterpreterAnalyzer(datasets={})
         result = interpreter.visit(ast)
         for sc in result.values():
-            assert sc == reference_datasets[sc.name]
+            assert sc.persistent == references[sc.name]
 
 
 class JoinBugs(BugHelper):
