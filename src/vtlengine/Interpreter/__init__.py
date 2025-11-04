@@ -399,7 +399,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         self.is_from_component_assignment = False
-        return Assignment.analyze(left_operand, right_operand)
+        result = Assignment.analyze(left_operand, right_operand)
+        if isinstance(result, (Dataset, Scalar)):
+            result.persistent = isinstance(node, AST.PersistentAssignment)
+        return result
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
@@ -779,7 +782,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return node.value
         # Having takes precedence as it is lower in the AST
         if self.udo_params is not None and node.value in self.udo_params[-1]:
-            udo_element = self.udo_params[-1][node.value]
+            udo_element = copy(self.udo_params[-1][node.value])
             if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
                 return udo_element
             # If it is only the component or dataset name, we rename the node.value
@@ -795,7 +798,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.aggregation_dataset.data is None:
                 data = None
             else:
-                data = self.aggregation_dataset.data[node.value]
+                data = copy(self.aggregation_dataset.data[node.value])
             return DataComponent(
                 name=node.value,
                 data=data,
@@ -805,12 +808,12 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets:
-                return self.datasets[node.value]
+                return copy(self.datasets[node.value])
             if self.regular_aggregation_dataset is not None:
                 if self.scalars is not None and node.value in self.scalars:
                     if node.value in self.regular_aggregation_dataset.components:
                         raise SemanticError("1-1-6-11", comp_name=node.value)
-                    return self.scalars[node.value]
+                    return copy(self.scalars[node.value])
                 if self.regular_aggregation_dataset.data is not None:
                     if (
                         self.is_from_join
@@ -843,7 +846,7 @@ class InterpreterAnalyzer(ASTTemplate):
                             comp_name=node.value,
                             dataset_name=self.regular_aggregation_dataset.name,
                         )
-                    data = self.regular_aggregation_dataset.data[node.value]
+                    data = copy(self.regular_aggregation_dataset.data[node.value])
                 else:
                     data = None
                 return DataComponent(
@@ -876,11 +879,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 nullable=self.ruleset_dataset.components[comp_name].nullable,
             )
         if self.scalars and node.value in self.scalars:
-            return self.scalars[node.value]
+            return copy(self.scalars[node.value])
         if node.value not in self.datasets:
             raise SemanticError("2-3-6", dataset_name=node.value)
 
-        return self.datasets[node.value]
+        return copy(self.datasets[node.value])
 
     def visit_Collection(self, node: AST.Collection) -> Any:
         if node.kind == "Set":
@@ -1759,8 +1762,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if node.value in self.datasets:
             if self.is_from_assignment:
-                return self.datasets[node.value].name
-            return self.datasets[node.value]
+                return copy(self.datasets[node.value].name)
+            return copy(self.datasets[node.value])
         return node.value
 
     def visit_DefIdentifier(self, node: AST.DefIdentifier) -> Any:
