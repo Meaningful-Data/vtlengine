@@ -560,6 +560,7 @@ def validate_dataset(data_structures: Union[Dict[str, Any], Path, List[Dict[str,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None) -> None:
     """
     Validates if the provided data structures and datapoints are consistent with each other.
+    If no datapoints are sent, a structural validation is applied over the data structures.
 
     Args:
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
