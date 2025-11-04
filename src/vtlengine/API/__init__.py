@@ -554,3 +554,19 @@ def generate_sdmx(
     ast = create_ast(vtl)
     result = ast_to_sdmx(ast, agency_id, id, version)
     return result
+
+def validate_dataset(data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
+    datapoints: Optional[Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]]] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None) -> None:
+    """
+    Validates if the provided data structures and datapoints are consistent with each other.
+
+    Args:
+        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. (default: None)
+        scalar_values: Dict with the scalar values
+
+    Raises:
+        Exception: If the data structures and datapoints are inconsistent.
+    """
+    load_datasets_with_data(data_structures, datapoints, scalar_values)
