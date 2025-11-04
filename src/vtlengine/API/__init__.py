@@ -14,7 +14,6 @@ from pysdmx.util import parse_urn
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
-    _get_persistence,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,

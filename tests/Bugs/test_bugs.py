@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.Interpreter import InterpreterAnalyzer
 
 
 class BugHelper(TestHelper):
@@ -38,6 +40,28 @@ class GeneralBugs(BugHelper):
         references_names = ["1", "2", "3", "4", "5"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+    def test_GH_314_1(self):
+        """ """
+        script = """
+        a <- cast("2020-M01", time_period);
+        b := cast("2020-M01", time_period);
+        c <- a;
+        d := a;
+        e <- b;
+        f := b;
+        """
+        code = "GH_314_1"
+        references_names = ["1"]
+
+        reference_datasets = self.LoadOutputs(code, references_names)
+
+        ast = create_ast(script)
+        interpreter = InterpreterAnalyzer(datasets={})
+        result = interpreter.visit(ast)
+        for sc in result.values():
+            assert sc == reference_datasets[sc.name]
 
 
 class JoinBugs(BugHelper):
