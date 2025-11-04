@@ -361,7 +361,6 @@ def run(
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
-    result = _get_persistence(result, ast)
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
     return result

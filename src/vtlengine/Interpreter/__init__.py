@@ -399,7 +399,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.is_from_assignment = False
         right_operand: Union[Dataset, DataComponent] = self.visit(node.right)
         self.is_from_component_assignment = False
-        return Assignment.analyze(left_operand, right_operand)
+        result = Assignment.analyze(left_operand, right_operand)
+        if isinstance(result, (Dataset, Scalar)):
+            result.persistent = isinstance(node, AST.PersistentAssignment)
+        return result
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Any:
         return self.visit_Assignment(node)
