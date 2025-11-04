@@ -21,7 +21,7 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    to_vtl_json,
+    to_vtl_json, _get_persistence,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
@@ -368,6 +368,7 @@ def run(
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
+    result = _get_persistence(result, ast)
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
     return result
