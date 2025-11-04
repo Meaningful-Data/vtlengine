@@ -14,6 +14,7 @@ from pysdmx.util import parse_urn
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _get_persistence,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -368,6 +369,7 @@ def run(
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
+    result = _get_persistence(result, ast)
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
     return result

@@ -28,11 +28,15 @@ class Scalar:
     name: str
     data_type: Type[ScalarType]
     _value: Any
+    persistent: bool = False
 
-    def __init__(self, name: str, data_type: Type[ScalarType], value: Any) -> None:
+    def __init__(
+        self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False
+    ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
+        self.persistent = persistent
 
     @property
     def value(self) -> Any:
@@ -177,8 +181,8 @@ class Component:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    # data: Optional[Union[SparkDataFrame, PandasDataFrame]]
     data: Optional[PandasDataFrame] = None
+    persistent: bool = False
 
     def __post_init__(self) -> None:
         if self.data is not None:
