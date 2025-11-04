@@ -358,7 +358,8 @@ def load_value_domains(
     Loads the value domains.
 
     Args:
-        input: Dict or Path of the json file that contains the value domains data.
+        input: Dict or Path, or a list of them \
+        of the json file that contains the value domains data.
 
     Returns:
         A dictionary with the value domains data, or a list of dictionaries with them.
@@ -398,7 +399,8 @@ def load_external_routines(
     Load the external routines.
 
     Args:
-        input: Dict or Path of the JSON file that contains the external routine data.
+        input: Dict or Path, or a list of them, \
+        of the JSON file that contains the external routine data.
 
     Returns:
         A dictionary with the external routine data, or a list with \
