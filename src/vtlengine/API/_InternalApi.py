@@ -351,12 +351,15 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDomain]:
+def load_value_domains(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
     Args:
-        input: Dict or Path of the json file that contains the value domains data.
+        input: Dict or Path, or a list of them \
+        of the json file that contains the value domains data.
 
     Returns:
         A dictionary with the value domains data, or a list of dictionaries with them.
@@ -369,6 +372,11 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
         _validate_json(input, vd_schema)
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
+    if isinstance(input, list):
+        vd = {}
+        for item in input:
+            vd.update(load_value_domains(item))
+        return vd
     if not isinstance(input, Path):
         raise Exception("Invalid vd file. Input is not a Path object")
     if not input.exists():
@@ -384,19 +392,23 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
+def load_external_routines(
+    input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]],
+) -> Any:
     """
     Load the external routines.
 
     Args:
-        input: Dict or Path of the sql file that contains the external routine data.
+        input: Dict or Path, or a list of them, \
+        of the JSON file that contains the external routine data.
 
     Returns:
         A dictionary with the external routine data, or a list with \
         the dictionaries from the Path given.
 
     Raises:
-        Exception: If the sql file does not exist, the Path is wrong, or the file is not a sql one.
+        Exception: If the JSON file does not exist, the Path is wrong, or the file is not a \
+        JSON one.
     """
     external_routines = {}
     if isinstance(input, dict):
@@ -404,6 +416,11 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
         ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
         external_routines[ext_routine.name] = ext_routine
         return external_routines
+    if isinstance(input, list):
+        ext_routines = {}
+        for item in input:
+            ext_routines.update(load_external_routines(item))
+        return ext_routines
     if not isinstance(input, Path):
         raise Exception("Input invalid. Input must be a json file.")
     if not input.exists():

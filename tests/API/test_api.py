@@ -2087,3 +2087,87 @@ def test_with_multiple_vd_and_ext_routines():
     assert run_result["DS_r2"] == reference["DS_r2"]
     assert run_result["DS_r3"] == reference["DS_r3"]
     assert run_result["DS_r4"] == reference["DS_r4"]
+
+
+def test_semantic_analysis_list_vd_ext_routines():
+    external_routines = [
+        {
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
+        },
+        filepath_sql / "SQL_4.json",
+    ]
+
+    value_domains = [
+        {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"},
+        filepath_ValueDomains / "VD_2.json",
+    ]
+    script = """
+          DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
+          DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
+          DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    semantic_result = semantic_analysis(
+        script=script,
+        data_structures=data_structures,
+        value_domains=value_domains,
+        external_routines=external_routines,
+    )
+
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=None,
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=None,
+        ),
+        "DS_r3": Dataset(
+            name="DS_r3",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=None,
+        ),
+        "DS_r4": Dataset(
+            name="DS_r4",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=None,
+        ),
+    }
+    assert semantic_result["DS_r"] == reference["DS_r"]
+    assert semantic_result["DS_r2"] == reference["DS_r2"]
+    assert semantic_result["DS_r3"] == reference["DS_r3"]
+    assert semantic_result["DS_r4"] == reference["DS_r4"]
