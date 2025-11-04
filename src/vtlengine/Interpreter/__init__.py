@@ -227,8 +227,12 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
+
+        if not isinstance(self.datasets, dict):
+            self.datasets = {}
         results = {}
         scalars_to_save = set()
+
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
