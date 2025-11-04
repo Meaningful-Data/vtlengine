@@ -611,11 +611,11 @@ def test_load_external_routine(input):
         "1": ExternalRoutine(
             dataset_names=["BNFCRS_TRNSFRS", "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4"],
             query="SELECT date(DT_RFRNC) as DT_RFRNC, PRSPCTV_ID, "
-            "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
-            "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
-            "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
-            "IN(SELECT INSTRMNT_UNQ_ID FROM "
-            "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
+                  "INSTRMNT_UNQ_ID, BNFCRS_CNTRPRTY_ID, "
+                  "TRNSFR_CNTRPRTY_ID, BNFCR_ID, TRNSFR_ID FROM "
+                  "BNFCRS_TRNSFRS WHERE INSTRMNT_UNQ_ID NOT "
+                  "IN(SELECT INSTRMNT_UNQ_ID FROM "
+                  "BNFCRS_TRNSFRS_CMMN_INSTRMNTS_4);",
             name="1",
         )
     }
@@ -833,7 +833,7 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
     "script, data_structures, datapoints, value_domains, external_routines", params_run
 )
 def test_run_only_persistent_results(
-    script, data_structures, datapoints, value_domains, external_routines, tmp_path
+        script, data_structures, datapoints, value_domains, external_routines, tmp_path
 ):
     output_path = tmp_path
 
@@ -1660,8 +1660,8 @@ def test_check_script_with_string_input():
 
 def test_check_script_invalid_input_type():
     with pytest.raises(
-        Exception,
-        match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
+            Exception,
+            match="invalid script format type: int. Input must be a string, TransformationScheme or Path object",
     ):
         _check_script(12345)
 
@@ -1939,7 +1939,7 @@ def test_wrong_type_in_scalar_definition(wrong_type, correct_type):
     "path_vd_schema, path_ext_routine_schema, path_vd, path_sql", params_validate_vd_sql_schema
 )
 def test_validate_json_schema_on_vd_and_external_routine(
-    path_vd_schema, path_ext_routine_schema, path_vd, path_sql
+        path_vd_schema, path_ext_routine_schema, path_vd, path_sql
 ):
     with open(path_vd, "r") as f:
         vd_data = json.load(f)
@@ -2087,3 +2087,87 @@ def test_with_multiple_vd_and_ext_routines():
     assert run_result["DS_r2"] == reference["DS_r2"]
     assert run_result["DS_r3"] == reference["DS_r3"]
     assert run_result["DS_r4"] == reference["DS_r4"]
+
+
+def test_semantic_analysis_list_vd_ext_routines():
+    external_routines = [
+        {
+            "name": "SQL_3",
+            "query": "SELECT Id_1, COUNT(*) AS Me_1 FROM DS_1 GROUP BY Id_1;",
+        },
+        filepath_sql / "SQL_4.json",
+    ]
+
+    value_domains = [
+        {"name": "Countries_EU_Sample", "setlist": ["DE", "FR", "IT"], "type": "String"},
+        filepath_ValueDomains / "VD_2.json",
+    ]
+    script = """
+          DS_r <- DS_1 [ calc Me_2:= Me_1 in Countries];
+          DS_r2 <- DS_1 [ calc Me_2:= Me_1 in Countries_EU_Sample];
+          DS_r3 <- eval(SQL_3(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+          DS_r4 <- eval(SQL_4(DS_1) language "sqlite" returns dataset {identifier<integer> Id_1, measure<number> Me_1});
+        """
+
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    semantic_result = semantic_analysis(
+        script=script,
+        data_structures=data_structures,
+        value_domains=value_domains,
+        external_routines=external_routines,
+    )
+
+    reference = {
+        "DS_r": Dataset(
+            name="DS_r",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=None
+        ),
+        "DS_r2": Dataset(
+            name="DS_r2",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+            },
+            data=None
+        ),
+        "DS_r3": Dataset(
+            name="DS_r3",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=None
+        ),
+        "DS_r4": Dataset(
+            name="DS_r4",
+            components={
+                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+            },
+            data=None
+        ),
+    }
+    assert semantic_result["DS_r"] == reference["DS_r"]
+    assert semantic_result["DS_r2"] == reference["DS_r2"]
+    assert semantic_result["DS_r3"] == reference["DS_r3"]
+    assert semantic_result["DS_r4"] == reference["DS_r4"]
