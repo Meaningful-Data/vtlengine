@@ -315,10 +315,12 @@ class Between(Operator.Operator):
                 data=None,
                 data_type=cls.return_type,
                 role=operand.role,
+                nullable=operand.nullable,
             )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             result = Scalar(name=operand.name, value=None, data_type=cls.return_type)
-        else:  # From or To is a DataComponent, or both
+        else:
+            # From or To is a DataComponent, or both
             result = DataComponent(
                 name=operand.name,
                 data=None,
