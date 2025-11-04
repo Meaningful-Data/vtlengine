@@ -39,13 +39,11 @@ CAST_MAPPING: Dict[str, type] = {
 
 
 class DataTypeSimpleRepr(type):
-
     def __repr__(cls) -> Any:
         return SCALAR_TYPES_CLASS_REVERSE[cls]
 
     def __hash__(cls) -> int:
         return id(cls)
-
 
 
 class ScalarType(metaclass=DataTypeSimpleRepr):
