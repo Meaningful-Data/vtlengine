@@ -42,7 +42,6 @@ class Membership(Binary):
             )
             if left_operand.data is not None:
                 left_operand.data[right_operand] = left_operand.data[component.name]
-            left_operand.data[right_operand] = left_operand.data[component.name]
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
