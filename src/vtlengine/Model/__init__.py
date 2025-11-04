@@ -30,7 +30,9 @@ class Scalar:
     _value: Any
     persistent: bool = False
 
-    def __init__(self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False) -> None:
+    def __init__(
+        self, name: str, data_type: Type[ScalarType], value: Any, persistent: bool = False
+    ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value

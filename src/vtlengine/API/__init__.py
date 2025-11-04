@@ -14,6 +14,7 @@ from pysdmx.util import parse_urn
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _get_persistence,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -21,7 +22,7 @@ from vtlengine.API._InternalApi import (
     load_external_routines,
     load_value_domains,
     load_vtl,
-    to_vtl_json, _get_persistence,
+    to_vtl_json,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
