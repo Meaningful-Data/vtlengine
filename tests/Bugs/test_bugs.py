@@ -62,7 +62,7 @@ class GeneralBugs(BugHelper):
         }
 
         ast = create_ast(script)
-        interpreter = InterpreterAnalyzer(datasets=[])
+        interpreter = InterpreterAnalyzer(datasets={})
         result = interpreter.visit(ast)
         for sc in result.values():
             assert sc.persistent == references[sc.name]
