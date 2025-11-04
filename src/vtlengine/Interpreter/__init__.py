@@ -227,6 +227,8 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = True
         else:
             Operators.only_semantic = False
+        if not isinstance(self.datasets, dict):
+            self.datasets = {}
         results = {}
         scalars_to_save = set()
         for child in node.children:
