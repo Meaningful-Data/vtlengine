@@ -157,11 +157,23 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]],
+    datapoints: Union[Path, str, List[Union[str, Path]], Dict[str, Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
     """
+    if isinstance(datapoints, dict):
+        dict_datapoints: Dict[str, Any] = {}
+        for dataset_name, datapoint in datapoints.items():
+            if not isinstance(dataset_name, str):
+                raise Exception("Invalid dataset name. Dictionary keys must be strings.")
+            if not isinstance(datapoint, (str, Path)):
+                raise Exception("Invalid datapoint path. Must be a Path or string.")
+            datapoint_path = Path(datapoint) if isinstance(datapoint, str) else datapoint
+            if not datapoint_path.exists():
+                raise Exception(f"Datapoint file not found: {datapoint_path}")
+            dict_datapoints[dataset_name] = datapoint_path
+        return dict_datapoints
     if isinstance(datapoints, list):
         dict_datapoints: Dict[str, Any] = {}
         for x in datapoints:
@@ -280,6 +292,13 @@ def load_datasets_with_data(
         _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
     if isinstance(datapoints, dict):
+        if all(isinstance(v, (str, Path)) for v in datapoints.values()):
+            dict_datapoints = _load_datapoints_path(datapoints)
+            for dataset_name, _ in dict_datapoints.items():
+                if dataset_name not in datasets:
+                    raise Exception(f"Not found dataset {dataset_name} in datastructures.")
+            _handle_scalars_values(scalars, scalar_values)
+            return datasets, scalars, dict_datapoints
         # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
