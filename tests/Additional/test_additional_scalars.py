@@ -246,6 +246,7 @@ params_scalar_operations = [
         {"Sc_r": Scalar(name="Sc_r", data_type=Boolean, value=False)},
     ),
     ("Sc_r <- +null;", {"Sc_r": Scalar(name="Sc_r", data_type=Number, value=None)}),
+    ("Sc_r <- nvl(null, 3);", {"Sc_r": Scalar(name="Sc_r", data_type=Integer, value=3)}),
 ]
 
 
