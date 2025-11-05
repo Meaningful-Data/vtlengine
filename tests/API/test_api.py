@@ -300,7 +300,6 @@ load_datasets_with_data_path_params_OK = [
             {"DS_1": filepath_csv / "custom_name.csv"},
         ),
     ),
-
 ]
 
 load_datasets_with_data_and_wrong_inputs = [

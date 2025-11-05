@@ -568,4 +568,52 @@ Returns:
     :file: _static/Example_7_2_output.csv
     :header-rows: 1
 
+.. _example_8_run_with_custom_dataset_names_for_datapoints:
+
+==========================================================
+Example 8: Run with custom dataset names for datapoints.
+==========================================================
+.. code-block:: python
+
+    from pathlib import Path
+
+    import pandas as pd
+
+    from vtlengine import run
+
+
+
+    def main():
+        filepath_csv = Path(__file__).parent / "custom_name.csv"
+        script = """
+            DS_A <- DS_1 * 10;
+        """
+
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                }
+            ]
+        }
+
+        data = filepath_csv
+
+        datapoints = {"DS_1": data}
+
+        run_result = run(script=script, data_structures=data_structures, datapoints=datapoints)
+
+        print(run_result)
+
+Returns:
+
+.. csv-table::
+    :file: _static/Example_8_output.csv
+    :header-rows: 1
+
+
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_

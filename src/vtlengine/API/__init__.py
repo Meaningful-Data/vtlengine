@@ -276,7 +276,11 @@ def run(
 
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        You can also use a custom name for the dataset by passing a dictionary with \
+        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        Check the following example: \
+        :ref:`Example 8 <example_8_run_with_custom_dataset_names_for_datapoints>`.
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None) It is passed as an object, that can be read from \

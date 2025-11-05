@@ -175,7 +175,7 @@ def _load_datapoints_path(
             dict_datapoints[dataset_name] = datapoint_path
         return dict_datapoints
     if isinstance(datapoints, list):
-        dict_datapoints: Dict[str, Any] = {}
+        dict_datapoints = {}
         for x in datapoints:
             result = _load_single_datapoint(x)
             dict_datapoints = {**dict_datapoints, **result}
