@@ -155,7 +155,7 @@ type_params = [
     DataTypes.TimePeriod,
     DataTypes.Date,
     DataTypes.Duration,
-    DataTypes.Null
+    DataTypes.Null,
 ]
 
 
