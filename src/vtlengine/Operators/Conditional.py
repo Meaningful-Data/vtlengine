@@ -249,9 +249,13 @@ class Nvl(Binary):
             if left.data_type is Null:
                 result.data_type = right.data_type
                 result.value = right.value
+            elif right.data_type is Null:
+                result.data_type = left.data_type
+                result.value = left.value
             else:
                 result.data_type = left.data_type
                 result.value = left.value
+
         else:
             if not isinstance(result, Scalar):
                 if isinstance(right, Scalar):
