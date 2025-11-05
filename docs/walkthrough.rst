@@ -428,8 +428,9 @@ Example 6: Run using Paths
 ===========================
 The following example shows how to run a VTL script by providing all the inputs as Path objects.
 As you can notice, datapoints can be provided as a dictionary with the dataset name as key and the Path object as value.
-In this case, we are using DS_1 as the key of the datapoints dictionary, which is inside the Path given, but the
-data file can have any name.
+In this case, we are using DS_1 as the key of the datapoints dictionary, which is inside the datastructures path given,
+but the data file can have any name.
+
 
 .. code-block:: python
 
