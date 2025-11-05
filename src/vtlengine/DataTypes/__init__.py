@@ -636,6 +636,7 @@ SCALAR_TYPES: Dict[str, Type[ScalarType]] = {
     "Time_Period": TimePeriod,
     "Duration": Duration,
     "Boolean": Boolean,
+    "Null": Null,
 }
 
 SCALAR_TYPES_CLASS_REVERSE: Dict[Any, str] = {
@@ -647,6 +648,7 @@ SCALAR_TYPES_CLASS_REVERSE: Dict[Any, str] = {
     TimePeriod: "Time_Period",
     Duration: "Duration",
     Boolean: "Boolean",
+    Null: "Null",
 }
 
 BASIC_TYPES: Dict[type, Type[ScalarType]] = {

@@ -6,7 +6,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast, run
-from vtlengine.DataTypes import Boolean, Integer, Number, String
+from vtlengine.DataTypes import Boolean, Integer, Number, String, Null
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Scalar
@@ -246,6 +246,7 @@ params_scalar_operations = [
         {"Sc_r": Scalar(name="Sc_r", data_type=Boolean, value=False)},
     ),
     ("Sc_r <- +null;", {"Sc_r": Scalar(name="Sc_r", data_type=Number, value=None)}),
+    ("Sc_r <- nvl(null, null);", {"Sc_r": Scalar(name="Sc_r", data_type=Null, value=None)}),
 ]
 
 
