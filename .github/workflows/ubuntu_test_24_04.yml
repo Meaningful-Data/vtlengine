@@ -46,5 +46,4 @@ jobs:
           poetry install --no-root
 
       - name: Run tests
-        run: |
-          pytest -v
+        run: poetry run pytest --cov
