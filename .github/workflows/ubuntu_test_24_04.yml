@@ -46,7 +46,7 @@ jobs:
       - name: Install project with Poetry (no s3 extras)
         run: |
           pip install poetry
-          poetry install --with dev
+          poetry install --only dev
 
       - name: Run tests
         run: poetry run pytest --cov
