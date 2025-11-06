@@ -2,9 +2,12 @@ name: Ubuntu 24.04 Tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
     branches: [ "main", "dev" ]
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -43,7 +46,7 @@ jobs:
       - name: Install project with Poetry (no s3 extras)
         run: |
           pip install poetry
-          poetry install --no-root
+          poetry install
 
       - name: Run tests
         run: poetry run pytest --cov
