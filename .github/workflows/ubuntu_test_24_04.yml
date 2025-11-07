@@ -31,7 +31,8 @@ jobs:
             python3-networkx \
             python3-sqlglot \
             python3-inflection \
-            python3-mysqldb
+            python3-pytest \
+            python3-pytest-cov
 
       - name: Install pip-only dependencies
         run: |
@@ -43,11 +44,5 @@ jobs:
             duckdb==1.1 \
             pysdmx==1.8.0
 
-      - name: Install project with Poetry (no s3 extras)
-        run: |
-          pip install poetry
-          poetry config virtualenvs.create false
-          poetry install --only dev
-
       - name: Run tests
-        run: poetry run pytest --cov
+        run: pytest -v
