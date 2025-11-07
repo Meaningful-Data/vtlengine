@@ -401,7 +401,7 @@ def load_value_domains(
     if not input.exists():
         raise Exception("Invalid vd file. Input does not exist")
     if input.is_dir():
-        value_domains: Dict[str, Any] = {}
+        value_domains = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}
