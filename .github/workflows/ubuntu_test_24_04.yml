@@ -30,7 +30,7 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
-            python3-pytest \
+            python3-pytest
 
       - name: Install pip-only dependencies
         run: |
@@ -49,8 +49,9 @@ jobs:
 
       - name: Build wheel
         run: |
-          poetry build -f wheel
+          poetry build -f wheel -o .
           VERSION=$(poetry version -s)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Install built package
         run: |
