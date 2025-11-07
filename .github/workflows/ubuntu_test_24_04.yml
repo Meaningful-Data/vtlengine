@@ -42,11 +42,19 @@ jobs:
             duckdb==1.1 \
             pysdmx==1.8.0
 
-      - name: Install project with Poetry
+      - name: Install Poetry
         run: |
           pip install poetry
           poetry config virtualenvs.create false
-          poetry install --only-root
+
+      - name: Build wheel
+        run: |
+          poetry build -f wheel
+          VERSION=$(poetry version -s)
+
+      - name: Install built package
+        run: |
+          pip install "./vtlengine-${VERSION}-py3-none-any.whl" --no-dependencies --break-system-packages
 
       - name: Run tests
         run: pytest -v
