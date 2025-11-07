@@ -50,12 +50,10 @@ jobs:
       - name: Build wheel
         run: |
           poetry build -f wheel -o .
-          VERSION=$(poetry version -s)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Install built package
         run: |
-          pip install "./vtlengine-${VERSION}-py3-none-any.whl" --no-dependencies --break-system-packages
+          pip install "./vtlengine-$(poetry version -s)-py3-none-any.whl" --no-dependencies --break-system-packages
 
       - name: Run tests
         run: pytest -v
