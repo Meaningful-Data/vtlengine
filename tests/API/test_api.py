@@ -726,7 +726,7 @@ def test_load_datastructures(datastructure):
     assert "DS_1" in datasets
     assert datasets["DS_1"] == reference_dataset
 
-    assert "sc_1" in scalars
+    assert "sc_2" in scalars
     assert scalars["sc_1"] == reference_scalar
 
 
