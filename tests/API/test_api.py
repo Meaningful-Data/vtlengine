@@ -2205,3 +2205,18 @@ def test_semantic_analysis_list_vd_ext_routines():
     assert semantic_result["DS_r2"] == reference["DS_r2"]
     assert semantic_result["DS_r3"] == reference["DS_r3"]
     assert semantic_result["DS_r4"] == reference["DS_r4"]
+
+
+@pytest.mark.parametrize(
+    "value_domains_input",
+    [
+        [
+            filepath_ValueDomains / "VD_1.json",
+            filepath_ValueDomains / "VD_2.json",
+        ]
+    ],
+)
+def test_loading_list_multiple_value_domains(value_domains_input):
+    value_domains_loaded = load_value_domains(value_domains_input)
+    assert "Countries" in value_domains_loaded
+    assert "AnaCreditCountries" in value_domains_loaded

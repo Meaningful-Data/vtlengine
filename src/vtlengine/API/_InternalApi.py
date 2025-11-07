@@ -392,16 +392,16 @@ def load_value_domains(
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if isinstance(input, list):
-        vd = {}
+        value_domains: Dict[str, Any] = {}
         for item in input:
-            vd.update(load_value_domains(item))
-        return vd
+            value_domains.update(load_value_domains(item))
+        return value_domains
     if not isinstance(input, Path):
         raise Exception("Invalid vd file. Input is not a Path object")
     if not input.exists():
         raise Exception("Invalid vd file. Input does not exist")
     if input.is_dir():
-        value_domains: Dict[str, Any] = {}
+        value_domains = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}
