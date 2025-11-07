@@ -30,9 +30,7 @@ jobs:
             python3-jsonschema \
             python3-networkx \
             python3-sqlglot \
-            python3-inflection \
             python3-pytest \
-            python3-pytest-cov
 
       - name: Install pip-only dependencies
         run: |
@@ -43,6 +41,12 @@ jobs:
             msgspec==0.19.0 \
             duckdb==1.1 \
             pysdmx==1.8.0
+
+      - name: Install project with Poetry
+        run: |
+          pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --only-root
 
       - name: Run tests
         run: pytest -v
