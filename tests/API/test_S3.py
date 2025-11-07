@@ -11,7 +11,7 @@ from vtlengine.files.output import TimePeriodRepresentation, save_datapoints
 from vtlengine.files.parser import load_datapoints
 from vtlengine.Model import Component, Dataset, Role
 
-pytest.importorskip("s3fs", reason="s3fs extra is not installed.")
+pytest.importorskip("s3fs", reason="s3 extra is not installed.")
 
 base_path = Path(__file__).parent
 filepath_output = base_path / "data" / "DataSet" / "output"
