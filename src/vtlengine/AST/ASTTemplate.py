@@ -416,7 +416,6 @@ class ASTTemplate(NodeVisitor):
                 self.visit(element)
         else:
             self.visit(node.element)
-        self.visit(node.element)
         for rule in node.rules:
             self.visit(rule)
 

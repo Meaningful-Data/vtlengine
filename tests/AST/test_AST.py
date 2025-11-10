@@ -430,7 +430,7 @@ def test_visit_HRuleset():
         mock_visit.assert_any_call(bin_op_node)
         mock_visit.assert_any_call(left_operand)
         mock_visit.assert_any_call(right_operand)
-        assert mock_visit.call_count == 6
+        assert mock_visit.call_count == 5
 
 
 def test_visit_DPRule():
