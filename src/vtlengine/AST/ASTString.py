@@ -340,8 +340,7 @@ class ASTString(ASTTemplate):
                 for condition in node.children[3:]:
                     conditions.append(self.visit(condition))
                 condition_str += ", ".join(conditions)
-                if self.pretty:
-                    condition_str = f"{condition_str}{nl}{tab * 2}"
+                condition_str += f"{nl}{tab * 2}" if self.pretty else " "
 
             default_value_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
             default_value_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
@@ -362,7 +361,7 @@ class ASTString(ASTTemplate):
                 )
             else:
                 return (
-                    f"{node.op}({operand}, {rule_name} {condition_str} rule {component_name}"
+                    f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
 
