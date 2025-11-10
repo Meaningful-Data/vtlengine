@@ -114,21 +114,28 @@ class ASTString(ASTTemplate):
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
-        signature = f"{node.signature_type} rule {node.element.value}"
+        if isinstance(node.element, list):
+            sep = nl + tab if self.pretty else " "
+            conditons = ", ".join([str(e.value) for e in node.element[:-1]])
+            signature = f"{sep}{node.signature_type}{sep}condition {conditons}{sep}rule {node.element[-1].value}"
+        else:
+            signature = f"{node.signature_type} rule {node.element.value}"
+
+        rules_strs = []
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
             for i, rule in enumerate(node.rules):
-                self.vtl_script += f"{tab}{self.visit(rule)}{nl}"
+                rule_str = f"{tab}{self.visit(rule)}"
                 if rule.erCode:
-                    self.vtl_script += f"{tab}errorcode {_handle_literal(rule.erCode)}{nl}"
+                    rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
                 if rule.erLevel:
-                    self.vtl_script += f"{tab}errorlevel {rule.erLevel}"
-                    if i != len(node.rules) - 1:
-                        self.vtl_script += f";{nl}"
-                    self.vtl_script += nl
+                    rule_str += f"{nl}{tab}errorlevel {rule.erLevel}"
+                rules_strs.append(rule_str)
+            rules_sep = f";{nl}" if len(rules_strs) > 1 else ""
+            rules = rules_sep.join(rules_strs)
+            self.vtl_script += rules + nl
             self.vtl_script += f"end hierarchical ruleset;{nl}"
         else:
-            rules_strs = []
             for rule in node.rules:
                 rule_str = self.visit(rule)
                 if rule.erCode:
@@ -147,6 +154,8 @@ class ASTString(ASTTemplate):
         vtl_script = ""
         if node.name is not None:
             vtl_script += f"{node.name}: "
+        if self.pretty and node.rule.op == "when":
+            vtl_script += nl
         vtl_script += f"{self.visit(node.rule)}"
         return vtl_script
 
