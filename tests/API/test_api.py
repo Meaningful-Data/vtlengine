@@ -20,7 +20,14 @@ from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
-from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
+from vtlengine.API import (
+    generate_sdmx,
+    prettify,
+    run,
+    run_sdmx,
+    semantic_analysis,
+    validate_dataset,
+)
 from vtlengine.API._InternalApi import (
     _check_script,
     _validate_json,
@@ -600,6 +607,29 @@ params_invalid_sql = [
         filepath_json / "external_routines_schema.json",
         filepath_sql / "ext_routine_wrong_query.json",
         id="wrong_query",
+    ),
+]
+
+
+params_validate_ds = [
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [10, 20]})},
+        True,
+        None,
+    ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
+        False,
+        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+    ),
+    (filepath_json / "DS_1.json", None, True, None),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_non_exist": pd.DataFrame({"Id_1": [1], "Me_1": [2]})},
+        False,
+        "Not found dataset DS_non_exist in datastructures.",
     ),
 ]
 
@@ -2171,3 +2201,17 @@ def test_semantic_analysis_list_vd_ext_routines():
     assert semantic_result["DS_r2"] == reference["DS_r2"]
     assert semantic_result["DS_r3"] == reference["DS_r3"]
     assert semantic_result["DS_r4"] == reference["DS_r4"]
+
+
+@pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
+def test_validate_dataset(ds_input, dp_input, is_valid, message):
+    if isinstance(ds_input, Path):
+        with open(ds_input, "r", encoding="utf-8") as f:
+            ds_data = json.load(f)
+    else:
+        ds_data = ds_input
+    if is_valid:
+        validate_dataset(ds_data, dp_input)
+    else:
+        with pytest.raises(Exception, match=message):
+            validate_dataset(ds_data, dp_input)

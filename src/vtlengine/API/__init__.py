@@ -134,6 +134,37 @@ def create_ast(text: str) -> Start:
     return ast
 
 
+def validate_dataset(
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    datapoints: Optional[
+        Union[Dict[str, pd.DataFrame], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> Dict[str, Dataset]:
+    """
+    Validate that datasets can be loaded from the given data_structures and optional datapoints.
+
+    Args:
+        data_structures: Dict, Path, or list of dicts/Paths defining datasets.
+        datapoints: Optional; dictionary of pandas DataFrames, Paths, or list of Paths.
+        scalar_values: Optional dictionary of scalar values to be used in datasets.
+
+    Returns:
+        Dictionary of Dataset objects successfully loaded.
+
+    Raises:
+        Exception: If any dataset fails to load or validation fails.
+    """
+    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints, scalar_values)
+
+    for name, ds in datasets.items():
+        if not isinstance(ds, Dataset):
+            raise Exception(f"Loaded object for dataset '{name}' is not a Dataset instance.")
+        if ds.data is None:
+            ds.data = pd.DataFrame(columns=list(ds.components.keys()))
+    return datasets
+
+
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
@@ -554,20 +585,3 @@ def generate_sdmx(
     ast = create_ast(vtl)
     result = ast_to_sdmx(ast, agency_id, id, version)
     return result
-
-def validate_dataset(data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Optional[Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]]] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None) -> None:
-    """
-    Validates if the provided data structures and datapoints are consistent with each other.
-    If no datapoints are sent, a structural validation is applied over the data structures.
-
-    Args:
-        data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. (default: None)
-        scalar_values: Dict with the scalar values
-
-    Raises:
-        Exception: If the data structures and datapoints are inconsistent.
-    """
-    load_datasets_with_data(data_structures, datapoints, scalar_values)
