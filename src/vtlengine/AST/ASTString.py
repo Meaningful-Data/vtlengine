@@ -117,14 +117,17 @@ class ASTString(ASTTemplate):
         if isinstance(node.element, list):
             sep = nl + tab if self.pretty else " "
             conditons = ", ".join([str(e.value) for e in node.element[:-1]])
-            signature = f"{sep}{node.signature_type}{sep}condition {conditons}{sep}rule {node.element[-1].value}"
+            signature = (
+                f"{sep}{node.signature_type}{sep}"
+                f"condition {conditons}{sep}rule {node.element[-1].value}"
+            )
         else:
             signature = f"{node.signature_type} rule {node.element.value}"
 
         rules_strs = []
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
-            for i, rule in enumerate(node.rules):
+            for _i, rule in enumerate(node.rules):
                 rule_str = f"{tab}{self.visit(rule)}"
                 if rule.erCode:
                     rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
@@ -352,7 +355,8 @@ class ASTString(ASTTemplate):
             )
             if self.pretty:
                 return (
-                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
+                    f"{node.op}({nl}{tab * 2}{operand},"
+                    f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
                     f"{component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
