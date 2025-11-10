@@ -320,13 +320,25 @@ class ASTString(ASTTemplate):
                 f"{node.op}({self.visit(node.children[0])}, "
                 f"{params_sep.join([self.visit(x) for x in node.params])})"
             )
+
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             operand = self.visit(node.children[0])
             component_name = self.visit(node.children[1])
             rule_name = self.visit(node.children[2])
+
             param_mode_value = node.params[0].value
             param_input_value = node.params[1].value
             param_output_value = node.params[2].value
+
+            condition_str = ""
+            if len(node.children) > 3:
+                condition_str += "condition "
+                conditions = []
+                for condition in node.children[3:]:
+                    conditions.append(self.visit(condition))
+                condition_str += ", ".join(conditions)
+                if self.pretty:
+                    condition_str = f"{condition_str}{nl}{tab * 2}"
 
             default_value_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
             default_value_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
@@ -340,13 +352,13 @@ class ASTString(ASTTemplate):
             )
             if self.pretty:
                 return (
-                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl}{tab * 2}rule "
+                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
                     f"{component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
             else:
                 return (
-                    f"{node.op}({operand}, {rule_name} rule {component_name}"
+                    f"{node.op}({operand}, {rule_name} {condition_str} rule {component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
 
