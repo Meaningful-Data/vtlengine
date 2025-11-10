@@ -131,7 +131,7 @@ class ASTString(ASTTemplate):
                 if rule.erLevel:
                     rule_str += f"{nl}{tab}errorlevel {rule.erLevel}"
                 rules_strs.append(rule_str)
-            rules_sep = f";{nl}" if len(rules_strs) > 1 else ""
+            rules_sep = f";{nl * 2}" if len(rules_strs) > 1 else ""
             rules = rules_sep.join(rules_strs)
             self.vtl_script += rules + nl
             self.vtl_script += f"end hierarchical ruleset;{nl}"
