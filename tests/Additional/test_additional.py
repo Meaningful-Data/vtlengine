@@ -3971,6 +3971,16 @@ class TimeOperatorsTest(AdditionalHelper):
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
+    def test_GH_292(self):
+        text = "DS_r <- period_indicator(DS_1);"
+        code = "GH_292"
+        number_inputs = 1
+        exception_code = "1-1-19-1"
+
+        self.NewSemanticExceptionTest(
+            text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
 
 class EmptyDatasetsTest(AdditionalHelper):
     """

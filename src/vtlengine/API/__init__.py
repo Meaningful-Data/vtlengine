@@ -14,7 +14,6 @@ from pysdmx.util import parse_urn
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
-    _get_persistence,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -201,13 +200,13 @@ def semantic_analysis(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines SQL files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
     Returns:
         The computed datasets.
@@ -308,19 +307,23 @@ def run(
 
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        You can also use a custom name for the dataset by passing a dictionary with \
+        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        Check the following example: \
+        :ref:`Example 6 <example_6_run_using_paths>`.
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -392,7 +395,6 @@ def run(
                 format_time_period_external_representation(obj, time_period_representation)
 
     # Returning only persistent datasets
-    result = _get_persistence(result, ast)
     if return_only_persistent:
         return _return_only_persistent_datasets(result, ast)
     return result
@@ -448,13 +450,13 @@ def run_sdmx(  # noqa: C901
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
