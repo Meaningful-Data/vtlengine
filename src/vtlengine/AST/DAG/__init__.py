@@ -31,6 +31,7 @@ from vtlengine.AST import (
     Start,
     VarID,
     UDOCall,
+    Constant,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
@@ -395,7 +396,7 @@ class DAGAnalyzer(ASTTemplate):
         if node_args:
             node_sig = [type(arg.type_) for arg in node_args.parameters]
             for i, param in enumerate(node.params):
-                if node_sig[i] != Component:
+                if not isinstance(param, Constant) and node_sig[i] != Component:
                     self.visit(param)
         else:
             super().visit_UDOCall(node)
