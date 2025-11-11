@@ -392,14 +392,14 @@ class DAGAnalyzer(ASTTemplate):
             self.visit(clause)
 
     def visit_UDOCall(self, node: UDOCall) -> None:
-        node_args = self.udos.get(node.op)
-        if node_args:
-            node_sig = [type(arg.type_) for arg in node_args.parameters]
-            for i, param in enumerate(node.params):
-                if not isinstance(param, Constant) and node_sig[i] != Component:
-                    self.visit(param)
-        else:
+        node_args = (self.udos or {}).get(node.op)
+        if not node_args:
             super().visit_UDOCall(node)
+        else:
+            node_sig = [type(p.type_) for p in node_args.parameters]
+            for sig, param in zip(node_sig, node.params):
+                if not isinstance(param, Constant) and sig is not Component:
+                    self.visit(param)
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
