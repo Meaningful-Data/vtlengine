@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-import sqlglot
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
