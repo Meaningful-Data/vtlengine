@@ -487,8 +487,11 @@ class ExternalRoutine:
 
     @classmethod
     def from_sql_query(cls, name: str, query: str) -> "ExternalRoutine":
-        dataset_names = cls._extract_dataset_names(query)
-        return cls(dataset_names, query, name)
+        try:
+            dataset_names = cls._extract_dataset_names(query)
+            return cls(dataset_names, query, name)
+        except sqlglot.errors.ParseError as e:
+            raise Exception(f"Invalid SQL query in external routine '{name}': {e}") from e
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
