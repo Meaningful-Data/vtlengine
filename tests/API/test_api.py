@@ -2021,7 +2021,7 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
     query = ext_routine_data.get("query")
     name = ext_routine_data.get("name", "test_routine")
 
-    with pytest.raises(sqlglot.errors.ParseError):
+    with pytest.raises(Exception, match="Invalid SQL query in external routine"):
         ExternalRoutine.from_sql_query(name, query)
 
 
