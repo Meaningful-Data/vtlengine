@@ -30,13 +30,11 @@ from vtlengine.AST import (
     RegularAggregation,
     Start,
     VarID,
-    UDOCall,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component
 
 
 @dataclass
@@ -390,15 +388,6 @@ class DAGAnalyzer(ASTTemplate):
         for clause in node.clauses:
             self.visit(clause)
 
-    def visit_UDOCall(self, node: UDOCall) -> None:
-        node_args = self.udos.get(node.op)
-        if node_args:
-            node_sig = [type(arg.type_) for arg in node_args.parameters]
-            for i, param in enumerate(node.params):
-                if node_sig[i] != Component:
-                    self.visit(param)
-        else:
-            super().visit_UDOCall(node)
 
 class HRDAGAnalyzer(DAGAnalyzer):
     @classmethod
