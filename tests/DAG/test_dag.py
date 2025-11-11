@@ -7,7 +7,7 @@ import pytest
 from vtlengine.API import create_ast
 from vtlengine.AST.DAG import DAGAnalyzer
 
-override = True
+override = False
 data_path = Path(__file__).parent / "data"
 
 
@@ -19,8 +19,8 @@ def _normalize_ds_structure(ds_structure):
     return json.loads(
         json.dumps(
             {
-                "insertion": sorted(ds_structure["insertion"]),
-                "deletion": sorted(ds_structure["deletion"]),
+                "insertion": {k: sorted(v) for k, v in ds_structure["insertion"].items()},
+                "deletion": {k: sorted(v) for k, v in ds_structure["deletion"].items()},
                 "global_inputs": sorted(ds_structure["global_inputs"]),
                 "persistent": sorted(ds_structure["persistent"]),
             }

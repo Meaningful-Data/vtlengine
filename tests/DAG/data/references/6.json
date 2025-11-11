@@ -1,22 +1,57 @@
 {
-    "insertion": [
-        1,
-        3,
-        4,
-        5
-    ],
-    "deletion": [
-        2,
-        3,
-        5,
-        6,
-        7,
-        8,
-        9,
-        11,
-        12,
-        13
-    ],
+    "insertion": {
+        "1": [
+            "BIS_LOC_STATS"
+        ],
+        "3": [
+            "DS3"
+        ],
+        "4": [
+            "DS1"
+        ],
+        "5": [
+            "DS2"
+        ]
+    },
+    "deletion": {
+        "7": [
+            "Aggregation.numDPCouYear",
+            "numYearCou"
+        ],
+        "9": [
+            "Validation.valResult_nonFiltered",
+            "valResult"
+        ],
+        "11": [
+            "DS1",
+            "Other.DS1_conv",
+            "Other.exRate"
+        ],
+        "12": [
+            "Other.DS1_tim",
+            "Other.DS2_tim",
+            "Other.val"
+        ],
+        "6": [
+            "numCouYear"
+        ],
+        "8": [
+            "Validation.valResult_filtered"
+        ],
+        "13": [
+            "Other.DS1_enr",
+            "Other.DS1_fin"
+        ],
+        "2": [
+            "BIS_LOC_STATS"
+        ],
+        "3": [
+            "DS3"
+        ],
+        "5": [
+            "DS2"
+        ]
+    },
     "global_inputs": [
         "BIS_LOC_STATS",
         "DS1",

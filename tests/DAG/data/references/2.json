@@ -1,13 +1,27 @@
 {
-    "insertion": [
-        2
-    ],
-    "deletion": [
-        2,
-        5,
-        6,
-        7
-    ],
+    "insertion": {
+        "2": [
+            "A"
+        ]
+    },
+    "deletion": {
+        "5": [
+            "a",
+            "mdl2.e"
+        ],
+        "7": [
+            "b",
+            "d",
+            "g",
+            "mdl1.c"
+        ],
+        "6": [
+            "mdl2.f"
+        ],
+        "2": [
+            "A"
+        ]
+    },
     "global_inputs": [
         "A"
     ],
