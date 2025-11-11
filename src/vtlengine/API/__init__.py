@@ -139,29 +139,11 @@ def validate_dataset(
         Union[Dict[str, pd.DataFrame], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-) -> Dict[str, Dataset]:
+) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
-
-    Args:
-        data_structures: Dict, Path, or list of dicts/Paths defining datasets.
-        datapoints: Optional; dictionary of pandas DataFrames, Paths, or list of Paths.
-        scalar_values: Optional dictionary of scalar values to be used in datasets.
-
-    Returns:
-        Dictionary of Dataset objects successfully loaded.
-
-    Raises:
-        Exception: If any dataset fails to load or validation fails.
     """
     datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints, scalar_values)
-
-    for name, ds in datasets.items():
-        if not isinstance(ds, Dataset):
-            raise Exception(f"Loaded object for dataset '{name}' is not a Dataset instance.")
-        if ds.data is None:
-            ds.data = pd.DataFrame(columns=list(ds.components.keys()))
-    return datasets
 
 
 def semantic_analysis(
