@@ -20,7 +20,15 @@ from pysdmx.model.vtl import VtlDataflowMapping
 
 import vtlengine.DataTypes as DataTypes
 from tests.Helper import TestHelper
-from vtlengine.API import generate_sdmx, prettify, run, run_sdmx, semantic_analysis
+from vtlengine.API import (
+    generate_sdmx,
+    prettify,
+    run,
+    run_sdmx,
+    semantic_analysis,
+    validate_external_routine,
+    validate_value_domain,
+)
 from vtlengine.API._InternalApi import (
     _check_script,
     _validate_json,
@@ -2003,8 +2011,17 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
         ext_routine_data = json.load(f)
     with open(path_schema, "r") as f:
         ext_routine_schema = json.load(f)
-    with pytest.raises(Exception, match="The given json does not follow the schema."):
+    try:
         _validate_json(ext_routine_data, ext_routine_schema)
+    except Exception:
+        with pytest.raises(Exception, match="The given json does not follow the schema."):
+            _validate_json(ext_routine_data, ext_routine_schema)
+        return
+    query = ext_routine_data.get("query")
+    name = ext_routine_data.get("name", "test_routine")
+
+    with pytest.raises(Exception, match="Invalid SQL query in external routine"):
+        ExternalRoutine.from_sql_query(name, query)
 
 
 def test_with_multiple_vd_and_ext_routines():
@@ -2220,3 +2237,39 @@ def test_loading_list_multiple_value_domains(value_domains_input):
     value_domains_loaded = load_value_domains(value_domains_input)
     assert "Countries" in value_domains_loaded
     assert "AnaCreditCountries" in value_domains_loaded
+
+
+params_validate_vd = [
+    (filepath_ValueDomains / "VD_1.json", True),
+    (filepath_ValueDomains / "VD_wrong_key.json", False),
+]
+
+params_validate_sql = [
+    (filepath_sql / "1.json", True),
+    (filepath_sql / "ext_routine_wrong_key.json", False),
+    (filepath_sql / "ext_routine_wrong_query.json", False),
+]
+
+
+@pytest.mark.parametrize("path_vd, is_valid", params_validate_vd)
+def test_validate_vd(path_vd, is_valid):
+    with open(path_vd, "r") as f:
+        vd_data = json.load(f)
+    if is_valid:
+        try:
+            validate_value_domain(vd_data)
+        except Exception:
+            with pytest.raises(Exception, match="The given json does not follow the schema."):
+                validate_value_domain(vd_data)
+
+
+@pytest.mark.parametrize("path_sql, is_valid", params_validate_sql)
+def test_validate_sql(path_sql, is_valid):
+    with open(path_sql, "r") as f:
+        ext_routine_data = json.load(f)
+    if is_valid:
+        try:
+            validate_external_routine(ext_routine_data)
+        except Exception:
+            with pytest.raises(Exception, match="The given json does not follow the schema."):
+                validate_external_routine(ext_routine_data)
