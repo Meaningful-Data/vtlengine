@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import sqlglot
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import (
@@ -2011,8 +2012,17 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
         ext_routine_data = json.load(f)
     with open(path_schema, "r") as f:
         ext_routine_schema = json.load(f)
-    with pytest.raises(Exception, match="The given json does not follow the schema."):
+    try:
         _validate_json(ext_routine_data, ext_routine_schema)
+    except Exception:
+        with pytest.raises(Exception, match="The given json does not follow the schema."):
+            _validate_json(ext_routine_data, ext_routine_schema)
+        return
+    query = ext_routine_data.get("query")
+    name = ext_routine_data.get("name", "test_routine")
+
+    with pytest.raises(sqlglot.errors.ParseError):
+        ExternalRoutine.from_sql_query(name, query)
 
 
 def test_with_multiple_vd_and_ext_routines():
@@ -2238,6 +2248,7 @@ params_validate_vd = [
 params_validate_sql = [
     (filepath_sql / "1.json", True),
     (filepath_sql / "ext_routine_wrong_key.json", False),
+    (filepath_sql / "ext_routine_wrong_query.json", False),
 ]
 
 
