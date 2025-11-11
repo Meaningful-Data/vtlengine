@@ -146,6 +146,38 @@ def validate_dataset(
     load_datasets_with_data(data_structures, datapoints, scalar_values)
 
 
+def validate_value_domain(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate ValueDomain(s) using JSON Schema.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing value domain definitions.
+
+    Raises:
+        Exception: If the input file is invalid, does not exist,
+                   or the JSON content does not follow the schema.
+    """
+    load_value_domains(input)
+
+
+def validate_external_routine(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate External Routine(s) using JSON Schema and SQLGlot.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing external routines.
+
+    Raises:
+        Exception: If JSON schema validation fails,
+                   SQL syntax is invalid, or file type is wrong.
+    """
+    load_external_routines(input)
+
+
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
