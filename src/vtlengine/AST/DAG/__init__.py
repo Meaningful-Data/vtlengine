@@ -19,6 +19,7 @@ from vtlengine.AST import (
     Analytic,
     Assignment,
     BinOp,
+    Constant,
     DefIdentifier,
     DPRuleset,
     HRuleset,
@@ -29,9 +30,8 @@ from vtlengine.AST import (
     PersistentAssignment,
     RegularAggregation,
     Start,
-    VarID,
     UDOCall,
-    Constant,
+    VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
@@ -400,6 +400,7 @@ class DAGAnalyzer(ASTTemplate):
                     self.visit(param)
         else:
             super().visit_UDOCall(node)
+
 
 class HRDAGAnalyzer(DAGAnalyzer):
     @classmethod

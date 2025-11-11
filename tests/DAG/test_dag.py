@@ -1,8 +1,8 @@
+import json
 from pathlib import Path
 from typing import List
 
 import pytest
-import json
 
 from vtlengine.API import create_ast
 from vtlengine.AST.DAG import DAGAnalyzer
@@ -12,16 +12,21 @@ data_path = Path(__file__).parent / "data"
 
 
 def _discover_tests(data_root: Path) -> List[str]:
-    return sorted(p.stem for p in (data_root/"vtl").iterdir() if p.is_file())
+    return sorted(p.stem for p in (data_root / "vtl").iterdir() if p.is_file())
 
 
 def _normalize_ds_structure(ds_structure):
-    return json.loads(json.dumps({
-        "insertion": sorted(ds_structure["insertion"]),
-        "deletion": sorted(ds_structure["deletion"]),
-        "global_inputs": sorted(ds_structure["global_inputs"]),
-        "persistent": sorted(ds_structure["persistent"]),
-    }))
+    return json.loads(
+        json.dumps(
+            {
+                "insertion": sorted(ds_structure["insertion"]),
+                "deletion": sorted(ds_structure["deletion"]),
+                "global_inputs": sorted(ds_structure["global_inputs"]),
+                "persistent": sorted(ds_structure["persistent"]),
+            }
+        )
+    )
+
 
 tests = _discover_tests(data_path)
 
