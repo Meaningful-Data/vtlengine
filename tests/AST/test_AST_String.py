@@ -41,6 +41,7 @@ params_prettier = [
     ("fill_time_series.vtl", "reference_fill_time_series.vtl"),
     ("date_add.vtl", "reference_date_add.vtl"),
     ("complete_grammar.vtl", "reference_complete_grammar.vtl"),
+    ("NBB_QBOP_QIIP.vtl", "reference_NBB_QBOP_QIIP.vtl"),
 ]
 
 
