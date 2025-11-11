@@ -1,56 +1,23 @@
 {
     "insertion": [
         1,
-        2,
-        6,
-        7,
-        8,
-        9,
-        13
+        3
     ],
     "deletion": [
         1,
         2,
         3,
         4,
-        8,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
+        5,
+        6
     ],
     "global_inputs": [
-        "ANCRDT_ACCNTNG_C",
-        "ANCRDT_ACCNTNG_C_T3",
-        "ANCRDT_ENTTY",
-        "ANCRDT_ENTTY_DFLT_C",
-        "ANCRDT_ENTTY_INSTRMNT_C",
-        "ANCRDT_FNNCL_C",
-        "ANCRDT_INSTRMNT_C",
-        "ANCRDT_INSTRMNT_C_T1",
-        "ANCRDT_INSTRMNT_C_T2",
-        "ANCRDT_INSTRMNT_C_T3"
+        "DSD_AGR",
+        "DSD_POP"
     ],
     "persistent": [
-        "DP_RLST_ACCNTNG_FRMWRK_RSLT",
-        "DP_RLST_ACCNTNG_INTRCMPNY",
-        "DP_RLST_ACCNTNG_RSLT",
-        "DP_RLST_FNNCL_ACCNTNG_RSLT",
-        "DP_RLST_FNNCL_RSLT",
-        "DP_RLST_INSTRMNTS_FLL_LST_QRTR_RSLT",
-        "DP_RLST_INSTRMNT_ACCNTNG_RSLT",
-        "DP_RLST_INSTRMNT_ENTTY_RSK_RSLT",
-        "RI0040",
-        "RI0100"
+        "DS_check_agr",
+        "DS_check_countries",
+        "final_dataset"
     ]
 }

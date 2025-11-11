@@ -7,7 +7,7 @@ import pytest
 from vtlengine.API import create_ast
 from vtlengine.AST.DAG import DAGAnalyzer
 
-override = False
+override = True
 data_path = Path(__file__).parent / "data"
 
 

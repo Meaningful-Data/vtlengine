@@ -1,504 +1,3010 @@
-define hierarchical ruleset accountingEntryQ(variable rule ACCOUNTING_ENTRY) is
-	N = A - L
-	errorcode "Net (assets-liabilities) [Accounting_Entry rule 'N = A - L']"
-	errorlevel 4
-end hierarchical ruleset;
+define datapoint ruleset anacreditCounterpartyDefault(variable DT_DFLT_STTS, DT_RFRNC, DFLT_STTS, NEVS_DT_DFLT_STTS, NEVS_DFLT_STTS) is
+		CN0630:
 
-define hierarchical ruleset areasQ(variable rule COUNTERPART_AREA) is
-	W1 = I8 + J8
-	errorcode "Rest of the world [COUNTERPART_AREA rule 'W1 = I8 + J8']"
-	errorlevel 4;
+				if
+					isnull(DT_RFRNC) or isnull(DT_DFLT_STTS)
+				then
+					true
+				else
+					DT_RFRNC >= DT_DFLT_STTS
+			errorcode  "CN0630"
+			errorlevel 3;
 
-	W1 = B5 + D5
-	errorcode "Rest of the world [COUNTERPART_AREA rule 'W1 = B5 + D5']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset functionalCategory(variable rule FUNCTIONAL_CAT) is
-	D = D1 + D2 + D3
-	errorcode "Func1 [FUNCTIONAL_CAT rule 'D=D1+D2+D3']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset instrAssetQ(variable rule INSTR_ASSET) is
-	F = F11 + F12 + FK + FR2
-	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F = F11 + F12 + FK + FR2']"
-	errorlevel 4;
-
-	F11 = F11A + F11B
-	errorcode "Monetary gold [INSTR_ASSET rule 'F11 = F11A + F11B']"
-	errorlevel 4;
-
-	F5 = F51 + F52
-	errorcode "Equity and investment fund shares/units [INSTR_ASSET rule 'F5 = F51 + F52']"
-	errorlevel 4;
-
-	FR1 = F3 + F5
-	errorcode "Securities (Equity, investment fund shares/units and debt securities) [INSTR_ASSET rule 'FR1 = F3 + F5']"
-	errorlevel 4;
-
-	FR2 = F2 + FR1 + F71 + FR41
-	errorcode "Other reserve assets .currency, deposits, securities, financial derivatives and other claims [INSTR_ASSET rule 'FR2 = F2 + FR1 + F71 + FR41']"
-	errorlevel 4;
-
-	F = F519 + F2 + F4 + F6 + F81 + F89
-	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F = F519 + F2 + F4 + F6 + F81 + F89']"
-	errorlevel 4;
-
-	F51 = F511 + F512 + F519
-	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F51 = F511 + F512 + F519']"
-	errorlevel 4;
-
-	F5 = F5A + F5B
-	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F5 = F5A + F5B']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset intAccItemQ(variable rule INT_ACC_ITEM) is
-	CA = G + S + IN1 + IN2
-	errorcode "Current account [INT_ACC_ITEM rule 'CA = G + S + IN1 + IN2']"
-	errorlevel 4;
-
-	D4P = D4S + D4Q
-	errorcode "Income: Investment income [INT_ACC_ITEM rule 'D4P = D4S + D4Q']"
-	errorlevel 4;
-
-	D4P = D4S + D41 + D44P
-	errorcode "Income: Investment income [INT_ACC_ITEM rule 'D4P = D4S + D41 + D44P']"
-	errorlevel 4;
-
-	GS = G + S
-	errorcode " [INT_ACC_ITEM rule 'GS=G+S']"
-	errorlevel 4;
-
-	IN1 = D1 + D4P + D4O
-	errorcode "Primary income [INT_ACC_ITEM rule 'IN1 = D1 + D4P + D4O']"
-	errorlevel 4;
-
-	D2 = D21 + D29
-	errorcode "Primary income [INT_ACC_ITEM rule 'D2 = D21 + D29']"
-	errorlevel 4;
-
-	D3 = D31 + D39
-	errorcode "Primary income [INT_ACC_ITEM rule 'D3 = D31 + D39']"
-	errorlevel 4;
-
-	D4O = D2 + D3 + D45
-	errorcode "Primary income [INT_ACC_ITEM rule 'D4O = D2 + D3 + D45']"
-	errorlevel 4;
-
-	D4S = D42S + D43S
-	errorcode "Primary income [INT_ACC_ITEM rule 'D4S = D42S + D43S']"
-	errorlevel 4;
-
-	D443 = D4431 + D4432
-	errorcode "Primary income [INT_ACC_ITEM rule 'D443 = D4431 + D4432']"
-	errorlevel 4;
-
-	D9 = D91 + D92 + D99
-	errorcode "Primary income [INT_ACC_ITEM rule 'D9 = D91 +D92 + D99']"
-	errorlevel 4;
-
-	G = G1 + G2 + G3 + G4EU
-	errorcode "Primary income [INT_ACC_ITEM rule 'G = G1 + G2 + G3 + G4EU']"
-	errorlevel 4;
-
-	G2 = G21 + G22
-	errorcode "Primary income [INT_ACC_ITEM rule 'G2 = G21 + G22']"
-	errorlevel 4;
-
-	IN2 = D5 + D61 + D71 + D72 + D74 + D75 + D76 + D8
-	errorcode "Primary income [INT_ACC_ITEM rule 'IN2 = D5 + D61 + D71 + D72 + D74 + D75 + D76 + D8']"
-	errorlevel 4;
-
-	KA = NP + D9
-	errorcode "Primary income [INT_ACC_ITEM rule 'KA = NP + D9']"
-	errorlevel 4;
-
-	S = SA + SB + SC + SD + SE + SF + SG + SH + SI + SJ + SK + SL + SN
-	errorcode "Primary income [INT_ACC_ITEM rule 'S = SA + SB + SC + SD + SE + SF + SG + SH + SI + SJ + SK + SL + SN']"
-	errorlevel 4;
-
-	SG = SG1 + SG2
-	errorcode "Primary income [INT_ACC_ITEM rule 'SG = SG1 + SG2']"
-	errorlevel 4;
-
-	SJ = SJ1 + SJ2 + SJ3
-	errorcode "Primary income [INT_ACC_ITEM rule 'SJ = SJ1 + SJ2 + SJ3']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset maturity(variable rule MATURITY) is
-	T = S + L
-	errorcode "All original maturities [MATURITY rule 'T = S + L']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset sectorsHierarchyQ(variable rule COUNTERPART_SECTOR) is
-	S1 = S121 + S12T + S13 + S1P
-	errorcode "total economy [COUNTERPART_SECTOR rule 'S1 = S121 + S12T + S13 + S1P']"
-	errorlevel 4;
-
-	S12T = S122 + S123
-	errorcode "Monetary financial institutions other than central bank [COUNTERPART_SECTOR rule 'S12T = S122 + S123']"
-	errorlevel 4;
-
-	S1P = S12M + S1V
-	errorcode "Other sectors than MFIs and general government [COUNTERPART_SECTOR rule 'S1P = S12M + S1V']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define hierarchical ruleset sectorsHierarchyQ2(variable rule REF_SECTOR) is
-	S1 = S121 + S12T + S13 + S1P
-	errorcode "total economy [REFERENCE_SECTOR rule 'S1 = S121 + S12T + S13 + S1P']"
-	errorlevel 4;
-
-	S1 = S13 + S1W
-	errorcode "total economy [REFERENCE_SECTOR rule 'S1 = S13 + S1W']"
-	errorlevel 4;
-
-	S12T = S122 + S123
-	errorcode "Monetary financial institutions other than central bank [REFERENCE_SECTOR rule 'S12T = S122 + S123']"
-	errorlevel 4;
-
-	S1P = S12M + S1V
-	errorcode "Other sectors than MFIs and general government [REFERENCE_SECTOR rule 'S1P = S12M + S1V']"
-	errorlevel 4
-end hierarchical ruleset;
-
-define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-		sign1c:
+		CN0816:
 			when
-				AE = "C" and IAI = "G"
-			then
-				O > 0
-			errorcode  "sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0']"
-			errorlevel 4;
 
-		sign2c:
-			when
-				AE = "C" and IAI = "GA"
+				if
+					isnull(DFLT_STTS)
+				then
+					false
+				else
+					NEVS_DT_DFLT_STTS = "0" and (NEVS_DFLT_STTS not_in {"0", "-2", "-3", "-5"} or isnull(NEVS_DFLT_STTS))
 			then
-				O > 0
-			errorcode  "sign2c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = GA then OBS_VALUE > 0']"
-			errorlevel 4;
+				DFLT_STTS = "14"
+			errorcode  "CN0816"
+			errorlevel 3;
 
-		sign3c:
-			when
-				AE = "C" and IAI = "S"
-			then
-				O > 0
-			errorcode  "sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0']"
-			errorlevel 4;
+		GCMA_TH_L_DT_DFLT_STTS_ENTTY:
 
-		sign4c:
-			when
-				AE = "C" and IAI = "IN1"
-			then
-				O > 0
-			errorcode  "sign4c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN1 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign5c:
-			when
-				AE = "C" and IAI = "IN2"
-			then
-				O > 0
-			errorcode  "sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign6c:
-			when
-				AE = "C" and IAI = "D1"
-			then
-				O > 0
-			errorcode  "sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign7c:
-			when
-				AE = "C" and IAI = "KA"
-			then
-				O > 0
-			errorcode  "sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign8c:
-			when
-				AE = "C" and IAI = "D4P"
-			then
-				O > 0
-			errorcode  "sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign1d:
-			when
-				AE = "D" and IAI = "G"
-			then
-				O > 0
-			errorcode  "sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign2d:
-			when
-				AE = "D" and IAI = "GA"
-			then
-				O > 0
-			errorcode  "sign2d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = GA then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign3d:
-			when
-				AE = "D" and IAI = "S"
-			then
-				O > 0
-			errorcode  "sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign4d:
-			when
-				AE = "D" and IAI = "IN1"
-			then
-				O > 0
-			errorcode  "sign4d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN1 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign5d:
-			when
-				AE = "D" and IAI = "IN2"
-			then
-				O > 0
-			errorcode  "sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign6d:
-			when
-				AE = "D" and IAI = "D1"
-			then
-				O > 0
-			errorcode  "sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign7d:
-			when
-				AE = "D" and IAI = "KA"
-			then
-				O > 0
-			errorcode  "sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign8d:
-			when
-				AE = "D" and IAI = "D4P"
-			then
-				O > 0
-			errorcode  "sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign9:
-			when
-				IAI = "D4Q" and FC = "D" and IA = "FL"
-			then
-				O > 0
-			errorcode  "sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign10:
-			when
-				IAI = "D4S" and FC = "P" and IA = "F"
-			then
-				O > 0
-			errorcode  "sign10 [Sign rule ' when INT_ACC_ITEM = D4S and FUNCTIONAL_CAT = P and  INSTR_ASSET = F then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign11:
-			when
-				IAI = "D41" and FC = "P" and IA = "F3"
-			then
-				O > 0
-			errorcode  "sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0']"
-			errorlevel 4;
-
-		sign12:
-			when
-				IAI = "D41" and FC = "O" and IA = "FLA"
-			then
-				O > 0
-			errorcode  "sign12 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = O and  INSTR_ASSET = FLA then OBS_VALUE > 0']"
+				if
+					isnull(DT_DFLT_STTS)
+				then
+					true
+				else
+					DT_DFLT_STTS >= cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_DFLT_STTS_ENTTY"
 			errorlevel 4
 end datapoint ruleset;
 
-define datapoint ruleset zeroValidation(variable COUNTERPART_AREA as CA, REF_SECTOR as RS, COUNTERPART_SECTOR as CS, FLOW_STOCK_ENTRY as FSE, ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
-		EQ0_1:
+define datapoint ruleset anacreditCounterpartyDefaultLastMonth(variable DFLT_STTS, DFLT_STTS_T1, DT_DFLT_STTS, DT_DFLT_STTS_T1) is
+		CN0640:
 			when
-				CA = "I8" and RS = "S1" and CS = "S121" and FSE = "T" and AE = "A" and IAI = "FA" and FC = "P" and IA = "F3"
+
+				if
+					isnull(DT_DFLT_STTS) or isnull(DT_DFLT_STTS_T1)
+				then
+					false
+				else
+					DFLT_STTS <> DFLT_STTS_T1
 			then
-				O = 0
-			errorcode  "EQ0_1 [Zero Validation rule ' when COUNTERPART_AREA = I8 and REF_SECTOR = S1 and COUNTERPART_SECTOR = S121 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = A and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']"
+				DT_DFLT_STTS > DT_DFLT_STTS_T1
+			errorcode  "CN0640"
+			errorlevel 3
+end datapoint ruleset;
+
+define datapoint ruleset anacreditEntityThresholds(variable DT_INTTN_LGL_PRCDNGS, DT_ENTRPRS_SZ, BLNC_SHT_TTL, ANNL_TRNVR) is
+		GCMA_TH_L_DT_INTTN_LGL_PRCDNGS:
+
+				if
+					isnull(DT_INTTN_LGL_PRCDNGS)
+				then
+					true
+				else
+					DT_INTTN_LGL_PRCDNGS > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_INTTN_LGL_PRCDNGS"
 			errorlevel 4;
 
-		EQ0_2:
-			when
-				CA = "W1" and RS = "S121" and CS = "S1" and FSE = "T" and AE = "L" and IAI = "FA" and FC = "P" and IA = "F3"
-			then
-				O = 0
-			errorcode  "EQ0_2  [Zero Validation rule ' when COUNTERPART_AREA = W1 and REF_SECTOR = S121 and COUNTERPART_SECTOR = S1 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = L and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']"
+		GCMA_TH_L_DT_ENTRPRS_SZ:
+
+				if
+					isnull(DT_ENTRPRS_SZ)
+				then
+					true
+				else
+					DT_ENTRPRS_SZ > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_ENTRPRS_SZ"
+			errorlevel 4;
+
+		GCMA_TH_H_BLNC_SHT_TTL:
+
+				if
+					isnull(BLNC_SHT_TTL)
+				then
+					true
+				else
+					BLNC_SHT_TTL < 5000000000000
+			errorcode  "GCMA_TH_H_BLNC_SHT_TTL"
+			errorlevel 4;
+
+		GCMA_TH_L_BLNC_SHT_TTL:
+
+				if
+					isnull(BLNC_SHT_TTL)
+				then
+					true
+				else
+					BLNC_SHT_TTL > 10
+			errorcode  "GCMA_TH_L_BLNC_SHT_TTL"
+			errorlevel 4;
+
+		GCMA_TH_H_ANNL_TRNVR:
+
+				if
+					isnull(ANNL_TRNVR)
+				then
+					true
+				else
+					ANNL_TRNVR < 1000000000000
+			errorcode  "GCMA_TH_H_ANNL_TRNVR"
+			errorlevel 4;
+
+		GCMA_TH_L_ANNL_TRNVR:
+
+				if
+					isnull(ANNL_TRNVR)
+				then
+					true
+				else
+					ANNL_TRNVR > 10
+			errorcode  "GCMA_TH_L_ANNL_TRNVR"
 			errorlevel 4
 end datapoint ruleset;
 
-define operator filRoundEr(ds dataset, comp component, margin number)
+define datapoint ruleset anacreditInstrumentProtection(variable DT_INCPTN, DT_MTRTY_PRTCTN, TYP_PRTCTN_VL, PRTCTN_VL, PRTCTN_ALLCTD_VL, THRD_PRTY_PRRTY_CLMS) is
+		CN0650:
+
+				if
+					isnull(DT_MTRTY_PRTCTN) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_MTRTY_PRTCTN >= DT_INCPTN
+			errorcode  "CN0650"
+			errorlevel 1;
+
+		CN0868:
+			when
+
+				if
+					isnull(PRTCTN_VL) or isnull(PRTCTN_ALLCTD_VL)
+				then
+					false
+				else
+					TYP_PRTCTN_VL <> "4"
+			then
+				PRTCTN_VL >= PRTCTN_ALLCTD_VL
+			errorcode  "CN0868"
+			errorlevel 3;
+
+		GCMA_TH_H_PRTCTN_ALLCTD_VL:
+
+				if
+					isnull(PRTCTN_ALLCTD_VL)
+				then
+					true
+				else
+					PRTCTN_ALLCTD_VL < 1000000000
+			errorcode  "GCMA_TH_H_PRTCTN_ALLCTD_VL"
+			errorlevel 4;
+
+		GCMA_TH_H_THRD_PRTY_PRRTY_CLMS:
+
+				if
+					isnull(THRD_PRTY_PRRTY_CLMS)
+				then
+					true
+				else
+					THRD_PRTY_PRRTY_CLMS < 1000000000
+			errorcode  "GCMA_TH_H_THRD_PRTY_PRRTY_CLMS"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset anacreditJointLiability(variable JNT_LBLTY_AMNT) is
+		GCMA_TH_H_JNT_LBLTY_AMNT:
+
+				if
+					isnull(JNT_LBLTY_AMNT)
+				then
+					true
+				else
+					JNT_LBLTY_AMNT <= 1000000000
+			errorcode  "GCMA_TH_H_JNT_LBLTY_AMNT"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset anacreditProtectionReceived(variable DT_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, DT_RFRNC, RL_ESTT_CLLTRL_LCTN, TYP_PRTCTN, RECL_CNTRY, RECL_TRRTRL_UNT, RECL_PSTL_CD, NEVS_RL_ESTT_CLLTRL_LCTN, NEVS_RECL_CNTRY, NEVS_RECL_TRRTRL_UNT, NEVS_RECL_PSTL_CD, PRTCTN_VL, DT_MTRTY_PRTCTN, ORGNL_PRTCTN_VL) is
+		CN0142:
+
+				if
+					isnull(DT_PRTCTN_VL) or isnull(DT_ORGNL_PRTCTN_VL)
+				then
+					true
+				else
+					DT_PRTCTN_VL >= DT_ORGNL_PRTCTN_VL
+			errorcode  "CN0142"
+			errorlevel 3;
+
+		CN0660:
+
+				if
+					isnull(DT_RFRNC) or isnull(DT_PRTCTN_VL)
+				then
+					true
+				else
+					DT_RFRNC >= DT_PRTCTN_VL
+			errorcode  "CN0660"
+			errorlevel 2;
+
+		CN0831:
+			when
+
+				if
+					isnull(TYP_PRTCTN)
+				then
+					false
+				else
+					NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+			then
+				TYP_PRTCTN not_in {"8", "9", "10"}
+			errorcode  "CN0831"
+			errorlevel 1;
+
+		CN0960a:
+			when
+
+				if
+					NEVS_RL_ESTT_CLLTRL_LCTN in {"-5", "-3", "-2"}
+				then
+					false
+				else
+					TYP_PRTCTN not_in {"8", "9", "10"}
+			then
+				NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+			errorcode  "CN0960a"
+			errorlevel 1;
+
+		CN0960b:
+			when
+
+				if
+					isnull(TYP_PRTCTN)
+				then
+					false
+				else
+					NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+			then
+				TYP_PRTCTN not_in {"8", "9", "10"}
+			errorcode  "CN0960b"
+			errorlevel 1;
+
+		CN0961a:
+			when
+
+				if
+					isnull(TYP_PRTCTN)
+				then
+					false
+				else
+					NEVS_RECL_CNTRY = "0"
+			then
+				TYP_PRTCTN not_in {"8", "9", "10"}
+			errorcode  "CN0961a"
+			errorlevel 1;
+
+		CN0961b:
+			when
+
+				if
+					isnull(NEVS_RECL_CNTRY) or NEVS_RECL_CNTRY in {"-5", "-3", "-2"}
+				then
+					false
+				else
+					TYP_PRTCTN not_in {"8", "9", "10"}
+			then
+				NEVS_RECL_CNTRY = "0"
+			errorcode  "CN0961b"
+			errorlevel 1;
+
+		CN0962a:
+			when
+
+				if
+					isnull(TYP_PRTCTN)
+				then
+					false
+				else
+					NEVS_RECL_TRRTRL_UNT
+			then
+				TYP_PRTCTN not_in {"8", "9", "10"}
+			errorcode  "CN0962a"
+			errorlevel 1;
+
+		CN0962b:
+			when
+
+				if
+					isnull(NEVS_RECL_TRRTRL_UNT) or NEVS_RECL_TRRTRL_UNT in {"-5", "-3", "-2"}
+				then
+					false
+				else
+					TYP_PRTCTN in {"8", "9", "10"}
+			then
+				NEVS_RECL_TRRTRL_UNT <> "0"
+			errorcode  "CN0962b"
+			errorlevel 1;
+
+		CN0963a:
+			when
+
+				if
+					isnull(TYP_PRTCTN)
+				then
+					false
+				else
+					NEVS_RECL_PSTL_CD = "0"
+			then
+				TYP_PRTCTN not_in {"8", "9", "10"}
+			errorcode  "CN0963a"
+			errorlevel 1;
+
+		CN0963b:
+			when
+
+				if
+					isnull(NEVS_RECL_PSTL_CD) or NEVS_RECL_PSTL_CD in {"-5", "-3", "-2"}
+				then
+					false
+				else
+					TYP_PRTCTN not_in {"8", "9", "10"}
+			then
+				NEVS_RECL_PSTL_CD = "0"
+			errorcode  "CN0963b"
+			errorlevel 1;
+
+		CN0980:
+			when
+				not isnull(RL_ESTT_CLLTRL_LCTN) or NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+			then
+				(isnull(RECL_CNTRY) and isnull(NEVS_RECL_CNTRY)) and (isnull(RECL_TRRTRL_UNT) and isnull(NEVS_RECL_TRRTRL_UNT)) and (isnull(RECL_PSTL_CD) and isnull(NEVS_RECL_PSTL_CD))
+			errorcode  "CN0980"
+			errorlevel 1;
+
+		GCMA_TH_H_PRTCTN_VL_TTL_PRTCTN:
+
+				if
+					isnull(PRTCTN_VL)
+				then
+					true
+				else
+					PRTCTN_VL <= 1000000000
+			errorcode  "GCMA_TH_H_PRTCTN_VL_TTL_PRTCTN"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_PRTCTN_VL:
+
+				if
+					isnull(DT_PRTCTN_VL)
+				then
+					true
+				else
+					DT_PRTCTN_VL >= cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_PRTCTN_VL"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_MTRTY_PRTCTN:
+
+				if
+					isnull(DT_MTRTY_PRTCTN)
+				then
+					true
+				else
+					DT_MTRTY_PRTCTN >= cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_MTRTY_PRTCTN"
+			errorlevel 4;
+
+		GCMA_TH_H_ORGNL_PRTCTN_VL_PRTCTN:
+
+				if
+					isnull(ORGNL_PRTCTN_VL)
+				then
+					true
+				else
+					ORGNL_PRTCTN_VL <= 1000000000
+			errorcode  "GCMA_TH_H_ORGNL_PRTCTN_VL_PRTCTN"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_ORGNL_PRTCTN_VL:
+
+				if
+					isnull(DT_ORGNL_PRTCTN_VL)
+				then
+					true
+				else
+					DT_ORGNL_PRTCTN_VL >= cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_ORGNL_PRTCTN_VL"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset anacreditProtectionReceivedLastMonth(variable DT_PRTCTN_VL, DT_PRTCTN_VL_T1, DT_ORGNL_PRTCTN_VL, DT_ORGNL_PRTCTN_VL_T1, ORGNL_PRTCTN_VL, ORGNL_PRTCTN_VL_T1, TYP_PRTCTN, TYP_PRTCTN_T1) is
+		CN0661:
+
+				if
+					isnull(DT_PRTCTN_VL) or isnull(DT_PRTCTN_VL_T1)
+				then
+					true
+				else
+					DT_PRTCTN_VL >= DT_PRTCTN_VL_T1
+			errorcode  "CN0661"
+			errorlevel 2;
+
+		CN0812:
+
+				if
+					isnull(ORGNL_PRTCTN_VL) or isnull(ORGNL_PRTCTN_VL_T1)
+				then
+					true
+				else
+					ORGNL_PRTCTN_VL = ORGNL_PRTCTN_VL_T1
+			errorcode  "CN0812"
+			errorlevel 1;
+
+		CN0813:
+
+				if
+					isnull(DT_ORGNL_PRTCTN_VL) or isnull(DT_ORGNL_PRTCTN_VL_T1)
+				then
+					true
+				else
+					DT_ORGNL_PRTCTN_VL = DT_ORGNL_PRTCTN_VL_T1
+			errorcode  "CN0813"
+			errorlevel 1;
+
+		CN0950:
+			when
+
+				if
+					isnull(TYP_PRTCTN) or isnull(TYP_PRTCTN_T1)
+				then
+					false
+				else
+					TYP_PRTCTN not_in {"8", "9", "10"} or TYP_PRTCTN_T1 not_in {"8", "9", "10"}
+			then
+				TYP_PRTCTN = TYP_PRTCTN_T1
+			errorcode  "CN0950"
+			errorlevel 3
+end datapoint ruleset;
+
+define datapoint ruleset completenessAccounting(variable CD0039, CD0030, CD0040, CD0041, CD0050, CD0060, ACCNTNG_CLSSFCTN, RCGNTN_STTS, ACCMLTD_WRTFFS, ACCMLTD_IMPRMNT, IMPRMNT_STTS, IMPRMNT_ASSSSMNT_MTHD, SRC_ENCMBRNC, ACCMLTD_CHNGS_FV_CR, PRFRMNG_STTS, DT_PRFRMNG_STTS, PRVSNS_OFF_BLNC_SHT, FRBRNC_STTS, DT_FRBRNC_STTS, CMLTV_RCVRS_SNC_DFLT, PRDNTL_PRTFL, CRRYNG_AMNT, NEVS_ACCNTNG_CLSSFCTN, NEVS_RCGNTN_STTS, NEVS_ACCMLTD_WRTFFS, NEVS_ACCMLTD_IMPRMNT, NEVS_IMPRMNT_STTS, NEVS_IMPRMNT_ASSSSMNT_MTHD, NEVS_SRC_ENCMBRNC, NEVS_ACCMLTD_CHNGS_FV_CR, NEVS_PRFRMNG_STTS, NEVS_DT_PRFRMNG_STTS, NEVS_PRVSNS_OFF_BLNC_SHT, NEVS_FRBRNC_STTS, NEVS_DT_FRBRNC_STTS, NEVS_CMLTV_RCVRS_SNC_DFLT, NEVS_PRDNTL_PRTFL, NEVS_CRRYNG_AMNT) is
+		CT0370:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(ACCNTNG_CLSSFCTN) or NEVS_ACCNTNG_CLSSFCTN = "0"
+			errorcode  "CT0370"
+			errorlevel 2;
+
+		CT0380:
+			when
+				not (CD0039)
+			then
+				not isnull(RCGNTN_STTS) or NEVS_RCGNTN_STTS = "0"
+			errorcode  "CT0380"
+			errorlevel 2;
+
+		CT0390:
+			when
+				not (CD0039 or CD0040 or CD0041)
+			then
+				not isnull(ACCMLTD_WRTFFS) or NEVS_ACCMLTD_WRTFFS = "0"
+			errorcode  "CT0390"
+			errorlevel 2;
+
+		CT0400:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(ACCMLTD_IMPRMNT) or NEVS_ACCMLTD_IMPRMNT = "0"
+			errorcode  "CT0400"
+			errorlevel 2;
+
+		CT0410:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(IMPRMNT_STTS) or NEVS_IMPRMNT_STTS = "0"
+			errorcode  "CT0410"
+			errorlevel 2;
+
+		CT0420:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(IMPRMNT_ASSSSMNT_MTHD) or NEVS_IMPRMNT_ASSSSMNT_MTHD = "0"
+			errorcode  "CT0420"
+			errorlevel 2;
+
+		CT0430:
+			when
+				not (CD0030 or CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(SRC_ENCMBRNC) or NEVS_SRC_ENCMBRNC = "0"
+			errorcode  "CT0430"
+			errorlevel 2;
+
+		CT0440:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(ACCMLTD_CHNGS_FV_CR) or NEVS_ACCMLTD_CHNGS_FV_CR = "0"
+			errorcode  "CT0440"
+			errorlevel 2;
+
+		CT0450:
+			when
+				not (CD0030 or CD0039 or CD0060)
+			then
+				not isnull(PRFRMNG_STTS) or NEVS_PRFRMNG_STTS = "0"
+			errorcode  "CT0450"
+			errorlevel 2;
+
+		CT0460:
+			when
+				not (CD0030 or CD0039 or CD0060)
+			then
+				not isnull(DT_PRFRMNG_STTS) or NEVS_DT_PRFRMNG_STTS = "0"
+			errorcode  "CT0460"
+			errorlevel 2;
+
+		CT0470:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(PRVSNS_OFF_BLNC_SHT) or NEVS_PRVSNS_OFF_BLNC_SHT = "0"
+			errorcode  "CT0470"
+			errorlevel 2;
+
+		CT0480:
+			when
+				not (CD0039 or CD0060)
+			then
+				not isnull(FRBRNC_STTS) or NEVS_FRBRNC_STTS = "0"
+			errorcode  "CT0480"
+			errorlevel 2;
+
+		CT0490:
+			when
+				not (CD0039 or CD0050 or CD0060)
+			then
+				not isnull(DT_FRBRNC_STTS) or NEVS_DT_FRBRNC_STTS = "0"
+			errorcode  "CT0490"
+			errorlevel 2;
+
+		CT0500:
+			when
+				not (CD0039)
+			then
+				not isnull(CMLTV_RCVRS_SNC_DFLT) or NEVS_CMLTV_RCVRS_SNC_DFLT = "0"
+			errorcode  "CT0500"
+			errorlevel 2;
+
+		CT0510:
+			when
+				not (CD0030 or CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(PRDNTL_PRTFL) or NEVS_PRDNTL_PRTFL = "0"
+			errorcode  "CT0510"
+			errorlevel 2;
+
+		CT0520:
+			when
+				not (CD0039 or CD0040 or CD0041 or CD0060)
+			then
+				not isnull(CRRYNG_AMNT) or NEVS_CRRYNG_AMNT = "0"
+			errorcode  "CT0520"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessCounterparties(variable CC0010, CC0020, CC0100, CC0101, CC0110, CC0140, CC0140A, CC0140B, CC0140C, CC0141, CC0141A, CC0142, CC0142A, CC0150, CC0151, CC0152, CC0160, CC0160A, CC0162, CC0170, CC0170A, CC0172, CC0180, CC0180A, CC0182, CC0190, CC0191, CC0192, CC0200, CC0201, CC0202, CC0122, CC0130, CC0130A, CC0131, CC0131A, CC0132, CC0132A, CC0111, CC0120, CC0121, ENTTY_RIAD_CD, LEI, HD_OFFC_UNDRT_CD, IMMDT_PRNT_UNDRT_CD, ULTMT_PRNT_UNDRT_CD, NM_ENTTY, STRT, CTY, PSTL_CD, CNTRY, LGL_FRM, INSTTTNL_SCTR, ECNMC_ACTVTY, LGL_PRCDNG_STTS, DT_INTTN_LGL_PRCDNGS, ENTRPRS_SZ, DT_ENTRPRS_SZ, NMBR_EMPLYS, TRRTRL_UNT, BLNC_SHT_TTL, ANNL_TRNVR, ACCNTNG_FRMWRK_SL) is
+		CY0010_a:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0122) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0192) or (CC0010 and CC0200) or (CC0010 and CC0202) or (CC0010 and CC0201) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0122) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0152) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0162) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0172) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0192) or (CC0020 and CC0200) or (CC0020 and CC0201) or (CC0020 and CC0202)
+			then
+				not isnull(LEI)
+			errorcode  "CY0010(a)"
+			errorlevel 2;
+
+		CY0040:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140B) or (CC0010 and CC0140C)
+			then
+				not isnull(IMMDT_PRNT_UNDRT_CD)
+			errorcode  "CY0040"
+			errorlevel 2;
+
+		CY0050:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140B) or (CC0010 and CC0140C)
+			then
+				not isnull(ULTMT_PRNT_UNDRT_CD)
+			errorcode  "CY0050"
+			errorlevel 2;
+
+		CY0060:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0122) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0192) or (CC0010 and CC0200) or (CC0010 and CC0201) or (CC0010 and CC0202) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0122) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0152) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0162) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0172) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0192) or (CC0020 and CC0200) or (CC0020 and CC0201) or (CC0020 and CC0202)
+			then
+				not isnull(NM_ENTTY)
+			errorcode  "CY0060"
+			errorlevel 2;
+
+		CY0070:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0122) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0152) or (CC0010 and CC0162) or (CC0010 and CC0172) or (CC0010 and CC0182) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0122) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0152) or (CC0020 and CC0162) or (CC0020 and CC0172) or (CC0020 and CC0192)
+			then
+				not isnull(STRT)
+			errorcode  "CY0070"
+			errorlevel 2;
+
+		CY0080:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0122) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0152) or (CC0010 and CC0162) or (CC0010 and CC0172) or (CC0010 and CC0182) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0122) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0152) or (CC0020 and CC0162) or (CC0020 and CC0172) or (CC0020 and CC0192)
+			then
+				not isnull(CTY)
+			errorcode  "CY0080"
+			errorlevel 2;
+
+		CY0090:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0192) or (CC0010 and CC0122) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0140) or (CC0010 and CC0142) or (CC0010 and CC0142A)
+			then
+				not isnull(TRRTRL_UNT)
+			errorcode  "CY0090"
+			errorlevel 2;
+
+		CY0100:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0122) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0152) or (CC0010 and CC0162) or (CC0010 and CC0172) or (CC0010 and CC0182) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0122) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0152) or (CC0020 and CC0162) or (CC0020 and CC0172) or (CC0020 and CC0182) or (CC0020 and CC0192)
+			then
+				not isnull(PSTL_CD)
+			errorcode  "CY0100"
+			errorlevel 2;
+
+		CY0110:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0122) or (CC0010 and CC0130) or (CC0010 and CC0130A) or (CC0010 and CC0131) or (CC0010 and CC0131A) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0141A) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0122) or (CC0020 and CC0130) or (CC0020 and CC0130A) or (CC0020 and CC0131) or (CC0020 and CC0131A) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0141) or (CC0020 and CC0141A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0152) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0162) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0172) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0192)
+			then
+				not isnull(CNTRY)
+			errorcode  "CY0110"
+			errorlevel 2;
+
+		CY0120:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0110) or (CC0010 and CC0120) or (CC0010 and CC0122) or (CC0010 and CC0132) or (CC0010 and CC0132A) or (CC0010 and CC0140) or (CC0010 and CC0140A) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0142) or (CC0010 and CC0142A) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0120) or (CC0020 and CC0122) or (CC0020 and CC0132) or (CC0020 and CC0132A) or (CC0020 and CC0140) or (CC0020 and CC0140A) or (CC0020 and CC0142) or (CC0020 and CC0142A) or (CC0020 and CC0152) or (CC0020 and CC0160) or (CC0020 and CC0162) or (CC0020 and CC0170) or (CC0020 and CC0172) or (CC0020 and CC0180) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0192)
+			then
+				not isnull(LGL_FRM)
+			errorcode  "CY0120"
+			errorlevel 2;
+
+		CY0130:
+			when
+				(CC0010 and CC0100) or (CC0010 and CC0101) or (CC0010 and CC0110) or (CC0010 and CC0111) or (CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0122) or (CC0010 and CC0130) or (CC0010 and CC0131) or (CC0010 and CC0132) or (CC0010 and CC0140) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0142) or (CC0010 and CC0150) or (CC0010 and CC0151) or (CC0010 and CC0152) or (CC0010 and CC0160) or (CC0010 and CC0160A) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0170A) or (CC0010 and CC0172) or (CC0010 and CC0180) or (CC0010 and CC0180A) or (CC0010 and CC0182) or (CC0010 and CC0190) or (CC0010 and CC0191) or (CC0010 and CC0192) or (CC0020 and CC0110) or (CC0020 and CC0111) or (CC0020 and CC0120) or (CC0020 and CC0121) or (CC0020 and CC0122) or (CC0020 and CC0130) or (CC0020 and CC0131) or (CC0020 and CC0132) or (CC0020 and CC0140) or (CC0020 and CC0142) or (CC0020 and CC0150) or (CC0020 and CC0151) or (CC0020 and CC0152) or (CC0020 and CC0160) or (CC0020 and CC0160A) or (CC0020 and CC0162) or (CC0020 and CC0170) or (CC0020 and CC0170A) or (CC0020 and CC0172) or (CC0020 and CC0180) or (CC0020 and CC0180A) or (CC0020 and CC0182) or (CC0020 and CC0190) or (CC0020 and CC0191) or (CC0020 and CC0192)
+			then
+				not isnull(INSTTTNL_SCTR) and INSTTTNL_SCTR <> "-4"
+			errorcode  "CY0130"
+			errorlevel 2;
+
+		CY0140:
+			when
+				(CC0010 and CC0120) or (CC0010 and CC0121) or (CC0010 and CC0122) or (CC0010 and CC0130) or (CC0010 and CC0131) or (CC0010 and CC0132) or (CC0010 and CC0140) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0141) or (CC0010 and CC0142) or (CC0010 and CC0160) or (CC0010 and CC0162) or (CC0010 and CC0170) or (CC0010 and CC0172)
+			then
+				not isnull(ECNMC_ACTVTY)
+			errorcode  "CY0140"
+			errorlevel 2;
+
+		CY0150:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140B) or (CC0010 and CC0140C) or (CC0010 and CC0142)
+			then
+				not isnull(LGL_PRCDNG_STTS)
+			errorcode  "CY0150"
+			errorlevel 2;
+
+		CY0170:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140C) or (CC0010 and CC0142)
+			then
+				not isnull(ENTRPRS_SZ)
+			errorcode  "CY0170"
+			errorlevel 2;
+
+		CY0190:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140C) or (CC0010 and CC0142)
+			then
+				not isnull(NMBR_EMPLYS)
+			errorcode  "CY0190"
+			errorlevel 2;
+
+		CY0200:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0142)
+			then
+				not isnull(BLNC_SHT_TTL)
+			errorcode  "CY0200"
+			errorlevel 2;
+
+		CY0210:
+			when
+				(CC0010 and CC0140) or (CC0010 and CC0140C) or (CC0010 and CC0142)
+			then
+				not isnull(ANNL_TRNVR)
+			errorcode  "CY0210"
+			errorlevel 2;
+
+		CY0220:
+			when
+				(CC0010 and CC0100)
+			then
+				not isnull(ACCNTNG_FRMWRK_SL)
+			errorcode  "CY0220"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessEntityDefault(variable CD0030, CD0039, CD0040, DFLT_STTS, DT_DFLT_STTS, NEVS_DFLT_STTS, NEVS_DT_DFLT_STTS) is
+		CT0650:
+			when
+				not (CD0030 or CD0039 or CD0040)
+			then
+				not isnull(DFLT_STTS) or NEVS_DFLT_STTS = "0"
+			errorcode  "CT0650"
+			errorlevel 2;
+
+		CT0660:
+			when
+				not (CD0030 or CD0039 or CD0040)
+			then
+				not isnull(DT_DFLT_STTS) or NEVS_DT_DFLT_STTS = "0"
+			errorcode  "CT0660"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessEntityRisk(variable CD0030, CD0039, CD0040, CD0060, CD0170, PD, NEVS_PD, DT_RFRNC) is
+		CT0640:
+			when
+				not (CD0030 or CD0039 or CD0040 or
+				if
+					DT_RFRNC >= cast("2021-03-31", date)
+				then
+					CD0060
+				else
+					false or CD0170)
+			then
+				not isnull(PD) or NEVS_PD = "0"
+			errorcode  "CT0640"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessFinancial(variable CD0060, CD0020, CD0030, ANNLSD_AGRD_RT, DT_NXT_INTRST_RT_RST, DFLT_STTS, DT_DFLT_STTS, TRNSFRRD_AMNT, ARRRS, DT_PST_D, TYP_SCRTSTN, OTSTNDNG_NMNL_AMNT, ACCRD_INTRST, NEVS_ANNLSD_AGRD_RT, NEVS_DT_NXT_INTRST_RT_RST, NEVS_DFLT_STTS, NEVS_DT_DFLT_STTS, NEVS_TRNSFRRD_AMNT, NEVS_ARRRS, NEVS_DT_PST_D, NEVS_TYP_SCRTSTN, NEVS_OTSTNDNG_NMNL_AMNT, NEVS_ACCRD_INTRST, NEVS_OFF_BLNC_SHT_AMNT, OFF_BLNC_SHT_AMNT, DT_RFRNC) is
+		CT0240:
+			when
+				not CD0060
+			then
+				not isnull(ANNLSD_AGRD_RT) or NEVS_ANNLSD_AGRD_RT = "0"
+			errorcode  "CT0240"
+			errorlevel 2;
+
+		CT0250:
+			when
+				not (CD0060 or CD0020)
+			then
+				not isnull(DT_NXT_INTRST_RT_RST) or NEVS_DT_NXT_INTRST_RT_RST = "0"
+			errorcode  "CT0250"
+			errorlevel 2;
+
+		CT0260:
+			when
+				not (CD0030 or
+				if
+					DT_RFRNC >= cast("2021-03-31", date)
+				then
+					CD0060
+				else
+					false)
+			then
+				not isnull(DFLT_STTS) or NEVS_DFLT_STTS = "0"
+			errorcode  "CT0260"
+			errorlevel 2;
+
+		CT0270:
+			when
+				not (CD0030 or
+				if
+					DT_RFRNC >= cast("2021-03-31", date)
+				then
+					CD0060
+				else
+					false)
+			then
+				not isnull(DT_DFLT_STTS) or NEVS_DT_DFLT_STTS = "0"
+			errorcode  "CT0270"
+			errorlevel 2;
+
+		CT0280:
+			when
+				not CD0060
+			then
+				not isnull(TRNSFRRD_AMNT) or NEVS_TRNSFRRD_AMNT = "0"
+			errorcode  "CT0280"
+			errorlevel 2;
+
+		CT0290:
+			when
+				not CD0060
+			then
+				not isnull(ARRRS) or NEVS_ARRRS = "0"
+			errorcode  "CT0290"
+			errorlevel 2;
+
+		CT0300:
+			when
+				not CD0060
+			then
+				not isnull(DT_PST_D) or NEVS_DT_PST_D = "0"
+			errorcode  "CT0300"
+			errorlevel 2;
+
+		CT0310:
+			when
+				not CD0060
+			then
+				not isnull(TYP_SCRTSTN) or NEVS_TYP_SCRTSTN = "0"
+			errorcode  "CT0310"
+			errorlevel 2;
+
+		CT0320:
+not isnull(OTSTNDNG_NMNL_AMNT) or NEVS_OTSTNDNG_NMNL_AMNT = "0"
+			errorcode  "CT0320"
+			errorlevel 2;
+
+		CT0330:
+			when
+				not (CD0060 or CD0020)
+			then
+				not isnull(ACCRD_INTRST) or NEVS_ACCRD_INTRST = "0"
+			errorcode  "CT0330"
+			errorlevel 2;
+
+		CT0340:
+not isnull(OFF_BLNC_SHT_AMNT) or NEVS_OFF_BLNC_SHT_AMNT = "0"
+			errorcode  "CT0340"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessInstrument(variable CD0020, CD0030, CD0039, CD0040, CD0050, CD0060, TYP_INSTRMNT, TYP_AMRTSTN, CRRNCY_DNMNTN, FDCRY, DT_INCPTN, DT_END_INTRST_ONLY, INTRST_RT_CP, INTRST_RT_FLR, INTRST_RT_RST_FRQNCY, INTRST_RT_SPRD, TYP_INTRST_RT, DT_LGL_FNL_MTRTY, CMMTMNT_INCPTN, PYMNT_FRQNCY, PRJCT_FNNC_LN, PRPS, RCRS, RFRNC_RT, DT_STTLMNT, SBRDNTD_DBT, SYNDCTD_CNTRCT_ID, RPYMNT_RGHTS, FV_CHNG_CR_BFR_PRCHS, NEVS_TYP_INSTRMNT, NEVS_TYP_AMRTSTN, NEVS_CRRNCY_DNMNTN, NEVS_FDCRY, NEVS_DT_INCPTN, NEVS_DT_END_INTRST_ONLY, NEVS_INTRST_RT_CP, NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_RST_FRQNCY, NEVS_INTRST_RT_SPRD, NEVS_TYP_INTRST_RT, NEVS_DT_LGL_FNL_MTRTY, NEVS_CMMTMNT_INCPTN, NEVS_PYMNT_FRQNCY, NEVS_PRJCT_FNNC_LN, NEVS_PRPS, NEVS_RCRS, NEVS_RFRNC_RT, NEVS_DT_STTLMNT, NEVS_SBRDNTD_DBT, NEVS_SYNDCTD_CNTRCT_ID, NEVS_RPYMNT_RGHTS, NEVS_FV_CHNG_CR_BFR_PRCHS) is
+		CT0010:
+			when
+				not CD0060
+			then
+				not isnull(TYP_INSTRMNT) or NEVS_TYP_INSTRMNT = "0"
+			errorcode  "CT0010"
+			errorlevel 2;
+
+		CT0020:
+			when
+				not (CD0020 or CD0050 or CD0060)
+			then
+				not isnull(TYP_AMRTSTN) or NEVS_TYP_AMRTSTN = "0"
+			errorcode  "CT0020"
+			errorlevel 2;
+
+		CT0030:
+			when
+				not CD0060
+			then
+				not isnull(CRRNCY_DNMNTN) or NEVS_CRRNCY_DNMNTN = "0"
+			errorcode  "CT0030"
+			errorlevel 2;
+
+		CT0040:
+			when
+				not CD0060
+			then
+				not isnull(FDCRY) or NEVS_FDCRY = "0"
+			errorcode  "CT0040"
+			errorlevel 2;
+
+		CT0050:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(DT_INCPTN) or NEVS_DT_INCPTN = "0"
+			errorcode  "CT0050"
+			errorlevel 2;
+
+		CT0060:
+			when
+				not (CD0020 or CD0050 or CD0060)
+			then
+				not isnull(DT_END_INTRST_ONLY) or NEVS_DT_END_INTRST_ONLY = "0"
+			errorcode  "CT0060"
+			errorlevel 2;
+
+		CT0070:
+			when
+				not (CD0020 or CD0039 or CD0040 or CD0060)
+			then
+				not isnull(INTRST_RT_CP) or NEVS_INTRST_RT_CP = "0"
+			errorcode  "CT0070"
+			errorlevel 2;
+
+		CT0080:
+			when
+				not (CD0020 or CD0039 or CD0040 or CD0060)
+			then
+				not isnull(INTRST_RT_FLR) or NEVS_INTRST_RT_FLR = "0"
+			errorcode  "CT0080"
+			errorlevel 2;
+
+		CT0090:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(INTRST_RT_RST_FRQNCY) or NEVS_INTRST_RT_RST_FRQNCY = "0"
+			errorcode  "CT0090"
+			errorlevel 2;
+
+		CT0100:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(INTRST_RT_SPRD) or NEVS_INTRST_RT_SPRD = "0"
+			errorcode  "CT0100"
+			errorlevel 2;
+
+		CT0110:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(TYP_INTRST_RT) or NEVS_TYP_INTRST_RT = "0"
+			errorcode  "CT0110"
+			errorlevel 2;
+
+		CT0120:
+			when
+				not CD0060
+			then
+				not isnull(DT_LGL_FNL_MTRTY) or NEVS_DT_LGL_FNL_MTRTY = "0"
+			errorcode  "CT0120"
+			errorlevel 2;
+
+		CT0130:
+			when
+				not CD0060
+			then
+				not isnull(CMMTMNT_INCPTN) or NEVS_CMMTMNT_INCPTN = "0"
+			errorcode  "CT0130"
+			errorlevel 2;
+
+		CT0140:
+			when
+				not (CD0020 or CD0050 or CD0060)
+			then
+				not isnull(PYMNT_FRQNCY) or NEVS_PYMNT_FRQNCY = "0"
+			errorcode  "CT0140"
+			errorlevel 2;
+
+		CT0150:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(PRJCT_FNNC_LN) or NEVS_PRJCT_FNNC_LN = "0"
+			errorcode  "CT0150"
+			errorlevel 2;
+
+		CT0160:
+			when
+				not CD0060
+			then
+				not isnull(PRPS) or NEVS_PRPS = "0"
+			errorcode  "CT0160"
+			errorlevel 2;
+
+		CT0170:
+			when
+				not CD0060
+			then
+				not isnull(RCRS) or NEVS_RCRS = "0"
+			errorcode  "CT0170"
+			errorlevel 2;
+
+		CT0180:
+			when
+				not (CD0020 or CD0060)
+			then
+				not isnull(RFRNC_RT) or NEVS_RFRNC_RT = "0"
+			errorcode  "CT0180"
+			errorlevel 2;
+
+		CT0190:
+			when
+				not CD0060
+			then
+				not isnull(DT_STTLMNT) or NEVS_DT_STTLMNT = "0"
+			errorcode  "CT0190"
+			errorlevel 2;
+
+		CT0200:
+			when
+				not CD0060
+			then
+				not isnull(SBRDNTD_DBT) or NEVS_SBRDNTD_DBT = "0"
+			errorcode  "CT0200"
+			errorlevel 2;
+
+		CT0210:
+			when
+				not CD0060
+			then
+				not isnull(SYNDCTD_CNTRCT_ID) or NEVS_SYNDCTD_CNTRCT_ID = "0"
+			errorcode  "CT0210"
+			errorlevel 2;
+
+		CT0220:
+			when
+				not CD0060
+			then
+				not isnull(RPYMNT_RGHTS) or NEVS_RPYMNT_RGHTS = "0"
+			errorcode  "CT0220"
+			errorlevel 2;
+
+		CT0230:
+			when
+				not (CD0030 or CD0039 or CD0040 or CD0060)
+			then
+				not isnull(FV_CHNG_CR_BFR_PRCHS) or NEVS_FV_CHNG_CR_BFR_PRCHS = "0"
+			errorcode  "CT0230"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessInstrumentProtection(variable CD0060, PRTCTN_ALLCTD_VL, THRD_PRTY_PRRTY_CLMS) is
+		CT0620:
+			when
+				not (CD0060)
+			then
+				not isnull(PRTCTN_ALLCTD_VL)
+			errorcode  "CT0620"
+			errorlevel 2;
+
+		CT0630:
+			when
+				not (CD0060)
+			then
+				not isnull(THRD_PRTY_PRRTY_CLMS)
+			errorcode  "CT0630"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessJointLiability(variable CD0060, JNT_LBLTY_AMNT, NEVS_JNT_LBLTY_AMNT) is
+		CT0360:
+			when
+				not CD0060
+			then
+				not isnull(JNT_LBLTY_AMNT) or NEVS_JNT_LBLTY_AMNT = "0"
+			errorcode  "CT0360"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset completenessProtection(variable CD0060, CD0050, TYP_PRTCTN, PRTCTN_VL, TYP_PRTCTN_VL, PRTCTN_VLTN_APPRCH, RL_ESTT_CLLTRL_LCTN, DT_PRTCTN_VL, DT_MTRTY_PRTCTN, ORGNL_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, NEVS_TYP_PRTCTN, NEVS_PRTCTN_VL, NEVS_TYP_PRTCTN_VL, NEVS_PRTCTN_VLTN_APPRCH, NEVS_RL_ESTT_CLLTRL_LCTN, NEVS_DT_PRTCTN_VL, NEVS_DT_MTRTY_PRTCTN, NEVS_ORGNL_PRTCTN_VL, NEVS_DT_ORGNL_PRTCTN_VL) is
+		CT0530:
+			when
+				not CD0060
+			then
+				not isnull(TYP_PRTCTN) or NEVS_TYP_PRTCTN = "0"
+			errorcode  "CT0530"
+			errorlevel 2;
+
+		CT0540:
+			when
+				not CD0060
+			then
+				not isnull(PRTCTN_VL) or NEVS_PRTCTN_VL = "0"
+			errorcode  "CT0540"
+			errorlevel 2;
+
+		CT0550:
+			when
+				not CD0060
+			then
+				not isnull(TYP_PRTCTN_VL) or NEVS_TYP_PRTCTN_VL = "0"
+			errorcode  "CT0550"
+			errorlevel 2;
+
+		CT0560:
+			when
+				not CD0060
+			then
+				not isnull(PRTCTN_VLTN_APPRCH) or NEVS_PRTCTN_VLTN_APPRCH = "0"
+			errorcode  "CT0560"
+			errorlevel 2;
+
+		CT0570:
+			when
+				not CD0060
+			then
+				not isnull(RL_ESTT_CLLTRL_LCTN) or NEVS_RL_ESTT_CLLTRL_LCTN = "0"
+			errorcode  "CT0570"
+			errorlevel 2;
+
+		CT0580:
+			when
+				not CD0060
+			then
+				not isnull(DT_PRTCTN_VL) or NEVS_DT_PRTCTN_VL = "0"
+			errorcode  "CT0580"
+			errorlevel 2;
+
+		CT0590:
+			when
+				not CD0060
+			then
+				not isnull(DT_MTRTY_PRTCTN) or NEVS_DT_MTRTY_PRTCTN = "0"
+			errorcode  "CT0590"
+			errorlevel 2;
+
+		CT0600:
+			when
+				not (CD0050 or CD0060)
+			then
+				not isnull(ORGNL_PRTCTN_VL) or NEVS_ORGNL_PRTCTN_VL = "0"
+			errorcode  "CT0600"
+			errorlevel 2;
+
+		CT0610:
+			when
+				not (CD0050 or CD0060)
+			then
+				not isnull(DT_ORGNL_PRTCTN_VL) or NEVS_DT_ORGNL_PRTCTN_VL = "0"
+			errorcode  "CT0610"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset financial(variable DT_NXT_INTRST_RT_RST, DT_RFRNC, DT_DFLT_STTS, DT_PST_D, ARRRS, DFLT_STTS, OFF_BLNC_SHT_AMNT, OTSTNDNG_NMNL_AMNT, TYP_SCRTSTN, ANNLSD_AGRD_RT, TRNSFRRD_AMNT, ACCRD_INTRST, NEVS_DT_PST_D) is
+		CN0210:
+
+				if
+					isnull(DT_NXT_INTRST_RT_RST) or isnull(DT_RFRNC)
+				then
+					true
+				else
+					DT_NXT_INTRST_RT_RST >= DT_RFRNC
+			errorcode  "CN0210"
+			errorlevel 1;
+
+		CN0240:
+
+				if
+					isnull(DT_RFRNC) or isnull(DT_DFLT_STTS)
+				then
+					true
+				else
+					DT_RFRNC >= DT_DFLT_STTS
+			errorcode  "CN0240"
+			errorlevel 2;
+
+		CN0250:
+
+				if
+					isnull(DT_RFRNC) or isnull(DT_PST_D)
+				then
+					true
+				else
+					DT_RFRNC >= DT_PST_D
+			errorcode  "CN0250"
+			errorlevel 2;
+
+		CN0270a:
+			when
+
+				if
+					isnull(ARRRS)
+				then
+					false
+				else
+					not isnull(DT_PST_D)
+			then
+				ARRRS > 0
+			errorcode  "CN0270a"
+			errorlevel 2;
+
+		CN0270b:
+			when
+
+				if
+					NEVS_DT_PST_D in {"-5", "-3", "-2"}
+				then
+					false
+				else
+					ARRRS > 0
+			then
+				not isnull(DT_PST_D)
+			errorcode  "CN0270b"
+			errorlevel 2;
+
+		CN0280:
+			when
+
+				if
+					isnull(ARRRS)
+				then
+					false
+				else
+					DFLT_STTS in {"18", "20"}
+			then
+				ARRRS > 0
+			errorcode  "CN0280"
+			errorlevel 2;
+
+		CN0847:
+			when
+
+				if
+					isnull(TYP_SCRTSTN)
+				then
+					false
+				else
+					OFF_BLNC_SHT_AMNT > 0 and OTSTNDNG_NMNL_AMNT = 0
+			then
+				TYP_SCRTSTN <> "1"
+			errorcode  "CN0847"
+			errorlevel 2;
+
+		GCMA_TH_H_ANNLSD_AGRD_RT:
+
+				if
+					isnull(ANNLSD_AGRD_RT)
+				then
+					true
+				else
+					ANNLSD_AGRD_RT < 3
+			errorcode  "GCMA_TH_H_ANNLSD_AGRD_RT"
+			errorlevel 4;
+
+		GCMA_TH_L_ANNLSD_AGRD_RT:
+
+				if
+					isnull(ANNLSD_AGRD_RT)
+				then
+					true
+				else
+					ANNLSD_AGRD_RT > cast("-0.5", number)
+			errorcode  "GCMA_TH_L_ANNLSD_AGRD_RT"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_DFLT_STTS_INSTRMNT:
+
+				if
+					isnull(DT_DFLT_STTS)
+				then
+					true
+				else
+					DT_DFLT_STTS > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_DFLT_STTS_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_H_TRNSFRRD_AMNT_INSTRMNT:
+
+				if
+					isnull(TRNSFRRD_AMNT)
+				then
+					true
+				else
+					TRNSFRRD_AMNT < 1000000000
+			errorcode  "GCMA_TH_H_TRNSFRRD_AMNT_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_H_ARRRS_INSTRMNT:
+
+				if
+					isnull(ARRRS)
+				then
+					true
+				else
+					ARRRS < 1000000000
+			errorcode  "GCMA_TH_H_ARRRS_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_PST_D:
+
+				if
+					isnull(DT_PST_D)
+				then
+					true
+				else
+					DT_PST_D > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_PST_D"
+			errorlevel 4;
+
+		GCMA_TH_H_OTSTNDNG_NMNL_AMNT_INSTRMNT:
+
+				if
+					isnull(OTSTNDNG_NMNL_AMNT)
+				then
+					true
+				else
+					OTSTNDNG_NMNL_AMNT < 1000000000
+			errorcode  "GCMA_TH_H_OTSTNDNG_NMNL_AMNT_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_H_ACCRD_INTRST_INSTRMNT:
+
+				if
+					isnull(ACCRD_INTRST)
+				then
+					true
+				else
+					ACCRD_INTRST < 1000000000
+			errorcode  "GCMA_TH_H_ACCRD_INTRST_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_L_ACCRD_INTRST_INSTRMNT:
+
+				if
+					isnull(ACCRD_INTRST)
+				then
+					true
+				else
+					ACCRD_INTRST > -10000000
+			errorcode  "GCMA_TH_L_ACCRD_INTRST_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_H_OFF_BLNC_SHT_AMNT_INSTRMNT:
+
+				if
+					isnull(OFF_BLNC_SHT_AMNT)
+				then
+					true
+				else
+					OFF_BLNC_SHT_AMNT < 1000000000
+			errorcode  "GCMA_TH_H_OFF_BLNC_SHT_AMNT_INSTRMNT"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset financialLastMonth(variable DFLT_STTS, DFLT_STTS_T1, DT_DFLT_STTS, DT_DFLT_STTS_T1) is
+		CN0290:
+			when
+
+				if
+					isnull(DT_DFLT_STTS) or isnull(DT_DFLT_STTS_T1)
+				then
+					false
+				else
+					DFLT_STTS <> DFLT_STTS_T1
+			then
+				DT_DFLT_STTS > DT_DFLT_STTS_T1
+			errorcode  "CN0290"
+			errorlevel 2
+end datapoint ruleset;
+
+define datapoint ruleset granularCmaEntity(variable ENTRPRS_SZ, BLNC_SHT_TTL, ANNL_TRNVR, NMBR_EMPLYS, INSTTTNL_SCTR) is
+		IG0010:
+			when
+
+				if
+					isnull(ENTRPRS_SZ)
+				then
+					false
+				else
+					NMBR_EMPLYS >= 250 or (ANNL_TRNVR >= 50000000 and BLNC_SHT_TTL >= 43000000)
+			then
+				ENTRPRS_SZ = "1"
+			errorcode  "IG0010"
+			errorlevel 1;
+
+		IG0011:
+			when
+
+				if
+					isnull(ENTRPRS_SZ)
+				then
+					false
+				else
+					NMBR_EMPLYS >= 50 or (ANNL_TRNVR >= 10000000 and BLNC_SHT_TTL >= 10000000)
+			then
+				ENTRPRS_SZ not_in {"4", "3"}
+			errorcode  "IG0011"
+			errorlevel 1;
+
+		IG0012:
+			when
+
+				if
+					isnull(ENTRPRS_SZ)
+				then
+					false
+				else
+					NMBR_EMPLYS >= 10 or (ANNL_TRNVR >= 2000000 and BLNC_SHT_TTL >= 2000000)
+			then
+				ENTRPRS_SZ <> "4"
+			errorcode  "IG0012"
+			errorlevel 1
+end datapoint ruleset;
+
+define datapoint ruleset granularCmaEntityInstrument(variable PD, DFLT_STTS, DFLT_STTS_INSTRMNT, NEVS_DFLT_STTS, NEVS_DFLT_STTS_INSTRMNT, NEVS_DT_DFLT_STTS_INSTRMNT, NEVS_DT_DFLT_STTS) is
+		IG0160:
+			when
+
+				if
+					isnull(DFLT_STTS) or isnull(DFLT_STTS_INSTRMNT) or isnull(NEVS_DFLT_STTS) or NEVS_DFLT_STTS in {"-2", "-3", "-5"} or isnull(NEVS_DFLT_STTS_INSTRMNT) or NEVS_DFLT_STTS_INSTRMNT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					PD = 1
+			then
+				((NEVS_DFLT_STTS = "-99" and DFLT_STTS <> "14") or (NEVS_DFLT_STTS_INSTRMNT = "-99" and DFLT_STTS_INSTRMNT <> "14"))
+			errorcode  "IG0160"
+			errorlevel 1;
+
+		IG0170:
+			when
+
+				if
+					NEVS_DT_DFLT_STTS in {"-2", "-3", "-5"} or NEVS_DT_DFLT_STTS_INSTRMNT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					PD = 1
+			then
+				isnull(NEVS_DT_DFLT_STTS) or isnull(NEVS_DT_DFLT_STTS_INSTRMNT)
+			errorcode  "IG0170"
+			errorlevel 1
+end datapoint ruleset;
+
+define datapoint ruleset granularCmaEntityRisk(variable ENTRPRS_SZ, PD, INSTTTNL_SCTR, DFLT_STTS, LGL_PRCDNG_STTS) is
+		IG0020:
+			when
+
+				if
+					isnull(PD)
+				then
+					false
+				else
+					ENTRPRS_SZ = "1" or INSTTTNL_SCTR = "S122"
+			then
+				PD >= 0.0003
+			errorcode  "IG0020"
+			errorlevel 1;
+
+		IG0080:
+			when
+
+				if
+					isnull(PD)
+				then
+					false
+				else
+					DFLT_STTS <> "14"
+			then
+				PD = 1
+			errorcode  "IG0080"
+			errorlevel 1;
+
+		IG0090:
+			when
+
+				if
+					isnull(DFLT_STTS)
+				then
+					false
+				else
+					LGL_PRCDNG_STTS = "3"
+			then
+				DFLT_STTS <> "14"
+			errorcode  "IG0090"
+			errorlevel 1
+end datapoint ruleset;
+
+define datapoint ruleset granularCmaProtection(variable PRTCTN_VL, TTL_PRTCTN_ALLCTD_VL, MX_THRD_PRTY_PRRTY_CLMS) is
+		IG0050:
+
+				if
+					isnull(PRTCTN_VL) or isnull(MX_THRD_PRTY_PRRTY_CLMS) or isnull(TTL_PRTCTN_ALLCTD_VL)
+				then
+					true
+				else
+					(PRTCTN_VL - MX_THRD_PRTY_PRRTY_CLMS) >= TTL_PRTCTN_ALLCTD_VL
+			errorcode  "IG0050"
+			errorlevel 1;
+
+		IG0060:
+
+				if
+					isnull(PRTCTN_VL) or isnull(MX_THRD_PRTY_PRRTY_CLMS)
+				then
+					true
+				else
+					PRTCTN_VL > MX_THRD_PRTY_PRRTY_CLMS
+			errorcode  "IG0060"
+			errorlevel 1
+end datapoint ruleset;
+
+define datapoint ruleset instrument(variable DT_STTLMNT, DT_INCPTN, DT_END_INTRST_ONLY, DT_LGL_FNL_MTRTY, DT_RFRNC, TYP_AMRTSTN, TYP_INTRST_RT, NEVS_DT_END_INTRST_ONLY, NEVS_INTRST_RT_CP, NEVS_INTRST_RT_FLR, NEVS_INTRST_RT_SPRD, NEVS_RFRNC_RT, INTRST_RT_CP, INTRST_RT_FLR, INTRST_RT_SPRD, CMMTMNT_INCPTN, FV_CHNG_CR_BFR_PRCHS) is
+		CN0010:
+
+				if
+					isnull(DT_STTLMNT) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_STTLMNT >= DT_INCPTN
+			errorcode  "CN0010"
+			errorlevel 3;
+
+		CN0030:
+
+				if
+					isnull(DT_END_INTRST_ONLY) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_END_INTRST_ONLY >= DT_INCPTN
+			errorcode  "CN0030"
+			errorlevel 1;
+
+		CN0040:
+
+				if
+					isnull(DT_LGL_FNL_MTRTY) or isnull(DT_STTLMNT)
+				then
+					true
+				else
+					DT_LGL_FNL_MTRTY >= DT_STTLMNT
+			errorcode  "CN0040"
+			errorlevel 3;
+
+		CN0050:
+
+				if
+					isnull(DT_LGL_FNL_MTRTY) or isnull(DT_END_INTRST_ONLY)
+				then
+					true
+				else
+					DT_LGL_FNL_MTRTY >= DT_END_INTRST_ONLY
+			errorcode  "CN0050"
+			errorlevel 1;
+
+		CN0140:
+
+				if
+					isnull(DT_RFRNC) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_RFRNC >= DT_INCPTN
+			errorcode  "CN0140"
+			errorlevel 3;
+
+		CN0141:
+
+				if
+					isnull(DT_RFRNC) or isnull(DT_STTLMNT)
+				then
+					true
+				else
+					DT_RFRNC >= DT_STTLMNT
+			errorcode  "CN0141"
+			errorlevel 3;
+
+		CN0220:
+
+				if
+					isnull(DT_END_INTRST_ONLY) or isnull(DT_STTLMNT)
+				then
+					true
+				else
+					DT_END_INTRST_ONLY >= DT_STTLMNT
+			errorcode  "CN0220"
+			errorlevel 1;
+
+		CN0835:
+			when
+
+				if
+					NEVS_DT_END_INTRST_ONLY in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_AMRTSTN in {"1", "3"}
+			then
+				NEVS_DT_END_INTRST_ONLY = "0"
+			errorcode  "CN0835"
+			errorlevel 1;
+
+		CN0836:
+			when
+
+				if
+					NEVS_INTRST_RT_CP in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INTRST_RT = "1"
+			then
+				NEVS_INTRST_RT_CP = "0"
+			errorcode  "CN0836"
+			errorlevel 1;
+
+		CN0837:
+			when
+
+				if
+					NEVS_INTRST_RT_FLR in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INTRST_RT = "1"
+			then
+				NEVS_INTRST_RT_FLR = "0"
+			errorcode  "CN0837"
+			errorlevel 1;
+
+		CN0838:
+			when
+
+				if
+					NEVS_INTRST_RT_SPRD in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INTRST_RT = "1"
+			then
+				NEVS_INTRST_RT_SPRD = "0"
+			errorcode  "CN0838"
+			errorlevel 2;
+
+		CN0839:
+			when
+
+				if
+					NEVS_RFRNC_RT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INTRST_RT = "1"
+			then
+				NEVS_RFRNC_RT = "0"
+			errorcode  "CN0839"
+			errorlevel 1;
+
+		GCMA_TH_L_DT_INCPTN:
+
+				if
+					isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_INCPTN > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_INCPTN"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_END_INTRST_ONLY:
+
+				if
+					isnull(DT_END_INTRST_ONLY)
+				then
+					true
+				else
+					DT_END_INTRST_ONLY > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_END_INTRST_ONLY"
+			errorlevel 4;
+
+		GCMA_TH_H_INTRST_RT_CP:
+
+				if
+					isnull(INTRST_RT_CP)
+				then
+					true
+				else
+					INTRST_RT_CP < 3
+			errorcode  "GCMA_TH_H_INTRST_RT_CP"
+			errorlevel 4;
+
+		GCMA_TH_L_INTRST_RT_CP:
+
+				if
+					isnull(INTRST_RT_CP)
+				then
+					true
+				else
+					INTRST_RT_CP > cast("-0.5", number)
+			errorcode  "GCMA_TH_L_INTRST_RT_CP"
+			errorlevel 4;
+
+		GCMA_TH_H_INTRST_RT_FLR:
+
+				if
+					isnull(INTRST_RT_FLR)
+				then
+					true
+				else
+					INTRST_RT_FLR < 3
+			errorcode  "GCMA_TH_H_INTRST_RT_FLR"
+			errorlevel 4;
+
+		GCMA_TH_L_INTRST_RT_FLR:
+
+				if
+					isnull(INTRST_RT_FLR)
+				then
+					true
+				else
+					INTRST_RT_FLR > cast("-0.5", number)
+			errorcode  "GCMA_TH_L_INTRST_RT_FLR"
+			errorlevel 4;
+
+		GCMA_TH_H_INTRST_RT_SPRD:
+
+				if
+					isnull(INTRST_RT_SPRD)
+				then
+					true
+				else
+					INTRST_RT_SPRD < 3
+			errorcode  "GCMA_TH_H_INTRST_RT_SPRD"
+			errorlevel 4;
+
+		GCMA_TH_L_INTRST_RT_SPRD:
+
+				if
+					isnull(INTRST_RT_SPRD)
+				then
+					true
+				else
+					INTRST_RT_SPRD > cast("-0.5", number)
+			errorcode  "GCMA_TH_L_INTRST_RT_SPRD"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_LGL_FNL_MTRTY:
+
+				if
+					isnull(DT_LGL_FNL_MTRTY)
+				then
+					true
+				else
+					DT_LGL_FNL_MTRTY > cast("1950-01-01", date)
+			errorcode  "GCMA_TH_L_DT_LGL_FNL_MTRTY"
+			errorlevel 4;
+
+		GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT:
+
+				if
+					isnull(CMMTMNT_INCPTN)
+				then
+					true
+				else
+					CMMTMNT_INCPTN < 1000000000
+			errorcode  "GCMA_TH_H_CMMTMNT_INCPTN_INSTRMNT"
+			errorlevel 4;
+
+		GCMA_TH_L_DT_STTLMNT:
+
+				if
+					isnull(DT_STTLMNT)
+				then
+					true
+				else
+					DT_STTLMNT > cast("1901-01-01", date)
+			errorcode  "GCMA_TH_L_DT_STTLMNT"
+			errorlevel 4;
+
+		GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT:
+
+				if
+					isnull(FV_CHNG_CR_BFR_PRCHS)
+				then
+					true
+				else
+					FV_CHNG_CR_BFR_PRCHS < 1000000000
+			errorcode  "GCMA_TH_H_FV_CHNG_CR_BFR_PRCHS_INSTRMNT"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset instrumentFinancial(variable DT_LGL_FNL_MTRTY, DT_RFRNC, DT_NXT_INTRST_RT_RST, DT_INCPTN, DT_PST_D, DT_STTLMNT, NEVS_DT_STTLMNT, OFF_BLNC_SHT_AMNT, TYP_INSTRMNT, NEVS_OFF_BLNC_SHT_AMNT, NEVS_CMMTMNT_INCPTN, OTSTNDNG_NMNL_AMNT, ARRRS, INTRST_RT_CP, ANNLSD_AGRD_RT, INTRST_RT_FLR, NEVS_RFRNC_RT, NEVS_DT_LGL_FNL_MTRTY, TYP_INTRST_RT, NEVS_TYP_INTRST_RT, DT_DFLT_STTS, RCRS) is
+		CN0080:
+			when
+
+				if
+					isnull(DT_NXT_INTRST_RT_RST)
+				then
+					false
+				else
+					DT_LGL_FNL_MTRTY >= DT_RFRNC
+			then
+				DT_LGL_FNL_MTRTY >= DT_NXT_INTRST_RT_RST
+			errorcode  "CN0080"
+			errorlevel 1;
+
+		CN0150:
+
+				if
+					isnull(DT_NXT_INTRST_RT_RST) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_NXT_INTRST_RT_RST >= DT_INCPTN
+			errorcode  "CN0150"
+			errorlevel 1;
+
+		CN0160:
+
+				if
+					isnull(DT_DFLT_STTS) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_DFLT_STTS >= DT_INCPTN
+			errorcode  "CN0160"
+			errorlevel 2;
+
+		CN0170:
+
+				if
+					isnull(DT_PST_D) or isnull(DT_INCPTN)
+				then
+					true
+				else
+					DT_PST_D >= DT_INCPTN
+			errorcode  "CN0170"
+			errorlevel 2;
+
+		CN0200:
+
+				if
+					isnull(DT_NXT_INTRST_RT_RST) or isnull(DT_STTLMNT)
+				then
+					true
+				else
+					DT_NXT_INTRST_RT_RST >= DT_STTLMNT
+			errorcode  "CN0200"
+			errorlevel 1;
+
+		CN0814:
+			when
+
+				if
+					isnull(OFF_BLNC_SHT_AMNT)
+				then
+					false
+				else
+					NEVS_DT_STTLMNT = "0"
+			then
+				OFF_BLNC_SHT_AMNT > 0
+			errorcode  "CN0814"
+			errorlevel 3;
+
+		CN0821:
+			when
+
+				if
+					NEVS_OFF_BLNC_SHT_AMNT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INSTRMNT = "1003"
+			then
+				NEVS_OFF_BLNC_SHT_AMNT = "0"
+			errorcode  "CN0821"
+			errorlevel 2;
+
+		CN0822:
+			when
+
+				if
+					NEVS_OFF_BLNC_SHT_AMNT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					TYP_INSTRMNT = "1022"
+			then
+				NEVS_OFF_BLNC_SHT_AMNT = "0"
+			errorcode  "CN0821"
+			errorlevel 2;
+
+		CN0945:
+			when
+
+				if
+					isnull(NEVS_CMMTMNT_INCPTN)
+				then
+					false
+				else
+					not isnull(DT_STTLMNT) and DT_INCPTN < DT_STTLMNT and NEVS_OFF_BLNC_SHT_AMNT = "0" and TYP_INSTRMNT <> "1000" and not (TYP_INSTRMNT = "71" and RCRS = "2")
+			then
+				NEVS_CMMTMNT_INCPTN <> "0"
+			errorcode  "CN0945"
+			errorlevel 3;
+
+		IG0120:
+			when
+
+				if
+					isnull(ARRRS)
+				then
+					false
+				else
+					DT_RFRNC > DT_LGL_FNL_MTRTY and OTSTNDNG_NMNL_AMNT > 0
+			then
+				ARRRS > 0
+			errorcode  "IG0120"
+			errorlevel 1;
+
+		IG0130:
+
+				if
+					isnull(INTRST_RT_CP) or isnull(ANNLSD_AGRD_RT)
+				then
+					true
+				else
+					INTRST_RT_CP >= ANNLSD_AGRD_RT
+			errorcode  "IG0130"
+			errorlevel 1;
+
+		IG0140:
+
+				if
+					isnull(ANNLSD_AGRD_RT) or isnull(INTRST_RT_FLR)
+				then
+					true
+				else
+					ANNLSD_AGRD_RT >= INTRST_RT_FLR
+			errorcode  "IG0140"
+			errorlevel 1;
+
+		IG0180:
+
+				if
+					isnull(DT_LGL_FNL_MTRTY) or isnull(DT_PST_D)
+				then
+					true
+				else
+					DT_LGL_FNL_MTRTY >= DT_PST_D
+			errorcode  "IG0180"
+			errorlevel 1;
+
+		IG0190a:
+			when
+
+				if
+					isnull(TYP_INTRST_RT)
+				then
+					false
+				else
+					NEVS_RFRNC_RT = "0" and (TYP_INSTRMNT <> "71" or (TYP_INSTRMNT <> "20" and DT_INCPTN = DT_STTLMNT and NEVS_OFF_BLNC_SHT_AMNT = "0") or (TYP_INSTRMNT <> "1000" and NEVS_DT_LGL_FNL_MTRTY <> "0"))
+			then
+				TYP_INTRST_RT = "1"
+			errorcode  "IG0190a"
+			errorlevel 1;
+
+		IG0190b:
+			when
+
+				if
+					NEVS_TYP_INTRST_RT in {"-2", "-3", "-5"}
+				then
+					false
+				else
+					NEVS_RFRNC_RT = "0" and not (TYP_INSTRMNT <> "71" or (TYP_INSTRMNT <> "20" and DT_INCPTN = DT_STTLMNT and NEVS_OFF_BLNC_SHT_AMNT = "0") or (TYP_INSTRMNT <> "1000" and NEVS_DT_LGL_FNL_MTRTY <> "0"))
+			then
+				NEVS_TYP_INTRST_RT = "0"
+			errorcode  "IG0190a"
+			errorlevel 1
+end datapoint ruleset;
+
+define datapoint ruleset instrumentFinancialLastMonth(variable TYP_INSTRMNT, NEVS_OFF_BLNC_SHT_AMNT, NEVS_DT_LGL_FNL_MTRTY, DT_INCPTN, DT_INCPTN_T1, DT_STTLMNT_T1, OFF_BLNC_SHT_AMNT, DT_STTLMNT) is
+		CN0925:
+			when
+
+				if
+					isnull(DT_INCPTN) or isnull(DT_INCPTN_T1)
+				then
+					false
+				else
+					not (TYP_INSTRMNT = "20" and NEVS_OFF_BLNC_SHT_AMNT = "0" or TYP_INSTRMNT = "1000" and NEVS_DT_LGL_FNL_MTRTY = "0")
+			then
+				DT_INCPTN = DT_INCPTN_T1
+			errorcode  "CN0925"
+			errorlevel 3;
+
+		CN0935:
+			when
+
+				if
+					isnull(DT_STTLMNT) or isnull(DT_STTLMNT_T1)
+				then
+					false
+				else
+					not isnull(DT_STTLMNT_T1) and not (TYP_INSTRMNT = "20" and isnull(OFF_BLNC_SHT_AMNT) or TYP_INSTRMNT = "1000" and NEVS_DT_LGL_FNL_MTRTY = "0")
+			then
+				DT_STTLMNT = DT_STTLMNT_T1
+			errorcode  "CN0935"
+			errorlevel 3
+end datapoint ruleset;
+
+define datapoint ruleset instrumentLastMonth(variable CMMTMNT_INCPTN, CMMTMNT_INCPTN_T1, FV_CHNG_CR_BFR_PRCHS, FV_CHNG_CR_BFR_PRCHS_T1) is
+		CN0804:
+
+				if
+					isnull(CMMTMNT_INCPTN) or isnull(CMMTMNT_INCPTN_T1)
+				then
+					true
+				else
+					CMMTMNT_INCPTN = CMMTMNT_INCPTN_T1
+			errorcode  "CN0804"
+			errorlevel 1;
+
+		CN0810:
+
+				if
+					isnull(FV_CHNG_CR_BFR_PRCHS) or isnull(FV_CHNG_CR_BFR_PRCHS_T1)
+				then
+					true
+				else
+					FV_CHNG_CR_BFR_PRCHS = FV_CHNG_CR_BFR_PRCHS_T1
+			errorcode  "CN0810"
+			errorlevel 2
+end datapoint ruleset;
+
+define operator drop_identifier(ds dataset, comp component)
 	returns dataset is
-		ds
-		[filter
-				comp > margin or
-					comp < -margin
-		]
+		max(
+		ds group except comp
+		)
 end operator;
 
-BOP_Q_VAL.bopObs :=
-	BOP
-		[keep OBS_VALUE];
-BOP_Q_VAL.functionalCategoryValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		functionalCategory
-		rule FUNCTIONAL_CAT);
-BOP_Q_VAL.accountingEntryValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		accountingEntryQ
-		rule ACCOUNTING_ENTRY);
-BOP_Q_VAL.intAccItemValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		intAccItemQ
-		rule INT_ACC_ITEM);
-BOP_Q_VAL.instrAssetValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		instrAssetQ
-		rule INSTR_ASSET);
-BOP_Q_VAL.counterpartSectorValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		sectorsHierarchyQ
-		rule COUNTERPART_SECTOR);
-BOP_Q_VAL.refSectorValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		sectorsHierarchyQ2
-		rule REF_SECTOR);
-BOP_Q_VAL.counterpartAreaValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		areasQ
-		rule COUNTERPART_AREA);
-BOP_Q_VAL.maturityValQ :=
-	check_hierarchy(
-		BOP_Q_VAL.bopObs,
-		maturity
-		rule MATURITY);
-BOP_Q_VAL.signVal :=
-	check_datapoint(
-	BOP_Q_VAL.bopObs,
-	signValidation
-
-);
-BOP_Q_VAL.notZero :=
-	check_datapoint(
-	BOP_Q_VAL.bopObs,
-	zeroValidation
-
-);
-BOP_Q_VAL.IAI_1 :=
-	check(BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] = BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4Q", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"] errorcode "IAI_1 - Rule [ INT_ACC_ITEM = D4P, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = D4S, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = D4Q, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] - (BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "D4Q", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"]) invalid);
-BOP_Q_VAL.IAI_2 :=
-	check(BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] = BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"] errorcode "IAI_2 - Rule [INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] - (BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
-		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"]) invalid);
-BOP_Q_VAL.IAI_3 :=
-	check(BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] = BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] errorcode "IAI_2 - Rule [INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] - BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] invalid);
-BOP_Q_VAL.left :=
-	BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D4432", FUNCTIONAL_CAT = "P", INSTR_ASSET = "F52", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"];
-BOP_Q_VAL.right_selection :=
-	BOP_Q_VAL.bopObs
-		[sub FREQ = "Q", ADJUSTMENT = "N", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "P", INSTR_ASSET = "F52B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "M", COMP_METHOD = "N"];
-BOP_Q_VAL.bopObs_t_1 :=
-	timeshift(BOP_Q_VAL.bopObs, 1);
-BOP_Q_VAL.BAL :=
-	check(BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] = BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] - BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"] errorcode "BAL - Rule [ (ACCOUNTING_ENTRY = N, INT_ACC_ITEM = EO) = (ACCOUNTING_ENTRY = N, INT_ACC_ITEM = FA) - (ACCOUNTING_ENTRY = B, INT_ACC_ITEM = CKA)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] - (BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] - BOP_Q_VAL.bopObs
-		[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"]) invalid);
-BOP_Q_VAL.valResult :=
-	union(BOP_Q_VAL.functionalCategoryValQ, BOP_Q_VAL.accountingEntryValQ, BOP_Q_VAL.intAccItemValQ, BOP_Q_VAL.instrAssetValQ, BOP_Q_VAL.counterpartSectorValQ, BOP_Q_VAL.refSectorValQ, BOP_Q_VAL.counterpartAreaValQ, BOP_Q_VAL.maturityValQ);
-BOP_Q_VAL.IAI_1_round :=
-	BOP_Q_VAL.IAI_1
+comp_count.CC0010_DS :=
+	ANCRDT_ENTTY
+		[calc CC0010 := CNTRY in AnaCreditCountries]
+		[keep CC0010];
+comp_count.FRGN_BRNCH_DS :=
+	ANCRDT_ENTTY
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
-		];
-BOP_Q_VAL.IAI_2_round :=
-	BOP_Q_VAL.IAI_2
+				not isnull(HD_OFFC_UNDRT_CD)
+		]
+		[calc FRGN_BRNCH := true]
+		[keep FRGN_BRNCH];
+comp_count.SPFUND_DS :=
+	ANCRDT_ENTTY
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
-		];
-BOP_Q_VAL.IAI_3_round :=
-	BOP_Q_VAL.IAI_3
+				LGL_FRM = "SPFUND"
+		]
+		[calc SPFUND := true]
+		[keep SPFUND];
+comp_count.CC010_FLTR :=
+	ANCRDT_ENTTY
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
+				CNTRY in AnaCreditCountries and
+					INSTTTNL_SCTR_DTL in {"S122_A", "S125_B1"}
 		];
-BOP_Q_VAL.right :=
-	sum(
-		BOP_Q_VAL.right_selection group except REF_SECTOR
+comp_count.CC011_MX :=
+	max(ANCRDT_INSTRMNT_C group by OBSRVD_AGNT_CD);
+comp_count.CC012_FLTR :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "1"
+		];
+comp_count.DBTR_INSTRMNT :=
+	inner_join(
+		ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "2"
+		] as A,
+		ANCRDT_INSTRMNT_C
+		[keep DT_INCPTN, TYP_INSTRMNT, RCRS] as B
 		);
-BOP_Q_VAL.REC :=
-	check(BOP_Q_VAL.bopObs
-		[sub FLOW_STOCK_ENTRY = "LE"] = BOP_Q_VAL.bopObs_t_1
-		[sub FLOW_STOCK_ENTRY = "LE"] + BOP_Q_VAL.bopObs
-		[sub FLOW_STOCK_ENTRY = "T"] + BOP_Q_VAL.bopObs
-		[sub FLOW_STOCK_ENTRY = "K7B"] + BOP_Q_VAL.bopObs
-		[sub FLOW_STOCK_ENTRY = "K7A"] + BOP_Q_VAL.bopObs
-		[sub FLOW_STOCK_ENTRY = "KA"] all);
-BOP_Q_VAL.BAL_round :=
-	BOP_Q_VAL.BAL
+comp_count.CC015_CD :=
+	ANCRDT_PRTCTN_RCVD_C
+		[calc identifier ENTTY_RIAD_CD := nvl(PRTCTN_PRVDR_CD, "")];
+comp_count.CC019_FLTR :=
+	ANCRDT_ENTTY_INSTRMNT_C
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
+				ENTTY_RL = "3"
 		];
-BOP_Q_VAL.valResult_round :=
-	filRoundEr(BOP_Q_VAL.valResult, 'imbalance', 4);
-BOP_Q_VAL.FUNC :=
-	check(BOP_Q_VAL.left = BOP_Q_VAL.right all);
-BOP_Q_VAL.REC_round :=
-	BOP_Q_VAL.REC
+comp_count.CC020_FLTR :=
+	ANCRDT_ENTTY_INSTRMNT_C
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
+				ENTTY_RL = "7"
 		];
-BOP_Q_VAL.FUNC1_round :=
-	BOP_Q_VAL.FUNC
+dsPrep.PRTCTN_RCVD_P :=
+	ANCRDT_PRTCTN_RCVD_C
 		[filter
-				'imbalance' > 4 or
-					'imbalance' < -4
+				not isnull(PRTCTN_PRVDR_CD)
+		]
+		[calc identifier ENTTY_RIAD_CD := nvl(PRTCTN_PRVDR_CD, "")]
+		[keep PRTCTN_PRVDR_CD]
+		[drop PRTCTN_PRVDR_CD
 		];
+dsPrep.ENTTY_INSTRMNT_P :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "2"];
+dsPrep.DBTRS :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "2"];
+dsPrep.INSTRMNTS_FLL_MNTHLY :=
+	inner_join(
+		ANCRDT_INSTRMNT_C,
+		ANCRDT_FNNCL_C
+		);
+dsPrep.CNTRPRTY_DFLT_T_T1 :=
+	inner_join(
+		drop_identifier(ANCRDT_ENTTY_DFLT_C, DT_RFRNC)
+		[keep DT_DFLT_STTS, DFLT_STTS] as A,
+		drop_identifier(ANCRDT_ENTTY_DFLT_C_T1, DT_RFRNC)
+		[keep DT_DFLT_STTS, DFLT_STTS]
+		[rename DT_DFLT_STTS to DT_DFLT_STTS_T1, DFLT_STTS to DFLT_STTS_T1] as B
+		);
+dsPrep.PRTCTN_RCVD_T_T1 :=
+	inner_join(
+		drop_identifier(ANCRDT_PRTCTN_RCVD_C, DT_RFRNC)
+		[keep DT_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, ORGNL_PRTCTN_VL, TYP_PRTCTN] as A,
+		drop_identifier(ANCRDT_PRTCTN_RCVD_C_T1, DT_RFRNC)
+		[keep DT_PRTCTN_VL, DT_ORGNL_PRTCTN_VL, ORGNL_PRTCTN_VL, TYP_PRTCTN]
+		[rename DT_PRTCTN_VL to DT_PRTCTN_VL_T1, DT_ORGNL_PRTCTN_VL to DT_ORGNL_PRTCTN_VL_T1, ORGNL_PRTCTN_VL to ORGNL_PRTCTN_VL_T1, TYP_PRTCTN to TYP_PRTCTN_T1] as B
+		);
+dsPrep.INSTRMNTS_SYNTHTC_PRTCTNS :=
+	inner_join(
+		ANCRDT_FNNCL_C
+		[filter
+				TYP_SCRTSTN = "6"
+		]
+		[keep TYP_SCRTSTN] as A,
+		ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+		);
+dsPrep.PRTCTN_RCVD_PRVDR_CD :=
+	ANCRDT_PRTCTN_RCVD_C
+		[keep PRTCTN_PRVDR_CD]
+		[filter
+				not isnull(PRTCTN_PRVDR_CD)
+		];
+dsPrep.ANCRDT_INSTRMNT_C_WODT :=
+	drop_identifier(ANCRDT_INSTRMNT_C, DT_RFRNC);
+dsPrep.ANCRDT_INSTRMNT_C_T1_WODT :=
+	drop_identifier(ANCRDT_INSTRMNT_C_T1, DT_RFRNC);
+dsPrep.ANCRDT_FNNCL_C_WODT :=
+	drop_identifier(ANCRDT_FNNCL_C, DT_RFRNC);
+dsPrep.ANCRDT_FNNCL_C_T1_WODT :=
+	drop_identifier(ANCRDT_FNNCL_C_T1, DT_RFRNC);
+dsPrep.INSTRMTNS_PRTCTNS :=
+	inner_join(
+		ANCRDT_INSTRMNT_C,
+		ANCRDT_INSTRMNT_PRTCTN_RCVD_C,
+		ANCRDT_PRTCTN_RCVD_C
+		);
+dsPrep.ENTTY_DFLT_RSK :=
+	left_join(
+		ANCRDT_ENTTY_DFLT_C,
+		ANCRDT_ENTTY_RSK_C
+		);
+dsPrep.LST_RIAD_CDS :=
+	drop_identifier(ANCRDT_ENTTY
+		[filter
+				DT_RFRNC >= DT_BRTH
+		], DT_RFRNC);
+dsPrep.INSTR_ACCNTNG_Z :=
+	inner_join(
+		ANCRDT_INSTRMNT_C,
+		ANCRDT_ACCNTNG_C_Z
+		 keep RCGNTN_STTS
+	);
+dsPrep.ENTTY_INSTRUMNT_OA :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RIAD_CD = OBSRVD_AGNT_CD
+		];
+dsPrep.INSTRMNT_OBSRVD_AGNT :=
+	inner_join(
+		ANCRDT_INSTRMNT_C,
+		ANCRDT_ENTTY
+		[rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD] as B
+		);
+dsPrep.ENTTY_INSTRUMNT_CRDTR :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = 1]
+		[calc CRDTR_CD := ENTTY_RIAD_CD];
+dsPrep.ENTTY_INSTRUMNT_DBTR :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = 2]
+		[calc DBTR_CD := ENTTY_RIAD_CD];
+dsPrep.INSTRMNTS_TRDTNL_SCRTSTN_CRDTR_FVC :=
+	inner_join(
+		ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "1"] as A,
+		ANCRDT_ENTTY
+		[filter
+				INSTTTNL_SCTR = "S125_A"
+		] as B,
+		ANCRDT_FNNCL_C
+		[filter
+				TYP_SCRTSTN = "1"
+		] as C
+		);
+dsPrep.ENTTY_INSTRMNT_USD :=
+	max(ANCRDT_ENTTY_INSTRMNT_C group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.JNT_LBLTS_USD :=
+	max(ANCRDT_JNT_LBLTS_C group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.ENTTY_DFLT_USD :=
+	max(ANCRDT_ENTTY_DFLT_C group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.ENTTY_RSK_USD :=
+	max(ANCRDT_ENTTY_RSK_C group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.PRTCTN_PRVDR :=
+	ANCRDT_PRTCTN_RCVD_C
+		[filter
+				not isnull(PRTCTN_PRVDR_CD)
+		]
+		[calc identifier ENTTY_RIAD_CD := nvl(PRTCTN_PRVDR_CD, "")];
+dsPrep.INSTRMNT_PRTCTN_AGGR :=
+	ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+		[aggr
+			MX_THRD_PRTY_PRRTY_CLMS := max(THRD_PRTY_PRRTY_CLMS), TTL_PRTCTN_ALLCTD_VL := sum(
+		PRTCTN_ALLCTD_VL
+		)
+			 group by DT_RFRNC, OBSRVD_AGNT_CD, PRTCTN_ID
+		];
+DP_RLST_INSTRMNT_RSLT <-
+	check_datapoint(
+	ANCRDT_INSTRMNT_C,
+	instrument
+
+);
+DP_RLST_FNNCL_RSLT <-
+	check_datapoint(
+	ANCRDT_FNNCL_C,
+	financial
+
+);
+DP_RLST_CNTRPRTY_DFLT_RSLT <-
+	check_datapoint(
+	ANCRDT_ENTTY_DFLT_C,
+	anacreditCounterpartyDefault
+
+);
+DP_RLST_PRTCTN_RCVD_RSLT <-
+	check_datapoint(
+	ANCRDT_PRTCTN_RCVD_C,
+	anacreditProtectionReceived
+
+);
+DP_RLST_JNT_LBLTS_RSLT <-
+	check_datapoint(
+	ANCRDT_JNT_LBLTS_C,
+	anacreditJointLiability
+
+);
+DP_RLST_ENTTY_THRSHLDS_RSLT <-
+	check_datapoint(
+	ANCRDT_ENTTY,
+	anacreditEntityThresholds
+
+);
+GRNLR_CMA_ENTTY <-
+	check_datapoint(
+	ANCRDT_ENTTY,
+	granularCmaEntity
+
+);
+CN0330 <-
+	check(ANCRDT_FNNCL_C
+		[keep OTSTNDNG_NMNL_AMNT]
+		[rename OTSTNDNG_NMNL_AMNT to obs] >= ANCRDT_JNT_LBLTS_C
+		[keep JNT_LBLTY_AMNT]
+		[rename JNT_LBLTY_AMNT to obs] errorcode "CN0330" errorlevel 3 invalid);
+CN0621 <-
+	check(ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "1"]
+		[calc dummy := "T"] <> ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "2"]
+		[calc dummy := "T"] errorcode "CN0621" errorlevel 3 invalid);
+comp_cred.CD0039_P :=
+	exists_in(ANCRDT_INSTRMNT_C, ANCRDT_ACCNTNG_C, false);
+comp_cred.CD0050_DS :=
+	ANCRDT_INSTRMNT_C
+		[filter
+				DT_INCPTN < cast("2018-09-01", date)
+		]
+		[calc CD0050 := true]
+		[keep CD0050];
+comp_cred.CRDTR_OBSRVD_AGNT :=
+	ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "1"]
+		[filter
+				OBSRVD_AGNT_CD = ENTTY_RIAD_CD
+		];
+comp_cred.CD0170_DS :=
+	ANCRDT_ENTTY
+		[rename ENTTY_RIAD_CD to OBSRVD_AGNT_CD]
+		[calc CD0170 :=
+				if
+					ANCRDT_DRGTN_QRTR_CR_OA = "T"
+				then
+					true
+				else
+					null]
+		[keep CD0170];
+comp_cred.ENTTY_DFLT_INSTRMNT :=
+	inner_join(
+		ANCRDT_ENTTY_DFLT_C,
+		ANCRDT_ENTTY_INSTRMNT_C
+		);
+comp_cred.PRTCN_INSTRMNT :=
+	inner_join(
+		ANCRDT_PRTCTN_RCVD_C,
+		ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+		);
+RI0030 <-
+	check(exists_in(ANCRDT_FNNCL_C, ANCRDT_INSTRMNT_C, false) errorcode "RI0030" errorlevel 5 all);
+RI0050 <-
+	check(exists_in(ANCRDT_FNNCL_C, ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "1"
+		], false) errorcode "RI0050" errorlevel 4 all);
+RI0060 <-
+	check(exists_in(ANCRDT_FNNCL_C, ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "2"
+		], false) errorcode "RI0060" errorlevel 5 all);
+RI0070 <-
+	check(exists_in(ANCRDT_FNNCL_C, ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "7"
+		], false) errorcode "RI0070" errorlevel 4 all);
+RI0090 <-
+	check(exists_in(ANCRDT_INSTRMNT_C, ANCRDT_FNNCL_C, false) errorcode "RI0090" errorlevel 3 all);
+RI0110 <-
+	check(exists_in(ANCRDT_ENTTY_INSTRMNT_C, ANCRDT_FNNCL_C, false) errorcode "RI0110" errorlevel 3 all);
+RI0120 <-
+	check(exists_in(min(ANCRDT_JNT_LBLTS_C group except ENTTY_RIAD_CD), ANCRDT_FNNCL_C, false) errorcode "RI0120" errorlevel 5 all);
+RI0130 <-
+	check(exists_in(min(ANCRDT_INSTRMNT_PRTCTN_RCVD_C group except PRTCTN_ID), ANCRDT_FNNCL_C, false) errorcode "RI0130" errorlevel 4 all);
+RI0220 <-
+	check(exists_in(ANCRDT_PRTCTN_RCVD_C, ANCRDT_INSTRMNT_PRTCTN_RCVD_C, false) errorcode "RI0220" errorlevel 4 all);
+RI0250 <-
+	check(exists_in(ANCRDT_INSTRMNT_PRTCTN_RCVD_C, ANCRDT_PRTCTN_RCVD_C, false) errorcode "RI0250" errorlevel 4 all);
+RI0290 <-
+	check(exists_in(ANCRDT_JNT_LBLTS_C, ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "2"
+		], false) errorcode "RI0290" errorlevel 4 all);
+comp_count.CC0010_CC0020 :=
+	comp_count.CC0010_DS
+		[calc CC0020 := not CC0010];
+comp_count.FRGN_BRNCHS_SPFUND :=
+	left_join(
+		ANCRDT_ENTTY,
+		comp_count.FRGN_BRNCH_DS,
+		comp_count.SPFUND_DS
+		);
+comp_count.CC012_MX :=
+	max(comp_count.CC012_FLTR group by OBSRVD_AGNT_CD);
+comp_count.DBTR_INSTRMNT_MX_DT :=
+	max(comp_count.DBTR_INSTRMNT group by ENTTY_RIAD_CD);
+comp_count.TRD_RCVBL_NN_RCRS_DBTRS :=
+	comp_count.DBTR_INSTRMNT
+		[calc TRD_RCVBL_NN_RCRS := TYP_INSTRMNT = "71" and RCRS = "2"]
+		[keep TRD_RCVBL_NN_RCRS];
+comp_count.CC015_MX :=
+	max(comp_count.CC015_CD group by ENTTY_RIAD_CD);
+comp_count.CC019_MX :=
+	max(comp_count.CC019_FLTR group by OBSRVD_AGNT_CD);
+comp_count.CC020_MX :=
+	max(comp_count.CC020_FLTR group by OBSRVD_AGNT_CD);
+dsPrep.DBTRS_PRTCTRS :=
+	union(min(dsPrep.ENTTY_INSTRMNT_P group by DT_RFRNC, OBSRVD_AGNT_CD, ENTTY_RIAD_CD), drop_identifier(dsPrep.PRTCTN_RCVD_P, PRTCTN_ID));
+dsPrep.NMBR_DBTRS :=
+	count(
+		dsPrep.DBTRS group except ENTTY_RIAD_CD
+		);
+DP_RLST_INSTRMNT_FNNCL_RSLT <-
+	check_datapoint(
+	dsPrep.INSTRMNTS_FLL_MNTHLY,
+	instrumentFinancial
+
+);
+DP_RLST_CNTRPRTY_DFLT_LST_MNTH_RSLT <-
+	check_datapoint(
+	dsPrep.CNTRPRTY_DFLT_T_T1,
+	anacreditCounterpartyDefaultLastMonth
+
+);
+DP_RLST_PRTCTN_RCVD_LST_MNTH_RSLT <-
+	check_datapoint(
+	dsPrep.PRTCTN_RCVD_T_T1,
+	anacreditProtectionReceivedLastMonth
+
+);
+dsPrep.CN0230_DTST :=
+	left_join(
+		dsPrep.INSTRMNTS_SYNTHTC_PRTCTNS,
+		ANCRDT_PRTCTN_RCVD_C
+		[filter
+				TYP_PRTCTN in {"4", "5", "12", "15"}
+		]
+		[keep TYP_PRTCTN] as B
+		using DT_RFRNC, OBSRVD_AGNT_CD, PRTCTN_ID);
+dsPrep.INSTRMNT_PRTCTN_PRVDR_CD :=
+	inner_join(
+		dsPrep.PRTCTN_RCVD_PRVDR_CD,
+		ANCRDT_INSTRMNT_PRTCTN_RCVD_C
+		);
+dsPrep.INSTRMNT_T_T1 :=
+	inner_join(
+		dsPrep.ANCRDT_INSTRMNT_C_WODT
+		[keep CMMTMNT_INCPTN, FV_CHNG_CR_BFR_PRCHS] as A,
+		dsPrep.ANCRDT_INSTRMNT_C_T1_WODT
+		[keep CMMTMNT_INCPTN, FV_CHNG_CR_BFR_PRCHS]
+		[rename CMMTMNT_INCPTN to CMMTMNT_INCPTN_T1, FV_CHNG_CR_BFR_PRCHS to FV_CHNG_CR_BFR_PRCHS_T1] as B
+		);
+dsPrep.INSTRMNT_FNNCL_T_T1 :=
+	inner_join(
+		dsPrep.ANCRDT_INSTRMNT_C_WODT
+		[keep TYP_INSTRMNT, NEVS_DT_LGL_FNL_MTRTY, DT_INCPTN, DT_STTLMNT] as A,
+		dsPrep.ANCRDT_INSTRMNT_C_T1_WODT
+		[keep DT_INCPTN, DT_STTLMNT]
+		[rename DT_INCPTN to DT_INCPTN_T1, DT_STTLMNT to DT_STTLMNT_T1] as B,
+		dsPrep.ANCRDT_FNNCL_C_WODT
+		[keep OFF_BLNC_SHT_AMNT, NEVS_OFF_BLNC_SHT_AMNT] as C
+		);
+dsPrep.FNNCL_T_T1 :=
+	inner_join(
+		dsPrep.ANCRDT_FNNCL_C_WODT
+		[keep DT_DFLT_STTS, DFLT_STTS] as A,
+		dsPrep.ANCRDT_FNNCL_C_T1_WODT
+		[keep DT_DFLT_STTS, DFLT_STTS, OFF_BLNC_SHT_AMNT]
+		[rename DT_DFLT_STTS to DT_DFLT_STTS_T1, DFLT_STTS to DFLT_STTS_T1] as B
+		);
+DP_RLST_INSTRMNT_PRTCTNS_RSLT <-
+	check_datapoint(
+	dsPrep.INSTRMTNS_PRTCTNS,
+	anacreditInstrumentProtection
+
+);
+dsPrep.ENTTY_PD :=
+	left_join(
+		dsPrep.ENTTY_DFLT_RSK,
+		ANCRDT_ENTTY
+		using DT_RFRNC, ENTTY_RIAD_CD);
+RI0210 <-
+	check(exists_in(dsPrep.PRTCTN_RCVD_P, dsPrep.LST_RIAD_CDS, false) errorcode "RI0210" errorlevel 4 all);
+dsPrep.ENTTY_INSTRUMNT_MX :=
+	drop_identifier(dsPrep.ENTTY_INSTRUMNT_OA, ENTTY_RIAD_CD);
+comp_cred.CD0020_DS :=
+	dsPrep.INSTRMNT_OBSRVD_AGNT
+		[filter
+				CNTRY not_in AnaCreditCountries
+		]
+		[calc CD0020 := true]
+		[keep CD0020];
+comp_cred.CD0030_DS :=
+	dsPrep.INSTRMNT_OBSRVD_AGNT
+		[filter
+				(CNTRY in AnaCreditCountries and
+					HD_OFFC_UNDRT_CNTRY not_in EU_countries) or
+					SSMSIGNIFICANCE = "EXI"
+		]
+		[calc CD0030 := true]
+		[keep CD0030];
+dsPrep.ENTTY_HD_QRTR_CRDTR_P :=
+	inner_join(
+		drop_identifier(dsPrep.ENTTY_INSTRUMNT_CRDTR, ENTTY_RIAD_CD) as A,
+		drop_identifier(dsPrep.ENTTY_INSTRUMNT_DBTR, ENTTY_RIAD_CD) as B
+		);
+CN0620 <-
+	check(exists_in(dsPrep.INSTRMNTS_TRDTNL_SCRTSTN_CRDTR_FVC, ANCRDT_ENTTY_INSTRMNT_C
+		[filter
+				ENTTY_RL = "3"
+		], false) errorcode "CN0620" errorlevel 3 all);
+dsPrep.PRTCTN_PRVDR_USD :=
+	max(dsPrep.PRTCTN_PRVDR group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.PRTCTN_AGGRGTD_INSTRMNT_PRTCTN :=
+	inner_join(
+		ANCRDT_PRTCTN_RCVD_C,
+		dsPrep.INSTRMNT_PRTCTN_AGGR
+		);
+comp_cred.CD0039_DS :=
+	comp_cred.CD0039_P
+		[calc CD0039 := not (bool_var)]
+		[keep CD0039];
+comp_cred.CD0060_P :=
+	left_join(
+		drop_identifier(comp_cred.CRDTR_OBSRVD_AGNT, ENTTY_RIAD_CD) as A,
+		ANCRDT_FNNCL_C,
+		ANCRDT_ACCNTNG_C_Z
+		 keep OTSTNDNG_NMNL_AMNT, OFF_BLNC_SHT_AMNT, ACCMLTD_WRTFFS, RCGNTN_STTS
+	);
+comp_count.FRGN_BRNCHS_SPFUND_FLL :=
+	nvl(comp_count.FRGN_BRNCHS_SPFUND
+		[keep SPFUND, FRGN_BRNCH], false);
+comp_count.CC013_CNTRPRTS_BFR_DT :=
+	comp_count.DBTR_INSTRMNT_MX_DT
+		[filter
+				DT_INCPTN < cast("2018-09-01", date)
+		]
+		[keep DT_INCPTN]
+		[drop DT_INCPTN
+		];
+comp_count.CC014_CNTRPRTS_AFTR_DT :=
+	comp_count.DBTR_INSTRMNT_MX_DT
+		[filter
+				DT_INCPTN >= cast("2018-09-01", date)
+		]
+		[keep DT_INCPTN]
+		[drop DT_INCPTN
+		];
+comp_count.MX_TRD_RCVBL_NN_RCRS :=
+	max(comp_count.TRD_RCVBL_NN_RCRS_DBTRS group by ENTTY_RIAD_CD);
+RI0191 <-
+	check(exists_in(ANCRDT_ENTTY_DFLT_C, dsPrep.DBTRS_PRTCTRS, false) errorcode "RI0191" errorlevel 4 all);
+RI0201 <-
+	check(exists_in(ANCRDT_ENTTY_RSK_C, dsPrep.DBTRS_PRTCTRS, false) errorcode "RI0201" errorlevel 4 all);
+dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR :=
+	inner_join(
+		dsPrep.DBTRS,
+		dsPrep.NMBR_DBTRS
+		[filter
+				int_var > 1
+		] as B
+		);
+dsPrep.ENTTY_INSTRMNT_1_DBTR :=
+	inner_join(
+		dsPrep.DBTRS,
+		dsPrep.NMBR_DBTRS
+		[filter
+				int_var = 1
+		] as B
+		);
+CN0230 <-
+	check(not isnull(dsPrep.CN0230_DTST#TYP_PRTCTN) errorcode "CN0230" errorlevel 2 invalid);
+dsPrep.CN0622_DTST :=
+	inner_join(
+		drop_identifier(dsPrep.INSTRMNT_PRTCTN_PRVDR_CD, PRTCTN_ID)
+		[calc identifier ENTTY_RIAD_CD := nvl(PRTCTN_PRVDR_CD, "")] as A,
+		ANCRDT_ENTTY_INSTRMNT_C
+		[sub ENTTY_RL = "1"] as B
+		);
+DP_RLST_INSTRMNT_LST_MNTH_RSLT <-
+	check_datapoint(
+	dsPrep.INSTRMNT_T_T1,
+	instrumentLastMonth
+
+);
+DP_RLST_INSTRMNT_FNNCL_LST_MNTH_RSLT <-
+	check_datapoint(
+	dsPrep.INSTRMNT_FNNCL_T_T1,
+	instrumentFinancialLastMonth
+
+);
+DP_RLST_FNNCL_LST_MNTH_RSLT <-
+	check_datapoint(
+	dsPrep.FNNCL_T_T1,
+	financialLastMonth
+
+);
+GRNLR_CMA_ENTTY_RSK <-
+	check_datapoint(
+	dsPrep.ENTTY_PD,
+	granularCmaEntityRisk
+
+);
+dsPrep.CRDTR_PVT :=
+	left_join(
+		dsPrep.INSTR_ACCNTNG_Z,
+		dsPrep.ENTTY_INSTRUMNT_MX
+		[sub ENTTY_RL = 1]
+		[calc CRDTR := true] as B
+		);
+dsPrep.ENTTY_HD_QRTR_CRDTR :=
+	left_join(
+		dsPrep.ENTTY_HD_QRTR_CRDTR_P,
+		ANCRDT_ENTTY
+		[rename ENTTY_RIAD_CD to CRDTR_CD]
+		[calc HD_QRTR_CD_CRDTR := HD_OFFC_UNDRT_CD]
+		[keep HD_QRTR_CD_CRDTR] as C
+		using DT_RFRNC, CRDTR_CD);
+comp_count.PRTCTN_PRVDR_USD :=
+	max(dsPrep.PRTCTN_PRVDR_USD group by DT_RFRNC, ENTTY_RIAD_CD);
+dsPrep.ENTTS_USD :=
+	union(dsPrep.ENTTY_INSTRMNT_USD, dsPrep.JNT_LBLTS_USD
+		[keep JNT_LBLTY_AMNT]
+		[drop JNT_LBLTY_AMNT
+		], dsPrep.ENTTY_DFLT_USD
+		[keep DFLT_STTS]
+		[drop DFLT_STTS
+		], dsPrep.ENTTY_RSK_USD
+		[keep PD]
+		[drop PD
+		], dsPrep.PRTCTN_PRVDR_USD
+		[keep PRTCTN_VL]
+		[drop PRTCTN_VL
+		]);
+GRNLR_CMA_PRTCTN <-
+	check_datapoint(
+	dsPrep.PRTCTN_AGGRGTD_INSTRMNT_PRTCTN,
+	granularCmaProtection
+
+);
+comp_cred.CD0060_DS :=
+	comp_cred.CD0060_P
+		[calc CD0060 :=
+				if
+					isnull(RCGNTN_STTS)
+				then
+
+				if
+					OTSTNDNG_NMNL_AMNT = 0 and isnull(OFF_BLNC_SHT_AMNT)
+				then
+					true
+				else
+					null
+				else
+
+				if
+					OTSTNDNG_NMNL_AMNT = 0 and isnull(OFF_BLNC_SHT_AMNT) and RCGNTN_STTS = "3" and ACCMLTD_WRTFFS > 0
+				then
+					true
+				else
+					null]
+		[keep CD0060];
+comp_count.TYP_ENTTY :=
+	comp_count.FRGN_BRNCHS_SPFUND_FLL
+		[calc OTHR_TYP_ENTTY := not SPFUND and not FRGN_BRNCH];
+dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR_FNNCL :=
+	inner_join(
+		dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR,
+		ANCRDT_ENTTY_DFLT_C
+		[keep DFLT_STTS] as B
+		);
+RI0260 <-
+	check(exists_in(dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR, ANCRDT_JNT_LBLTS_C, false) errorcode "RI0260" errorlevel 4 all);
+dsPrep.FNNCL_NT_JN :=
+	inner_join(
+		ANCRDT_FNNCL_C,
+		dsPrep.ENTTY_INSTRMNT_1_DBTR
+		using DT_RFRNC, OBSRVD_AGNT_CD, CNTRCT_ID, INSTRMNT_ID);
+CN0622 <-
+	check(isnull(dsPrep.CN0622_DTST#PRTCTN_PRVDR_CD) errorcode "CN0622" errorlevel 2 invalid);
+dsPrep.CRDTR_SRVCR_PVT :=
+	left_join(
+		dsPrep.CRDTR_PVT,
+		dsPrep.ENTTY_INSTRUMNT_MX
+		[sub ENTTY_RL = 7]
+		[calc SRVCR := true] as B
+		);
+dsPrep.ENTTY_HD_QRTR :=
+	left_join(
+		dsPrep.ENTTY_HD_QRTR_CRDTR,
+		ANCRDT_ENTTY
+		[rename ENTTY_RIAD_CD to DBTR_CD]
+		[calc HD_QRTR_CD_DBTR := HD_OFFC_UNDRT_CD]
+		[keep HD_QRTR_CD_DBTR] as B
+		using DT_RFRNC, DBTR_CD);
+dsPrep.ENTTS_USD_BRTH :=
+	inner_join(
+		dsPrep.ENTTS_USD
+		[calc DT_RFRNC_USD := DT_RFRNC] as A,
+		ANCRDT_ENTTY
+		[keep DT_BRTH] as B
+		);
+comp_count.CC010_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		drop_identifier(comp_count.CC010_FLTR, DT_RFRNC)
+		[keep CNTRY]
+		[drop CNTRY
+		] as B
+		);
+comp_count.CC011_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC011_MX
+		[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B
+		);
+comp_count.CC012_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC012_MX
+		[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B
+		);
+comp_count.CC013_DT_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC013_CNTRPRTS_BFR_DT,
+		comp_count.MX_TRD_RCVBL_NN_RCRS
+		);
+comp_count.CC014_DT_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC014_CNTRPRTS_AFTR_DT,
+		comp_count.MX_TRD_RCVBL_NN_RCRS,
+		ANCRDT_ENTTY
+		[keep INSTTTNL_SCTR] as D
+		);
+comp_count.CC015_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC015_MX
+		);
+comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR_P :=
+	left_join(
+		comp_count.TYP_ENTTY,
+		comp_count.PRTCTN_PRVDR_USD
+		[calc IS_PRTCTN_PRVDR := true]
+		[keep IS_PRTCTN_PRVDR] as B
+		);
+comp_count.CC019_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC019_MX
+		[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B
+		);
+comp_count.CC020_JN :=
+	inner_join(
+		comp_count.TYP_ENTTY,
+		comp_count.CC020_MX
+		[rename OBSRVD_AGNT_CD to ENTTY_RIAD_CD] as B
+		);
+dsPrep.DBTRS_DFLT :=
+	dsPrep.ENTTY_INSTRMNTS_OVR_1_DBTR_FNNCL
+		[filter
+				DFLT_STTS <> "14"
+		];
+dsPrep.ENTTY_INSTRMNT_CMA :=
+	left_join(
+		dsPrep.FNNCL_NT_JN
+		[keep DFLT_STTS, NEVS_DFLT_STTS, DT_DFLT_STTS, NEVS_DT_DFLT_STTS]
+		[rename DFLT_STTS to DFLT_STTS_INSTRMNT, NEVS_DFLT_STTS to NEVS_DFLT_STTS_INSTRMNT, DT_DFLT_STTS to DT_DFLT_STTS_INSTRMNT, NEVS_DT_DFLT_STTS to NEVS_DT_DFLT_STTS_INSTRMNT] as A,
+		dsPrep.ENTTY_PD
+		using DT_RFRNC, OBSRVD_AGNT_CD, ENTTY_RIAD_CD);
+dsPrep.CRDTR_SRVCR_DBTR_PVT :=
+	left_join(
+		dsPrep.CRDTR_SRVCR_PVT,
+		dsPrep.ENTTY_INSTRUMNT_MX
+		[sub ENTTY_RL = 2]
+		[calc DBTR := true] as B
+		);
+comp_cred.CD0040_DS :=
+	dsPrep.CRDTR_SRVCR_PVT
+		[filter
+				RCGNTN_STTS = "3" and
+					not CRDTR and
+					SRVCR
+		]
+		[calc CD0040 := true]
+		[keep CD0040];
+comp_cred.CD0041_DS :=
+	dsPrep.ENTTY_HD_QRTR
+		[filter
+				HD_QRTR_CD_CRDTR = HD_QRTR_CD_DBTR or
+					HD_QRTR_CD_CRDTR = DBTR_CD or
+					HD_QRTR_CD_DBTR = CRDTR_CD
+		]
+		[calc CD0041 := true]
+		[keep CD0041];
+CN0869 <-
+	check(dsPrep.ENTTS_USD_BRTH
+		[rename DT_RFRNC_USD to COMP_DT]
+		[keep COMP_DT] >= dsPrep.ENTTS_USD_BRTH
+		[rename DT_BRTH to COMP_DT]
+		[keep COMP_DT] errorcode "CN0869" errorlevel 2 invalid);
+comp_count.CC010 :=
+	comp_count.CC010_JN
+		[calc CC0100 := OTHR_TYP_ENTTY, CC0101 := FRGN_BRNCH]
+		[keep CC0100, CC0101];
+comp_count.CC011 :=
+	comp_count.CC011_JN
+		[calc CC0110 := OTHR_TYP_ENTTY, CC0111 := FRGN_BRNCH]
+		[keep CC0110, CC0111];
+comp_count.CC012 :=
+	comp_count.CC012_JN
+		[calc CC0120 := OTHR_TYP_ENTTY, CC0121 := FRGN_BRNCH, CC0122 := SPFUND]
+		[keep CC0120, CC0121, CC0122];
+comp_count.CC013 :=
+	comp_count.CC013_DT_JN
+		[calc CC0130 := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS, CC0130A := OTHR_TYP_ENTTY and TRD_RCVBL_NN_RCRS, CC0131 := FRGN_BRNCH and not TRD_RCVBL_NN_RCRS, CC0131A := FRGN_BRNCH and TRD_RCVBL_NN_RCRS, CC0132 := SPFUND and not TRD_RCVBL_NN_RCRS, CC0132A := SPFUND and TRD_RCVBL_NN_RCRS]
+		[keep CC0130, CC0130A, CC0131, CC0131A, CC0132, CC0132A];
+comp_count.CC0140 :=
+	comp_count.CC014_DT_JN
+		[calc CC0140 := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR not_in {"S15", "S1311", "S1312", "S1313", "S1314", "S123", "S124"}];
+comp_count.CC015 :=
+	comp_count.CC015_JN
+		[calc CC0150 := OTHR_TYP_ENTTY, CC0151 := FRGN_BRNCH, CC0152 := SPFUND]
+		[keep CC0150, CC0151, CC0152];
+comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR :=
+	inner_join(
+		comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR_P,
+		ANCRDT_ENTTY
+		[keep HD_OFFC_UNDRT_CD, IMMDT_PRNT_UNDRT_CD, ULTMT_PRNT_UNDRT_CD] as B
+		);
+comp_count.CC019 :=
+	comp_count.CC019_JN
+		[calc CC0190 := OTHR_TYP_ENTTY, CC0191 := FRGN_BRNCH, CC0192 := SPFUND]
+		[keep CC0190, CC0191, CC0192];
+comp_count.CC020 :=
+	comp_count.CC020_JN
+		[calc CC0200 := OTHR_TYP_ENTTY, CC0201 := FRGN_BRNCH, CC0202 := SPFUND]
+		[keep CC0200, CC0201, CC0202];
+dsPrep.NMBR_DBTRS_DFLT :=
+	count(
+		dsPrep.DBTRS_DFLT group except ENTTY_RIAD_CD
+		);
+GRNLR_CMA_ENTTY_INSTRMNT <-
+	check_datapoint(
+	dsPrep.ENTTY_INSTRMNT_CMA,
+	granularCmaEntityInstrument
+
+);
+comp_cred.ATTRBTS_FLL_P :=
+	left_join(
+		ANCRDT_INSTRMNT_C
+		[keep TYP_INSTRMNT]
+		[drop TYP_INSTRMNT
+		] as A,
+		comp_cred.CD0020_DS,
+		comp_cred.CD0030_DS,
+		comp_cred.CD0039_DS,
+		comp_cred.CD0040_DS,
+		comp_cred.CD0041_DS,
+		comp_cred.CD0050_DS,
+		comp_cred.CD0060_DS
+		);
+comp_count.CC0140B :=
+	comp_count.CC0140
+		[calc CC0140B := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR in {"S15", "S1311", "S1312", "S1313", "S1314", "S123", "S124"}];
+comp_count.CC016_FLTR :=
+	comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR
+		[filter
+				ENTTY_RIAD_CD = HD_OFFC_UNDRT_CD
+		];
+comp_count.CC017_FLTR :=
+	comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR
+		[filter
+				ENTTY_RIAD_CD = IMMDT_PRNT_UNDRT_CD
+		];
+comp_count.CC018_FLTR :=
+	comp_count.TYP_ENTTY_IS_PRTCTN_PRVDR
+		[filter
+				ENTTY_RIAD_CD = ULTMT_PRNT_UNDRT_CD
+		];
+dsPrep.OVR_1_DBTR_DFLTS :=
+	inner_join(
+		dsPrep.NMBR_DBTRS
+		[rename int_var to TTL_NMBR_DBTRS] as A,
+		dsPrep.NMBR_DBTRS_DFLT
+		[rename int_var to TTL_NMBR_DFLT_DBTRS] as B,
+		ANCRDT_FNNCL_C
+		[keep DFLT_STTS] as C
+		);
+comp_cred.ATTRBTS_FLL_CD0170_DS :=
+	left_join(
+		comp_cred.ATTRBTS_FLL_P,
+		comp_cred.CD0170_DS
+		using DT_RFRNC, OBSRVD_AGNT_CD);
+comp_count.CC0140C :=
+	comp_count.CC0140B
+		[calc CC0140C := OTHR_TYP_ENTTY and not TRD_RCVBL_NN_RCRS and INSTTTNL_SCTR = "S15"];
+comp_count.CC016 :=
+	comp_count.CC016_FLTR
+		[calc CC0160 := OTHR_TYP_ENTTY, CC0160A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR, CC0162 := SPFUND]
+		[keep CC0160, CC0160A, CC0162];
+comp_count.CC017 :=
+	comp_count.CC017_FLTR
+		[calc CC0170 := OTHR_TYP_ENTTY, CC0170A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR, CC0172 := SPFUND]
+		[keep CC0170, CC0170A, CC0172];
+comp_count.CC018 :=
+	comp_count.CC018_FLTR
+		[calc CC0180 := OTHR_TYP_ENTTY, CC0180A := OTHR_TYP_ENTTY and IS_PRTCTN_PRVDR, CC0182 := SPFUND]
+		[keep CC0180, CC0180A, CC0182];
+dsPrep.OVR_1_DBTR_ALL_DFLTD :=
+	dsPrep.OVR_1_DBTR_DFLTS
+		[filter
+				TTL_NMBR_DBTRS = TTL_NMBR_DFLT_DBTRS
+		];
+comp_cred.ATTRBTS_FLL :=
+	nvl(comp_cred.ATTRBTS_FLL_CD0170_DS, false);
+comp_count.CC014 :=
+	comp_count.CC0140C
+		[calc CC0140A := OTHR_TYP_ENTTY and TRD_RCVBL_NN_RCRS, CC0141 := FRGN_BRNCH and not TRD_RCVBL_NN_RCRS, CC0141A := FRGN_BRNCH and TRD_RCVBL_NN_RCRS, CC0142 := SPFUND and not TRD_RCVBL_NN_RCRS, CC0142A := SPFUND and TRD_RCVBL_NN_RCRS]
+		[keep CC0140, CC0140A, CC0140B, CC0140C, CC0141, CC0141A, CC0142, CC0142A];
+IG0070 <-
+	check(dsPrep.OVR_1_DBTR_ALL_DFLTD#DFLT_STTS <> "14" errorcode "IG0070" errorlevel 1 invalid);
+comp_cred.INSTRMNT_CHCK :=
+	inner_join(
+		ANCRDT_INSTRMNT_C,
+		comp_cred.ATTRBTS_FLL
+		);
+comp_cred.ENTTY_DFLT_CHK :=
+	inner_join(
+		comp_cred.ENTTY_DFLT_INSTRMNT,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0060, CD0030, CD0039, CD0040] as B
+		);
+comp_cred.FNNCL_CHCK :=
+	inner_join(
+		ANCRDT_FNNCL_C,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0060, CD0020, CD0030] as B
+		);
+comp_cred.ACCNTNG_CHCK :=
+	inner_join(
+		ANCRDT_ACCNTNG_C,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0039, CD0030, CD0040, CD0041, CD0050, CD0060] as B
+		);
+comp_cred.INSTRMNT_PRTCTN_RCVD_CHK :=
+	inner_join(
+		ANCRDT_INSTRMNT_PRTCTN_RCVD_C,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0060] as B
+		);
+comp_cred.JNT_LBLTS_CHK :=
+	inner_join(
+		ANCRDT_JNT_LBLTS_C,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0060] as B
+		);
+comp_cred.PRTCTN_RCVD_CHK :=
+	inner_join(
+		comp_cred.PRTCN_INSTRMNT,
+		comp_cred.ATTRBTS_FLL
+		[keep CD0060, CD0050] as B
+		);
+comp_cred.ATTRBTS_ENTTY :=
+	max(comp_cred.ATTRBTS_FLL group by DT_RFRNC, OBSRVD_AGNT_CD);
+comp_count.VLDTN_CNDTNS :=
+	left_join(
+		comp_count.CC0010_CC0020,
+		comp_count.CC010,
+		comp_count.CC011,
+		comp_count.CC012,
+		comp_count.CC013,
+		comp_count.CC014,
+		comp_count.CC015,
+		comp_count.CC016,
+		comp_count.CC017,
+		comp_count.CC018,
+		comp_count.CC019,
+		comp_count.CC020
+		);
+INSTRMNT_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.INSTRMNT_CHCK,
+	completenessInstrument
+
+);
+ENTTY_DFLT_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.ENTTY_DFLT_CHK,
+	completenessEntityDefault
+
+);
+FNNCL_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.FNNCL_CHCK,
+	completenessFinancial
+
+);
+ACCNTNG_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.ACCNTNG_CHCK,
+	completenessAccounting
+
+);
+INSTRMNT_PRTCTN_RCVD_CMPLNTNSS <-
+	check_datapoint(
+	comp_cred.INSTRMNT_PRTCTN_RCVD_CHK,
+	completenessInstrumentProtection
+
+);
+JNT_LBLTS_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.JNT_LBLTS_CHK,
+	completenessJointLiability
+
+);
+PRTCTN_RCVD_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.PRTCTN_RCVD_CHK,
+	completenessProtection
+
+);
+comp_cred.ENTTY_RSK_CHK :=
+	inner_join(
+		ANCRDT_ENTTY_RSK_C,
+		comp_cred.ATTRBTS_ENTTY
+		[keep CD0030, CD0039, CD0040, CD0060, CD0170] as B
+		);
+comp_count.VLDTN_CNDTNS_FLL :=
+	nvl(comp_count.VLDTN_CNDTNS, false);
+ENTTY_RSK_CMPLTNSS <-
+	check_datapoint(
+	comp_cred.ENTTY_RSK_CHK,
+	completenessEntityRisk
+
+);
+comp_count.ENTTY_VLDTN :=
+	inner_join(
+		ANCRDT_ENTTY,
+		comp_count.VLDTN_CNDTNS_FLL
+		);
+CNTRPRTY_CMPLTNSS <-
+	check_datapoint(
+	comp_count.ENTTY_VLDTN,
+	completenessCounterparties
+
+);
