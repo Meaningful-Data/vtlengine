@@ -143,7 +143,7 @@ def validate_dataset(
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
     """
-    datasets, scalars, _ = load_datasets_with_data(data_structures, datapoints, scalar_values)
+    load_datasets_with_data(data_structures, datapoints, scalar_values)
 
 
 def semantic_analysis(
