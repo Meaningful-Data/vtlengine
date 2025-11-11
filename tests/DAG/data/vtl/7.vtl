@@ -1,0 +1,504 @@
+define hierarchical ruleset accountingEntryQ(variable rule ACCOUNTING_ENTRY) is
+	N = A - L
+	errorcode "Net (assets-liabilities) [Accounting_Entry rule 'N = A - L']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset areasQ(variable rule COUNTERPART_AREA) is
+	W1 = I8 + J8
+	errorcode "Rest of the world [COUNTERPART_AREA rule 'W1 = I8 + J8']"
+	errorlevel 4;
+
+	W1 = B5 + D5
+	errorcode "Rest of the world [COUNTERPART_AREA rule 'W1 = B5 + D5']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset functionalCategory(variable rule FUNCTIONAL_CAT) is
+	D = D1 + D2 + D3
+	errorcode "Func1 [FUNCTIONAL_CAT rule 'D=D1+D2+D3']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset instrAssetQ(variable rule INSTR_ASSET) is
+	F = F11 + F12 + FK + FR2
+	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F = F11 + F12 + FK + FR2']"
+	errorlevel 4;
+
+	F11 = F11A + F11B
+	errorcode "Monetary gold [INSTR_ASSET rule 'F11 = F11A + F11B']"
+	errorlevel 4;
+
+	F5 = F51 + F52
+	errorcode "Equity and investment fund shares/units [INSTR_ASSET rule 'F5 = F51 + F52']"
+	errorlevel 4;
+
+	FR1 = F3 + F5
+	errorcode "Securities (Equity, investment fund shares/units and debt securities) [INSTR_ASSET rule 'FR1 = F3 + F5']"
+	errorlevel 4;
+
+	FR2 = F2 + FR1 + F71 + FR41
+	errorcode "Other reserve assets .currency, deposits, securities, financial derivatives and other claims [INSTR_ASSET rule 'FR2 = F2 + FR1 + F71 + FR41']"
+	errorlevel 4;
+
+	F = F519 + F2 + F4 + F6 + F81 + F89
+	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F = F519 + F2 + F4 + F6 + F81 + F89']"
+	errorlevel 4;
+
+	F51 = F511 + F512 + F519
+	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F51 = F511 + F512 + F519']"
+	errorlevel 4;
+
+	F5 = F5A + F5B
+	errorcode "Total financial assets/liabilities (reserve assets) [INSTR_ASSET rule 'F5 = F5A + F5B']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset intAccItemQ(variable rule INT_ACC_ITEM) is
+	CA = G + S + IN1 + IN2
+	errorcode "Current account [INT_ACC_ITEM rule 'CA = G + S + IN1 + IN2']"
+	errorlevel 4;
+
+	D4P = D4S + D4Q
+	errorcode "Income: Investment income [INT_ACC_ITEM rule 'D4P = D4S + D4Q']"
+	errorlevel 4;
+
+	D4P = D4S + D41 + D44P
+	errorcode "Income: Investment income [INT_ACC_ITEM rule 'D4P = D4S + D41 + D44P']"
+	errorlevel 4;
+
+	GS = G + S
+	errorcode " [INT_ACC_ITEM rule 'GS=G+S']"
+	errorlevel 4;
+
+	IN1 = D1 + D4P + D4O
+	errorcode "Primary income [INT_ACC_ITEM rule 'IN1 = D1 + D4P + D4O']"
+	errorlevel 4;
+
+	D2 = D21 + D29
+	errorcode "Primary income [INT_ACC_ITEM rule 'D2 = D21 + D29']"
+	errorlevel 4;
+
+	D3 = D31 + D39
+	errorcode "Primary income [INT_ACC_ITEM rule 'D3 = D31 + D39']"
+	errorlevel 4;
+
+	D4O = D2 + D3 + D45
+	errorcode "Primary income [INT_ACC_ITEM rule 'D4O = D2 + D3 + D45']"
+	errorlevel 4;
+
+	D4S = D42S + D43S
+	errorcode "Primary income [INT_ACC_ITEM rule 'D4S = D42S + D43S']"
+	errorlevel 4;
+
+	D443 = D4431 + D4432
+	errorcode "Primary income [INT_ACC_ITEM rule 'D443 = D4431 + D4432']"
+	errorlevel 4;
+
+	D9 = D91 + D92 + D99
+	errorcode "Primary income [INT_ACC_ITEM rule 'D9 = D91 +D92 + D99']"
+	errorlevel 4;
+
+	G = G1 + G2 + G3 + G4EU
+	errorcode "Primary income [INT_ACC_ITEM rule 'G = G1 + G2 + G3 + G4EU']"
+	errorlevel 4;
+
+	G2 = G21 + G22
+	errorcode "Primary income [INT_ACC_ITEM rule 'G2 = G21 + G22']"
+	errorlevel 4;
+
+	IN2 = D5 + D61 + D71 + D72 + D74 + D75 + D76 + D8
+	errorcode "Primary income [INT_ACC_ITEM rule 'IN2 = D5 + D61 + D71 + D72 + D74 + D75 + D76 + D8']"
+	errorlevel 4;
+
+	KA = NP + D9
+	errorcode "Primary income [INT_ACC_ITEM rule 'KA = NP + D9']"
+	errorlevel 4;
+
+	S = SA + SB + SC + SD + SE + SF + SG + SH + SI + SJ + SK + SL + SN
+	errorcode "Primary income [INT_ACC_ITEM rule 'S = SA + SB + SC + SD + SE + SF + SG + SH + SI + SJ + SK + SL + SN']"
+	errorlevel 4;
+
+	SG = SG1 + SG2
+	errorcode "Primary income [INT_ACC_ITEM rule 'SG = SG1 + SG2']"
+	errorlevel 4;
+
+	SJ = SJ1 + SJ2 + SJ3
+	errorcode "Primary income [INT_ACC_ITEM rule 'SJ = SJ1 + SJ2 + SJ3']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset maturity(variable rule MATURITY) is
+	T = S + L
+	errorcode "All original maturities [MATURITY rule 'T = S + L']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset sectorsHierarchyQ(variable rule COUNTERPART_SECTOR) is
+	S1 = S121 + S12T + S13 + S1P
+	errorcode "total economy [COUNTERPART_SECTOR rule 'S1 = S121 + S12T + S13 + S1P']"
+	errorlevel 4;
+
+	S12T = S122 + S123
+	errorcode "Monetary financial institutions other than central bank [COUNTERPART_SECTOR rule 'S12T = S122 + S123']"
+	errorlevel 4;
+
+	S1P = S12M + S1V
+	errorcode "Other sectors than MFIs and general government [COUNTERPART_SECTOR rule 'S1P = S12M + S1V']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define hierarchical ruleset sectorsHierarchyQ2(variable rule REF_SECTOR) is
+	S1 = S121 + S12T + S13 + S1P
+	errorcode "total economy [REFERENCE_SECTOR rule 'S1 = S121 + S12T + S13 + S1P']"
+	errorlevel 4;
+
+	S1 = S13 + S1W
+	errorcode "total economy [REFERENCE_SECTOR rule 'S1 = S13 + S1W']"
+	errorlevel 4;
+
+	S12T = S122 + S123
+	errorcode "Monetary financial institutions other than central bank [REFERENCE_SECTOR rule 'S12T = S122 + S123']"
+	errorlevel 4;
+
+	S1P = S12M + S1V
+	errorcode "Other sectors than MFIs and general government [REFERENCE_SECTOR rule 'S1P = S12M + S1V']"
+	errorlevel 4
+end hierarchical ruleset;
+
+define datapoint ruleset signValidation(variable ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+		sign1c:
+			when
+				AE = "C" and IAI = "G"
+			then
+				O > 0
+			errorcode  "sign1c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = G then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign2c:
+			when
+				AE = "C" and IAI = "GA"
+			then
+				O > 0
+			errorcode  "sign2c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = GA then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign3c:
+			when
+				AE = "C" and IAI = "S"
+			then
+				O > 0
+			errorcode  "sign3c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = S then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign4c:
+			when
+				AE = "C" and IAI = "IN1"
+			then
+				O > 0
+			errorcode  "sign4c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN1 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign5c:
+			when
+				AE = "C" and IAI = "IN2"
+			then
+				O > 0
+			errorcode  "sign5c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = IN2 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign6c:
+			when
+				AE = "C" and IAI = "D1"
+			then
+				O > 0
+			errorcode  "sign6c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D1 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign7c:
+			when
+				AE = "C" and IAI = "KA"
+			then
+				O > 0
+			errorcode  "sign7c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = KA then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign8c:
+			when
+				AE = "C" and IAI = "D4P"
+			then
+				O > 0
+			errorcode  "sign8c [Sign rule ' when ACCOUNTING_ENTRY = C and INT_ACC_ITEM = D4P then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign1d:
+			when
+				AE = "D" and IAI = "G"
+			then
+				O > 0
+			errorcode  "sign1d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = G then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign2d:
+			when
+				AE = "D" and IAI = "GA"
+			then
+				O > 0
+			errorcode  "sign2d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = GA then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign3d:
+			when
+				AE = "D" and IAI = "S"
+			then
+				O > 0
+			errorcode  "sign3d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = S then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign4d:
+			when
+				AE = "D" and IAI = "IN1"
+			then
+				O > 0
+			errorcode  "sign4d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN1 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign5d:
+			when
+				AE = "D" and IAI = "IN2"
+			then
+				O > 0
+			errorcode  "sign5d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = IN2 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign6d:
+			when
+				AE = "D" and IAI = "D1"
+			then
+				O > 0
+			errorcode  "sign6d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D1 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign7d:
+			when
+				AE = "D" and IAI = "KA"
+			then
+				O > 0
+			errorcode  "sign7d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = KA then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign8d:
+			when
+				AE = "D" and IAI = "D4P"
+			then
+				O > 0
+			errorcode  "sign8d [Sign rule ' when ACCOUNTING_ENTRY = D and INT_ACC_ITEM = D4P then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign9:
+			when
+				IAI = "D4Q" and FC = "D" and IA = "FL"
+			then
+				O > 0
+			errorcode  "sign9 [Sign rule ' when INT_ACC_ITEM = D4Q and FUNCTIONAL_CAT = D and  INSTR_ASSET = FL then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign10:
+			when
+				IAI = "D4S" and FC = "P" and IA = "F"
+			then
+				O > 0
+			errorcode  "sign10 [Sign rule ' when INT_ACC_ITEM = D4S and FUNCTIONAL_CAT = P and  INSTR_ASSET = F then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign11:
+			when
+				IAI = "D41" and FC = "P" and IA = "F3"
+			then
+				O > 0
+			errorcode  "sign11 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = P and  INSTR_ASSET = F3 then OBS_VALUE > 0']"
+			errorlevel 4;
+
+		sign12:
+			when
+				IAI = "D41" and FC = "O" and IA = "FLA"
+			then
+				O > 0
+			errorcode  "sign12 [Sign rule ' when INT_ACC_ITEM = D41 and FUNCTIONAL_CAT = O and  INSTR_ASSET = FLA then OBS_VALUE > 0']"
+			errorlevel 4
+end datapoint ruleset;
+
+define datapoint ruleset zeroValidation(variable COUNTERPART_AREA as CA, REF_SECTOR as RS, COUNTERPART_SECTOR as CS, FLOW_STOCK_ENTRY as FSE, ACCOUNTING_ENTRY as AE, INT_ACC_ITEM as IAI, FUNCTIONAL_CAT as FC, INSTR_ASSET as IA, OBS_VALUE as O) is
+		EQ0_1:
+			when
+				CA = "I8" and RS = "S1" and CS = "S121" and FSE = "T" and AE = "A" and IAI = "FA" and FC = "P" and IA = "F3"
+			then
+				O = 0
+			errorcode  "EQ0_1 [Zero Validation rule ' when COUNTERPART_AREA = I8 and REF_SECTOR = S1 and COUNTERPART_SECTOR = S121 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = A and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']"
+			errorlevel 4;
+
+		EQ0_2:
+			when
+				CA = "W1" and RS = "S121" and CS = "S1" and FSE = "T" and AE = "L" and IAI = "FA" and FC = "P" and IA = "F3"
+			then
+				O = 0
+			errorcode  "EQ0_2  [Zero Validation rule ' when COUNTERPART_AREA = W1 and REF_SECTOR = S121 and COUNTERPART_SECTOR = S1 and FLOW_STOCK_ENTRY = T and ACCOUNTING_ENTRY = L and INT_ACC_ITEM = FA  and FUNCTIONAL_CAT = P  and INSTR_ASSET = F3 then OBS_VALUE = 0']"
+			errorlevel 4
+end datapoint ruleset;
+
+define operator filRoundEr(ds dataset, comp component, margin number)
+	returns dataset is
+		ds
+		[filter
+				comp > margin or
+					comp < -margin
+		]
+end operator;
+
+BOP_Q_VAL.bopObs :=
+	BOP
+		[keep OBS_VALUE];
+BOP_Q_VAL.functionalCategoryValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		functionalCategory
+		rule FUNCTIONAL_CAT);
+BOP_Q_VAL.accountingEntryValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		accountingEntryQ
+		rule ACCOUNTING_ENTRY);
+BOP_Q_VAL.intAccItemValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		intAccItemQ
+		rule INT_ACC_ITEM);
+BOP_Q_VAL.instrAssetValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		instrAssetQ
+		rule INSTR_ASSET);
+BOP_Q_VAL.counterpartSectorValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		sectorsHierarchyQ
+		rule COUNTERPART_SECTOR);
+BOP_Q_VAL.refSectorValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		sectorsHierarchyQ2
+		rule REF_SECTOR);
+BOP_Q_VAL.counterpartAreaValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		areasQ
+		rule COUNTERPART_AREA);
+BOP_Q_VAL.maturityValQ :=
+	check_hierarchy(
+		BOP_Q_VAL.bopObs,
+		maturity
+		rule MATURITY);
+BOP_Q_VAL.signVal :=
+	check_datapoint(
+	BOP_Q_VAL.bopObs,
+	signValidation
+
+);
+BOP_Q_VAL.notZero :=
+	check_datapoint(
+	BOP_Q_VAL.bopObs,
+	zeroValidation
+
+);
+BOP_Q_VAL.IAI_1 :=
+	check(BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] = BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4Q", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"] errorcode "IAI_1 - Rule [ INT_ACC_ITEM = D4P, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = D4S, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = D4Q, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4P", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] - (BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "D4Q", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"]) invalid);
+BOP_Q_VAL.IAI_2 :=
+	check(BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] = BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"] errorcode "IAI_2 - Rule [INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F"] - (BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5"] + BOP_Q_VAL.bopObs
+		[sub INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "FL"]) invalid);
+BOP_Q_VAL.IAI_3 :=
+	check(BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] = BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] errorcode "IAI_2 - Rule [INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F = (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=F5) + (INT_ACC_ITEM = FA, FUNCTIONAL_CAT= D, INSTR_ASSET=FL)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D43S", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] - BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "D", INSTR_ASSET = "F5B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"] invalid);
+BOP_Q_VAL.left :=
+	BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", REF_SECTOR = "S1", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "C", INT_ACC_ITEM = "D4432", FUNCTIONAL_CAT = "P", INSTR_ASSET = "F52", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "_X", COMP_METHOD = "N"];
+BOP_Q_VAL.right_selection :=
+	BOP_Q_VAL.bopObs
+		[sub FREQ = "Q", ADJUSTMENT = "N", COUNTERPART_SECTOR = "S1", FLOW_STOCK_ENTRY = "T", ACCOUNTING_ENTRY = "A", INT_ACC_ITEM = "FA", FUNCTIONAL_CAT = "P", INSTR_ASSET = "F52B", MATURITY = "_Z", CURRENCY_DENOM = "_T", VALUATION = "M", COMP_METHOD = "N"];
+BOP_Q_VAL.bopObs_t_1 :=
+	timeshift(BOP_Q_VAL.bopObs, 1);
+BOP_Q_VAL.BAL :=
+	check(BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] = BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] - BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"] errorcode "BAL - Rule [ (ACCOUNTING_ENTRY = N, INT_ACC_ITEM = EO) = (ACCOUNTING_ENTRY = N, INT_ACC_ITEM = FA) - (ACCOUNTING_ENTRY = B, INT_ACC_ITEM = CKA)]" errorlevel 3 imbalance BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "EO"] - (BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "N", INT_ACC_ITEM = "FA"] - BOP_Q_VAL.bopObs
+		[sub ACCOUNTING_ENTRY = "B", INT_ACC_ITEM = "CKA"]) invalid);
+BOP_Q_VAL.valResult :=
+	union(BOP_Q_VAL.functionalCategoryValQ, BOP_Q_VAL.accountingEntryValQ, BOP_Q_VAL.intAccItemValQ, BOP_Q_VAL.instrAssetValQ, BOP_Q_VAL.counterpartSectorValQ, BOP_Q_VAL.refSectorValQ, BOP_Q_VAL.counterpartAreaValQ, BOP_Q_VAL.maturityValQ);
+BOP_Q_VAL.IAI_1_round :=
+	BOP_Q_VAL.IAI_1
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
+BOP_Q_VAL.IAI_2_round :=
+	BOP_Q_VAL.IAI_2
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
+BOP_Q_VAL.IAI_3_round :=
+	BOP_Q_VAL.IAI_3
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
+BOP_Q_VAL.right :=
+	sum(
+		BOP_Q_VAL.right_selection group except REF_SECTOR
+		);
+BOP_Q_VAL.REC :=
+	check(BOP_Q_VAL.bopObs
+		[sub FLOW_STOCK_ENTRY = "LE"] = BOP_Q_VAL.bopObs_t_1
+		[sub FLOW_STOCK_ENTRY = "LE"] + BOP_Q_VAL.bopObs
+		[sub FLOW_STOCK_ENTRY = "T"] + BOP_Q_VAL.bopObs
+		[sub FLOW_STOCK_ENTRY = "K7B"] + BOP_Q_VAL.bopObs
+		[sub FLOW_STOCK_ENTRY = "K7A"] + BOP_Q_VAL.bopObs
+		[sub FLOW_STOCK_ENTRY = "KA"] all);
+BOP_Q_VAL.BAL_round :=
+	BOP_Q_VAL.BAL
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
+BOP_Q_VAL.valResult_round :=
+	filRoundEr(BOP_Q_VAL.valResult, 'imbalance', 4);
+BOP_Q_VAL.FUNC :=
+	check(BOP_Q_VAL.left = BOP_Q_VAL.right all);
+BOP_Q_VAL.REC_round :=
+	BOP_Q_VAL.REC
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
+BOP_Q_VAL.FUNC1_round :=
+	BOP_Q_VAL.FUNC
+		[filter
+				'imbalance' > 4 or
+					'imbalance' < -4
+		];
