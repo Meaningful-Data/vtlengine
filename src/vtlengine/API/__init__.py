@@ -1,4 +1,3 @@
-import json
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -16,16 +15,13 @@ from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
     _return_only_persistent_datasets,
-    _validate_json,
     ast_to_sdmx,
-    external_routine_schema,
     load_datasets,
     load_datasets_with_data,
     load_external_routines,
     load_value_domains,
     load_vtl,
     to_vtl_json,
-    vd_schema,
 )
 from vtlengine.AST import Start
 from vtlengine.AST.ASTConstructor import ASTVisitor
@@ -39,7 +35,7 @@ from vtlengine.files.output._time_period_representation import (
     format_time_period_external_representation,
 )
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, ExternalRoutine, Scalar
+from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
 
@@ -150,26 +146,7 @@ def validate_value_domain(
         Exception: If the input file is invalid, does not exist,
                    or the JSON content does not follow the schema.
     """
-    if isinstance(input, dict):
-        _validate_json(input, vd_schema)
-    elif isinstance(input, list):
-        for item in input:
-            validate_value_domain(item)
-        return
-    elif isinstance(input, Path):
-        if not input.exists():
-            raise Exception(f"Value Domain file not found: {input}")
-        if input.is_dir():
-            for f in input.iterdir():
-                if f.suffix == ".json":
-                    validate_value_domain(f)
-            return
-        if input.suffix != ".json":
-            raise Exception("Invalid file type for Value Domain. Must be .json")
-
-        with input.open("r", encoding="utf-8") as f:  # type: ignore[assignment]
-            data = json.load(f)  # type: ignore[arg-type]
-            _validate_json(data, vd_schema)
+    load_value_domains(input)
 
 
 def validate_external_routine(
@@ -185,29 +162,7 @@ def validate_external_routine(
         Exception: If JSON schema validation fails,
                    SQL syntax is invalid, or file type is wrong.
     """
-    if isinstance(input, dict):
-        _validate_json(input, external_routine_schema)
-        ExternalRoutine.from_sql_query(input["name"], input["query"])
-        return
-    elif isinstance(input, list):
-        for item in input:
-            validate_external_routine(item)
-        return
-    elif isinstance(input, Path):
-        if not input.exists():
-            raise Exception(f"External Routine file not found: {input}")
-        if input.is_dir():
-            for f in input.iterdir():
-                if f.suffix == ".json":
-                    validate_external_routine(f)
-            return
-        if input.suffix != ".json":
-            raise Exception("Invalid file type for External Routine. Must be .json")
-        else:
-            with open(input, "r", encoding="utf-8") as f:  # type: ignore[assignment]
-                data = json.load(f)  # type: ignore[arg-type]
-                _validate_json(data, external_routine_schema)
-                ExternalRoutine.from_sql_query(data["name"], data["query"])
+    load_external_routines(input)
 
 
 def semantic_analysis(
@@ -273,11 +228,9 @@ def semantic_analysis(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        validate_value_domain(value_domains)
         vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        validate_external_routine(external_routines)
         ext_routines = load_external_routines(external_routines)
 
     # Running the interpreter
@@ -407,11 +360,9 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        validate_value_domain(value_domains)
         vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        validate_external_routine(external_routines)
         ext_routines = load_external_routines(external_routines)
 
     # Checking time period output format value
