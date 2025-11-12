@@ -1,0 +1,41 @@
+{
+    "insertion": {
+        "1": [
+            "DSD_AGR"
+        ],
+        "3": [
+            "DSD_POP"
+        ]
+    },
+    "deletion": {
+        "1": [
+            "DS_check_agr"
+        ],
+        "2": [
+            "DS_check_countries"
+        ],
+        "5": [
+            "derivation.agriculture_arranged",
+            "derivation.population_arranged"
+        ],
+        "6": [
+            "derivation.new_ratio",
+            "final_dataset"
+        ],
+        "4": [
+            "DSD_AGR"
+        ],
+        "3": [
+            "DSD_POP"
+        ]
+    },
+    "global_inputs": [
+        "DSD_AGR",
+        "DSD_POP"
+    ],
+    "persistent": [
+        "DS_check_agr",
+        "DS_check_countries",
+        "final_dataset"
+    ]
+}
