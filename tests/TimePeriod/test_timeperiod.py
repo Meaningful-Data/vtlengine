@@ -13,7 +13,6 @@ from vtlengine.Operators.Time import Time
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
-
 ds_param = [
     ("1", 'DS_r := DSD_EXR[filter TIME_PERIOD = cast("2002M1", time_period)];'),
     ("2", 'DS_r := DSD_EXR[filter TIME_PERIOD <> cast("2002Q1", time_period)];'),
@@ -46,12 +45,13 @@ ds_param = [
     ("GL_462_2", "added := demo_data_structure; DS_r := added+ ds_2;"),
     ("GL_462_3", "sc_result := sc_1;"),
     ("GL_462_4", "DS_r := ds_2;"),
+    ("GL_563_1",
+     """ds_with_year  := DSD_AN_HOUSE_PRICES[calc identifier year_id  := cast(time_agg("A", TIME_PERIOD), string)]; ds_with_year2 := ds_with_year[calc identifier year_id2 := cast(time_agg("A", TIME_PERIOD), string)];"""),
 ]
 
 error_param = [
     ("GL_440_2", "DS_r := DS_1;", "0-1-1-12"),
-]
-
+] \
 
 @pytest.mark.parametrize("code, expression", ds_param)
 def test_case_ds(load_input, load_reference, code, expression):
