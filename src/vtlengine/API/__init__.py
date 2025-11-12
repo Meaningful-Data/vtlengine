@@ -133,6 +133,19 @@ def create_ast(text: str) -> Start:
     return ast
 
 
+def validate_dataset(
+    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    datapoints: Optional[
+        Union[Dict[str, pd.DataFrame], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
+    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+) -> None:
+    """
+    Validate that datasets can be loaded from the given data_structures and optional datapoints.
+    """
+    load_datasets_with_data(data_structures, datapoints, scalar_values)
+
+
 def validate_value_domain(
     input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
 ) -> None:

@@ -115,21 +115,31 @@ class ASTString(ASTTemplate):
 
     # ---------------------- Rulesets ----------------------
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
-        signature = f"{node.signature_type} rule {node.element.value}"
+        if isinstance(node.element, list):
+            sep = nl + tab if self.pretty else " "
+            conditons = ", ".join([str(e.value) for e in node.element[:-1]])
+            signature = (
+                f"{sep}{node.signature_type}{sep}"
+                f"condition {conditons}{sep}rule {node.element[-1].value}"
+            )
+        else:
+            signature = f"{node.signature_type} rule {node.element.value}"
+
+        rules_strs = []
         if self.pretty:
             self.vtl_script += f"define hierarchical ruleset {node.name}({signature}) is{nl}"
-            for i, rule in enumerate(node.rules):
-                self.vtl_script += f"{tab}{self.visit(rule)}{nl}"
+            for _i, rule in enumerate(node.rules):
+                rule_str = f"{tab}{self.visit(rule)}"
                 if rule.erCode:
-                    self.vtl_script += f"{tab}errorcode {_handle_literal(rule.erCode)}{nl}"
+                    rule_str += f"{nl}{tab}errorcode {_handle_literal(rule.erCode)}"
                 if rule.erLevel:
-                    self.vtl_script += f"{tab}errorlevel {rule.erLevel}"
-                    if i != len(node.rules) - 1:
-                        self.vtl_script += f";{nl}"
-                    self.vtl_script += nl
+                    rule_str += f"{nl}{tab}errorlevel {rule.erLevel}"
+                rules_strs.append(rule_str)
+            rules_sep = f";{nl * 2}" if len(rules_strs) > 1 else ""
+            rules = rules_sep.join(rules_strs)
+            self.vtl_script += rules + nl
             self.vtl_script += f"end hierarchical ruleset;{nl}"
         else:
-            rules_strs = []
             for rule in node.rules:
                 rule_str = self.visit(rule)
                 if rule.erCode:
@@ -148,6 +158,8 @@ class ASTString(ASTTemplate):
         vtl_script = ""
         if node.name is not None:
             vtl_script += f"{node.name}: "
+        if self.pretty and node.rule.op == "when":
+            vtl_script += nl
         vtl_script += f"{self.visit(node.rule)}"
         return vtl_script
 
@@ -312,13 +324,24 @@ class ASTString(ASTTemplate):
                 f"{node.op}({self.visit(node.children[0])}, "
                 f"{params_sep.join([self.visit(x) for x in node.params])})"
             )
+
         elif node.op in (CHECK_HIERARCHY, HIERARCHY):
             operand = self.visit(node.children[0])
             component_name = self.visit(node.children[1])
             rule_name = self.visit(node.children[2])
+
             param_mode_value = node.params[0].value
             param_input_value = node.params[1].value
             param_output_value = node.params[2].value
+
+            condition_str = ""
+            if len(node.children) > 3:
+                condition_str += "condition "
+                conditions = []
+                for condition in node.children[3:]:
+                    conditions.append(self.visit(condition))
+                condition_str += ", ".join(conditions)
+                condition_str += f"{nl}{tab * 2}" if self.pretty else " "
 
             default_value_input = "dataset" if node.op == CHECK_HIERARCHY else "rule"
             default_value_output = "invalid" if node.op == CHECK_HIERARCHY else "computed"
@@ -332,13 +355,14 @@ class ASTString(ASTTemplate):
             )
             if self.pretty:
                 return (
-                    f"{node.op}({nl}{tab * 2}{operand},{nl}{tab * 2}{rule_name}{nl}{tab * 2}rule "
+                    f"{node.op}({nl}{tab * 2}{operand},"
+                    f"{nl}{tab * 2}{rule_name}{nl}{tab * 2}{condition_str}rule "
                     f"{component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
             else:
                 return (
-                    f"{node.op}({operand}, {rule_name} rule {component_name}"
+                    f"{node.op}({operand}, {rule_name} {condition_str}rule {component_name}"
                     f"{param_mode}{param_input}{param_output})"
                 )
 
