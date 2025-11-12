@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
 from vtlengine import AST
-from vtlengine.AST import Comment, DPRuleset, HRuleset, Operator, TimeAggregation
+from vtlengine.AST import Comment, DPRuleset, HRuleset, Operator, TimeAggregation, Assignment, PersistentAssignment
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.tokens import (
@@ -103,11 +103,8 @@ class ASTString(ASTTemplate):
         return self.vtl_script
 
     def visit_Start(self, node: AST.Start) -> Any:
-        transformations = [
-            x for x in node.children if not isinstance(x, (HRuleset, DPRuleset, Operator, Comment))
-        ]
         for child in node.children:
-            if child in transformations:
+            if isinstance(child, (Assignment, PersistentAssignment)):
                 self.is_first_assignment = True
             self.visit(child)
             self.vtl_script += "\n"
