@@ -194,18 +194,22 @@ class DAGAnalyzer(ASTTemplate):
     def loadEdges(self):
         """ """
         if len(self.vertex) != 0:
-            countEdges = 0
-            # For each vertex
+            count_edges = 0
+            # Build a mapping of datasets to their statement keys
+            ref_to_keys = {}
             for key, statement in self.dependencies.items():
-                outputs = statement[OUTPUTS]
-                persistent = statement[PERSISTENT]
-                reference = outputs + persistent
-                for subKey, subStatement in self.dependencies.items():
-                    subInputs = subStatement[INPUTS]
-                    candidates = subInputs
-                    if candidates and reference[0] in candidates:
-                        self.edges[countEdges] = (key, subKey)
-                        countEdges += 1
+                reference = statement[OUTPUTS] + statement[PERSISTENT]
+                if reference:
+                    ref_value = reference[0]
+                    ref_to_keys[ref_value] = key
+
+            # Create edges by checking inputs against the mapping
+            for subKey, subStatement in self.dependencies.items():
+                for input_val in subStatement[INPUTS]:
+                    if input_val in ref_to_keys:
+                        key = ref_to_keys[input_val]
+                        self.edges[count_edges] = (key, subKey)
+                        count_edges += 1
 
     def nx_topologicalSort(self):
         """ """
