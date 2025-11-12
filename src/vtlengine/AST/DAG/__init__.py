@@ -19,6 +19,7 @@ from vtlengine.AST import (
     Analytic,
     Assignment,
     BinOp,
+    Constant,
     DefIdentifier,
     DPRuleset,
     HRuleset,
@@ -29,12 +30,14 @@ from vtlengine.AST import (
     PersistentAssignment,
     RegularAggregation,
     Start,
+    UDOCall,
     VarID,
 )
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG._words import DELETE, GLOBAL, INPUTS, INSERT, OUTPUTS, PERSISTENT, UNKNOWN
 from vtlengine.AST.Grammar.tokens import AS, DROP, KEEP, MEMBERSHIP, RENAME, TO
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component
 
 
 @dataclass
@@ -387,6 +390,16 @@ class DAGAnalyzer(ASTTemplate):
     def visit_JoinOp(self, node: JoinOp) -> None:
         for clause in node.clauses:
             self.visit(clause)
+
+    def visit_UDOCall(self, node: UDOCall) -> None:
+        node_args = (self.udos or {}).get(node.op)
+        if not node_args:
+            super().visit_UDOCall(node)
+        else:
+            node_sig = [type(p.type_) for p in node_args.parameters]
+            for sig, param in zip(node_sig, node.params):
+                if not isinstance(param, Constant) and sig is not Component:
+                    self.visit(param)
 
 
 class HRDAGAnalyzer(DAGAnalyzer):
