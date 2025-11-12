@@ -133,11 +133,45 @@ def create_ast(text: str) -> Start:
     return ast
 
 
+def validate_value_domain(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate ValueDomain(s) using JSON Schema.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing value domain definitions.
+
+    Raises:
+        Exception: If the input file is invalid, does not exist,
+                   or the JSON content does not follow the schema.
+    """
+    load_value_domains(input)
+
+
+def validate_external_routine(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> None:
+    """
+    Validate External Routine(s) using JSON Schema and SQLGlot.
+
+    Args:
+        input: Dict, Path, or List of Dict/Path objects representing external routines.
+
+    Raises:
+        Exception: If JSON schema validation fails,
+                   SQL syntax is invalid, or file type is wrong.
+    """
+    load_external_routines(input)
+
+
 def semantic_analysis(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    value_domains: Optional[Union[Dict[str, Any], Path]] = None,
-    external_routines: Optional[Union[Dict[str, Any], Path]] = None,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    external_routines: Optional[
+        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
+    ] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -167,13 +201,13 @@ def semantic_analysis(
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines SQL files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
     Returns:
         The computed datasets.
@@ -274,19 +308,23 @@ def run(
 
         data_structures: Dict, Path or a List of Dicts or Paths with the data structures.
 
-        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data.
+        datapoints: Dict, Path, S3 URI or List of S3 URIs or Paths with data. \
+        You can also use a custom name for the dataset by passing a dictionary with \
+        the dataset name as key and the Path, S3 URI or DataFrame as value. \
+        Check the following example: \
+        :ref:`Example 6 <example_6_run_using_paths>`.
 
         value_domains: Dict or Path, or List of Dicts or Paths of the \
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \
@@ -322,20 +360,10 @@ def run(
     # Handling of library items
     vd = None
     if value_domains is not None:
-        if isinstance(value_domains, list):
-            vd = {}
-            for item in value_domains:
-                vd.update(load_value_domains(item))
-        else:
-            vd = load_value_domains(value_domains)
+        vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
-        if isinstance(external_routines, list):
-            ext_routines = {}
-            for item in external_routines:
-                ext_routines.update(load_external_routines(item))
-        else:
-            ext_routines = load_external_routines(external_routines)
+        ext_routines = load_external_routines(external_routines)
 
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
@@ -423,13 +451,13 @@ def run_sdmx(  # noqa: C901
         value domains JSON files. (default:None) It is passed as an object, that can be read from \
         a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         external_routines: String or Path, or List of Strings or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
         Check the following example: \
-        :ref:`Example 6 <example_6_run_with_multiple_value_domains_and_external_routines>`.
+        :ref:`Example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
 
         time_period_output_format: String with the possible values \
         ("sdmx_gregorian", "sdmx_reporting", "vtl") for the representation of the \

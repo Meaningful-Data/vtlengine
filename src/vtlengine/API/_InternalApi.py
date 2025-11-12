@@ -157,13 +157,25 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]]],
+    datapoints: Union[Path, str, List[Union[str, Path]], Dict[str, Union[str, Path]]],
 ) -> Dict[str, Dataset]:
     """
     Returns a dict with the data given from a Path.
     """
-    if isinstance(datapoints, list):
+    if isinstance(datapoints, dict):
         dict_datapoints: Dict[str, Any] = {}
+        for dataset_name, datapoint in datapoints.items():
+            if not isinstance(dataset_name, str):
+                raise Exception("Invalid dataset name. Dictionary keys must be strings.")
+            if not isinstance(datapoint, (str, Path)):
+                raise Exception("Invalid datapoint path. Must be a Path or string.")
+            datapoint_path = Path(datapoint) if isinstance(datapoint, str) else datapoint
+            if not datapoint_path.exists():
+                raise Exception(f"Datapoint file not found: {datapoint_path}")
+            dict_datapoints[dataset_name] = datapoint_path
+        return dict_datapoints
+    if isinstance(datapoints, list):
+        dict_datapoints = {}
         for x in datapoints:
             result = _load_single_datapoint(x)
             dict_datapoints = {**dict_datapoints, **result}
@@ -280,6 +292,13 @@ def load_datasets_with_data(
         _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
     if isinstance(datapoints, dict):
+        if all(isinstance(v, (str, Path)) for v in datapoints.values()):
+            dict_datapoints = _load_datapoints_path(datapoints)
+            for dataset_name, _ in dict_datapoints.items():
+                if dataset_name not in datasets:
+                    raise Exception(f"Not found dataset {dataset_name} in datastructures.")
+            _handle_scalars_values(scalars, scalar_values)
+            return datasets, scalars, dict_datapoints
         # Handling dictionary of Pandas Dataframes
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
@@ -351,12 +370,15 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     return {vd.name: vd}
 
 
-def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDomain]:
+def load_value_domains(
+    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
     Args:
-        input: Dict or Path of the json file that contains the value domains data.
+        input: Dict or Path, or a list of them \
+        of the json file that contains the value domains data.
 
     Returns:
         A dictionary with the value domains data, or a list of dictionaries with them.
@@ -369,12 +391,17 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
         _validate_json(input, vd_schema)
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
+    if isinstance(input, list):
+        value_domains: Dict[str, Any] = {}
+        for item in input:
+            value_domains.update(load_value_domains(item))
+        return value_domains
     if not isinstance(input, Path):
         raise Exception("Invalid vd file. Input is not a Path object")
     if not input.exists():
         raise Exception("Invalid vd file. Input does not exist")
     if input.is_dir():
-        value_domains: Dict[str, Any] = {}
+        value_domains = {}
         for f in input.iterdir():
             vd = _load_single_value_domain(f)
             value_domains = {**value_domains, **vd}
@@ -384,19 +411,23 @@ def load_value_domains(input: Union[Dict[str, Any], Path]) -> Dict[str, ValueDom
     return _load_single_value_domain(input)
 
 
-def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
+def load_external_routines(
+    input: Union[Dict[str, Any], Path, str, List[Union[Dict[str, Any], Path]]],
+) -> Any:
     """
     Load the external routines.
 
     Args:
-        input: Dict or Path of the sql file that contains the external routine data.
+        input: Dict or Path, or a list of them, \
+        of the JSON file that contains the external routine data.
 
     Returns:
         A dictionary with the external routine data, or a list with \
         the dictionaries from the Path given.
 
     Raises:
-        Exception: If the sql file does not exist, the Path is wrong, or the file is not a sql one.
+        Exception: If the JSON file does not exist, the Path is wrong, or the file is not a \
+        JSON one.
     """
     external_routines = {}
     if isinstance(input, dict):
@@ -404,6 +435,11 @@ def load_external_routines(input: Union[Dict[str, Any], Path, str]) -> Any:
         ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
         external_routines[ext_routine.name] = ext_routine
         return external_routines
+    if isinstance(input, list):
+        ext_routines = {}
+        for item in input:
+            ext_routines.update(load_external_routines(item))
+        return ext_routines
     if not isinstance(input, Path):
         raise Exception("Input invalid. Input must be a json file.")
     if not input.exists():
@@ -426,11 +462,7 @@ def _return_only_persistent_datasets(
     """
     Returns only the datasets with a persistent assignment.
     """
-    persistent = []
-    for child in ast.children:
-        if isinstance(child, PersistentAssignment) and hasattr(child.left, "value"):
-            persistent.append(child.left.value)
-    return {dataset.name: dataset for dataset in datasets.values() if dataset.name in persistent}
+    return {dataset.name: dataset for dataset in datasets.values() if dataset.persistent}
 
 
 def _load_single_external_routine_from_file(input: Path) -> Any:

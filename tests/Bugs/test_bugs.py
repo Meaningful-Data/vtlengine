@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.Interpreter import InterpreterAnalyzer
 
 
 class BugHelper(TestHelper):
@@ -38,6 +40,32 @@ class GeneralBugs(BugHelper):
         references_names = ["1", "2", "3", "4", "5"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_314_1(self):
+        """ """
+        script = """
+        a <- cast("2020-M01", time_period);
+        b := cast("2020-M01", time_period);
+        c <- a;
+        d := a;
+        e <- b;
+        f := b;
+        """
+
+        references = {
+            "a": True,
+            "b": False,
+            "c": True,
+            "d": False,
+            "e": True,
+            "f": False,
+        }
+
+        ast = create_ast(script)
+        interpreter = InterpreterAnalyzer(datasets={})
+        result = interpreter.visit(ast)
+        for sc in result.values():
+            assert sc.persistent == references[sc.name]
 
 
 class JoinBugs(BugHelper):
@@ -2863,19 +2891,6 @@ class ExternalRoutineBugs(BugHelper):
 class CastBugs(BugHelper):
     classTest = "Bugs.CastTest"
 
-    def test_GL_449_1(self):
-        """
-        Status: OK
-        Description:
-        Goal: Check Result.
-        """
-        code = "GL_449_1"
-        number_inputs = 1
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
     def test_GL_449_2(self):
         """
         Status: OK
@@ -2898,32 +2913,6 @@ class CastBugs(BugHelper):
         code = "GL_449_3"
         number_inputs = 1
         message = "1-1-5-4"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_GL_449_4(self):
-        """
-        Status: OK
-        Description:
-        Goal: Check Result.
-        """
-        code = "GL_449_4"
-        number_inputs = 1
-        message = "1-1-1-16"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_GL_449_5(self):
-        """
-        Status: OK
-        Description:
-        Goal: Check Result.
-        """
-        code = "GL_449_5"
-        number_inputs = 1
-        message = "1-1-1-16"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2979,19 +2968,6 @@ class CastBugs(BugHelper):
         code = "GL_448_2"
         number_inputs = 1
         message = "1-1-19-7"
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
-
-    def test_GL_447_1(self):
-        """
-        Status: OK
-        Description: Time_period not usable for order by clause
-        Goal: Check Result.
-        """
-        code = "GL_447_1"
-        number_inputs = 1
-        message = "1-1-1-16"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

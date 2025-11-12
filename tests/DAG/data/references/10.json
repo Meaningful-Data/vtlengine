@@ -1,0 +1,71 @@
+{
+    "insertion": {
+        "1": [
+            "BOP"
+        ]
+    },
+    "deletion": {
+        "24": [
+            "BOP_Q_VAL.bopObs",
+            "BOP_Q_VAL.bopObs_t_1"
+        ],
+        "19": [
+            "BOP_Q_VAL.accountingEntryValQ",
+            "BOP_Q_VAL.counterpartAreaValQ",
+            "BOP_Q_VAL.counterpartSectorValQ",
+            "BOP_Q_VAL.functionalCategoryValQ",
+            "BOP_Q_VAL.instrAssetValQ",
+            "BOP_Q_VAL.intAccItemValQ",
+            "BOP_Q_VAL.maturityValQ",
+            "BOP_Q_VAL.refSectorValQ"
+        ],
+        "10": [
+            "BOP_Q_VAL.signVal"
+        ],
+        "11": [
+            "BOP_Q_VAL.notZero"
+        ],
+        "20": [
+            "BOP_Q_VAL.IAI_1",
+            "BOP_Q_VAL.IAI_1_round"
+        ],
+        "21": [
+            "BOP_Q_VAL.IAI_2",
+            "BOP_Q_VAL.IAI_2_round"
+        ],
+        "22": [
+            "BOP_Q_VAL.IAI_3",
+            "BOP_Q_VAL.IAI_3_round"
+        ],
+        "27": [
+            "BOP_Q_VAL.left",
+            "BOP_Q_VAL.right"
+        ],
+        "23": [
+            "BOP_Q_VAL.right_selection"
+        ],
+        "25": [
+            "BOP_Q_VAL.BAL",
+            "BOP_Q_VAL.BAL_round"
+        ],
+        "26": [
+            "BOP_Q_VAL.valResult",
+            "BOP_Q_VAL.valResult_round"
+        ],
+        "28": [
+            "BOP_Q_VAL.REC",
+            "BOP_Q_VAL.REC_round"
+        ],
+        "29": [
+            "BOP_Q_VAL.FUNC",
+            "BOP_Q_VAL.FUNC1_round"
+        ],
+        "1": [
+            "BOP"
+        ]
+    },
+    "global_inputs": [
+        "BOP"
+    ],
+    "persistent": []
+}
