@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
 from vtlengine import AST
-from vtlengine.AST import Comment, DPRuleset, HRuleset, Operator, TimeAggregation, Assignment, PersistentAssignment
+from vtlengine.AST import (
+    Assignment,
+    PersistentAssignment,
+    TimeAggregation,
+)
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.tokens import (
