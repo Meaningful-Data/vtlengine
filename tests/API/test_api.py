@@ -26,6 +26,7 @@ from vtlengine.API import (
     run,
     run_sdmx,
     semantic_analysis,
+    validate_dataset,
     validate_external_routine,
     validate_value_domain,
 )
@@ -272,40 +273,6 @@ load_datasets_with_data_path_params_OK = [
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
-        ),
-    ),
-    (
-        filepath_json / "DS_1.json",
-        {"DS_1": filepath_csv / "custom_name.csv"},
-        (
-            {
-                "DS_1": Dataset(
-                    name="DS_1",
-                    components={
-                        "Id_1": Component(
-                            name="Id_1",
-                            data_type=DataTypes.Integer,
-                            role=Role.IDENTIFIER,
-                            nullable=False,
-                        ),
-                        "Id_2": Component(
-                            name="Id_2",
-                            data_type=DataTypes.String,
-                            role=Role.IDENTIFIER,
-                            nullable=False,
-                        ),
-                        "Me_1": Component(
-                            name="Me_1",
-                            data_type=DataTypes.Number,
-                            role=Role.MEASURE,
-                            nullable=True,
-                        ),
-                    },
-                    data=None,
-                )
-            },
-            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
-            {"DS_1": filepath_csv / "custom_name.csv"},
         ),
     ),
 ]
@@ -643,6 +610,40 @@ params_invalid_sql = [
         filepath_sql / "ext_routine_wrong_query.json",
         id="wrong_query",
     ),
+]
+
+
+params_validate_ds = [
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [10, 20]})},
+        True,
+        None,
+    ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
+        False,
+        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+    ),
+    (filepath_json / "DS_1.json", None, True, None),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_non_exist": pd.DataFrame({"Id_1": [1], "Me_1": [2]})},
+        False,
+        "Not found dataset DS_non_exist in datastructures.",
+    ),
+]
+
+params_validate_vd = [
+    (filepath_ValueDomains / "VD_1.json", True),
+    (filepath_ValueDomains / "VD_wrong_key.json", False),
+]
+
+params_validate_sql = [
+    (filepath_sql / "1.json", True),
+    (filepath_sql / "ext_routine_wrong_key.json", False),
+    (filepath_sql / "ext_routine_wrong_query.json", False),
 ]
 
 
@@ -2239,18 +2240,6 @@ def test_loading_list_multiple_value_domains(value_domains_input):
     assert "AnaCreditCountries" in value_domains_loaded
 
 
-params_validate_vd = [
-    (filepath_ValueDomains / "VD_1.json", True),
-    (filepath_ValueDomains / "VD_wrong_key.json", False),
-]
-
-params_validate_sql = [
-    (filepath_sql / "1.json", True),
-    (filepath_sql / "ext_routine_wrong_key.json", False),
-    (filepath_sql / "ext_routine_wrong_query.json", False),
-]
-
-
 @pytest.mark.parametrize("path_vd, is_valid", params_validate_vd)
 def test_validate_vd(path_vd, is_valid):
     with open(path_vd, "r") as f:
@@ -2273,3 +2262,17 @@ def test_validate_sql(path_sql, is_valid):
         except Exception:
             with pytest.raises(Exception, match="The given json does not follow the schema."):
                 validate_external_routine(ext_routine_data)
+
+
+@pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
+def test_validate_dataset(ds_input, dp_input, is_valid, message):
+    if isinstance(ds_input, Path):
+        with open(ds_input, "r", encoding="utf-8") as f:
+            ds_data = json.load(f)
+    else:
+        ds_data = ds_input
+    if is_valid:
+        validate_dataset(ds_data, dp_input)
+    else:
+        with pytest.raises(Exception, match=message):
+            validate_dataset(ds_data, dp_input)
