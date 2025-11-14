@@ -2121,7 +2121,7 @@ class ScalarTests(SemanticHelper):
         """
         Dataset --> Dataset
         Status:
-        Expression: DS_1 := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
+        Expression: DS_r := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
         Description:
 
         Git Branch:
@@ -2827,6 +2827,7 @@ def test_bug_297():
     except Exception as e:
         pytest.fail(f"semantic_analysis raised an exception: {e}")
 
+
 def test_bug_349():
     """
     Github issue #349. Resolves a bug in semantic analysis where input name is the same
@@ -2863,11 +2864,10 @@ def test_bug_349():
                     {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
                     {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
                 ],
-            }
+            },
         ],
     }
     with pytest.raises(SemanticError, match="0-1-2-9"):
         semantic_analysis(script_1, data_structures=data_structures_1)
     with pytest.raises(SemanticError, match="0-1-2-8"):
         semantic_analysis(script_2, data_structures=data_structures_2)
-

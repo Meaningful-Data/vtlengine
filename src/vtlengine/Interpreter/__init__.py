@@ -154,7 +154,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_case_then: bool = False
     signature_values: Optional[Dict[str, Any]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.datasets_inputs = set(self.datasets.keys())
         self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
 
