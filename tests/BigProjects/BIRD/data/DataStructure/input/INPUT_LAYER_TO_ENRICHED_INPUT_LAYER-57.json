@@ -1,19 +1,43 @@
 {
   "datasets": [
     {
-      "name": "CRDT_ASSSSMNT_SPLT.ECA_CNTRPRTS",
+      "name": "CMMTMNT_RCVD",
       "DataStructure": [
         {
-          "name": "CNTRPRTY_ID",
+          "name": "ACCMLTD_NGTV_VL_ADJSTMNT_MR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "CMMTMNT_UNQ_ID",
           "role": "Identifier",
           "type": "String",
           "nullable": false
         },
         {
-          "name": "CRDT_QLTY_STP_CNTRPRTY",
+          "name": "CNTRCT_ID",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
+        },
+        {
+          "name": "CRRNCY_DNMNTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "DT_INCPTN",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
+        },
+        {
+          "name": "DT_LGL_FNL_MTRTY",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "DT_RFRNC",
@@ -22,46 +46,22 @@
           "nullable": false
         },
         {
-          "name": "ECA_ECAI_CD",
+          "name": "NMNL_AMNT",
           "role": "Measure",
-          "type": "String",
-          "nullable": true
+          "type": "Number",
+          "nullable": false
         },
         {
-          "name": "ECA_ECAI_CNTRPRTY",
-          "role": "Measure",
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "ECA_ECAI_NM_CNTRPRTY",
+          "name": "TYP_CMMTMNT",
           "role": "Measure",
           "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_SHRT_TRM_CRDT_ASSSSMNT_CNTRPRTY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "RTNG_CD",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "RTNG_SCL_CD",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "RTNG_SCL_NM_CNTRPRTY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

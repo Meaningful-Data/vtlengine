@@ -19,6 +19,8 @@ centralised_messages = {
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
     "0-1-2-6": "Not found scalar {name} in datastructures",
     "0-1-2-7": "Invalid value '{value}' for type {type_} {op_type} {name}.",
+    "0-1-2-8": "Input datasets cannot be used as outputs: {datasets_names}",
+    "0-1-2-9": "Input scalars cannot be used as outputs: {scalars_names}",
     # Run SDMX errors
     "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",

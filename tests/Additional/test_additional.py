@@ -2140,7 +2140,7 @@ class AggregateOperatorsTest(AdditionalHelper):
                         [calc BNFCR_ID := BNFCRS_CNTRPRTY_ID,
                             TRNSFR_ID := TRNSFR_CNTRPRTY_ID];"""
         code = "10-7"
-        number_inputs = 2
+        number_inputs = 1
         references_names = ["DS_r1", "DS_r2"]
 
         self.BaseTest(
