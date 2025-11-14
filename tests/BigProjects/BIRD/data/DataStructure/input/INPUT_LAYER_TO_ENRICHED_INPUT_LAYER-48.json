@@ -1,12 +1,18 @@
 {
   "datasets": [
     {
-      "name": "D_ENTRPRS_SZ_CLCLTD_1.D_ENTRPRS_SZ_CLCLTD",
+      "name": "CSH_ON_HND",
       "DataStructure": [
         {
-          "name": "CNTRPRTY_ID",
+          "name": "CRRNCY_DNMNTN",
           "role": "Identifier",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
           "nullable": false
         },
         {
@@ -16,16 +22,22 @@
           "nullable": false
         },
         {
-          "name": "ENTRPRS_SZ",
-          "role": "Measure",
+          "name": "IS_HFS",
+          "role": "Identifier",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "IS_DRVD_ENTRPRS_SZ",
-          "role": "Measure",
+          "name": "OBSRVD_AGNT_INTRNL_ID",
+          "role": "Identifier",
           "type": "String",
-          "nullable": true
+          "nullable": false
+        },
+        {
+          "name": "PRSPCTV_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
         }
       ]
     }
