@@ -8,7 +8,7 @@ The VTL Engine API provides eight basic methods:
 
 * **Semantic Analysis**: Validates the correctness of a VTL script and computes the data structures of the datasets created within the script.
 * **Run**: Executes a VTL script using the provided input datasets.
-* **Run_sdmx**: Ensures compatibility with `pysdmx` by running a VTL script using the `pysdmx` `PandasDataset`. It allows SDMX datasets to be used as input when running a script.
+* **Run_sdmx**: Ensures compatibility with `pysdmx` by running a VTL script using the `pysdmx` `PandasDataset`. The VTL engine uses these datapoints as input while mapping them to the VTL script's expected structure
 * **Generate_sdmx**: Ensures compatibility with `pysdmx` by generating a `TransformationScheme` object from a VTL script.
 * **Prettify**: Formats a VTL script to make it more readable.
 * **validate_datasets**: Validates the input datasets against the provided data structures.
@@ -31,7 +31,7 @@ Any VTL action requires the following elements as input:
     can be provided as dictionaries or as paths to JSON files.
 
 * **External Routines**:
-    The VTL Engine supports the use of SQL (SQLite) within the `eval`
+    The VTL Engine supports the use of SQL (ISO/IEC 9075) within the `eval`
     operator. External routines can be provided as a SQL string, a `Path`
     object, or a list of such elements pointing to `.sql` files. The
     default value is `None`, which should be used if external routines
