@@ -54,6 +54,7 @@ from vtlengine.Model import Component, Dataset
 
 nl = "\n"
 tab = "\t"
+RESERVED_WORDS = {x.replace("'", ""): x for x in Lexer.literalNames}
 
 
 def _handle_literal(value: Union[str, int, float, bool]):
@@ -84,9 +85,8 @@ def _format_dataset_eval(dataset: Dataset) -> str:
 
 
 def _format_reserved_word(value: str):
-    reserved_words = {x.replace("'", ""): x for x in Lexer.literalNames}
-    if value in reserved_words:
-        return reserved_words[value]
+    if value in RESERVED_WORDS:
+        return RESERVED_WORDS[value]
     elif value[0] == "_":
         return f"'{value}'"
     return value
