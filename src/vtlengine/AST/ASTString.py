@@ -427,10 +427,10 @@ class ASTString(ASTTemplate):
 
     def visit_Aggregation(self, node: AST.Aggregation) -> str:
         grouping, having = self._handle_grouping_having(node)
+        operand = "" if node.operand is None else f"{self.visit(node.operand)}"
         if self.pretty and node.op not in (MAX, MIN):
-            operand = self.visit(node.operand)
             return f"{node.op}({nl}{tab * 2}{operand}{grouping}{having}{nl}{tab * 2})"
-        return f"{node.op}({self.visit(node.operand)}{grouping}{having})"
+        return f"{node.op}({operand}{grouping}{having})"
 
     def visit_Analytic(self, node: AST.Analytic) -> str:
         operand = "" if node.operand is None else self.visit(node.operand)
