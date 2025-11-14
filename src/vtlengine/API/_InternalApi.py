@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 from pathlib import Path
@@ -27,7 +28,12 @@ from vtlengine.Exceptions import (
     SemanticError,
     check_key,
 )
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_csv_path, _validate_pandas
+from vtlengine.files.parser import (
+    _fill_dataset_empty_data,
+    _validate_csv_path,
+    _validate_pandas,
+    load_datapoints,
+)
 from vtlengine.Model import (
     Component as VTL_Component,
 )
@@ -125,12 +131,18 @@ def _load_dataset_from_structure(
             scalars[scalar_name] = scalar
     return datasets, scalars
 
+
 def _generate_single_path_dict(
     datapoint: Path,
 ) -> Dict[str, Path]:
+    """
+    Generates a dict with one dataset name and its path. The dataset name is extracted
+    from the filename without the .csv extension.
+    """
     dataset_name = datapoint.name.removesuffix(".csv")
     dict_paths = {dataset_name: datapoint}
     return dict_paths
+
 
 def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, Path]]:
     """
@@ -149,6 +161,9 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
             datapoint = Path(datapoint)
         except Exception:
             raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
+    # Validation of Path object
+    if not datapoint.exists():
+        raise Exception(f"Datapoint file not found: {datapoint}")
 
     # Generation of datapoints dictionary with Path objects
     dict_paths: Dict[str, Path] = {}
@@ -159,36 +174,44 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
             dict_paths.update(_generate_single_path_dict(f))
     else:
         dict_paths = _generate_single_path_dict(datapoint)
-    return dict_paths # type: ignore[return-value]
+    return dict_paths  # type: ignore[return-value]
 
-def _check_datapoint_path_exists(datapoint: Union[str, Path]) -> None:
+
+def _check_unique_datapoints(
+    datapoints_to_add: List[str],
+    datapoints_present: List[str],
+) -> None:
     """
-    Checks if the datapoint path exists.
+    Checks we don´t add duplicate dataset names in the datapoints.
     """
+    for x in datapoints_to_add:
+        if x in datapoints_present:
+            raise Exception(
+                f"Duplicate dataset name found in datapoints: {x}. "
+                f"Please check file names and dictionary keys in datapoints."
+            )
 
 
 def _load_datapoints_path(
     datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
-) -> Dict[str, Path]:
+) -> Dict[str, Union[str, Path]]:
     """
     Returns a dict with the data given from a Path.
     """
-    dict_datapoints: Dict[str, Path] = {}
+    dict_datapoints: Dict[str, Union[str, Path]] = {}
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
-                raise Exception("Invalid dataset name. Dictionary keys must be strings.")
-            if not isinstance(datapoint, (str, Path)):
-                raise Exception("Invalid datapoint path. Must be a Path or string.")
-            datapoint_path = Path(datapoint) if isinstance(datapoint, str) else datapoint
-            if not datapoint_path.exists():
-                raise Exception(f"Datapoint file not found: {datapoint_path}")
-            dict_datapoints[dataset_name] = datapoint_path
+                raise Exception("Invalid dataset name. Datapoints dictionary keys must be strings.")
+            single_datapoint = _load_single_datapoint(datapoint)
+            _check_unique_datapoints(list(single_datapoint.keys()), list(dict_datapoints.keys()))
+            dict_datapoints.update(single_datapoint)
         return dict_datapoints
     if isinstance(datapoints, list):
         for x in datapoints:
-            result = _load_single_datapoint(x)
-            dict_datapoints = {**dict_datapoints, **result}
+            single_datapoint = _load_single_datapoint(x)
+            _check_unique_datapoints(list(single_datapoint.keys()), list(dict_datapoints.keys()))
+            dict_datapoints.update(single_datapoint)
         return dict_datapoints
     return _load_single_datapoint(datapoints)
 
@@ -340,20 +363,26 @@ def load_datasets_with_data(
         )
 
     # Handling Individual, List or Dict of Paths or S3 URIs
-    dict_datapoints = _load_datapoints_path(datapoints)
-    for dataset_name in dict_datapoints:
+    # NOTE: Adding type: ignore[arg-type] due to mypy issue with Union types
+    datapoints_path = _load_datapoints_path(datapoints)  # type: ignore[arg-type]
+    for dataset_name, csv_pointer in datapoints_path.items():
         # Check if dataset exists in datastructures
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name} in datastructures.")
         # Validate csv path for this dataset
-        _validate_csv_path(
-            components=datasets[dataset_name].components, csv_path=dict_datapoints[dataset_name]
-        )
+        components = datasets[dataset_name].components
+        if isinstance(csv_pointer, str):  # S3 URI case, we load as in memory just to check
+            _ = load_datapoints(
+                components=components, dataset_name=dataset_name, csv_path=csv_pointer
+            )
+            gc.collect()  # Garbage collector to free memory after loading in memory
+        else:  # Path case
+            _validate_csv_path(components=components, csv_path=csv_pointer)
 
     _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
 
-    return datasets, scalars, dict_datapoints
+    return datasets, scalars, datapoints_path
 
 
 def load_vtl(input: Union[str, Path]) -> str:
