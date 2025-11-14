@@ -210,7 +210,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
@@ -244,7 +244,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
                 "DS_2": Dataset(
                     name="DS_2",
@@ -268,7 +268,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},

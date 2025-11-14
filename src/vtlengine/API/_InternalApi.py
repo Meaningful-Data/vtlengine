@@ -27,7 +27,7 @@ from vtlengine.Exceptions import (
     SemanticError,
     check_key,
 )
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_pandas
+from vtlengine.files.parser import _fill_dataset_empty_data, _validate_csv_path, _validate_pandas
 from vtlengine.Model import (
     Component as VTL_Component,
 )
@@ -125,45 +125,56 @@ def _load_dataset_from_structure(
             scalars[scalar_name] = scalar
     return datasets, scalars
 
+def _generate_single_path_dict(
+    datapoint: Path,
+) -> Dict[str, Path]:
+    dataset_name = datapoint.name.removesuffix(".csv")
+    dict_paths = {dataset_name: datapoint}
+    return dict_paths
 
-def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Any]:
+def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, Path]]:
     """
     Returns a dict with the data given from one dataset.
     """
-    if not isinstance(datapoint, (Path, str)):
+    if not isinstance(datapoint, (str, Path)):
         raise Exception("Invalid datapoint. Input must be a Path or an S3 URI")
+    # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
             __check_s3_extra()
             dataset_name = datapoint.split("/")[-1].removesuffix(".csv")
-            dict_data = {dataset_name: datapoint}
-            return dict_data
+            return {dataset_name: datapoint}
+        # Converting to Path object if it is not an S3 URI
         try:
             datapoint = Path(datapoint)
         except Exception:
             raise Exception("Invalid datapoint. Input must refer to a Path or an S3 URI")
+
+    # Generation of datapoints dictionary with Path objects
+    dict_paths: Dict[str, Path] = {}
     if datapoint.is_dir():
-        datapoints: Dict[str, Any] = {}
         for f in datapoint.iterdir():
             if f.suffix != ".csv":
                 continue
-            dp = _load_single_datapoint(f)
-            datapoints = {**datapoints, **dp}
-        dict_data = datapoints
+            dict_paths.update(_generate_single_path_dict(f))
     else:
-        dataset_name = datapoint.name.removesuffix(".csv")
-        dict_data = {dataset_name: datapoint}  # type: ignore[dict-item]
-    return dict_data
+        dict_paths = _generate_single_path_dict(datapoint)
+    return dict_paths # type: ignore[return-value]
+
+def _check_datapoint_path_exists(datapoint: Union[str, Path]) -> None:
+    """
+    Checks if the datapoint path exists.
+    """
 
 
 def _load_datapoints_path(
-    datapoints: Union[Path, str, List[Union[str, Path]], Dict[str, Union[str, Path]]],
-) -> Dict[str, Dataset]:
+    datapoints: Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path],
+) -> Dict[str, Path]:
     """
     Returns a dict with the data given from a Path.
     """
+    dict_datapoints: Dict[str, Path] = {}
     if isinstance(datapoints, dict):
-        dict_datapoints: Dict[str, Any] = {}
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
                 raise Exception("Invalid dataset name. Dictionary keys must be strings.")
@@ -175,7 +186,6 @@ def _load_datapoints_path(
             dict_datapoints[dataset_name] = datapoint_path
         return dict_datapoints
     if isinstance(datapoints, list):
-        dict_datapoints = {}
         for x in datapoints:
             result = _load_single_datapoint(x)
             dict_datapoints = {**dict_datapoints, **result}
@@ -265,9 +275,17 @@ def _handle_scalars_values(
         scalars[name].value = scalars[name].data_type.cast(value)
 
 
+def _handle_empty_datasets(datasets: Dict[str, Dataset]) -> None:
+    for dataset in datasets.values():
+        if dataset.data is None:
+            _fill_dataset_empty_data(dataset)
+
+
 def load_datasets_with_data(
     data_structures: Any,
-    datapoints: Optional[Any] = None,
+    datapoints: Optional[
+        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
+    ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> Any:
     """
@@ -284,41 +302,55 @@ def load_datasets_with_data(
     Raises:
         Exception: If the Path is wrong or the file is invalid.
     """
+    # Load the datasets without data
     datasets, scalars = load_datasets(data_structures)
+    # Handle empty datasets and scalar values if no datapoints are given
     if datapoints is None:
-        for dataset in datasets.values():
-            if isinstance(dataset, Dataset):
-                _fill_dataset_empty_data(dataset)
+        _handle_empty_datasets(datasets)
         _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
-    if isinstance(datapoints, dict):
-        if all(isinstance(v, (str, Path)) for v in datapoints.values()):
-            dict_datapoints = _load_datapoints_path(datapoints)
-            for dataset_name, _ in dict_datapoints.items():
-                if dataset_name not in datasets:
-                    raise Exception(f"Not found dataset {dataset_name} in datastructures.")
-            _handle_scalars_values(scalars, scalar_values)
-            return datasets, scalars, dict_datapoints
-        # Handling dictionary of Pandas Dataframes
+
+    # Handling dictionary of Pandas Dataframes
+    if isinstance(datapoints, dict) and all(
+        isinstance(v, pd.DataFrame) for v in datapoints.values()
+    ):
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name} in datastructures.")
+            # This exception is not needed due to the all() check above, but it is left for safety
+            if not isinstance(data, pd.DataFrame):
+                raise Exception(
+                    f"Invalid datapoint for dataset {dataset_name}. Must be a Pandas Dataframe."
+                )
             datasets[dataset_name].data = _validate_pandas(
                 datasets[dataset_name].components, data, dataset_name
             )
-        for dataset_name in datasets:
-            if datasets[dataset_name].data is None:
-                datasets[dataset_name].data = pd.DataFrame(
-                    columns=list(datasets[dataset_name].components.keys())
-                )
+        # Handle empty datasets and scalar values for remaining datasets
+        _handle_empty_datasets(datasets)
         _handle_scalars_values(scalars, scalar_values)
         return datasets, scalars, None
-    # Handling dictionary of paths
+
+    # Checking mixed types in the dictionary
+    if isinstance(datapoints, dict) and any(
+        not isinstance(v, (str, Path)) for v in datapoints.values()
+    ):
+        raise Exception(
+            "Invalid datapoints. All values in the dictionary must be Paths or S3 URIs, "
+            "or all values must be Pandas Dataframes."
+        )
+
+    # Handling Individual, List or Dict of Paths or S3 URIs
     dict_datapoints = _load_datapoints_path(datapoints)
-    for dataset_name, _ in dict_datapoints.items():
+    for dataset_name in dict_datapoints:
+        # Check if dataset exists in datastructures
         if dataset_name not in datasets:
             raise Exception(f"Not found dataset {dataset_name} in datastructures.")
+        # Validate csv path for this dataset
+        _validate_csv_path(
+            components=datasets[dataset_name].components, csv_path=dict_datapoints[dataset_name]
+        )
 
+    _handle_empty_datasets(datasets)
     _handle_scalars_values(scalars, scalar_values)
 
     return datasets, scalars, dict_datapoints
