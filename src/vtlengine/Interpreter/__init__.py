@@ -156,6 +156,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def __post_init__(self):
         self.datasets_inputs = set(self.datasets.keys())
+        self.scalars_inputs = set(self.scalars.keys()) if self.scalars else set()
 
     # **********************************
     # *                                *
@@ -232,7 +233,8 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic = False
         results = {}
         scalars_to_save = set()
-        invalid_outputs = []
+        invalid_dataset_outputs = []
+        invalid_scalar_outputs = []
         for child in node.children:
             if isinstance(child, (AST.Assignment, AST.PersistentAssignment)):
                 vtlengine.Exceptions.dataset_output = child.left.value  # type: ignore[attr-defined]
@@ -243,7 +245,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-3-17")
             result = self.visit(child)
             if isinstance(result, Dataset) and result.name in self.datasets_inputs:
-                invalid_outputs.append(result.name)
+                invalid_dataset_outputs.append(result.name)
+            if isinstance(result, Scalar) and result.name in self.scalars_inputs:
+                invalid_scalar_outputs.append(result.name)
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
@@ -270,8 +274,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.scalars[result.name] = copy(result)
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
-        if invalid_outputs:
-            raise Exception(f"Input datasets used as outputs: {', '.join(invalid_outputs)}")
+        if invalid_dataset_outputs:
+            raise SemanticError("0-1-2-8", datasets_names=", ".join(invalid_dataset_outputs))
+        if invalid_scalar_outputs:
+            raise SemanticError("0-1-2-9", scalars_names=", ".join(invalid_scalar_outputs))
 
         if self.output_path is not None and scalars_to_save:
             scalars_filtered = {
