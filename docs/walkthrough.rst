@@ -2,50 +2,71 @@
 10 minutes to VTL Engine
 ########################
 
-Summarizes the main functions of the VTL Engine
+Summarizes the main functions of the VTL Engine.
 
-The VTL Engine API implements five basic methods:
+The VTL Engine API provides eight basic methods:
 
-* **Semantic Analysis**: aimed at validating the correctness of a script and computing the data
-  structures of the data sets created in the script.
-* **Run**: aimed at executing the provided input on the provided input datasets.
-* **Run_sdmx**: as part of the compatibility with pysdmx, this method is used to run a VTL script by using the pysdmx `PandasDataset`.
-  It allows the use of SDMX datasets as input to run the given script.
-* **Generate_sdmx**: as part of the compatibility with pysdmx, this method is used to generate a `TransformationScheme` object from a
-  VTL script.
-* **Prettify**: aimed at formatting the VTL script to make it more readable.
+* **Semantic Analysis**: Validates the correctness of a VTL script and computes the data structures of the datasets created within the script.
+* **Run**: Executes a VTL script using the provided input datapoints.
+* **Run_sdmx**: Ensures compatibility with `pysdmx` by running a VTL script using the `pysdmx` `PandasDataset`. The VTL engine uses the input datapoints while mapping the SDMX DataStructureDefinition to the VTL datastructure.
+* **Generate_sdmx**: Ensures compatibility with `pysdmx` by generating a `TransformationScheme` object from a VTL script.
+* **Prettify**: Formats a VTL script to make it more readable.
+* **validate_datasets**: Validates the input datapoints against the provided data structures.
+* **validate_value_domains**: Validates input value domains using a JSON Schema.
+* **validate_external_routines**: Validates external routines using both JSON Schema and SQLGlot.
 
-Any action with VTL requires the following elements as input:
+Any VTL action requires the following elements as input:
 
-* **VTL Script**: Is the VTL to be executed, which includes the transformation scheme, as well as de
-  User Defined Operators, Hierarchical Rulesets and Datapoint Rulesets. It is provided as a string
-  or as a Path object to a vtl file.
-* **Data structures** : Provides the structure of the input artifacts of the VTL script, according to
-  the VTL Information model. Given that the current version doesn't prescribe a standard format for
-  providing the information, the VTL Engine is implementing a JSON format that can be found here.
-  Data Structures can be provided as Dictionaries or as Paths to JSON files. It is possible to have
-* **External routines**: The VTL Engine allows using SQL (SQLite) with the eval operator. Can be
-  provided as a string with the SQL or as a path object, or a List of them, to an SQL file. Its default value is `None`,
-  which shall be used if external routines are not applicable to the VTL script. You can find an example at the :ref:`example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
-* **Value domains**: Provides the value domains that are used in the VTL script, normally with an in
-  operator. Can be provided as a dictionary or as a path, or a List of them, to a JSON file. Its default value
-  is `None`, which shall be used if value domains are not applicable to the VTL script.
-  You can find an example at the :ref:`example 5 <example_5_run_with_multiple_value_domains_and_external_routines>`.
-* **Scalar values**: The VTL Engine now allows the use of scalar values to be used as input in the VTL script. These scalar values can be provided as a dictionary, where the keys are the names of the scalar values and the values are the scalar values themselves. The default value is `None`, which shall be used if scalar values are not applicable to the VTL script.
-* **Output folder**: The VTL Engine allows the user to specify an output folder where the results of
-  the VTL script execution will be saved. This is useful for scripts that generate datasets or scalar
-  values. The output folder can be provided as a Path object.
+* **VTL Script**:
+    The VTL script to be executed. It includes the transformation scheme,
+    as well as any User Defined Operators, Hierarchical Rulesets, and
+    Datapoint Rulesets. It can be provided as a string or as a `Path`
+    object pointing to a `.vtl` file.
+
+* **Data Structures**:
+    Define the structure of the input artifacts used in the VTL script,
+    according to the VTL Information Model. As the current version does
+    not prescribe a standard format for this information, the VTL Engine
+    uses a JSON-based format, which can be found here. Data structures
+    can be provided as dictionaries or as paths to JSON files.
+
+* **External Routines**:
+    The VTL Engine supports the use of SQL (ISO/IEC 9075) within the `eval`
+    operator. External routines can be provided as a SQL string, a `Path`
+    object, or a list of such elements pointing to `.sql` files. The
+    default value is `None`, which should be used if external routines
+    are not applicable to the script. See :ref:`example 5
+    <example_5_run_with_multiple_value_domains_and_external_routines>`
+    for an example.
+
+* **Value Domains**:
+    Define the value domains referenced in the VTL script, usually with
+    an `in` operator. They can be provided as dictionaries, as paths, or
+    as lists of JSON files. The default value is `None`, which should be
+    used if value domains are not applicable. See :ref:`example 5
+    <example_5_run_with_multiple_value_domains_and_external_routines>`
+    for details.
+
+* **Scalar Values**:
+    The VTL Engine supports scalar values as input for VTL scripts.
+    These can be provided as a dictionary where keys are scalar names
+    and values are the corresponding data. The default value is `None`,
+    which should be used if scalar values are not required.
+
+* **Output Folder**:
+    Specifies the directory where the results of the VTL script execution
+    are saved. This is useful for scripts that generate datasets or
+    scalar values. The output folder can be provided as a `Path` object.
 
 *****************
 Semantic Analysis
 *****************
-The :meth:`vtlengine.semantic_analysis` method serves to validate the correctness of a VTL script, as well as to
-calculate the data structures of the datasets generated by the VTL script itself (that calculation
-is a pre-requisite for the semantic analysis).
 
-* If the VTL script is correct, the method returns a dictionary with the data structures of all the
-  datasets generated by the script.
-* If the VTL script is incorrect, raises a SemanticError.
+The :meth:`vtlengine.semantic_analysis` method validates the correctness of a VTL script and computes the data structures of
+the datasets generated by the script itself (a prerequisite for semantic analysis).
+
+* If the VTL script is correct, the method returns a dictionary containing the data structures of all datasets generated by the script.
+* If the VTL script is incorrect, a `SemanticError` is raised.
 
 ======================
 Example 1: Correct VTL
@@ -91,8 +112,7 @@ Returns:
 Example 2: Incorrect VTL
 ========================
 
-Note that, as compared to Example 1, the only change is that Me_1 is of the String
-data type, instead of Number.
+Compared to Example 1, the only difference is that `Me_1` uses a `String` data type instead of `Number`.
 
 .. code-block:: python
 
@@ -125,7 +145,7 @@ data type, instead of Number.
     print(sa_result)
 
 
-Will raise the following Error:
+Raises the following Error:
 
 .. code-block:: python
 
@@ -137,16 +157,16 @@ Will raise the following Error:
 Run VTL Scripts
 *****************
 
-The :meth:`vtlengine.run` method serves to execute a VTL script with input datapoints.
+The :meth:`vtlengine.run` method executes a VTL script with the provided datapoints.
 
-Returns a dictionary with all the generated Datasets.
-When the output parameter is set, the engine will write the result of the computation to the output
-folder, else it will include the data in the dictionary of the computed datasets.
+It returns a dictionary containing all generated datasets.
+If the `output` parameter is set, the engine writes the computation results to the specified folder; otherwise,
+the data is returned within the dictionary of computed datasets.
 
-Two validations are performed before running, which can raise errors:
+Two validations are performed before execution, either of which may raise an error:
 
-* Semantic analysis: Equivalent to running the :meth:`vtlengine.semantic_analysis` method
-* Data load analysis: Basic check of the data structure (names and types)
+* **Semantic analysis**: Equivalent to running :meth:`vtlengine.semantic_analysis`.
+* **Data load analysis**: Performs a basic check of data structure names and types.
 
 =====================
 Example 3: Simple run
@@ -200,22 +220,22 @@ Example 3: Simple run
 Example 4: Run from SDMX Dataset
 ================================
 
-The :meth:`vtlengine.run_sdmx` method serves to execute a VTL script with input SDMX files, using get_datasets function from pysdmx.
-Executes a VTL script using one or more `PandasDataset` instances from the `pysdmx` library.
+The :meth:`vtlengine.run_sdmx` method executes a VTL script using SDMX files, via the `get_datasets` function from `pysdmx`.
+It runs a VTL script with one or more `PandasDataset` instances from the `pysdmx` library.
 
-This function prepares the required VTL data structures and datapoints, handles mapping from dataset structures to VTL identifiers,
-and delegates execution to the VTL engine. It performs internal validation of dataset structures and the VTL script's input dependencies using DAG analysis.
+This method prepares the required VTL data structures and datapoints, maps dataset structures to VTL identifiers, and delegates execution to the VTL Engine.
+It performs internal validation of dataset structures and input dependencies using DAG analysis.
 
-`Documentation on read and writing SDMX datasets <https://py.sdmx.io/howto/data_rw.html>`_.
+For details on reading and writing SDMX datasets, see the `pysdmx documentation <https://py.sdmx.io/howto/vtl_handling.html>`_.
 
 The process works as follows:
 
-- The user provides a VTL script. This can be passed as a string, a Transformation Scheme, or a file.
-- One or more SDMX datasets are supplied as `PandasDataset`. These datasets must include structural metadata (using pysdmx Schema).
-- If multiple datasets are used, a mapping is required to link each dataset to the corresponding name expected in the script.
-  This mapping could be a VTLDataflowMapping object or a dictionary with key-value pairs of the short-urn and the VTL dataset name.
-- The function checks that all inputs are valid, converts them into VTL-compatible format, and then executes the script.
-- The result is a new dataset (or several) generated by the logic defined in the VTL script.
+- Provide a VTL script (as a string, `TransformationScheme`, or file).
+- Supply one or more SDMX datasets as `PandasDataset` objects including structural metadata (from the `pysdmx` Schema).
+- When using multiple datasets, provide a mapping linking each dataset to the corresponding name expected in the script.
+  This can be a `VTLDataflowMapping` object or a dictionary pairing the short-URN with the VTL dataset name.
+- The method validates all inputs, converts them into a VTL-compatible format, and executes the script.
+- The result is a new dataset (or several) generated according to the logic defined in the VTL script.
 
 .. important::
     The short-urn is the meaningful part of the URN. The format is:
@@ -226,13 +246,13 @@ The process works as follows:
     Dataflow=MD:TEST_DF(1.0) is the short-urn for
     urn:sdmx:org.sdmx.infomodel.datastructure.Dataflow=MD:TEST_DF(1.0)
 
-Optional settings are the same as in the run method, including:
+Optional settings are the same as in the `run` method, including:
 
 - Providing value domains for data validation.
 - Using external routines as SQL statements.
 - Controlling how time period columns are formatted in the output.
-- Saving the result to a specified output folder.
-- Filtering output datasets to only return those marked as “persistent” in the VTL script.
+- Saving results to a specified output folder.
+- Filtering output datasets to return only those marked as “persistent” in the VTL script.
 
 
 .. code-block:: python
@@ -254,8 +274,8 @@ Optional settings are the same as in the run method, including:
     :file: _static/DS_r_run_sdmx.csv
     :header-rows: 1
 
-As part with the compatibility with pysdmx, the function can also be used by taking as input a
-TransformationScheme object. If we do not include a mapping, VTL script must have a single input, and data file must have only one dataset:
+As part of its compatibility with `pysdmx`, the function can also take a `TransformationScheme` object as input.
+If no mapping is provided, the VTL script must have a single input, and the data file must contain only one dataset.
 
 .. code-block:: python
 
@@ -301,8 +321,7 @@ TransformationScheme object. If we do not include a mapping, VTL script must hav
 
 
 
-Finally, the mapping information is used to map the SDMX input dataset to the VTL input dataset by using the VTLDataflowMapping
-object from pysdmx or a dictionary.
+Finally, mapping information can be used to link an SDMX input dataset to a VTL input dataset via the `VTLDataflowMapping` object from `pysdmx` or a dictionary.
 
 .. code-block:: python
 
@@ -426,10 +445,9 @@ Returns:
 ===========================
 Example 6: Run using Paths
 ===========================
-The following example shows how to run a VTL script by providing all the inputs as Path objects.
-As you can notice, datapoints can be provided as a dictionary with the dataset name as key and the Path object as value.
-In this case, we are using DS_1 as the key of the datapoints dictionary, which is inside the datastructures path given,
-but the data file can have any name.
+The following example shows how to run a VTL script by providing all inputs as Path objects.
+In this case, datapoints can be passed as a dictionary where the dataset name is the key and the corresponding file path is the value.
+Here, `DS_1` is the dictionary key that matches the dataset defined in the data structures file, but the input data file itself can have any name.
 
 
 .. code-block:: python
@@ -472,54 +490,12 @@ Returns:
     :header-rows: 1
 
 
-********
-Prettify
-********
-
-The :meth:`vtlengine.prettify` method serves to format a VTL script to make it more readable.
-
-.. code-block:: python
-
-    from vtlengine import prettify
-    script = """
-        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
-                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
-                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
-                    end hierarchical ruleset;
-
-        DS_r <- check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
-        """
-    prettified_script = prettify(script)
-    print(prettified_script)
-
-returns:
-
-.. code-block:: text
-
-
-    define hierarchical ruleset accountingEntry(variable rule ACCOUNTING_ENTRY) is
-        B = C - D
-        errorcode "Balance (credit-debit)"
-        errorlevel 4;
-
-        N = A - L
-        errorcode "Net (assets-liabilities)"
-        errorlevel 4
-    end hierarchical ruleset;
-
-    DS_r <-
-        check_hierarchy(
-            BOP,
-            accountingEntry,
-            rule ACCOUNTING_ENTRY);
-
 
 **********************
 Run with Scalar Values
 **********************
-The VTL Engine now allows the use of scalar values to be used as input in the VTL script. With the provided output
-path, csv files will be generated with the results of the script execution. Scalar results will be saved in a
-csv file with value of the resulted scalar.
+The VTL Engine also supports the use of scalar values to be used as input within the VTL script. When an output path is provided,
+the engine generates CSV files containing the results of the script execution. Scalar results are saved as CSV files containing the resulting scalar value.
 
 =================================
 Example 7: Run with Scalar Values
@@ -579,4 +555,48 @@ Returns:
 
     30
 
+
+********
+Prettify
+********
+
+The :meth:`vtlengine.prettify` method formats a VTL script to improve readability.
+
+.. code-block:: python
+
+    from vtlengine import prettify
+    script = """
+        define hierarchical ruleset accountingEntry (variable rule ACCOUNTING_ENTRY) is
+                        B = C - D errorcode "Balance (credit-debit)" errorlevel 4;
+                        N = A - L errorcode "Net (assets-liabilities)" errorlevel 4
+                    end hierarchical ruleset;
+
+        DS_r <- check_hierarchy(BOP, accountingEntry rule ACCOUNTING_ENTRY dataset);
+        """
+    prettified_script = prettify(script)
+    print(prettified_script)
+
+Returns:
+
+.. code-block:: text
+
+
+    define hierarchical ruleset accountingEntry(variable rule ACCOUNTING_ENTRY) is
+        B = C - D
+        errorcode "Balance (credit-debit)"
+        errorlevel 4;
+
+        N = A - L
+        errorcode "Net (assets-liabilities)"
+        errorlevel 4
+    end hierarchical ruleset;
+
+    DS_r <-
+        check_hierarchy(
+            BOP,
+            accountingEntry,
+            rule ACCOUNTING_ENTRY);
+
+
 For more information on usage, please refer to the `API documentation <https://docs.vtlengine.meaningfuldata.eu/api.html>`_
+
