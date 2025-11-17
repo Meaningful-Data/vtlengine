@@ -7,7 +7,7 @@ Summarizes the main functions of the VTL Engine.
 The VTL Engine API provides eight basic methods:
 
 * **Semantic Analysis**: Validates the correctness of a VTL script and computes the data structures of the datasets created within the script.
-* **Run**: Executes a VTL script using the provided input datasets.
+* **Run**: Executes a VTL script using the provided input datapoints.
 * **Run_sdmx**: Ensures compatibility with `pysdmx` by running a VTL script using the `pysdmx` `PandasDataset`. The VTL engine uses the input datapoints while mapping the SDMX DataStructureDefinition to the VTL datastructure.
 * **Generate_sdmx**: Ensures compatibility with `pysdmx` by generating a `TransformationScheme` object from a VTL script.
 * **Prettify**: Formats a VTL script to make it more readable.
