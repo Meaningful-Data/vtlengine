@@ -640,7 +640,7 @@ params_validate_ds = [
         None,
     ),
     (
-        [json.load(open(filepath_json / "DS_1.json"))],
+        filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"Id_1": [1], "Id_2": ["A"], "Me_1": [10]})},
         True,
         None,
@@ -657,7 +657,6 @@ params_validate_ds = [
         True,
         None,
     ),
-
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
