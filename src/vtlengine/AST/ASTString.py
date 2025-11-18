@@ -629,8 +629,8 @@ class ASTString(ASTTemplate):
         elif node.start_mode == "current":
             start = "current data point"
         else:
-            start = f"{node.start} {node.start_mode}"
-        stop = f"{node.stop} {node.stop_mode}"
+            start = f"{node.start if node.start != 'current row' else 0} {node.start_mode}"
+        stop = f"{node.stop if node.stop != 'current row' else 0} {node.stop_mode}"
         if node.stop_mode == "current":
             stop = "current data point"
         mode = "data points" if node.type_ == "data" else "range"
