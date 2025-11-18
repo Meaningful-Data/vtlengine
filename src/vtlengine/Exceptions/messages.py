@@ -31,7 +31,6 @@ centralised_messages = {
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     # Infer Data Structure errors
     "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
-    "0-1-1-3": "Can not infer data structure: {errors}.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
     "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
