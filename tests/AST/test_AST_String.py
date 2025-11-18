@@ -47,7 +47,7 @@ params_prettier = [
     ("HR_with_condition.vtl", "reference_HR_with_condition.vtl"),
     ("GH_352.vtl", "reference_GH_352.vtl"),
     ("GH_358.vtl", "reference_GH_358.vtl"),
-    ("unbounded.vtl", "reference_unbounded.vtl")
+    ("unbounded.vtl", "reference_unbounded.vtl"),
 ]
 
 
