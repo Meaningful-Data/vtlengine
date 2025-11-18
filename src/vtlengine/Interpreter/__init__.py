@@ -275,9 +275,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
         if invalid_dataset_outputs:
-            raise SemanticError("0-1-2-8", datasets_names=", ".join(invalid_dataset_outputs))
+            raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
         if invalid_scalar_outputs:
-            raise SemanticError("0-1-2-9", scalars_names=", ".join(invalid_scalar_outputs))
+            raise SemanticError("0-1-2-8", names=", ".join(invalid_scalar_outputs))
 
         if self.output_path is not None and scalars_to_save:
             scalars_filtered = {

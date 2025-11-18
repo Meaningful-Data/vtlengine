@@ -2867,7 +2867,7 @@ def test_bug_349():
             },
         ],
     }
-    with pytest.raises(SemanticError, match="0-1-2-9"):
+    with pytest.raises(SemanticError, match="0-1-2-8"):
         semantic_analysis(script_1, data_structures=data_structures_1)
     with pytest.raises(SemanticError, match="0-1-2-8"):
         semantic_analysis(script_2, data_structures=data_structures_2)
