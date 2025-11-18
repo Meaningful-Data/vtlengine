@@ -21,6 +21,7 @@ params = [
     "time.vtl",
     "comments.vtl",
     "complete_grammar.vtl",
+    "GH_347.vtl",
 ]
 
 params_prettier = [
