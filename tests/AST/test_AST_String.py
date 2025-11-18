@@ -112,8 +112,10 @@ def test_prettier(filename, expected):
     result_script = prettify(script)
     with open(prettier_path / expected, "r") as file:
         expected_script = file.read()
-
+    input_ast = create_ast(script)
+    expected_input_ast = create_ast(expected_script)
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
+    assert input_ast == expected_input_ast
 
 
 @pytest.mark.parametrize("filename", params)
