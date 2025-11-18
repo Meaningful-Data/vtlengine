@@ -136,7 +136,7 @@ def create_ast(text: str) -> Start:
 def validate_dataset(
     data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
     datapoints: Optional[
-        Union[Dict[str, pd.DataFrame], Path, List[Union[Dict[str, Any], Path]]]
+        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
 ) -> None:
@@ -269,7 +269,7 @@ def semantic_analysis(
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, pd.DataFrame], str, Path, List[Dict[str, Any]], List[Path]],
+    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
