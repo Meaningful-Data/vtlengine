@@ -12,7 +12,9 @@ from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
+    APPLY,
     ATTRIBUTE,
+    CALC,
     CAST,
     CHARSET_MATCH,
     CHECK_DATAPOINT,
@@ -27,6 +29,7 @@ from vtlengine.AST.Grammar.tokens import (
     IDENTIFIER,
     INSTR,
     INTERSECT,
+    KEEP,
     LOG,
     MAX,
     MEASURE,
@@ -39,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     PLUS,
     POWER,
     RANDOM,
+    RENAME,
     REPLACE,
     ROUND,
     SETDIFF,
@@ -551,7 +555,14 @@ class ASTString(ASTTemplate):
             body = f"{nl}{tab * 4}{condition}{nl}{tab * 2}"
         else:
             body = child_sep.join([self.visit(x) for x in node.children])
-        if isinstance(node.dataset, AST.JoinOp):
+        if isinstance(node.dataset, AST.JoinOp) and node.op in [
+            CALC,
+            DROP,
+            FILTER,
+            KEEP,
+            RENAME,
+            APPLY,
+        ]:
             dataset = self.visit(node.dataset)
             if self.pretty:
                 return f"{dataset[:-1]} {(node.op)} {body}{nl}{tab})"

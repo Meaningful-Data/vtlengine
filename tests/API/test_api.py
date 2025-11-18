@@ -210,7 +210,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
@@ -244,7 +244,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
                 "DS_2": Dataset(
                     name="DS_2",
@@ -268,7 +268,7 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 ),
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
@@ -632,6 +632,36 @@ params_validate_ds = [
         {"DS_non_exist": pd.DataFrame({"Id_1": [1], "Me_1": [2]})},
         False,
         "Not found dataset DS_non_exist in datastructures.",
+    ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": pd.DataFrame({"Id_1": [1], "Id_2": ["A"], "Me_1": [10]})},
+        True,
+        None,
+    ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": pd.DataFrame({"Id_1": [1], "Id_2": ["A"], "Me_1": [10]})},
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        True,
+        None,
+    ),
+    (
+        [filepath_json / "DS_1.json"],
+        {"DS_1": pd.DataFrame({"wrong": [1]})},
+        False,
+        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
     ),
 ]
 
@@ -2266,7 +2296,15 @@ def test_validate_sql(path_sql, is_valid):
 
 @pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
 def test_validate_dataset(ds_input, dp_input, is_valid, message):
-    if isinstance(ds_input, Path):
+    if isinstance(ds_input, list):
+        ds_data = []
+        for item in ds_input:
+            if isinstance(item, Path):
+                with open(item, "r", encoding="utf-8") as f:
+                    ds_data.append(json.load(f))
+            else:
+                ds_data.append(item)
+    elif isinstance(ds_input, Path):
         with open(ds_input, "r", encoding="utf-8") as f:
             ds_data = json.load(f)
     else:
