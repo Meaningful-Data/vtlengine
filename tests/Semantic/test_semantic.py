@@ -4,6 +4,7 @@ import pytest
 
 from tests.Helper import TestHelper
 from vtlengine import semantic_analysis
+from vtlengine.Exceptions import SemanticError
 
 
 class SemanticHelper(TestHelper):
@@ -2120,7 +2121,7 @@ class ScalarTests(SemanticHelper):
         """
         Dataset --> Dataset
         Status:
-        Expression: DS_1 := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
+        Expression: DS_r := DS_1[calc identifier Id_3 := Me_1 <> sc_2];
         Description:
 
         Git Branch:
@@ -2825,3 +2826,48 @@ def test_bug_297():
         semantic_analysis(script, data_structures=data_structures)
     except Exception as e:
         pytest.fail(f"semantic_analysis raised an exception: {e}")
+
+
+def test_bug_349():
+    """
+    Github issue #349. Resolves a bug in semantic analysis where input name is the same
+    as an output defined.
+    """
+    script_1 = """
+                sc_r <- sc_1;
+                sc_1 <- sc_2 + 10;
+            """
+
+    data_structures_1 = {
+        "scalars": [
+            {"name": "sc_1", "type": "Number"},
+            {"name": "sc_2", "type": "Number"},
+        ]
+    }
+    script_2 = """
+            DS_r <- DS_1;
+            DS_1 <- DS_2 + 10;
+        """
+
+    data_structures_2 = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+            {
+                "name": "DS_2",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            },
+        ],
+    }
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_1, data_structures=data_structures_1)
+    with pytest.raises(SemanticError, match="0-1-2-8"):
+        semantic_analysis(script_2, data_structures=data_structures_2)

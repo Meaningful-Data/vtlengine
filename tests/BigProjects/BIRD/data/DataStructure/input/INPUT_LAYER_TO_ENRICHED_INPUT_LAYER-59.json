@@ -1,85 +1,121 @@
 {
   "datasets": [
     {
-      "name": "CNTRPRTS",
+      "name": "ADVNCS_NT_LNS",
       "DataStructure": [
         {
-          "name": "ACCNTNG_FRMWRK_SL",
+          "name": "ACCMLTD_CHNGS_FV",
           "role": "Measure",
-          "type": "String",
-          "nullable": true
+          "type": "Number",
+          "nullable": false
         },
         {
-          "name": "ANNL_TRNVR",
+          "name": "ACCMLTD_CHNGS_FV_CR",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_IMPRMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "ACCMLTD_IMPRMNT_GAAP1",
           "role": "Measure",
           "type": "Number",
           "nullable": true
         },
         {
-          "name": "APPRCH_PRDNTL_PRPSS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "BLNC_SHT_TTL",
+          "name": "ACCMLTD_IMPRMNT_GAAP2",
           "role": "Measure",
           "type": "Number",
           "nullable": true
         },
         {
-          "name": "CHRCTRSTCS_CRDT_RSK",
+          "name": "ACCMLTD_NGTV_VL_ADJSTMNT_MR",
           "role": "Measure",
-          "type": "String",
+          "type": "Number",
           "nullable": true
         },
         {
-          "name": "CNTRL_PBLC_BDS",
+          "name": "ACCMLTD_WRTFFS",
           "role": "Measure",
-          "type": "String",
-          "nullable": true
+          "type": "Number",
+          "nullable": false
         },
         {
-          "name": "CNTRPRTY_ID",
-          "role": "Identifier",
+          "name": "ACCNTNG_CLSSFCTN",
+          "role": "Measure",
           "type": "String",
           "nullable": false
         },
         {
-          "name": "CNTRY",
+          "name": "ACCRD_INTRST",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "APPRCH_CRDT_QLTY_STTS",
           "role": "Measure",
           "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CLLTRL_OBTND_TKNG_PSSSSN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "CLLTRL_OBTND_TKNG_PSSSSN_DT",
+          "role": "Measure",
+          "type": "Date",
           "nullable": true
         },
         {
           "name": "CRDT_QLTY_STTS",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "CTY",
+          "name": "CRRNCY_DNMNTN",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
+        },
+        {
+          "name": "CRRYNG_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
         },
         {
           "name": "DT_DFLT_STTS",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "DT_ENTRPRS_SZ",
+          "name": "DT_FRBRNC_STTS",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "DT_INTTN_LGL_PRCDNGS",
+          "name": "DT_PRFRMNG_STTS",
           "role": "Measure",
           "type": "Date",
-          "nullable": true
+          "nullable": false
+        },
+        {
+          "name": "DT_PST_D",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": false
         },
         {
           "name": "DT_RFRNC",
@@ -88,153 +124,117 @@
           "nullable": false
         },
         {
-          "name": "DT_STTS",
-          "role": "Measure",
-          "type": "Date",
-          "nullable": true
-        },
-        {
-          "name": "ECNMC_ACTVTY",
+          "name": "ELGBL_CNTRL_BNK_FNDNG",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "ENTRPRS_SZ_CHC",
+          "name": "FRBRNC_STTS",
           "role": "Measure",
           "type": "String",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "ENTRPRS_SZ_INPT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "EQTY",
+          "name": "FV",
           "role": "Measure",
           "type": "Number",
           "nullable": false
         },
         {
-          "name": "EXCPTN_MRG_ACQSTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "HD_OFFC_UNDRT_ID_STRNG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IMMDT_PRNT_UNDRT_ID_STRNG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INSTTTNL_SCTR",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INSTTTNL_SCTR_CNTRL",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "INTRNTNL_ORGNSTN",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_CNTRL_GVRNMNT_TRTD_LG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_CNTRL_GVRNMNT_TRTD_PS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_LCL_GVRNMNT_TRTD_PS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_PLLNG_EFFCT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_RPRTNG_ANCRDT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "IS_SM_PRTCTN_SCHM",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "LEI",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "LGL_FRM",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "LGL_PRCDNG_STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NMBR_EMPLYS",
+          "name": "FV_CHNG_CR_BFR_PRCHS",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "NM_ENTTY",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NTNL_ID",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "PD",
+          "name": "FV_CHNG_HDG_ACCNTNG",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
+          "nullable": false
         },
         {
-          "name": "PR_LSS",
+          "name": "FV_HRRCHY",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "FVO_DSGNTN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "GRSS_CRRYNG_AMNT_E_INTRST",
           "role": "Measure",
           "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "IMPRMNT_ASSSSMNT_MTHD",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IMPRMNT_STTS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "INSTRMNT_UNQ_ID",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_HFS",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_LW_CRDT_RSK",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_NN_PRFRMNG_PRR_FRBRNC",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "IS_TTL_EXTNGSHMNT",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OBSRVD_AGNT_INTRNL_ID",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "OTSTNDNG_NMNL_AMNT",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": false
+        },
+        {
+          "name": "PRJCT_FNNC_LN",
+          "role": "Measure",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "PRPS",
+          "role": "Measure",
+          "type": "String",
           "nullable": false
         },
         {
@@ -244,46 +244,10 @@
           "nullable": false
         },
         {
-          "name": "PSTL_CD",
+          "name": "SBRDNTD_DBT",
           "role": "Measure",
           "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "STRT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "STTS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TRRTRL_UNT",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "TT_ASST_INVST",
-          "role": "Measure",
-          "type": "Number",
           "nullable": false
-        },
-        {
-          "name": "TYP_ENTRPRS",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "ULTMT_PRNT_UNDRT_ID_STRNG",
-          "role": "Measure",
-          "type": "String",
-          "nullable": true
         }
       ]
     }
