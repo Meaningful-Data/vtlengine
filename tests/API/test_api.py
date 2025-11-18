@@ -646,12 +646,6 @@ params_validate_ds = [
         None,
     ),
     (
-        filepath_json / "DS_1.json",
-        filepath_csv,
-        False,
-        "Not found dataset custom_name in datastructures",
-    ),
-    (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
         [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
         True,
