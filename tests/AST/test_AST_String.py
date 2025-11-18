@@ -43,8 +43,7 @@ params_prettier = [
     ("date_add.vtl", "reference_date_add.vtl"),
     ("complete_grammar.vtl", "reference_complete_grammar.vtl"),
     ("HR_with_condition.vtl", "reference_HR_with_condition.vtl"),
-    ("GH_352.vtl", "reference_GH_352.vtl")
-    ("GH_358.vtl", "reference_GH_358.vtl"),
+    ("GH_352.vtl", "reference_GH_352.vtl")("GH_358.vtl", "reference_GH_358.vtl"),
 ]
 
 
