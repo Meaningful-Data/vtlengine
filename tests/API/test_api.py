@@ -41,7 +41,7 @@ from vtlengine.API._InternalApi import (
     to_vtl_json,
 )
 from vtlengine.DataTypes import Integer, String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection
@@ -92,12 +92,12 @@ input_vd_error_params = [
     (filepath_VTL / "1.vtl", "Invalid vd file. Must have .json extension"),
     (
         filepath_json / "DS_1.json",
-        "The given json does not follow the schema.",
+        "0-1-2-9",
     ),
     (2, "Invalid vd file. Input is not a Path object"),
     (
         {"setlist": ["AT", "BE", "CY"], "type": "String"},
-        "The given json does not follow the schema.",
+        "0-1-2-9",
     ),
 ]
 
@@ -296,7 +296,7 @@ ext_params_OK = [(filepath_sql / "1.json")]
 ext_params_wrong = [
     (
         filepath_json / "DS_1.json",
-        "The given json does not follow the schema.",
+        "0-1-2-9",
     ),
     (5, "Input invalid. Input must be a json file."),
     (filepath_sql / "6.sql", "Input invalid. Input does not exist"),
@@ -2002,7 +2002,7 @@ def test_attempt_to_validate_invalid_vd(path_schema, path_vd):
         vd_data = json.load(f)
     with open(path_schema, "r") as f:
         vd_schema = json.load(f)
-    with pytest.raises(Exception, match="The given json does not follow the schema."):
+    with pytest.raises(InputValidationException, match="0-1-2-9"):
         _validate_json(vd_data, vd_schema)
 
 
@@ -2014,8 +2014,8 @@ def test_attempt_to_validate_invalid_sql(path_schema, path_sql):
         ext_routine_schema = json.load(f)
     try:
         _validate_json(ext_routine_data, ext_routine_schema)
-    except Exception:
-        with pytest.raises(Exception, match="The given json does not follow the schema."):
+    except InputValidationException:
+        with pytest.raises(InputValidationException, match="0-1-2-9"):
             _validate_json(ext_routine_data, ext_routine_schema)
         return
     query = ext_routine_data.get("query")

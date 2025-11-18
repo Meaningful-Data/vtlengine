@@ -21,6 +21,7 @@ centralised_messages = {
     "0-1-2-7": "Invalid value '{value}' for type {type_} {op_type} {name}.",
     "0-1-2-8": "Cannot pass as inputs datasets/scalars defined as outputs of transformations "
     "in the script, please check: {names}",
+    "0-1-2-9": "The provided JSON does not follow the required JSON Schema",
     # Run SDMX errors
     "0-1-3-1": "Expected exactly one input dataset in the whole script, found: {number_datasets}",
     "0-1-3-2": "SDMX Dataset {schema} requires to have a Schema object defined as structure",

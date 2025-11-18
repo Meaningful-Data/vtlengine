@@ -356,8 +356,8 @@ def load_vtl(input: Union[str, Path]) -> str:
 def _validate_json(data: Dict[str, Any], schema: Dict[str, Any]) -> None:
     try:
         jsonschema.validate(instance=data, schema=schema)
-    except jsonschema.ValidationError:
-        raise Exception("The given json does not follow the schema.")
+    except jsonschema.ValidationError as e:
+        raise InputValidationException(code="0-1-2-9", message=f"{e}")
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
