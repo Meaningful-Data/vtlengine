@@ -142,6 +142,14 @@ def validate_dataset(
 ) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
+
+    Args:
+        data_structures: Dict, Path, or List of Dict/Path objects representing data structures.
+        datapoints: Optional Dict, Path, or List of Dict/Path objects representing datapoints.
+        scalar_values: Optional Dict with scalar values to be used in the datasets.
+
+    Raises:
+        Exception: If the data structures or datapoints are invalid or cannot be loaded.
     """
     load_datasets_with_data(data_structures, datapoints, scalar_values)
 
