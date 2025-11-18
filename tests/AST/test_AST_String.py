@@ -23,7 +23,7 @@ params = [
     "complete_grammar.vtl",
     "GH_347.vtl",
     "GH_352.vtl",
-    "GH_358.vtl"
+    "GH_358.vtl",
 ]
 
 params_prettier = [
