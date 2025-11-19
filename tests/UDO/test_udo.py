@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from tests.Helper import TestHelper
 
 
@@ -706,3 +708,18 @@ class UdoTest(UDOHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+
+    def test_GH_353(self):
+        """
+        Status: OK
+        Description: Test with UDO using other UDO inside
+        Goal: Check Result.
+        """
+        code = "GH_353"
+        number_inputs = 0
+        references_names = []
+        error_message = "Invalid type definition dattt at line 1:31"
+
+        with pytest.raises(Exception, match=error_message):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
