@@ -355,8 +355,8 @@ class Terminals(VtlVisitor):
 
         else:
             raise SyntaxError(
-                f"Invalid type definition {scalartype.children[0]} at line "
-                f"{ctx.start.line}:{ctx.start.column}"
+                f"Invalid parameter type definition {scalartype.children[0]} at line "
+                f"{ctx.start.line}:{ctx.start.column}."
             )
 
         if len(scalartype_constraint) != 0:

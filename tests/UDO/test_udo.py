@@ -718,7 +718,7 @@ class UdoTest(UDOHelper):
         code = "GH_353"
         number_inputs = 0
         references_names = []
-        error_message = "Invalid type definition dattt at line 1:31"
+        error_message = "Invalid parameter type definition dattt at line 1:31."
 
         with pytest.raises(Exception, match=error_message):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
