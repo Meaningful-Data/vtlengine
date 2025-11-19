@@ -40,7 +40,9 @@ from vtlengine.Interpreter import InterpreterAnalyzer
 base_path = Path(__file__).parent
 filepath = base_path / "data" / "encode"
 
-param = ["DS_r := DS_1 + DS_2;"]
+param = ["DS_r := DS_1 + DS_2;",
+         """DS_r := DS_1 + DS_2;
+         //comment"""]
 
 
 param_ast = [
