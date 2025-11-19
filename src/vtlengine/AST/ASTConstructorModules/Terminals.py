@@ -354,7 +354,10 @@ class Terminals(VtlVisitor):
             type_node = self.visitBasicScalarType(scalartype)
 
         else:
-            raise SyntaxError(f"Invalid type definition {scalartype.children[0]} at line {ctx.start.line}:{ctx.start.column}")
+            raise SyntaxError(
+                f"Invalid type definition {scalartype.children[0]} at line "
+                f"{ctx.start.line}:{ctx.start.column}"
+            )
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45

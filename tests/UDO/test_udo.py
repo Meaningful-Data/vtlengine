@@ -709,7 +709,6 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-
     def test_GH_353(self):
         """
         Status: OK
