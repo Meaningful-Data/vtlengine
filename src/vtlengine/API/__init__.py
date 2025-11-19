@@ -125,6 +125,7 @@ def create_ast(text: str) -> Start:
     Raises:
         Exception: When the vtl syntax expression is wrong.
     """
+    text = text + "\n"
     stream = _lexer(text)
     cst = _parser(stream)
     visitor = ASTVisitor()
