@@ -275,6 +275,40 @@ load_datasets_with_data_path_params_OK = [
             {"DS_1": filepath_csv / "DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
         ),
     ),
+    (
+        filepath_json / "DS_1.json",
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
+        (
+            {
+                "DS_1": Dataset(
+                    name="DS_1",
+                    components={
+                        "Id_1": Component(
+                            name="Id_1",
+                            data_type=DataTypes.Integer,
+                            role=Role.IDENTIFIER,
+                            nullable=False,
+                        ),
+                        "Id_2": Component(
+                            name="Id_2",
+                            data_type=DataTypes.String,
+                            role=Role.IDENTIFIER,
+                            nullable=False,
+                        ),
+                        "Me_1": Component(
+                            name="Me_1",
+                            data_type=DataTypes.Number,
+                            role=Role.MEASURE,
+                            nullable=True,
+                        ),
+                    },
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
+                )
+            },
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
+            {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
+        ),
+    ),
 ]
 
 load_datasets_with_data_and_wrong_inputs = [
@@ -318,7 +352,14 @@ params_run = [
         [filepath_csv / "DS_1.csv", filepath_csv / "DS_2.csv"],
         filepath_ValueDomains / "VD_1.json",
         filepath_sql / "1.json",
-    )
+    ),
+    (
+        filepath_VTL / "2.vtl",
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        filepath_ValueDomains / "VD_1.json",
+        filepath_sql / "1.json",
+    ),
 ]
 
 params_schema = [(filepath_json / "DS_Schema.json")]
@@ -662,6 +703,12 @@ params_validate_ds = [
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
         "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+    ),
+    (
+        [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        True,
+        None,
     ),
 ]
 

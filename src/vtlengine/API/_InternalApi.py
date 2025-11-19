@@ -203,9 +203,14 @@ def _load_datapoints_path(
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
                 raise Exception("Invalid dataset name. Datapoints dictionary keys must be strings.")
+            if not isinstance(datapoint, (str, Path)):
+                raise Exception(
+                    "Invalid datapoint. Datapoints dictionary values must be Paths or S3 URIs."
+                )
             single_datapoint = _load_single_datapoint(datapoint)
-            _check_unique_datapoints(list(single_datapoint.keys()), list(dict_datapoints.keys()))
-            dict_datapoints.update(single_datapoint)
+            first_datapoint = list(single_datapoint.values())[0]
+            _check_unique_datapoints([dataset_name], list(dict_datapoints.keys()))
+            dict_datapoints[dataset_name] = first_datapoint
         return dict_datapoints
     if isinstance(datapoints, list):
         for x in datapoints:
