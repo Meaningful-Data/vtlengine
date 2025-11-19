@@ -277,7 +277,7 @@ load_datasets_with_data_path_params_OK = [
     ),
     (
         filepath_json / "DS_1.json",
-        {"DS_1": filepath_csv / "custom_name.csv"},
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
         (
             {
                 "DS_1": Dataset(
@@ -302,11 +302,11 @@ load_datasets_with_data_path_params_OK = [
                             nullable=True,
                         ),
                     },
-                    data=None,
+                    data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
             {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
-            {"DS_1": filepath_csv / "custom_name.csv"},
+            {"DS_1": filepath_csv / "custom_name_DS_1.csv"},
         ),
     ),
 ]
@@ -356,7 +356,7 @@ params_run = [
     (
         filepath_VTL / "2.vtl",
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
-        {"DS_1": filepath_csv / "custom_name.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
         filepath_ValueDomains / "VD_1.json",
         filepath_sql / "1.json",
     ),
@@ -706,7 +706,7 @@ params_validate_ds = [
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
-        {"DS_1": filepath_csv / "custom_name.csv", "DS_2": filepath_csv / "DS_2.csv"},
+        {"DS_1": filepath_csv / "custom_name_DS_1.csv", "DS_2": filepath_csv / "DS_2.csv"},
         True,
         None,
     ),
