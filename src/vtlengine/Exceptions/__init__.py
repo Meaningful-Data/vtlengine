@@ -106,13 +106,24 @@ class InterpreterError(VTLEngineException):
         super().__init__(message, None, None, code)
 
 
-class RuntimeError(VTLEngineException):
-    """ """
+class RunTimeError(VTLEngineException):
+    output_message = " Please check transformation with output dataset "
+    comp_code = None
 
     def __init__(
-        self, message: str, lino: Optional[str] = None, colno: Optional[str] = None
+        self,
+        code: str,
+        comp_code: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(message, lino, colno)
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + str(dataset_output)
+
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
 
 
 class InputValidationException(VTLEngineException):
@@ -170,3 +181,25 @@ def key_distance(key: str, objetive: str) -> int:
             dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
 
     return dp[-1][-1]
+
+
+class DataLoadError(VTLEngineException):
+    output_message = " Please check loaded file"
+    comp_code: Optional[str] = None
+
+    def __init__(
+        self,
+        code: str,
+        comp_code: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        message = centralised_messages[code].format(**kwargs)
+        if dataset_output:
+            message += self.output_message + " " + str(dataset_output)
+        else:
+            message += self.output_message
+
+        super().__init__(message, None, None, code)
+
+        if comp_code:
+            self.comp_code = comp_code
