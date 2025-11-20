@@ -11,6 +11,8 @@ centralised_messages = {
     # Input Validation errors
     "0-1-1-1": "invalid script format type: {format_}. Input must be a string, "
     "TransformationScheme or Path object",
+    "0-1-1-2": "The provided input {input} can not be used in this instance.",
+    "0-1-1-3": "Invalid file extension: expected {expected_ext}, got {ext}",
     "0-1-2-1": "Invalid json structure because additional properties have been supplied "
     "on file {filename}.",
     "0-1-2-2": "Errors found on file {filename}: {errors}",
@@ -30,10 +32,11 @@ centralised_messages = {
     "0-1-3-5": "Dataset {dataset_name} not found in the input datasets.",
     "0-1-3-6": "Input name {missing} not found in the input datasets.",
     "0-1-3-7": "Invalid input datasets type: {type_}. Expected a sequence of PandasDataset.",
-    # JSON Schema validations
+    # DataLoad errors
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
+    "0-3-1-2": "{file} file not found. Please verify that the file exists and the provided path is correct.",
     # Infer Data Structure errors
-    "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
+    # "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
     "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
