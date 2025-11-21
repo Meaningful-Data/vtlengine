@@ -84,6 +84,7 @@ centralised_messages = {
     "1-1-5-5": "A mask can't be provided to cast from type {type_1} to {type_2}. Mask provided: "
     "{mask_value}.",
     "2-1-5-1": "Impossible to cast {value} from type {type_1} to {type_2}.",
+    "2-1-5-2": "Value {value} has decimals, cannot cast to integer",
     # Clause errors
     "1-1-6-2": "At op {op}: The identifier {name} in dataset {dataset} could not be included "
     "in the {op} op.",

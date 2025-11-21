@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key
+from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, RunTimeError
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -252,7 +252,7 @@ class TestHelper(TestCase):
             value_domains=value_domains,
             external_routines=external_routines,
         )
-        with pytest.raises(SemanticError) as context:
+        with pytest.raises((SemanticError, RunTimeError)) as context:
             ast = create_ast(text)
             interpreter.visit(ast)
 
