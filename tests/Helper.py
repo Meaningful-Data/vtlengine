@@ -8,7 +8,7 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, RunTimeError
+from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, RunTimeError, InputValidationException
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -357,4 +357,5 @@ class TestHelper(TestCase):
         if len(context.value.args) > 1 and exception_code is not None:
             assert exception_code == str(context.value.args[1])
         else:
-            assert exception_message in str(context.value.args[0])
+            if exception_message is not None:
+                assert exception_message in str(context.value.args[0])

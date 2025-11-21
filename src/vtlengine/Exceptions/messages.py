@@ -16,7 +16,7 @@ centralised_messages = {
     "0-1-2-1": "Invalid json structure because additional properties have been supplied "
     "on file {filename}.",
     "0-1-2-2": "Errors found on file {filename}: {errors}",
-    "0-1-2-3": "Component {component} is duplicated.",
+    "0-1-2-3": "{element_type} '{element}' is/are duplicated.",
     "0-1-2-4": "Invalid json structure because {err} on file {filename}.",
     "0-1-2-5": "File {file} must be encoded in utf-8 (without BOM).",
     "0-1-2-6": "Not found scalar {name} in datastructures",
@@ -37,7 +37,6 @@ centralised_messages = {
     "0-3-1-2": "{file} file not found. Please verify that the file exists and the provided path is correct.",
     "0-3-1-3": "Output folder {folder} not found or invalid. Must be a valid Path or S3 directory.",
     # Infer Data Structure errors
-    # "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
     "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
@@ -48,7 +47,7 @@ centralised_messages = {
     "0-1-1-9": "You have a problem related with commas, review rfc4180 standard, review file "
     "{file}.",
     "0-1-1-10": "On Dataset {name} loading: Component {comp_name} is missing in Datapoints.",
-    "0-1-1-11": "Wrong data in the file for this scalardataset {name}.",
+    "0-1-1-11": "Wrong data in the file for this scalar/dataset {name}.",
     "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
     "0-1-1-13": "Invalid key on {field} field: {key}{closest_key}.",
     "0-1-1-14": "Empty datasets {dataset1} and {dataset2} shape missmatch.",

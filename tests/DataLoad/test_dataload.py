@@ -83,9 +83,9 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-3"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Number"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_4(self):
@@ -146,9 +146,9 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-8"
         number_inputs = 1
 
-        message = "Duplicated columns Me_3 found in file."
+        exception_code = "0-1-2-3"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_9(self):
@@ -211,9 +211,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-11"
         number_inputs = 1
 
-        message = "On Dataset dsPrep.ENTTY_JN loading:  An identifier cannot have null values, found null values on VLD_T."
+        exception_code = "0-1-1-4"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_13(self):
@@ -255,9 +255,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-14"
         number_inputs = 1
 
-        message = "On Dataset dsPrep.ENTTY_JN loading:  An identifier cannot have null values, found null values on VLD_T."
+        exception_code = "0-1-1-4"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_16(self):
@@ -378,9 +378,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-22"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_24(self):
@@ -395,9 +395,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-23"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_4 to Time"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_25(self):
@@ -412,9 +412,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-24"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_4 to Time"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_26(self):
@@ -441,9 +441,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-26"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_28(self):
@@ -471,9 +471,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-29"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_30(self):
@@ -486,9 +486,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-30"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     # Types of boolean
@@ -546,9 +546,9 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-34"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
+        exception_code = "0-1-1-12"
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_35(self):
@@ -575,10 +575,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-36"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Integer"
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     # Checking Time, Data and Time_period
@@ -593,10 +593,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-37"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_38(self):
@@ -623,10 +623,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-39"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
+        exception_code = "O-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     # Time
@@ -640,10 +640,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-40"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Time"
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     # Date
@@ -704,10 +704,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-26"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration"
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_46(self):
@@ -719,10 +719,10 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-43"
         number_inputs = 1
 
-        message = "Datasets without identifiers must have 0 or 1 datapoints"
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_47(self):
@@ -774,10 +774,10 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-13"
         number_inputs = 1
 
-        message = "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration."
+        exception_code = "0-1-1-12"
 
         self.DataLoadExceptionTest(
-            code=code, number_inputs=number_inputs, exception_message=message
+            code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
     def test_GL_483_1(self):

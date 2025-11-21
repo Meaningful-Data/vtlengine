@@ -665,7 +665,7 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+        "0-1-1-10",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -702,7 +702,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "On Dataset DS_1 loading: Component Id_1 is missing in Datapoints.",
+        "0-1-1-10",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -1455,11 +1455,11 @@ def test_mandatory_at_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(InputValidationException) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    result = exception_code == str(context.value.args[1])
+    result = exception_code == str(context.value.args[0])
     if result is False:
-        print(f"\n{exception_code} != {context.value.args[1]}")
+        print(f"\n{exception_code} != {context.value.args[0]}")
     assert result
 
 
@@ -1508,11 +1508,11 @@ def test_mandatory_me_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(InputValidationException) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    result = exception_code == str(context.value.args[1])
+    result = exception_code == str(context.value.args[0])
     if result is False:
-        print(f"\n{exception_code} != {context.value.args[1]}")
+        print(f"\n{exception_code} != {context.value.args[0]}")
     assert result
 
 

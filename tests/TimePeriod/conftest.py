@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.API._InternalApi import load_datasets_with_data
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, InputValidationException
 
 
 def load_datasets(base_path, code, folder_type):
@@ -45,7 +45,12 @@ def load_reference(request, code):
 
 @pytest.fixture
 def load_error(request, code):
-    with pytest.raises(SemanticError) as context:
-        base_path = request.node.get_closest_marker("input_path").args[0]
+    base_path = request.node.get_closest_marker("input_path").args[0]
+    try:
         return load_datasets(base_path, code, folder_type="input")
-    return context.value.args[1]
+    except (SemanticError, InputValidationException) as ex:
+        if hasattr(ex, "code"):
+            return ex.code
+        elif len(ex.args) > 1:
+            return ex.args[1]
+        return ex.args[0]
