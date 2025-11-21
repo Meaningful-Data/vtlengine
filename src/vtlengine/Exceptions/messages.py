@@ -314,6 +314,7 @@ centralised_messages = {
     "1-4-1-9": "At op check_datapoint: {name} has an invalid datatype expected DataSet, found "
     "Scalar.",
     # AST Creation
+    "1-4-2-0": "Error creating DAG.",
     "1-4-2-1": "Eval could not be called without a {option} type definition.",
     "1-4-2-2": "Optional or empty expression node is not allowed in time_agg.",
     "1-4-2-3": "{value} could not be called in the count.",
@@ -323,4 +324,5 @@ centralised_messages = {
     "1-4-2-6": "At op {op}: Window must be provided.",
     "1-4-2-7": "At op {op}: Partition by or order by clause must be provided for Analytic "
     "operators.",
+    "1-4-2-8": "At op {op}: Vtl Script contains Cycles, no DAG established. Nodes involved: {nodes}."
 }
