@@ -458,7 +458,7 @@ params_run_sdmx_errors = [
             ),
         ],
         None,
-        SemanticError,
+        InputValidationException,
         "0-1-3-3",
     ),
     (
@@ -471,7 +471,7 @@ params_run_sdmx_errors = [
             )
         ],
         42,
-        TypeError,
+        InputValidationException,
         "Expected dict or VtlDataflowMapping type for mappings.",
     ),
     (
@@ -488,7 +488,7 @@ params_run_sdmx_errors = [
             dataflow_alias="ALIAS",
             id="Test",
         ),
-        TypeError,
+        InputValidationException,
         "Expected str, Reference, DataflowRef or Dataflow type for dataflow in VtlDataflowMapping.",
     ),
 ]
@@ -1630,7 +1630,7 @@ def test_run_sdmx_2_1_gen_all(code, data, structure):
 @pytest.mark.parametrize("data, error_code", params_exception_vtl_to_json)
 def test_to_vtl_json_exception(data, error_code):
     datasets = get_datasets(data)
-    with pytest.raises(SemanticError, match=error_code):
+    with pytest.raises(InputValidationException, match=error_code):
         run_sdmx("DS_r := BIS_DER [calc Me_4 := OBS_VALUE];", datasets)
 
 
