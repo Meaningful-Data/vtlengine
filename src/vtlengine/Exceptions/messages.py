@@ -36,23 +36,23 @@ centralised_messages = {
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     "0-3-1-2": "{file} file not found. Please verify that the file exists and the provided path is correct.",
     "0-3-1-3": "Output folder {folder} not found or invalid. Must be a valid Path or S3 directory.",
-    # Infer Data Structure errors
-    "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
+    "0-3-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
     "values on {null_identifier}.",
-    "0-1-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
+    "0-3-1-5": "On Dataset {name} loading: Datasets without identifiers must have 0 or "
     "1 datapoints.",
+    "0-3-1-6": "On Dataset {name} loading: Component {comp_name} is missing in Datapoints.",
+    "0-3-1-7": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
+    "0-3-1-8": "On Dataset {name} loading: Duplicated identifiers are not allowed, "
+    "found on row {row_index}",
+    # Infer Data Structure errors
     "0-1-1-6": "Duplicated records. Combination of identifiers are repeated.",
     "0-1-1-7": "G1 - The provided CSV file is empty.",
     "0-1-1-8": "The following identifiers {ids} were not found , review file {file}.",
     "0-1-1-9": "You have a problem related with commas, review rfc4180 standard, review file "
     "{file}.",
-    "0-1-1-10": "On Dataset {name} loading: Component {comp_name} is missing in Datapoints.",
     "0-1-1-11": "Wrong data in the file for this scalar/dataset {name}.",
-    "0-1-1-12": "On Dataset {name} loading: not possible to cast column {column} to {type}.",
     "0-1-1-13": "Invalid key on {field} field: {key}{closest_key}.",
     "0-1-1-14": "Empty datasets {dataset1} and {dataset2} shape missmatch.",
-    "0-1-1-15": "On Dataset {name} loading: Duplicated identifiers are not allowed, "
-    "found on row {row_index}",
     "0-1-0-1": " Trying to redefine input datasets {dataset}.",  # Semantic Error
     # ------------Operators-------------
     # General Semantic errors

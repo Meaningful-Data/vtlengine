@@ -88,5 +88,5 @@ class InnerJoinIdentifiersTypeChecking(TestInnerJoinTypeChecking):
         """
         code = "2-2-1-4"
         number_inputs = 2
-        message = "0-1-1-12"
+        message = "0-3-1-7"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)

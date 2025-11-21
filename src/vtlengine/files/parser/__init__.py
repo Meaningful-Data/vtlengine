@@ -138,15 +138,15 @@ def _validate_pandas(
     if missing_columns:
         for name in missing_columns:
             if components[name].nullable is False:
-                raise InputValidationException("0-1-1-10", name=dataset_name, comp_name=name)
+                raise DataLoadError("0-3-1-6", name=dataset_name, comp_name=name)
             data[name] = None
 
     for id_name in id_names:
         if data[id_name].isnull().any():
-            raise InputValidationException("0-1-1-4", null_identifier=id_name, name=dataset_name)
+            raise DataLoadError("0-3-1-4", null_identifier=id_name, name=dataset_name)
 
     if len(id_names) == 0 and len(data) > 1:
-        raise InputValidationException("0-1-1-5", name=dataset_name)
+        raise DataLoadError("0-3-1-5", name=dataset_name)
 
     data = data.fillna(np.nan).replace([np.nan], None)
     # Checking data types on all data types
@@ -201,7 +201,7 @@ def _validate_pandas(
 
     except ValueError:
         str_comp = SCALAR_TYPES_CLASS_REVERSE[comp.data_type] if comp else "Null"
-        raise InputValidationException("0-1-1-12", name=dataset_name, column=comp_name, type=str_comp)
+        raise DataLoadError("0-3-1-7", name=dataset_name, column=comp_name, type=str_comp)
 
     if id_names:
         check_identifiers_duplicity(data, id_names, dataset_name)
@@ -213,7 +213,7 @@ def check_identifiers_duplicity(data: pd.DataFrame, identifiers: List[str], name
     dup_id_row = data.duplicated(subset=identifiers, keep=False)
     if dup_id_row.any():
         row_index = int(dup_id_row.idxmax()) + 1
-        raise InputValidationException("0-1-1-15", name=name, row_index=row_index)
+        raise DataLoadError("0-3-1-8", name=name, row_index=row_index)
 
 
 def load_datapoints(

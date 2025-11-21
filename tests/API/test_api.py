@@ -665,7 +665,7 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "0-1-1-10",
+        "0-3-1-6",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -702,7 +702,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "0-1-1-10",
+        "0-3-1-6",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -1411,7 +1411,7 @@ def test_non_mandatory_fill_me():
 
 
 def test_mandatory_at_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-6"
 
     script = """
         DS_r := DS_1;
@@ -1455,16 +1455,16 @@ def test_mandatory_at_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(InputValidationException) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    result = exception_code == str(context.value.args[0])
+    result = exception_code == str(context.value.args[1])
     if result is False:
-        print(f"\n{exception_code} != {context.value.args[0]}")
+        print(f"\n{exception_code} != {context.value.args[1]}")
     assert result
 
 
 def test_mandatory_me_error():
-    exception_code = "0-1-1-10"
+    exception_code = "0-3-1-6"
 
     script = """
         DS_r := DS_1;
@@ -1508,11 +1508,11 @@ def test_mandatory_me_error():
 
     datapoints = {"DS_1": data_df}
 
-    with pytest.raises(InputValidationException) as context:
+    with pytest.raises(DataLoadError) as context:
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    result = exception_code == str(context.value.args[0])
+    result = exception_code == str(context.value.args[1])
     if result is False:
-        print(f"\n{exception_code} != {context.value.args[0]}")
+        print(f"\n{exception_code} != {context.value.args[1]}")
     assert result
 
 

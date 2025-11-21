@@ -83,7 +83,7 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-3"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -180,7 +180,7 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-10"
         number_inputs = 1
 
-        exception_code = "0-1-1-4"
+        exception_code = "0-3-1-4"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -211,7 +211,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-11"
         number_inputs = 1
 
-        exception_code = "0-1-1-4"
+        exception_code = "0-3-1-4"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -255,7 +255,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-14"
         number_inputs = 1
 
-        exception_code = "0-1-1-4"
+        exception_code = "0-3-1-4"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -378,7 +378,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-22"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -395,7 +395,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-23"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -412,7 +412,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-24"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -441,7 +441,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-26"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -471,7 +471,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-29"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -486,7 +486,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-30"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -546,7 +546,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-34"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -575,7 +575,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-36"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -593,7 +593,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-37"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -623,7 +623,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-39"
         number_inputs = 1
 
-        exception_code = "O-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -640,7 +640,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-40"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -704,7 +704,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-26"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -719,7 +719,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_91-43"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-5"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -774,7 +774,7 @@ class DataLoadTest(DataLoadHelper):
         code = "DataLoad-13"
         number_inputs = 1
 
-        exception_code = "0-1-1-12"
+        exception_code = "0-3-1-7"
 
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code

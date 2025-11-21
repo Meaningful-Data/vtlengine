@@ -101,7 +101,7 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         """
         code = "4-2-3-4"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-7"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_5(self):
@@ -119,7 +119,7 @@ class ComponentComponentTypeChecking(TestComponentTypeChecking):
         """
         code = "4-2-3-5"
         number_inputs = 1
-        message = "0-1-1-12"
+        message = "0-3-1-7"
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code=message)
 
     def test_6(self):
