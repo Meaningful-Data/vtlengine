@@ -552,18 +552,18 @@ def _check_output_folder(output_folder: Union[str, Path]) -> None:
         if "s3://" in output_folder:
             __check_s3_extra()
             if not output_folder.endswith("/"):
-                raise ValueError("Output folder must be a Path or S3 URI to a directory")
+                raise DataLoadError("0-3-1-3", folder=str(output_folder))
             return
         try:
             output_folder = Path(output_folder)
         except Exception:
-            raise ValueError("Output folder must be a Path or S3 URI to a directory")
+            raise DataLoadError("0-3-1-3", folder=str(output_folder))
 
     if not isinstance(output_folder, Path):
-        raise ValueError("Output folder must be a Path or S3 URI to a directory")
+        raise DataLoadError("0-3-1-3", folder=str(output_folder))
     if not output_folder.exists():
         if output_folder.suffix != "":
-            raise ValueError("Output folder must be a Path or S3 URI to a directory")
+            raise DataLoadError("0-3-1-3", folder=str(output_folder))
         os.mkdir(output_folder)
 
 

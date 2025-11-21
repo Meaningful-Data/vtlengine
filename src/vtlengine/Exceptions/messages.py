@@ -35,6 +35,7 @@ centralised_messages = {
     # DataLoad errors
     "0-3-1-1": "Dataset {dataset} is not valid according to JSON schema",
     "0-3-1-2": "{file} file not found. Please verify that the file exists and the provided path is correct.",
+    "0-3-1-3": "Output folder {folder} not found or invalid. Must be a valid Path or S3 directory.",
     # Infer Data Structure errors
     # "0-1-1-2": "The provided {source} must have data to can infer the data structure.",
     "0-1-1-4": "On Dataset {name} loading:  An identifier cannot have null values, found null "
