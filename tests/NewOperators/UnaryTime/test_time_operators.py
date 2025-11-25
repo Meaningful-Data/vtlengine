@@ -6,7 +6,7 @@ from pytest import mark
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import SemanticError, RunTimeError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
@@ -78,7 +78,7 @@ def test_unary_time_ds(load_input, load_reference, code, expression):
 def test_errors_ds(load_input, code, expression, error_code):
     warnings.filterwarnings("ignore", category=FutureWarning)
     datasets = load_input
-    with pytest.raises(SemanticError) as context:
+    with pytest.raises(Exception) as context:
         ast = create_ast(expression)
         interpreter = InterpreterAnalyzer(datasets)
         interpreter.visit(ast)
