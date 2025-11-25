@@ -23,7 +23,7 @@ from vtlengine.DataTypes._time_checking import (
     check_time_period,
 )
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING
-from vtlengine.Exceptions import InputValidationException, SemanticError, DataLoadError
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser._rfc_dialect import register_rfc
 from vtlengine.Model import Component, Dataset, Role
 
@@ -57,7 +57,9 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
 
     if len(list(set(csv_columns))) != len(csv_columns):
         duplicates = list(set([item for item in csv_columns if csv_columns.count(item) > 1]))
-        raise InputValidationException(code="0-1-2-3", element_type="Columns", element=f"{', '.join(duplicates)}")
+        raise InputValidationException(
+            code="0-1-2-3", element_type="Columns", element=f"{', '.join(duplicates)}"
+        )
 
     comp_names = set([c.name for c in components.values() if c.role == Role.IDENTIFIER])
     comps_missing: Union[str, List[str]] = (

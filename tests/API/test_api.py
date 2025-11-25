@@ -41,7 +41,7 @@ from vtlengine.API._InternalApi import (
     to_vtl_json,
 )
 from vtlengine.DataTypes import Integer, String
-from vtlengine.Exceptions import InputValidationException, SemanticError, DataLoadError
+from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 
 # Path selection

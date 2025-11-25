@@ -13,7 +13,7 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period_str,
     str_period_to_date,
 )
-from vtlengine.Exceptions import SemanticError, RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 
 DTYPE_MAPPING: Dict[str, str] = {
     "String": "string",
@@ -480,7 +480,9 @@ class Duration(ScalarType):
             match = re.match(cls.iso8601_duration_pattern, value)
             return bool(match)
         except Exception:
-            raise RunTimeError("2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration")
+            raise RunTimeError(
+                "2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+            )
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
@@ -509,9 +511,7 @@ class Duration(ScalarType):
     @classmethod
     def to_days(cls, value: Any) -> int:
         if not cls.validate_duration(value):
-            raise RunTimeError(
-                "2-1-19-15",op=value
-            )
+            raise RunTimeError("2-1-19-15", op=value)
 
         match = re.match(cls.iso8601_duration_pattern, value)
 

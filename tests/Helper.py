@@ -8,7 +8,12 @@ import pytest
 
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import SemanticError, VTLEngineException, check_key, RunTimeError, InputValidationException
+from vtlengine.Exceptions import (
+    RunTimeError,
+    SemanticError,
+    VTLEngineException,
+    check_key,
+)
 from vtlengine.files.output import (
     TimePeriodRepresentation,
     format_time_period_external_representation,

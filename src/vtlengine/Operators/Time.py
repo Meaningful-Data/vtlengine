@@ -38,7 +38,7 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period,
     period_to_date,
 )
-from vtlengine.Exceptions import SemanticError, RunTimeError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 

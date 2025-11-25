@@ -29,7 +29,7 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar.lexer import Lexer
 from vtlengine.AST.Grammar.parser import Parser
-from vtlengine.Exceptions import SemanticError, InputValidationException
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,

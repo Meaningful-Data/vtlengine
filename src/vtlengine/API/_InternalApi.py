@@ -24,9 +24,9 @@ from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentA
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
 from vtlengine.Exceptions import (
+    DataLoadError,
     InputValidationException,
-    SemanticError,
-    check_key, DataLoadError,
+    check_key,
 )
 from vtlengine.files.parser import (
     _fill_dataset_empty_data,
@@ -149,7 +149,9 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
     Returns a dict with the data given from one dataset.
     """
     if not isinstance(datapoint, (str, Path)):
-        raise InputValidationException(code="0-1-1-2", input=datapoint, message="Input must be a Path or an S3 URI")
+        raise InputValidationException(
+            code="0-1-1-2", input=datapoint, message="Input must be a Path or an S3 URI"
+        )
     # Handling of str values
     if isinstance(datapoint, str):
         if "s3://" in datapoint:
@@ -160,10 +162,12 @@ def _load_single_datapoint(datapoint: Union[str, Path]) -> Dict[str, Union[str, 
         try:
             datapoint = Path(datapoint)
         except Exception:
-            raise InputValidationException (code="0-1-1-2", input=datapoint, message="Input must refer to a Path or an S3 URI")
+            raise InputValidationException(
+                code="0-1-1-2", input=datapoint, message="Input must refer to a Path or an S3 URI"
+            )
     # Validation of Path object
     if not datapoint.exists():
-        raise DataLoadError(code= "0-3-1-2", file=datapoint)
+        raise DataLoadError(code="0-3-1-2", file=datapoint)
 
     # Generation of datapoints dictionary with Path objects
     dict_paths: Dict[str, Path] = {}
@@ -202,9 +206,17 @@ def _load_datapoints_path(
     if isinstance(datapoints, dict):
         for dataset_name, datapoint in datapoints.items():
             if not isinstance(dataset_name, str):
-                raise InputValidationException(code="0-1-1-2", input=dataset_name, message="Datapoints dictionary keys must be strings.")
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=dataset_name,
+                    message="Datapoints dictionary keys must be strings.",
+                )
             if not isinstance(datapoint, (str, Path)):
-                raise InputValidationException(code="0-1-1-2", input=datapoint, message="Datapoints dictionary values must be Paths or S3 URIs.")
+                raise InputValidationException(
+                    code="0-1-1-2",
+                    input=datapoint,
+                    message="Datapoints dictionary values must be Paths or S3 URIs.",
+                )
             single_datapoint = _load_single_datapoint(datapoint)
             first_datapoint = list(single_datapoint.values())[0]
             _check_unique_datapoints([dataset_name], list(dict_datapoints.keys()))
@@ -228,7 +240,9 @@ def _load_datastructure_single(
     if isinstance(data_structure, dict):
         return _load_dataset_from_structure(data_structure)
     if not isinstance(data_structure, Path):
-        raise InputValidationException(code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=data_structure, message="Input must be a dict or Path object"
+        )
     if not data_structure.exists():
         raise DataLoadError(code="0-3-1-2", file=data_structure)
     if data_structure.is_dir():
@@ -243,7 +257,9 @@ def _load_datastructure_single(
         return datasets, scalars
     else:
         if data_structure.suffix != ".json":
-            raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix)
+            raise InputValidationException(
+                code="0-1-1-3", expected_ext=".json", ext=data_structure.suffix
+            )
         with open(data_structure, "r") as file:
             structures = json.load(file)
     return _load_dataset_from_structure(structures)
@@ -342,7 +358,9 @@ def load_datasets_with_data(
     ):
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
-                raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+                raise InputValidationException(
+                    f"Not found dataset {dataset_name} in datastructures."
+                )
             # This exception is not needed due to the all() check above, but it is left for safety
             if not isinstance(data, pd.DataFrame):
                 raise InputValidationException(
@@ -408,7 +426,9 @@ def load_vtl(input: Union[str, Path]) -> str:
         else:
             return input
     if not isinstance(input, Path):
-        raise InputValidationException(code="0-1-1-2", input=input, message="Input is not a Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input is not a Path object"
+        )
     if not input.exists():
         raise DataLoadError(code="0-3-1-2", file=input)
     if input.suffix != ".vtl":
@@ -461,7 +481,9 @@ def load_value_domains(
             value_domains.update(load_value_domains(item))
         return value_domains
     if not isinstance(input, Path):
-        raise InputValidationException(code="0-1-1-2", input=input, message="Input is not a Path object")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input is not a Path object"
+        )
     if not input.exists():
         raise DataLoadError(code="0-3-1-2", file=input)
     if input.is_dir():
@@ -505,7 +527,9 @@ def load_external_routines(
             ext_routines.update(load_external_routines(item))
         return ext_routines
     if not isinstance(input, Path):
-        raise InputValidationException(code="0-1-1-2", input=input, message="Input must be a json file.")
+        raise InputValidationException(
+            code="0-1-1-2", input=input, message="Input must be a json file."
+        )
     if not input.exists():
         raise DataLoadError(code="0-3-1-2", file=input)
     if input.is_dir():

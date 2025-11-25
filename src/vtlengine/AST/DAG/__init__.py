@@ -161,7 +161,7 @@ class DAGAnalyzer(ASTTemplate):
                 dag.check_overwriting(MLStatements)
             return dag
 
-        except nx.NetworkXUnfeasible as error:
+        except nx.NetworkXUnfeasible:
             error_keys = {}
             for v in dag.edges.values():
                 aux_v0, aux_v1 = v[1], v[0]
@@ -420,7 +420,7 @@ class HRDAGAnalyzer(DAGAnalyzer):
                 ast.rules = dag.rules_ast
             return dag
 
-        except nx.NetworkXUnfeasible as error:
+        except nx.NetworkXUnfeasible:
             error_keys = {}
             for v in dag.edges.values():
                 aux_v0, aux_v1 = v[1], v[0]
