@@ -38,37 +38,6 @@ class VTLEngineException(Exception):
         return [self.lino, self.colno]
 
 
-class DataTypeException(VTLEngineException):
-    """
-    Implement here the exception of DataTypeException.py:
-        class DataTypeError(Exception):
-            def __init__(self, value, dataType):
-                super().__init__("Invalid Scalar value '{}' for data type {}.". format(
-                    value, dataType
-                    ))
-    """
-
-    def __init__(
-        self,
-        message: str = "default_value",
-        lino: Optional[str] = None,
-        colno: Optional[str] = None,
-    ) -> None:
-        super().__init__(message, lino, colno)
-
-
-class SyntaxError(VTLEngineException):
-    """ """
-
-    def __init__(
-        self,
-        message: str = "default_value",
-        lino: Optional[str] = None,
-        colno: Optional[str] = None,
-    ) -> None:
-        super().__init__(message, lino, colno)
-
-
 class SemanticError(VTLEngineException):
     """ """
 
@@ -89,21 +58,6 @@ class SemanticError(VTLEngineException):
 
         if comp_code:
             self.comp_code = comp_code
-
-
-class InterpreterError(VTLEngineException):
-    output_message = " Please check transformation with output dataset "
-
-    def __init__(self, code: str, **kwargs: Any) -> None:
-        if dataset_output:
-            message = (
-                centralised_messages[code].format(**kwargs)
-                + self.output_message
-                + str(dataset_output)
-            )
-        else:
-            message = centralised_messages[code].format(**kwargs)
-        super().__init__(message, None, None, code)
 
 
 class RunTimeError(VTLEngineException):
