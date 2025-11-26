@@ -40,11 +40,8 @@ class RoleSetter(Unary):
 
         result = cls.validate(operand, data_size)
         if isinstance(operand, Scalar):
-            if operand.value is None:
-                operand.value = "NULL"
-            else:
-                operand.value = repr(operand.value)
-            query = f"SELECT {operand.value} AS {result.name} FROM range({data_size})"
+            value = repr(operand.value) if operand.value is not None else "NULL"
+            query = f"SELECT {value} AS {result.name} FROM range({data_size})"
             result.data = con.query(query)
         else:
             result.data = operand.data

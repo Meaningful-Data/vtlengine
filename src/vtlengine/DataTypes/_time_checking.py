@@ -27,7 +27,7 @@ date_pattern = r"\d{4}[-][0-1]?\d[-][0-3]?\d"
 
 
 def check_date(value: str, ds_name: str, col_name: str) -> str:
-    value = value.replace(" ", "")
+    value = value.strip()
     date_result = re.fullmatch(date_pattern, value)
     if date_result is not None:
         try:
@@ -48,7 +48,7 @@ time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
 
 
 def check_time(value: str, ds_name: str, col_name: str) -> str:
-    value = value.replace(" ", "")
+    value = value.strip()
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
         date1_time = datetime.strptime(value, "%Y")

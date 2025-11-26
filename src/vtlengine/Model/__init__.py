@@ -192,6 +192,10 @@ class DataComponent:
     def data(self, value: Optional[Union[pd.DataFrame, DuckDBPyRelation]]) -> None:
         if isinstance(value, pd.DataFrame):
             value = con.from_df(value)
+        elif isinstance(value, pd.Series):
+            value = con.from_df(value.to_frame())
+        elif isinstance(value, list):
+            value = con.from_df(pd.DataFrame({self.name: value}))
         if isinstance(value, DuckDBPyRelation):
             self._data = RelationProxy(value)
         elif isinstance(value, RelationProxy):
@@ -265,8 +269,8 @@ class DataComponent:
 class Dataset:
     name: str
     components: Dict[str, Component]
-    _data: Optional[RelationProxy] = None
     persistent: bool = False
+    _data: Optional[RelationProxy] = None
 
     @property
     def data(self) -> Optional[RelationProxy]:
@@ -292,10 +296,12 @@ class Dataset:
         name: str,
         components: Dict[str, Component],
         data: Optional[Union[pd.DataFrame, DuckDBPyRelation, RelationProxy]] = None,
+        persistent: bool = False,
     ) -> None:
         self.name = name
         self.components = components
         self.data = data
+        self.persistent = persistent
         self.__post_init__()
 
     def __post_init__(self) -> None:

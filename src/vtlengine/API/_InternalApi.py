@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import jsonschema
 import pandas as pd
+from duckdb import DuckDBPyRelation
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
@@ -31,8 +32,7 @@ from vtlengine.Exceptions import (
 from vtlengine.files.parser import (
     _fill_dataset_empty_data,
     _validate_csv_path,
-    _validate_pandas,
-    load_datapoints,
+    load_datapoints, _validate_duckdb,
 )
 from vtlengine.Model import (
     Component as VTL_Component,
@@ -340,17 +340,17 @@ def load_datasets_with_data(
 
     # Handling dictionary of Pandas Dataframes
     if isinstance(datapoints, dict) and all(
-        isinstance(v, pd.DataFrame) for v in datapoints.values()
+        isinstance(v, DuckDBPyRelation) for v in datapoints.values()
     ):
         for dataset_name, data in datapoints.items():
             if dataset_name not in datasets:
                 raise Exception(f"Not found dataset {dataset_name} in datastructures.")
             # This exception is not needed due to the all() check above, but it is left for safety
-            if not isinstance(data, pd.DataFrame):
+            if not isinstance(data, DuckDBPyRelation):
                 raise Exception(
                     f"Invalid datapoint for dataset {dataset_name}. Must be a Pandas Dataframe."
                 )
-            datasets[dataset_name].data = _validate_pandas(
+            datasets[dataset_name].data = _validate_duckdb(
                 datasets[dataset_name].components, data, dataset_name
             )
         # Handle empty datasets and scalar values for remaining datasets

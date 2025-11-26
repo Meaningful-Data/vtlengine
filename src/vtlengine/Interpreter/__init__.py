@@ -645,7 +645,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if self.only_semantic or self.regular_aggregation_dataset.data is None:
                     data = None
                 else:
-                    data = self.regular_aggregation_dataset.data[id_names].copy()
+                    data = self.regular_aggregation_dataset.data[id_names]
                     data[operand_comp.name] = operand_comp.data
 
                 operand = Dataset(

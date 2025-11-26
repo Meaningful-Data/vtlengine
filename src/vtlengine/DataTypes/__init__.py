@@ -390,7 +390,7 @@ class TimeInterval(ScalarType):
         if pd.isnull(value):
             return True
         try:
-            check_time(value)
+            check_time(value, "", "")
         except Exception:
             return False
         return True
@@ -436,7 +436,7 @@ class Date(TimeInterval):
         if pd.isnull(value):
             return True
         try:
-            check_date(value)
+            check_date(value, "", "")
         except Exception:
             return False
         return True
@@ -489,7 +489,7 @@ class TimePeriod(TimeInterval):
         if pd.isnull(value):
             return True
         try:
-            check_time_period(value)
+            check_time_period(value, "", "")
         except Exception:
             return False
         return True

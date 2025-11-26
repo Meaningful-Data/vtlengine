@@ -8,10 +8,10 @@ from duckdb import DuckDBPyRelation  # type: ignore[import-untyped]
 
 from vtlengine.connection import con
 from vtlengine.DataTypes import Date, Duration, TimeInterval, TimePeriod
+from vtlengine.DataTypes._time_checking import load_time_checks
 from vtlengine.duckdb.duckdb_utils import empty_relation
 from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
 from vtlengine.files.parser._rfc_dialect import register_rfc
-from vtlengine.files.parser._time_checking import load_time_checks
 from vtlengine.Model import Component, Dataset, RelationProxy, Role
 
 load_time_checks(con)

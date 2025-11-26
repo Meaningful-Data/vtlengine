@@ -193,7 +193,9 @@ def apply_bin_op_scalar(cls: Type["Binary"], left: Any, right: Any) -> Any:
     return float(result) if isinstance(result, Decimal) else result
 
 
-def _cast_time_types(data_type: Any, value: Any) -> Union[str, int]:
+def _cast_time_types(data_type: Any, value: Any) -> Optional[Union[str, int]]:
+    if value is None:
+        return None
     if data_type == TimeInterval:
         return TimeIntervalHandler.from_iso_format(value)  # type: ignore[return-value]
     elif data_type == TimePeriod:
@@ -206,6 +208,8 @@ def _cast_time_types(data_type: Any, value: Any) -> Union[str, int]:
 
 
 def cast_time_types_scalar(op: str, data_type: Type["ScalarType"], value: str) -> Any:
+    if value is None:
+        return None
     if op not in BINARY_COMPARISON_OPERATORS:
         return value
     if data_type == TimeInterval:
