@@ -22,15 +22,7 @@ from vtlengine import AST as AST
 from vtlengine.__extras_check import __check_s3_extra
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import (
-    DataLoadError,
-    InputValidationException,
-    SemanticError,
-    check_key,
-)
-from vtlengine.files.parser import _fill_dataset_empty_data, _validate_duckdb
 from vtlengine.Exceptions import (
     InputValidationException,
     SemanticError,

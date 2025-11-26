@@ -16,7 +16,7 @@ import vtlengine.DataTypes as DataTypes
 from vtlengine.connection import con
 from vtlengine.DataTypes import SCALAR_TYPES, ScalarType
 from vtlengine.duckdb.duckdb_utils import clean_execution_graph, normalize_data, quote_cols
-from vtlengine.Exceptions import DataLoadError
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 
 from .relation_proxy import RelationProxy
 
@@ -267,7 +267,6 @@ class Dataset:
     components: Dict[str, Component]
     _data: Optional[RelationProxy] = None
     persistent: bool = False
-
 
     @property
     def data(self) -> Optional[RelationProxy]:

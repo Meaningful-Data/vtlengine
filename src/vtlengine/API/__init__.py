@@ -40,7 +40,6 @@ from vtlengine.files.output._time_period_representation import (
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
-from vtlengine.Model import Dataset, Scalar
 
 pd.options.mode.chained_assignment = None
 
@@ -275,7 +274,9 @@ def semantic_analysis(
 def run(
     script: Union[str, TransformationScheme, Path],
     data_structures: Union[Dict[str, Any], Path, List[Dict[str, Any]], List[Path]],
-    datapoints: Union[Dict[str, Union[DuckDBPyRelation, str, Path]], List[Union[str, Path]], str, Path],
+    datapoints: Union[
+        Dict[str, Union[DuckDBPyRelation, str, Path]], List[Union[str, Path]], str, Path
+    ],
     value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
