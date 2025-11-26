@@ -1,4 +1,6 @@
-import sqlite3
+import re
+
+import duckdb
 from typing import Any, Dict, List, Union
 
 import pandas as pd
@@ -109,23 +111,27 @@ class Eval(Unary):
     def _execute_query(
         query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
     ) -> pd.DataFrame:
+        for forbidden in ["INSTALL", "LOAD"]:
+            if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
+                raise Exception(f"Query contains forbidden command: {forbidden}")
+        if re.search(r"FROM\s+'https?://", query, re.IGNORECASE):
+            raise Exception("Query contains forbidden URL in FROM clause")
         try:
-            conn = sqlite3.connect(":memory:")
+            conn = duckdb.connect(database=':memory:', read_only=False)
+
             try:
                 for ds_name in dataset_names:
-                    data[ds_name].to_sql(ds_name, conn, index=False)
-                conn.commit()
-
-                df_result = pd.read_sql_query(query, conn)
-
+                    df = data[ds_name]
+                    if df.empty:
+                        df = pd.DataFrame([{col: None for col in df.columns}])
+                    conn.register(ds_name, df)
+                df_result = conn.execute(query).fetchdf()
                 conn.close()
-
             except Exception as e:
                 conn.close()
                 raise Exception(f"Error executing SQL query: {e}")
         except Exception as e:
-            raise Exception(f"Error connecting to In-Memory SQLite: {e}")
-
+            raise Exception(f"Error connecting to DuckDB in memory: {e}")
         return df_result
 
     @classmethod
